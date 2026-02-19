@@ -1,7 +1,7 @@
 /forecast:
   get:
     summary: Get wealth trajectory forecast
-    description: Calculate wealth trajectory forecast based on user's current assets and projected monthly contributions with interest rates.
+    description: Calculate wealth trajectory forecast based on user's current accounts and projected monthly contributions with interest rates.
     operationId: getForecast
     tags:
       - Forecast

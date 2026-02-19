@@ -27,7 +27,7 @@ interface EditDrawerDetail {
   amount?: string | number;
   currency?: string;
   category_id?: string;
-  asset_id?: string;
+  account_id?: string;
   transaction_date?: string;
 }
 
@@ -260,7 +260,7 @@ function initTransactionDrawer(): void {
     setInput('amount', detail.amount ?? '');
     setInput('currency', detail.currency ?? DEFAULT_CURRENCY);
     setInput('category_id', detail.category_id ?? '');
-    setInput('asset_id', detail.asset_id ?? '');
+    setInput('account_id', detail.account_id ?? '');
     setInput('transaction_date', detail.transaction_date ?? '');
 
     // Update category chip active state

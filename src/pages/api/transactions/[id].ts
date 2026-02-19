@@ -85,9 +85,10 @@ export const PUT: APIRoute = async (context) => {
     if (validation.data.currency !== undefined) updateData.currency = validation.data.currency;
     if (validation.data.category_id !== undefined)
       updateData.category_id = validation.data.category_id;
-    if (validation.data.asset_id !== undefined) updateData.asset_id = validation.data.asset_id;
-    if (validation.data.to_asset_id !== undefined)
-      updateData.to_asset_id = validation.data.to_asset_id;
+    if (validation.data.account_id !== undefined)
+      updateData.account_id = validation.data.account_id;
+    if (validation.data.to_account_id !== undefined)
+      updateData.to_account_id = validation.data.to_account_id;
     if (validation.data.transaction_date !== undefined) {
       // Convert date string (YYYY-MM-DD) to Date object
       // The validation ensures the string is in the correct format

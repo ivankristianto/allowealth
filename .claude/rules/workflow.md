@@ -105,7 +105,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
 - ✅ **Clean up dead error handling after simplifying methods** - when removing functionality (e.g., balance mutation), also remove corresponding error handlers in API routes
 - ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
-- ✅ **Exclude debt from asset allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
+- ✅ **Exclude debt from account allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
 
 ## CLI Conventions
 
@@ -157,7 +157,7 @@ When redesigning or refactoring components, follow systematic exploration before
 **Rules:**
 
 - ✅ **See component in Chrome before refactoring** - visual issues aren't obvious from code
-- ✅ **Check reference pages (transactions, assets) for patterns** - consistent UI patterns
+- ✅ **Check reference pages (transactions, accounts) for patterns** - consistent UI patterns
 - ✅ **Plan with diagrams before implementing** - `BEFORE` / `AFTER` ASCII art clarifies changes
 - ✅ **Verify mobile view after changes** - responsive stacking differs from desktop
 - ❌ **Refactor components without seeing the current state** - may reintroduce bugs already fixed

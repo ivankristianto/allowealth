@@ -21,8 +21,8 @@ export const CacheTags = {
   DASHBOARD: 'dashboard' as const,
   SESSION: 'session' as const,
   CATEGORIES: 'categories' as const,
-  ASSETS: 'assets' as const,
+  ACCOUNTS: 'accounts' as const,
   LAYOUT: 'layout' as const,
-  ASSET_CATEGORIES: 'asset-categories' as const,
+  ACCOUNT_CATEGORIES: 'account-categories' as const,
   API_KEYS: 'api_keys' as const,
 } as const;

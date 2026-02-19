@@ -28,7 +28,7 @@ const meta: Meta = {
 |--------|------|---------------|
 | Add Expense | ShoppingCart | accent (indigo) |
 | Log Income | CircleDollarSign | success (emerald) |
-| Add Asset | Plus | success (emerald) |
+| Add Account | Plus | success (emerald) |
 
 ### Interactive States
 
@@ -201,11 +201,11 @@ export const CustomActions: StoryObj = {
   args: {
     actions: [
       {
-        label: 'Add Asset',
-        url: '/assets',
+        label: 'Add Account',
+        url: '/accounts',
         icon: 'plus',
         variant: 'income',
-        ariaLabel: 'Add new asset',
+        ariaLabel: 'Add new account',
       },
       {
         label: 'Record Payment',
@@ -256,11 +256,11 @@ export const AllVariants: StoryObj = {
         title: 'Custom Actions',
         actions: [
           {
-            label: 'Add Asset',
-            url: '/assets',
+            label: 'Add Account',
+            url: '/accounts',
             icon: 'plus',
             variant: 'income',
-            ariaLabel: 'Add new asset',
+            ariaLabel: 'Add new account',
           },
           {
             label: 'Record Payment',

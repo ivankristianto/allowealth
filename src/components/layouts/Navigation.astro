@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: Receipt },
   { href: '/budget', label: 'Budget', icon: Donut },
-  { href: '/assets', label: 'Assets', icon: Wallet },
+  { href: '/accounts', label: 'Accounts', icon: Wallet },
   { href: '/reports', label: 'Reports', icon: ChartBar },
   { href: '/forecast', label: 'Forecast', icon: TrendingUp },
   { href: '/calculators', label: 'Calculators', icon: Calculator },
@@ -72,7 +72,7 @@ const isActive = (href: string) => {
 
   // Exact match for index routes
   if (currentPath === href) return true;
-  // For nested routes (e.g., /assets/history), parent is active if path starts with href + '/'
+  // For nested routes (e.g., /accounts/history), parent is active if path starts with href + '/'
   return currentPath.startsWith(href + '/');
 };
 

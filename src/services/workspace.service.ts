@@ -56,7 +56,7 @@ export interface OnboardingStatus {
   currency: boolean;
   categories: boolean;
   budgets: boolean;
-  assets: boolean;
+  accounts: boolean;
   transactions: boolean;
 }
 
@@ -258,7 +258,7 @@ export class WorkspaceService {
    */
   async getOnboardingStatus(workspaceId: string): Promise<OnboardingStatus> {
     // Run all 5 checks in parallel for performance
-    const [currencyMeta, expenseCategory, nonZeroBudget, asset, transaction] = await Promise.all([
+    const [currencyMeta, expenseCategory, nonZeroBudget, account, transaction] = await Promise.all([
       // 1. Currency: workspace meta has an explicit currency entry
       this.db.query.workspaceMeta.findFirst({
         where: and(
@@ -287,11 +287,11 @@ export class WorkspaceService {
         columns: { id: true },
       }),
 
-      // 4. Assets: at least 1 non-deleted asset
-      this.db.query.assets.findFirst({
+      // 4. Accounts: at least 1 non-deleted account
+      this.db.query.accounts.findFirst({
         where: and(
-          eq(this.schema.assets.workspace_id, workspaceId),
-          isNull(this.schema.assets.deleted_at)
+          eq(this.schema.accounts.workspace_id, workspaceId),
+          isNull(this.schema.accounts.deleted_at)
         ),
         columns: { id: true },
       }),
@@ -310,7 +310,7 @@ export class WorkspaceService {
       currency: !!currencyMeta,
       categories: !!expenseCategory,
       budgets: !!nonZeroBudget,
-      assets: !!asset,
+      accounts: !!account,
       transactions: !!transaction,
     };
   }

@@ -9,14 +9,14 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import { Info, Download } from '@lucide/astro';
-import { categoryService, assetService } from '@/services';
+import { categoryService, accountService } from '@/services';
 
 const user = Astro.locals.user!;
 const currentPath = '/transactions/export';
 
-// Fetch categories and assets for filters
+// Fetch categories and accounts for filters
 const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
-const assets = await assetService.findAll(user.workspaceId);
+const accounts = await accountService.findAll(user.workspaceId);
 
 // Get current filters from query params
 const url = new URL(Astro.url);
@@ -25,7 +25,7 @@ const currentFilters = {
   type: (url.searchParams.get('type') || '') as 'expense' | 'income' | '',
   currency: (url.searchParams.get('currency') || '') as 'IDR' | 'USD' | '',
   category_id: url.searchParams.get('category_id') || '',
-  asset_id: url.searchParams.get('asset_id') || '',
+  account_id: url.searchParams.get('account_id') || '',
   start_date: url.searchParams.get('start_date') || '',
   end_date: url.searchParams.get('end_date') || '',
 };
@@ -71,7 +71,7 @@ const exportUrl = buildExportUrl();
           <TransactionFilters
             action="/transactions/export"
             categories={categories}
-            assets={assets}
+            accounts={accounts}
             values={currentFilters}
             count={0}
           />
@@ -83,7 +83,7 @@ const exportUrl = buildExportUrl();
           <ul class="text-sm text-base-content/60 space-y-1 mb-4">
             <li>Filename format: <code>transactions_YYYY-MM-DD.csv</code></li>
             <li>
-              Includes all transaction fields: date, type, amount, currency, category, asset,
+              Includes all transaction fields: date, type, amount, currency, category, account,
               description
             </li>
             <li>Uses current filters to select transactions</li>

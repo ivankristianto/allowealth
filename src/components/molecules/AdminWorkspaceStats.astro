@@ -2,7 +2,7 @@
 /**
  * Admin Workspace Stats
  *
- * Displays workspace metric cards for members, transactions, assets, budgets, and categories.
+ * Displays workspace metric cards for members, transactions, accounts, budgets, and categories.
  * Uses the StatCard atom component for design system consistency.
  */
 import StatCard from '@/components/atoms/StatCard.astro';
@@ -23,7 +23,7 @@ const stats = [
     Icon: Receipt,
     variant: 'accent' as const,
   },
-  { label: 'Assets', value: workspace.assetCount, Icon: Wallet, variant: 'success' as const },
+  { label: 'Accounts', value: workspace.accountCount, Icon: Wallet, variant: 'success' as const },
   { label: 'Budgets', value: workspace.budgetCount, Icon: ChartPie, variant: 'warning' as const },
   { label: 'Categories', value: workspace.categoryCount, Icon: Tag, variant: 'error' as const },
 ];

@@ -36,7 +36,7 @@ export const mockNotifications: Notification[] = [
   {
     id: '4',
     type: 'info',
-    title: 'Asset update reminder',
+    title: 'Account update reminder',
     description: 'Update your stock portfolio',
     time: '1d ago',
   },

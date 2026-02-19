@@ -32,7 +32,7 @@ const meta: Meta = {
 | /dashboard | Dashboard | LayoutDashboard |
 | /transactions | Transactions | Search |
 | /budget | Budget | Calendar |
-| /assets | Assets | DollarSign |
+| /accounts | Accounts | DollarSign |
 | /reports | Reports | Info |
 | /forecast | Forecast | TriangleAlert |
 | /calculators | Calculators | Plus |
@@ -72,7 +72,7 @@ const meta: Meta = {
         '/dashboard',
         '/transactions',
         '/budget',
-        '/assets',
+        '/accounts',
         '/reports',
         '/forecast',
         '/calculators',
@@ -147,7 +147,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
     { href: '/dashboard', label: 'Dashboard', iconKey: 'layoutDashboard' as const },
     { href: '/transactions', label: 'Transactions', iconKey: 'receipt' as const },
     { href: '/budget', label: 'Budget', iconKey: 'donut' as const },
-    { href: '/assets', label: 'Assets', iconKey: 'wallet' as const },
+    { href: '/accounts', label: 'Accounts', iconKey: 'wallet' as const },
     { href: '/reports', label: 'Reports', iconKey: 'chartBar' as const },
     { href: '/forecast', label: 'Forecast', iconKey: 'trendingUp' as const },
     { href: '/calculators', label: 'Calculators', iconKey: 'calculator' as const },
@@ -167,7 +167,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
     }
     // Exact match for index routes
     if (currentPath === href) return true;
-    // For nested routes (e.g., /assets/history), parent is active if path starts with href + '/'
+    // For nested routes (e.g., /accounts/history), parent is active if path starts with href + '/'
     return currentPath.startsWith(href + '/');
   };
 
@@ -250,8 +250,8 @@ export const BudgetActive: StoryObj = {
   render: (args) => createNavigation(args),
 };
 
-export const AssetsActive: StoryObj = {
-  args: { currentPath: '/assets' },
+export const AccountsActive: StoryObj = {
+  args: { currentPath: '/accounts' },
   render: (args) => createNavigation(args),
 };
 

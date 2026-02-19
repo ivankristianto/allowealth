@@ -10,7 +10,7 @@ import { TransactionService } from './transaction.service';
 import {
   createMockDatabase,
   createMockCategory,
-  createMockAsset,
+  createMockAccount,
   createMockTransaction,
   createMockTransactionWithRelations,
   resetMockDatabase,
@@ -20,7 +20,7 @@ describe('TransactionService', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
   let transactionService: TransactionService;
   const mockCategory = createMockCategory();
-  const mockAsset = createMockAsset();
+  const mockAccount = createMockAccount();
   const mockTransaction = createMockTransaction();
 
   beforeEach(() => {
@@ -39,14 +39,14 @@ describe('TransactionService', () => {
         amount: '50000',
         currency: 'IDR' as const,
         category_id: 'cat-1',
-        asset_id: 'asset-1',
+        account_id: 'account-1',
         transaction_date: new Date('2026-01-05'),
         description: 'Lunch',
       };
 
-      // Mock category and asset lookup
+      // Mock category and account lookup
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
-      (mockDb.query.assets.findFirst as any).mockResolvedValue(mockAsset);
+      (mockDb.query.accounts.findFirst as any).mockResolvedValue(mockAccount);
 
       // Mock insert returning the created transaction
       (mockDb.insert as any).mockReturnValueOnce({
@@ -59,7 +59,7 @@ describe('TransactionService', () => {
       const transactionWithRelations = createMockTransactionWithRelations(
         { id: 'txn-1' },
         mockCategory,
-        mockAsset
+        mockAccount
       );
       (mockDb.query.transactions.findFirst as any).mockResolvedValue(transactionWithRelations);
 
@@ -78,7 +78,7 @@ describe('TransactionService', () => {
         amount: '50000',
         currency: 'IDR' as const,
         category_id: 'non-existent',
-        asset_id: 'asset-1',
+        account_id: 'account-1',
         transaction_date: new Date('2026-01-05'),
       };
 
@@ -88,7 +88,7 @@ describe('TransactionService', () => {
       await expect(transactionService.create(input)).rejects.toThrow('Category not found');
     });
 
-    it('should throw error if asset not found', async () => {
+    it('should throw error if account not found', async () => {
       const input = {
         workspace_id: 'workspace-1',
         created_by_user_id: 'user-1',
@@ -96,15 +96,15 @@ describe('TransactionService', () => {
         amount: '50000',
         currency: 'IDR' as const,
         category_id: 'cat-1',
-        asset_id: 'non-existent',
+        account_id: 'non-existent',
         transaction_date: new Date('2026-01-05'),
       };
 
-      // Mock category as found but asset as not found
+      // Mock category as found but account as not found
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
-      (mockDb.query.assets.findFirst as any).mockResolvedValue(undefined);
+      (mockDb.query.accounts.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(transactionService.create(input)).rejects.toThrow('Asset not found');
+      await expect(transactionService.create(input)).rejects.toThrow('Account not found');
     });
 
     it('should throw error if category is inactive', async () => {
@@ -117,7 +117,7 @@ describe('TransactionService', () => {
         amount: '50000',
         currency: 'IDR' as const,
         category_id: 'cat-1',
-        asset_id: 'asset-1',
+        account_id: 'account-1',
         transaction_date: new Date('2026-01-05'),
       };
 
@@ -133,7 +133,7 @@ describe('TransactionService', () => {
       const transactionWithRelations = createMockTransactionWithRelations(
         { id: 'txn-1' },
         mockCategory,
-        mockAsset
+        mockAccount
       );
 
       (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(transactionWithRelations);
@@ -143,7 +143,7 @@ describe('TransactionService', () => {
       expect(result).toBeDefined();
       expect(result?.id).toBe('txn-1');
       expect(result?.category).toBeDefined();
-      expect(result?.asset).toBeDefined();
+      expect(result?.account).toBeDefined();
       expect(mockDb.query.transactions.findFirst).toHaveBeenCalled();
     });
 
@@ -159,7 +159,7 @@ describe('TransactionService', () => {
   describe('findAll', () => {
     it('should find all transactions with filters', async () => {
       const transactionsWithRelations = [
-        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockAsset),
+        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockAccount),
       ];
 
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
@@ -176,7 +176,7 @@ describe('TransactionService', () => {
 
     it('should filter by date range', async () => {
       const transactionsWithRelations = [
-        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockAsset),
+        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockAccount),
       ];
 
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
@@ -193,7 +193,7 @@ describe('TransactionService', () => {
 
     it('should paginate results', async () => {
       const transactionsWithRelations = [
-        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockAsset),
+        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockAccount),
       ];
 
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
@@ -213,7 +213,7 @@ describe('TransactionService', () => {
         createMockTransactionWithRelations(
           { id: 'txn-1', category_id: 'cat-food' },
           mockCategory,
-          mockAsset
+          mockAccount
         ),
       ];
 
@@ -228,12 +228,12 @@ describe('TransactionService', () => {
       expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
     });
 
-    it('should filter by asset', async () => {
+    it('should filter by account', async () => {
       const transactionsWithRelations = [
         createMockTransactionWithRelations(
-          { id: 'txn-1', asset_id: 'asset-cash' },
+          { id: 'txn-1', account_id: 'account-cash' },
           mockCategory,
-          mockAsset
+          mockAccount
         ),
       ];
 
@@ -241,7 +241,7 @@ describe('TransactionService', () => {
 
       const result = await transactionService.findAll({
         workspace_id: 'workspace-1',
-        asset_id: 'asset-cash',
+        account_id: 'account-cash',
       });
 
       expect(result).toBeDefined();
@@ -253,7 +253,7 @@ describe('TransactionService', () => {
         createMockTransactionWithRelations(
           { id: 'txn-1', currency: 'USD' },
           mockCategory,
-          mockAsset
+          mockAccount
         ),
       ];
 
@@ -273,7 +273,7 @@ describe('TransactionService', () => {
         createMockTransactionWithRelations(
           { id: 'txn-1', description: 'Lunch at restaurant' },
           mockCategory,
-          mockAsset
+          mockAccount
         ),
       ];
 
@@ -294,10 +294,10 @@ describe('TransactionService', () => {
       const mockUpdatedTransaction = createMockTransactionWithRelations(
         { amount: '75000' },
         mockCategory,
-        mockAsset
+        mockAccount
       );
 
-      // Mock findById returning updated transaction (no category/asset change)
+      // Mock findById returning updated transaction (no category/account change)
       (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockUpdatedTransaction);
 
       const result = await transactionService.update('txn-1', 'user-1', {
@@ -321,18 +321,18 @@ describe('TransactionService', () => {
       ).rejects.toThrow('Category not found');
     });
 
-    it('should validate asset on update', async () => {
+    it('should validate account on update', async () => {
       // Mock findById returning existing transaction
       (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(mockTransaction);
-      // Mock category as found but asset as not found
+      // Mock category as found but account as not found
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
-      (mockDb.query.assets.findFirst as any).mockResolvedValue(undefined);
+      (mockDb.query.accounts.findFirst as any).mockResolvedValue(undefined);
 
       await expect(
         transactionService.update('txn-1', 'user-1', {
-          asset_id: 'non-existent',
+          account_id: 'non-existent',
         })
-      ).rejects.toThrow('Asset not found');
+      ).rejects.toThrow('Account not found');
     });
 
     it('should validate inactive category on update', async () => {
@@ -354,7 +354,7 @@ describe('TransactionService', () => {
       const mockUpdatedTransaction = createMockTransactionWithRelations(
         { description: 'Updated description' },
         mockCategory,
-        mockAsset
+        mockAccount
       );
 
       (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockUpdatedTransaction);
@@ -370,7 +370,7 @@ describe('TransactionService', () => {
       const mockUpdatedTransaction = createMockTransactionWithRelations(
         { amount: '100000', description: 'Big lunch' },
         mockCategory,
-        mockAsset
+        mockAccount
       );
 
       (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockUpdatedTransaction);
@@ -390,7 +390,7 @@ describe('TransactionService', () => {
       const transactionWithRelations = createMockTransactionWithRelations(
         { id: 'txn-1' },
         mockCategory,
-        mockAsset
+        mockAccount
       );
 
       // Mock findById returning existing transaction
@@ -459,7 +459,7 @@ describe('TransactionService', () => {
       expect(result).toBe(3);
     });
 
-    it('should count by asset', async () => {
+    it('should count by account', async () => {
       (mockDb.select as any).mockReturnValueOnce({
         from: mock(() => ({
           where: mock(() => Promise.resolve([{ count: 7 }])),
@@ -468,7 +468,7 @@ describe('TransactionService', () => {
 
       const result = await transactionService.count({
         workspace_id: 'workspace-1',
-        asset_id: 'asset-cash',
+        account_id: 'account-cash',
       });
 
       expect(result).toBe(7);
@@ -554,7 +554,7 @@ describe('TransactionService', () => {
   });
 
   describe('getHistory', () => {
-    it('should resolve category and asset IDs to readable names in diffs', async () => {
+    it('should resolve category and account IDs to readable names in diffs', async () => {
       const logs = [
         {
           id: 'log-update-1',
@@ -562,11 +562,11 @@ describe('TransactionService', () => {
           user_id: 'user-1',
           old_value: JSON.stringify({
             category_id: 'cat-1',
-            asset_id: 'asset-1',
+            account_id: 'account-1',
           }),
           new_value: JSON.stringify({
             category_id: 'cat-2',
-            asset_id: 'asset-2',
+            account_id: 'account-2',
           }),
           created_at: new Date('2026-01-10T10:00:00Z'),
           user: { id: 'user-1', name: 'Ivan' },
@@ -578,9 +578,9 @@ describe('TransactionService', () => {
         { id: 'cat-1', name: 'Food' },
         { id: 'cat-2', name: 'Transport' },
       ]);
-      (mockDb.query.assets.findMany as any).mockResolvedValueOnce([
-        { id: 'asset-1', name: 'Cash' },
-        { id: 'asset-2', name: 'BCA Savings' },
+      (mockDb.query.accounts.findMany as any).mockResolvedValueOnce([
+        { id: 'account-1', name: 'Cash' },
+        { id: 'account-2', name: 'BCA Savings' },
       ]);
 
       const result = await transactionService.getHistory('txn-1', 'workspace-1');
@@ -589,8 +589,8 @@ describe('TransactionService', () => {
       expect(updateEntry).toBeDefined();
       expect(updateEntry?.oldValue?.category_id).toBe('Food');
       expect(updateEntry?.newValue?.category_id).toBe('Transport');
-      expect(updateEntry?.oldValue?.asset_id).toBe('Cash');
-      expect(updateEntry?.newValue?.asset_id).toBe('BCA Savings');
+      expect(updateEntry?.oldValue?.account_id).toBe('Cash');
+      expect(updateEntry?.newValue?.account_id).toBe('BCA Savings');
     });
   });
 });

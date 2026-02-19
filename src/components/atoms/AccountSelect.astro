@@ -1,0 +1,119 @@
+---
+import Label from './Label.astro';
+
+/**
+ * Account Select Component
+ *
+ * Dropdown for selecting accounts (bank accounts, wallets, etc.).
+ *
+ * @param {Array} accounts - Array of account objects {id, name, type}
+ * @param {string} label - Label text for the select (renders a <label> element)
+ * @param {string} helpText - Optional help text displayed below the label
+ * @param {string} name - Input name
+ * @param {string} value - Selected account ID
+ * @param {boolean} required - Whether the field is required
+ * @param {boolean} error - Show error state
+ * @param {string} errorMessage - Error message to display
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID. If not provided, auto-generates as '{name}-select'
+ * @param {boolean} disabled - Whether the select is disabled
+ * @param {string} describedBy - Additional IDs for aria-describedby (combined with inline error message ID)
+ */
+
+export interface Props {
+  accounts: Array<{ id: string; name: string; type: string; account_class?: string }>;
+  /** Label text for the select (renders a <label> element) */
+  label?: string;
+  /** Optional help text displayed below the label */
+  helpText?: string;
+  name?: string;
+  value?: string;
+  required?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  className?: string;
+  id?: string;
+  disabled?: boolean;
+  /**
+   * Additional IDs for aria-describedby (combined with inline error message ID if error exists)
+   * Used to associate select with external description elements like form-level error containers
+   */
+  describedBy?: string;
+  'data-testid'?: string;
+}
+
+const {
+  accounts = [],
+  label = '',
+  helpText = '',
+  name = 'account_id',
+  value = '',
+  required = false,
+  error = false,
+  errorMessage = '',
+  className = '',
+  id = '',
+  disabled = false,
+  describedBy = '',
+  'data-testid': dataTestId,
+} = Astro.props;
+
+const inputId = id || `${name}-select`;
+
+// Build aria-describedby value: combine inline error ID with external describedBy IDs
+const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` : null, describedBy]
+  .filter(Boolean)
+  .join(' ')
+  .trim();
+---
+
+<div class="form-control">
+  {
+    label && (
+      <Label htmlFor={inputId} required={required} helpText={helpText}>
+        {label}
+      </Label>
+    )
+  }
+  <select
+    id={inputId}
+    name={name}
+    value={value}
+    required={required}
+    disabled={disabled}
+    class:list={[
+      // Base select classes aligned with premium form styling
+      'select select-bordered w-full',
+      'h-14', // Height: 3.5rem (56px) - taller for premium feel
+      'py-4 pl-6 pr-10', // Larger padding for premium look
+      'text-base font-bold', // Larger, bolder text
+      'bg-base-200', // Theme-aware background
+      'rounded-lg border border-base-300',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+      error && 'select-error border-error', // Error state with border-error
+      disabled && 'opacity-50 cursor-not-allowed',
+      className,
+    ]}
+    aria-invalid={error}
+    aria-describedby={ariaDescribeIds || undefined}
+    aria-required={required}
+    data-testid={dataTestId}
+  >
+    <option value="">Select account...</option>
+    {
+      accounts.map((account) => (
+        <option value={account.id} selected={account.id === value}>
+          {account.name}
+        </option>
+      ))
+    }
+  </select>
+
+  {
+    error && errorMessage && (
+      <span id={`${inputId}-error`} class="text-error text-sm mt-1" role="alert">
+        {errorMessage}
+      </span>
+    )
+  }
+</div>

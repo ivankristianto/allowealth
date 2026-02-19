@@ -23,12 +23,12 @@ describe('DashboardService', () => {
     it('should return complete dashboard data', async () => {
       const result = await dashboardService.getDashboardData('user-123');
 
-      expect(result).toHaveProperty('totalAssets');
+      expect(result).toHaveProperty('totalAccounts');
       expect(result).toHaveProperty('monthlySpent');
       expect(result).toHaveProperty('monthlyIncome');
       expect(result).toHaveProperty('topCategoryExpenses');
       expect(result).toHaveProperty('budgetHealth');
-      expect(result).toHaveProperty('assetReminders');
+      expect(result).toHaveProperty('accountReminders');
       expect(result).toHaveProperty('recentTransactions');
     });
 
@@ -54,7 +54,7 @@ describe('DashboardService', () => {
         undefined,
         'IDR'
       );
-      expect(result.totalAssets.convertedCurrency).toBe('IDR');
+      expect(result.totalAccounts.convertedCurrency).toBe('IDR');
     });
 
     it('should accept custom currency USD', async () => {
@@ -64,7 +64,7 @@ describe('DashboardService', () => {
         undefined,
         'USD'
       );
-      expect(result.totalAssets.convertedCurrency).toBe('USD');
+      expect(result.totalAccounts.convertedCurrency).toBe('USD');
     });
 
     it('should fetch all data in parallel', async () => {
@@ -79,10 +79,10 @@ describe('DashboardService', () => {
     it('should have consistent data types across all sections', async () => {
       const result = await dashboardService.getDashboardData('user-123');
 
-      // totalAssets amounts are strings
-      expect(typeof result.totalAssets.idr).toBe('string');
-      expect(typeof result.totalAssets.usd).toBe('string');
-      expect(typeof result.totalAssets.converted).toBe('string');
+      // totalAccounts amounts are strings
+      expect(typeof result.totalAccounts.idr).toBe('string');
+      expect(typeof result.totalAccounts.usd).toBe('string');
+      expect(typeof result.totalAccounts.converted).toBe('string');
 
       // monthlySpent amounts are strings
       expect(typeof result.monthlySpent.total).toBe('string');
@@ -98,8 +98,8 @@ describe('DashboardService', () => {
         expect(typeof alert.spent).toBe('string');
       });
 
-      // assetReminders have string balances
-      result.assetReminders.forEach((reminder) => {
+      // accountReminders have string balances
+      result.accountReminders.forEach((reminder) => {
         expect(typeof reminder.currentBalance).toBe('string');
       });
 
@@ -111,12 +111,12 @@ describe('DashboardService', () => {
   });
 
   describe('error-path defaults', () => {
-    it('should return zeroed totalAssets when db is unavailable', async () => {
+    it('should return zeroed totalAccounts when db is unavailable', async () => {
       const result = await dashboardService.getDashboardData('error-user');
 
-      expect(result.totalAssets.idr).toBe('0');
-      expect(result.totalAssets.usd).toBe('0');
-      expect(result.totalAssets.converted).toBe('0');
+      expect(result.totalAccounts.idr).toBe('0');
+      expect(result.totalAccounts.usd).toBe('0');
+      expect(result.totalAccounts.converted).toBe('0');
     });
 
     it('should return zeroed monthlySpent when db is unavailable', async () => {
@@ -148,10 +148,10 @@ describe('DashboardService', () => {
       expect(result.budgetHealth.alerts).toHaveLength(0);
     });
 
-    it('should return empty assetReminders when db is unavailable', async () => {
+    it('should return empty accountReminders when db is unavailable', async () => {
       const result = await dashboardService.getDashboardData('error-user');
 
-      expect(result.assetReminders).toEqual([]);
+      expect(result.accountReminders).toEqual([]);
     });
 
     it('should return empty recentTransactions when db is unavailable', async () => {
@@ -160,14 +160,14 @@ describe('DashboardService', () => {
       expect(result.recentTransactions).toEqual([]);
     });
 
-    it('should preserve currency in totalAssets even on error', async () => {
+    it('should preserve currency in totalAccounts even on error', async () => {
       const resultIDR = await dashboardService.getDashboardData(
         'error-user',
         undefined,
         undefined,
         'IDR'
       );
-      expect(resultIDR.totalAssets.convertedCurrency).toBe('IDR');
+      expect(resultIDR.totalAccounts.convertedCurrency).toBe('IDR');
 
       const resultUSD = await dashboardService.getDashboardData(
         'error-user',
@@ -175,7 +175,7 @@ describe('DashboardService', () => {
         undefined,
         'USD'
       );
-      expect(resultUSD.totalAssets.convertedCurrency).toBe('USD');
+      expect(resultUSD.totalAccounts.convertedCurrency).toBe('USD');
     });
   });
 

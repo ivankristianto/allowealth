@@ -1,0 +1,608 @@
+---
+/**
+ * AccountItemRow Component
+ *
+ * Individual account row within an AccountGroupCard.
+ * Shows account name, currency badge, updated date, balance, and action buttons.
+ *
+ * Part of the Global Accounts page redesign.
+ * Uses modals for edit, delete, and history actions.
+ *
+ * @param {string} id - Account ID
+ * @param {string} name - Account name
+ * @param {string} type - Account type (bank_account, stock, etc.)
+ * @param {string} categoryId - Account category ID
+ * @param {string} categoryName - Account category name
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {number} balance - Account balance
+ * @param {Date} lastUpdated - Last updated date
+ * @param {string} className - Additional CSS classes
+ */
+
+import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Eye } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
+
+export interface Props {
+  id: string;
+  name: string;
+  type: AccountType;
+  accountClass?: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  currency: 'IDR' | 'USD';
+  balance: number;
+  initialBalance?: number;
+  lastUpdated: Date;
+  className?: string;
+  isHistoricalView?: boolean;
+}
+
+const {
+  id,
+  name,
+  type,
+  accountClass,
+  categoryId = null,
+  categoryName = null,
+  currency,
+  balance,
+  initialBalance,
+  lastUpdated,
+  className = '',
+  isHistoricalView = false,
+} = Astro.props;
+
+const isDebt = accountClass === 'debt';
+
+// Get display label for type
+const typeLabel = ACCOUNT_TYPE_LABELS[type] || type;
+const categoryLabel = categoryName || typeLabel;
+
+// Format date for display
+const lastUpdateDate = new Date(lastUpdated);
+const formattedDate = lastUpdateDate.toLocaleDateString('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+// Calculate relative time for "last updated" display
+const now = new Date();
+const diffMs = now.getTime() - lastUpdateDate.getTime();
+const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+const relativeTime =
+  diffDays === 0
+    ? 'Today'
+    : diffDays === 1
+      ? 'Yesterday'
+      : diffDays < 7
+        ? `${diffDays}d ago`
+        : diffDays < 30
+          ? `${Math.floor(diffDays / 7)}w ago`
+          : formattedDate;
+
+// Display value: debt accounts show negative
+const displayBalance = isDebt ? -balance : balance;
+
+// Currency-specific classes (debt always shows red)
+const currencyValueClasses = isDebt
+  ? 'text-error'
+  : currency === 'IDR'
+    ? 'text-success'
+    : 'text-info';
+
+const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all group', className]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div
+  class={rowClasses}
+  data-account-row={id}
+  data-testid="account-item"
+  data-account-id={id}
+  data-account-name={name}
+>
+  {/* Mobile Layout - shown below sm breakpoint */}
+  <div class="sm:hidden">
+    {/* Row 1: Name + Balance (with pencil) + Menu */}
+    <div class="flex items-center gap-2">
+      {
+        !isHistoricalView && (
+          <ChevronDown
+            size={14}
+            class="stroke-current text-base-content/30 shrink-0 transition-transform duration-200"
+            aria-hidden="true"
+            data-expand-chevron={id}
+          />
+        )
+      }
+      <h4
+        class="flex-1 min-w-0 text-base font-bold text-base-content leading-none tracking-tight truncate"
+        data-testid="account-name"
+      >
+        <a
+          href={`/accounts/${id}`}
+          class="hover:text-accent transition-colors underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
+          {name}
+        </a>
+      </h4>
+
+      <div class="flex items-center gap-0.5 shrink-0">
+        <p
+          class:list={['text-base font-bold tracking-tight leading-none', currencyValueClasses]}
+          data-testid="account-balance"
+        >
+          {formatCurrency(displayBalance, currency)}
+        </p>
+        {/* Update Balance pencil (primary action) */}
+        {
+          !isHistoricalView && (
+            <button
+              type="button"
+              class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
+              data-update-value-account={id}
+              data-account-name={name}
+              data-account-currency={currency}
+              data-account-balance={balance}
+              data-testid="account-update-value-btn"
+            >
+              <Pencil size={12} class="stroke-current" aria-hidden="true" />
+            </button>
+          )
+        }
+      </div>
+
+      {/* Mobile dropdown menu (manage actions) */}
+      {
+        !isHistoricalView && (
+          <div class="dropdown dropdown-end shrink-0 -mr-1.5" data-dropdown-menu>
+            <button
+              type="button"
+              tabindex={0}
+              class="btn btn-ghost btn-xs btn-square min-h-[44px] min-w-[44px]"
+              aria-label={`Actions for ${name}`}
+              aria-haspopup="menu"
+            >
+              <Ellipsis size={16} class="stroke-current opacity-40" aria-hidden="true" />
+            </button>
+            <ul
+              tabindex={0}
+              class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-44 border border-base-300"
+              role="menu"
+            >
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`View ${name} timeline`}
+                  data-history-account={id}
+                  data-account-name={name}
+                  data-account-type={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-history-btn"
+                >
+                  <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
+                  Timeline
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`Edit ${name} details`}
+                  data-edit-account={id}
+                  data-account-name={name}
+                  data-account-type={type}
+                  data-account-category-id={categoryId || ''}
+                  data-account-category-name={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-edit-btn"
+                >
+                  <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                  Edit Details
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 text-warning"
+                  aria-label={`Deactivate ${name}`}
+                  data-close-account={id}
+                  data-account-name={name}
+                  data-account-type={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-close-btn"
+                >
+                  <PowerOff size={16} class="stroke-current" aria-hidden="true" />
+                  Deactivate
+                </button>
+              </li>
+            </ul>
+          </div>
+        )
+      }
+    </div>
+
+    {/* Row 2: relative time + initial balance + view details */}
+    <div class="mt-2 flex items-center gap-2">
+      <span
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+        title={`Last balance input: ${formattedDate}`}
+      >
+        Updated {relativeTime.toLowerCase()}
+      </span>
+      {
+        initialBalance !== undefined && initialBalance !== balance && (
+          <span
+            class="text-xs font-medium text-base-content/40"
+            data-testid="account-initial-balance"
+          >
+            Initial: {formatCurrency(initialBalance, currency)}
+          </span>
+        )
+      }
+      <a
+        href={`/accounts/${id}`}
+        class="ml-auto flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-base-content/40 hover:text-accent transition-all"
+        aria-label={`View ${name} details`}
+      >
+        <Eye size={12} class="stroke-current" aria-hidden="true" />
+        Details
+      </a>
+    </div>
+  </div>
+
+  {/* Desktop Layout - shown at sm and above */}
+  <div class="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
+    {
+      !isHistoricalView && (
+        <ChevronDown
+          size={16}
+          class="stroke-current text-base-content/30 shrink-0 transition-transform duration-200"
+          aria-hidden="true"
+          data-expand-chevron={id}
+        />
+      )
+    }
+    {/* Account Info */}
+    <div class="flex-1 min-w-0">
+      <h4
+        class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
+        data-testid="account-name"
+      >
+        <a
+          href={`/accounts/${id}`}
+          class="hover:text-accent transition-colors underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
+          {name}
+        </a>
+      </h4>
+      <span
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40 mt-2 lg:mt-3"
+        title={`Last balance input: ${formattedDate}`}
+      >
+        Updated {relativeTime.toLowerCase()}
+      </span>
+    </div>
+
+    {/* Balance and Actions */}
+    <div class="flex items-center gap-6 lg:gap-10">
+      {/* Balance with inline update pencil */}
+      <div class="text-right sm:min-w-[140px]">
+        <div class="flex items-center justify-end gap-1">
+          <p
+            class:list={[
+              'text-lg lg:text-xl font-bold tracking-tight leading-none',
+              currencyValueClasses,
+            ]}
+            data-testid="account-balance"
+          >
+            {formatCurrency(displayBalance, currency)}
+          </p>
+          {
+            !isHistoricalView && (
+              <button
+                type="button"
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
+                data-update-value-account={id}
+                data-account-name={name}
+                data-account-currency={currency}
+                data-account-balance={balance}
+                data-testid="account-update-value-btn"
+              >
+                <Pencil size={14} class="stroke-current" aria-hidden="true" />
+              </button>
+            )
+          }
+        </div>
+        {
+          initialBalance !== undefined && initialBalance !== balance && (
+            <p
+              class="text-xs font-medium text-base-content/40 mt-1"
+              data-testid="account-initial-balance"
+            >
+              Initial: {formatCurrency(initialBalance, currency)}
+            </p>
+          )
+        }
+      </div>
+
+      {/* Action Buttons - hidden for historical views */}
+      {
+        !isHistoricalView && (
+          <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+            {/* View Timeline */}
+            <div class="tooltip tooltip-bottom" data-tip="View timeline">
+              <button
+                type="button"
+                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
+                aria-label={`View ${name} timeline`}
+                data-history-account={id}
+                data-account-name={name}
+                data-account-type={categoryLabel}
+                data-account-currency={currency}
+                data-account-balance={balance}
+                data-testid="account-history-btn"
+              >
+                <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Manage Menu (Edit Details + Deactivate) */}
+            <div class="dropdown dropdown-end" data-dropdown-menu>
+              <div class="tooltip tooltip-bottom" data-tip="More actions">
+                <button
+                  type="button"
+                  tabindex={0}
+                  class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-base-content transition-all rounded-xl hover:bg-base-200"
+                  aria-label={`More actions for ${name}`}
+                  aria-haspopup="menu"
+                >
+                  <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+                </button>
+              </div>
+              <ul
+                tabindex={0}
+                class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-44 border border-base-300"
+                role="menu"
+              >
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex items-center gap-2"
+                    aria-label={`Edit ${name} details`}
+                    data-edit-account={id}
+                    data-account-name={name}
+                    data-account-type={type}
+                    data-account-category-id={categoryId || ''}
+                    data-account-category-name={categoryLabel}
+                    data-account-currency={currency}
+                    data-account-balance={balance}
+                    data-testid="account-edit-btn"
+                  >
+                    <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                    Edit Details
+                  </button>
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex items-center gap-2 text-warning"
+                    aria-label={`Deactivate ${name}`}
+                    data-close-account={id}
+                    data-account-name={name}
+                    data-account-type={categoryLabel}
+                    data-account-currency={currency}
+                    data-account-balance={balance}
+                    data-testid="account-close-btn"
+                  >
+                    <PowerOff size={16} class="stroke-current" aria-hidden="true" />
+                    Deactivate
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        )
+      }
+
+      {/* View details link */}
+      <a
+        href={`/accounts/${id}`}
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-base-content/40 hover:text-accent hover:bg-accent/10 transition-all"
+        aria-label={`View ${name} details`}
+      >
+        <Eye size={14} class="stroke-current" aria-hidden="true" />
+        <span>Details</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+{/* Inline History Container (populated by client script) */}
+{
+  !isHistoricalView && (
+    <div
+      data-history-container
+      data-account-id={id}
+      class="hidden bg-base-200/50 rounded-xl p-4 mt-2 mb-2 mx-4 lg:mx-8"
+      role="region"
+      aria-label={`Value history for ${name}`}
+      aria-live="polite"
+    />
+  )
+}
+
+<script>
+  // Track initialized elements to avoid duplicate listeners
+  const initializedTimelineButtons = new WeakSet<Element>();
+  const initializedUpdateValueButtons = new WeakSet<Element>();
+  const initializedEditButtons = new WeakSet<Element>();
+  const initializedCloseButtons = new WeakSet<Element>();
+
+  function initAccountRowButtons() {
+    // Initialize Timeline buttons
+    document.querySelectorAll('[data-history-account]').forEach((button) => {
+      if (initializedTimelineButtons.has(button)) return;
+      initializedTimelineButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const accountId = btn.getAttribute('data-history-account');
+        const accountName = btn.getAttribute('data-account-name') || 'Account';
+        const accountType = btn.getAttribute('data-account-type') || 'Unknown';
+        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
+          | 'IDR'
+          | 'USD';
+        const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
+
+        if (!accountId) return;
+
+        // Dispatch event to open history modal
+        document.dispatchEvent(
+          new CustomEvent('open-account-history', {
+            detail: {
+              id: accountId,
+              name: accountName,
+              type: accountType,
+              currency: accountCurrency,
+              balance: accountBalance,
+            },
+          })
+        );
+      });
+    });
+
+    // Initialize Update Value buttons
+    document.querySelectorAll('[data-update-value-account]').forEach((button) => {
+      if (initializedUpdateValueButtons.has(button)) return;
+      initializedUpdateValueButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const accountId = btn.getAttribute('data-update-value-account');
+        const accountName = btn.getAttribute('data-account-name') || 'Account';
+        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
+          | 'IDR'
+          | 'USD';
+        const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
+
+        if (!accountId) return;
+
+        document.dispatchEvent(
+          new CustomEvent('open-account-update-value', {
+            detail: {
+              id: accountId,
+              name: accountName,
+              currency: accountCurrency,
+              balance: accountBalance,
+            },
+          })
+        );
+      });
+    });
+
+    // Initialize Edit buttons
+    document.querySelectorAll('[data-edit-account]').forEach((button) => {
+      if (initializedEditButtons.has(button)) return;
+      initializedEditButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const accountId = btn.getAttribute('data-edit-account');
+        const accountName = btn.getAttribute('data-account-name') || '';
+        const accountType = btn.getAttribute('data-account-type') || 'bank_account';
+        const accountCategoryId = btn.getAttribute('data-account-category-id') || '';
+        const accountCategoryName = btn.getAttribute('data-account-category-name') || '';
+        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
+          | 'IDR'
+          | 'USD';
+        const accountBalance = btn.getAttribute('data-account-balance') || '0';
+
+        if (!accountId) return;
+
+        // Dispatch event to open edit modal
+        document.dispatchEvent(
+          new CustomEvent('open-account-form', {
+            detail: {
+              id: accountId,
+              name: accountName,
+              type: accountType,
+              categoryId: accountCategoryId,
+              categoryName: accountCategoryName,
+              currency: accountCurrency,
+              balance: accountBalance,
+            },
+          })
+        );
+      });
+    });
+
+    // Initialize Deactivate buttons
+    document.querySelectorAll('[data-close-account]').forEach((button) => {
+      if (initializedCloseButtons.has(button)) return;
+      initializedCloseButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const accountId = btn.getAttribute('data-close-account');
+        const accountName = btn.getAttribute('data-account-name') || 'this account';
+        const accountType = btn.getAttribute('data-account-type') || 'Account';
+        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
+          | 'IDR'
+          | 'USD';
+        const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
+
+        if (!accountId) return;
+
+        // Dispatch event to open deactivate confirmation modal
+        document.dispatchEvent(
+          new CustomEvent('open-account-close', {
+            detail: {
+              id: accountId,
+              name: accountName,
+              type: accountType,
+              currency: accountCurrency,
+              balance: accountBalance,
+            },
+          })
+        );
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAccountRowButtons);
+  } else {
+    initAccountRowButtons();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAccountRowButtons);
+</script>

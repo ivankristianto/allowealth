@@ -28,7 +28,7 @@ export const addTransactionSchema = z.object({
   amount: z.number().positive(),
   currency: z.enum(['IDR', 'USD']),
   category_name: z.string(),
-  asset_name: z.string(),
+  account_name: z.string(),
   date: isoDateString.optional(),
   description: z.string().max(500).optional(),
 });
@@ -63,36 +63,36 @@ export const listTransactionsTool: Tool = {
 export const addExpenseTool: Tool = {
   name: 'add_expense',
   description:
-    'Create an expense transaction. Use list_categories and list_assets first if you are unsure of the exact names. Category and asset names are fuzzy-matched.',
+    'Create an expense transaction. Use list_categories and list_accounts first if you are unsure of the exact names. Category and account names are fuzzy-matched.',
   inputSchema: {
     type: 'object',
     properties: {
       amount: { type: 'number', description: 'Amount (positive number)' },
       currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
-      asset_name: { type: 'string', description: 'Asset/account name (fuzzy matched)' },
+      account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
       date: { type: 'string', description: 'Transaction date (YYYY-MM-DD). Defaults to today.' },
       description: { type: 'string', description: 'Optional description/note' },
     },
-    required: ['amount', 'currency', 'category_name', 'asset_name'],
+    required: ['amount', 'currency', 'category_name', 'account_name'],
   },
 };
 
 export const addIncomeTool: Tool = {
   name: 'add_income',
   description:
-    'Create an income transaction. Use list_categories and list_assets first if you are unsure of the exact names. Category and asset names are fuzzy-matched.',
+    'Create an income transaction. Use list_categories and list_accounts first if you are unsure of the exact names. Category and account names are fuzzy-matched.',
   inputSchema: {
     type: 'object',
     properties: {
       amount: { type: 'number', description: 'Amount (positive number)' },
       currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
-      asset_name: { type: 'string', description: 'Asset/account name (fuzzy matched)' },
+      account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
       date: { type: 'string', description: 'Transaction date (YYYY-MM-DD). Defaults to today.' },
       description: { type: 'string', description: 'Optional description/note' },
     },
-    required: ['amount', 'currency', 'category_name', 'asset_name'],
+    required: ['amount', 'currency', 'category_name', 'account_name'],
   },
 };
 
@@ -118,7 +118,7 @@ export async function handleListTransactions(args: Record<string, unknown>, ctx:
     amount: t.amount,
     currency: t.currency,
     category: t.category?.name ?? null,
-    asset: t.asset?.name ?? null,
+    account: t.account?.name ?? null,
     date:
       t.transaction_date instanceof Date
         ? t.transaction_date.toISOString().split('T')[0]
@@ -157,17 +157,17 @@ async function resolveCategory(
   return { category };
 }
 
-async function resolveAsset(name: string, workspaceId: string, ctx: ToolContext) {
-  const assets = await ctx.services.asset.findAll(workspaceId);
-  const names = assets.map((a: any) => a.name);
+async function resolveAccount(name: string, workspaceId: string, ctx: ToolContext) {
+  const accounts = await ctx.services.account.findAll(workspaceId);
+  const names = accounts.map((a: any) => a.name);
   const match = fuzzyMatch(name, names);
 
   if (!match) {
-    return { error: `No matching asset for "${name}"`, available: names };
+    return { error: `No matching account for "${name}"`, available: names };
   }
 
-  const asset = assets.find((a: any) => a.name === match);
-  return { asset };
+  const account = accounts.find((a: any) => a.name === match);
+  return { account };
 }
 
 export async function handleAddTransaction(
@@ -195,17 +195,17 @@ export async function handleAddTransaction(
     };
   }
 
-  // Resolve asset
-  const assetResult = await resolveAsset(input.asset_name, workspaceId, ctx);
-  if ('error' in assetResult) {
+  // Resolve account
+  const accountResult = await resolveAccount(input.account_name, workspaceId, ctx);
+  if ('error' in accountResult) {
     return {
       isError: true,
       content: [
         {
           type: 'text' as const,
           text: JSON.stringify({
-            error: assetResult.error,
-            available_assets: assetResult.available,
+            error: accountResult.error,
+            available_accounts: accountResult.available,
           }),
         },
       ],
@@ -221,7 +221,7 @@ export async function handleAddTransaction(
     amount: String(input.amount),
     currency: input.currency,
     category_id: categoryResult.category.id,
-    asset_id: assetResult.asset.id,
+    account_id: accountResult.account.id,
     transaction_date: transactionDate,
     description: input.description ?? undefined,
   });
@@ -237,7 +237,7 @@ export async function handleAddTransaction(
             amount: transaction?.amount,
             currency: transaction?.currency,
             category: categoryResult.category.name,
-            asset: assetResult.asset.name,
+            account: accountResult.account.name,
             date: transactionDate.toISOString().split('T')[0],
             description: transaction?.description,
           },

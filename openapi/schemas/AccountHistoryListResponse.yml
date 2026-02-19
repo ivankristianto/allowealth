@@ -1,0 +1,11 @@
+# Account History List Response Schema
+AccountHistoryListResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: './AccountHistoryItem.yml#/AccountHistoryItem'

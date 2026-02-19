@@ -1,0 +1,84 @@
+---
+/**
+ * Accounts History Redirect Page
+ *
+ * This page shows all accounts with links to their specific history pages.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import { accountService } from '@/services';
+import { formatCurrency } from '@/lib/formatting';
+import type { AccountOutput } from '@/lib/types/account';
+
+const user = Astro.locals.user!;
+const currentPath = '/accounts/history';
+
+// Fetch all accounts from database
+const rawAccounts = await accountService.findAll(user.workspaceId);
+
+// Transform to AccountOutput format
+const accounts: AccountOutput[] = rawAccounts.map((account) => ({
+  id: account.id,
+  name: account.name,
+  type: account.type,
+  account_class: account.account_class,
+  balance: account.balance,
+  currency: account.currency,
+  status: account.status ?? 'active',
+  closed_at: account.closed_at ?? null,
+  closed_by_user_id: account.closed_by_user_id ?? null,
+  last_updated: account.last_updated,
+  created_at: account.created_at,
+  updated_at: account.updated_at,
+}));
+---
+
+<ProtectedLayout title="Account History" currentPath={currentPath} subtitle="Track balance changes">
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold">Account History</h2>
+    </div>
+
+    <div class="tabs">
+      <a class="tab" href="/accounts">List</a>
+      <a class="tab" href="/accounts">Add New</a>
+      <a class="tab tab-active" href="/accounts/history">History</a>
+    </div>
+
+    {
+      accounts.length > 0 ? (
+        <div class="card bg-base-100 shadow border border-base-300">
+          <div class="card-body">
+            <h3 class="text-lg font-semibold mb-4">Select an account to view its history</h3>
+            <div class="grid gap-2">
+              {accounts.map((account) => (
+                <a
+                  href={`/accounts/history/${account.id}`}
+                  class="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <span class="font-medium">{account.name}</span>
+                  <span
+                    class={`font-semibold ${account.currency === 'IDR' ? 'text-success' : 'text-info'}`}
+                  >
+                    {formatCurrency(account.balance, account.currency)}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="card bg-base-100 shadow border border-base-300">
+          <div class="card-body">
+            <p class="text-base-content/60">
+              No accounts available. Add an account first to view its history.
+            </p>
+            <a href="/accounts" class="btn btn-accent mt-4">
+              Add Your First Account
+            </a>
+          </div>
+        </div>
+      )
+    }
+  </div>
+</ProtectedLayout>

@@ -34,7 +34,7 @@ The application uses a **workspace-centric** multi-tenant model:
 │   ┌───────┴───────────────────────────────────────────────────────┐    │
 │   │                                                               │    │
 │   │   USERS (admin/member)                                        │    │
-│   │   CATEGORIES, ASSETS, TRANSACTIONS, BUDGETS, etc.            │    │
+│   │   CATEGORIES, ACCOUNTS, TRANSACTIONS, BUDGETS, etc.            │    │
 │   │   All scoped by workspace_id                                  │    │
 │   │                                                               │    │
 │   └───────────────────────────────────────────────────────────────┘    │
@@ -52,12 +52,12 @@ The application uses a **workspace-centric** multi-tenant model:
   workspaces                    users                       budget_categories
   workspace_meta                user_meta                   budgets
   workspace_invitations         sessions                    transactions
-                                password_reset_tokens       assets
-                                email_verification_tokens   asset_categories
-  SECURITY & AUDIT              oauth_accounts              asset_history
-  ────────────────                                          asset_update_reminders
-  api_keys                      REFERENCE DATA              asset_snapshots
-  audit_logs                    ──────────────              asset_snapshot_items
+                                password_reset_tokens       accounts
+                                email_verification_tokens   account_categories
+  SECURITY & AUDIT              oauth_accounts              account_history
+  ────────────────                                          account_update_reminders
+  api_keys                      REFERENCE DATA              account_snapshots
+  audit_logs                    ──────────────              account_snapshot_items
                                 exchange_rates
 ```
 
@@ -70,11 +70,11 @@ erDiagram
     WORKSPACES ||--o{ WORKSPACE_INVITATIONS : "has_pending"
     WORKSPACES ||--o{ USERS : "has_members"
     WORKSPACES ||--o{ BUDGET_CATEGORIES : "contains"
-    WORKSPACES ||--o{ ASSET_CATEGORIES : "contains"
+    WORKSPACES ||--o{ ACCOUNT_CATEGORIES : "contains"
     WORKSPACES ||--o{ TRANSACTIONS : "contains"
-    WORKSPACES ||--o{ ASSETS : "contains"
-    WORKSPACES ||--o{ ASSET_SNAPSHOTS : "contains"
-    WORKSPACES ||--o{ ASSET_UPDATE_REMINDERS : "contains"
+    WORKSPACES ||--o{ ACCOUNTS : "contains"
+    WORKSPACES ||--o{ ACCOUNT_SNAPSHOTS : "contains"
+    WORKSPACES ||--o{ ACCOUNT_UPDATE_REMINDERS : "contains"
     WORKSPACES ||--o{ BUDGETS : "contains"
     WORKSPACES ||--o{ API_KEYS : "contains"
     WORKSPACES ||--o{ AUDIT_LOGS : "contains"
@@ -90,11 +90,11 @@ erDiagram
 
     %% User creates financial data (audit trail)
     USERS ||--o{ BUDGET_CATEGORIES : "creates"
-    USERS ||--o{ ASSET_CATEGORIES : "creates"
+    USERS ||--o{ ACCOUNT_CATEGORIES : "creates"
     USERS ||--o{ TRANSACTIONS : "creates"
-    USERS ||--o{ ASSETS : "creates"
-    USERS ||--o{ ASSET_SNAPSHOTS : "creates"
-    USERS ||--o{ ASSET_UPDATE_REMINDERS : "creates"
+    USERS ||--o{ ACCOUNTS : "creates"
+    USERS ||--o{ ACCOUNT_SNAPSHOTS : "creates"
+    USERS ||--o{ ACCOUNT_UPDATE_REMINDERS : "creates"
     USERS ||--o{ BUDGETS : "creates"
     USERS ||--o{ AUDIT_LOGS : "generates"
 
@@ -102,15 +102,15 @@ erDiagram
     BUDGET_CATEGORIES ||--o{ TRANSACTIONS : "categorizes"
     BUDGET_CATEGORIES ||--o{ BUDGETS : "allocates"
 
-    ASSET_CATEGORIES ||--o{ ASSETS : "groups"
+    ACCOUNT_CATEGORIES ||--o{ ACCOUNTS : "groups"
 
-    ASSETS ||--o{ TRANSACTIONS : "source_of"
-    ASSETS ||--o{ TRANSACTIONS : "destination_for"
-    ASSETS ||--o{ ASSET_HISTORY : "tracks"
-    ASSETS ||--o{ ASSET_UPDATE_REMINDERS : "has"
-    ASSETS ||--o{ ASSET_SNAPSHOT_ITEMS : "included_in"
+    ACCOUNTS ||--o{ TRANSACTIONS : "source_of"
+    ACCOUNTS ||--o{ TRANSACTIONS : "destination_for"
+    ACCOUNTS ||--o{ ACCOUNT_HISTORY : "tracks"
+    ACCOUNTS ||--o{ ACCOUNT_UPDATE_REMINDERS : "has"
+    ACCOUNTS ||--o{ ACCOUNT_SNAPSHOT_ITEMS : "included_in"
 
-    ASSET_SNAPSHOTS ||--o{ ASSET_SNAPSHOT_ITEMS : "contains"
+    ACCOUNT_SNAPSHOTS ||--o{ ACCOUNT_SNAPSHOT_ITEMS : "contains"
 
     %% Workspace tables
     WORKSPACES {
@@ -212,7 +212,7 @@ erDiagram
         timestamp updated_at
     }
 
-    ASSET_CATEGORIES {
+    ACCOUNT_CATEGORIES {
         text id PK
         text workspace_id FK
         text created_by_user_id FK
@@ -245,8 +245,8 @@ erDiagram
         text workspace_id FK
         text created_by_user_id FK
         text category_id FK
-        text asset_id FK
-        text to_asset_id FK
+        text account_id FK
+        text to_account_id FK
         text type
         text amount
         text currency
@@ -259,7 +259,7 @@ erDiagram
         timestamp updated_at
     }
 
-    ASSETS {
+    ACCOUNTS {
         text id PK
         text workspace_id FK
         text created_by_user_id FK
@@ -281,19 +281,19 @@ erDiagram
         timestamp updated_at
     }
 
-    ASSET_HISTORY {
+    ACCOUNT_HISTORY {
         text id PK
-        text asset_id FK
+        text account_id FK
         text balance
         text notes
         timestamp recorded_at
     }
 
-    ASSET_UPDATE_REMINDERS {
+    ACCOUNT_UPDATE_REMINDERS {
         text id PK
         text workspace_id FK
         text created_by_user_id FK
-        text asset_id FK
+        text account_id FK
         text frequency
         timestamp last_updated
         timestamp next_reminder
@@ -301,7 +301,7 @@ erDiagram
         timestamp created_at
     }
 
-    ASSET_SNAPSHOTS {
+    ACCOUNT_SNAPSHOTS {
         text id PK
         text workspace_id FK
         text created_by_user_id FK
@@ -312,10 +312,10 @@ erDiagram
         timestamp created_at
     }
 
-    ASSET_SNAPSHOT_ITEMS {
+    ACCOUNT_SNAPSHOT_ITEMS {
         text id PK
         text snapshot_id FK
-        text asset_id FK
+        text account_id FK
         text balance
         text currency
     }
@@ -543,8 +543,8 @@ Financial transactions (income/expenses/transfers). Shared across the workspace.
   - `workspace_id` → `workspaces.id` (cascade delete)
   - `created_by_user_id` → `users.id` (audit trail)
   - `category_id` → `budget_categories.id` (nullable for transfers)
-  - `asset_id` → `assets.id` (source asset)
-  - `to_asset_id` → `assets.id` (destination asset for transfers)
+  - `account_id` → `accounts.id` (source account)
+  - `to_account_id` → `accounts.id` (destination account for transfers)
 - **Key Fields**:
   - `workspace_id`: Workspace this transaction belongs to
   - `created_by_user_id`: User who created this transaction
@@ -557,13 +557,13 @@ Financial transactions (income/expenses/transfers). Shared across the workspace.
   - `deleted_by_user_id`: User who deleted (audit trail)
   - `deleted_at`: Soft delete timestamp (for audit trail)
 - **Soft Delete**: Uses `deleted_at` to maintain history
-- **Transfer Handling**: For transfers, `category_id` is null, `asset_id` is the source, and `to_asset_id` is the destination
+- **Transfer Handling**: For transfers, `category_id` is null, `account_id` is the source, and `to_account_id` is the destination
 
-### Asset & Liability Tracking
+### Account & Liability Tracking
 
-#### `asset_categories`
+#### `account_categories`
 
-Workspace-defined categories for organizing assets and liabilities.
+Workspace-defined categories for organizing accounts and liabilities.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
@@ -574,70 +574,70 @@ Workspace-defined categories for organizing assets and liabilities.
   - `created_by_user_id`: User who created this category
   - `name`: Category name (e.g., "Investments", "Emergency Fund", "Retirement")
   - `description`: Optional description
-  - `is_liability`: Whether this category is for liabilities (vs assets)
+  - `is_liability`: Whether this category is for liabilities (vs accounts)
   - `is_system`: Whether this is a system-created default category (cannot be deleted)
   - `sort_order`: Display order for sorting categories
-- **Use Case**: Allows workspace members to create custom groupings for their assets/liabilities beyond the built-in types
+- **Use Case**: Allows workspace members to create custom groupings for their accounts/liabilities beyond the built-in types
 
-#### `assets`
+#### `accounts`
 
-Accounts representing both assets (what you own) and liabilities (what you owe). Shared across the workspace.
+Accounts representing both accounts (what you own) and liabilities (what you owe). Shared across the workspace.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
   - `workspace_id` → `workspaces.id` (cascade delete)
   - `created_by_user_id` → `users.id` (audit trail)
-  - `category_id` → `asset_categories.id` (nullable, for custom grouping)
+  - `category_id` → `account_categories.id` (nullable, for custom grouping)
 - **Key Fields**:
-  - `workspace_id`: Workspace this asset belongs to
-  - `created_by_user_id`: User who created this asset
-  - `type`: Asset type ('cash', 'bank_account', 'e_wallet', 'mutual_fund', 'bond', 'crypto', 'stock', 'other') or Liability type ('credit_card', 'loan')
+  - `workspace_id`: Workspace this account belongs to
+  - `created_by_user_id`: User who created this account
+  - `type`: Account type ('cash', 'bank_account', 'e_wallet', 'mutual_fund', 'bond', 'crypto', 'stock', 'other') or Liability type ('credit_card', 'loan')
   - `account_class`: Classification for allocation calculations ('liquid' | 'non_liquid' | 'debt')
-  - `balance`: Current value (positive for assets, positive for liabilities - represents amount owed) (string for precision)
+  - `balance`: Current value (positive for accounts, positive for liabilities - represents amount owed) (string for precision)
   - `initial_balance`: Original balance at creation (string for precision)
   - `currency`: IDR | USD
   - `credit_limit`: For credit cards only, the maximum credit limit (string for precision)
   - `is_cash_account`: Flag for cash-type accounts (used for liquidity calculations)
   - `status`: 'active' | 'closed'
-  - `closed_at`: When the asset/account was closed
-  - `closed_by_user_id`: User who closed the asset
+  - `closed_at`: When the account/account was closed
+  - `closed_by_user_id`: User who closed the account
   - `last_updated`: Last balance update timestamp
   - `deleted_at`: Soft delete timestamp
 - **Soft Delete**: Preserves historical data
-- **Asset Types**: cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other
+- **Account Types**: cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other
 - **Liability Types**: credit_card, loan
 
-#### `asset_history`
+#### `account_history`
 
-Balance change log for assets.
+Balance change log for accounts.
 
 - **Primary Key**: `id` (text)
-- **Foreign Keys**: `asset_id` → `assets.id` (cascade delete)
+- **Foreign Keys**: `account_id` → `accounts.id` (cascade delete)
 - **Key Fields**:
   - `balance`: Balance at this point in time (string for precision)
   - `notes`: Optional update notes
   - `recorded_at`: When this balance was recorded
-- **Use Case**: Track asset performance over time
+- **Use Case**: Track account performance over time
 
-#### `asset_update_reminders`
+#### `account_update_reminders`
 
-Scheduled reminders to update asset balances. Shared across the workspace.
+Scheduled reminders to update account balances. Shared across the workspace.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
   - `workspace_id` → `workspaces.id` (cascade delete)
   - `created_by_user_id` → `users.id` (audit trail)
-  - `asset_id` → `assets.id` (cascade delete)
+  - `account_id` → `accounts.id` (cascade delete)
 - **Key Fields**:
   - `workspace_id`: Workspace this reminder belongs to
   - `created_by_user_id`: User who created this reminder
   - `frequency`: 'weekly' | 'monthly' | 'quarterly'
-  - `last_updated`: Last time asset was updated
+  - `last_updated`: Last time account was updated
   - `next_reminder`: When to show next reminder
   - `is_dismissed`: User dismissed this reminder
-- **Use Case**: Prompt workspace members to keep asset values current
+- **Use Case**: Prompt workspace members to keep account values current
 
-#### `asset_snapshots`
+#### `account_snapshots`
 
 Monthly net worth snapshots. Shared across the workspace.
 
@@ -654,16 +654,16 @@ Monthly net worth snapshots. Shared across the workspace.
   - `notes`: Optional snapshot notes
 - **Use Case**: Monthly net worth reports and trends
 
-#### `asset_snapshot_items`
+#### `account_snapshot_items`
 
-Individual asset values within a snapshot.
+Individual account values within a snapshot.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
-  - `snapshot_id` → `asset_snapshots.id` (cascade delete)
-  - `asset_id` → `assets.id`
+  - `snapshot_id` → `account_snapshots.id` (cascade delete)
+  - `account_id` → `accounts.id`
 - **Key Fields**:
-  - `balance`: Asset value at snapshot time (string for precision)
+  - `balance`: Account value at snapshot time (string for precision)
   - `currency`: IDR | USD
 - **Use Case**: Detailed breakdown of monthly net worth
 
@@ -816,8 +816,8 @@ As data grows, consider adding:
 
 - `transactions(user_id, transaction_date)` - for dashboard queries
 - `transactions(category_id)` - for category reports
-- `assets(user_id, deleted_at)` - for asset list filtering
-- `asset_history(asset_id, recorded_at)` - for performance charts
+- `accounts(user_id, deleted_at)` - for account list filtering
+- `account_history(account_id, recorded_at)` - for performance charts
 
 ## Multi-Currency Support
 
@@ -843,8 +843,8 @@ const txns = await db.query.transactions.findMany({
   where: eq(transactions.user_id, userId),
   with: {
     category: true,
-    asset: true,
-    toAsset: true,
+    account: true,
+    toAccount: true,
   },
 });
 
@@ -955,8 +955,8 @@ const txns = await db.query.transactions.findMany({
   where: eq(transactions.workspace_id, workspaceId),
   with: {
     category: true,
-    asset: true,
-    toAsset: true,
+    account: true,
+    toAccount: true,
     createdBy: true, // User who created this transaction
   },
 });
@@ -998,14 +998,14 @@ src/db/schema/
 │   ├── email-verification-tokens.ts # Email verification
 │   ├── oauth-accounts.ts         # OAuth/SSO linked accounts
 │   ├── categories.ts             # Income/expense categories (table: budget_categories)
-│   ├── asset-categories.ts       # Custom asset categories
+│   ├── account-categories.ts       # Custom account categories
 │   ├── budgets.ts                # Period-specific budget allocations
 │   ├── transactions.ts           # Financial transactions
-│   ├── assets.ts                 # Assets & liabilities
-│   ├── asset-history.ts          # Balance tracking
-│   ├── asset-update-reminders.ts # Update notifications
-│   ├── asset-snapshots.ts        # Monthly net worth
-│   ├── asset-snapshot-items.ts   # Snapshot details
+│   ├── accounts.ts                 # Accounts & liabilities
+│   ├── account-history.ts          # Balance tracking
+│   ├── account-update-reminders.ts # Update notifications
+│   ├── account-snapshots.ts        # Monthly net worth
+│   ├── account-snapshot-items.ts   # Snapshot details
 │   ├── audit-logs.ts             # Audit trail
 │   ├── api-keys.ts               # API key management
 │   └── exchange-rates.ts         # Currency conversion
@@ -1019,7 +1019,7 @@ src/db/schema/
 2. **User Attribution**: All records track `created_by_user_id` for audit trail
 3. **Role-Based Access**: Users have `admin` or `member` role within their workspace
 4. **Decimal Precision**: Money stored as strings to prevent floating-point errors
-5. **Soft Deletes**: Transactions, assets, and users use `deleted_at` for audit trail
+5. **Soft Deletes**: Transactions, accounts, and users use `deleted_at` for audit trail
 6. **Multi-Currency**: Native currency storage with conversion at query time
 7. **Type Safety**: Drizzle schema provides end-to-end TypeScript types
 8. **Modular Organization**: One file per table for maintainability

@@ -7,7 +7,7 @@
  *
  * Displays:
  * - Quick actions (Add Expense, Log Income)
- * - Total assets (IDR + USD)
+ * - Total accounts (IDR + USD)
  * - Monthly spending vs budget
  * - Budget health alerts
  * - Spending summary card with progress
@@ -22,7 +22,7 @@ import type { DashboardData } from '@/services/dashboard.service';
 import type { OnboardingStatus } from '@/services/workspace.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
-import AssetsWidget from '@/components/organisms/AssetsWidget.astro';
+import AccountsWidget from '@/components/organisms/AccountsWidget.astro';
 import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
@@ -71,7 +71,7 @@ try {
     Boolean(primaryCurrency) &&
     onboardingStatus.categories &&
     onboardingStatus.budgets &&
-    onboardingStatus.assets &&
+    onboardingStatus.accounts &&
     onboardingStatus.transactions;
 
   // Only fetch dashboard data if currency is set
@@ -98,7 +98,7 @@ try {
   dashboardData = null;
 }
 
-// Categories and assets for transaction modals are provided by ProtectedLayout
+// Categories and accounts for transaction modals are provided by ProtectedLayout
 
 // Get month name for remaining label
 const currentMonthName = MONTH_NAMES_SHORT[currentMonth - 1];
@@ -126,10 +126,10 @@ const recentTransactions: TransactionOutput[] =
           color: tx.category.color,
         }
       : null,
-    asset: {
-      id: tx.asset.id,
-      name: tx.asset.name,
-      type: tx.asset.type,
+    account: {
+      id: tx.account.id,
+      name: tx.account.name,
+      type: tx.account.type,
     },
     has_history: tx.hasHistory,
     created_by_user_name: tx.createdByName,
@@ -232,9 +232,9 @@ const spendingCategories =
             </div>
 
             <div class="space-y-6 @sm:space-y-8">
-              <AssetsWidget
-                assetIdr={safeParseFloat(dashboardData?.totalAssets.idr)}
-                assetUsd={safeParseFloat(dashboardData?.totalAssets.usd)}
+              <AccountsWidget
+                accountIdr={safeParseFloat(dashboardData?.totalAccounts.idr)}
+                accountUsd={safeParseFloat(dashboardData?.totalAccounts.usd)}
                 debtIdr={safeParseFloat(dashboardData?.totalDebt?.idr)}
                 debtUsd={safeParseFloat(dashboardData?.totalDebt?.usd)}
                 loading={!dashboardData}

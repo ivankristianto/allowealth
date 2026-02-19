@@ -102,7 +102,7 @@ export default defineConfig({
           './src/pages/dashboard.astro',
           './src/pages/transactions/index.astro',
           './src/pages/budget/index.astro',
-          './src/pages/assets/index.astro',
+          './src/pages/accounts/index.astro',
           './src/pages/reports/index.astro',
           './src/layouts/ProtectedLayout.astro',
           './src/services/index.ts',

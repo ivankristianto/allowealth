@@ -4,7 +4,7 @@ import {
   generateTestId,
   getSeededTestData,
   TestCategory,
-  TestAsset,
+  TestAccount,
 } from '../../helpers';
 
 /**
@@ -12,7 +12,7 @@ import {
  * Populated in beforeAll hook to avoid hardcoded values.
  */
 let incomeCategories: TestCategory[] = [];
-let assets: TestAsset[] = [];
+let accounts: TestAccount[] = [];
 
 test.describe('Add Income Transaction', () => {
   /**
@@ -22,14 +22,14 @@ test.describe('Add Income Transaction', () => {
   test.beforeAll(async ({ request }) => {
     const testData = await getSeededTestData(request);
     incomeCategories = testData.incomeCategories;
-    assets = testData.assets;
+    accounts = testData.accounts;
 
     // Ensure we have test data
     if (incomeCategories.length === 0) {
       throw new Error('No income categories found in seeded database');
     }
-    if (assets.length === 0) {
-      throw new Error('No assets found in seeded database');
+    if (accounts.length === 0) {
+      throw new Error('No accounts found in seeded database');
     }
   });
 
@@ -41,10 +41,10 @@ test.describe('Add Income Transaction', () => {
   }
 
   /**
-   * Helper to get an asset by index, with fallback to first available.
+   * Helper to get an account by index, with fallback to first available.
    */
-  function getAsset(index: number): TestAsset {
-    return assets[index % assets.length];
+  function getAccount(index: number): TestAccount {
+    return accounts[index % accounts.length];
   }
 
   /**
@@ -52,7 +52,7 @@ test.describe('Add Income Transaction', () => {
    *
    * Flow:
    * 1. Navigate to add transaction page with income type pre-selected
-   * 2. Fill form with income details (amount, category, asset, date, description)
+   * 2. Fill form with income details (amount, category, account, date, description)
    * 3. Submit the form
    * 4. Verify redirect to transactions list page
    * 5. Verify success toast notification
@@ -70,7 +70,7 @@ test.describe('Add Income Transaction', () => {
 
     // Use seeded data
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page with income type pre-selected
     await addTransactionPage.gotoAddTransaction('income');
@@ -80,7 +80,7 @@ test.describe('Add Income Transaction', () => {
       type: 'income',
       amount: incomeAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: incomeDescription,
       date: new Date().toISOString().split('T')[0], // Today's date
     });
@@ -110,9 +110,9 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `E2E Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.SMALL_INCOME; // 1,000,000 IDR
 
-    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    // Use first seeded category and account (avoid ordering issues with higher indices)
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
@@ -122,7 +122,7 @@ test.describe('Add Income Transaction', () => {
       type: 'income',
       amount: incomeAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: incomeDescription,
       // date is optional and defaults to today
     });
@@ -149,9 +149,9 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Large Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.LARGE_INCOME; // 15,000,000 IDR
 
-    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    // Use first seeded category and account (avoid ordering issues with higher indices)
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
@@ -161,7 +161,7 @@ test.describe('Add Income Transaction', () => {
       type: 'income',
       amount: incomeAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: incomeDescription,
     });
 
@@ -192,9 +192,9 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Custom Date Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
-    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    // Use first seeded category and account (avoid ordering issues with higher indices)
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
@@ -204,7 +204,7 @@ test.describe('Add Income Transaction', () => {
       type: 'income',
       amount: incomeAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: incomeDescription,
       date: todayDate,
     });
@@ -234,9 +234,9 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Type Test Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
-    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    // Use first seeded category and account (avoid ordering issues with higher indices)
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page with income pre-selected
     await addTransactionPage.gotoAddTransaction('income');
@@ -246,7 +246,7 @@ test.describe('Add Income Transaction', () => {
       type: 'income',
       amount: incomeAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: incomeDescription,
     });
 
@@ -294,7 +294,7 @@ test.describe('Add Income Transaction', () => {
       },
     ];
 
-    const defaultAsset = getAsset(0);
+    const defaultAccount = getAccount(0);
 
     for (const income of testIncomes) {
       // Navigate to add transaction page
@@ -306,7 +306,7 @@ test.describe('Add Income Transaction', () => {
         type: 'income',
         amount: income.amount,
         categoryName: getCategory(income.categoryIndex).name,
-        assetName: defaultAsset.name,
+        accountName: defaultAccount.name,
         description,
       });
 
@@ -326,7 +326,7 @@ test.describe('Add Income Transaction', () => {
   test('verify form is reset after income submission', async ({ addTransactionPage }) => {
     // Use seeded data
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction
     await addTransactionPage.gotoAddTransaction('income');
@@ -336,14 +336,14 @@ test.describe('Add Income Transaction', () => {
       type: 'income',
       amount: TEST_AMOUNTS.MEDIUM_INCOME,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: 'Test Income',
     });
 
     // Verify form values were filled
     expect(await addTransactionPage.getAmountValue()).toBeTruthy();
     expect(await addTransactionPage.getSelectedCategory()).toBeTruthy();
-    expect(await addTransactionPage.getSelectedAsset()).toBeTruthy();
+    expect(await addTransactionPage.getSelectedAccount()).toBeTruthy();
 
     // Submit the form
     await addTransactionPage.submit();
@@ -361,33 +361,33 @@ test.describe('Add Income Transaction', () => {
   });
 
   /**
-   * Test adding income with different asset types.
+   * Test adding income with different account types.
    *
-   * Verifies that income can be added to various asset types.
+   * Verifies that income can be added to various account types.
    */
-  test('successfully add income with different asset types', async ({
+  test('successfully add income with different account types', async ({
     addTransactionPage,
     transactionsPage,
     page,
   }) => {
-    // Use up to 2 assets from seeded data
-    const testAssets = assets.slice(0, Math.min(2, assets.length));
+    // Use up to 2 accounts from seeded data
+    const testAccounts = accounts.slice(0, Math.min(2, accounts.length));
     const category = getCategory(0);
 
-    for (const asset of testAssets) {
+    for (const account of testAccounts) {
       const incomeId = generateTestId();
-      const incomeDescription = `Income to ${asset.name} ${incomeId}`;
+      const incomeDescription = `Income to ${account.name} ${incomeId}`;
       const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
       // Navigate to add transaction page
       await addTransactionPage.gotoAddTransaction('income');
 
-      // Fill the form with different asset
+      // Fill the form with different account
       await addTransactionPage.fillForm({
         type: 'income',
         amount: incomeAmount,
         categoryName: category.name,
-        assetName: asset.name,
+        accountName: account.name,
         description: incomeDescription,
       });
 

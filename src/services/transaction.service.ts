@@ -6,7 +6,7 @@ const log = createLogger('transaction');
 import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
-import { AssetService } from './asset.service';
+import { AccountService } from './account.service';
 import {
   createTransactionSchema,
   updateTransactionSchema,
@@ -33,7 +33,7 @@ export interface CSVRow {
   amount: string;
   currency: string;
   category: string;
-  asset: string;
+  account: string;
   description: string;
   [key: string]: string; // Allow dynamic column access
 }
@@ -46,8 +46,8 @@ interface TransactionInsertRow {
   amount: string;
   currency: 'IDR' | 'USD';
   category_id: string | null;
-  asset_id: string;
-  to_asset_id: string | null;
+  account_id: string;
+  to_account_id: string | null;
   transaction_date: Date;
   description: string;
   created_at: Date;
@@ -59,7 +59,7 @@ export interface TransactionFilters {
   type?: 'expense' | 'income' | 'transfer';
   category_id?: string;
   category_ids?: string[]; // Multiple category filter
-  asset_id?: string;
+  account_id?: string;
   currency?: 'IDR' | 'USD';
   start_date?: Date;
   end_date?: Date;
@@ -76,7 +76,7 @@ export class TransactionService {
   }
   private db: IDatabase;
   private categoryService: CategoryService;
-  private assetService: AssetService;
+  private accountService: AccountService;
 
   /**
    * Safely convert Date/number/string to ISO string.
@@ -97,7 +97,7 @@ export class TransactionService {
   constructor(db: IDatabase) {
     this.db = db;
     this.categoryService = new CategoryService(db);
-    this.assetService = new AssetService(db);
+    this.accountService = new AccountService(db);
   }
 
   /**
@@ -129,15 +129,19 @@ export class TransactionService {
       }
     }
 
-    // Verify source asset exists, belongs to workspace, and is active
-    const asset = await this.assetService.findByIdIncludingClosed(
-      validated.asset_id,
+    // Verify source account exists, belongs to workspace, and is active
+    const account = await this.accountService.findByIdIncludingClosed(
+      validated.account_id,
       validated.workspace_id
     );
-    if (!asset) {
-      throw new TransactionServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    if (!account) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_NOT_FOUND,
+        'Account not found',
+        404
+      );
     }
-    if (asset.status === 'closed') {
+    if (account.status === 'closed') {
       throw new TransactionServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
         'Cannot create transaction — source account is deactivated',
@@ -145,20 +149,20 @@ export class TransactionService {
       );
     }
 
-    // For transfers, verify destination asset exists and is active
-    if (validated.type === 'transfer' && validated.to_asset_id) {
-      const toAsset = await this.assetService.findByIdIncludingClosed(
-        validated.to_asset_id,
+    // For transfers, verify destination account exists and is active
+    if (validated.type === 'transfer' && validated.to_account_id) {
+      const toAccount = await this.accountService.findByIdIncludingClosed(
+        validated.to_account_id,
         validated.workspace_id
       );
-      if (!toAsset) {
+      if (!toAccount) {
         throw new TransactionServiceError(
-          ServiceErrorCode.ASSET_NOT_FOUND,
-          'Destination asset not found',
+          ServiceErrorCode.ACCOUNT_NOT_FOUND,
+          'Destination account not found',
           404
         );
       }
-      if (toAsset.status === 'closed') {
+      if (toAccount.status === 'closed') {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
           'Cannot create transfer — destination account is deactivated',
@@ -179,8 +183,8 @@ export class TransactionService {
         amount: validated.amount,
         currency: validated.currency,
         category_id: validated.category_id || null,
-        asset_id: validated.asset_id,
-        to_asset_id: validated.to_asset_id || null,
+        account_id: validated.account_id,
+        to_account_id: validated.to_account_id || null,
         transaction_date: validated.transaction_date,
         description: validated.description,
         created_at: new Date(),
@@ -200,8 +204,8 @@ export class TransactionService {
         amount: validated.amount,
         currency: validated.currency,
         category_id: validated.category_id || null,
-        asset_id: validated.asset_id,
-        to_asset_id: validated.to_asset_id || null,
+        account_id: validated.account_id,
+        to_account_id: validated.to_account_id || null,
         description: validated.description || null,
         transaction_date: validated.transaction_date.toISOString(),
       },
@@ -233,8 +237,8 @@ export class TransactionService {
         ),
         with: {
           category: true,
-          asset: true,
-          toAsset: true,
+          account: true,
+          toAccount: true,
         },
       });
 
@@ -308,8 +312,8 @@ export class TransactionService {
       conditions.push(inArray(this.schema.transactions.category_id, filters.category_ids));
     }
 
-    if (filters.asset_id) {
-      conditions.push(eq(this.schema.transactions.asset_id, filters.asset_id));
+    if (filters.account_id) {
+      conditions.push(eq(this.schema.transactions.account_id, filters.account_id));
     }
 
     if (filters.currency) {
@@ -335,8 +339,8 @@ export class TransactionService {
       where: and(...conditions),
       with: {
         category: true,
-        asset: true,
-        toAsset: true,
+        account: true,
+        toAccount: true,
         createdBy: {
           columns: {
             id: true,
@@ -412,16 +416,20 @@ export class TransactionService {
       }
     }
 
-    // Verify asset if being updated
-    if (validated.asset_id !== undefined) {
-      const asset = await this.assetService.findByIdIncludingClosed(
-        validated.asset_id,
+    // Verify account if being updated
+    if (validated.account_id !== undefined) {
+      const account = await this.accountService.findByIdIncludingClosed(
+        validated.account_id,
         workspaceId
       );
-      if (!asset) {
-        throw new TransactionServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+      if (!account) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.ACCOUNT_NOT_FOUND,
+          'Account not found',
+          404
+        );
       }
-      if (asset.status === 'closed') {
+      if (account.status === 'closed') {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
           'Cannot update transaction — source account is deactivated',
@@ -430,20 +438,20 @@ export class TransactionService {
       }
     }
 
-    // Verify destination asset if being updated
-    if (validated.to_asset_id !== undefined && validated.to_asset_id !== null) {
-      const toAsset = await this.assetService.findByIdIncludingClosed(
-        validated.to_asset_id,
+    // Verify destination account if being updated
+    if (validated.to_account_id !== undefined && validated.to_account_id !== null) {
+      const toAccount = await this.accountService.findByIdIncludingClosed(
+        validated.to_account_id,
         workspaceId
       );
-      if (!toAsset) {
+      if (!toAccount) {
         throw new TransactionServiceError(
-          ServiceErrorCode.ASSET_NOT_FOUND,
-          'Destination asset not found',
+          ServiceErrorCode.ACCOUNT_NOT_FOUND,
+          'Destination account not found',
           404
         );
       }
-      if (toAsset.status === 'closed') {
+      if (toAccount.status === 'closed') {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
           'Cannot update transfer — destination account is deactivated',
@@ -458,8 +466,8 @@ export class TransactionService {
       'amount',
       'currency',
       'category_id',
-      'asset_id',
-      'to_asset_id',
+      'account_id',
+      'to_account_id',
       'description',
       'transaction_date',
     ] as const;
@@ -500,8 +508,8 @@ export class TransactionService {
     if (validated.amount !== undefined) updateData.amount = validated.amount;
     if (validated.currency !== undefined) updateData.currency = validated.currency;
     if (validated.category_id !== undefined) updateData.category_id = validated.category_id;
-    if (validated.asset_id !== undefined) updateData.asset_id = validated.asset_id;
-    if (validated.to_asset_id !== undefined) updateData.to_asset_id = validated.to_asset_id;
+    if (validated.account_id !== undefined) updateData.account_id = validated.account_id;
+    if (validated.to_account_id !== undefined) updateData.to_account_id = validated.to_account_id;
     if (validated.transaction_date !== undefined)
       updateData.transaction_date = validated.transaction_date;
     if (validated.description !== undefined) updateData.description = validated.description;
@@ -588,8 +596,8 @@ export class TransactionService {
           amount: txRecord.amount,
           currency: txRecord.currency,
           category_id: txRecord.category_id,
-          asset_id: txRecord.asset_id,
-          to_asset_id: txRecord.to_asset_id,
+          account_id: txRecord.account_id,
+          to_account_id: txRecord.to_account_id,
           description: txRecord.description,
           transaction_date: this.toIsoString(
             txRecord.transaction_date as Date | number | string | null
@@ -634,8 +642,8 @@ export class TransactionService {
       conditions.push(inArray(this.schema.transactions.category_id, filters.category_ids));
     }
 
-    if (filters.asset_id) {
-      conditions.push(eq(this.schema.transactions.asset_id, filters.asset_id));
+    if (filters.account_id) {
+      conditions.push(eq(this.schema.transactions.account_id, filters.account_id));
     }
 
     if (filters.currency) {
@@ -680,7 +688,7 @@ export class TransactionService {
   private resolveAuditReferences(
     payload: Record<string, unknown> | null,
     categoryNames: Map<string, string>,
-    assetNames: Map<string, string>
+    accountNames: Map<string, string>
   ): Record<string, unknown> | null {
     if (!payload) return null;
 
@@ -697,8 +705,8 @@ export class TransactionService {
         continue;
       }
 
-      if (key === 'asset_id' || key === 'to_asset_id') {
-        resolved[key] = assetNames.get(value) ?? value;
+      if (key === 'account_id' || key === 'to_account_id') {
+        resolved[key] = accountNames.get(value) ?? value;
         continue;
       }
 
@@ -757,16 +765,16 @@ export class TransactionService {
     };
 
     // --- Pre-load workspace data (2 queries) ---
-    const [workspaceCategories, workspaceAssets] = await Promise.all([
+    const [workspaceCategories, workspaceAccounts] = await Promise.all([
       this.categoryService.findAll(workspaceId),
-      this.assetService.findAll(workspaceId, { includeInactive: true }),
+      this.accountService.findAll(workspaceId, { includeInactive: true }),
     ]);
 
     const categoryMap = new Map<string, { id: string; is_active: boolean }>(
       workspaceCategories.map((c) => [c.name.toLowerCase(), { id: c.id, is_active: c.is_active }])
     );
-    // Store full asset object for status checks
-    const assetMap = new Map(workspaceAssets.map((a) => [a.name.toLowerCase(), a]));
+    // Store full account object for status checks
+    const accountMap = new Map(workspaceAccounts.map((a) => [a.name.toLowerCase(), a]));
 
     // --- Date-scoped duplicate detection (1 lightweight query) ---
     const csvDates = new Set<string>();
@@ -794,7 +802,7 @@ export class TransactionService {
             type: txTable.type,
             amount: txTable.amount,
             category_id: txTable.category_id,
-            asset_id: txTable.asset_id,
+            account_id: txTable.account_id,
           })
           .from(txTable)
           .where(
@@ -811,11 +819,13 @@ export class TransactionService {
           type: string;
           amount: string;
           category_id: string | null;
-          asset_id: string;
+          account_id: string;
         }>) {
           const txDate = this.toIsoString(t.transaction_date);
           const dateKey = txDate ? txDate.split('T')[0] : '';
-          existingKeys.add(`${dateKey}-${t.type}-${t.amount}-${t.category_id ?? ''}-${t.asset_id}`);
+          existingKeys.add(
+            `${dateKey}-${t.type}-${t.amount}-${t.category_id ?? ''}-${t.account_id}`
+          );
         }
       }
     }
@@ -837,11 +847,11 @@ export class TransactionService {
       const amountStr = columnMapping.amount ? row[columnMapping.amount] : row.amount;
       const currencyStr = columnMapping.currency ? row[columnMapping.currency] : row.currency;
       const categoryStr = columnMapping.category ? row[columnMapping.category] : row.category;
-      const assetStr = columnMapping.asset ? row[columnMapping.asset] : row.asset;
+      const accountStr = columnMapping.account ? row[columnMapping.account] : row.account;
       const descriptionStr = columnMapping.description
         ? row[columnMapping.description]
         : row.description;
-      const toAssetStr = columnMapping.to_asset ? row[columnMapping.to_asset] : undefined;
+      const toAccountStr = columnMapping.to_account ? row[columnMapping.to_account] : undefined;
 
       // Validate date
       const transactionDate = new Date(dateStr ?? '');
@@ -904,51 +914,51 @@ export class TransactionService {
         categoryId = category.id;
       }
 
-      // Look up source asset
-      const asset = assetMap.get((assetStr ?? '').toLowerCase().trim());
-      if (!asset) {
-        result.errors.push({ row: i + 1, message: `Asset not found: ${assetStr}` });
+      // Look up source account
+      const account = accountMap.get((accountStr ?? '').toLowerCase().trim());
+      if (!account) {
+        result.errors.push({ row: i + 1, message: `Account not found: ${accountStr}` });
         continue;
       }
-      if (asset.status === 'closed') {
+      if (account.status === 'closed') {
         result.errors.push({
           row: i + 1,
-          message: `Account is deactivated: ${assetStr}`,
+          message: `Account is deactivated: ${accountStr}`,
         });
         continue;
       }
 
-      // Validate destination asset for transfers
-      let toAssetId: string | null = null;
+      // Validate destination account for transfers
+      let toAccountId: string | null = null;
       if (typeStr === 'transfer') {
-        if (!toAssetStr) {
+        if (!toAccountStr) {
           result.errors.push({
             row: i + 1,
-            message: 'Destination asset is required for transfers',
+            message: 'Destination account is required for transfers',
           });
           continue;
         }
-        const toAsset = assetMap.get(toAssetStr.toLowerCase().trim());
-        if (!toAsset) {
+        const toAccount = accountMap.get(toAccountStr.toLowerCase().trim());
+        if (!toAccount) {
           result.errors.push({
             row: i + 1,
-            message: `Destination asset not found: ${toAssetStr}`,
+            message: `Destination account not found: ${toAccountStr}`,
           });
           continue;
         }
-        if (toAsset.status === 'closed') {
+        if (toAccount.status === 'closed') {
           result.errors.push({
             row: i + 1,
-            message: `Destination account is deactivated: ${toAssetStr}`,
+            message: `Destination account is deactivated: ${toAccountStr}`,
           });
           continue;
         }
-        toAssetId = toAsset.id;
+        toAccountId = toAccount.id;
       }
 
       // Check for duplicates
       const normalizedAmount = amount.toString();
-      const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${normalizedAmount}-${categoryId ?? ''}-${asset.id}`;
+      const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${normalizedAmount}-${categoryId ?? ''}-${account.id}`;
       if (existingKeys.has(duplicateKey)) {
         result.skipped++;
         continue;
@@ -964,8 +974,8 @@ export class TransactionService {
         amount: normalizedAmount,
         currency: currencyStr,
         category_id: categoryId,
-        asset_id: asset.id,
-        to_asset_id: toAssetId,
+        account_id: account.id,
+        to_account_id: toAccountId,
         transaction_date: transactionDate,
         description,
         created_at: now,
@@ -1025,7 +1035,7 @@ export class TransactionService {
     });
 
     // CSV header
-    const headers = ['date', 'type', 'amount', 'currency', 'category', 'asset', 'description'];
+    const headers = ['date', 'type', 'amount', 'currency', 'category', 'account', 'description'];
 
     // Build CSV rows
     const csvRows = allTransactions.map((t: any) => [
@@ -1034,7 +1044,7 @@ export class TransactionService {
       t.amount,
       t.currency,
       t.category?.name || '',
-      t.asset.name,
+      t.account.name,
       t.description || '',
     ]);
 
@@ -1059,10 +1069,10 @@ export class TransactionService {
   }
 
   /**
-   * Get transactions for a specific asset, with monthly totals.
+   * Get transactions for a specific account, with monthly totals.
    */
-  async getTransactionsByAsset(
-    assetId: string,
+  async getTransactionsByAccount(
+    accountId: string,
     workspaceId: string,
     year: number,
     month: number
@@ -1080,7 +1090,7 @@ export class TransactionService {
 
     const txTable = this.schema.transactions;
 
-    // Get all transactions where this asset is source or destination
+    // Get all transactions where this account is source or destination
     const transactions = await (this.db as any)
       .select()
       .from(txTable)
@@ -1090,7 +1100,7 @@ export class TransactionService {
           sql`${txTable.deleted_at} IS NULL`,
           gte(txTable.transaction_date, startOfMonth),
           lte(txTable.transaction_date, endOfMonth),
-          sql`(${txTable.asset_id} = ${assetId} OR ${txTable.to_asset_id} = ${assetId})`
+          sql`(${txTable.account_id} = ${accountId} OR ${txTable.to_account_id} = ${accountId})`
         )
       )
       .orderBy(desc(txTable.transaction_date));
@@ -1103,15 +1113,15 @@ export class TransactionService {
 
     for (const tx of transactions) {
       const amount = tx.amount || '0';
-      if (tx.type === 'income' && tx.asset_id === assetId) {
+      if (tx.type === 'income' && tx.account_id === accountId) {
         totalIncome = decimalAdd(totalIncome, amount);
-      } else if (tx.type === 'expense' && tx.asset_id === assetId) {
+      } else if (tx.type === 'expense' && tx.account_id === accountId) {
         totalExpenses = decimalAdd(totalExpenses, amount);
       } else if (tx.type === 'transfer') {
-        if (tx.asset_id === assetId) {
+        if (tx.account_id === accountId) {
           totalTransfersOut = decimalAdd(totalTransfersOut, amount);
         }
-        if (tx.to_asset_id === assetId) {
+        if (tx.to_account_id === accountId) {
           totalTransfersIn = decimalAdd(totalTransfersIn, amount);
         }
       }
@@ -1137,7 +1147,7 @@ export class TransactionService {
     workspaceId: string,
     showAll = false
   ): Promise<TransactionHistoryResponse> {
-    const [results, categories, assets] = await Promise.all([
+    const [results, categories, accounts] = await Promise.all([
       this.db.query.auditLogs.findMany({
         where: and(
           eq(this.schema.auditLogs.entity_type, 'transaction'),
@@ -1161,8 +1171,8 @@ export class TransactionService {
           name: true,
         },
       }),
-      this.db.query.assets.findMany({
-        where: eq(this.schema.assets.workspace_id, workspaceId),
+      this.db.query.accounts.findMany({
+        where: eq(this.schema.accounts.workspace_id, workspaceId),
         columns: {
           id: true,
           name: true,
@@ -1173,8 +1183,8 @@ export class TransactionService {
     const categoryNames = new Map<string, string>(
       categories.map((category: { id: string; name: string }) => [category.id, category.name])
     );
-    const assetNames = new Map<string, string>(
-      assets.map((asset: { id: string; name: string }) => [asset.id, asset.name])
+    const accountNames = new Map<string, string>(
+      accounts.map((account: { id: string; name: string }) => [account.id, account.name])
     );
 
     interface AuditLogRow {
@@ -1211,12 +1221,12 @@ export class TransactionService {
       oldValue: this.resolveAuditReferences(
         this.parseAuditValue(entry.old_value),
         categoryNames,
-        assetNames
+        accountNames
       ),
       newValue: this.resolveAuditReferences(
         this.parseAuditValue(entry.new_value),
         categoryNames,
-        assetNames
+        accountNames
       ),
     }));
 

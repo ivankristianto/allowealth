@@ -3,7 +3,7 @@
  * Summary Cards Component (Organism)
  *
  * Displays three summary cards on the dashboard:
- * - Total Assets Card (IDR + USD + converted total)
+ * - Total Accounts Card (IDR + USD + converted total)
  * - Monthly Spent Card (progress bar, percentage, color-coded)
  * - Budget Health Card (alert count, status indicator)
  *
@@ -30,7 +30,7 @@ import { CircleAlert, DollarSign, Calendar, ShieldCheck, ChevronRight } from '@l
 // - 16px: Navigation/interactive icons (subtle)
 
 export interface SummaryCardsData {
-  totalAssets: {
+  totalAccounts: {
     idr: string;
     usd: string;
     converted: string;
@@ -64,7 +64,9 @@ const monthlySpentRemaining = data
 
 // Determine if we should show empty state
 const isEmpty =
-  !loading && !error && (!data || (data.totalAssets.idr === '0' && data.totalAssets.usd === '0'));
+  !loading &&
+  !error &&
+  (!data || (data.totalAccounts.idr === '0' && data.totalAccounts.usd === '0'));
 
 // Budget status colors
 const getBudgetStatusColor = (status: string): string => {
@@ -161,7 +163,7 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
         <Card>
           <EmptyState
             title="No data yet"
-            message="Start by adding your assets and transactions"
+            message="Start by adding your accounts and transactions"
             iconName="trending"
             variant="centered"
             className="py-0"
@@ -171,10 +173,13 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
     ) : (
       // Normal state with data
       <>
-        {/* Total Assets Card */}
+        {/* Total Accounts Card */}
         <StatCard
-          title="Total Assets"
-          value={formatCurrency(data!.totalAssets.converted, data!.totalAssets.convertedCurrency)}
+          title="Total Accounts"
+          value={formatCurrency(
+            data!.totalAccounts.converted,
+            data!.totalAccounts.convertedCurrency
+          )}
           valueColor="text-success"
           iconVariant="accent"
           className="transition-all hover:shadow-md"
@@ -184,13 +189,13 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
             <div class="flex justify-between items-baseline">
               <span class="text-sm text-neutral">IDR:</span>
               <span class="font-semibold text-lg text-success">
-                {formatCurrency(data!.totalAssets.idr, 'IDR')}
+                {formatCurrency(data!.totalAccounts.idr, 'IDR')}
               </span>
             </div>
             <div class="flex justify-between items-baseline">
               <span class="text-sm text-neutral">USD:</span>
               <span class="font-semibold text-lg text-info">
-                {formatCurrency(data!.totalAssets.usd, 'USD')}
+                {formatCurrency(data!.totalAccounts.usd, 'USD')}
               </span>
             </div>
           </div>

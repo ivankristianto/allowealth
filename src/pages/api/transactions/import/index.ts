@@ -69,7 +69,7 @@ export const POST: APIRoute = async (context) => {
       amount: (formData.get('map_amount') as string) || 'amount',
       currency: (formData.get('map_currency') as string) || 'currency',
       category: (formData.get('map_category') as string) || 'category',
-      asset: (formData.get('map_asset') as string) || 'asset',
+      account: (formData.get('map_account') as string) || 'account',
       description: (formData.get('map_description') as string) || 'description',
     };
 

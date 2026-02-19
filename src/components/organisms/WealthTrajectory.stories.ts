@@ -85,7 +85,7 @@ export const Default: Story = {
                   Wealth Trajectory
                 </h2>
                 <p class="text-sm text-base-content/60 mt-2 font-medium">
-                  Predicting global asset growth over the next decade.
+                  Predicting global account growth over the next decade.
                 </p>
               </div>
               <div class="flex flex-wrap gap-6 items-end">
@@ -193,7 +193,7 @@ export const Error: Story = {
         <div class="space-y-8">
           <div>
             <h2 class="text-2xl font-bold">Wealth Trajectory</h2>
-            <p class="text-sm text-base-content/60 mt-2">Predicting global asset growth over the next decade.</p>
+            <p class="text-sm text-base-content/60 mt-2">Predicting global account growth over the next decade.</p>
           </div>
 
           <div class="p-12 text-center">
@@ -217,7 +217,7 @@ export const Empty: Story = {
         <div class="space-y-8">
           <div>
             <h2 class="text-2xl font-bold">Wealth Trajectory</h2>
-            <p class="text-sm text-base-content/60 mt-2">Predicting global asset growth over the next decade.</p>
+            <p class="text-sm text-base-content/60 mt-2">Predicting global account growth over the next decade.</p>
           </div>
 
           <div class="p-12 text-center">

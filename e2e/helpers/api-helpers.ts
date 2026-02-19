@@ -91,7 +91,7 @@ export async function createTransactionViaAPI(
     type: 'income' | 'expense';
     amount: number;
     categoryId: string;
-    assetId: string;
+    accountId: string;
     date?: string;
     currency?: 'IDR' | 'USD';
     description?: string;
@@ -108,7 +108,7 @@ export async function createTransactionViaAPI(
       currency: data.currency || 'IDR',
       // API uses snake_case field names
       category_id: data.categoryId,
-      asset_id: data.assetId,
+      account_id: data.accountId,
       transaction_date: data.date || new Date().toISOString().split('T')[0],
       description: data.description || 'E2E Test Transaction',
     },
@@ -161,14 +161,14 @@ export async function createCategoryViaAPI(
 }
 
 /**
- * Create an asset via API for test setup.
+ * Create an account via API for test setup.
  * @param request - Playwright API request context
- * @param data - Asset data to create
+ * @param data - Account data to create
  */
 /**
- * Valid asset types (must match src/lib/types/asset.ts AssetType)
+ * Valid account types (must match src/lib/types/account.ts AccountType)
  */
-type AssetType =
+type AccountType =
   | 'cash'
   | 'bank_account'
   | 'e_wallet'
@@ -180,16 +180,16 @@ type AssetType =
   | 'credit_card'
   | 'loan';
 
-export async function createAssetViaAPI(
+export async function createAccountViaAPI(
   request: APIRequestContext,
   data: {
     name: string;
-    type: AssetType;
+    type: AccountType;
     balance: number;
     currency?: 'IDR' | 'USD';
   }
 ): Promise<{ id: string }> {
-  const response = await request.post(`${E2E_BASE_URL}/api/assets`, {
+  const response = await request.post(`${E2E_BASE_URL}/api/accounts`, {
     headers: {
       [CSRF_HEADER_NAME]: getCsrfToken(),
     },
@@ -204,7 +204,7 @@ export async function createAssetViaAPI(
 
   if (!response.ok()) {
     const errorBody = await response.text();
-    throw new Error(`Failed to create asset: ${response.status()} - ${errorBody}`);
+    throw new Error(`Failed to create account: ${response.status()} - ${errorBody}`);
   }
 
   // API returns { success: true, data: {...} }, extract the data
@@ -356,16 +356,16 @@ export async function getCategoriesViaAPI(
 }
 
 /**
- * Get all assets via API.
+ * Get all accounts via API.
  * @param request - Playwright API request context
  */
-export async function getAssetsViaAPI(
+export async function getAccountsViaAPI(
   request: APIRequestContext
 ): Promise<Array<{ id: string; name: string; balance: number }>> {
-  const response = await request.get(`${E2E_BASE_URL}/api/assets`);
+  const response = await request.get(`${E2E_BASE_URL}/api/accounts`);
 
   if (!response.ok()) {
-    throw new Error(`Failed to get assets: ${response.status()}`);
+    throw new Error(`Failed to get accounts: ${response.status()}`);
   }
 
   // API returns { success: true, data: [...] }, extract the data
@@ -398,7 +398,7 @@ export async function waitForAPIReady(page: Page, timeout: number = 30000): Prom
 }
 
 /**
- * Category and Asset type definitions for test data helpers
+ * Category and Account type definitions for test data helpers
  */
 export interface TestCategory {
   id: string;
@@ -406,7 +406,7 @@ export interface TestCategory {
   type: 'income' | 'expense';
 }
 
-export interface TestAsset {
+export interface TestAccount {
   id: string;
   name: string;
   type: string;
@@ -415,33 +415,33 @@ export interface TestAsset {
 
 /**
  * Get seeded test data from the database.
- * Returns categories and assets that were created by the seeder.
+ * Returns categories and accounts that were created by the seeder.
  * This ensures tests use actual database data instead of hardcoded values.
  *
  * @param request - Playwright API request context
- * @returns Object containing arrays of income categories, expense categories, and assets
+ * @returns Object containing arrays of income categories, expense categories, and accounts
  */
 export async function getSeededTestData(request: APIRequestContext): Promise<{
   incomeCategories: TestCategory[];
   expenseCategories: TestCategory[];
-  assets: TestAsset[];
+  accounts: TestAccount[];
 }> {
-  const [incomeCategories, expenseCategories, assets] = await Promise.all([
+  const [incomeCategories, expenseCategories, accounts] = await Promise.all([
     getCategoriesViaAPI(request, 'income'),
     getCategoriesViaAPI(request, 'expense'),
-    getAssetsViaAPI(request),
+    getAccountsViaAPI(request),
   ]);
 
   return {
     incomeCategories: incomeCategories as TestCategory[],
     expenseCategories: expenseCategories as TestCategory[],
-    assets: assets as TestAsset[],
+    accounts: accounts as TestAccount[],
   };
 }
 
 /**
  * Get a random item from an array.
- * Useful for selecting random categories/assets in tests.
+ * Useful for selecting random categories/accounts in tests.
  */
 export function getRandomItem<T>(items: T[]): T {
   if (items.length === 0) {
@@ -477,18 +477,18 @@ export async function getFirstCategory(
 }
 
 /**
- * Get the first asset.
+ * Get the first account.
  * Falls back to creating one if none exists.
  *
  * @param request - Playwright API request context
- * @returns Asset object with id and name
+ * @returns Account object with id and name
  */
-export async function getFirstAsset(request: APIRequestContext): Promise<TestAsset> {
-  const assets = await getAssetsViaAPI(request);
+export async function getFirstAccount(request: APIRequestContext): Promise<TestAccount> {
+  const accounts = await getAccountsViaAPI(request);
 
-  if (assets.length === 0) {
-    // Create a default asset if none exists
-    const created = await createAssetViaAPI(request, {
+  if (accounts.length === 0) {
+    // Create a default account if none exists
+    const created = await createAccountViaAPI(request, {
       name: `E2E-Cash-${Date.now()}`,
       type: 'cash',
       balance: 10000000,
@@ -496,5 +496,5 @@ export async function getFirstAsset(request: APIRequestContext): Promise<TestAss
     return { id: created.id, name: `E2E-Cash-${Date.now()}`, type: 'cash', balance: 10000000 };
   }
 
-  return assets[0] as TestAsset;
+  return accounts[0] as TestAccount;
 }

@@ -2,7 +2,7 @@ import { test, expect } from '../test.fixture';
 import {
   createTransactionViaAPI,
   createCategoryViaAPI,
-  createAssetViaAPI,
+  createAccountViaAPI,
   deleteTransactionViaAPI,
   deleteCategoryViaAPI,
 } from '../../helpers';
@@ -33,7 +33,7 @@ test.describe('Cross-Page Data Verification', () => {
 
   let testCategoryExpenseId: string;
   let testCategoryIncomeId: string;
-  let testAssetId: string;
+  let testAccountId: string;
   let testExpenseTransactionId: string;
   let testIncomeTransactionId: string;
 
@@ -64,21 +64,21 @@ test.describe('Cross-Page Data Verification', () => {
       });
       testCategoryIncomeId = incomeCategory.id;
 
-      // Create test asset with unique name
-      const asset = await createAssetViaAPI(page.request, {
-        name: `E2E Asset ${TEST_RUN_ID}`,
+      // Create test account with unique name
+      const account = await createAccountViaAPI(page.request, {
+        name: `E2E Account ${TEST_RUN_ID}`,
         type: 'bank_account',
         balance: TEST_AMOUNTS.SMALL_INCOME,
         currency: 'IDR',
       });
-      testAssetId = asset.id;
+      testAccountId = account.id;
 
       // Create test transactions
       const expenseTransaction = await createTransactionViaAPI(page.request, {
         type: 'expense',
         amount: TEST_AMOUNTS.MEDIUM_EXPENSE,
         categoryId: testCategoryExpenseId,
-        assetId: testAssetId,
+        accountId: testAccountId,
         description: `E2E Expense ${TEST_RUN_ID}`,
       });
       testExpenseTransactionId = expenseTransaction.id;
@@ -87,7 +87,7 @@ test.describe('Cross-Page Data Verification', () => {
         type: 'income',
         amount: TEST_AMOUNTS.MEDIUM_INCOME,
         categoryId: testCategoryIncomeId,
-        assetId: testAssetId,
+        accountId: testAccountId,
         description: `E2E Income ${TEST_RUN_ID}`,
       });
       testIncomeTransactionId = incomeTransaction.id;

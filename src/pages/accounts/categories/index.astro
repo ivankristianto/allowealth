@@ -1,0 +1,198 @@
+---
+/**
+ * Account Categories Management Page
+ *
+ * UI scaffolding for custom account categories.
+ * Uses the interactive architecture with server-rendered HTML fragments.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import TabToggle from '@/components/atoms/TabToggle.astro';
+import ActionBar from '@components/molecules/ActionBar.astro';
+import AccountCategoryModal from '@/components/organisms/AccountCategoryModal.astro';
+import AccountCategoryDeleteDialog from '@/components/organisms/AccountCategoryDeleteDialog.astro';
+import AccountCategoryTablePartial from '@/components/partials/AccountCategoryTablePartial.astro';
+import { ArrowLeft, Plus, Search } from '@lucide/astro';
+import { accountCategoryService, accountService } from '@/services';
+
+const currentPath = '/accounts/categories';
+const user = Astro.locals.user!;
+
+const url = new URL(Astro.url);
+const typeFilter = (url.searchParams.get('type') as 'account' | 'liability') || 'account';
+const searchQuery = url.searchParams.get('search') || '';
+
+const categories = await accountCategoryService.findAll(user.workspaceId);
+const accounts = await accountService.findAll(user.workspaceId);
+const accountCountByCategory = new Map<string, number>();
+
+for (const account of accounts) {
+  if (!account.category_id) continue;
+  accountCountByCategory.set(
+    account.category_id,
+    (accountCountByCategory.get(account.category_id) || 0) + 1
+  );
+}
+
+const allCategories = categories.map((category) => ({
+  id: category.id,
+  name: category.name,
+  description: category.description,
+  isLiability: category.is_liability,
+  isSystem: category.is_system,
+  sortOrder: category.sort_order,
+  accountCount: accountCountByCategory.get(category.id) || 0,
+}));
+
+let filteredCategories = allCategories.filter(
+  (category) => category.isLiability === (typeFilter === 'liability')
+);
+
+if (searchQuery) {
+  const query = searchQuery.toLowerCase();
+  filteredCategories = filteredCategories.filter(
+    (category) =>
+      category.name.toLowerCase().includes(query) ||
+      (category.description || '').toLowerCase().includes(query)
+  );
+}
+
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
+---
+
+<ProtectedLayout
+  title="Account Categories"
+  currentPath={currentPath}
+  subtitle="Manage your account and liability categories"
+>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    <!-- Page Intro -->
+    <div>
+      <div>
+        <h2 class="text-2xl font-bold text-base-content tracking-tight leading-none">
+          Manage Categories
+        </h2>
+        <p class="text-sm text-base-content/60 mt-2 font-medium">
+          Organizing {allCategories.length} categories across your portfolio
+        </p>
+      </div>
+    </div>
+
+    <ActionBar ariaLabel="Account category actions" edgeBleed>
+      <a href="/accounts" class={ghostBtn} aria-label="Back to accounts">
+        <ArrowLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <ArrowLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Back</span>
+      </a>
+
+      <button
+        slot="primary"
+        class={accentGhostBtn}
+        data-action="create-account-category"
+        data-testid="create-account-category-btn"
+        aria-label="Create account category"
+      >
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Add Category</span>
+      </button>
+    </ActionBar>
+
+    <!-- Filters -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+      <TabToggle
+        activeTab={typeFilter}
+        option1Value="account"
+        option1Label="Accounts"
+        option2Value="liability"
+        option2Label="Liabilities"
+        name="type"
+      />
+
+      <form id="account-category-search-form" class="relative flex-1 w-full max-w-md">
+        <label class="sr-only" for="account-category-search">Search categories</label>
+        <span
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40"
+          aria-hidden="true"
+        >
+          <Search size={20} />
+        </span>
+        <input
+          id="account-category-search"
+          type="search"
+          name="search"
+          placeholder="Search categories..."
+          value={searchQuery}
+          class="w-full pl-12 pr-6 py-3.5 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
+          data-testid="account-category-search-input"
+        />
+        <input type="hidden" name="type" value={typeFilter} />
+      </form>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="bg-base-100 rounded-card border border-base-300 shadow-sm overflow-hidden">
+      <div class="table-scroll-hint">
+        <div class="overflow-x-auto">
+          <table
+            class="w-full text-left border-collapse"
+            role="table"
+            data-testid="account-categories-table"
+          >
+            <caption class="sr-only">
+              Account categories list with {filteredCategories.length} entries
+            </caption>
+            <thead>
+              <tr class="border-b border-base-200 bg-base-200/50">
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                >
+                  Category Name
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
+                >
+                  Description
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                >
+                  Type
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                >
+                  Accounts
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <!-- Server-rendered table body partial - used for both SSR and dynamic HTML injection -->
+            <AccountCategoryTablePartial categories={allCategories} typeFilter={typeFilter} />
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live region for screen reader announcements -->
+  <div id="categories-live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <AccountCategoryModal id="account-category-modal" />
+  <AccountCategoryDeleteDialog id="account-category-delete-dialog" />
+</ProtectedLayout>
+
+<script src="./account-categories.client.ts"></script>

@@ -15,7 +15,7 @@ const PROTECTED_PREFIXES = [
   '/dashboard',
   '/transactions',
   '/budget',
-  '/assets',
+  '/accounts',
   '/reports',
   '/forecast',
   '/calculators',

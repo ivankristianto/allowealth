@@ -45,7 +45,7 @@ import {
 import {
   workspaceInvitationService,
   emailVerificationService,
-  assetCategoryService,
+  accountCategoryService,
 } from '@/services';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from '@/services/service-errors';
 import { getSignupMode, SIGNUP_MODES } from '@/lib/auth/signup-mode';
@@ -115,10 +115,10 @@ export const POST: APIRoute = async (context) => {
       // Mark invitation as accepted
       await workspaceInvitationService.accept(invitationToken);
 
-      // Seed default asset categories for admin users (idempotent - skips if already exist)
+      // Seed default account categories for admin users (idempotent - skips if already exist)
       if (invitation.role === 'admin') {
         try {
-          await assetCategoryService.seedDefaultCategories(invitation.workspace_id, user.id);
+          await accountCategoryService.seedDefaultCategories(invitation.workspace_id, user.id);
         } catch (seedError) {
           logError('Failed to seed default categories for invited admin', seedError);
         }

@@ -364,10 +364,10 @@ export function getStatusBadgeClasses(status: BudgetStatusClassName): string {
 }
 
 /**
- * Get asset update priority
+ * Get account update priority
  * Returns: 'high' (>30 days), 'medium' (>14 days), 'low' (>7 days), 'none' (<=7 days)
  */
-export function getAssetUpdatePriority(
+export function getAccountUpdatePriority(
   daysSinceUpdate: number
 ): 'high' | 'medium' | 'low' | 'none' {
   if (daysSinceUpdate > 30) return 'high';
@@ -377,9 +377,9 @@ export function getAssetUpdatePriority(
 }
 
 /**
- * Format asset type for display
+ * Format account type for display
  */
-export function formatAssetType(type: string): string {
+export function formatAccountType(type: string): string {
   const labels: Record<string, string> = {
     bank_account: 'Bank Account',
     mutual_fund: 'Mutual Fund',

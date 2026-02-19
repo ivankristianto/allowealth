@@ -4,7 +4,7 @@ import {
   generateTestId,
   getSeededTestData,
   TestCategory,
-  TestAsset,
+  TestAccount,
 } from '../../helpers';
 
 /**
@@ -12,7 +12,7 @@ import {
  * Populated in beforeAll hook to avoid hardcoded values.
  */
 let expenseCategories: TestCategory[] = [];
-let assets: TestAsset[] = [];
+let accounts: TestAccount[] = [];
 
 test.describe('Add Expense Transaction', () => {
   /**
@@ -22,14 +22,14 @@ test.describe('Add Expense Transaction', () => {
   test.beforeAll(async ({ request }) => {
     const testData = await getSeededTestData(request);
     expenseCategories = testData.expenseCategories;
-    assets = testData.assets;
+    accounts = testData.accounts;
 
     // Ensure we have test data
     if (expenseCategories.length === 0) {
       throw new Error('No expense categories found in seeded database');
     }
-    if (assets.length === 0) {
-      throw new Error('No assets found in seeded database');
+    if (accounts.length === 0) {
+      throw new Error('No accounts found in seeded database');
     }
   });
 
@@ -41,10 +41,10 @@ test.describe('Add Expense Transaction', () => {
   }
 
   /**
-   * Helper to get an asset by index, with fallback to first available.
+   * Helper to get an account by index, with fallback to first available.
    */
-  function getAsset(index: number): TestAsset {
-    return assets[index % assets.length];
+  function getAccount(index: number): TestAccount {
+    return accounts[index % accounts.length];
   }
 
   /**
@@ -52,7 +52,7 @@ test.describe('Add Expense Transaction', () => {
    *
    * Flow:
    * 1. Navigate to add transaction page with expense type pre-selected
-   * 2. Fill form with expense details (amount, category, asset, date, description)
+   * 2. Fill form with expense details (amount, category, account, date, description)
    * 3. Submit the form
    * 4. Verify redirect to transactions list page
    * 5. Verify success toast notification
@@ -70,7 +70,7 @@ test.describe('Add Expense Transaction', () => {
 
     // Use seeded data
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page with expense type pre-selected
     await addTransactionPage.gotoAddTransaction('expense');
@@ -80,7 +80,7 @@ test.describe('Add Expense Transaction', () => {
       type: 'expense',
       amount: expenseAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: expenseDescription,
       date: new Date().toISOString().split('T')[0], // Today's date
     });
@@ -99,7 +99,7 @@ test.describe('Add Expense Transaction', () => {
   /**
    * Successfully add a small expense with all required fields.
    *
-   * Tests that all required fields (amount, category, asset, description/title) are provided.
+   * Tests that all required fields (amount, category, account, description/title) are provided.
    */
   test('successfully add expense with required fields only', async ({
     addTransactionPage,
@@ -113,7 +113,7 @@ test.describe('Add Expense Transaction', () => {
 
     // Use seeded data
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
@@ -123,7 +123,7 @@ test.describe('Add Expense Transaction', () => {
       type: 'expense',
       amount: expenseAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: expenseDescription, // Title is a required field
     });
 
@@ -150,9 +150,9 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Large Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.LARGE_EXPENSE; // 1,000,000 IDR
 
-    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    // Use first seeded category and account (avoid ordering issues with higher indices)
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
@@ -162,7 +162,7 @@ test.describe('Add Expense Transaction', () => {
       type: 'expense',
       amount: expenseAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: expenseDescription,
     });
 
@@ -196,9 +196,9 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Past Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.MEDIUM_EXPENSE;
 
-    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    // Use first seeded category and account (avoid ordering issues with higher indices)
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
@@ -208,7 +208,7 @@ test.describe('Add Expense Transaction', () => {
       type: 'expense',
       amount: expenseAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: expenseDescription,
       date: formattedDate,
     });
@@ -242,7 +242,7 @@ test.describe('Add Expense Transaction', () => {
 
     // Use seeded data
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction page with expense pre-selected
     await addTransactionPage.gotoAddTransaction('expense');
@@ -252,7 +252,7 @@ test.describe('Add Expense Transaction', () => {
       type: 'expense',
       amount: expenseAmount,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: expenseDescription,
     });
 
@@ -301,7 +301,7 @@ test.describe('Add Expense Transaction', () => {
       },
     ];
 
-    const defaultAsset = getAsset(0);
+    const defaultAccount = getAccount(0);
 
     for (const expense of testExpenses) {
       // Navigate to add transaction page
@@ -313,7 +313,7 @@ test.describe('Add Expense Transaction', () => {
         type: 'expense',
         amount: expense.amount,
         categoryName: getCategory(expense.categoryIndex).name,
-        assetName: defaultAsset.name,
+        accountName: defaultAccount.name,
         description,
       });
 
@@ -334,7 +334,7 @@ test.describe('Add Expense Transaction', () => {
   test('verify form is reset after expense submission', async ({ addTransactionPage }) => {
     // Use seeded data
     const category = getCategory(0);
-    const asset = getAsset(0);
+    const account = getAccount(0);
 
     // Navigate to add transaction
     await addTransactionPage.gotoAddTransaction('expense');
@@ -344,14 +344,14 @@ test.describe('Add Expense Transaction', () => {
       type: 'expense',
       amount: TEST_AMOUNTS.MEDIUM_EXPENSE,
       categoryName: category.name,
-      assetName: asset.name,
+      accountName: account.name,
       description: 'Test Expense',
     });
 
     // Verify form values were filled
     expect(await addTransactionPage.getAmountValue()).toBeTruthy();
     expect(await addTransactionPage.getSelectedCategory()).toBeTruthy();
-    expect(await addTransactionPage.getSelectedAsset()).toBeTruthy();
+    expect(await addTransactionPage.getSelectedAccount()).toBeTruthy();
 
     // Submit the form
     await addTransactionPage.submit();

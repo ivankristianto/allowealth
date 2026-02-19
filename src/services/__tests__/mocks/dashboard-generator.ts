@@ -6,17 +6,17 @@
  */
 
 import type {
-  TotalAssets,
+  TotalAccounts,
   MonthlySpent,
   BudgetHealth,
   BudgetAlert,
-  AssetReminder,
+  AccountReminder,
 } from '../../dashboard.service';
 
 /**
- * Mock total assets data
+ * Mock total accounts data
  */
-export interface MockTotalAssets extends TotalAssets {
+export interface MockTotalAccounts extends TotalAccounts {
   userId: string;
 }
 
@@ -39,9 +39,9 @@ export interface MockBudgetHealth extends BudgetHealth {
 }
 
 /**
- * Mock asset reminder data
+ * Mock account reminder data
  */
-export interface MockAssetReminder extends AssetReminder {}
+export interface MockAccountReminder extends AccountReminder {}
 
 /**
  * Mock transaction data
@@ -51,8 +51,8 @@ export interface MockTransaction {
   userId: string;
   categoryId: string;
   categoryName: string;
-  assetId: string;
-  assetName: string;
+  accountId: string;
+  accountName: string;
   type: 'expense' | 'income';
   amount: string;
   currency: 'IDR' | 'USD';
@@ -67,10 +67,10 @@ export interface MockTransaction {
  */
 export interface MockDashboardData {
   userId: string;
-  totalAssets: MockTotalAssets;
+  totalAccounts: MockTotalAccounts;
   monthlySpent: MockMonthlySpent;
   budgetHealth: MockBudgetHealth;
-  assetReminders: MockAssetReminder[];
+  accountReminders: MockAccountReminder[];
   recentTransactions: MockTransaction[];
 }
 
@@ -120,9 +120,9 @@ class SeededRandom {
 }
 
 /**
- * Generate mock total assets data
+ * Generate mock total accounts data
  */
-function generateMockTotalAssets(userId: string, rng: SeededRandom): MockTotalAssets {
+function generateMockTotalAccounts(userId: string, rng: SeededRandom): MockTotalAccounts {
   const idr = rng.nextFloat(10_000_000, 100_000_000);
   const usd = rng.nextFloat(1_000, 10_000);
   const convertedCurrency: 'IDR' | 'USD' = 'IDR';
@@ -228,11 +228,11 @@ function generateMockBudgetHealth(
 }
 
 /**
- * Generate mock asset reminders
+ * Generate mock account reminders
  */
-function generateMockAssetReminders(userId: string, rng: SeededRandom): MockAssetReminder[] {
-  const assetTypes = ['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other'] as const;
-  const assetNames = [
+function generateMockAccountReminders(userId: string, rng: SeededRandom): MockAccountReminder[] {
+  const accountTypes = ['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other'] as const;
+  const accountNames = [
     'Bank BCA',
     'Bank Mandiri',
     'BCA Syariah',
@@ -246,7 +246,7 @@ function generateMockAssetReminders(userId: string, rng: SeededRandom): MockAsse
   ];
 
   const numReminders = rng.nextInt(0, 5);
-  const reminders: MockAssetReminder[] = [];
+  const reminders: MockAccountReminder[] = [];
 
   for (let i = 0; i < numReminders; i++) {
     const daysSinceUpdate = rng.nextInt(8, 60);
@@ -261,14 +261,14 @@ function generateMockAssetReminders(userId: string, rng: SeededRandom): MockAsse
       priority = 'low';
     }
 
-    const assetName = assetNames[i % assetNames.length];
-    const assetType = assetTypes[i % assetTypes.length];
+    const accountName = accountNames[i % accountNames.length];
+    const accountType = accountTypes[i % accountTypes.length];
 
-    if (assetName && assetType) {
+    if (accountName && accountType) {
       reminders.push({
-        assetId: `asset-${userId}-${i}`,
-        assetName,
-        assetType,
+        accountId: `account-${userId}-${i}`,
+        accountName,
+        accountType,
         lastUpdated,
         daysSinceUpdate,
         priority,
@@ -298,11 +298,11 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
     { id: 'cat-6', name: 'Freelance' },
   ];
 
-  const assets = [
-    { id: 'asset-1', name: 'BCA Savings' },
-    { id: 'asset-2', name: 'Mandiri Checking' },
-    { id: 'asset-3', name: 'GoPay' },
-    { id: 'asset-4', name: 'OVO' },
+  const accounts = [
+    { id: 'account-1', name: 'BCA Savings' },
+    { id: 'account-2', name: 'Mandiri Checking' },
+    { id: 'account-3', name: 'GoPay' },
+    { id: 'account-4', name: 'OVO' },
   ];
 
   const expenseDescriptions = [
@@ -341,7 +341,7 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
     const category = categories[categoryIndex];
     const descriptions = isExpense ? expenseDescriptions : incomeDescriptions;
     const descriptionIndex = rng.nextInt(0, descriptions.length - 1);
-    const assetIndex = rng.nextInt(0, assets.length - 1);
+    const accountIndex = rng.nextInt(0, accounts.length - 1);
     const amount = isExpense
       ? rng.nextFloat(20_000, 2_000_000)
       : rng.nextFloat(5_000_000, 20_000_000);
@@ -353,8 +353,8 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
         userId,
         categoryId: category.id,
         categoryName: category.name,
-        assetId: assets[assetIndex]?.id || 'asset-default',
-        assetName: assets[assetIndex]?.name || 'Default',
+        accountId: accounts[accountIndex]?.id || 'account-default',
+        accountName: accounts[accountIndex]?.name || 'Default',
         type: isExpense ? 'expense' : 'income',
         amount: amount.toFixed(2),
         currency: 'IDR',
@@ -382,7 +382,7 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
  *
  * @example
  * const data = generateMockDashboardData('user-123');
- * console.log(data.totalAssets); // Total assets data
+ * console.log(data.totalAccounts); // Total accounts data
  * console.log(data.monthlySpent); // Monthly spent data
  * console.log(data.budgetHealth); // Budget health data
  */
@@ -401,21 +401,21 @@ export function generateMockDashboardData(
 
   return {
     userId,
-    totalAssets: generateMockTotalAssets(userId, rng),
+    totalAccounts: generateMockTotalAccounts(userId, rng),
     monthlySpent: generateMockMonthlySpent(userId, currentMonth, currentYear, rng),
     budgetHealth: generateMockBudgetHealth(userId, currentMonth, currentYear, rng),
-    assetReminders: generateMockAssetReminders(userId, rng),
+    accountReminders: generateMockAccountReminders(userId, rng),
     recentTransactions: generateMockRecentTransactions(userId, rng),
   };
 }
 
 /**
- * Generate mock assets array
+ * Generate mock accounts array
  */
-export function generateMockAssets(userId: string, count: number = 5) {
+export function generateMockAccounts(userId: string, count: number = 5) {
   const rng = new SeededRandom(userId);
-  const assetTypes = ['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other'] as const;
-  const assetNames = [
+  const accountTypes = ['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other'] as const;
+  const accountNames = [
     'Bank BCA',
     'Bank Mandiri',
     'BCA Syariah',
@@ -427,10 +427,10 @@ export function generateMockAssets(userId: string, count: number = 5) {
   ];
 
   return Array.from({ length: count }, (_, i) => ({
-    id: `asset-${userId}-${i}`,
+    id: `account-${userId}-${i}`,
     userId,
-    name: assetNames[i % assetNames.length],
-    type: assetTypes[i % assetTypes.length],
+    name: accountNames[i % accountNames.length],
+    type: accountTypes[i % accountTypes.length],
     balance: rng.nextFloat(1_000_000, 50_000_000).toFixed(2),
     currency: 'IDR' as const,
     lastUpdated: new Date(Date.now() - rng.nextInt(0, 60) * 24 * 60 * 60 * 1000),

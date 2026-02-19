@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { reportService, assetService } from '@/services';
+import { reportService, accountService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -109,14 +109,14 @@ export const GET: APIRoute = async (context) => {
       reportData = await reportService.getYearlyReport(auth.workspaceId, year, currency);
     }
 
-    // Fetch asset totals by class for summary cards
-    let totalAssetsIdr = 0;
-    let totalAssetsUsd = 0;
+    // Fetch account totals by class for summary cards
+    let totalAccountsIdr = 0;
+    let totalAccountsUsd = 0;
     let totalDebtIdr = 0;
     let totalDebtUsd = 0;
 
     try {
-      const classTotals = await assetService.getTotalByClass(auth.workspaceId);
+      const classTotals = await accountService.getTotalByClass(auth.workspaceId);
       for (const row of classTotals) {
         const total = parseFloat(row.total || '0');
         if (isNaN(total)) continue;
@@ -124,8 +124,8 @@ export const GET: APIRoute = async (context) => {
           if (row.currency === 'USD') totalDebtUsd += Math.abs(total);
           else totalDebtIdr += Math.abs(total);
         } else {
-          if (row.currency === 'USD') totalAssetsUsd += total;
-          else totalAssetsIdr += total;
+          if (row.currency === 'USD') totalAccountsUsd += total;
+          else totalAccountsIdr += total;
         }
       }
     } catch (error) {
@@ -177,8 +177,8 @@ export const GET: APIRoute = async (context) => {
             budgetHealth,
             expenseCategories,
             currency,
-            totalAssetsIdr,
-            totalAssetsUsd,
+            totalAccountsIdr,
+            totalAccountsUsd,
             totalDebtIdr,
             totalDebtUsd,
           },

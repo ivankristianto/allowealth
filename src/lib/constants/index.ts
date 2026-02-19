@@ -7,7 +7,7 @@
  */
 
 export * from './currency';
-export * from './asset-categories';
+export * from './account-categories';
 export * from './user-meta-keys';
 export * from './workspace-meta-keys';
 export * from './period';

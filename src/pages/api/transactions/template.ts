@@ -5,7 +5,7 @@ import type { APIRoute } from 'astro';
  * Returns a CSV template file with expected column headers and a sample row.
  */
 export const GET: APIRoute = async () => {
-  const headers = ['date', 'type', 'amount', 'currency', 'category', 'asset', 'description'];
+  const headers = ['date', 'type', 'amount', 'currency', 'category', 'account', 'description'];
   const sampleRow = [
     '2025-01-15',
     'expense',

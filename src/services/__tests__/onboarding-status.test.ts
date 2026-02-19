@@ -21,7 +21,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.currency).toBe(false);
     expect(status.categories).toBe(false);
     expect(status.budgets).toBe(false);
-    expect(status.assets).toBe(false);
+    expect(status.accounts).toBe(false);
     expect(status.transactions).toBe(false);
   });
 
@@ -67,21 +67,21 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.budgets).toBe(true);
   });
 
-  it('should detect assets as set when at least one non-deleted asset exists', async () => {
+  it('should detect accounts as set when at least one non-deleted account exists', async () => {
     // Currency not set
     (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce(undefined);
     // No categories
     (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(undefined);
     // No budgets
     (mockDb.query.budgets.findFirst as any).mockResolvedValueOnce(undefined);
-    // Asset exists
-    (mockDb.query.assets.findFirst as any).mockResolvedValueOnce({
-      id: 'asset-1',
+    // Account exists
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce({
+      id: 'account-1',
     });
 
     const status = await workspaceService.getOnboardingStatus('workspace-1');
 
-    expect(status.assets).toBe(true);
+    expect(status.accounts).toBe(true);
   });
 
   it('should detect transactions as set when at least one non-deleted transaction exists', async () => {
@@ -91,8 +91,8 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(undefined);
     // No budgets
     (mockDb.query.budgets.findFirst as any).mockResolvedValueOnce(undefined);
-    // No assets
-    (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(undefined);
+    // No accounts
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(undefined);
     // Transaction exists
     (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce({
       id: 'txn-1',
@@ -111,7 +111,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     });
     (mockDb.query.categories.findFirst as any).mockResolvedValueOnce({ id: 'cat-1' });
     (mockDb.query.budgets.findFirst as any).mockResolvedValueOnce({ id: 'budget-1' });
-    (mockDb.query.assets.findFirst as any).mockResolvedValueOnce({ id: 'asset-1' });
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce({ id: 'account-1' });
     (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce({ id: 'txn-1' });
 
     const status = await workspaceService.getOnboardingStatus('workspace-1');
@@ -119,7 +119,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.currency).toBe(true);
     expect(status.categories).toBe(true);
     expect(status.budgets).toBe(true);
-    expect(status.assets).toBe(true);
+    expect(status.accounts).toBe(true);
     expect(status.transactions).toBe(true);
   });
 });

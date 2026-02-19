@@ -8,7 +8,7 @@ export interface TransactionFormData {
   type: 'expense' | 'income';
   amount: string | number;
   categoryName: string;
-  assetName: string;
+  accountName: string;
   description?: string;
   date?: string;
 }
@@ -48,8 +48,8 @@ export class AddTransactionPage extends BasePage {
     return this.getFormPanel().locator('[data-testid="transaction-category-select"]');
   }
 
-  private get assetSelect(): Locator {
-    return this.getFormPanel().locator('[data-testid="transaction-asset-select"]');
+  private get accountSelect(): Locator {
+    return this.getFormPanel().locator('[data-testid="transaction-account-select"]');
   }
 
   private get dateInput(): Locator {
@@ -147,19 +147,19 @@ export class AddTransactionPage extends BasePage {
     // Click the category chip to trigger validation and enable submit button
     await categoryChip.click();
 
-    // Wait for asset select to have options (poll for option with our asset name)
+    // Wait for account select to have options (poll for option with our account name)
     await expect
       .poll(
         async () => {
-          const options: string[] = await this.assetSelect.locator('option').allTextContents();
-          return options.some((opt) => opt.includes(data.assetName));
+          const options: string[] = await this.accountSelect.locator('option').allTextContents();
+          return options.some((opt) => opt.includes(data.accountName));
         },
-        { timeout: 10000, message: `Asset "${data.assetName}" not found in select options` }
+        { timeout: 10000, message: `Account "${data.accountName}" not found in select options` }
       )
       .toBe(true);
 
-    // Select asset by visible text
-    await this.assetSelect.selectOption({ label: data.assetName });
+    // Select account by visible text
+    await this.accountSelect.selectOption({ label: data.accountName });
 
     // Fill optional date
     if (data.date) {
@@ -258,10 +258,10 @@ export class AddTransactionPage extends BasePage {
   }
 
   /**
-   * Get the currently selected asset.
+   * Get the currently selected account.
    */
-  async getSelectedAsset(): Promise<string> {
-    return this.assetSelect.inputValue();
+  async getSelectedAccount(): Promise<string> {
+    return this.accountSelect.inputValue();
   }
 
   /**

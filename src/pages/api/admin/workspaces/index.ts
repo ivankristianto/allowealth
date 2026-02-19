@@ -8,7 +8,7 @@ import { logError } from '@/lib/logger';
  * GET /api/admin/workspaces
  *
  * Lists all workspaces with aggregated counts (members, transactions,
- * assets, budgets, categories). Supports filtering, sorting, and pagination.
+ * accounts, budgets, categories). Supports filtering, sorting, and pagination.
  * Super admin only.
  *
  * Query params:

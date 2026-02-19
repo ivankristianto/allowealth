@@ -2,7 +2,7 @@ import { test, expect } from '../test.fixture';
 import { TEST_AMOUNTS, generateTestId, generateExpenseData, getCurrentMonth } from '../../helpers';
 import {
   getCategoriesViaAPI,
-  getAssetsViaAPI,
+  getAccountsViaAPI,
   expectSuccessToast,
   setBudgetViaAPI,
 } from '../../helpers';
@@ -23,14 +23,14 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
   // Test data that will be used throughout
   let categoryId: string;
   let categoryName: string;
-  let assetId: string;
-  let assetName: string;
+  let accountId: string;
+  let accountName: string;
   const expenseAmount = TEST_AMOUNTS.MEDIUM_EXPENSE; // 250,000 IDR
   let transactionDescription: string;
 
   /**
    * Setup: Prepare test data before running the test
-   * Gets available categories and assets from the API
+   * Gets available categories and accounts from the API
    */
   test.beforeAll(async ({ request }) => {
     // Get expense categories
@@ -43,13 +43,13 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
     categoryId = foodCategory?.id || categories[0].id;
     categoryName = foodCategory?.name || categories[0].name;
 
-    // Get available assets
-    const assets = await getAssetsViaAPI(request);
-    if (assets.length === 0) {
-      throw new Error('No assets found. Check database seed.');
+    // Get available accounts
+    const accounts = await getAccountsViaAPI(request);
+    if (accounts.length === 0) {
+      throw new Error('No accounts found. Check database seed.');
     }
-    assetId = assets[0].id;
-    assetName = assets[0].name;
+    accountId = accounts[0].id;
+    accountName = accounts[0].name;
 
     // Generate unique description for this test run
     transactionDescription = `E2E Expense Test ${generateTestId()}`;
@@ -86,7 +86,7 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
       type: 'expense',
       amount: expenseAmount,
       categoryName: categoryName,
-      assetName: assetName,
+      accountName: accountName,
       description: transactionDescription,
       date: new Date().toISOString().split('T')[0], // Today's date
     });
@@ -202,7 +202,7 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
       type: 'expense',
       amount: TEST_AMOUNTS.SMALL_EXPENSE, // 50k IDR
       categoryName: categoryName,
-      assetName: assetName,
+      accountName: accountName,
       description: `Budget Test ${generateTestId()}`,
       date: new Date().toISOString().split('T')[0],
     });

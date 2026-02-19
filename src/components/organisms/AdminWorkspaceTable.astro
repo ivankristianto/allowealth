@@ -2,7 +2,7 @@
 /**
  * Admin Workspace Table
  *
- * Displays workspace list in a table with name, status, member/transaction/asset counts,
+ * Displays workspace list in a table with name, status, member/transaction/account counts,
  * and creation date. Each row links to the workspace details page.
  * Uses the Card atom component for design system consistency.
  */
@@ -25,7 +25,7 @@ const { workspaces } = Astro.props;
           <th>Status</th>
           <th>Members</th>
           <th>Transactions</th>
-          <th>Assets</th>
+          <th>Accounts</th>
           <th>Created</th>
         </tr>
       </thead>
@@ -50,7 +50,7 @@ const { workspaces } = Astro.props;
                 </td>
                 <td>{ws.memberCount}</td>
                 <td>{ws.transactionCount}</td>
-                <td>{ws.assetCount}</td>
+                <td>{ws.accountCount}</td>
                 <td>{new Date(ws.createdAt).toLocaleDateString()}</td>
               </tr>
             ))

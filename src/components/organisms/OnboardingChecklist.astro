@@ -58,8 +58,8 @@ const steps: Step[] = [
     id: 4,
     title: 'Add your accounts',
     description: 'Track bank accounts, wallets, or cash',
-    href: '/assets?onboarding=add-asset',
-    complete: status.assets,
+    href: '/accounts?onboarding=add-account',
+    complete: status.accounts,
     unlocked: status.budgets,
   },
   {
@@ -68,7 +68,7 @@ const steps: Step[] = [
     description: 'Log your first expense or income',
     href: '#',
     complete: status.transactions,
-    unlocked: status.assets,
+    unlocked: status.accounts,
   },
 ];
 

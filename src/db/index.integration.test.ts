@@ -19,7 +19,7 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
 import { db, getDb, resetDb } from '@/db';
-import { workspaces, users, categories, assets, transactions } from '@/db/schema';
+import { workspaces, users, categories, accounts, transactions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Test workspace for all test users
@@ -97,12 +97,12 @@ async function createTestDatabase() {
 
   await testDb.insert(categories).values(testCategory).onConflictDoNothing();
 
-  // Insert a test asset
-  const testAsset = {
-    id: 'test-asset-runtime',
+  // Insert a test account
+  const testAccount = {
+    id: 'test-account-runtime',
     workspace_id: TEST_WORKSPACE_ID,
     created_by_user_id: testUser.id,
-    name: 'Test Asset',
+    name: 'Test Account',
     type: 'bank_account' as const,
     account_class: 'liquid' as const,
     balance: '1000000',
@@ -112,7 +112,7 @@ async function createTestDatabase() {
     updated_at: new Date(),
   };
 
-  await testDb.insert(assets).values(testAsset).onConflictDoNothing();
+  await testDb.insert(accounts).values(testAccount).onConflictDoNothing();
 
   // Insert a test transaction
   const testTransaction = {
@@ -120,7 +120,7 @@ async function createTestDatabase() {
     workspace_id: TEST_WORKSPACE_ID,
     created_by_user_id: testUser.id,
     category_id: testCategory.id,
-    asset_id: testAsset.id,
+    account_id: testAccount.id,
     type: 'expense' as const,
     amount: '50000',
     currency: 'IDR' as const,
@@ -132,7 +132,7 @@ async function createTestDatabase() {
 
   await testDb.insert(transactions).values(testTransaction).onConflictDoNothing();
 
-  return { testUser, testCategory, testAsset, testTransaction };
+  return { testUser, testCategory, testAccount, testTransaction };
 }
 
 /**
@@ -150,7 +150,7 @@ async function cleanupTestData() {
     // Table might not exist or data already deleted
   }
   try {
-    await testDb.delete(assets).where(eq(assets.id, 'test-asset-runtime'));
+    await testDb.delete(accounts).where(eq(accounts.id, 'test-account-runtime'));
   } catch {
     // Table might not exist or data already deleted
   }
@@ -291,7 +291,7 @@ describe('Database Integration Tests', () => {
     });
 
     it('should handle transaction operations correctly', async () => {
-      const { testUser, testCategory, testAsset } = await createTestDatabase();
+      const { testUser, testCategory, testAccount } = await createTestDatabase();
 
       // Test transaction
       const result = await db.transaction(async (tx: any) => {
@@ -303,7 +303,7 @@ describe('Database Integration Tests', () => {
             workspace_id: TEST_WORKSPACE_ID,
             created_by_user_id: testUser.id,
             category_id: testCategory.id,
-            asset_id: testAsset.id,
+            account_id: testAccount.id,
             type: 'expense',
             amount: '100000',
             currency: 'IDR',
@@ -393,11 +393,11 @@ describe('Database Integration Tests', () => {
       const result = await service.getDashboardData('test-user-runtime-agnostic');
 
       // Should return default values for non-existent data
-      expect(result).toHaveProperty('totalAssets');
-      expect(result.totalAssets).toHaveProperty('idr');
-      expect(result.totalAssets).toHaveProperty('usd');
-      expect(result.totalAssets).toHaveProperty('converted');
-      expect(result.totalAssets.idr).toBe('0');
+      expect(result).toHaveProperty('totalAccounts');
+      expect(result.totalAccounts).toHaveProperty('idr');
+      expect(result.totalAccounts).toHaveProperty('usd');
+      expect(result.totalAccounts).toHaveProperty('converted');
+      expect(result.totalAccounts.idr).toBe('0');
     });
 
     it('should allow services to be imported in middleware context', async () => {
@@ -426,8 +426,8 @@ describe('Database Integration Tests', () => {
       expect(schemaModule.users).toBeDefined();
       expect(schemaModule.categories).toBeDefined();
       expect(schemaModule.transactions).toBeDefined();
-      expect(schemaModule.assets).toBeDefined();
-      expect(schemaModule.assetHistory).toBeDefined();
+      expect(schemaModule.accounts).toBeDefined();
+      expect(schemaModule.accountHistory).toBeDefined();
       expect(schemaModule.exchangeRates).toBeDefined();
       expect(schemaModule.passwordResetTokens).toBeDefined();
       expect(schemaModule.sessions).toBeDefined();
@@ -441,7 +441,7 @@ describe('Database Integration Tests', () => {
       // Verify schema re-exports
       expect(dbModule.users).toBeDefined();
       expect(dbModule.categories).toBeDefined();
-      expect(dbModule.assets).toBeDefined();
+      expect(dbModule.accounts).toBeDefined();
       expect(dbModule.transactions).toBeDefined();
     });
   });

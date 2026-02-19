@@ -30,7 +30,7 @@ CSV Import page for bulk importing transactions from a CSV file.
 - Style: \`alert-info mb-6\`
 - Icon: Info (16px) with \`shrink-0\`
 - Heading: "CSV Format Requirements" (h3, font-bold)
-- Required columns list: date, type, amount, currency, category, asset, description
+- Required columns list: date, type, amount, currency, category, account, description
 
 ### Required CSV Columns
 
@@ -41,7 +41,7 @@ CSV Import page for bulk importing transactions from a CSV file.
 | amount | Numeric value |
 | currency | IDR or USD |
 | category | Category name |
-| asset | Asset/account name |
+| account | Account/account name |
 | description | Transaction description |
 
 ### CSVImportForm Integration
@@ -124,7 +124,7 @@ const createImportPage = (): HTMLElement => {
         <li>amount - Numeric value</li>
         <li>currency - IDR or USD</li>
         <li>category - Category name</li>
-        <li>asset - Asset/account name</li>
+        <li>account - Account/account name</li>
         <li>description - Transaction description</li>
       </ul>
     </div>

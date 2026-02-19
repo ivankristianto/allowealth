@@ -29,8 +29,8 @@ describe('transaction utilities', () => {
         icon: 'shopping-cart',
         color: 'bg-info',
       },
-      asset: {
-        id: 'asset-1',
+      account: {
+        id: 'account-1',
         name: 'Cash',
         type: 'cash',
       },
@@ -54,13 +54,13 @@ describe('transaction utilities', () => {
       expect(result.category.type).toBe('expense');
     });
 
-    test('transforms asset correctly', () => {
+    test('transforms account correctly', () => {
       const result = transformTransaction(mockDrizzleTransaction);
 
-      expect(result.asset).toBeDefined();
-      expect(result.asset.id).toBe('asset-1');
-      expect(result.asset.name).toBe('Cash');
-      expect(result.asset.type).toBe('cash');
+      expect(result.account).toBeDefined();
+      expect(result.account.id).toBe('account-1');
+      expect(result.account.name).toBe('Cash');
+      expect(result.account.type).toBe('cash');
     });
 
     test('handles null description', () => {

@@ -98,8 +98,8 @@ function buildQueryString(
     params.set('category_ids', filters.category_ids.join(','));
   }
 
-  if (filters.asset_id) {
-    params.set('asset_id', filters.asset_id);
+  if (filters.account_id) {
+    params.set('account_id', filters.account_id);
   }
 
   if (filters.currency) {

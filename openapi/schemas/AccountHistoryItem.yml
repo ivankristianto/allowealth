@@ -1,0 +1,17 @@
+# Account History Item Schema
+AccountHistoryItem:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    balance:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+    notes:
+      oneOf:
+        - type: string
+        - type: 'null'
+    recorded_at:
+      type: string
+      format: date-time

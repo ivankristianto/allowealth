@@ -22,7 +22,7 @@ const isActive = (href: string, currentPath: string): boolean => {
 // Navigation items configuration (mirrors component)
 const navItems = [
   { href: '/transactions', label: 'Activity' },
-  { href: '/assets', label: 'Assets' },
+  { href: '/accounts', label: 'Accounts' },
   { href: '/budget', label: 'Budgets' },
   { href: '/reports', label: 'Reports' },
 ];
@@ -31,15 +31,15 @@ describe('MobileNavigation', () => {
   describe('isActive function', () => {
     it('should return true for exact path match', () => {
       expect(isActive('/transactions', '/transactions')).toBe(true);
-      expect(isActive('/assets', '/assets')).toBe(true);
+      expect(isActive('/accounts', '/accounts')).toBe(true);
       expect(isActive('/budget', '/budget')).toBe(true);
       expect(isActive('/reports', '/reports')).toBe(true);
     });
 
     it('should return false for non-matching paths', () => {
-      expect(isActive('/transactions', '/assets')).toBe(false);
+      expect(isActive('/transactions', '/accounts')).toBe(false);
       expect(isActive('/budget', '/reports')).toBe(false);
-      expect(isActive('/assets', '/transactions')).toBe(false);
+      expect(isActive('/accounts', '/transactions')).toBe(false);
     });
 
     it('should handle dashboard root path', () => {
@@ -49,7 +49,7 @@ describe('MobileNavigation', () => {
 
     it('should handle nested paths (child routes)', () => {
       expect(isActive('/transactions', '/transactions/add')).toBe(true);
-      expect(isActive('/assets', '/assets/123')).toBe(true);
+      expect(isActive('/accounts', '/accounts/123')).toBe(true);
       expect(isActive('/budget', '/budget/history')).toBe(true);
       expect(isActive('/reports', '/reports/custom')).toBe(true);
     });
@@ -57,7 +57,7 @@ describe('MobileNavigation', () => {
     it('should not match partial path names', () => {
       // /transactions should not match /transactionsExtra
       expect(isActive('/transactions', '/transactionsExtra')).toBe(false);
-      expect(isActive('/assets', '/assetsManager')).toBe(false);
+      expect(isActive('/accounts', '/accountsManager')).toBe(false);
     });
 
     it('should not match similar but different paths', () => {
@@ -73,12 +73,12 @@ describe('MobileNavigation', () => {
 
     it('should have correct hrefs for all items', () => {
       const hrefs = navItems.map((item) => item.href);
-      expect(hrefs).toEqual(['/transactions', '/assets', '/budget', '/reports']);
+      expect(hrefs).toEqual(['/transactions', '/accounts', '/budget', '/reports']);
     });
 
     it('should have correct labels for all items', () => {
       const labels = navItems.map((item) => item.label);
-      expect(labels).toEqual(['Activity', 'Assets', 'Budgets', 'Reports']);
+      expect(labels).toEqual(['Activity', 'Accounts', 'Budgets', 'Reports']);
     });
 
     it('should have non-empty labels for accessibility', () => {
@@ -115,7 +115,7 @@ describe('MobileNavigation', () => {
 
     it('should handle deeply nested paths', () => {
       expect(isActive('/transactions', '/transactions/edit/123')).toBe(true);
-      expect(isActive('/assets', '/assets/history/2024/01')).toBe(true);
+      expect(isActive('/accounts', '/accounts/history/2024/01')).toBe(true);
     });
 
     it('should handle paths with trailing slashes as nested', () => {

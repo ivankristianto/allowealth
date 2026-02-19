@@ -30,7 +30,7 @@ const meta: Meta = {
 | Search | text input | Free text with Search icon |
 | Type | select | All, Income, Expense |
 | Category | select | Dynamic from categories |
-| Asset | select | Dynamic from assets |
+| Account | select | Dynamic from accounts |
 | Date From | date | Date picker |
 | Date To | date | Date picker |
 
@@ -78,11 +78,11 @@ const meta: Meta = {
 - **searchQuery**: Initial search text
 - **selectedType**: all | income | expense
 - **selectedCategory**: Category ID or null
-- **selectedAsset**: Asset ID or null
+- **selectedAccount**: Account ID or null
 - **dateFrom**: Start date filter
 - **dateTo**: End date filter
 - **categories**: Array of category options
-- **assets**: Array of asset options
+- **accounts**: Array of account options
         `,
       },
     },
@@ -109,7 +109,7 @@ function createTransactionFilters(args: {
   searchQuery?: string;
   selectedType?: 'all' | 'income' | 'expense';
   selectedCategory?: string;
-  selectedAsset?: string;
+  selectedAccount?: string;
   dateFrom?: string;
   dateTo?: string;
 }): HTMLElement {
@@ -117,7 +117,7 @@ function createTransactionFilters(args: {
     searchQuery = '',
     selectedType = 'all',
     selectedCategory = '',
-    selectedAsset = '',
+    selectedAccount = '',
     dateFrom = '',
     dateTo = '',
   } = args;
@@ -184,22 +184,22 @@ function createTransactionFilters(args: {
   `;
   grid.appendChild(categoryGroup);
 
-  // Asset filter
-  const assetGroup = document.createElement('div');
-  assetGroup.className = 'form-control';
-  assetGroup.innerHTML = `
-    <label class="label" for="asset">
-      <span class="label-text">Asset</span>
+  // Account filter
+  const accountGroup = document.createElement('div');
+  accountGroup.className = 'form-control';
+  accountGroup.innerHTML = `
+    <label class="label" for="account">
+      <span class="label-text">Account</span>
     </label>
-    <select id="asset" name="asset" class="select select-bordered h-10 bg-base-200 focus:ring-2 focus:ring-accent focus:outline-none w-full">
-      <option value="" ${!selectedAsset ? 'selected' : ''}>All Assets</option>
-      <option value="1" ${selectedAsset === '1' ? 'selected' : ''}>Cash</option>
-      <option value="2" ${selectedAsset === '2' ? 'selected' : ''}>BCA Savings</option>
-      <option value="3" ${selectedAsset === '3' ? 'selected' : ''}>Mandiri Checking</option>
-      <option value="4" ${selectedAsset === '4' ? 'selected' : ''}>GoPay</option>
+    <select id="account" name="account" class="select select-bordered h-10 bg-base-200 focus:ring-2 focus:ring-accent focus:outline-none w-full">
+      <option value="" ${!selectedAccount ? 'selected' : ''}>All Accounts</option>
+      <option value="1" ${selectedAccount === '1' ? 'selected' : ''}>Cash</option>
+      <option value="2" ${selectedAccount === '2' ? 'selected' : ''}>BCA Savings</option>
+      <option value="3" ${selectedAccount === '3' ? 'selected' : ''}>Mandiri Checking</option>
+      <option value="4" ${selectedAccount === '4' ? 'selected' : ''}>GoPay</option>
     </select>
   `;
-  grid.appendChild(assetGroup);
+  grid.appendChild(accountGroup);
 
   // Date From filter
   const dateFromGroup = document.createElement('div');
@@ -286,7 +286,7 @@ export const FullyFiltered: StoryObj = {
     searchQuery: 'groceries',
     selectedType: 'expense',
     selectedCategory: '1',
-    selectedAsset: '2',
+    selectedAccount: '2',
     dateFrom: '2024-01-01',
     dateTo: '2024-01-31',
   },

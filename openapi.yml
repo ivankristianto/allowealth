@@ -3,7 +3,7 @@ info:
   title: Expenses API
   description: |
     Personal and family financial application API for expense tracking, budgeting,
-    asset management, and financial forecasting.
+    account management, and financial forecasting.
 
     **Authentication:**
     Most endpoints require session-based authentication via HTTP-only session cookies.
@@ -56,8 +56,8 @@ tags:
     description: Transaction management (income and expenses)
   - name: Categories
     description: Category management for budgeting
-  - name: Assets
-    description: Asset tracking and management
+  - name: Accounts
+    description: Account tracking and management
   - name: Budget
     description: Budget overview and alerts
   - name: Forecast
@@ -133,27 +133,27 @@ paths:
   /api/categories/{id}:
     $ref: './openapi/paths/categories.yml#/paths/~1api~1categories~1{id}'
 
-  /api/asset-categories:
-    $ref: './openapi/paths/asset-categories.yml#/paths/~1api~1asset-categories'
-  /api/asset-categories/{id}:
-    $ref: './openapi/paths/asset-categories.yml#/paths/~1api~1asset-categories~1{id}'
+  /api/account-categories:
+    $ref: './openapi/paths/account-categories.yml#/paths/~1api~1account-categories'
+  /api/account-categories/{id}:
+    $ref: './openapi/paths/account-categories.yml#/paths/~1api~1account-categories~1{id}'
 
-  /api/assets:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets'
-  /api/assets/{id}:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}'
-  /api/assets/{id}/balance:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1balance'
-  /api/assets/{id}/history:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1history'
-  /api/assets/closed:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1closed'
-  /api/assets/{id}/close:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1close'
-  /api/assets/{id}/reopen:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1reopen'
-  /api/assets/transfer:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1transfer'
+  /api/accounts:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts'
+  /api/accounts/{id}:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}'
+  /api/accounts/{id}/balance:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1balance'
+  /api/accounts/{id}/history:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1history'
+  /api/accounts/closed:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1closed'
+  /api/accounts/{id}/close:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1close'
+  /api/accounts/{id}/reopen:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1reopen'
+  /api/accounts/transfer:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1transfer'
   # Budget CRUD endpoints (new)
   /api/budgets:
     $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets'
@@ -309,35 +309,35 @@ components:
     CategoriesListResponse:
       $ref: './openapi/schemas/CategoriesListResponse.yml#/CategoriesListResponse'
 
-    # Asset Category Schemas
-    AssetCategory:
-      $ref: './openapi/schemas/AssetCategory.yml#/AssetCategory'
-    CreateAssetCategoryRequest:
-      $ref: './openapi/schemas/CreateAssetCategoryRequest.yml#/CreateAssetCategoryRequest'
-    UpdateAssetCategoryRequest:
-      $ref: './openapi/schemas/UpdateAssetCategoryRequest.yml#/UpdateAssetCategoryRequest'
-    AssetCategoryResponse:
-      $ref: './openapi/schemas/AssetCategoryResponse.yml#/AssetCategoryResponse'
-    AssetCategoriesListResponse:
-      $ref: './openapi/schemas/AssetCategoriesListResponse.yml#/AssetCategoriesListResponse'
+    # Account Category Schemas
+    AccountCategory:
+      $ref: './openapi/schemas/AccountCategory.yml#/AccountCategory'
+    CreateAccountCategoryRequest:
+      $ref: './openapi/schemas/CreateAccountCategoryRequest.yml#/CreateAccountCategoryRequest'
+    UpdateAccountCategoryRequest:
+      $ref: './openapi/schemas/UpdateAccountCategoryRequest.yml#/UpdateAccountCategoryRequest'
+    AccountCategoryResponse:
+      $ref: './openapi/schemas/AccountCategoryResponse.yml#/AccountCategoryResponse'
+    AccountCategoriesListResponse:
+      $ref: './openapi/schemas/AccountCategoriesListResponse.yml#/AccountCategoriesListResponse'
 
-    # Asset Schemas
-    Asset:
-      $ref: './openapi/schemas/Asset.yml#/Asset'
-    CreateAssetRequest:
-      $ref: './openapi/schemas/CreateAssetRequest.yml#/CreateAssetRequest'
-    UpdateAssetRequest:
-      $ref: './openapi/schemas/UpdateAssetRequest.yml#/UpdateAssetRequest'
-    UpdateAssetBalanceRequest:
-      $ref: './openapi/schemas/UpdateAssetBalanceRequest.yml#/UpdateAssetBalanceRequest'
-    AssetResponse:
-      $ref: './openapi/schemas/AssetResponse.yml#/AssetResponse'
-    AssetsListResponse:
-      $ref: './openapi/schemas/AssetsListResponse.yml#/AssetsListResponse'
-    AssetHistoryItem:
-      $ref: './openapi/schemas/AssetHistoryItem.yml#/AssetHistoryItem'
-    AssetHistoryListResponse:
-      $ref: './openapi/schemas/AssetHistoryListResponse.yml#/AssetHistoryListResponse'
+    # Account Schemas
+    Account:
+      $ref: './openapi/schemas/Account.yml#/Account'
+    CreateAccountRequest:
+      $ref: './openapi/schemas/CreateAccountRequest.yml#/CreateAccountRequest'
+    UpdateAccountRequest:
+      $ref: './openapi/schemas/UpdateAccountRequest.yml#/UpdateAccountRequest'
+    UpdateAccountBalanceRequest:
+      $ref: './openapi/schemas/UpdateAccountBalanceRequest.yml#/UpdateAccountBalanceRequest'
+    AccountResponse:
+      $ref: './openapi/schemas/AccountResponse.yml#/AccountResponse'
+    AccountsListResponse:
+      $ref: './openapi/schemas/AccountsListResponse.yml#/AccountsListResponse'
+    AccountHistoryItem:
+      $ref: './openapi/schemas/AccountHistoryItem.yml#/AccountHistoryItem'
+    AccountHistoryListResponse:
+      $ref: './openapi/schemas/AccountHistoryListResponse.yml#/AccountHistoryListResponse'
     # Budget Schemas
     Budget:
       $ref: './openapi/schemas/Budget.yml#/Budget'
