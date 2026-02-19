@@ -6,13 +6,18 @@ const main = defineCommand({
     description: 'Allowealth CLI — manage workspaces, database, deployments, and admin tasks',
   },
   args: {
-    prod: {
-      type: 'boolean',
-      description: 'Use production environment (.env.production)',
+    target: {
+      type: 'string',
+      description: 'Database target: sqlite (default), d1, d1-local, postgres',
+      default: 'sqlite',
     },
   },
   async setup({ args }) {
-    if (args.prod) {
+    const { validateTarget } = await import('./lib/target');
+    const target = validateTarget(args.target as string);
+    process.env.AW_TARGET = target;
+
+    if (target === 'postgres') {
       const { loadEnvFile } = await import('./lib/env-loader');
       loadEnvFile('.env.production');
     }

@@ -82,52 +82,61 @@ See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
 ## Allowealth CLI (`aw`)
 
-The `aw` CLI provides a unified interface for admin and operational commands. Use `--prod` to target production.
+The `aw` CLI provides a unified interface for admin and operational commands. Use `--target` to select the database backend.
+
+### Target Values
+
+| Target     | Database               | Env loading                  | Auth                       |
+| ---------- | ---------------------- | ---------------------------- | -------------------------- |
+| `sqlite`   | Local SQLite (default) | None                         | N/A                        |
+| `d1`       | Remote Cloudflare D1   | None                         | wrangler handles it        |
+| `d1-local` | Local D1 emulation     | None                         | wrangler --local           |
+| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env |
 
 ### Quick Reference
 
-| Command                       | Description                        |
-| ----------------------------- | ---------------------------------- |
-| `bun run aw --help`           | Show all commands                  |
-| `bun run aw <command> --help` | Show subcommand help               |
-| `bun run aw --prod <command>` | Run against production environment |
+| Command                                  | Description            |
+| ---------------------------------------- | ---------------------- |
+| `bun run aw --help`                      | Show all commands      |
+| `bun run aw <command> --help`            | Show subcommand help   |
+| `bun run aw --target postgres <command>` | Run against PostgreSQL |
+| `bun run aw --target d1 <command>`       | Run against remote D1  |
 
 ### Workspace Management
 
-| Command                                                                          | Description                            |
-| -------------------------------------------------------------------------------- | -------------------------------------- |
-| `bun run aw workspace create --name "Name" --email admin@example.com`            | Create workspace with admin invitation |
-| `bun run aw workspace create-d1 --name "Name" --email admin@example.com`         | Create workspace on D1 (remote)        |
-| `bun run aw workspace create-d1 --name "Name" --email admin@example.com --local` | Create workspace on D1 (local)         |
-| `bun run aw workspace list`                                                      | List all workspaces                    |
-| `bun run aw workspace delete --id <id>`                                          | Delete workspace (with confirmation)   |
-| `bun run aw workspace delete --id <id> --force`                                  | Delete workspace (skip confirmation)   |
-
-Production: `bun run aw --prod workspace list`
+| Command                                                                                 | Description                                |
+| --------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `bun run aw workspace create --name "Name" --email admin@example.com`                   | Create workspace (SQLite)                  |
+| `bun run aw --target postgres workspace create --name "Name" --email admin@example.com` | Create workspace (PostgreSQL)              |
+| `bun run aw --target d1 workspace create --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)            |
+| `bun run aw --target d1-local workspace create --name "Name" --email admin@example.com` | Create workspace on D1 (local)             |
+| `bun run aw workspace list`                                                             | List all workspaces (sqlite/postgres only) |
+| `bun run aw workspace delete --id <id>`                                                 | Delete workspace (sqlite/postgres only)    |
+| `bun run aw workspace delete --id <id> --force`                                         | Delete workspace (skip confirmation)       |
 
 ### Database
 
-| Command                              | Description                                |
-| ------------------------------------ | ------------------------------------------ |
-| `bun run aw db migrate`              | Apply pending migrations (SQLite)          |
-| `bun run aw --prod db migrate`       | Apply pending migrations (PostgreSQL)      |
-| `bun run aw db migrate --d1`         | Auto-apply pending migrations to remote D1 |
-| `bun run aw db migrate --d1 --local` | Auto-apply pending migrations to local D1  |
-| `bun run aw db generate`             | Generate migration from schema changes     |
-| `bun run aw db push`                 | Push schema directly (dev only)            |
-| `bun run aw db studio`               | Open Drizzle Studio                        |
-| `bun run aw db seed`                 | Seed with demo data                        |
-| `bun run aw db reset`                | Delete + push + seed (dev only)            |
-| `bun run aw db empty`                | Truncate all data                          |
+| Command                                   | Description                                |
+| ----------------------------------------- | ------------------------------------------ |
+| `bun run aw db migrate`                   | Apply pending migrations (SQLite)          |
+| `bun run aw --target postgres db migrate` | Apply pending migrations (PostgreSQL)      |
+| `bun run aw --target d1 db migrate`       | Apply pending migrations to remote D1      |
+| `bun run aw --target d1-local db migrate` | Apply pending migrations to local D1       |
+| `bun run aw db generate`                  | Generate migration from schema changes     |
+| `bun run aw db push`                      | Push schema directly (dev only)            |
+| `bun run aw db studio`                    | Open Drizzle Studio                        |
+| `bun run aw db seed`                      | Seed with demo data (sqlite/postgres only) |
+| `bun run aw db reset`                     | Delete + push + seed (sqlite only)         |
+| `bun run aw db empty`                     | Truncate all data (sqlite/postgres only)   |
 
 ### Admin & Security
 
-| Command                                                                            | Description                   |
-| ---------------------------------------------------------------------------------- | ----------------------------- |
-| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin   |
-| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key              |
-| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate DB password            |
-| `bun run aw admin generate-email-key`                                              | Generate email encryption key |
+| Command                                                                            | Description                                        |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin (sqlite/postgres only) |
+| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key (sqlite/postgres only)            |
+| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate DB password                                 |
+| `bun run aw admin generate-email-key`                                              | Generate email encryption key                      |
 
 ### Deploy
 

@@ -7,20 +7,12 @@ export default defineCommand({
   subCommands: {
     migrate: defineCommand({
       meta: { name: 'migrate', description: 'Apply pending database migrations' },
-      args: {
-        d1: {
-          type: 'boolean',
-          description: 'Migrate Cloudflare D1 database instead of local/Postgres',
-        },
-        local: {
-          type: 'boolean',
-          description: 'Target local D1 instead of remote (only with --d1)',
-        },
-      },
-      async run({ args }) {
-        if (args.d1) {
+      async run() {
+        const { isD1, isD1Local } = await import('../lib/target');
+
+        if (isD1()) {
           const { migrateD1 } = await import('../lib/d1-migrate');
-          await migrateD1({ local: Boolean(args.local) });
+          await migrateD1({ local: isD1Local() });
         } else {
           exec('drizzle-kit', ['migrate']);
         }
@@ -46,13 +38,23 @@ export default defineCommand({
     }),
     seed: defineCommand({
       meta: { name: 'seed', description: 'Seed database with demo data' },
-      run() {
+      async run() {
+        const { isD1 } = await import('../lib/target');
+        if (isD1()) {
+          console.error('Error: "db seed" is not supported for D1 targets.');
+          process.exit(1);
+        }
         exec('bun', ['run', 'src/db/seed.ts']);
       },
     }),
     reset: defineCommand({
       meta: { name: 'reset', description: 'Delete SQLite DB, push schema, and seed (dev only)' },
-      run() {
+      async run() {
+        const { getTarget } = await import('../lib/target');
+        if (getTarget() !== 'sqlite') {
+          console.error('Error: "db reset" is only supported for the sqlite target.');
+          process.exit(1);
+        }
         console.log('Resetting database...');
         exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
         exec('mkdir', ['-p', 'db']);
@@ -62,7 +64,12 @@ export default defineCommand({
     }),
     empty: defineCommand({
       meta: { name: 'empty', description: 'Truncate all data (preserve schema)' },
-      run() {
+      async run() {
+        const { isD1 } = await import('../lib/target');
+        if (isD1()) {
+          console.error('Error: "db empty" is not supported for D1 targets.');
+          process.exit(1);
+        }
         exec('bun', ['run', 'src/db/empty.ts']);
       },
     }),

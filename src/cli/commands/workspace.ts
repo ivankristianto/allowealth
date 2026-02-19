@@ -41,15 +41,8 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        // Lazy imports to avoid loading DB at CLI startup
-        const { db } = await import('@/db');
-        const { WorkspaceService } = await import('@/services/workspace.service');
-        const { WorkspaceMetaService } = await import('@/services/workspace-meta.service');
-        const { WorkspaceInvitationService } =
-          await import('@/services/workspace-invitation.service');
-        const { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } =
-          await import('@/lib/constants/workspace-meta-keys');
-        const { getEnv } = await import('@/lib/env');
+        const { getTarget, isD1, isD1Local } = await import('../lib/target');
+        const target = getTarget();
 
         let email = (args.email as string | undefined)?.trim();
         if (!email) {
@@ -61,153 +54,137 @@ export default defineCommand({
         }
         const normalizedEmail = email.toLowerCase();
 
-        console.log('\nCreating workspace...');
+        if (isD1()) {
+          // D1 path: use wrangler to execute SQL directly
+          const { execFileSync } = await import('child_process');
+          const { nanoid } = await import('nanoid');
 
-        const workspaceService = new WorkspaceService(db);
-        const workspace = await workspaceService.create({ name: args.name as string });
-        console.log(`  Created workspace: ${workspace.name} (${workspace.id})`);
+          const D1_DATABASE_NAME = 'allowealth-db';
+          const TOKEN_LENGTH = 64;
+          const INVITATION_EXPIRY_DAYS = 7;
+          const INVITATION_EXPIRY_MS = INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+          const local = isD1Local();
 
-        const metaService = new WorkspaceMetaService(db);
-        const currency =
-          (args.currency as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY];
-        await metaService.set(workspace.id, WORKSPACE_META_KEYS.CURRENCY, currency);
+          console.log(`\nCreate Workspace (D1)`);
+          console.log(`Target: ${local ? 'local' : 'remote'} D1\n`);
+          console.log('Creating workspace...');
 
-        const weekStart =
-          (args['week-start'] as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
-        await metaService.set(workspace.id, WORKSPACE_META_KEYS.WEEK_START, weekStart);
+          const sqlEscape = (v: string) => v.replace(/'/g, "''");
+          const d1Execute = (sql: string) => {
+            execFileSync(
+              'wrangler',
+              ['d1', 'execute', D1_DATABASE_NAME, local ? '--local' : '--remote', '--command', sql],
+              { stdio: 'inherit' }
+            );
+          };
 
-        const compactNumbers =
-          (args['compact-numbers'] as string) ||
-          WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS];
-        await metaService.set(workspace.id, WORKSPACE_META_KEYS.COMPACT_NUMBERS, compactNumbers);
+          const workspaceId = nanoid();
+          const invitationId = nanoid();
+          const token = nanoid(TOKEN_LENGTH);
+          const now = Date.now();
+          const expiresAt = now + INVITATION_EXPIRY_MS;
+          const name = args.name as string;
+          const currency = args.currency as string;
+          const weekStart = args['week-start'] as string;
+          const compactNumbers = args['compact-numbers'] as string;
 
-        console.log(`  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
-
-        const invitationService = new WorkspaceInvitationService(db);
-        const invitation = await invitationService.create({
-          workspaceId: workspace.id,
-          email: normalizedEmail,
-          role: 'admin',
-        });
-
-        const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
-        const signupLink = `${baseUrl}/signup?token=${invitation.token}`;
-
-        console.log(`  Created admin invitation for: ${normalizedEmail}`);
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('Workspace created successfully!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`\nInvitation link:\n  ${signupLink}\n`);
-      },
-    }),
-
-    'create-d1': defineCommand({
-      meta: {
-        name: 'create-d1',
-        description: 'Create workspace on Cloudflare D1 via wrangler',
-      },
-      args: {
-        name: { type: 'string', alias: 'n', description: 'Workspace name', required: true },
-        email: { type: 'string', alias: 'e', description: 'Admin invitation email' },
-        currency: { type: 'string', alias: 'c', description: 'Default currency', default: 'IDR' },
-        'week-start': {
-          type: 'string',
-          alias: 'w',
-          description: 'Week start day (monday or sunday)',
-          default: 'monday',
-        },
-        'compact-numbers': {
-          type: 'string',
-          description: 'Compact number formatting (true or false)',
-          default: 'true',
-        },
-        local: {
-          type: 'boolean',
-          description: 'Execute against local D1 instead of remote',
-        },
-      },
-      async run({ args }) {
-        const { execFileSync } = await import('child_process');
-        const { nanoid } = await import('nanoid');
-
-        const D1_DATABASE_NAME = 'allowealth-db';
-        const TOKEN_LENGTH = 64;
-        const INVITATION_EXPIRY_DAYS = 7;
-        const INVITATION_EXPIRY_MS = INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-        const isLocal = Boolean(args.local);
-
-        let email = (args.email as string | undefined)?.trim();
-        if (!email) {
-          email = (await prompt('Admin email: ')).trim();
-        }
-        if (!validateEmail(email)) {
-          console.error('Error: Invalid email format');
-          process.exit(1);
-        }
-        const normalizedEmail = email.toLowerCase();
-
-        console.log(`\nCreate Workspace (D1)`);
-        console.log(`Target: ${isLocal ? 'local' : 'remote'} D1\n`);
-        console.log('Creating workspace...');
-
-        const sqlEscape = (v: string) => v.replace(/'/g, "''");
-        const d1Execute = (sql: string) => {
-          execFileSync(
-            'wrangler',
-            ['d1', 'execute', D1_DATABASE_NAME, isLocal ? '--local' : '--remote', '--command', sql],
-            { stdio: 'inherit' }
+          d1Execute(
+            `INSERT INTO workspaces (id, name, status, created_at, updated_at) VALUES ('${sqlEscape(workspaceId)}', '${sqlEscape(name)}', 'active', ${now}, ${now});`
           );
-        };
+          console.log(`  Created workspace: ${name} (${workspaceId})`);
 
-        const workspaceId = nanoid();
-        const invitationId = nanoid();
-        const token = nanoid(TOKEN_LENGTH);
-        const now = Date.now();
-        const expiresAt = now + INVITATION_EXPIRY_MS;
-        const name = args.name as string;
-        const currency = args.currency as string;
-        const weekStart = args['week-start'] as string;
-        const compactNumbers = args['compact-numbers'] as string;
+          const metaRows = [
+            { key: 'currency', value: currency },
+            { key: 'week_start', value: weekStart },
+            { key: 'compact_numbers', value: compactNumbers },
+          ];
+          const metaValues = metaRows
+            .map(
+              (m) =>
+                `('${nanoid()}', '${workspaceId}', '${m.key}', '${sqlEscape(m.value)}', ${now}, ${now})`
+            )
+            .join(', ');
+          d1Execute(
+            `INSERT INTO workspace_meta (id, workspace_id, meta_key, meta_value, created_at, updated_at) VALUES ${metaValues};`
+          );
+          console.log(`  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
 
-        d1Execute(
-          `INSERT INTO workspaces (id, name, status, created_at, updated_at) VALUES ('${sqlEscape(workspaceId)}', '${sqlEscape(name)}', 'active', ${now}, ${now});`
-        );
-        console.log(`  Created workspace: ${name} (${workspaceId})`);
+          d1Execute(
+            `INSERT INTO workspace_invitations (id, workspace_id, email, token, role, expires_at, created_at) VALUES ('${invitationId}', '${workspaceId}', '${sqlEscape(normalizedEmail)}', '${token}', 'admin', ${expiresAt}, ${now});`
+          );
+          console.log(`  Created admin invitation for: ${normalizedEmail}`);
 
-        const metaRows = [
-          { key: 'currency', value: currency },
-          { key: 'week_start', value: weekStart },
-          { key: 'compact_numbers', value: compactNumbers },
-        ];
-        const metaValues = metaRows
-          .map(
-            (m) =>
-              `('${nanoid()}', '${workspaceId}', '${m.key}', '${sqlEscape(m.value)}', ${now}, ${now})`
-          )
-          .join(', ');
-        d1Execute(
-          `INSERT INTO workspace_meta (id, workspace_id, meta_key, meta_value, created_at, updated_at) VALUES ${metaValues};`
-        );
-        console.log(`  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
+          const baseUrl = local ? 'http://localhost:4321' : 'https://allowealth.io';
+          const signupLink = `${baseUrl}/signup?token=${token}`;
 
-        d1Execute(
-          `INSERT INTO workspace_invitations (id, workspace_id, email, token, role, expires_at, created_at) VALUES ('${invitationId}', '${workspaceId}', '${sqlEscape(normalizedEmail)}', '${token}', 'admin', ${expiresAt}, ${now});`
-        );
-        console.log(`  Created admin invitation for: ${normalizedEmail}`);
+          console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log('Workspace created successfully!');
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log(`\nInvitation link:\n  ${signupLink}\n`);
+        } else {
+          // Drizzle ORM path: sqlite / postgres
+          const { db } = await import('@/db');
+          const { WorkspaceService } = await import('@/services/workspace.service');
+          const { WorkspaceMetaService } = await import('@/services/workspace-meta.service');
+          const { WorkspaceInvitationService } =
+            await import('@/services/workspace-invitation.service');
+          const { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } =
+            await import('@/lib/constants/workspace-meta-keys');
+          const { getEnv } = await import('@/lib/env');
 
-        const baseUrl = isLocal ? 'http://localhost:4321' : 'https://allowealth.io';
-        const signupLink = `${baseUrl}/signup?token=${token}`;
+          console.log(`\nCreating workspace (${target})...`);
 
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('Workspace created successfully!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`\nInvitation link:\n  ${signupLink}\n`);
+          const workspaceService = new WorkspaceService(db);
+          const workspace = await workspaceService.create({ name: args.name as string });
+          console.log(`  Created workspace: ${workspace.name} (${workspace.id})`);
+
+          const metaService = new WorkspaceMetaService(db);
+          const currency =
+            (args.currency as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY];
+          await metaService.set(workspace.id, WORKSPACE_META_KEYS.CURRENCY, currency);
+
+          const weekStart =
+            (args['week-start'] as string) ||
+            WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
+          await metaService.set(workspace.id, WORKSPACE_META_KEYS.WEEK_START, weekStart);
+
+          const compactNumbers =
+            (args['compact-numbers'] as string) ||
+            WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS];
+          await metaService.set(workspace.id, WORKSPACE_META_KEYS.COMPACT_NUMBERS, compactNumbers);
+
+          console.log(`  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
+
+          const invitationService = new WorkspaceInvitationService(db);
+          const invitation = await invitationService.create({
+            workspaceId: workspace.id,
+            email: normalizedEmail,
+            role: 'admin',
+          });
+
+          const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
+          const signupLink = `${baseUrl}/signup?token=${invitation.token}`;
+
+          console.log(`  Created admin invitation for: ${normalizedEmail}`);
+          console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log('Workspace created successfully!');
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log(`\nInvitation link:\n  ${signupLink}\n`);
+        }
       },
     }),
 
     list: defineCommand({
       meta: { name: 'list', description: 'List all workspaces with user counts' },
       async run() {
+        const { isD1 } = await import('../lib/target');
+        if (isD1()) {
+          console.error(
+            'Error: "workspace list" is not supported for D1 targets. Use the Cloudflare dashboard instead.'
+          );
+          process.exit(1);
+        }
+
         const { db, workspaces, workspaceMeta, users } = await import('@/db');
         const { eq, sql } = await import('drizzle-orm');
 
@@ -263,6 +240,14 @@ export default defineCommand({
         },
       },
       async run({ args }) {
+        const { isD1 } = await import('../lib/target');
+        if (isD1()) {
+          console.error(
+            'Error: "workspace delete" is not supported for D1 targets. Use the Cloudflare dashboard instead.'
+          );
+          process.exit(1);
+        }
+
         const { db, users } = await import('@/db');
         const { WorkspaceService } = await import('@/services/workspace.service');
         const { eq, sql } = await import('drizzle-orm');

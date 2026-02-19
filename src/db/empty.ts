@@ -6,8 +6,8 @@
  * Works for both SQLite and PostgreSQL.
  *
  * Usage:
- *   bun run db:empty           # Uses default .env
- *   bun run db:empty:prod      # Uses .env.production
+ *   bun run db:empty                          # Uses default .env (SQLite)
+ *   bun run aw --target postgres db empty     # Uses .env.production (PostgreSQL)
  */
 
 import { db, getActiveSchema } from './index';
