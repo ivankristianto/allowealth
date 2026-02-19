@@ -8,6 +8,13 @@
       "when": 1771249678290,
       "tag": "0000_violet_daimon_hellstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771507582507,
+      "tag": "0001_legal_lord_hawal",
+      "breakpoints": true
     }
   ]
 }
