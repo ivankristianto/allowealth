@@ -18,15 +18,8 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { resolveTarget, isD1 } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-
-        if (isD1()) {
-          console.error(
-            'Error: "admin create-super-admin" is not supported for D1 targets. Use wrangler d1 execute instead.'
-          );
-          process.exit(1);
-        }
 
         const { db, users } = await import('@/db');
         const { eq, and, isNull } = await import('drizzle-orm');
@@ -79,15 +72,8 @@ export default defineCommand({
         name: { type: 'string', alias: 'n', description: 'Key name', required: true },
       },
       async run({ args }) {
-        const { resolveTarget, isD1 } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-
-        if (isD1()) {
-          console.error(
-            'Error: "admin create-api-key" is not supported for D1 targets. Use wrangler d1 execute instead.'
-          );
-          process.exit(1);
-        }
 
         const { db } = await import('@/db');
         const { ApiKeyService } = await import('@/services/api-key.service');

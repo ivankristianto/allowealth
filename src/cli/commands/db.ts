@@ -47,13 +47,8 @@ export default defineCommand({
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, isD1 } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-
-        if (isD1()) {
-          console.error('Error: "db seed" is not supported for D1 targets.');
-          process.exit(1);
-        }
         exec('bun', ['run', 'src/db/seed.ts']);
       },
     }),
@@ -83,13 +78,8 @@ export default defineCommand({
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, isD1 } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-
-        if (isD1()) {
-          console.error('Error: "db empty" is not supported for D1 targets.');
-          process.exit(1);
-        }
         exec('bun', ['run', 'src/db/empty.ts']);
       },
     }),

@@ -47,9 +47,13 @@ export async function resolveTarget(args: Record<string, unknown>): Promise<CliT
   const target = validateTarget(args.target as string);
   process.env.AW_TARGET = target;
 
-  if (target === 'postgres') {
+  if (target === 'postgres' || target === 'd1') {
     const { loadEnvFile } = await import('./env-loader');
     loadEnvFile('.env.production');
+  }
+
+  if (target === 'd1' || target === 'd1-local') {
+    process.env.D1_ENABLED = 'true';
   }
 
   return target;
