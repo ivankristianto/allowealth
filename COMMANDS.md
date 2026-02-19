@@ -95,11 +95,12 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Quick Reference
 
-| Command                             | Description               |
-| ----------------------------------- | ------------------------- |
-| `bun run aw --help`                 | Show all commands         |
-| `bun run aw <command> --help`       | Show subcommand help      |
-| `bun run aw db migrate --target d1` | Example: target remote D1 |
+| Command                             | Description              |
+| ----------------------------------- | ------------------------ |
+| `bun run aw --help`                 | Show all commands        |
+| `bun run aw <command> --help`       | Show subcommand help     |
+| `bun run aw --target d1 db migrate` | Target before subcommand |
+| `bun run aw db migrate --target d1` | Target after subcommand  |
 
 ### Workspace Management
 

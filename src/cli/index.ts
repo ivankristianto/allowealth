@@ -1,9 +1,32 @@
 import { defineCommand, runMain } from 'citty';
+import { normalizeTargetArgv, targetArg, validateTarget } from './lib/target';
+
+// Normalize `--target d1` → `--target=d1` before citty parses argv.
+// Citty treats the first non-flag token as a subcommand name, so space-separated
+// values like `--target d1 db migrate` would interpret "d1" as a subcommand.
+normalizeTargetArgv();
 
 const main = defineCommand({
   meta: {
     name: 'aw',
     description: 'Allowealth CLI — manage workspaces, database, deployments, and admin tasks',
+  },
+  args: {
+    target: targetArg,
+  },
+  async setup({ args }) {
+    const target = validateTarget(args.target as string);
+
+    // Only set AW_TARGET for non-default targets so leaf commands
+    // can still override via their own --target arg.
+    if (target !== 'sqlite') {
+      process.env.AW_TARGET = target;
+
+      if (target === 'postgres') {
+        const { loadEnvFile } = await import('./lib/env-loader');
+        loadEnvFile('.env.production');
+      }
+    }
   },
   subCommands: {
     workspace: () => import('./commands/workspace').then((m) => m.default),
