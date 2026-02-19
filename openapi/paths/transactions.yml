@@ -19,9 +19,14 @@ paths:
           description: Filter by category ID
           schema:
             type: string
-        - name: payment_method_id
+        - name: account_id
           in: query
-          description: Filter by payment method ID
+          description: Filter by account ID
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          description: Optional workspace member user ID filter
           schema:
             type: string
         - name: currency

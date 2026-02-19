@@ -16,7 +16,8 @@ paths:
 
         **Security:**
         - Requires authentication (session cookie)
-        - All data filtered by authenticated user's ID
+        - All data scoped to authenticated user's workspace
+        - Optional `user_id` narrows data to a specific workspace member
         - Period format validated to prevent SQL injection
         - Date ranges validated (month 1-12, year 2000-2100)
 
@@ -52,6 +53,11 @@ paths:
             type: string
             enum: [IDR, USD]
             default: IDR
+        - name: user_id
+          in: query
+          description: Optional workspace member ID to scope report data to a single user
+          schema:
+            type: string
         - name: _render
           in: query
           description: Response format (json or html)
@@ -67,10 +73,11 @@ paths:
             - summary: Summary metrics cards (income, expenses, savings, budget health)
             - charts: Resource allocation donut chart and financial velocity bar chart
             - table: Category intelligence table with spending details
+            - selector: Report selector controls
             - all: All partials (default)
           schema:
             type: string
-            enum: [summary, charts, table, all]
+            enum: [summary, charts, table, selector, all]
             default: all
       responses:
         '200':
@@ -170,12 +177,60 @@ paths:
                   value:
                     success: false
                     error:
-                      message: "Invalid _partial parameter. Must be one of: summary, charts, table, all."
+                      message: "Invalid _partial parameter. Must be one of: summary, charts, table, selector, all."
                       code: "INVALID_PARTIAL"
             text/html:
               schema:
                 type: string
                 description: Error message rendered as HTML
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/reports/members:
+    get:
+      tags: [Reports]
+      summary: Get member spending summary
+      description: |
+        Retrieve per-member income, expenses, net savings, and transaction counts
+        for a monthly or yearly period within the authenticated workspace.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: range
+          in: query
+          required: true
+          description: Report range type
+          schema:
+            type: string
+            enum: [monthly, yearly]
+        - name: period
+          in: query
+          required: true
+          description: |
+            Period to summarize.
+            - For monthly: YYYY-MM format (e.g., "2024-02")
+            - For yearly: YYYY format (e.g., "2024")
+          schema:
+            type: string
+            pattern: '^\d{4}(-\d{2})?$'
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/MemberSummaryResponse.yml#/MemberSummaryResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '500':

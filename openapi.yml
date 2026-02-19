@@ -168,6 +168,8 @@ paths:
 
   /api/reports:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'
+  /api/reports/members:
+    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1members'
 
   # Admin endpoints
   /api/admin/diagnostics:
