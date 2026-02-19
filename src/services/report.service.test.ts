@@ -595,6 +595,13 @@ describe('ReportService', () => {
     });
   });
 
+  describe('getMemberSummary', () => {
+    test('should return member summary array', async () => {
+      const result = await service.getMemberSummary('workspace-1', '2024-02', 'monthly', 'IDR');
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
   describe('getCategoryTransactions', () => {
     test('should return category transactions with correct structure', async () => {
       const userId = 'test-user-123';
