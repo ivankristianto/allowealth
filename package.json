@@ -67,7 +67,8 @@
     "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
     "test:e2e:report": "playwright show-report test-results/playwright-report",
     "test:e2e:critical": "playwright test --config=e2e/playwright.config.ts --grep @critical",
-    "release": "bun run scripts/release.ts"
+    "release": "bun run scripts/release.ts",
+    "aw": "bun run src/cli/index.ts"
   },
   "dependencies": {
     "@astrojs/node": "9.5.2",
@@ -79,6 +80,7 @@
     "arctic": "^3.7.0",
     "astro": "5.16.15",
     "chart.js": "^4.5.1",
+    "citty": "^0.2.1",
     "consola": "^3.4.2",
     "daisyui": "^5.5.14",
     "decimal.js": "^10.6.0",

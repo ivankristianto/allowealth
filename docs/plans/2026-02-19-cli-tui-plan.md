@@ -15,6 +15,7 @@
 ### Task 1: Install citty and scaffold entry point
 
 **Files:**
+
 - Create: `src/cli/index.ts`
 - Create: `src/cli/lib/env-loader.ts`
 - Modify: `package.json` (add dependency + script)
@@ -157,6 +158,7 @@ git commit -m "feat(cli): scaffold aw CLI entry point with citty"
 These are thin wrappers that delegate to existing tools via `execFileSync`.
 
 **Files:**
+
 - Modify: `src/cli/commands/deploy.ts`
 - Modify: `src/cli/commands/mcp.ts`
 - Modify: `src/cli/commands/release.ts`
@@ -304,6 +306,7 @@ git commit -m "feat(cli): add deploy, mcp, release, backfill commands"
 ### Task 3: Implement db commands (shell-out wrappers)
 
 **Files:**
+
 - Modify: `src/cli/commands/db.ts`
 
 **Step 1: Implement db.ts with all shell-out subcommands**
@@ -404,6 +407,7 @@ git commit -m "feat(cli): add db commands (migrate, generate, push, studio, seed
 ### Task 4: Implement workspace commands (extract existing logic)
 
 **Files:**
+
 - Modify: `src/cli/commands/workspace.ts`
 
 **Context:** These commands extract the `main()` logic from existing standalone scripts. The key change is that argument parsing moves from manual `process.argv` to citty's `args` definition. The business logic stays the same.
@@ -413,6 +417,7 @@ git commit -m "feat(cli): add db commands (migrate, generate, push, studio, seed
 Replace `src/cli/commands/workspace.ts`. This is the largest command file because it has 4 subcommands with extracted logic.
 
 Source mapping:
+
 - `create` ← `src/cli/create-workspace.ts`
 - `create-d1` ← `src/cli/create-workspace-d1.ts`
 - `list` ← `src/cli/list-workspaces.ts`
@@ -465,12 +470,10 @@ export default defineCommand({
         const { db } = await import('@/db');
         const { WorkspaceService } = await import('@/services/workspace.service');
         const { WorkspaceMetaService } = await import('@/services/workspace-meta.service');
-        const { WorkspaceInvitationService } = await import(
-          '@/services/workspace-invitation.service'
-        );
-        const { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } = await import(
-          '@/lib/constants/workspace-meta-keys'
-        );
+        const { WorkspaceInvitationService } =
+          await import('@/services/workspace-invitation.service');
+        const { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } =
+          await import('@/lib/constants/workspace-meta-keys');
         const { getEnv } = await import('@/lib/env');
 
         let email = (args.email as string | undefined)?.trim();
@@ -495,8 +498,7 @@ export default defineCommand({
         await metaService.set(workspace.id, WORKSPACE_META_KEYS.CURRENCY, currency);
 
         const weekStart =
-          (args['week-start'] as string) ||
-          WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
+          (args['week-start'] as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
         await metaService.set(workspace.id, WORKSPACE_META_KEYS.WEEK_START, weekStart);
 
         const compactNumbers =
@@ -578,7 +580,7 @@ export default defineCommand({
           execFileSync(
             'wrangler',
             ['d1', 'execute', D1_DATABASE_NAME, isLocal ? '--local' : '--remote', '--command', sql],
-            { stdio: 'inherit' },
+            { stdio: 'inherit' }
           );
         };
 
@@ -593,7 +595,7 @@ export default defineCommand({
         const compactNumbers = args['compact-numbers'] as string;
 
         d1Execute(
-          `INSERT INTO workspaces (id, name, status, created_at, updated_at) VALUES ('${sqlEscape(workspaceId)}', '${sqlEscape(name)}', 'active', ${now}, ${now});`,
+          `INSERT INTO workspaces (id, name, status, created_at, updated_at) VALUES ('${sqlEscape(workspaceId)}', '${sqlEscape(name)}', 'active', ${now}, ${now});`
         );
         console.log(`  Created workspace: ${name} (${workspaceId})`);
 
@@ -605,18 +607,16 @@ export default defineCommand({
         const metaValues = metaRows
           .map(
             (m) =>
-              `('${nanoid()}', '${workspaceId}', '${m.key}', '${sqlEscape(m.value)}', ${now}, ${now})`,
+              `('${nanoid()}', '${workspaceId}', '${m.key}', '${sqlEscape(m.value)}', ${now}, ${now})`
           )
           .join(', ');
         d1Execute(
-          `INSERT INTO workspace_meta (id, workspace_id, meta_key, meta_value, created_at, updated_at) VALUES ${metaValues};`,
+          `INSERT INTO workspace_meta (id, workspace_id, meta_key, meta_value, created_at, updated_at) VALUES ${metaValues};`
         );
-        console.log(
-          `  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`,
-        );
+        console.log(`  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
 
         d1Execute(
-          `INSERT INTO workspace_invitations (id, workspace_id, email, token, role, expires_at, created_at) VALUES ('${invitationId}', '${workspaceId}', '${sqlEscape(normalizedEmail)}', '${token}', 'admin', ${expiresAt}, ${now});`,
+          `INSERT INTO workspace_invitations (id, workspace_id, email, token, role, expires_at, created_at) VALUES ('${invitationId}', '${workspaceId}', '${sqlEscape(normalizedEmail)}', '${token}', 'admin', ${expiresAt}, ${now});`
         );
         console.log(`  Created admin invitation for: ${normalizedEmail}`);
 
@@ -757,6 +757,7 @@ git commit -m "feat(cli): add workspace commands (create, create-d1, list, delet
 ### Task 5: Implement admin commands (extract existing logic)
 
 **Files:**
+
 - Modify: `src/cli/commands/admin.ts`
 
 **Context:** These commands extract logic from existing scripts. `rotate-db-password` and `generate-email-key` are simpler to delegate via shell-out since they have complex I/O (hidden password input, file manipulation).
@@ -906,6 +907,7 @@ git commit -m "feat(cli): add admin commands (create-super-admin, create-api-key
 ### Task 6: Implement D1 auto-migration
 
 **Files:**
+
 - Create: `src/cli/lib/d1-migrate.ts`
 - Create: `src/cli/lib/d1-migrate.test.ts`
 
@@ -925,8 +927,20 @@ describe('parseJournal', () => {
       version: '7',
       dialect: 'sqlite',
       entries: [
-        { idx: 0, version: '6', when: 1771249670426, tag: '0000_woozy_steel_serpent', breakpoints: true },
-        { idx: 1, version: '6', when: 1771349670426, tag: '0001_next_migration', breakpoints: true },
+        {
+          idx: 0,
+          version: '6',
+          when: 1771249670426,
+          tag: '0000_woozy_steel_serpent',
+          breakpoints: true,
+        },
+        {
+          idx: 1,
+          version: '6',
+          when: 1771349670426,
+          tag: '0001_next_migration',
+          breakpoints: true,
+        },
       ],
     };
     const result = parseJournal(journal);
@@ -1016,10 +1030,7 @@ export function parseJournal(journal: Journal): JournalEntry[] {
 /**
  * Find migrations that haven't been applied yet.
  */
-export function findPendingMigrations(
-  all: JournalEntry[],
-  appliedTags: string[],
-): JournalEntry[] {
+export function findPendingMigrations(all: JournalEntry[], appliedTags: string[]): JournalEntry[] {
   const appliedSet = new Set(appliedTags);
   return all.filter((entry) => !appliedSet.has(entry.tag));
 }
@@ -1030,15 +1041,8 @@ export function findPendingMigrations(
 function d1Execute(sql: string, local: boolean): string {
   const result = execFileSync(
     'wrangler',
-    [
-      'd1',
-      'execute',
-      D1_DATABASE_NAME,
-      local ? '--local' : '--remote',
-      '--command',
-      sql,
-    ],
-    { encoding: 'utf-8' },
+    ['d1', 'execute', D1_DATABASE_NAME, local ? '--local' : '--remote', '--command', sql],
+    { encoding: 'utf-8' }
   );
   return result;
 }
@@ -1049,16 +1053,8 @@ function d1Execute(sql: string, local: boolean): string {
 function d1ExecuteJson(sql: string, local: boolean): any[] {
   const result = execFileSync(
     'wrangler',
-    [
-      'd1',
-      'execute',
-      D1_DATABASE_NAME,
-      local ? '--local' : '--remote',
-      '--command',
-      sql,
-      '--json',
-    ],
-    { encoding: 'utf-8' },
+    ['d1', 'execute', D1_DATABASE_NAME, local ? '--local' : '--remote', '--command', sql, '--json'],
+    { encoding: 'utf-8' }
   );
   const parsed = JSON.parse(result);
   // wrangler d1 --json returns an array of result sets
@@ -1075,7 +1071,7 @@ function ensureTrackingTable(local: boolean): void {
       tag TEXT NOT NULL UNIQUE,
       applied_at INTEGER NOT NULL DEFAULT (unixepoch())
     );`,
-    local,
+    local
   );
 }
 
@@ -1083,10 +1079,7 @@ function ensureTrackingTable(local: boolean): void {
  * Get list of already-applied migration tags from D1.
  */
 function getAppliedTags(local: boolean): string[] {
-  const rows = d1ExecuteJson(
-    'SELECT tag FROM __drizzle_migrations ORDER BY id;',
-    local,
-  );
+  const rows = d1ExecuteJson('SELECT tag FROM __drizzle_migrations ORDER BY id;', local);
   return rows.map((row: { tag: string }) => row.tag);
 }
 
@@ -1162,10 +1155,7 @@ export async function migrateD1(options: { local: boolean }): Promise<void> {
     }
 
     // Record as applied
-    d1Execute(
-      `INSERT INTO __drizzle_migrations (tag) VALUES ('${migration.tag}');`,
-      local,
-    );
+    d1Execute(`INSERT INTO __drizzle_migrations (tag) VALUES ('${migration.tag}');`, local);
 
     console.log(`  ✓ Applied ${migration.tag} (${statements.length} statements)`);
   }
@@ -1191,6 +1181,7 @@ git commit -m "feat(cli): implement D1 auto-migration with journal-based trackin
 ### Task 7: Clean up old scripts and update documentation
 
 **Files:**
+
 - Delete: `src/cli/create-workspace.ts`
 - Delete: `src/cli/create-workspace-d1.ts`
 - Delete: `src/cli/list-workspaces.ts`
@@ -1258,63 +1249,63 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Quick Reference
 
-| Command | Description |
-|---|---|
-| `bun run aw --help` | Show all commands |
-| `bun run aw <command> --help` | Show subcommand help |
+| Command                       | Description                        |
+| ----------------------------- | ---------------------------------- |
+| `bun run aw --help`           | Show all commands                  |
+| `bun run aw <command> --help` | Show subcommand help               |
 | `bun run aw --prod <command>` | Run against production environment |
 
 ### Workspace Management
 
-| Command | Description |
-|---|---|
-| `bun run aw workspace create --name "Name" --email admin@example.com` | Create workspace with admin invitation |
-| `bun run aw workspace create-d1 --name "Name" --email admin@example.com` | Create workspace on D1 (remote) |
-| `bun run aw workspace create-d1 --name "Name" --email admin@example.com --local` | Create workspace on D1 (local) |
-| `bun run aw workspace list` | List all workspaces |
-| `bun run aw workspace delete --id <id>` | Delete workspace (with confirmation) |
-| `bun run aw workspace delete --id <id> --force` | Delete workspace (skip confirmation) |
+| Command                                                                          | Description                            |
+| -------------------------------------------------------------------------------- | -------------------------------------- |
+| `bun run aw workspace create --name "Name" --email admin@example.com`            | Create workspace with admin invitation |
+| `bun run aw workspace create-d1 --name "Name" --email admin@example.com`         | Create workspace on D1 (remote)        |
+| `bun run aw workspace create-d1 --name "Name" --email admin@example.com --local` | Create workspace on D1 (local)         |
+| `bun run aw workspace list`                                                      | List all workspaces                    |
+| `bun run aw workspace delete --id <id>`                                          | Delete workspace (with confirmation)   |
+| `bun run aw workspace delete --id <id> --force`                                  | Delete workspace (skip confirmation)   |
 
 Production: `bun run aw --prod workspace list`
 
 ### Database
 
-| Command | Description |
-|---|---|
-| `bun run aw db migrate` | Apply pending migrations (SQLite) |
-| `bun run aw --prod db migrate` | Apply pending migrations (PostgreSQL) |
-| `bun run aw db migrate --d1` | Auto-apply pending migrations to remote D1 |
-| `bun run aw db migrate --d1 --local` | Auto-apply pending migrations to local D1 |
-| `bun run aw db generate` | Generate migration from schema changes |
-| `bun run aw db push` | Push schema directly (dev only) |
-| `bun run aw db studio` | Open Drizzle Studio |
-| `bun run aw db seed` | Seed with demo data |
-| `bun run aw db reset` | Delete + push + seed (dev only) |
-| `bun run aw db empty` | Truncate all data |
+| Command                              | Description                                |
+| ------------------------------------ | ------------------------------------------ |
+| `bun run aw db migrate`              | Apply pending migrations (SQLite)          |
+| `bun run aw --prod db migrate`       | Apply pending migrations (PostgreSQL)      |
+| `bun run aw db migrate --d1`         | Auto-apply pending migrations to remote D1 |
+| `bun run aw db migrate --d1 --local` | Auto-apply pending migrations to local D1  |
+| `bun run aw db generate`             | Generate migration from schema changes     |
+| `bun run aw db push`                 | Push schema directly (dev only)            |
+| `bun run aw db studio`               | Open Drizzle Studio                        |
+| `bun run aw db seed`                 | Seed with demo data                        |
+| `bun run aw db reset`                | Delete + push + seed (dev only)            |
+| `bun run aw db empty`                | Truncate all data                          |
 
 ### Admin & Security
 
-| Command | Description |
-|---|---|
-| `bun run aw admin create-super-admin --email admin@example.com` | Promote user to super admin |
-| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key |
-| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]` | Rotate DB password |
-| `bun run aw admin generate-email-key` | Generate email encryption key |
+| Command                                                                            | Description                   |
+| ---------------------------------------------------------------------------------- | ----------------------------- |
+| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin   |
+| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key              |
+| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate DB password            |
+| `bun run aw admin generate-email-key`                                              | Generate email encryption key |
 
 ### Deploy
 
-| Command | Description |
-|---|---|
+| Command                        | Description                            |
+| ------------------------------ | -------------------------------------- |
 | `bun run aw deploy cloudflare` | Build and deploy to Cloudflare Workers |
-| `bun run aw deploy vercel` | Build and deploy to Vercel |
-| `bun run aw deploy netlify` | Build and deploy to Netlify |
+| `bun run aw deploy vercel`     | Build and deploy to Vercel             |
+| `bun run aw deploy netlify`    | Build and deploy to Netlify            |
 
 ### Other
 
-| Command | Description |
-|---|---|
-| `bun run aw mcp start` | Start MCP server |
-| `bun run aw release` | Interactive release |
+| Command                                  | Description                 |
+| ---------------------------------------- | --------------------------- |
+| `bun run aw mcp start`                   | Start MCP server            |
+| `bun run aw release`                     | Interactive release         |
 | `bun run aw backfill email-verification` | Backfill email verification |
 ```
 
@@ -1387,6 +1378,7 @@ Expected: Prints encryption key
 **Step 4: Commit any formatting fixes**
 
 If quality gates made changes:
+
 ```bash
 git add -A
 git commit -m "style: format cli files"

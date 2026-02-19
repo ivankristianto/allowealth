@@ -64,26 +64,26 @@ The root command defines a `--prod` boolean flag. In the root `setup()` hook, wh
 
 ```ts
 const main = defineCommand({
-  meta: { name: "aw", version: "0.12.0", description: "Allowealth CLI" },
+  meta: { name: 'aw', version: '0.12.0', description: 'Allowealth CLI' },
   args: {
     prod: {
-      type: "boolean",
-      description: "Use production environment (.env.production)",
+      type: 'boolean',
+      description: 'Use production environment (.env.production)',
     },
   },
   setup({ args }) {
     if (args.prod) {
-      loadEnvFile(".env.production");
+      loadEnvFile('.env.production');
     }
   },
   subCommands: {
-    workspace: () => import("./commands/workspace"),
-    db: () => import("./commands/db"),
-    admin: () => import("./commands/admin"),
-    deploy: () => import("./commands/deploy"),
-    mcp: () => import("./commands/mcp"),
-    release: () => import("./commands/release"),
-    backfill: () => import("./commands/backfill"),
+    workspace: () => import('./commands/workspace'),
+    db: () => import('./commands/db'),
+    admin: () => import('./commands/admin'),
+    deploy: () => import('./commands/deploy'),
+    mcp: () => import('./commands/mcp'),
+    release: () => import('./commands/release'),
+    backfill: () => import('./commands/backfill'),
   },
 });
 ```
@@ -157,41 +157,41 @@ The `--local` flag switches `wrangler d1 execute` between `--remote` and `--loca
 
 These just run existing tools with the right env/flags:
 
-| Command | Shells out to |
-|---|---|
-| `aw db generate` | `drizzle-kit generate` |
-| `aw db migrate` (non-D1) | `drizzle-kit migrate` |
-| `aw db push` | `drizzle-kit push` |
-| `aw db studio` | `drizzle-kit studio` |
-| `aw db seed` | `bun run src/db/seed.ts` |
-| `aw db reset` | `rm -f db/.dev.db* && drizzle-kit push --force && bun run src/db/seed.ts` |
-| `aw db empty` | `bun run src/db/empty.ts` |
-| `aw deploy cloudflare` | `astro build && wrangler deploy` (with `DEPLOY_TARGET=cloudflare`) |
-| `aw deploy vercel` | `astro build && vercel deploy --prod` (with `DEPLOY_TARGET=vercel`) |
-| `aw deploy netlify` | `astro build && netlify deploy --prod` (with `DEPLOY_TARGET=netlify`) |
-| `aw mcp start` | `bun run mcp-server/src/index.ts` |
-| `aw release` | `bun run scripts/release.ts` |
-| `aw backfill email-verification` | `bun run scripts/backfill-email-verification.ts` |
+| Command                          | Shells out to                                                             |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| `aw db generate`                 | `drizzle-kit generate`                                                    |
+| `aw db migrate` (non-D1)         | `drizzle-kit migrate`                                                     |
+| `aw db push`                     | `drizzle-kit push`                                                        |
+| `aw db studio`                   | `drizzle-kit studio`                                                      |
+| `aw db seed`                     | `bun run src/db/seed.ts`                                                  |
+| `aw db reset`                    | `rm -f db/.dev.db* && drizzle-kit push --force && bun run src/db/seed.ts` |
+| `aw db empty`                    | `bun run src/db/empty.ts`                                                 |
+| `aw deploy cloudflare`           | `astro build && wrangler deploy` (with `DEPLOY_TARGET=cloudflare`)        |
+| `aw deploy vercel`               | `astro build && vercel deploy --prod` (with `DEPLOY_TARGET=vercel`)       |
+| `aw deploy netlify`              | `astro build && netlify deploy --prod` (with `DEPLOY_TARGET=netlify`)     |
+| `aw mcp start`                   | `bun run mcp-server/src/index.ts`                                         |
+| `aw release`                     | `bun run scripts/release.ts`                                              |
+| `aw backfill email-verification` | `bun run scripts/backfill-email-verification.ts`                          |
 
 ### Logic commands (extracted from existing scripts)
 
 These move the `main()` logic from standalone scripts into citty command handlers:
 
-| Command | Source script |
-|---|---|
-| `aw workspace create` | `src/cli/create-workspace.ts` |
-| `aw workspace create-d1` | `src/cli/create-workspace-d1.ts` |
-| `aw workspace list` | `src/cli/list-workspaces.ts` |
-| `aw workspace delete` | `src/cli/delete-workspace.ts` |
-| `aw admin create-super-admin` | `src/cli/create-super-admin.ts` |
-| `aw admin create-api-key` | `src/cli/create-api-key.ts` |
-| `aw admin rotate-db-password` | `src/cli/rotate-db-password.ts` |
-| `aw admin generate-email-key` | `scripts/generate-email-key.ts` |
+| Command                       | Source script                    |
+| ----------------------------- | -------------------------------- |
+| `aw workspace create`         | `src/cli/create-workspace.ts`    |
+| `aw workspace create-d1`      | `src/cli/create-workspace-d1.ts` |
+| `aw workspace list`           | `src/cli/list-workspaces.ts`     |
+| `aw workspace delete`         | `src/cli/delete-workspace.ts`    |
+| `aw admin create-super-admin` | `src/cli/create-super-admin.ts`  |
+| `aw admin create-api-key`     | `src/cli/create-api-key.ts`      |
+| `aw admin rotate-db-password` | `src/cli/rotate-db-password.ts`  |
+| `aw admin generate-email-key` | `scripts/generate-email-key.ts`  |
 
 ### New logic
 
-| Command | Description |
-|---|---|
+| Command              | Description                                           |
+| -------------------- | ----------------------------------------------------- |
 | `aw db migrate --d1` | D1 auto-migration (journal-based, new implementation) |
 
 ## Dependencies
@@ -201,6 +201,7 @@ These move the `main()` logic from standalone scripts into citty command handler
 ## package.json Changes
 
 Add one script:
+
 ```json
 {
   "aw": "bun run src/cli/index.ts"
@@ -208,6 +209,7 @@ Add one script:
 ```
 
 After migration is complete, remove these scripts:
+
 - All `cli:*` and `cli:*:prod` variants (14 scripts)
 - `db:d1:migrate`, `db:d1:migrate:local`
 - `backfill:email-verification`, `backfill:email-verification:prod`
