@@ -107,6 +107,13 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
 - ✅ **Exclude debt from asset allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
 
+## CLI Conventions
+
+- ✅ **Add new CLI scripts as `aw` subcommands** — register in `src/cli/index.ts` subCommands, create command file in `src/cli/commands/`
+- ✅ **Use `src/cli/lib/exec.ts` for shell-out commands** — wraps `execFileSync` with clean error handling
+- ✅ **Use lazy `await import()` inside `run()` for logic commands** — avoids loading DB/services at CLI startup
+- ❌ **Create standalone scripts in `src/cli/` or `scripts/`** — use `aw` subcommands instead; the `aw` CLI (`bun run aw`) is the single entry point
+
 ## Subprocess Patterns
 
 - ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
