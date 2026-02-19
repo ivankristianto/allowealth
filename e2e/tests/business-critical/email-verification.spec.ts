@@ -74,8 +74,9 @@ test.describe('Email Verification', () => {
 
     test('shows expired token error message', async ({ page }) => {
       await page.goto('/login?error=expired_token');
-      const errorArea = page.locator('[data-testid="login-error"]');
-      await expect(errorArea).toContainText('expired');
+      // expired_token shows as a banner (with resend button), not inline error
+      const banner = page.locator('.alert-error');
+      await expect(banner).toContainText('expired');
     });
   });
 

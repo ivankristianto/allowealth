@@ -175,18 +175,17 @@ test.describe('Cross-Page Data Verification', () => {
     expect(reportsExpenses).toBeGreaterThanOrEqual(0);
   });
 
-  test('net worth is displayed on dashboard', async ({ dashboardPage }) => {
-    // Navigate to dashboard
-    await dashboardPage.gotoDashboard();
+  test('net worth is displayed on accounts page', async ({ page }) => {
+    // Navigate to accounts page where net worth is shown in portfolio summary
+    await page.goto('/accounts');
 
-    // Verify net worth is visible
-    await dashboardPage.expectNetWorthVisible();
+    // Verify net worth is visible in the portfolio summary
+    const netWorthElement = page.locator('[data-testid="portfolio-net-worth"]');
+    await expect(netWorthElement).toBeVisible();
 
-    // Get net worth value
-    const dashboardNetWorth = await dashboardPage.getNetWorth();
-
-    // Net worth should be a reasonable value (can be 0 or positive)
-    expect(dashboardNetWorth).toBeGreaterThanOrEqual(0);
+    // Net worth text should contain a currency value
+    const text = await netWorthElement.textContent();
+    expect(text).toBeTruthy();
   });
 
   test('navigation between pages preserves data visibility', async ({

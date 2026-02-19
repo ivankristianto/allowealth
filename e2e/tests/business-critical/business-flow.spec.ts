@@ -70,7 +70,6 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
     // Verify key dashboard elements are visible
     await dashboardPage.expectTotalExpensesVisible();
     await dashboardPage.expectTotalIncomeVisible();
-    await dashboardPage.expectNetWorthVisible();
 
     // Capture the initial total expenses for comparison
     const initialExpenses = await dashboardPage.getTotalExpenses();

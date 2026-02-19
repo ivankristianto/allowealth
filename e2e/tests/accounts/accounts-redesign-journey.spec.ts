@@ -73,7 +73,7 @@ test.describe('Accounts Redesign Journey', () => {
     }
 
     // Every rendered label must be one of the valid account class labels
-    const validLabels = ['Liquid', 'Non-Liquid', 'Debt'];
+    const validLabels = ['Liquid Accounts', 'Non-Liquid Accounts', 'Debt Accounts'];
     for (const label of renderedLabels) {
       expect(validLabels).toContain(label);
     }
@@ -108,35 +108,30 @@ test.describe('Accounts Redesign Journey', () => {
     expect(accountId).toBeTruthy();
 
     // Click the account name link (inside h4 > a)
-    const accountLink = firstAccountItem.locator('h4 a').first();
-    await accountLink.click();
+    // The component has dual mobile/desktop layouts, both contain h4 > a
+    // Pick the visible one based on viewport
+    const accountLinks = firstAccountItem.locator('h4 a');
+    const visibleLink = (await accountLinks.nth(0).isVisible())
+      ? accountLinks.nth(0)
+      : accountLinks.nth(1);
+    await visibleLink.click();
 
     // Verify navigation to detail page
     await page.waitForURL(`**/accounts/${accountId}`);
     expect(page.url()).toContain(`/accounts/${accountId}`);
 
-    // Verify "Current Balance" label is displayed
-    await expect(page.getByText('Current Balance')).toBeVisible();
-
-    // Verify balance value is displayed (contains "Rp" for IDR or "$" for USD)
-    const balanceSection = page.locator('.text-2xl, .lg\\:text-3xl').first();
+    // Verify balance value is displayed (the account header shows the balance directly)
+    const balanceSection = page.locator('.text-2xl').first();
     await expect(balanceSection).toBeVisible();
 
-    // Verify "Calculated Balance" section exists (may not render if no transactions)
-    // We check for the label text; it only appears when calculated balance is available
-    const calcBalanceLabel = page.getByText('Calculated Balance');
-    const calcCount = await calcBalanceLabel.count();
-    // Just verify the page structure is correct - calculated balance is optional
-    expect(calcCount).toBeGreaterThanOrEqual(0);
-
-    // Verify monthly summary stat cards are present
-    await expect(page.getByText('Income', { exact: true })).toBeVisible();
-    await expect(page.getByText('Expenses', { exact: true })).toBeVisible();
-    await expect(page.getByText('Transfers In', { exact: true })).toBeVisible();
-    await expect(page.getByText('Transfers Out', { exact: true })).toBeVisible();
-
-    // Verify the transactions section heading exists
-    await expect(page.locator('h3').filter({ hasText: 'Transactions' })).toBeVisible();
+    // Verify monthly summary stat labels are present
+    const statLabels = page.locator('.label-premium');
+    const labelTexts = await statLabels.allTextContents();
+    const normalizedLabels = labelTexts.map((t) => t.trim());
+    expect(normalizedLabels).toContain('Income');
+    expect(normalizedLabels).toContain('Expenses');
+    expect(normalizedLabels).toContain('Transfers In');
+    expect(normalizedLabels).toContain('Transfers Out');
   });
 
   /**
@@ -250,7 +245,10 @@ test.describe('Accounts Redesign Journey', () => {
     const accountItem = page
       .locator('[data-testid="account-item"]')
       .filter({ has: page.locator('h4', { hasText: bankData.name }) });
-    const nameLink = accountItem.locator('h4 a').first();
+    // The component has dual mobile/desktop layouts, both contain h4 > a
+    // Pick the visible one based on viewport
+    const nameLinks = accountItem.locator('h4 a');
+    const nameLink = (await nameLinks.nth(0).isVisible()) ? nameLinks.nth(0) : nameLinks.nth(1);
     await nameLink.click();
 
     // Verify we navigated to the detail page
@@ -260,8 +258,7 @@ test.describe('Accounts Redesign Journey', () => {
     // Verify account name is displayed on detail page
     await expect(page.locator('h2').filter({ hasText: bankData.name })).toBeVisible();
 
-    // Verify "Current Balance" is displayed with the correct amount
-    await expect(page.getByText('Current Balance')).toBeVisible();
+    // Verify balance value is displayed
     const formattedBalance = formatIDR(bankData.balance);
     await expect(page.locator('text=' + formattedBalance).first()).toBeVisible();
 

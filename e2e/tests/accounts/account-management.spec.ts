@@ -406,7 +406,7 @@ test.describe('Account Management - Fresh Workspace', () => {
 
     await page.goto('/accounts');
 
-    const addFirstAccountButton = page.locator('button[data-add-account-btn]');
+    const addFirstAccountButton = page.locator('button[data-add-first-account-btn]');
     await expect(addFirstAccountButton).toBeVisible();
 
     await addFirstAccountButton.click();
