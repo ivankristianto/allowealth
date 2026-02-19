@@ -510,6 +510,10 @@ Deploy to Cloudflare's edge network.
 bun add -d @astrojs/cloudflare
 bun add -d wrangler
 
+# Copy and configure wrangler.toml
+cp wrangler.toml.example wrangler.toml
+# Edit wrangler.toml: set your D1 database_id or Hyperdrive id
+
 # Set database URL secret
 wrangler secret put DATABASE_URL
 
@@ -517,7 +521,7 @@ wrangler secret put DATABASE_URL
 bun run deploy:cloudflare
 ```
 
-**Configuration:** `wrangler.toml` is already included in the project.
+**Configuration:** `wrangler.toml` is gitignored and must be created locally from `wrangler.toml.example`. This keeps your Cloudflare resource IDs out of version control. The example file contains placeholder values — replace `YOUR_D1_DATABASE_ID` / `YOUR_HYPERDRIVE_ID` with IDs from your Cloudflare account.
 
 #### 3. Vercel
 

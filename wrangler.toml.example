@@ -1,6 +1,11 @@
 # Cloudflare Workers Configuration
 # https://developers.cloudflare.com/workers/wrangler/configuration/
 #
+# SETUP: Copy this file to wrangler.toml and fill in your own values.
+#   cp wrangler.toml.example wrangler.toml
+#
+# wrangler.toml is gitignored — never commit it with real IDs or secrets.
+#
 # DEPLOYMENT OPTIONS — choose one database backend:
 #
 # A. PostgreSQL + Hyperdrive (default, active below)
@@ -13,6 +18,7 @@
 #    - To activate: uncomment [[d1_databases]], comment out [[hyperdrive]]
 #    - Deploy: bun run deploy:cloudflare
 
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
 name = "allowealth"
 main = "dist/_worker.js/index.js"
 compatibility_date = "2026-02-01"
@@ -65,7 +71,7 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 # Create config: wrangler hyperdrive create allowealth-db --connection-string="<direct-supabase-url>"
 # [[hyperdrive]]
 # binding = "HYPERDRIVE"
-# id = "119e775bed8d476cb4d24c42278131e2"
+# id = "YOUR_HYPERDRIVE_ID"  # wrangler hyperdrive create allowealth-db --connection-string="..."
 # For local dev: point to a local PostgreSQL instance
 # Or set env var CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
 # localConnectionString = "postgresql://user:pass@localhost:5432/expenses"
@@ -80,14 +86,10 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 #   6. Secrets:     wrangler secret put EMAIL_API_KEY  (DATABASE_URL is not needed for D1)
 #   7. Deploy:      bun run deploy:cloudflare
 #
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "allowealth-db"
-# database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create allowealth-db
 [[d1_databases]]
 binding = "DB"
 database_name = "allowealth-db"
-database_id = "bb0afde5-2f05-408a-ad89-3f6617598c41"
+database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create allowealth-db
 
 # Workers Logs — captures all console.* output, auto-indexes JSON fields
 # https://developers.cloudflare.com/workers/observability/logs/workers-logs/
