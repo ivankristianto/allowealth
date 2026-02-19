@@ -154,12 +154,20 @@ export async function migrateD1(options: { local: boolean }): Promise<void> {
 
     const statements = readMigrationStatements(migration.tag);
 
-    for (const statement of statements) {
-      d1Execute(statement, local);
+    for (let i = 0; i < statements.length; i++) {
+      try {
+        d1Execute(statements[i], local);
+      } catch (error) {
+        console.error(`\nFailed on statement ${i + 1}/${statements.length} of ${migration.tag}`);
+        console.error(`Statements 1-${i} were already applied.`);
+        console.error('Resolve manually, then re-run migration.');
+        throw error;
+      }
     }
 
     // Record as applied
-    d1Execute(`INSERT INTO __drizzle_migrations (tag) VALUES ('${migration.tag}');`, local);
+    const safeTag = migration.tag.replace(/'/g, "''");
+    d1Execute(`INSERT INTO __drizzle_migrations (tag) VALUES ('${safeTag}');`, local);
 
     console.log(`  Applied ${migration.tag} (${statements.length} statements)`);
   }
