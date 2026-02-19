@@ -28,7 +28,11 @@ export type AuditAction =
   | 'admin_delete'
   | 'admin_deactivate'
   | 'admin_reactivate'
-  | 'admin_role_change';
+  | 'admin_role_change'
+  | 'mfa_setup_init'
+  | 'mfa_enable'
+  | 'mfa_disable'
+  | 'mfa_backup_regenerate';
 
 /**
  * Types of entities that can be audited
@@ -40,7 +44,8 @@ export type AuditEntityType =
   | 'budget'
   | 'user'
   | 'workspace'
-  | 'session';
+  | 'session'
+  | 'user_mfa';
 
 /**
  * Context for audit log entries

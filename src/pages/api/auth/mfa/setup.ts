@@ -21,9 +21,12 @@ export const POST: APIRoute = async ({ locals }) => {
   if (!user) {
     return createErrorResponseResponse('NOT_AUTHENTICATED', 'Authentication required', 401);
   }
+  if (!user.workspaceId) {
+    return createErrorResponseResponse('INVALID_STATE', 'User workspace is required', 400);
+  }
 
   try {
-    const result = await mfaService.initSetup(user.id, user.email);
+    const result = await mfaService.initSetup(user.id, user.email, user.workspaceId);
 
     return new Response(
       JSON.stringify(

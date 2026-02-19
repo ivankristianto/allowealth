@@ -11,6 +11,7 @@ import { createTOTPKeyURI, verifyTOTPWithGracePeriod } from '@oslojs/otp';
 import { createLogger } from '@/lib/logger';
 import { getActiveSchema, type IDatabase } from '@/db';
 import { getEnv } from '@/lib/env';
+import { logAuditEvent } from '@/lib/audit-log';
 import {
   decryptTotpSecret,
   encryptTotpSecret,
@@ -57,7 +58,7 @@ export class MfaService {
   /**
    * Initialize MFA setup for a user.
    */
-  async initSetup(userId: string, userEmail: string): Promise<MfaSetupResult> {
+  async initSetup(userId: string, userEmail: string, workspaceId: string): Promise<MfaSetupResult> {
     const encryptionKey = getEncryptionKey();
 
     // Generate 20-byte secret (160-bit)
@@ -103,6 +104,13 @@ export class MfaService {
     const qrCodeDataUrl = await QRCode.toDataURL(totpUri);
 
     log.info(`MFA setup initiated for user ${userId}`);
+    void logAuditEvent({
+      workspaceId,
+      userId,
+      action: 'mfa_setup_init',
+      entityType: 'user_mfa',
+      entityId: userId,
+    });
 
     return {
       qrCodeDataUrl,
@@ -114,7 +122,7 @@ export class MfaService {
    * Verify initial setup by checking a TOTP code and enable MFA.
    * Returns plaintext backup codes for one-time display.
    */
-  async verifySetup(userId: string, totpCode: string): Promise<string[]> {
+  async verifySetup(userId: string, totpCode: string, workspaceId: string): Promise<string[]> {
     const mfaRecord = await this.getMfaRecord(userId);
     if (!mfaRecord) {
       throw new Error('No MFA setup found. Start setup first.');
@@ -139,6 +147,14 @@ export class MfaService {
     const backupCodes = await this.generateAndStoreBackupCodes(mfaRecord.id);
 
     log.info(`MFA enabled for user ${userId}`);
+    void logAuditEvent({
+      workspaceId,
+      userId,
+      action: 'mfa_enable',
+      entityType: 'user_mfa',
+      entityId: userId,
+      newValue: { backupCodesGenerated: 10 },
+    });
 
     return backupCodes;
   }
@@ -229,7 +245,7 @@ export class MfaService {
   /**
    * Disable MFA for a user. Requires valid TOTP or backup code.
    */
-  async disable(userId: string, code: string): Promise<void> {
+  async disable(userId: string, code: string, workspaceId: string): Promise<void> {
     const isTotpValid = await this.verifyTotp(userId, code);
     const isBackupCodeValid = !isTotpValid && (await this.verifyAndConsumeBackupCode(userId, code));
 
@@ -249,12 +265,23 @@ export class MfaService {
     await this.db.delete(this.schema.userMfa).where(eq(this.schema.userMfa.id, mfaRecord.id));
 
     log.info(`MFA disabled for user ${userId}`);
+    void logAuditEvent({
+      workspaceId,
+      userId,
+      action: 'mfa_disable',
+      entityType: 'user_mfa',
+      entityId: userId,
+    });
   }
 
   /**
    * Regenerate backup codes. Requires a valid TOTP code.
    */
-  async regenerateBackupCodes(userId: string, totpCode: string): Promise<string[]> {
+  async regenerateBackupCodes(
+    userId: string,
+    totpCode: string,
+    workspaceId: string
+  ): Promise<string[]> {
     const isValid = await this.verifyTotp(userId, totpCode);
     if (!isValid) {
       throw new Error('Invalid verification code.');
@@ -272,6 +299,14 @@ export class MfaService {
     const backupCodes = await this.generateAndStoreBackupCodes(mfaRecord.id);
 
     log.info(`Backup codes regenerated for user ${userId}`);
+    void logAuditEvent({
+      workspaceId,
+      userId,
+      action: 'mfa_backup_regenerate',
+      entityType: 'user_mfa',
+      entityId: userId,
+      newValue: { codesGenerated: 10 },
+    });
 
     return backupCodes;
   }

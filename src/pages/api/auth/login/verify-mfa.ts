@@ -8,12 +8,14 @@
 import type { APIRoute } from 'astro';
 import { auth } from '@/lib/auth/lucia';
 import { mfaService } from '@/services';
+import { logAuditEvent } from '@/lib/audit-log';
 import {
   createErrorResponseResponse,
   createSuccessResponse,
   STANDARD_RESPONSE_HEADERS,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import { eq } from 'drizzle-orm';
 import {
   applyRateLimitHeaders,
   checkRateLimit,
@@ -75,6 +77,29 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
 
     const session = await auth.createSession(userId, {});
     const sessionCookie = auth.createSessionCookie(session.id);
+
+    // Log MFA-verified login. Must never block authentication flow.
+    try {
+      const { db, getActiveSchema } = await import('@/db');
+      const schema = getActiveSchema();
+      const userRecord = await db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+        columns: { workspace_id: true },
+      });
+
+      if (userRecord?.workspace_id) {
+        void logAuditEvent({
+          workspaceId: userRecord.workspace_id,
+          userId,
+          action: 'login',
+          entityType: 'session',
+          entityId: session.id,
+          newValue: { mfa: true, method: isBackupCode ? 'backup_code' : 'totp' },
+        });
+      }
+    } catch {
+      // Audit logging should never block login.
+    }
 
     cookies.delete(MFA_PENDING_COOKIE, { path: '/' });
 

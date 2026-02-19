@@ -21,6 +21,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
   if (!user) {
     return createErrorResponseResponse('NOT_AUTHENTICATED', 'Authentication required', 401);
   }
+  if (!user.workspaceId) {
+    return createErrorResponseResponse('INVALID_STATE', 'User workspace is required', 400);
+  }
 
   try {
     const body = await request.json();
@@ -30,7 +33,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
       return createErrorResponseResponse('INVALID_INPUT', 'Verification code is required', 400);
     }
 
-    await mfaService.disable(user.id, code);
+    await mfaService.disable(user.id, code, user.workspaceId);
 
     return new Response(
       JSON.stringify(createSuccessResponse({ message: 'MFA disabled successfully' })),

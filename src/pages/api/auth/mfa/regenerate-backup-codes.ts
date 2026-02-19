@@ -21,6 +21,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
   if (!user) {
     return createErrorResponseResponse('NOT_AUTHENTICATED', 'Authentication required', 401);
   }
+  if (!user.workspaceId) {
+    return createErrorResponseResponse('INVALID_STATE', 'User workspace is required', 400);
+  }
 
   try {
     const body = await request.json();
@@ -30,7 +33,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
       return createErrorResponseResponse('INVALID_INPUT', 'TOTP code is required', 400);
     }
 
-    const backupCodes = await mfaService.regenerateBackupCodes(user.id, code);
+    const backupCodes = await mfaService.regenerateBackupCodes(user.id, code, user.workspaceId);
 
     return new Response(JSON.stringify(createSuccessResponse({ backupCodes })), {
       status: 200,
