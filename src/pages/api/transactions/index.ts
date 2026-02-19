@@ -114,6 +114,7 @@ export const GET: APIRoute = async (context) => {
     if (filters.start_date && filters.end_date) {
       const monthTransactions = await transactionService.findAll({
         workspace_id: auth.workspaceId,
+        created_by_user_id: filters.created_by_user_id,
         start_date: filters.start_date,
         end_date: filters.end_date,
         include_deleted: false,

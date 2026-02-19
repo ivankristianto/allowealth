@@ -82,6 +82,7 @@ interface SSRData {
   filters: {
     type: 'income' | 'expense';
     search: string;
+    user_id: string;
     category_id: string;
     category_ids: string[];
     month: string;
@@ -183,6 +184,7 @@ async function fetchAndRender(): Promise<void> {
     const response = await fetchTransactionsHtml(
       {
         type: filters.type,
+        user_id: filters.user_id || undefined,
         category_ids: filters.category_ids.length > 0 ? filters.category_ids : undefined,
         search: filters.search || undefined,
         month: filters.month,
@@ -515,13 +517,14 @@ function updateUrl(): void {
   const url = new URL(window.location.href);
 
   // Clear all filter params
-  ['type', 'search', 'category_id', 'category_ids', 'month', 'page'].forEach((key) => {
+  ['type', 'search', 'user_id', 'category_id', 'category_ids', 'month', 'page'].forEach((key) => {
     url.searchParams.delete(key);
   });
 
   // Set active filters
   url.searchParams.set('type', filters.type);
   if (filters.search) url.searchParams.set('search', filters.search);
+  if (filters.user_id) url.searchParams.set('user_id', filters.user_id);
   if (filters.category_id) url.searchParams.set('category_id', filters.category_id);
   if (filters.category_ids && filters.category_ids.length > 0) {
     url.searchParams.set('category_ids', filters.category_ids.join(','));
@@ -547,6 +550,7 @@ function handlePopState(): void {
     ...transactionFiltersStore.get(),
     type: (params.type === 'income' ? 'income' : 'expense') as 'income' | 'expense',
     search: params.search || '',
+    user_id: params.user_id || '',
     category_id: params.category_id || '',
     category_ids: categoryIds,
     month: params.month || '',
@@ -713,6 +717,7 @@ function setupEventListeners(): void {
       transactionFiltersStore.set({
         type: 'expense',
         search: '',
+        user_id: '',
         category_id: '',
         category_ids: [],
         account_id: '',
