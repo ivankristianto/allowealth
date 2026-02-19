@@ -238,16 +238,37 @@ function createDatabase(): Database {
   let driver: (DatabaseDriver & { _raw: unknown }) | null = null;
 
   try {
-    // D1 path - Cloudflare Workers with D1 binding
+    // D1 path - Cloudflare Workers binding or CLI HTTP/local drivers
     if (config.isD1) {
+      // Worker runtime: use D1 binding directly
       const d1Binding = getD1Binding();
-      if (!d1Binding) {
-        throw new Error(
-          'D1_ENABLED is set but D1 binding is not available. ' +
-            'Ensure D1 binding is configured in wrangler.toml'
-        );
+      if (d1Binding) {
+        return createD1Database(d1Binding, sqliteSchema) as unknown as Database;
       }
-      return createD1Database(d1Binding, sqliteSchema) as unknown as Database;
+
+      // CLI: remote D1 via REST API
+      const awTarget = process.env.AW_TARGET;
+      if (awTarget === 'd1') {
+        // Dynamic require — d1-http.ts is only needed in CLI context, avoid bundling
+        const dynamicRequire = getRequire();
+        const { createD1HttpDatabase } = dynamicRequire('./drivers/d1-http');
+        return createD1HttpDatabase(sqliteSchema) as unknown as Database;
+      }
+
+      // CLI: local D1 via bun:sqlite on wrangler's state file
+      if (awTarget === 'd1-local') {
+        const localRequire = getRequire();
+        const { findLocalD1Path } = localRequire('./drivers/d1-local');
+        const localPath = findLocalD1Path(process.cwd());
+        driver = createBunDriver(localPath);
+        const { drizzle } = localRequire('drizzle-orm/bun-sqlite');
+        return drizzle(driver._raw, { schema: sqliteSchema });
+      }
+
+      throw new Error(
+        'D1_ENABLED is set but no D1 driver is available. ' +
+          'Use --target d1 or --target d1-local, or run in Cloudflare Workers.'
+      );
     }
 
     // PostgreSQL path - used in production (Cloudflare Workers with PostgreSQL)

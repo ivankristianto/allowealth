@@ -641,8 +641,9 @@ async function clearAllTables() {
 
   try {
     // Disable FK checks during cleanup to avoid ordering issues
-    const { dialect } = getDatabaseConfig();
-    if (dialect === 'sqlite') {
+    const config = getDatabaseConfig();
+    const { dialect } = config;
+    if (dialect === 'sqlite' && !config.isD1) {
       await runRawSql(sql`PRAGMA foreign_keys = OFF`);
     }
 
@@ -666,12 +667,12 @@ async function clearAllTables() {
     await db.delete(exchangeRates);
 
     // Re-enable FK checks
-    if (dialect === 'sqlite') {
+    if (dialect === 'sqlite' && !config.isD1) {
       await runRawSql(sql`PRAGMA foreign_keys = ON`);
     }
 
-    // Run VACUUM to clean up the database and reclaim space (SQLite only)
-    if (dialect === 'sqlite') {
+    // Run VACUUM to clean up the database and reclaim space (SQLite only, not D1)
+    if (dialect === 'sqlite' && !config.isD1) {
       console.log('🧹 Vacuuming database...');
       await runRawSql(sql`VACUUM`);
     }
