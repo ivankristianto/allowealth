@@ -33,6 +33,7 @@ import { reportService, accountService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
+import { Users } from '@lucide/astro';
 
 const currentPath = '/reports';
 
@@ -193,7 +194,11 @@ const selectedPeriodLabel =
 ---
 
 <ProtectedLayout title="Reports" currentPath={currentPath} subtitle={selectedPeriodLabel}>
-  <div slot="header" data-selector-container>
+  <div slot="header" class="flex items-center gap-2" data-selector-container>
+    <a href="/reports/members" class="btn btn-sm btn-ghost gap-2">
+      <Users class="w-4 h-4" />
+      Member Spending
+    </a>
     <ReportSelector
       selectedRange={defaultRange}
       selectedPeriod={defaultPeriod}
