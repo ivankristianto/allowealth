@@ -94,6 +94,11 @@ export const GET: APIRoute = async (context) => {
       filters.search = search;
     }
 
+    const userId = url.searchParams.get('user_id');
+    if (userId && typeof userId === 'string' && userId.trim() !== '') {
+      filters.created_by_user_id = userId;
+    }
+
     // Exclude soft-deleted transactions from main list to avoid inflating count
     filters.include_deleted = false;
     filters.include_history_flag = true;
