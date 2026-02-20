@@ -20,8 +20,8 @@ import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueMod
 import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Search } from '@lucide/astro';
-import { accountService, accountCategoryService } from '@/services';
+import { CalendarDays, Info, Search } from '@lucide/astro';
+import { accountService, accountCategoryService, workspaceService } from '@/services';
 import type { AccountOutput, AccountType, AccountClass } from '@/lib/types/account';
 import { formatAccountType, deriveAccountClass, ACCOUNT_CLASS_LABELS } from '@/lib/types/account';
 import { formatMonthYear } from '@/lib/utils/date';
@@ -54,6 +54,8 @@ const VALID_ACCOUNT_TYPES = [
 // Get query parameters for filtering
 const url = new URL(Astro.url);
 const searchParams = Object.fromEntries(url.searchParams.entries());
+const isPersonalView = url.searchParams.get('view') === 'mine';
+const ownerUserId = isPersonalView ? user.id : undefined;
 
 // Build filters for service with validation
 const filters: {
@@ -61,6 +63,7 @@ const filters: {
   type?: AccountType;
   category_id?: string;
   currency?: 'IDR' | 'USD';
+  owner_user_id?: string;
 } = {
   user_id: user.workspaceId,
 };
@@ -74,6 +77,9 @@ if (searchParams.categoryId) {
 }
 if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
   filters.currency = searchParams.currency;
+}
+if (ownerUserId) {
+  filters.owner_user_id = ownerUserId;
 }
 
 // Month navigation parameters
@@ -94,6 +100,15 @@ const currentMonthUrl = new URL(url);
 currentMonthUrl.searchParams.delete('year');
 currentMonthUrl.searchParams.delete('month');
 const currentMonthHref = `${currentMonthUrl.pathname}${currentMonthUrl.search}`;
+
+// Build view-toggle URLs while preserving active filters and period.
+const allAccountsUrl = new URL(url);
+allAccountsUrl.searchParams.delete('view');
+const allAccountsHref = `${allAccountsUrl.pathname}${allAccountsUrl.search}`;
+
+const myAccountsUrl = new URL(url);
+myAccountsUrl.searchParams.set('view', 'mine');
+const myAccountsHref = `${myAccountsUrl.pathname}${myAccountsUrl.search}`;
 
 // Generate monthly period options (latest -> oldest, capped by shared selector window)
 const monthlyPeriodOptions: PeriodOption[] = Array.from(
@@ -121,10 +136,13 @@ if (!monthlyPeriodOptions.some((period) => period.value === selectedPeriod)) {
 }
 
 // Get closed account count for navigation link
-const closedCount = await accountService.countClosed(user.workspaceId);
+const closedCount = await accountService.countClosed(user.workspaceId, ownerUserId);
 
 // Fetch accounts and categories from database
 const categories = await accountCategoryService.findAll(user.workspaceId);
+const isAdmin = user.role === 'admin';
+const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
+const memberNamesById = new Map(workspaceMembers.map((m) => [m.id, m.name]));
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
 const defaultCategoryId =
   categories.find((category) => category.is_system && !category.is_liability)?.id ||
@@ -160,6 +178,7 @@ if (!isViewingCurrentMonth) {
       status: snapshot.status ?? 'active',
       closed_at: snapshot.closed_at ?? null,
       closed_by_user_id: snapshot.closed_by_user_id ?? null,
+      created_by_user_id: snapshot.created_by_user_id,
       last_updated: snapshot.snapshot_date || snapshot.last_updated,
       created_at: snapshot.created_at,
       updated_at: snapshot.updated_at,
@@ -186,6 +205,7 @@ if (!isViewingCurrentMonth) {
       status: account.status ?? 'active',
       closed_at: account.closed_at ?? null,
       closed_by_user_id: account.closed_by_user_id ?? null,
+      created_by_user_id: account.created_by_user_id,
       last_updated: account.last_updated,
       created_at: account.created_at,
       updated_at: account.updated_at,
@@ -257,11 +277,32 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
       )
     }
 
+    {/* Personal view indicator */}
+    {
+      isPersonalView && (
+        <div
+          class="bg-info/10 border border-info/20 rounded-card px-4 py-3 text-sm text-info font-medium flex items-center gap-2"
+          data-testid="personal-view-banner"
+        >
+          <Info size={16} class="stroke-current shrink-0" />
+          <span>
+            Showing your accounts only. Values reflect your portfolio.
+            <a href={allAccountsHref} class="underline font-bold ml-1">
+              View all accounts &rarr;
+            </a>
+          </span>
+        </div>
+      )
+    }
+
     {/* Action Buttons - always visible so users can add accounts/categories even when empty */}
     <AccountActions
       isHistoricalView={!isViewingCurrentMonth}
       defaultCategoryId={defaultCategoryId}
       closedCount={closedCount}
+      isPersonalView={isPersonalView}
+      allAccountsHref={allAccountsHref}
+      myAccountsHref={myAccountsHref}
     />
 
     {
@@ -324,6 +365,8 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
                       initialBalance={
                         account.initial_balance ? parseFloat(account.initial_balance) : undefined
                       }
+                      ownerUserId={account.created_by_user_id}
+                      ownerName={memberNamesById.get(account.created_by_user_id)}
                       lastUpdated={account.last_updated}
                       isHistoricalView={!isViewingCurrentMonth}
                     />
@@ -375,7 +418,15 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
       balance: a.balance,
     }))}
   />
-  <AccountFormModal id="account-form-modal" mode="add" categories={categories} />
+  <AccountFormModal
+    id="account-form-modal"
+    mode="add"
+    categories={categories}
+    members={isAdmin
+      ? workspaceMembers.map((member) => ({ id: member.id, name: member.name }))
+      : []}
+    isAdmin={isAdmin}
+  />
   <AccountCategoryModal id="account-category-modal" />
   <AccountDeleteConfirmModal id="account-delete-modal" />
   <AccountHistoryModal id="account-history-modal" />

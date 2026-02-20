@@ -196,10 +196,10 @@ export function groupAccountsByType(accounts: AccountOutput[]): Record<string, A
 /**
  * Group accounts by account class (liquid, non_liquid, debt)
  */
-export function groupAccountsByClass(
-  accounts: AccountOutput[]
-): Record<AccountClass, AccountOutput[]> {
-  const groups: Record<AccountClass, AccountOutput[]> = {
+export function groupAccountsByClass<T extends AccountOutput>(
+  accounts: T[]
+): Record<AccountClass, T[]> {
+  const groups: Record<AccountClass, T[]> = {
     liquid: [],
     non_liquid: [],
     debt: [],

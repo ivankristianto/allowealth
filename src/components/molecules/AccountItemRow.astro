@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Eye } from '@lucide/astro';
+import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Eye, User } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 
@@ -28,6 +28,8 @@ export interface Props {
   name: string;
   type: AccountType;
   accountClass?: string;
+  ownerUserId?: string;
+  ownerName?: string;
   categoryId?: string | null;
   categoryName?: string | null;
   currency: 'IDR' | 'USD';
@@ -43,6 +45,8 @@ const {
   name,
   type,
   accountClass,
+  ownerUserId = '',
+  ownerName,
   categoryId = null,
   categoryName = null,
   currency,
@@ -202,6 +206,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
                   data-account-type={type}
                   data-account-category-id={categoryId || ''}
                   data-account-category-name={categoryLabel}
+                  data-account-owner-id={ownerUserId}
                   data-account-currency={currency}
                   data-account-balance={balance}
                   data-testid="account-edit-btn"
@@ -233,8 +238,26 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       }
     </div>
 
-    {/* Row 2: relative time + initial balance + view details */}
+    {/* Row 2: owner + relative time + initial balance + view details */}
     <div class="mt-2 flex items-center gap-2">
+      {
+        ownerName && (
+          <span
+            class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+            data-testid="account-owner"
+          >
+            <User size={10} class="stroke-current shrink-0" aria-hidden="true" />
+            {ownerName}
+          </span>
+        )
+      }
+      {
+        ownerName && (
+          <span class="text-base-content/20 text-[11px]" aria-hidden="true">
+            &middot;
+          </span>
+        )
+      }
       <span
         class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
         title={`Last balance input: ${formattedDate}`}
@@ -287,12 +310,32 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
           {name}
         </a>
       </h4>
-      <span
-        class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40 mt-2 lg:mt-3"
-        title={`Last balance input: ${formattedDate}`}
-      >
-        Updated {relativeTime.toLowerCase()}
-      </span>
+      <div class="flex items-center gap-2 mt-2 lg:mt-3">
+        {
+          ownerName && (
+            <span
+              class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+              data-testid="account-owner"
+            >
+              <User size={10} class="stroke-current shrink-0" aria-hidden="true" />
+              {ownerName}
+            </span>
+          )
+        }
+        {
+          ownerName && (
+            <span class="text-base-content/20 text-[11px]" aria-hidden="true">
+              &middot;
+            </span>
+          )
+        }
+        <span
+          class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+          title={`Last balance input: ${formattedDate}`}
+        >
+          Updated {relativeTime.toLowerCase()}
+        </span>
+      </div>
     </div>
 
     {/* Balance and Actions */}
@@ -388,6 +431,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
                     data-account-type={type}
                     data-account-category-id={categoryId || ''}
                     data-account-category-name={categoryLabel}
+                    data-account-owner-id={ownerUserId}
                     data-account-currency={currency}
                     data-account-balance={balance}
                     data-testid="account-edit-btn"
@@ -536,6 +580,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         const accountType = btn.getAttribute('data-account-type') || 'bank_account';
         const accountCategoryId = btn.getAttribute('data-account-category-id') || '';
         const accountCategoryName = btn.getAttribute('data-account-category-name') || '';
+        const accountOwnerId = btn.getAttribute('data-account-owner-id') || '';
         const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
           | 'IDR'
           | 'USD';
@@ -552,6 +597,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
               type: accountType,
               categoryId: accountCategoryId,
               categoryName: accountCategoryName,
+              ownerId: accountOwnerId,
               currency: accountCurrency,
               balance: accountBalance,
             },

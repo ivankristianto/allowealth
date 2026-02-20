@@ -28,9 +28,18 @@ export interface Props {
     is_system: boolean;
     sort_order: number;
   }>;
+  members?: Array<{ id: string; name: string }>;
+  isAdmin?: boolean;
 }
 
-const { id, mode = 'add', currency = 'IDR', categories = [] } = Astro.props;
+const {
+  id,
+  mode = 'add',
+  currency = 'IDR',
+  categories = [],
+  members = [],
+  isAdmin = false,
+} = Astro.props;
 
 const isEditMode = mode === 'edit';
 const title = isEditMode ? 'Edit Account' : 'Register Account';
@@ -79,6 +88,7 @@ const categoryOptions = categories.length
       <form id={`${id}-form`} class="flex flex-col gap-6" aria-describedby={`${id}-error`}>
         {/* Hidden field for account ID (edit mode) */}
         <input type="hidden" name="account_id" id={`${id}-account-id`} value="" />
+        <input type="hidden" name="original_owner_id" id={`${id}-original-owner-id`} value="" />
 
         {/* Account Name */}
         <div class="space-y-2">
@@ -186,6 +196,27 @@ const categoryOptions = categories.length
           </div>
         </div>
 
+        {/* Owner transfer (admin only, edit mode) */}
+        {
+          isAdmin && members.length > 1 && (
+            <div class="form-control w-full hidden" data-account-owner-field>
+              <label class="label" for={`${id}-owner`}>
+                <span class="label-text font-medium">Owner</span>
+              </label>
+              <select
+                id={`${id}-owner`}
+                name="ownerId"
+                class="select select-bordered w-full rounded-xl"
+                data-account-owner-select
+              >
+                {members.map((member) => (
+                  <option value={member.id}>{member.name}</option>
+                ))}
+              </select>
+            </div>
+          )
+        }
+
         {/* Error message container */}
         <div
           id={`${id}-error`}
@@ -232,6 +263,7 @@ const categoryOptions = categories.length
     name: string;
     categoryId?: string;
     categoryName?: string;
+    ownerId?: string;
     currency: 'IDR' | 'USD';
     balance: string;
   }
@@ -253,12 +285,21 @@ const categoryOptions = categories.length
 
       // Form fields
       const accountIdInput = document.getElementById(`${id}-account-id`) as HTMLInputElement | null;
+      const originalOwnerInput = document.getElementById(
+        `${id}-original-owner-id`
+      ) as HTMLInputElement | null;
       const nameInput = document.getElementById(`${id}-name`) as HTMLInputElement | null;
       const categorySelect = document.getElementById(
         `${id}-categoryId`
       ) as HTMLSelectElement | null;
       const currencySelect = document.getElementById(`${id}-currency`) as HTMLSelectElement | null;
       const balanceInput = document.getElementById(`${id}-balance`) as HTMLInputElement | null;
+      const ownerField = container.querySelector(
+        '[data-account-owner-field]'
+      ) as HTMLElement | null;
+      const ownerSelect = container.querySelector(
+        '[data-account-owner-select]'
+      ) as HTMLSelectElement | null;
       const createCategoryBtn = container.querySelector('[data-toggle-custom-type]');
 
       // Title and subtitle for dynamic updates
@@ -293,6 +334,7 @@ const categoryOptions = categories.length
       // Function to populate form for edit mode
       const populateForm = (data: AccountFormData) => {
         if (accountIdInput) accountIdInput.value = data.id || '';
+        if (originalOwnerInput) originalOwnerInput.value = data.ownerId || '';
         if (nameInput) nameInput.value = data.name || '';
         if (categorySelect) {
           if (data.categoryId) {
@@ -324,12 +366,20 @@ const categoryOptions = categories.length
         if (balanceField) {
           (balanceField as HTMLElement).style.display = data.id ? 'none' : '';
         }
+
+        if (ownerField) {
+          ownerField.classList.toggle('hidden', !data.id);
+        }
+        if (ownerSelect && data.ownerId) {
+          ownerSelect.value = data.ownerId;
+        }
       };
 
       // Function to reset form
       const resetForm = () => {
         form.reset();
         if (accountIdInput) accountIdInput.value = '';
+        if (originalOwnerInput) originalOwnerInput.value = '';
         if (errorDiv) {
           errorDiv.textContent = '';
           errorDiv.classList.add('hidden');
@@ -348,6 +398,10 @@ const categoryOptions = categories.length
         const balanceField = container.querySelector(`#${id}-balance`)?.closest('.space-y-2');
         if (balanceField) {
           (balanceField as HTMLElement).style.display = '';
+        }
+
+        if (ownerField) {
+          ownerField.classList.add('hidden');
         }
       };
 
@@ -390,6 +444,8 @@ const categoryOptions = categories.length
         const categoryId = formData.get('categoryId') as string;
         const currency = formData.get('currency') as string;
         const balance = formData.get('balance') as string;
+        const selectedOwnerId = formData.get('ownerId') as string | null;
+        const originalOwnerId = formData.get('original_owner_id') as string | null;
 
         // Clear previous errors
         if (errorDiv) {
@@ -474,6 +530,23 @@ const categoryOptions = categories.length
                 errorData.message ||
                 `Failed to ${isEdit ? 'update' : 'create'} account`
             );
+          }
+
+          if (isEdit && selectedOwnerId && originalOwnerId && selectedOwnerId !== originalOwnerId) {
+            const transferResponse = await csrfFetch(`/api/accounts/${accountId}/transfer-owner`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ owner_user_id: selectedOwnerId }),
+            });
+
+            if (!transferResponse.ok) {
+              const transferErrorData = await transferResponse.json();
+              throw new Error(
+                transferErrorData.error?.message ||
+                  transferErrorData.message ||
+                  'Account updated, but ownership transfer failed'
+              );
+            }
           }
 
           // Success

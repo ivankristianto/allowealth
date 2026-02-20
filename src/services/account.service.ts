@@ -148,6 +148,7 @@ export class AccountService {
       category_id?: string;
       currency?: Currency;
       includeInactive?: boolean;
+      owner_user_id?: string;
     },
     perf?: PerfCollector
   ) {
@@ -174,6 +175,10 @@ export class AccountService {
 
     if (filters?.currency) {
       conditions.push(eq(this.schema.accounts.currency, filters.currency));
+    }
+
+    if (filters?.owner_user_id) {
+      conditions.push(eq(this.schema.accounts.created_by_user_id, filters.owner_user_id));
     }
 
     return cacheOrFetch(
@@ -618,6 +623,7 @@ export class AccountService {
       type?: AccountType;
       category_id?: string;
       currency?: Currency;
+      owner_user_id?: string;
     },
     perf?: PerfCollector
   ) {
@@ -914,21 +920,72 @@ export class AccountService {
   }
 
   /**
+   * Transfer account ownership to a different user.
+   * Admin-only check is enforced at API layer.
+   */
+  async transferOwnership(accountId: string, newOwnerId: string, workspaceId: string) {
+    const account = await this.findByIdIncludingClosed(accountId, workspaceId);
+    if (!account) {
+      throw new AccountServiceError(ServiceErrorCode.ACCOUNT_NOT_FOUND, 'Account not found', 404);
+    }
+
+    const owner = await this.db.query.users.findFirst({
+      where: and(
+        eq(this.schema.users.id, newOwnerId),
+        eq(this.schema.users.workspace_id, workspaceId),
+        sql`${this.schema.users.deleted_at} IS NULL`
+      ),
+    });
+    if (!owner) {
+      throw new AccountServiceError(
+        ServiceErrorCode.USER_NOT_FOUND,
+        'Owner user not found in workspace',
+        404
+      );
+    }
+
+    await this.db
+      .update(this.schema.accounts)
+      .set({
+        created_by_user_id: newOwnerId,
+        updated_at: new Date(),
+      })
+      .where(
+        and(
+          eq(this.schema.accounts.id, accountId),
+          eq(this.schema.accounts.workspace_id, workspaceId)
+        )
+      );
+
+    // Invalidate account cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+  }
+
+  /**
    * Get account counts grouped by category ID
    */
-  async countClosed(workspaceId: string): Promise<number> {
+  async countClosed(workspaceId: string, ownerUserId?: string): Promise<number> {
+    const conditions = [
+      eq(this.schema.accounts.workspace_id, workspaceId),
+      eq(this.schema.accounts.status, 'closed'),
+      sql`${this.schema.accounts.deleted_at} IS NULL`,
+    ];
+
+    if (ownerUserId) {
+      conditions.push(eq(this.schema.accounts.created_by_user_id, ownerUserId));
+    }
+
     const result = await (this.db as any)
       .select({
         count: sql<number>`count(*)`,
       })
       .from(this.schema.accounts)
-      .where(
-        and(
-          eq(this.schema.accounts.workspace_id, workspaceId),
-          eq(this.schema.accounts.status, 'closed'),
-          sql`${this.schema.accounts.deleted_at} IS NULL`
-        )
-      );
+      .where(and(...conditions));
 
     return result[0]?.count ?? 0;
   }

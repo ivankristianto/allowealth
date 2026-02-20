@@ -48,4 +48,11 @@ This file is managed by Claude Code's auto-memory system.
 
 ---
 
+## User Preferences (Critical)
+
+- **ALWAYS follow user instructions exactly.** When the user says to spawn an agent with a specific model (e.g., "spawn new agent with sonnet"), use the Task tool with that exact model. NEVER execute the work directly in the main conversation when the user explicitly requested delegation to a subagent.
+- Never substitute your own approach for what the user explicitly asked for. Instructions on HOW to do something are just as important as WHAT to do.
+
+---
+
 _Note: Detailed patterns and rules are in `.claude/rules/`. This file contains quick reference only._

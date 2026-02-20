@@ -10,13 +10,16 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Settings, ArrowRightLeft, Archive } from '@lucide/astro';
+import { Plus, Settings, ArrowRightLeft, Archive, Users, User } from '@lucide/astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
 
 export interface Props {
   isHistoricalView?: boolean;
   defaultCategoryId?: string;
   closedCount?: number;
+  isPersonalView?: boolean;
+  allAccountsHref?: string;
+  myAccountsHref?: string;
   className?: string;
 }
 
@@ -24,6 +27,9 @@ const {
   isHistoricalView = false,
   defaultCategoryId = '',
   closedCount = 0,
+  isPersonalView = false,
+  allAccountsHref = '/accounts',
+  myAccountsHref = '/accounts?view=mine',
   className = '',
 } = Astro.props;
 
@@ -35,6 +41,40 @@ const accentGhostBtn =
 ---
 
 <ActionBar className={className} ariaLabel="Account actions" edgeBleed>
+  {/* View Toggle */}
+  <div class="tooltip tooltip-bottom" data-tip="View all accounts">
+    <a
+      href={allAccountsHref}
+      class:list={[
+        ghostBtn,
+        !isPersonalView && 'bg-base-content/10 !text-base-content font-semibold',
+      ]}
+      aria-current={!isPersonalView ? 'page' : undefined}
+      aria-label="View all accounts"
+      data-testid="view-all-accounts-btn"
+    >
+      <Users size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Users size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="text-xs md:text-sm">All</span>
+    </a>
+  </div>
+  <div class="tooltip tooltip-bottom" data-tip="View my accounts">
+    <a
+      href={myAccountsHref}
+      class:list={[
+        ghostBtn,
+        isPersonalView && 'bg-base-content/10 !text-base-content font-semibold',
+      ]}
+      aria-current={isPersonalView ? 'page' : undefined}
+      aria-label="View my accounts"
+      data-testid="view-my-accounts-btn"
+    >
+      <User size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <User size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="text-xs md:text-sm">Mine</span>
+    </a>
+  </div>
+
   {/* Categories */}
   <div class="tooltip tooltip-bottom" data-tip="Manage account categories">
     <a

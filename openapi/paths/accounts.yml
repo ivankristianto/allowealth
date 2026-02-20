@@ -25,6 +25,13 @@ paths:
           schema:
             type: string
             enum: [IDR, USD]
+        - name: owner
+          in: query
+          description: |
+            Filter by owner user ID.
+            Non-admin users may only use their own user ID.
+          schema:
+            type: string
       responses:
         '200':
           description: Successful response
@@ -36,6 +43,12 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Insufficient permissions for requested owner filter
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     post:
@@ -384,6 +397,58 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Insufficient permissions (admin only)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/{id}/transfer-owner:
+    patch:
+      tags: [Accounts]
+      summary: Transfer account ownership
+      description: Transfer account ownership to another workspace member (admin only)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [owner_user_id]
+              properties:
+                owner_user_id:
+                  type: string
+                  minLength: 1
+                  description: Target owner user ID
+      responses:
+        '200':
+          description: Ownership transferred successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Ownership transferred successfully
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '403':
