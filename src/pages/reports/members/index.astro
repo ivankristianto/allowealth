@@ -6,14 +6,14 @@ import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 import StatCard from '@/components/atoms/StatCard.astro';
-import Button from '@/components/atoms/Button.astro';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import { reportService, workspaceService } from '@/services';
 import type { MemberSummaryRow, ReportData } from '@/services/report.service';
 import { formatMonthYear } from '@/lib/utils/date';
 import { formatCurrency } from '@/lib/formatting';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import type { Currency } from '@/lib/enums';
-import { ChevronRight, Users, ArrowLeft } from '@lucide/astro';
+import { ChevronRight, Users } from '@lucide/astro';
 
 const currentPath = '/reports/members';
 
@@ -176,20 +176,7 @@ const totalNet = totals.income - totals.expenses;
 ---
 
 <ProtectedLayout title="Member Spending" currentPath={currentPath} subtitle={subtitleText}>
-  <div slot="header" class="flex items-center gap-2">
-    {
-      urlUserId ? (
-        <Button variant="ghost" size="sm" href={overviewUrl} aria-label="Back to member overview">
-          <ArrowLeft class="w-4 h-4" />
-          <span class="hidden sm:inline">Overview</span>
-        </Button>
-      ) : (
-        <Button variant="ghost" size="sm" href="/reports" aria-label="Back to reports">
-          <ArrowLeft class="w-4 h-4" />
-          <span class="hidden sm:inline">Reports</span>
-        </Button>
-      )
-    }
+  <div slot="header">
     <ReportSelector
       selectedRange={range}
       selectedPeriod={defaultPeriod}
@@ -208,6 +195,14 @@ const totalNet = totals.income - totals.expenses;
         data-current-currency={currency}
         data-current-user-id={urlUserId}
       >
+        <Breadcrumb
+          items={[
+            { label: 'Reports', href: '/reports' },
+            { label: 'Member Spending', href: overviewUrl },
+            { label: selectedMemberName },
+          ]}
+        />
+
         <ReportSummaryCardsPartial
           totalIncome={userReportForPartials.totalIncome}
           totalExpenses={userReportForPartials.totalExpenses}
@@ -241,10 +236,14 @@ const totalNet = totals.income - totals.expenses;
         data-current-currency={currency}
         data-current-user-id=""
       >
+        <Breadcrumb
+          items={[{ label: 'Reports', href: '/reports' }, { label: 'Member Spending' }]}
+        />
+
         {/* Summary Stat Cards */}
         <div class="@container">
           <div class="grid grid-cols-1 @2xl:grid-cols-3 gap-4 @2xl:gap-6">
-            <StatCard title="FAMILY INCOME">
+            <StatCard title="TOTAL INCOME">
               <Fragment slot="details">
                 <div class="flex items-center gap-2">
                   <span class={currencyBadge}>{currency}</span>
@@ -255,7 +254,7 @@ const totalNet = totals.income - totals.expenses;
               </Fragment>
             </StatCard>
 
-            <StatCard title="FAMILY EXPENSES">
+            <StatCard title="TOTAL EXPENSES">
               <Fragment slot="details">
                 <div class="space-y-1.5">
                   <div class="flex items-center gap-2">
@@ -271,7 +270,7 @@ const totalNet = totals.income - totals.expenses;
               </Fragment>
             </StatCard>
 
-            <StatCard title="FAMILY NET">
+            <StatCard title="NET SAVINGS">
               <Fragment slot="details">
                 <div class="flex items-center gap-2">
                   <span class={currencyBadge}>{currency}</span>
