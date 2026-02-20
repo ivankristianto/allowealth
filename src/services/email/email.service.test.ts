@@ -113,6 +113,21 @@ describe('EmailService', () => {
     });
   });
 
+  describe('sendEmailChangeVerification', () => {
+    it('should send email change verification email via console in dev mode', async () => {
+      const service = new EmailService();
+
+      const result = await service.sendEmailChangeVerification({
+        to: 'user@example.com',
+        userName: 'Test User',
+        newEmail: 'new@example.com',
+        verificationUrl: 'https://example.com/verify?token=abc',
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('graceful degradation', () => {
     it('should use console provider when env vars not configured', async () => {
       setTestEnv({

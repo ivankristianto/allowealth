@@ -1,10 +1,39 @@
 # User endpoint paths
 paths:
   /api/user/profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      description: |
+        Retrieve the current authenticated user's profile.
+        If an email change is in progress, `data.pendingEmail` contains the
+        email address awaiting verification.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/UserProfileResponse.yml#/UserProfileResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
     put:
       tags: [User]
       summary: Update user profile
-      description: Update user name and email. Email must be unique across all users.
+      description: |
+        Update user profile fields.
+        When the email is changed, the endpoint starts a verify-first flow:
+        it stores `data.pendingEmail` and sends a verification email instead of
+        applying the email immediately. Email change validation runs first, so
+        if the new email is already used the endpoint returns 409 and no other
+        profile updates are persisted.
       security:
         - sessionAuth: []
       requestBody:
@@ -19,7 +48,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../schemas/UserProfileResponse.yml#/UserProfileResponse'
+                $ref: '../schemas/UserProfileUpdateResponse.yml#/UserProfileUpdateResponse'
         '400':
           description: Validation error or invalid input
           content:
@@ -29,11 +58,18 @@ paths:
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '409':
-          description: Email already exists
+          description: Email already exists (`EMAIL_ALREADY_EXISTS`)
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+              examples:
+                emailAlreadyExists:
+                  value:
+                    success: false
+                    error:
+                      message: Email already exists
+                      code: EMAIL_ALREADY_EXISTS
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -71,4 +107,3 @@ paths:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
-

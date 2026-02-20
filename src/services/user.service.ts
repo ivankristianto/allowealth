@@ -9,7 +9,6 @@
  *
  * Error codes:
  * - USER_NOT_FOUND: User doesn't exist
- * - EMAIL_ALREADY_EXISTS: Email owned by another user
  * - INVALID_PASSWORD: Old password doesn't match
  * - WEAK_PASSWORD: New password doesn't meet requirements
  * - VALIDATION_ERROR: Input validation failed
@@ -29,9 +28,8 @@ import {
 /**
  * Zod schemas for user service validation
  */
-export const updateProfileSchema = z.object({
+const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
-  email: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
 });
 
 export const updatePasswordSchema = z.object({
@@ -44,9 +42,8 @@ export const updatePasswordSchema = z.object({
 });
 
 /**
- * Input types inferred from Zod schemas
+ * Input type inferred from Zod schema
  */
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
 
 /**
@@ -86,14 +83,14 @@ export class UserService {
   }
 
   /**
-   * Update user profile (name and email)
+   * Update user profile (name only)
    *
    * @param userId - User ID to update
    * @param input - Profile update data
    * @returns Promise resolving to updated user
-   * @throws {UserServiceError} If user not found, email exists, or validation fails
+   * @throws {UserServiceError} If user not found or validation fails
    */
-  async updateProfile(userId: string, input: UpdateProfileInput) {
+  async updateProfile(userId: string, input: { name: string }) {
     // Validate input using Zod schema
     const validated = updateProfileSchema.parse(input);
 
@@ -106,27 +103,11 @@ export class UserService {
       throw new UserServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
     }
 
-    // If email is being changed, check if it's already taken
-    if (validated.email.toLowerCase() !== user.email.toLowerCase()) {
-      const existingUser = await this.db.query.users.findFirst({
-        where: eq(this.schema.users.email, validated.email.toLowerCase()),
-      });
-
-      if (existingUser) {
-        throw new UserServiceError(
-          ServiceErrorCode.EMAIL_ALREADY_EXISTS,
-          'Email already exists',
-          409
-        );
-      }
-    }
-
     // Update user
     await this.db
       .update(this.schema.users)
       .set({
         name: validated.name.trim(),
-        email: validated.email.toLowerCase(),
         updated_at: new Date(),
       })
       .where(eq(this.schema.users.id, userId));

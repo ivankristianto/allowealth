@@ -62,7 +62,6 @@ describe('UserService', () => {
   const userService = new UserService(db);
 
   const testEmail1 = 'userServiceTest@example.com';
-  const testEmail2 = 'userServiceTest2@example.com';
   const testPassword = 'SecurePassword123!';
   const testName = 'Test User';
 
@@ -70,8 +69,7 @@ describe('UserService', () => {
   beforeEach(async () => {
     // Delete test users and their meta
     const testUsers = await db.query.users.findMany({
-      where: (users, { or }) =>
-        or(eq(users.email, testEmail1.toLowerCase()), eq(users.email, testEmail2.toLowerCase())),
+      where: eq(users.email, testEmail1.toLowerCase()),
     });
 
     for (const user of testUsers) {
@@ -83,8 +81,7 @@ describe('UserService', () => {
   // Clean up after all tests
   afterEach(async () => {
     const testUsers = await db.query.users.findMany({
-      where: (users, { or }) =>
-        or(eq(users.email, testEmail1.toLowerCase()), eq(users.email, testEmail2.toLowerCase())),
+      where: eq(users.email, testEmail1.toLowerCase()),
     });
 
     for (const user of testUsers) {
@@ -94,30 +91,16 @@ describe('UserService', () => {
   });
 
   describe('updateProfile', () => {
-    it('should update user name and email', async () => {
+    it('should update user name only', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
 
-      const newEmail = `updated-${nanoid()}@example.com`;
       const updatedUser = await userService.updateProfile(user.id, {
         name: 'Updated Name',
-        email: newEmail,
       });
 
       expect(updatedUser).toBeDefined();
       expect(updatedUser.name).toBe('Updated Name');
-      expect(updatedUser.email).toBe(newEmail.toLowerCase());
-    });
-
-    it('should normalize email to lowercase', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-      const newEmail = `uppercase-${nanoid()}@EXAMPLE.COM`;
-
-      const updatedUser = await userService.updateProfile(user.id, {
-        name: 'Test User',
-        email: newEmail,
-      });
-
-      expect(updatedUser.email).toBe(newEmail.toLowerCase());
+      expect(updatedUser.email).toBe(testEmail1.toLowerCase());
     });
 
     it('should trim name whitespace', async () => {
@@ -125,55 +108,16 @@ describe('UserService', () => {
 
       const updatedUser = await userService.updateProfile(user.id, {
         name: '  Trimmed Name  ',
-        email: testEmail1,
       });
 
       expect(updatedUser.name).toBe('Trimmed Name');
-    });
-
-    it('should allow updating same email for same user', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const updatedUser = await userService.updateProfile(user.id, {
-        name: 'Updated Name',
-        email: testEmail1,
-      });
-
-      expect(updatedUser.name).toBe('Updated Name');
       expect(updatedUser.email).toBe(testEmail1.toLowerCase());
-    });
-
-    it('should throw error for duplicate email', async () => {
-      const user1 = await createTestUser(testEmail1, testPassword, 'User 1');
-      await createTestUser(testEmail2, testPassword, 'User 2');
-
-      expect(
-        userService.updateProfile(user1.id, {
-          name: 'Updated Name',
-          email: testEmail2,
-        })
-      ).rejects.toThrow();
-    });
-
-    it('should throw error with EMAIL_ALREADY_EXISTS code for duplicate email', async () => {
-      const user1 = await createTestUser(testEmail1, testPassword, 'User 1');
-      await createTestUser(testEmail2, testPassword, 'User 2');
-
-      expect(
-        userService.updateProfile(user1.id, {
-          name: 'Updated Name',
-          email: testEmail2,
-        })
-      ).rejects.toMatchObject({
-        code: ServiceErrorCode.EMAIL_ALREADY_EXISTS,
-      });
     });
 
     it('should throw error for non-existent user', async () => {
       expect(
         userService.updateProfile('non-existent-id', {
           name: 'Updated Name',
-          email: 'updated@example.com',
         })
       ).rejects.toThrow();
     });
@@ -182,7 +126,6 @@ describe('UserService', () => {
       expect(
         userService.updateProfile('non-existent-id', {
           name: 'Updated Name',
-          email: 'updated@example.com',
         })
       ).rejects.toMatchObject({
         code: ServiceErrorCode.USER_NOT_FOUND,
@@ -195,18 +138,6 @@ describe('UserService', () => {
       expect(
         userService.updateProfile(user.id, {
           name: '',
-          email: testEmail1,
-        })
-      ).rejects.toThrow();
-    });
-
-    it('should throw validation error for invalid email', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      expect(
-        userService.updateProfile(user.id, {
-          name: 'Test User',
-          email: 'invalid-email',
         })
       ).rejects.toThrow();
     });
@@ -217,7 +148,6 @@ describe('UserService', () => {
       expect(
         userService.updateProfile(user.id, {
           name: 'a'.repeat(256),
-          email: testEmail1,
         })
       ).rejects.toThrow();
     });
@@ -351,7 +281,6 @@ describe('UserService', () => {
       // Update profile
       const updatedUser = await userService.updateProfile(user.id, {
         name: 'Updated Name',
-        email: `updated-${nanoid()}@example.com`,
       });
       expect(updatedUser.name).toBe('Updated Name');
 

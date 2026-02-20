@@ -14,6 +14,7 @@ export const USER_META_KEYS = {
   SHOW_INDIVIDUAL_CURRENCIES: 'show_individual_currencies',
   PHONE: 'phone',
   BIO: 'bio',
+  PENDING_EMAIL: 'pending_email',
 } as const;
 
 /**
@@ -34,6 +35,7 @@ export const META_DEFAULTS: Record<UserMetaKey, string> = {
   [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: 'true',
   [USER_META_KEYS.PHONE]: '',
   [USER_META_KEYS.BIO]: '',
+  [USER_META_KEYS.PENDING_EMAIL]: '',
 };
 
 /**
@@ -56,6 +58,9 @@ export const META_VALUE_SCHEMAS: Record<UserMetaKey, z.ZodType<string>> = {
   }),
   [USER_META_KEYS.PHONE]: z.string().max(50, 'Phone number must be at most 50 characters'),
   [USER_META_KEYS.BIO]: z.string().max(500, 'Bio must be at most 500 characters'),
+  [USER_META_KEYS.PENDING_EMAIL]: z
+    .email({ message: 'Invalid email format' })
+    .max(255, 'Email must be at most 255 characters'),
 };
 
 /**
@@ -67,6 +72,7 @@ export const metaKeySchema = z.enum(
     USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
     USER_META_KEYS.PHONE,
     USER_META_KEYS.BIO,
+    USER_META_KEYS.PENDING_EMAIL,
   ],
   {
     message: `Invalid meta key. Must be one of: ${VALID_META_KEYS.join(', ')}`,

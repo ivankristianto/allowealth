@@ -48,6 +48,16 @@ export interface SendEmailVerificationOptions {
 }
 
 /**
+ * Email change verification options
+ */
+export interface SendEmailChangeVerificationOptions {
+  to: string;
+  userName: string;
+  newEmail: string;
+  verificationUrl: string;
+}
+
+/**
  * Email configuration from environment variables
  */
 interface EmailConfig {
@@ -125,6 +135,26 @@ export class EmailService {
   async sendEmailVerification(options: SendEmailVerificationOptions): Promise<SendEmailResult> {
     const { to, userName, verificationUrl } = options;
     const template = emailTemplateService.emailVerification({ verificationUrl, userName });
+
+    return this.send({
+      to,
+      subject: template.subject,
+      html: template.html,
+    });
+  }
+
+  /**
+   * Send an email change verification email
+   */
+  async sendEmailChangeVerification(
+    options: SendEmailChangeVerificationOptions
+  ): Promise<SendEmailResult> {
+    const { to, userName, newEmail, verificationUrl } = options;
+    const template = emailTemplateService.emailChangeVerification({
+      verificationUrl,
+      userName,
+      newEmail,
+    });
 
     return this.send({
       to,

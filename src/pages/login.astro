@@ -14,6 +14,7 @@ const error = url.searchParams.get('error');
 const redirect = url.searchParams.get('redirect') || '';
 const registered = url.searchParams.get('registered');
 const verified = url.searchParams.get('verified');
+const emailChanged = url.searchParams.get('email-changed');
 const emailParam = url.searchParams.get('email') || '';
 
 const oauthError = Astro.url.searchParams.get('oauth_error') || '';
@@ -25,6 +26,7 @@ const errorMessages: Record<string, string> = {
   invalid_token: 'Invalid verification link. Please request a new one.',
   expired_token: 'Verification link has expired.',
   verification_failed: 'Email verification failed. Please try again.',
+  email_taken: 'Email change failed - the email is now used by another account.',
 };
 
 // Only use whitelisted error codes to prevent XSS
@@ -45,6 +47,9 @@ if (registered === 'true') {
 } else if (error === 'expired_token') {
   bannerMessage = 'Verification link has expired.';
   bannerType = 'error';
+} else if (emailChanged === 'true') {
+  bannerMessage = 'Email changed successfully! Please sign in with your new email.';
+  bannerType = 'success';
 }
 ---
 

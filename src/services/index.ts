@@ -71,7 +71,11 @@ export const workspaceMetaService = new WorkspaceMetaService(db);
 export const workspaceInvitationService = new WorkspaceInvitationService(db);
 export const apiKeyService = new ApiKeyService(db);
 export const emailService = new EmailService();
-export const emailVerificationService = new EmailVerificationService(db, emailService);
+export const emailVerificationService = new EmailVerificationService(
+  db,
+  emailService,
+  userMetaService
+);
 export const superAdminService = new SuperAdminService(db);
 export const diagnosticsService = new DiagnosticsService(db);
 export const mfaService = new MfaService(db);

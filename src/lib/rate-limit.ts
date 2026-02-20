@@ -393,6 +393,16 @@ export const RATE_LIMIT_PRESETS = {
   } satisfies RateLimitConfig,
 
   /**
+   * Rate limit for resending email change verification
+   * 3 requests per hour per user
+   */
+  resendEmailChange: {
+    maxRequests: 3,
+    windowMs: 60 * 60 * 1000, // 1 hour
+    message: 'Too many resend requests. Please try again later.',
+  } satisfies RateLimitConfig,
+
+  /**
    * Standard API rate limit
    * 100 requests per minute per IP
    */
