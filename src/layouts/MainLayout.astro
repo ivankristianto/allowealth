@@ -74,4 +74,23 @@ const hasHeaderSlot = Astro.slots.has('header');
   <script>
     import '../components/layouts/MobileDrawer.client';
   </script>
+
+  <script>
+    // Dynamically sync main content padding-top to the actual header height.
+    // The fixed header height varies: title may wrap on narrow viewports and some
+    // pages inject extra rows (e.g. PeriodicSelector) via the header slot.
+    // A static Tailwind pt-XX class can be insufficient, leaving content hidden
+    // beneath the header. This script measures the rendered header each time the
+    // layout is (re-)painted and overrides the padding via an inline style.
+    function syncMainPadding() {
+      const header = document.querySelector<HTMLElement>('header');
+      const main = document.getElementById('main-content');
+      if (!header || !main) return;
+      main.style.paddingTop = `${header.offsetHeight}px`;
+    }
+
+    syncMainPadding();
+    window.addEventListener('resize', syncMainPadding);
+    document.addEventListener('astro:page-load', syncMainPadding);
+  </script>
 </BaseLayout>
