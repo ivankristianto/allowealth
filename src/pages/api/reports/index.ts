@@ -100,13 +100,16 @@ export const GET: APIRoute = async (context) => {
         : errorResponse(errorMsg, 400, 'INVALID_CURRENCY');
     }
 
+    // Optional: filter by specific user
+    const userId = url.searchParams.get('user_id') || undefined;
+
     // 3. Call service with workspaceId to fetch report data
     let reportData: ReportData;
     if (range === 'monthly') {
-      reportData = await reportService.getMonthlyReport(auth.workspaceId, period, currency);
+      reportData = await reportService.getMonthlyReport(auth.workspaceId, period, currency, userId);
     } else {
       const year = parseInt(period, 10);
-      reportData = await reportService.getYearlyReport(auth.workspaceId, year, currency);
+      reportData = await reportService.getYearlyReport(auth.workspaceId, year, currency, userId);
     }
 
     // Fetch account totals by class for summary cards

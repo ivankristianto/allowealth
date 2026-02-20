@@ -106,6 +106,18 @@ export interface CategoryTransactionsData {
 }
 
 /**
+ * Per-member spending summary row
+ */
+export interface MemberSummaryRow {
+  userId: string;
+  userName: string;
+  totalIncome: string;
+  totalExpenses: string;
+  netSavings: string;
+  transactionCount: number;
+}
+
+/**
  * Report data aggregation service
  */
 export class ReportService {
@@ -155,7 +167,8 @@ export class ReportService {
   async getMonthlyReport(
     workspaceId: string,
     period: string,
-    currency: 'IDR' | 'USD' = 'IDR'
+    currency: 'IDR' | 'USD' = 'IDR',
+    userId?: string
   ): Promise<ReportData> {
     try {
       // Validate inputs
@@ -181,12 +194,12 @@ export class ReportService {
         categoryIntelligence,
         trendData,
       ] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
-        this.getBudgetHealth(workspaceId, year, month, currency),
-        this.getExpenseByCategory(workspaceId, startDate, endDate, currency),
-        this.getCategoryIntelligence(workspaceId, year, month, currency),
-        this.getTrendData(workspaceId, year, month, currency, 3), // Trailing 3 months
+        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
+        this.getBudgetHealth(workspaceId, year, month, currency, userId),
+        this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
+        this.getCategoryIntelligence(workspaceId, year, month, currency, userId),
+        this.getTrendData(workspaceId, year, month, currency, 3, userId), // Trailing 3 months
       ]);
 
       // Calculate net savings
@@ -226,7 +239,8 @@ export class ReportService {
   async getYearlyReport(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD' = 'IDR'
+    currency: 'IDR' | 'USD' = 'IDR',
+    userId?: string
   ): Promise<ReportData> {
     try {
       // Validate inputs
@@ -249,12 +263,12 @@ export class ReportService {
         categoryIntelligence,
         trendData,
       ] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
-        this.getYearlyBudgetHealth(workspaceId, year, currency),
-        this.getExpenseByCategory(workspaceId, startDate, endDate, currency),
-        this.getYearlyCategoryIntelligence(workspaceId, year, currency),
-        this.getYearlyTrendData(workspaceId, year, currency), // 12 months
+        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
+        this.getYearlyBudgetHealth(workspaceId, year, currency, userId),
+        this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
+        this.getYearlyCategoryIntelligence(workspaceId, year, currency, userId),
+        this.getYearlyTrendData(workspaceId, year, currency, userId), // 12 months
       ]);
 
       // Calculate net savings
@@ -394,6 +408,134 @@ export class ReportService {
     }
   }
 
+  /**
+   * Get per-member spending summary for a period
+   *
+   * Returns income, expenses, net savings, and transaction count for each
+   * workspace member who has transactions in the given period.
+   *
+   * @param workspaceId - Workspace ID
+   * @param period - Period string ('YYYY-MM' for monthly, 'YYYY' for yearly)
+   * @param range - 'monthly' or 'yearly'
+   * @param currency - Currency to aggregate
+   * @returns Array of per-member summaries, sorted by total expenses descending
+   */
+  async getMemberSummary(
+    workspaceId: string,
+    period: string,
+    range: 'monthly' | 'yearly',
+    currency: 'IDR' | 'USD' = 'IDR'
+  ): Promise<MemberSummaryRow[]> {
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
+
+    let startDate: Date;
+    let endDate: Date;
+
+    if (range === 'monthly') {
+      const { year, month } = validatePeriod(period, 'monthly');
+      if (!month) throw new Error(`Invalid monthly period: ${period}`);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0, 23, 59, 59);
+    } else {
+      const { year } = validatePeriod(period, 'yearly');
+      startDate = new Date(year, 0, 1);
+      endDate = new Date(year, 11, 31, 23, 59, 59);
+    }
+
+    const incomeByUser = await (this.db as any)
+      .select({
+        user_id: this.schema.transactions.created_by_user_id,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'income'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.transactions.created_by_user_id);
+
+    const expensesByUser = await (this.db as any)
+      .select({
+        user_id: this.schema.transactions.created_by_user_id,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'expense'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.transactions.created_by_user_id);
+
+    const members = await this.db.query.users.findMany({
+      where: and(
+        eq(this.schema.users.workspace_id, workspaceId),
+        sql`${this.schema.users.deleted_at} IS NULL`
+      ),
+    });
+
+    const memberMap = new Map(
+      members.map((member: any) => [member.id, member.name || member.email])
+    );
+
+    const incomeMap = new Map<string, { total: string; count: number }>();
+    for (const row of incomeByUser) {
+      incomeMap.set(row.user_id, {
+        total: row.total?.toString() || '0',
+        count: Number(row.count) || 0,
+      });
+    }
+
+    const expenseMap = new Map<string, { total: string; count: number }>();
+    for (const row of expensesByUser) {
+      expenseMap.set(row.user_id, {
+        total: row.total?.toString() || '0',
+        count: Number(row.count) || 0,
+      });
+    }
+
+    const allUserIds = new Set([...incomeMap.keys(), ...expenseMap.keys()]);
+
+    const results: MemberSummaryRow[] = [];
+    for (const userId of allUserIds) {
+      const income = incomeMap.get(userId)?.total || '0';
+      const expenses = expenseMap.get(userId)?.total || '0';
+      const incomeCount = incomeMap.get(userId)?.count || 0;
+      const expenseCount = expenseMap.get(userId)?.count || 0;
+
+      results.push({
+        userId,
+        userName: memberMap.get(userId) || 'Unknown',
+        totalIncome: income,
+        totalExpenses: expenses,
+        netSavings: decimalSubtract(income, expenses),
+        transactionCount: incomeCount + expenseCount,
+      });
+    }
+
+    results.sort((a, b) => {
+      const aExp = parseFloat(a.totalExpenses) || 0;
+      const bExp = parseFloat(b.totalExpenses) || 0;
+      return bExp - aExp;
+    });
+
+    return results;
+  }
+
   // ============================================
   // Private Helper Methods
   // ============================================
@@ -406,7 +548,8 @@ export class ReportService {
     workspaceId: string,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<string> {
     const [result] = await (this.db as any)
       .select({
@@ -420,7 +563,8 @@ export class ReportService {
           eq(this.schema.transactions.currency, currency),
           gte(this.schema.transactions.transaction_date, startDate),
           lte(this.schema.transactions.transaction_date, endDate),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
         )
       );
 
@@ -436,7 +580,8 @@ export class ReportService {
     workspaceId: string,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<string> {
     const [result] = await (this.db as any)
       .select({
@@ -450,7 +595,8 @@ export class ReportService {
           eq(this.schema.transactions.currency, currency),
           gte(this.schema.transactions.transaction_date, startDate),
           lte(this.schema.transactions.transaction_date, endDate),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
         )
       );
 
@@ -466,7 +612,8 @@ export class ReportService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<number> {
     // Get total budget for the month
     const [budgetResult] = await (this.db as any)
@@ -494,7 +641,13 @@ export class ReportService {
     // Get total spent
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
-    const totalExpenses = await this.getTotalExpenses(workspaceId, startDate, endDate, currency);
+    const totalExpenses = await this.getTotalExpenses(
+      workspaceId,
+      startDate,
+      endDate,
+      currency,
+      userId
+    );
 
     // Calculate percentage
     if (decimalIsZero(totalBudget)) {
@@ -514,7 +667,8 @@ export class ReportService {
   private async getYearlyBudgetHealth(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<number> {
     // Get total budget for all months in the year
     const [budgetResult] = await (this.db as any)
@@ -541,7 +695,13 @@ export class ReportService {
     // Get total spent for year
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31, 23, 59, 59);
-    const totalExpenses = await this.getTotalExpenses(workspaceId, startDate, endDate, currency);
+    const totalExpenses = await this.getTotalExpenses(
+      workspaceId,
+      startDate,
+      endDate,
+      currency,
+      userId
+    );
 
     // Calculate percentage
     if (decimalIsZero(totalBudget)) {
@@ -562,7 +722,8 @@ export class ReportService {
     workspaceId: string,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<CategoryExpense[]> {
     const categoryExpenses = await (this.db as any)
       .select({
@@ -581,7 +742,8 @@ export class ReportService {
           eq(this.schema.transactions.currency, currency),
           gte(this.schema.transactions.transaction_date, startDate),
           lte(this.schema.transactions.transaction_date, endDate),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
         )
       )
       .groupBy(this.schema.categories.name)
@@ -605,7 +767,8 @@ export class ReportService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<CategoryIntelligence[]> {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -642,7 +805,8 @@ export class ReportService {
           eq(this.schema.transactions.currency, currency),
           gte(this.schema.transactions.transaction_date, startDate),
           lte(this.schema.transactions.transaction_date, endDate),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
         )
       )
       .groupBy(this.schema.transactions.category_id);
@@ -673,7 +837,8 @@ export class ReportService {
   private async getYearlyCategoryIntelligence(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<CategoryIntelligence[]> {
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31, 23, 59, 59);
@@ -731,7 +896,8 @@ export class ReportService {
           eq(this.schema.transactions.currency, currency),
           gte(this.schema.transactions.transaction_date, startDate),
           lte(this.schema.transactions.transaction_date, endDate),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
         )
       )
       .groupBy(this.schema.transactions.category_id);
@@ -764,7 +930,8 @@ export class ReportService {
     year: number,
     month: number,
     currency: 'IDR' | 'USD',
-    trailingMonths: number
+    trailingMonths: number,
+    userId?: string
   ): Promise<TrendDataPoint[]> {
     const trendData: TrendDataPoint[] = [];
 
@@ -778,8 +945,8 @@ export class ReportService {
       const endDate = new Date(trendYear, trendMonth, 0, 23, 59, 59);
 
       const [income, expenses] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
+        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
       ]);
 
       trendData.push({
@@ -799,7 +966,8 @@ export class ReportService {
   private async getYearlyTrendData(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    userId?: string
   ): Promise<TrendDataPoint[]> {
     const trendData: TrendDataPoint[] = [];
 
@@ -809,8 +977,8 @@ export class ReportService {
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
       const [income, expenses] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
+        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
       ]);
 
       trendData.push({

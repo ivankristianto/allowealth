@@ -248,6 +248,25 @@ describe('TransactionService', () => {
       expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
     });
 
+    it('should filter transactions by created_by_user_id', async () => {
+      const filters = {
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
+      };
+
+      const transactionWithRelations = createMockTransactionWithRelations(
+        { id: 'txn-1', created_by_user_id: 'user-1' },
+        mockCategory,
+        mockAccount
+      );
+      (mockDb.query.transactions.findMany as any).mockResolvedValue([transactionWithRelations]);
+
+      const result = await transactionService.findAll(filters);
+
+      expect(result).toHaveLength(1);
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
+    });
+
     it('should filter by currency', async () => {
       const transactionsWithRelations = [
         createMockTransactionWithRelations(

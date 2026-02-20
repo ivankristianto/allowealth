@@ -17,6 +17,7 @@ export type TransactionTypeFilter = 'income' | 'expense' | 'transfer';
 export interface TransactionFilters {
   type: TransactionTypeFilter;
   search: string;
+  user_id: string;
   category_id: string;
   category_ids: string[]; // Support multiple categories
   account_id: string;
@@ -31,6 +32,7 @@ export interface TransactionFilters {
 const initialFilters: TransactionFilters = {
   type: 'expense',
   search: '',
+  user_id: '',
   category_id: '',
   category_ids: [],
   account_id: '',
@@ -77,6 +79,7 @@ export function hasActiveFilters(): boolean {
   return (
     filters.type !== 'expense' ||
     filters.search !== '' ||
+    filters.user_id !== '' ||
     filters.category_id !== '' ||
     filters.category_ids.length > 0 ||
     filters.account_id !== '' ||

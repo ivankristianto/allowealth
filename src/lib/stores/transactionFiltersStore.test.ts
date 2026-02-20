@@ -19,6 +19,7 @@ describe('transactionFiltersStore', () => {
 
       expect(filters.type).toBe('expense');
       expect(filters.search).toBe('');
+      expect(filters.user_id).toBe('');
       expect(filters.category_id).toBe('');
       expect(filters.category_ids).toEqual([]);
       expect(filters.account_id).toBe('');
@@ -100,6 +101,11 @@ describe('transactionFiltersStore', () => {
       expect(hasActiveFilters()).toBe(true);
     });
 
+    it('should return true when user_id has a value', () => {
+      transactionFiltersStore.setKey('user_id', 'user-1');
+      expect(hasActiveFilters()).toBe(true);
+    });
+
     it('should return true when category_id has a value', () => {
       transactionFiltersStore.setKey('category_id', 'cat-1');
       expect(hasActiveFilters()).toBe(true);
@@ -152,6 +158,7 @@ describe('transactionFiltersStore', () => {
       const newState: TransactionFilters = {
         type: 'income',
         search: 'test',
+        user_id: 'user-123',
         category_id: 'cat-1',
         category_ids: ['cat-2'],
         account_id: 'account-1',

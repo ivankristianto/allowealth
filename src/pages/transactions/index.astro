@@ -57,6 +57,7 @@ const categoryIdsParam = searchParams.category_ids || '';
 const categoryIds = categoryIdsParam ? categoryIdsParam.split(',').filter(Boolean) : [];
 const searchValue = searchParams.search || '';
 const selectedMonth = searchParams.month || '';
+const userId = searchParams.user_id || '';
 
 // Calculate current month key from today's date (used as default)
 const todayMonthKey = getCurrentMonthKey();
@@ -72,6 +73,7 @@ const filters = {
   category_id: categoryId || undefined,
   category_ids: categoryIds.length > 0 ? categoryIds : undefined,
   account_id: searchParams.account_id,
+  created_by_user_id: userId || undefined,
   currency: searchParams.currency as 'IDR' | 'USD' | undefined,
   start_date: monthDateRange?.start,
   end_date: monthDateRange?.end,
@@ -103,10 +105,31 @@ const categories = await trackPhase('categoryService.findAll', perf, () =>
 const allUserTransactions = await transactionService.findAll(
   {
     workspace_id: user.workspaceId,
+    created_by_user_id: userId || undefined,
     limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
   },
   perf
 );
+
+const memberNameMap = new Map<string, string>();
+for (const tx of allUserTransactions as any[]) {
+  const memberId = tx.created_by_user_id;
+  if (!memberId || memberNameMap.has(memberId)) continue;
+
+  const memberName = tx.createdBy?.name?.trim() || 'Unknown';
+  memberNameMap.set(memberId, memberName);
+}
+
+// Keep the currently selected filter visible even if it has no transactions in this data window.
+if (userId && !memberNameMap.has(userId)) {
+  const fallbackName = userId === user.id ? user.name || user.email || 'Unknown' : 'Unknown';
+  memberNameMap.set(userId, fallbackName);
+}
+
+const memberOptions = Array.from(memberNameMap, ([id, name]) => ({ id, name })).sort((a, b) =>
+  a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+);
+const showMemberFilter = memberOptions.length > 1 || Boolean(userId);
 
 // Extract available months using utility function
 const availableMonthsWithLabels = trackPhaseSync('extractAvailableMonths', perf, () =>
@@ -171,6 +194,7 @@ const buildBaseUrl = () => {
   params.set('type', typeFilter);
   if (searchValue) params.set('search', searchValue);
   if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
+  if (userId) params.set('user_id', userId);
   const queryString = params.toString();
   return queryString ? `/transactions?${queryString}` : '/transactions';
 };
@@ -204,6 +228,7 @@ const ssrData = trackPhaseSync('buildSsrData', perf, () => ({
   filters: {
     type: typeFilter,
     search: searchValue,
+    user_id: userId,
     category_id: categoryId,
     category_ids: categoryIds,
     month: effectiveMonth,
@@ -279,6 +304,9 @@ perf?.recordMilestone('preRender.elapsed');
         categoryIds={categoryIds}
         categories={categories}
         showCategoryFilter={true}
+        userId={userId}
+        members={memberOptions}
+        showMemberFilter={showMemberFilter}
         selectedMonth={effectiveMonth}
         currentMonth={currentMonthKey}
         baseUrl={baseUrl}

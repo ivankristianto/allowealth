@@ -441,6 +441,192 @@ function createMockDatabase(): IDatabase {
   } as unknown as IDatabase;
 }
 
+function extractParamValues(sqlNode: any): any[] {
+  const values: any[] = [];
+
+  const visit = (node: any): void => {
+    if (!node) return;
+
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+
+    if (node.constructor?.name === 'Param' && node.value !== undefined) {
+      values.push(node.value);
+    }
+
+    if (Array.isArray(node.queryChunks)) {
+      node.queryChunks.forEach(visit);
+    }
+  };
+
+  visit(sqlNode);
+  return values;
+}
+
+function createMemberSummaryMockDatabase(): IDatabase {
+  const mockUsers = [
+    {
+      id: 'u1',
+      name: 'Alice',
+      email: 'alice@example.com',
+      workspace_id: 'workspace-1',
+      deleted_at: null,
+    },
+    {
+      id: 'u2',
+      name: null,
+      email: 'bob@example.com',
+      workspace_id: 'workspace-1',
+      deleted_at: null,
+    },
+  ];
+
+  const mockTransactions = [
+    {
+      created_by_user_id: 'u1',
+      workspace_id: 'workspace-1',
+      type: 'income',
+      amount: '1000',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-05'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u1',
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '250',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-10'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u1',
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '50',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-17'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u2',
+      workspace_id: 'workspace-1',
+      type: 'income',
+      amount: '200',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-04'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u2',
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '500',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-08'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u3',
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '75',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-11'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u1',
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '999',
+      currency: 'USD',
+      transaction_date: new Date('2024-02-12'),
+      deleted_at: null,
+    },
+    {
+      created_by_user_id: 'u1',
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '999',
+      currency: 'IDR',
+      transaction_date: new Date('2024-01-22'),
+      deleted_at: null,
+    },
+  ];
+
+  return {
+    query: {
+      users: {
+        findMany: async (config: any) => {
+          const params = extractParamValues(config?.where);
+          const workspaceId =
+            params.find(
+              (value) =>
+                typeof value === 'string' &&
+                value !== 'income' &&
+                value !== 'expense' &&
+                value !== 'IDR' &&
+                value !== 'USD'
+            ) || 'workspace-1';
+
+          return mockUsers.filter(
+            (member) => member.workspace_id === workspaceId && member.deleted_at === null
+          );
+        },
+      },
+    },
+    select: (columns: any) => ({
+      from: (_table: any) => ({
+        where: (condition: any) => ({
+          groupBy: async (_column: any) => {
+            if (!('user_id' in columns)) return [];
+
+            const params = extractParamValues(condition);
+            const workspaceId =
+              params.find(
+                (value) =>
+                  typeof value === 'string' &&
+                  value !== 'income' &&
+                  value !== 'expense' &&
+                  value !== 'IDR' &&
+                  value !== 'USD'
+              ) || 'workspace-1';
+            const txType = params.find((value) => value === 'income' || value === 'expense');
+            const currency = params.find((value) => value === 'IDR' || value === 'USD');
+            const dateBounds = params.filter((value) => value instanceof Date) as Date[];
+            const startDate = dateBounds[0] || new Date('1970-01-01');
+            const endDate = dateBounds[1] || new Date('2100-12-31');
+
+            const grouped = new Map<string, { total: number; count: number }>();
+            for (const tx of mockTransactions) {
+              if (tx.workspace_id !== workspaceId) continue;
+              if (tx.deleted_at !== null) continue;
+              if (txType && tx.type !== txType) continue;
+              if (currency && tx.currency !== currency) continue;
+              if (tx.transaction_date < startDate || tx.transaction_date > endDate) continue;
+
+              const existing = grouped.get(tx.created_by_user_id) || { total: 0, count: 0 };
+              existing.total += Number(tx.amount);
+              existing.count += 1;
+              grouped.set(tx.created_by_user_id, existing);
+            }
+
+            return Array.from(grouped.entries()).map(([user_id, aggregate]) => ({
+              user_id,
+              total: String(aggregate.total),
+              count: aggregate.count,
+            }));
+          },
+        }),
+      }),
+    }),
+  } as unknown as IDatabase;
+}
+
 describe('ReportService', () => {
   let service: ReportService;
   let mockDb: IDatabase;
@@ -534,6 +720,15 @@ describe('ReportService', () => {
     });
   });
 
+  describe('getMonthlyReport with userId filter', () => {
+    test('should accept optional userId parameter', async () => {
+      const report = await service.getMonthlyReport('workspace-1', '2024-02', 'IDR', 'user-123');
+      expect(report).toBeDefined();
+      expect(report.totalIncome).toBeDefined();
+      expect(report.totalExpenses).toBeDefined();
+    });
+  });
+
   describe('getYearlyReport', () => {
     test('should return yearly report with correct structure', async () => {
       const userId = 'test-user-123';
@@ -583,6 +778,71 @@ describe('ReportService', () => {
       expect(typeof report.totalIncome).toBe('string');
       expect(typeof report.totalExpenses).toBe('string');
       expect(typeof report.netSavings).toBe('string');
+    });
+  });
+
+  describe('getMemberSummary', () => {
+    test('should return sorted member totals with stable row shape', async () => {
+      const memberSummaryService = new ReportService(createMemberSummaryMockDatabase());
+      const result = await memberSummaryService.getMemberSummary(
+        'workspace-1',
+        '2024-02',
+        'monthly',
+        'IDR'
+      );
+
+      expect(result).toEqual([
+        {
+          userId: 'u2',
+          userName: 'bob@example.com',
+          totalIncome: '200',
+          totalExpenses: '500',
+          netSavings: '-300',
+          transactionCount: 2,
+        },
+        {
+          userId: 'u1',
+          userName: 'Alice',
+          totalIncome: '1000',
+          totalExpenses: '300',
+          netSavings: '700',
+          transactionCount: 3,
+        },
+        {
+          userId: 'u3',
+          userName: 'Unknown',
+          totalIncome: '0',
+          totalExpenses: '75',
+          netSavings: '-75',
+          transactionCount: 1,
+        },
+      ]);
+
+      for (const row of result) {
+        expect(typeof row.userId).toBe('string');
+        expect(typeof row.userName).toBe('string');
+        expect(typeof row.totalIncome).toBe('string');
+        expect(typeof row.totalExpenses).toBe('string');
+        expect(typeof row.netSavings).toBe('string');
+        expect(typeof row.transactionCount).toBe('number');
+      }
+    });
+
+    test('should propagate database errors', async () => {
+      const errorService = new ReportService({
+        query: {
+          users: {
+            findMany: async () => [],
+          },
+        },
+        select: () => {
+          throw new Error('Database unavailable');
+        },
+      } as unknown as IDatabase);
+
+      await expect(
+        errorService.getMemberSummary('workspace-1', '2024-02', 'monthly', 'IDR')
+      ).rejects.toThrow('Database unavailable');
     });
   });
 

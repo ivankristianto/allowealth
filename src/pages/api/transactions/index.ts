@@ -94,6 +94,11 @@ export const GET: APIRoute = async (context) => {
       filters.search = search;
     }
 
+    const userId = url.searchParams.get('user_id');
+    if (userId && userId.trim() !== '') {
+      filters.created_by_user_id = userId;
+    }
+
     // Exclude soft-deleted transactions from main list to avoid inflating count
     filters.include_deleted = false;
     filters.include_history_flag = true;
@@ -109,6 +114,7 @@ export const GET: APIRoute = async (context) => {
     if (filters.start_date && filters.end_date) {
       const monthTransactions = await transactionService.findAll({
         workspace_id: auth.workspaceId,
+        created_by_user_id: filters.created_by_user_id,
         start_date: filters.start_date,
         end_date: filters.end_date,
         include_deleted: false,

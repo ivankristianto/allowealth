@@ -33,6 +33,7 @@ import { reportService, accountService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 
 const currentPath = '/reports';
 
@@ -203,6 +204,10 @@ const selectedPeriodLabel =
   </div>
 
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10">
+    <Breadcrumb
+      items={[{ label: 'Reports' }, { label: 'Member Spending', href: '/reports/members' }]}
+    />
+
     {/* Summary Metric Cards Container */}
     <div data-summary-container>
       <ReportSummaryCardsPartial

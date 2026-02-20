@@ -1,0 +1,11 @@
+# Member summary API response
+MemberSummaryResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: './MemberSummaryRow.yml#/MemberSummaryRow'

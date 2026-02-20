@@ -1,0 +1,35 @@
+# Per-member spending summary row
+MemberSummaryRow:
+  type: object
+  properties:
+    userId:
+      type: string
+      description: Workspace member user ID
+      example: usr_abc123
+    userName:
+      type: string
+      description: Display name for the member
+      example: Alex Doe
+    totalIncome:
+      type: string
+      description: Total income for the selected period (decimal string)
+      example: "9750000"
+    totalExpenses:
+      type: string
+      description: Total expenses for the selected period (decimal string)
+      example: "4735000"
+    netSavings:
+      type: string
+      description: Net savings for the selected period (decimal string)
+      example: "5015000"
+    transactionCount:
+      type: integer
+      description: Total number of income + expense transactions
+      example: 42
+  required:
+    - userId
+    - userName
+    - totalIncome
+    - totalExpenses
+    - netSavings
+    - transactionCount

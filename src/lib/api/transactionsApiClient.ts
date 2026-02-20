@@ -89,6 +89,10 @@ function buildQueryString(
     params.set('search', filters.search);
   }
 
+  if (filters.user_id) {
+    params.set('user_id', filters.user_id);
+  }
+
   if (filters.category_id) {
     params.set('category_id', filters.category_id);
   }
