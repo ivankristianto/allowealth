@@ -46,7 +46,7 @@ interface BudgetSummaryArgs {
   totalAllocated?: number;
   totalSpent?: number;
   distribution?: DistributionItem[];
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   loading?: boolean;
 }
 

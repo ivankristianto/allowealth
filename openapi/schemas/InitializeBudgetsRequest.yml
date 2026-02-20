@@ -15,7 +15,7 @@ InitializeBudgetsRequest:
       description: Target year
     currency:
       type: string
-      enum: [IDR, USD]
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
       description: Currency to filter categories by
   description: |
     Initialize budgets for all active expense categories that don't

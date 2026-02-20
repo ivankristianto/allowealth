@@ -51,7 +51,7 @@ export function parseBudgetPeriodKey(period: string): { year: number; month: num
   return { year, month };
 }
 
-export function buildBudgetUrlForPeriod(period: string, currency: 'IDR' | 'USD'): string {
+export function buildBudgetUrlForPeriod(period: string, currency: Currency): string {
   const parsed = parseBudgetPeriodKey(period);
   if (!parsed) return `/budget?currency=${currency}`;
 

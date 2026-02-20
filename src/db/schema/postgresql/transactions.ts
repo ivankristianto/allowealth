@@ -23,7 +23,7 @@ export const transactions = pgTable(
     type: text('type', { enum: ['expense', 'income', 'transfer'] }).notNull(),
     amount: text('amount').notNull(), // Stored as string for decimal precision
     // P2: TODO - Consider using numeric type for PostgreSQL native decimal support
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
     description: text('description'),
     transaction_date: timestamp('transaction_date').notNull(),
     updated_by_user_id: text('updated_by_user_id').references(() => users.id),

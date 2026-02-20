@@ -12,7 +12,7 @@ CreateTransactionRequest:
       description: Amount as string (decimal with up to 2 decimal places)
     currency:
       type: string
-      enum: [IDR, USD]
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     category_id:
       type: string
       format: uuid

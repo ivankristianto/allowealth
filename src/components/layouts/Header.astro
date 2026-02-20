@@ -2,7 +2,7 @@
 /**
  * Header Component
  *
- * Premium glass-effect header with page title, subtitle, currency selector,
+ * Premium glass-effect header with page title, subtitle,
  * notifications, and new entry button. Displays user context when authenticated.
  *
  * @param title - Page title (required, defined by each page)
@@ -12,7 +12,6 @@
  */
 
 import { Menu, Plus } from '@lucide/astro';
-import CurrencySelector from '../molecules/CurrencySelector.astro';
 // TODO: Re-enable when notification system is implemented
 // import NotificationDropdown from '../molecules/NotificationDropdown.astro';
 import ThemeToggle from '../atoms/ThemeToggle.astro';
@@ -73,21 +72,13 @@ const hasHeaderSlot = Astro.slots.has('header');
       </div>
     </div>
 
-    <!-- Right side: Header slot content (desktop) + Currency selector + New Entry button -->
+    <!-- Right side: Header slot content (desktop) + New Entry button -->
     <div class="flex items-center gap-3 sm:gap-5">
-      {/* Header slot content inline on desktop (e.g., PeriodNavigator beside CurrencySelector) */}
+      {/* Header slot content inline on desktop (e.g., PeriodNavigator) */}
       {
         hasHeaderSlot && (
           <div class="hidden lg:block" data-header-slot-desktop>
             <slot name="header" />
-          </div>
-        )
-      }
-
-      {
-        user && (
-          <div class="hidden sm:block">
-            <CurrencySelector />
           </div>
         )
       }

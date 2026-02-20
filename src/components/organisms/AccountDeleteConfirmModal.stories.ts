@@ -52,7 +52,7 @@ interface AccountDeactivateModalArgs {
   accountName?: string;
   accountType?: string;
   balance?: number;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   isLoading?: boolean;
   hasError?: boolean;
   errorMessage?: string;

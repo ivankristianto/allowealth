@@ -10,7 +10,7 @@ export interface CashFlowEntry {
   amount: number;
   type: CashFlowType;
   icon: CashFlowIconName;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }
 
 export interface CashFlowTypeConfig {
@@ -46,7 +46,7 @@ export const getCashFlowSignedAmount = (amount: number, type: CashFlowType): num
 export const formatCashFlowAmount = (
   amount: number,
   type: CashFlowType,
-  currency: 'IDR' | 'USD' = 'IDR'
+  currency: Currency = 'IDR'
 ): string => {
   const normalized = Math.abs(amount);
   const baseAmount = formatCurrency(normalized, currency);

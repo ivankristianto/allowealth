@@ -394,10 +394,9 @@ describe('Database Integration Tests', () => {
 
       // Should return default values for non-existent data
       expect(result).toHaveProperty('totalAccounts');
-      expect(result.totalAccounts).toHaveProperty('idr');
-      expect(result.totalAccounts).toHaveProperty('usd');
-      expect(result.totalAccounts).toHaveProperty('converted');
-      expect(result.totalAccounts.idr).toBe('0');
+      expect(result.totalAccounts).toHaveProperty('byCurrency');
+      expect(Array.isArray(result.totalAccounts.byCurrency)).toBe(true);
+      expect(result.totalAccounts.byCurrency.length).toBe(0);
     });
 
     it('should allow services to be imported in middleware context', async () => {
@@ -428,7 +427,6 @@ describe('Database Integration Tests', () => {
       expect(schemaModule.transactions).toBeDefined();
       expect(schemaModule.accounts).toBeDefined();
       expect(schemaModule.accountHistory).toBeDefined();
-      expect(schemaModule.exchangeRates).toBeDefined();
       expect(schemaModule.passwordResetTokens).toBeDefined();
       expect(schemaModule.sessions).toBeDefined();
       expect(schemaModule.userMeta).toBeDefined();

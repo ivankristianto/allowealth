@@ -148,7 +148,7 @@ const { id } = Astro.props;
   import { addToast } from '@lib/stores/toastStore';
   import { csrfFetch } from '@/lib/csrf-client';
   import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
-  import type { Currency } from '@/lib/constants/currency';
+  import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   const initializedModals = new WeakSet<Element>();
 
@@ -208,7 +208,7 @@ const { id } = Astro.props;
         const handleOpen = ((
           e: CustomEvent<{ id: string; name: string; currency: string; balance: number }>
         ) => {
-          selectedCurrency = e.detail.currency === 'USD' ? 'USD' : 'IDR';
+          selectedCurrency = isValidCurrency(e.detail.currency) ? e.detail.currency : 'IDR';
           balanceFormatter?.updateCurrency(selectedCurrency);
 
           if (accountIdInput) accountIdInput.value = e.detail.id;

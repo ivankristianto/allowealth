@@ -57,7 +57,7 @@ interface AccountFormModalArgs {
   mode?: 'add' | 'edit';
   accountName?: string;
   accountType?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   balance?: string;
   isLoading?: boolean;
   hasError?: boolean;

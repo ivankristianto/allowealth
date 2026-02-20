@@ -371,12 +371,12 @@ describe('BudgetCardGrid - filtering', () => {
 
 describe('BudgetCardGrid - currency handling', () => {
   it('should handle IDR currency', () => {
-    const currency: 'IDR' | 'USD' = 'IDR';
+    const currency: Currency = 'IDR';
     expect(currency).toBe('IDR');
   });
 
   it('should handle USD currency', () => {
-    const currency: 'IDR' | 'USD' = 'USD';
+    const currency: Currency = 'USD';
     expect(currency).toBe('USD');
   });
 

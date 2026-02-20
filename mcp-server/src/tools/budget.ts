@@ -2,10 +2,25 @@ import { z } from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 
+const SUPPORTED_CURRENCIES = [
+  'IDR',
+  'USD',
+  'SGD',
+  'PHP',
+  'EUR',
+  'GBP',
+  'MYR',
+  'THB',
+  'JPY',
+  'AUD',
+  'KRW',
+  'INR',
+] as const;
+
 export const budgetSummarySchema = z.object({
   month: z.number().min(1).max(12).optional(),
   year: z.number().min(2020).max(2100).optional(),
-  currency: z.enum(['IDR', 'USD']).default('IDR'),
+  currency: z.enum(SUPPORTED_CURRENCIES).default('IDR'),
 });
 
 export const tool: Tool = {
@@ -17,7 +32,11 @@ export const tool: Tool = {
     properties: {
       month: { type: 'number', description: 'Month number (1-12). Defaults to current month.' },
       year: { type: 'number', description: 'Year. Defaults to current year.' },
-      currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Currency. Defaults to IDR.' },
+      currency: {
+        type: 'string',
+        enum: [...SUPPORTED_CURRENCIES],
+        description: 'Currency. Defaults to IDR.',
+      },
     },
   },
 };

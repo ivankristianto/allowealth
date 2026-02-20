@@ -113,7 +113,7 @@ export const GET: APIRoute = async (context) => {
     // Convert to forecast-compatible format
     const forecastAccounts: AccountWithHistory[] = accountsWithHistory.map((account) => ({
       balance: parseFloat(account.balance),
-      currency: account.currency as 'IDR' | 'USD',
+      currency: account.currency as Currency,
       history: account.history,
     }));
 

@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { transactionService } from '@/services';
+import { transactionService, workspaceMetaService } from '@/services';
 import { errorResponse, getAuthenticatedUser, isValidDate } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * GET /api/transactions/export
@@ -16,6 +17,13 @@ export const GET: APIRoute = async (context) => {
     const filters: any = {
       workspace_id: auth.workspaceId,
     };
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
 
     const type = url.searchParams.get('type');
     if (type && (type === 'expense' || type === 'income')) {
@@ -33,7 +41,10 @@ export const GET: APIRoute = async (context) => {
     }
 
     const currency = url.searchParams.get('currency');
-    if (currency && (currency === 'IDR' || currency === 'USD')) {
+    if (currency) {
+      if (!isValidCurrency(currency) || !allowedCurrencies.includes(currency)) {
+        return errorResponse('Invalid currency parameter', 400);
+      }
       filters.currency = currency;
     }
 

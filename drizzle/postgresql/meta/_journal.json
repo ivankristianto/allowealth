@@ -15,6 +15,13 @@
       "when": 1771507582507,
       "tag": "0001_legal_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771579153981,
+      "tag": "0002_multi_currency_support",
+      "breakpoints": true
     }
   ]
 }

@@ -52,7 +52,7 @@ export interface TransactionsState {
   error: string | null;
   categories: Category[];
   availableMonths: AvailableMonth[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 // Initial state
@@ -103,7 +103,7 @@ export function initializeFromSSR(data: {
   summary: SummaryState;
   categories: Category[];
   availableMonths: AvailableMonth[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }): void {
   transactionsDataStore.set({
     transactions: data.transactions,

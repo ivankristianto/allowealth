@@ -73,7 +73,7 @@ export interface Props {
   budget: number;
   percentageUsed: number;
   status?: 'ok' | 'warning' | 'exceeded';
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   /** Selected month (1-12) for transaction link context */
   month?: number;
   /** Selected year for transaction link context */

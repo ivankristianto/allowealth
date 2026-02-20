@@ -2,14 +2,29 @@ import { z } from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 
+const SUPPORTED_CURRENCIES = [
+  'IDR',
+  'USD',
+  'SGD',
+  'PHP',
+  'EUR',
+  'GBP',
+  'MYR',
+  'THB',
+  'JPY',
+  'AUD',
+  'KRW',
+  'INR',
+] as const;
+
 export const dashboardSchema = z.object({
   month: z.number().min(1).max(12).optional(),
   year: z.number().min(2020).max(2100).optional(),
-  currency: z.enum(['IDR', 'USD']).default('IDR'),
+  currency: z.enum(SUPPORTED_CURRENCIES).default('IDR'),
 });
 
 export const accountSummarySchema = z.object({
-  currency: z.enum(['IDR', 'USD']).optional(),
+  currency: z.enum(SUPPORTED_CURRENCIES).optional(),
 });
 
 export const dashboardTool: Tool = {
@@ -21,7 +36,11 @@ export const dashboardTool: Tool = {
     properties: {
       month: { type: 'number', description: 'Month (1-12). Defaults to current month.' },
       year: { type: 'number', description: 'Year. Defaults to current year.' },
-      currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Currency. Defaults to IDR.' },
+      currency: {
+        type: 'string',
+        enum: [...SUPPORTED_CURRENCIES],
+        description: 'Currency. Defaults to IDR.',
+      },
     },
   },
 };
@@ -32,7 +51,11 @@ export const accountSummaryTool: Tool = {
   inputSchema: {
     type: 'object',
     properties: {
-      currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Filter by currency' },
+      currency: {
+        type: 'string',
+        enum: [...SUPPORTED_CURRENCIES],
+        description: 'Filter by currency',
+      },
     },
   },
 };
@@ -56,12 +79,7 @@ export async function handleGetDashboard(args: Record<string, unknown>, ctx: Too
     month,
     year,
     currency: input.currency,
-    total_accounts: {
-      idr: data.totalAccounts.idr,
-      usd: data.totalAccounts.usd,
-      converted_total: data.totalAccounts.converted,
-      converted_currency: data.totalAccounts.convertedCurrency,
-    },
+    total_accounts: data.totalAccounts.byCurrency,
     monthly_income: data.monthlyIncome.total,
     monthly_expenses: {
       total: data.monthlySpent.total,

@@ -7,7 +7,7 @@ import { BasePage } from './BasePage';
 export interface AccountFormData {
   name: string;
   type: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   initialBalance?: string | number;
 }
 

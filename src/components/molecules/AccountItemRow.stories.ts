@@ -39,7 +39,7 @@ export default meta;
 interface AccountItemRowArgs {
   id?: string;
   name?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   balance?: number;
   lastUpdated?: string;
 }

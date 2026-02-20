@@ -73,7 +73,7 @@ export interface AccountWithHistory {
   /** Account balance */
   balance: number;
   /** Account currency */
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   /** Historical balance records */
   history?: HistoricalDataPoint[];
 }

@@ -20,7 +20,7 @@ export interface Props {
   totalInterest: number;
   finalBalance: number;
   yearlyData: YearlyData[];
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }
 
 const { totalInterest, finalBalance, yearlyData, currency = 'IDR' } = Astro.props;

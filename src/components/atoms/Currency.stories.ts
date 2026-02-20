@@ -59,8 +59,8 @@ const createCurrency = (args: {
   };
 
   let formatted = compact
-    ? formatCurrencyCompact(amount, currency as 'IDR' | 'USD')
-    : formatCurrency(amount, currency as 'IDR' | 'USD');
+    ? formatCurrencyCompact(amount, currency as Currency)
+    : formatCurrency(amount, currency as Currency);
 
   if (showSign && amount !== 0) {
     formatted = (amount > 0 ? '+' : '') + formatted;

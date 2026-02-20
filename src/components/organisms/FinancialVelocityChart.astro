@@ -16,6 +16,7 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
+import type { Currency } from '@/lib/constants/currency';
 
 export interface TrendDataPoint {
   name: string; // Month label (e.g., "Jan", "Feb")
@@ -25,6 +26,7 @@ export interface TrendDataPoint {
 
 export interface Props {
   data: TrendDataPoint[];
+  currency?: Currency;
   subtitle?: string;
   loading?: boolean;
   error?: string;
@@ -33,6 +35,7 @@ export interface Props {
 
 const {
   data = [],
+  currency = 'IDR',
   subtitle = 'TRAILING 3 MONTHS',
   loading = false,
   error,
@@ -88,6 +91,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
         <div
           class="h-[300px] w-full min-h-[300px]"
           data-chart-data={serializedData}
+          data-currency={currency}
           id={`${chartId}-container`}
         >
           <canvas
@@ -129,6 +133,8 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   import { Chart } from '@/lib/chart-setup';
   import { formatCurrency } from '@/lib/formatting/currency-client';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import { isValidCurrency } from '@/lib/constants/currency';
+  import type { Currency } from '@/lib/constants/currency';
 
   interface TrendDataPoint {
     name: string;
@@ -185,7 +191,11 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   /**
    * Initialize financial velocity chart with Chart.js
    */
-  function initFinancialVelocityChart(chartId: string, data: TrendDataPoint[]): void {
+  function initFinancialVelocityChart(
+    chartId: string,
+    data: TrendDataPoint[],
+    currency: Currency
+  ): void {
     const canvas = document.getElementById(chartId) as HTMLCanvasElement;
     if (!canvas) return;
 
@@ -259,7 +269,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
               label: (context) => {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
-                return `${label}: ${formatCurrency(value, 'IDR')}`;
+                return `${label}: ${formatCurrency(value, currency)}`;
               },
             },
           },
@@ -320,7 +330,10 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
     onInit: (container, data) => {
       const chartId = container.querySelector('canvas')?.id;
       if (!chartId || charts[chartId]) return;
-      initFinancialVelocityChart(chartId, data);
+      const currencyAttr = container.getAttribute('data-currency');
+      const currency: Currency =
+        currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+      initFinancialVelocityChart(chartId, data, currency);
     },
     onThemeChange: updateChartThemeColors,
     onCleanup: () => {

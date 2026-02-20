@@ -31,7 +31,7 @@ describe('currency formatting', () => {
 
   it('falls back to full format for small values', () => {
     expect(formatCurrencyCompact(999, 'IDR')).toBe('Rp999');
-    expect(formatCurrencyCompact(999, 'USD')).toBe('$999.00');
+    expect(formatCurrencyCompact(999, 'USD')).toBe('$999');
   });
 
   it('handles invalid numeric inputs as zero', () => {
@@ -39,8 +39,8 @@ describe('currency formatting', () => {
     expect(formatCurrency(Number.POSITIVE_INFINITY, 'USD')).toBe('$0.00');
   });
 
-  it('falls back to default currency on invalid codes', () => {
-    expect(formatCurrency(1000, 'EUR' as unknown as 'IDR')).toBe('Rp1.000,00');
+  it('formats newly supported currencies', () => {
+    expect(formatCurrency(1000, 'EUR')).toBe('€1.000,00');
   });
 });
 

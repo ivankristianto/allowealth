@@ -12,7 +12,9 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTablePartial.astro';
 import YearToggle from '@/components/molecules/YearToggle.astro';
-import { budgetService, type MonthlyBudgetHistory } from '@/services';
+import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
+import { budgetService, workspaceMetaService, type MonthlyBudgetHistory } from '@/services';
+import { isValidCurrency } from '@/lib/constants/currency';
 import { CircleX, Download, History as HistoryIcon } from '@lucide/astro';
 
 const user = Astro.locals.user!;
@@ -21,6 +23,7 @@ const currentPath = '/budget/history';
 // Get query parameters
 const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
+const currencyParam = url.searchParams.get('currency');
 
 // Current date info
 const now = new Date();
@@ -30,15 +33,22 @@ const currentYear = now.getFullYear();
 // Default to current year, parse from URL if provided
 const selectedYear = yearParam ? parseInt(yearParam, 10) : currentYear;
 
-// Default currency (could be user preference in the future)
-const selectedCurrency: 'IDR' | 'USD' = 'IDR';
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const selectedCurrency =
+  currencyParam && isValidCurrency(currencyParam) && workspaceCurrencies.includes(currencyParam)
+    ? currencyParam
+    : workspaceCurrencyConfig.primary;
 
 // Get budget history from service (24 months to cover 2 years)
 let historyData: MonthlyBudgetHistory[] = [];
 let error: string | null = null;
 
 try {
-  const allHistory = await budgetService.getBudgetHistory(user!.id, selectedCurrency, 24);
+  const allHistory = await budgetService.getBudgetHistory(user.workspaceId, selectedCurrency, 24);
 
   // Filter by selected year
   historyData = allHistory.filter((h) => h.year === selectedYear);
@@ -50,7 +60,7 @@ try {
 // Get available years from history data (for toggle)
 const allYears = new Set<number>();
 try {
-  const fullHistory = await budgetService.getBudgetHistory(user!.id, selectedCurrency, 24);
+  const fullHistory = await budgetService.getBudgetHistory(user.workspaceId, selectedCurrency, 24);
   fullHistory.forEach((h) => allYears.add(h.year));
 } catch {
   // If we can't get history, at least show current year
@@ -66,6 +76,13 @@ const ssrData = {
   availableYears,
   currency: selectedCurrency,
 };
+
+const currencyTabs = workspaceCurrencies.map((currencyCode) => {
+  const params = new URLSearchParams(url.searchParams);
+  params.set('currency', currencyCode);
+  params.set('year', selectedYear.toString());
+  return { currency: currencyCode, href: `/budget/history?${params.toString()}` };
+});
 ---
 
 <ProtectedLayout
@@ -78,6 +95,8 @@ const ssrData = {
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
     data-ssr-data={JSON.stringify(ssrData)}
   >
+    <CurrencyTabs tabs={currencyTabs} selected={selectedCurrency} />
+
     {/* Header Section */}
     <div class="flex flex-col @2xl:flex-row justify-between items-start @2xl:items-center gap-6">
       <div>

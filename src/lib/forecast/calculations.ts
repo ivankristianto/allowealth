@@ -161,8 +161,8 @@ export function calculateGrowthMultiple(finalBalance: number, initialBalance: nu
  */
 export function convertCurrency(
   amount: number,
-  fromCurrency: 'IDR' | 'USD',
-  toCurrency: 'IDR' | 'USD',
+  fromCurrency: Currency,
+  toCurrency: Currency,
   exchangeRate: number = IDR_PER_USD
 ): number {
   if (fromCurrency === toCurrency) return amount;

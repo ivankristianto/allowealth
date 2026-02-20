@@ -28,9 +28,11 @@ import RecentTransactionsList from '@/components/molecules/RecentTransactionsLis
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import OnboardingChecklist from '@/components/organisms/OnboardingChecklist.astro';
 import MfaEnableBanner from '@/components/molecules/MfaEnableBanner.astro';
+import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 const currentPath = '/dashboard';
 const user = Astro.locals.user;
@@ -40,17 +42,18 @@ const perf = Astro.locals.perf;
 const now = new Date();
 const currentMonth = now.getMonth() + 1;
 const currentYear = now.getFullYear();
+const url = Astro.url;
+const currencyParam = url.searchParams.get('currency');
 
 // Check onboarding status and get currency
 let onboardingStatus: OnboardingStatus | null = null;
 let isOnboardingComplete = false;
-let primaryCurrency: 'IDR' | 'USD' | null = null;
+let primaryCurrency: Currency | null = null;
+let secondaryCurrency: Currency | null = null;
+let selectedDetailCurrency: Currency | null = null;
 let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
 let mfaEnabled = false;
-
-const isSupportedCurrency = (value: string | null): value is 'IDR' | 'USD' =>
-  value === 'IDR' || value === 'USD';
 
 try {
   if (!user) {
@@ -62,8 +65,11 @@ try {
 
   // Validate currency from workspace meta before computing completion
   if (onboardingStatus.currency) {
-    const currencyValue = await workspaceMetaService.get(user.workspaceId, 'currency');
-    primaryCurrency = isSupportedCurrency(currencyValue) ? currencyValue : null;
+    const primaryValue = await workspaceMetaService.getCurrency(user.workspaceId);
+    primaryCurrency = isValidCurrency(primaryValue) ? primaryValue : null;
+
+    const secondaryValue = await workspaceMetaService.getSecondaryCurrency(user.workspaceId);
+    secondaryCurrency = secondaryValue && isValidCurrency(secondaryValue) ? secondaryValue : null;
   }
 
   // Tie completion to validated currency so checklist stays visible if currency is unsupported
@@ -76,11 +82,20 @@ try {
 
   // Only fetch dashboard data if currency is set
   if (primaryCurrency) {
+    const availableCurrencies = [
+      primaryCurrency,
+      ...(secondaryCurrency ? [secondaryCurrency] : []),
+    ];
+    selectedDetailCurrency =
+      currencyParam && isValidCurrency(currencyParam) && availableCurrencies.includes(currencyParam)
+        ? currencyParam
+        : primaryCurrency;
+
     dashboardData = await dashboardService.getDashboardData(
       user.workspaceId,
       currentMonth,
       currentYear,
-      primaryCurrency,
+      selectedDetailCurrency,
       perf
     );
   }
@@ -150,6 +165,22 @@ const safeParseFloat = (value: string | undefined | null): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const accountTotalsByCurrency = (dashboardData?.totalAccounts.byCurrency ?? []).map((row) => ({
+  currency: row.currency,
+  amount: safeParseFloat(row.amount),
+}));
+const debtTotalsByCurrency = (dashboardData?.totalDebt.byCurrency ?? []).map((row) => ({
+  currency: row.currency,
+  amount: safeParseFloat(row.amount),
+}));
+const dashboardCurrencyTabs =
+  primaryCurrency && secondaryCurrency
+    ? [
+        { currency: primaryCurrency, href: '/dashboard' },
+        { currency: secondaryCurrency, href: `/dashboard?currency=${secondaryCurrency}` },
+      ]
+    : [];
+
 // Filter out transfer transactions for cash flow widget (only supports income/expense)
 const cashFlowItems: CashFlowEntry[] =
   dashboardData?.recentTransactions
@@ -203,13 +234,18 @@ const spendingCategories =
     {
       !error && primaryCurrency && (
         <>
+          <CurrencyTabs
+            tabs={dashboardCurrencyTabs}
+            selected={selectedDetailCurrency || primaryCurrency}
+          />
+
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
             <SpendingCard
               spent={safeParseFloat(dashboardData?.monthlySpent.total)}
               budget={safeParseFloat(dashboardData?.monthlySpent.budget)}
               income={safeParseFloat(dashboardData?.monthlyIncome.total)}
-              currency={primaryCurrency}
+              currency={selectedDetailCurrency || primaryCurrency}
               remainingLabel={`Budget Remaining for ${currentMonthName}`}
               loading={!dashboardData}
             />
@@ -233,10 +269,10 @@ const spendingCategories =
 
             <div class="space-y-6 @sm:space-y-8">
               <AccountsWidget
-                accountIdr={safeParseFloat(dashboardData?.totalAccounts.idr)}
-                accountUsd={safeParseFloat(dashboardData?.totalAccounts.usd)}
-                debtIdr={safeParseFloat(dashboardData?.totalDebt?.idr)}
-                debtUsd={safeParseFloat(dashboardData?.totalDebt?.usd)}
+                accountTotals={accountTotalsByCurrency}
+                debtTotals={debtTotalsByCurrency}
+                primaryCurrency={primaryCurrency}
+                secondaryCurrency={secondaryCurrency}
                 loading={!dashboardData}
               />
               <CashFlowWidget items={cashFlowItems} loading={!dashboardData} />

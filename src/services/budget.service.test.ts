@@ -29,6 +29,7 @@ describe('BudgetService', () => {
     mockDb = createMockDatabase();
     budgetService = new BudgetService(mockDb);
     resetMockDatabase(mockDb);
+    (mockDb.query.workspaces.findFirst as any).mockResolvedValue({ id: 'workspace-1' });
   });
 
   describe('exportToCSV', () => {

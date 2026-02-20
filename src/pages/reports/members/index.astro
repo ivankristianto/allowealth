@@ -8,12 +8,13 @@ import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModa
 import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
 import StatCard from '@/components/atoms/StatCard.astro';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
-import { reportService, workspaceService } from '@/services';
+import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
+import { reportService, workspaceMetaService, workspaceService } from '@/services';
 import type { MemberSummaryRow, ReportData } from '@/services/report.service';
 import { formatMonthYear } from '@/lib/utils/date';
 import { formatCurrency } from '@/lib/formatting';
 import { safeParseDecimal } from '@/lib/utils/decimal';
-import type { Currency } from '@/lib/enums';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 const currentPath = '/reports/members';
 
@@ -60,7 +61,15 @@ if (urlPeriod) {
   defaultPeriod = range === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
 }
 
-const currency: Currency = urlCurrency === 'USD' ? 'USD' : 'IDR';
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const currency =
+  urlCurrency && isValidCurrency(urlCurrency) && workspaceCurrencies.includes(urlCurrency)
+    ? urlCurrency
+    : workspaceCurrencyConfig.primary;
 
 // Period label for header subtitle
 const selectedPeriodLabel =
@@ -144,6 +153,12 @@ const userReportForPartials = userReportData
 
 const overviewUrl = `/reports/members?range=${range}&period=${defaultPeriod}&currency=${currency}`;
 
+const currencyTabs = workspaceCurrencies.map((currencyCode) => {
+  const params = new URLSearchParams(url.searchParams);
+  params.set('currency', currencyCode);
+  return { currency: currencyCode, href: `/reports/members?${params.toString()}` };
+});
+
 // Header subtitle: member name for detail, period for overview
 const subtitleText = urlUserId
   ? `${selectedMemberName} · ${selectedPeriodLabel}`
@@ -178,6 +193,8 @@ const totalNet = totals.income - totals.expenses;
         data-current-currency={currency}
         data-current-user-id={urlUserId}
       >
+        <CurrencyTabs tabs={currencyTabs} selected={currency} />
+
         <Breadcrumb
           items={[
             { label: 'Reports', href: '/reports' },
@@ -198,6 +215,7 @@ const totalNet = totals.income - totals.expenses;
         <ReportChartsPartial
           expenseByCategory={userReportForPartials.expenseByCategory}
           trendData={userReportForPartials.trendData}
+          currency={currency}
           resourceAllocationSubtitle={range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX'}
           financialVelocitySubtitle={range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
         />
@@ -219,6 +237,8 @@ const totalNet = totals.income - totals.expenses;
         data-current-currency={currency}
         data-current-user-id=""
       >
+        <CurrencyTabs tabs={currencyTabs} selected={currency} />
+
         <Breadcrumb
           items={[{ label: 'Reports', href: '/reports' }, { label: 'Member Spending' }]}
         />
@@ -355,6 +375,7 @@ const totalNet = totals.income - totals.expenses;
             spent,
             budgetLimit: budgetLimitAttr ? parseFloat(budgetLimitAttr) : null,
             period: currentPeriod,
+            currency,
           },
         });
         document.dispatchEvent(customEvent);

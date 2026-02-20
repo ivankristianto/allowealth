@@ -18,7 +18,7 @@ export default meta;
 const createCurrencyInput = (args: {
   label?: string;
   value?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   required?: boolean;
   error?: boolean;
   errorMessage?: string;

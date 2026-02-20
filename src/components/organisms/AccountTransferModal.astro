@@ -159,7 +159,7 @@ const { id, accounts = [] } = Astro.props;
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
   import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
-  import type { Currency } from '@/lib/constants/currency';
+  import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   const initializedContainers = new WeakSet<Element>();
 
@@ -194,7 +194,7 @@ const { id, accounts = [] } = Astro.props;
           const fromCurrency = selectedFrom?.dataset.currency || '';
           const fromId = fromSelect.value;
 
-          selectedCurrency = fromCurrency === 'USD' ? 'USD' : 'IDR';
+          selectedCurrency = isValidCurrency(fromCurrency) ? fromCurrency : 'IDR';
           amountFormatter.updateCurrency(selectedCurrency);
 
           Array.from(toSelect.options).forEach((opt) => {

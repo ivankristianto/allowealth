@@ -10,7 +10,7 @@
  * @param {Array} categories - Uninitialized categories to display
  * @param {number} month - Selected month (1-12)
  * @param {number} year - Selected year
- * @param {'IDR' | 'USD'} currency - Selected currency
+ * @param {Currency} currency - Selected currency
  */
 
 import Modal from '../molecules/Modal.astro';
@@ -22,7 +22,7 @@ export interface Props {
   categories: Array<{ id: string; name: string; icon: string; color: string }>;
   month: number;
   year: number;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 const { id, categories, month, year, currency } = Astro.props;

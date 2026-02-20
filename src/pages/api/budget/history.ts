@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { budgetService } from '@/services';
+import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // Import partial component for HTML rendering
 import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTablePartial.astro';
@@ -12,7 +13,7 @@ import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTableP
  * GET /api/budget/history
  * Get budget history for multiple months
  * Query params:
- *   - currency: 'IDR' | 'USD' (default: 'IDR')
+ *   - currency: Currency (default: 'IDR')
  *   - months: number (default: 12, max: 24)
  *   - year: number (optional, filters to specific year)
  *   - _render: 'html' | 'json' (default: 'json')
@@ -26,14 +27,28 @@ export const GET: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const perf = context.locals.perf;
 
-    const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
+    const currencyParam = url.searchParams.get('currency');
     const monthsParam = url.searchParams.get('months');
     const yearParam = url.searchParams.get('year');
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    const currency =
+      currencyParam && isValidCurrency(currencyParam) && allowedCurrencies.includes(currencyParam)
+        ? currencyParam
+        : workspaceCurrencyConfig.primary;
 
     // Default to 24 months to get enough history for year filtering
     const months = monthsParam ? parseInt(monthsParam, 10) : 24;
 
-    if (currency !== 'IDR' && currency !== 'USD') {
+    if (
+      currencyParam &&
+      (!isValidCurrency(currencyParam) || !allowedCurrencies.includes(currencyParam))
+    ) {
       return render.wantsHtml()
         ? render.error('Invalid currency parameter', 400)
         : errorResponse('Invalid currency parameter', 400);

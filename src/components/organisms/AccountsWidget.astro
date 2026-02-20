@@ -2,7 +2,7 @@
 /**
  * AccountsWidget Component
  *
- * Displays total accounts and total debt per currency (IDR, USD).
+ * Displays total accounts and total debt grouped by currency.
  */
 import { Landmark, Wallet, CreditCard } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
@@ -13,26 +13,46 @@ import StatLabel from '@/components/atoms/StatLabel.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 
 export interface Props {
-  accountIdr: number;
-  accountUsd: number;
-  debtIdr?: number;
-  debtUsd?: number;
+  accountTotals: Array<{ currency: Currency; amount: number }>;
+  debtTotals?: Array<{ currency: Currency; amount: number }>;
+  primaryCurrency: Currency;
+  secondaryCurrency?: Currency | null;
   loading?: boolean;
   className?: string;
 }
 
 const {
-  accountIdr,
-  accountUsd,
-  debtIdr = 0,
-  debtUsd = 0,
+  accountTotals,
+  debtTotals = [],
+  primaryCurrency,
+  secondaryCurrency = null,
   loading = false,
   className = '',
 } = Astro.props;
 
-const isEmpty = !accountIdr && !accountUsd && !debtIdr && !debtUsd;
-const hasDebt = debtIdr > 0 || debtUsd > 0;
-const hasNoAccounts = accountIdr <= 0 && accountUsd <= 0;
+const orderedCurrencies = [primaryCurrency, ...(secondaryCurrency ? [secondaryCurrency] : [])];
+const sortByWorkspacePreference = (
+  a: { currency: Currency },
+  b: { currency: Currency }
+): number => {
+  const aIndex = orderedCurrencies.indexOf(a.currency);
+  const bIndex = orderedCurrencies.indexOf(b.currency);
+  if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+  if (aIndex !== -1) return -1;
+  if (bIndex !== -1) return 1;
+  return a.currency.localeCompare(b.currency);
+};
+
+const visibleAccountTotals = accountTotals
+  .filter((row) => row.amount > 0)
+  .sort(sortByWorkspacePreference);
+const visibleDebtTotals = debtTotals
+  .filter((row) => row.amount > 0)
+  .sort(sortByWorkspacePreference);
+
+const isEmpty = visibleAccountTotals.length === 0 && visibleDebtTotals.length === 0;
+const hasDebt = visibleDebtTotals.length > 0;
+const hasNoAccounts = visibleAccountTotals.length === 0;
 
 const badge =
   'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
@@ -108,24 +128,20 @@ const cardClasses = [
       </div>
       <div class="space-y-2">
         {
-          accountIdr > 0 && (
+          visibleAccountTotals.map((row, index) => (
             <div class="flex items-center gap-2.5">
-              <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-              <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-                {formatCurrency(accountIdr, 'IDR')}
+              <span
+                class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+              >
+                {row.currency}
+              </span>
+              <p
+                class={`text-lg font-bold tracking-tight leading-none truncate ${index === 0 ? 'text-success' : 'text-info'}`}
+              >
+                {formatCurrency(row.amount, row.currency)}
               </p>
             </div>
-          )
-        }
-        {
-          accountUsd > 0 && (
-            <div class="flex items-center gap-2.5">
-              <span class={`${badge} bg-info/10 text-info`}>USD</span>
-              <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
-                {formatCurrency(accountUsd, 'USD')}
-              </p>
-            </div>
-          )
+          ))
         }
         {hasNoAccounts && <p class="text-sm text-base-content/40">No accounts</p>}
       </div>
@@ -141,22 +157,18 @@ const cardClasses = [
             </StatLabel>
           </div>
           <div class="space-y-2">
-            {debtIdr > 0 && (
+            {visibleDebtTotals.map((row, index) => (
               <div class="flex items-center gap-2.5">
-                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                <span
+                  class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+                >
+                  {row.currency}
+                </span>
                 <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                  {formatCurrency(debtIdr, 'IDR')}
+                  {formatCurrency(row.amount, row.currency)}
                 </p>
               </div>
-            )}
-            {debtUsd > 0 && (
-              <div class="flex items-center gap-2.5">
-                <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                  {formatCurrency(debtUsd, 'USD')}
-                </p>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )

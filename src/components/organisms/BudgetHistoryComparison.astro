@@ -33,7 +33,7 @@ export interface MonthlyBudgetData {
 
 export interface Props {
   history: MonthlyBudgetData[];
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   currentMonth?: number;
   currentYear?: number;
   className?: string;

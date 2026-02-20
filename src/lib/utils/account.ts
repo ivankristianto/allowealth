@@ -3,6 +3,7 @@
  */
 
 import type { AccountOutput, AccountClass } from '@/lib/types/account';
+import type { Currency } from '@/lib/constants/currency';
 
 /**
  * Predefined color palette for account allocation visualization.
@@ -80,7 +81,7 @@ const IDR_TO_USD_RATE = 15000;
  * Convert amount between currencies
  * @TODO: Wire with backend - Use real-time exchange rates
  */
-export function convertToIdr(amount: number, currency: 'IDR' | 'USD'): number {
+export function convertToIdr(amount: number, currency: Currency): number {
   return currency === 'IDR' ? amount : amount * IDR_TO_USD_RATE;
 }
 
@@ -93,13 +94,16 @@ export function convertIdrToUsd(amountIdr: number): number {
 }
 
 /**
- * Calculate account allocation distribution by type
- * All values are normalized to IDR for percentage calculation
+ * Calculate account allocation distribution by type.
+ * Optionally scoped to a single currency to avoid cross-currency mixing.
  *
  * @param accounts - Array of accounts
  * @returns Array of allocation items sorted by percentage (largest first)
  */
-export function calculateAccountAllocation(accounts: AccountOutput[]): AccountAllocationItem[] {
+export function calculateAccountAllocation(
+  accounts: AccountOutput[],
+  currencyFilter?: Currency
+): AccountAllocationItem[] {
   if (!accounts || accounts.length === 0) {
     return [];
   }
@@ -111,6 +115,8 @@ export function calculateAccountAllocation(accounts: AccountOutput[]): AccountAl
   > = {};
 
   for (const account of accounts) {
+    if (currencyFilter && account.currency !== currencyFilter) continue;
+
     const balance = parseFloat(account.balance || '0');
     if (isNaN(balance) || balance <= 0) continue;
 
@@ -219,6 +225,99 @@ export function groupAccountsByClass<T extends AccountOutput>(
 export interface AccountGroupTotals {
   idr: number;
   usd: number;
+}
+
+export interface CurrencyTotal {
+  currency: Currency;
+  amount: number;
+}
+
+function sortCurrencyTotals(
+  totals: CurrencyTotal[],
+  currencyOrder: Currency[] = []
+): CurrencyTotal[] {
+  return [...totals].sort((a, b) => {
+    const aIdx = currencyOrder.indexOf(a.currency);
+    const bIdx = currencyOrder.indexOf(b.currency);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.currency.localeCompare(b.currency);
+  });
+}
+
+/**
+ * Calculate total non-debt account value by currency.
+ */
+export function calculateAccountTotalsByCurrency(
+  accounts: AccountOutput[],
+  currencyOrder: Currency[] = []
+): CurrencyTotal[] {
+  const totals = new Map<Currency, number>();
+
+  for (const account of accounts) {
+    if (account.account_class === 'debt') continue;
+    const balance = parseFloat(account.balance || '0');
+    if (isNaN(balance) || balance <= 0) continue;
+
+    const previous = totals.get(account.currency) || 0;
+    totals.set(account.currency, previous + balance);
+  }
+
+  return sortCurrencyTotals(
+    Array.from(totals.entries()).map(([currency, amount]) => ({ currency, amount })),
+    currencyOrder
+  );
+}
+
+/**
+ * Calculate total debt (absolute) by currency.
+ */
+export function calculateDebtTotalsByCurrency(
+  accounts: AccountOutput[],
+  currencyOrder: Currency[] = []
+): CurrencyTotal[] {
+  const totals = new Map<Currency, number>();
+
+  for (const account of accounts) {
+    if (account.account_class !== 'debt') continue;
+    const balance = Math.abs(parseFloat(account.balance || '0'));
+    if (isNaN(balance) || balance <= 0) continue;
+
+    const previous = totals.get(account.currency) || 0;
+    totals.set(account.currency, previous + balance);
+  }
+
+  return sortCurrencyTotals(
+    Array.from(totals.entries()).map(([currency, amount]) => ({ currency, amount })),
+    currencyOrder
+  );
+}
+
+/**
+ * Calculate group totals by currency.
+ */
+export function calculateGroupTotalsByCurrency(
+  accounts: AccountOutput[],
+  currencyOrder: Currency[] = []
+): CurrencyTotal[] {
+  const totals = new Map<Currency, number>();
+
+  for (const account of accounts) {
+    const rawBalance = parseFloat(account.balance || '0');
+    if (isNaN(rawBalance)) continue;
+
+    const normalizedBalance = account.account_class === 'debt' ? Math.abs(rawBalance) : rawBalance;
+    if (normalizedBalance <= 0) continue;
+
+    const previous = totals.get(account.currency) || 0;
+    totals.set(account.currency, previous + normalizedBalance);
+  }
+
+  return sortCurrencyTotals(
+    Array.from(totals.entries()).map(([currency, amount]) => ({ currency, amount })),
+    currencyOrder
+  );
 }
 
 export function calculateGroupTotals(accounts: AccountOutput[]): AccountGroupTotals {

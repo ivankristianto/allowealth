@@ -21,7 +21,7 @@ export interface TransactionFilters {
   category_id: string;
   category_ids: string[]; // Support multiple categories
   account_id: string;
-  currency: 'IDR' | 'USD' | '';
+  currency: Currency | '';
   start_date: string;
   end_date: string;
   page: number;

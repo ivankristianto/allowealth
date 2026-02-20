@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENCY, type Currency } from './currency';
+
 /**
  * Workspace Meta Keys Constants
  *
@@ -10,6 +12,7 @@
  */
 export const WORKSPACE_META_KEYS = {
   CURRENCY: 'currency',
+  SECONDARY_CURRENCY: 'secondary_currency',
   WEEK_START: 'week_start',
   COMPACT_NUMBERS: 'compact_numbers',
 } as const;
@@ -23,7 +26,8 @@ export type WorkspaceMetaKey = (typeof WORKSPACE_META_KEYS)[keyof typeof WORKSPA
  * Default values for each workspace meta key (stored as strings in database)
  */
 export const WORKSPACE_META_DEFAULTS: Record<WorkspaceMetaKey, string> = {
-  [WORKSPACE_META_KEYS.CURRENCY]: 'IDR',
+  [WORKSPACE_META_KEYS.CURRENCY]: DEFAULT_CURRENCY,
+  [WORKSPACE_META_KEYS.SECONDARY_CURRENCY]: '',
   [WORKSPACE_META_KEYS.WEEK_START]: 'monday',
   [WORKSPACE_META_KEYS.COMPACT_NUMBERS]: 'true',
 };
@@ -50,7 +54,8 @@ export type WeekStart = (typeof WEEK_START_VALUES)[number];
  * Type-safe workspace settings derived from meta values
  */
 export interface WorkspaceSettings {
-  currency: string;
+  currency: Currency;
+  secondaryCurrency: Currency | '';
   weekStart: WeekStart;
   compactNumbers: boolean;
 }
@@ -59,7 +64,8 @@ export interface WorkspaceSettings {
  * Default workspace settings
  */
 export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
-  currency: 'IDR',
+  currency: DEFAULT_CURRENCY,
+  secondaryCurrency: '',
   weekStart: 'monday',
   compactNumbers: true,
 };

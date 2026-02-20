@@ -19,7 +19,7 @@ export interface Props {
   id: string;
   month: number;
   year: number;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 const { id, month, year, currency } = Astro.props;

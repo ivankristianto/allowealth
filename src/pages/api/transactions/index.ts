@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { transactionService } from '@/services';
+import { transactionService, workspaceMetaService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -25,6 +25,7 @@ import { createRenderHelper } from '@/lib/api/renderResponse';
 import TransactionListPartial from '@/components/partials/TransactionListPartial.astro';
 import TransactionSummaryPartial from '@/components/partials/TransactionSummaryPartial.astro';
 import PaginationPartial from '@/components/partials/PaginationPartial.astro';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * GET /api/transactions
@@ -37,6 +38,13 @@ export const GET: APIRoute = async (context) => {
     const { url } = context;
 
     const { limit, offset } = getPaginationParams(url);
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
 
     // Parse filter params
     const filters: any = {
@@ -67,7 +75,10 @@ export const GET: APIRoute = async (context) => {
     }
 
     const currency = url.searchParams.get('currency');
-    if (currency && (currency === 'IDR' || currency === 'USD')) {
+    if (currency) {
+      if (!isValidCurrency(currency) || !allowedCurrencies.includes(currency)) {
+        return errorResponse('Invalid currency parameter', 400);
+      }
       filters.currency = currency;
     }
 
@@ -115,6 +126,7 @@ export const GET: APIRoute = async (context) => {
       const monthTransactions = await transactionService.findAll({
         workspace_id: auth.workspaceId,
         created_by_user_id: filters.created_by_user_id,
+        currency: filters.currency,
         start_date: filters.start_date,
         end_date: filters.end_date,
         include_deleted: false,
@@ -155,7 +167,13 @@ export const GET: APIRoute = async (context) => {
       const totalPages = Math.ceil(total / limit);
 
       // Get currency from user settings or default
-      const currencyParam = (url.searchParams.get('_currency') as 'IDR' | 'USD') || 'IDR';
+      const requestedRenderCurrency = url.searchParams.get('_currency');
+      const currencyParam =
+        requestedRenderCurrency &&
+        isValidCurrency(requestedRenderCurrency) &&
+        allowedCurrencies.includes(requestedRenderCurrency)
+          ? requestedRenderCurrency
+          : (filters.currency ?? workspaceCurrencyConfig.primary);
 
       // Generate period label from date range
       let periodLabel = '';

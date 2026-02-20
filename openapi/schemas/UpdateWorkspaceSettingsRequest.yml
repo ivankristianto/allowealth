@@ -11,9 +11,17 @@ UpdateWorkspaceSettingsRequest:
       example: "Family Budget 2025"
     currency:
       type: string
-      enum: [IDR, USD]
-      description: Default currency for the workspace
+      description: >
+        Primary workspace currency. Supported values: IDR, USD, SGD, PHP, EUR, GBP, MYR, THB,
+        JPY, AUD, KRW, INR.
       example: "IDR"
+    secondaryCurrency:
+      type: string
+      nullable: true
+      description: >
+        Optional secondary currency. Must differ from primary currency.
+        Set null or empty string to disable secondary currency.
+      example: "USD"
     weekStart:
       type: string
       enum: [sunday, monday]

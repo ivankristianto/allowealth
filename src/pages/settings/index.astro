@@ -16,6 +16,7 @@ import {
   Building2,
   Clock,
   Database,
+  Info,
   Mail,
   RotateCcw,
   Save,
@@ -26,6 +27,7 @@ import {
   X,
 } from '@lucide/astro';
 import { workspaceService, workspaceMetaService, workspaceInvitationService } from '@/services';
+import { CURRENCY_META, CURRENCY_OPTIONS } from '@/lib/constants/currency';
 
 const currentPath = '/settings';
 
@@ -50,10 +52,12 @@ let workspaceData = {
   createdAt: new Date().toISOString(),
   settings: {
     currency: 'IDR',
+    secondaryCurrency: '',
     weekStart: 'monday',
     compactNumbers: true,
   },
 };
+let canChangeCurrency = true;
 
 let members: Array<{
   id: string;
@@ -86,10 +90,13 @@ try {
           : String(workspace.created_at),
       settings: {
         currency: settings.currency,
+        secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
       },
     };
+
+    canChangeCurrency = await workspaceMetaService.canChangeCurrencySettings(workspaceId);
   }
 
   // Fetch workspace members
@@ -132,10 +139,10 @@ const navItems = [
 
 const activeSection = 'general';
 
-const currencyOptions = [
-  { value: 'IDR', label: 'Indonesian Rupiah (IDR)' },
-  { value: 'USD', label: 'US Dollar (USD)' },
-];
+const currencyOptions = CURRENCY_OPTIONS.map((opt) => ({
+  value: opt.value,
+  label: `${CURRENCY_META[opt.value].flagEmoji} ${opt.value} — ${CURRENCY_META[opt.value].name}`,
+}));
 
 const weekStartOptions = [
   { value: 'monday', label: 'Monday' },
@@ -320,6 +327,7 @@ const dataActions = [
                         id="primary-currency"
                         name="currency"
                         class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                        disabled={!canChangeCurrency}
                       >
                         {
                           currencyOptions.map((currency) => (
@@ -335,24 +343,74 @@ const dataActions = [
                     </div>
 
                     <div class="form-control">
-                      <Label htmlFor="week-starts">Week Starts On</Label>
+                      <Label htmlFor="secondary-currency">Secondary Currency</Label>
                       <select
-                        id="week-starts"
-                        name="weekStart"
+                        id="secondary-currency"
+                        name="secondaryCurrency"
                         class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                        disabled={!canChangeCurrency}
                       >
+                        <option value="" selected={!workspaceData.settings.secondaryCurrency}>
+                          None
+                        </option>
                         {
-                          weekStartOptions.map((option) => (
-                            <option
-                              value={option.value}
-                              selected={workspaceData.settings.weekStart === option.value}
-                            >
-                              {option.label}
-                            </option>
-                          ))
+                          currencyOptions
+                            .filter(
+                              (currency) => currency.value !== workspaceData.settings.currency
+                            )
+                            .map((currency) => (
+                              <option
+                                value={currency.value}
+                                selected={
+                                  workspaceData.settings.secondaryCurrency === currency.value
+                                }
+                              >
+                                {currency.label}
+                              </option>
+                            ))
                         }
                       </select>
                     </div>
+                  </div>
+
+                  {
+                    !canChangeCurrency && (
+                      <div class="alert alert-info text-sm">
+                        <Info class="size-5 shrink-0" />
+                        <span>
+                          Currency settings are locked after creating accounts, budgets, or
+                          transactions.
+                        </span>
+                      </div>
+                    )
+                  }
+                  {
+                    canChangeCurrency && (
+                      <p class="text-xs text-warning/80 mt-1 ml-1">
+                        Choose carefully — currency settings cannot be changed after you add
+                        accounts or transactions.
+                      </p>
+                    )
+                  }
+
+                  <div class="form-control">
+                    <Label htmlFor="week-starts">Week Starts On</Label>
+                    <select
+                      id="week-starts"
+                      name="weekStart"
+                      class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    >
+                      {
+                        weekStartOptions.map((option) => (
+                          <option
+                            value={option.value}
+                            selected={workspaceData.settings.weekStart === option.value}
+                          >
+                            {option.label}
+                          </option>
+                        ))
+                      }
+                    </select>
                   </div>
 
                   <div
@@ -653,6 +711,12 @@ const dataActions = [
     'save-settings-btn-bottom'
   ) as HTMLButtonElement | null;
   const settingsForm = document.getElementById('workspace-settings-form') as HTMLFormElement | null;
+  const primaryCurrencySelect = document.getElementById(
+    'primary-currency'
+  ) as HTMLSelectElement | null;
+  const secondaryCurrencySelect = document.getElementById(
+    'secondary-currency'
+  ) as HTMLSelectElement | null;
 
   async function handleSave() {
     const allSaveBtns = [saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
@@ -662,7 +726,8 @@ const dataActions = [
       const formData = new FormData(settingsForm!);
 
       const payload: Record<string, unknown> = {
-        currency: formData.get('currency'),
+        currency: primaryCurrencySelect?.value ?? formData.get('currency'),
+        secondaryCurrency: secondaryCurrencySelect?.value ?? '',
         weekStart: formData.get('weekStart'),
         compactNumbers: formData.get('compactNumbers') === 'on',
       };
@@ -702,6 +767,22 @@ const dataActions = [
 
   if (saveBtnBottom && settingsForm) {
     saveBtnBottom.addEventListener('click', handleSave);
+  }
+
+  if (primaryCurrencySelect && secondaryCurrencySelect) {
+    const syncSecondaryCurrencyOptions = () => {
+      const selectedPrimary = primaryCurrencySelect.value;
+      for (const option of Array.from(secondaryCurrencySelect.options)) {
+        if (option.value === '') continue;
+        option.hidden = option.value === selectedPrimary;
+      }
+      if (secondaryCurrencySelect.value === selectedPrimary) {
+        secondaryCurrencySelect.value = '';
+      }
+    };
+
+    primaryCurrencySelect.addEventListener('change', syncSecondaryCurrencyOptions);
+    syncSecondaryCurrencyOptions();
   }
 
   // ==================== CANCEL INVITATION ====================

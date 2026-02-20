@@ -35,7 +35,7 @@ function renderResults(data: {
     interest: number;
     closingBalance: number;
   }>;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }): void {
   if (!resultsContainer) return;
 

@@ -28,7 +28,7 @@ export interface Props {
   totalAllocated: number;
   totalSpent: number;
   distribution: DistributionItem[] | AllocationDistribution[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 const { totalAllocated, totalSpent, distribution, currency } = Astro.props;
