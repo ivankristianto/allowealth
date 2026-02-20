@@ -68,6 +68,40 @@ describe('EmailTemplateService', () => {
     });
   });
 
+  describe('emailChangeVerification', () => {
+    it('should generate email change verification email with correct subject', () => {
+      const result = templateService.emailChangeVerification({
+        verificationUrl: 'https://example.com/verify?token=abc',
+        userName: 'Test User',
+        newEmail: 'new@example.com',
+      });
+
+      expect(result.subject).toBe('Confirm your new email address');
+    });
+
+    it('should include verification URL and new email in HTML', () => {
+      const result = templateService.emailChangeVerification({
+        verificationUrl: 'https://example.com/verify?token=abc',
+        userName: 'Test User',
+        newEmail: 'new@example.com',
+      });
+
+      expect(result.html).toContain('https://example.com/verify?token=abc');
+      expect(result.html).toContain('new@example.com');
+    });
+
+    it('should escape user-provided values in HTML', () => {
+      const result = templateService.emailChangeVerification({
+        verificationUrl: 'https://example.com/verify?token=abc',
+        userName: '<script>alert("x")</script>',
+        newEmail: 'new+<tag>@example.com',
+      });
+
+      expect(result.html).toContain('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;');
+      expect(result.html).toContain('new+&lt;tag&gt;@example.com');
+    });
+  });
+
   describe('footer', () => {
     it('should include current year in footer', () => {
       const result = templateService.passwordReset({

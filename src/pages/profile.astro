@@ -8,16 +8,21 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ManageAccountForms from '@/components/organisms/ManageAccountForms.astro';
 import type { User } from '@/lib/auth/lucia';
+import { emailVerificationService } from '@/services';
+import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
 const currentPath = '/profile';
 
 // User is authenticated (enforced by ProtectedLayout)
 const user = Astro.locals.user! as User;
+const pendingEmail = await emailVerificationService.getPendingEmailChange(user.id);
+const oauthAccounts = await getLinkedOAuthAccounts(user.id);
+const hasLinkedOAuth = oauthAccounts.length > 0;
 ---
 
 <ProtectedLayout title="Profile" currentPath={currentPath} subtitle="Manage your account details">
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <ManageAccountForms user={user} />
+    <ManageAccountForms user={user} pendingEmail={pendingEmail} hasLinkedOAuth={hasLinkedOAuth} />
   </div>
 </ProtectedLayout>
 
@@ -27,12 +32,23 @@ const user = Astro.locals.user! as User;
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
   const API_PROFILE_URL = '/api/user/profile';
+  const API_RESEND_EMAIL_CHANGE_URL = '/api/user/resend-email-change';
+  const API_CANCEL_EMAIL_CHANGE_URL = '/api/user/cancel-email-change';
 
   // ==================== PROFILE FORM ====================
   const profileForm = document.getElementById('profile-form');
   const profileNameInput = document.getElementById('full-name');
   const profileEmailInput = document.getElementById('email');
+  const oauthWarning = document.getElementById('oauth-warning');
   const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
+
+  if (profileEmailInput instanceof HTMLInputElement && oauthWarning instanceof HTMLElement) {
+    profileEmailInput.addEventListener('input', () => {
+      const currentEmail = profileEmailInput.dataset.currentEmail || '';
+      const isChanged = profileEmailInput.value.toLowerCase() !== currentEmail.toLowerCase();
+      oauthWarning.style.display = isChanged ? 'flex' : 'none';
+    });
+  }
 
   if (
     profileForm instanceof HTMLFormElement &&
@@ -40,6 +56,8 @@ const user = Astro.locals.user! as User;
     profileEmailInput instanceof HTMLInputElement &&
     profileSubmitButton instanceof HTMLButtonElement
   ) {
+    const hadPendingEmailOnLoad = profileForm.dataset.hadPendingEmail === 'true';
+
     profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -85,12 +103,144 @@ const user = Astro.locals.user! as User;
           return;
         }
 
+        if (result.data?.pendingEmail) {
+          addToast(
+            result.data.message || `Verification email sent to ${result.data.pendingEmail}`,
+            'info'
+          );
+          window.location.reload();
+          return;
+        }
+
+        if (hadPendingEmailOnLoad) {
+          addToast('Profile updated successfully!', 'success');
+          window.location.reload();
+          return;
+        }
+
         addToast('Profile updated successfully!', 'success');
       } catch (error) {
         console.error('Profile update error:', error);
         addToast('An error occurred. Please check your connection and try again.', 'error');
       } finally {
         setButtonLoading(profileSubmitButton, false);
+      }
+    });
+  }
+
+  // ==================== RESEND EMAIL CHANGE ====================
+  const resendBtn = document.getElementById('resend-email-change-btn');
+  const COOLDOWN_KEY = 'resend-email-change-cooldown';
+  const COOLDOWN_SECONDS = 60;
+
+  function startCooldown(btn: HTMLButtonElement, endsAt: number) {
+    btn.disabled = true;
+    const tick = () => {
+      const remaining = Math.ceil((endsAt - Date.now()) / 1000);
+      if (remaining <= 0) {
+        localStorage.removeItem(COOLDOWN_KEY);
+        btn.textContent = 'Resend email';
+        btn.disabled = false;
+      } else {
+        btn.textContent = `Resend (${remaining}s)`;
+        requestAnimationFrame(() => setTimeout(tick, 1000));
+      }
+    };
+    tick();
+  }
+
+  if (resendBtn instanceof HTMLButtonElement) {
+    // Restore cooldown from previous page load
+    const savedCooldown = localStorage.getItem(COOLDOWN_KEY);
+    if (savedCooldown) {
+      const endsAt = parseInt(savedCooldown, 10);
+      if (endsAt > Date.now()) {
+        startCooldown(resendBtn, endsAt);
+      } else {
+        localStorage.removeItem(COOLDOWN_KEY);
+      }
+    }
+
+    resendBtn.addEventListener('click', async () => {
+      if (resendBtn.disabled) return;
+
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending…';
+
+      try {
+        const response = await fetch(API_RESEND_EMAIL_CHANGE_URL, {
+          method: 'POST',
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'include',
+        });
+
+        const result = await response.json();
+
+        if (response.status === 429) {
+          const msg =
+            result.error?.message || result.error || 'Too many requests. Please try again later.';
+          addToast(msg, 'warning');
+          resendBtn.textContent = 'Resend email';
+          resendBtn.disabled = false;
+          return;
+        }
+
+        if (!response.ok || !result.success) {
+          addToast(result.error?.message || 'Failed to resend verification email.', 'error');
+          resendBtn.textContent = 'Resend email';
+          resendBtn.disabled = false;
+          return;
+        }
+
+        addToast('Verification email resent. Check your inbox.', 'success');
+
+        // Start cooldown persisted in localStorage
+        const endsAt = Date.now() + COOLDOWN_SECONDS * 1000;
+        localStorage.setItem(COOLDOWN_KEY, String(endsAt));
+        startCooldown(resendBtn, endsAt);
+      } catch (error) {
+        console.error('Resend email change error:', error);
+        addToast('An error occurred. Please try again.', 'error');
+        resendBtn.textContent = 'Resend email';
+        resendBtn.disabled = false;
+      }
+    });
+  }
+
+  // ==================== CANCEL EMAIL CHANGE ====================
+  const cancelBtn = document.getElementById('cancel-email-change-btn');
+
+  if (cancelBtn instanceof HTMLButtonElement) {
+    cancelBtn.addEventListener('click', async () => {
+      if (cancelBtn.disabled) return;
+
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = 'Cancelling…';
+
+      try {
+        const response = await fetch(API_CANCEL_EMAIL_CHANGE_URL, {
+          method: 'POST',
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'include',
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          addToast(result.error?.message || 'Failed to cancel email change.', 'error');
+          cancelBtn.disabled = false;
+          cancelBtn.textContent = 'Cancel change';
+          return;
+        }
+
+        addToast('Email change cancelled.', 'success');
+        localStorage.removeItem(COOLDOWN_KEY);
+        window.location.reload();
+      } catch (error) {
+        console.error('Cancel email change error:', error);
+        addToast('An error occurred. Please try again.', 'error');
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'Cancel change';
       }
     });
   }

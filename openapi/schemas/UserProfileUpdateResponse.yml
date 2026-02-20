@@ -1,0 +1,12 @@
+# User Profile Update Response Schema
+UserProfileUpdateResponse:
+  allOf:
+    - $ref: './UserProfileResponse.yml#/UserProfileResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Human-readable message about the email change

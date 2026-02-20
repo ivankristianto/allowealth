@@ -9,6 +9,8 @@
 
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
+import { auth } from '@/lib/auth/lucia';
+import { invalidateUserSessions } from '@/lib/auth/session-cache';
 import { EmailVerificationService } from '@/services/email-verification.service';
 import { WorkspaceService } from '@/services/workspace.service';
 import { AccountCategoryService } from '@/services/account-category.service';
@@ -45,11 +47,34 @@ export const GET: APIRoute = async ({ request, redirect }) => {
         return redirect('/login?error=invalid_token', 302);
       }
 
+      if (error === 'EMAIL_ALREADY_EXISTS') {
+        log.warn('Email change failed - email claimed by another user');
+        return redirect('/login?error=email_taken', 302);
+      }
+
       log.error('Email verification failed', { error });
       return redirect('/login?error=verification_failed', 302);
     }
 
     const user = result.user;
+
+    // Handle email change verification by clearing all existing sessions first.
+    if (result.emailChanged) {
+      const authWithDeleteSessions = auth as typeof auth & {
+        deleteUserSessions?: (userId: string) => Promise<void>;
+      };
+
+      if (authWithDeleteSessions.deleteUserSessions) {
+        await authWithDeleteSessions.deleteUserSessions(user.id);
+      } else {
+        await auth.invalidateUserSessions(user.id);
+      }
+
+      await invalidateUserSessions(user.id);
+
+      log.info('Email changed, all sessions invalidated', { userId: user.id });
+      return redirect('/login?email-changed=true', 302);
+    }
 
     // If user is workspace owner (admin role), activate workspace and seed categories
     if (user.role === 'admin') {
