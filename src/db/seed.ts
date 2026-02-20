@@ -1297,12 +1297,24 @@ async function seedTransferTransactions(
   return count;
 }
 
+// Accounts created by the member user (personal e-wallets, some stocks, a credit card)
+const MEMBER_OWNED_ACCOUNTS = new Set([
+  'GoPay',
+  'OVO',
+  'Mandiri Credit Card',
+  'Stock - AAPL',
+  'Stock - GOOGL',
+  'Chase Checking',
+  'Car Loan - Innova',
+]);
+
 /**
  * Seed accounts (both payment accounts and investment accounts)
  */
 async function seedAccounts(
   workspaceId: string,
   userId: string,
+  memberUserId: string,
   accountCategoryMap: Map<string, string>
 ): Promise<Map<string, string>> {
   console.log('💰 Seeding accounts...');
@@ -1311,6 +1323,8 @@ async function seedAccounts(
   const now = new Date();
   const createdAt = daysAgo(90);
 
+  const ownerFor = (name: string) => (MEMBER_OWNED_ACCOUNTS.has(name) ? memberUserId : userId);
+
   // First, seed payment accounts (cash, bank accounts, credit cards, e-wallets)
   for (const account of PAYMENT_ACCOUNTS) {
     const id = nanoid();
@@ -1318,7 +1332,7 @@ async function seedAccounts(
     await db.insert(accounts).values({
       id,
       workspace_id: workspaceId,
-      created_by_user_id: userId,
+      created_by_user_id: ownerFor(account.name),
       name: account.name,
       type: account.type,
       account_class: deriveAccountClass(account.type),
@@ -1342,7 +1356,7 @@ async function seedAccounts(
     await db.insert(accounts).values({
       id,
       workspace_id: workspaceId,
-      created_by_user_id: userId,
+      created_by_user_id: ownerFor(account.name),
       name: account.name,
       type: account.type,
       account_class: deriveAccountClass(account.type),
@@ -1365,7 +1379,7 @@ async function seedAccounts(
     await db.insert(accounts).values({
       id,
       workspace_id: workspaceId,
-      created_by_user_id: userId,
+      created_by_user_id: ownerFor(loan.name),
       name: loan.name,
       type: loan.type,
       account_class: deriveAccountClass(loan.type),
@@ -1406,7 +1420,8 @@ async function seedAccounts(
   });
   accountMap.set('Old Savings (Closed)', closedId);
 
-  console.log(`✓ Created ${accountMap.size} accounts`);
+  const memberCount = MEMBER_OWNED_ACCOUNTS.size;
+  console.log(`✓ Created ${accountMap.size} accounts (${memberCount} owned by member)`);
   return accountMap;
 }
 
@@ -1854,7 +1869,7 @@ async function seed() {
     await seedBudgets(workspaceId, userId, categoryMap);
 
     // Seed accounts FIRST (transactions now depend on accounts)
-    const accountMap = await seedAccounts(workspaceId, userId, accountCategoryMap);
+    const accountMap = await seedAccounts(workspaceId, userId, memberUserId, accountCategoryMap);
 
     // Seed transactions for the 3 months
     await seedIncomeTransactions(workspaceId, userId, categoryMap, accountMap);
