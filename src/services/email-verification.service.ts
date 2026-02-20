@@ -186,7 +186,7 @@ export class EmailVerificationService {
     log.info('Email change requested', { userId, newEmail: normalizedEmail });
   }
 
-  private async clearPendingEmailAndTokens(userId: string): Promise<void> {
+  async clearPendingEmailAndTokens(userId: string): Promise<void> {
     await this.db
       .delete(this.schema.userMeta)
       .where(
@@ -199,6 +199,60 @@ export class EmailVerificationService {
     await this.db
       .delete(this.schema.emailVerificationTokens)
       .where(eq(this.schema.emailVerificationTokens.user_id, userId));
+  }
+
+  /**
+   * Resend verification email for a pending email change.
+   * Creates a new token and sends the email change verification to the pending address.
+   * Does NOT re-unlink OAuth accounts (already done on initial request).
+   */
+  async resendEmailChangeVerification(userId: string): Promise<{ pendingEmail: string }> {
+    const pendingEmail = await this.getPendingEmailChange(userId);
+
+    if (!pendingEmail) {
+      throw new UserServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'No pending email change found',
+        400
+      );
+    }
+
+    const user = await this.db.query.users.findFirst({
+      where: eq(this.schema.users.id, userId),
+    });
+
+    if (!user) {
+      throw new UserServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+
+    if (!this.emailSvc) {
+      log.warn('No email service configured, skipping verification email');
+      throw new UserServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Email service not available',
+        503
+      );
+    }
+
+    // Delete old tokens and create a fresh one
+    await this.db
+      .delete(this.schema.emailVerificationTokens)
+      .where(eq(this.schema.emailVerificationTokens.user_id, userId));
+
+    const token = await this.createVerificationToken(userId);
+
+    const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
+    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+
+    await this.emailSvc.sendEmailChangeVerification({
+      to: pendingEmail,
+      userName: user.name,
+      newEmail: pendingEmail,
+      verificationUrl,
+    });
+
+    log.info('Email change verification resent', { userId, pendingEmail });
+    return { pendingEmail };
   }
 
   /**

@@ -11,7 +11,7 @@ import Input from '@/components/atoms/Input.astro';
 import Button from '@/components/atoms/Button.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
-import { User, Info, TriangleAlert } from '@lucide/astro';
+import { User, Mail, TriangleAlert } from '@lucide/astro';
 import type { User as UserType } from '@/lib/auth/lucia';
 import { patterns } from '@/lib/validation/patterns';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
@@ -71,7 +71,7 @@ const profileDetails = {
             >
           </div>
 
-          <div class="flex-1 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="flex-1 grid grid-cols-1 gap-4">
             <div class="form-control">
               <Label htmlFor="full-name" required>Full Name</Label>
               <Input
@@ -99,13 +99,47 @@ const profileDetails = {
                 data-current-email={displayEmail}
                 className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
+              <p class="mt-1.5 text-xs text-base-content/40">
+                Changing your email requires verification and re-login. Make sure the new address is
+                correct.
+              </p>
               {
                 pendingEmail && (
-                  <div class="mt-2 flex items-center gap-2 text-sm text-info">
-                    <Info size={16} class="shrink-0" />
-                    <span>
-                      Pending verification: <strong>{pendingEmail}</strong>
-                    </span>
+                  <div
+                    class="mt-3 rounded-xl bg-info/8 border border-info/20 p-4"
+                    role="status"
+                    id="pending-email-banner"
+                    data-pending-email={pendingEmail}
+                  >
+                    <div class="flex items-start gap-3">
+                      <div class="rounded-lg bg-info/15 p-1.5 mt-0.5">
+                        <Mail size={14} class="text-info" aria-hidden="true" />
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-base-content">Email change pending</p>
+                        <p class="text-xs text-base-content/60 mt-0.5">
+                          Verification link sent to{' '}
+                          <strong class="text-base-content/80">{pendingEmail}</strong>
+                        </p>
+                        <div class="flex items-center gap-1 mt-1.5 -ml-2">
+                          <button
+                            type="button"
+                            id="resend-email-change-btn"
+                            class="text-xs font-bold text-info underline underline-offset-2 hover:text-info/80 transition-colors min-h-[44px] min-w-[44px] px-2 inline-flex items-center"
+                          >
+                            Resend email
+                          </button>
+                          <span class="text-base-content/20">|</span>
+                          <button
+                            type="button"
+                            id="cancel-email-change-btn"
+                            class="text-xs font-bold text-base-content/40 underline underline-offset-2 hover:text-error/70 transition-colors min-h-[44px] min-w-[44px] px-2 inline-flex items-center"
+                          >
+                            Cancel change
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )
               }
@@ -125,7 +159,7 @@ const profileDetails = {
               }
             </div>
 
-            <div class="form-control md:col-span-2">
+            <div class="form-control">
               <Label htmlFor="phone">Phone Number</Label>
               <Input
                 type="text"
@@ -137,7 +171,7 @@ const profileDetails = {
               />
             </div>
 
-            <div class="form-control md:col-span-2">
+            <div class="form-control">
               <Label htmlFor="bio">Short Bio</Label>
               <textarea
                 id="bio"

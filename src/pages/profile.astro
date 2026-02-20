@@ -32,6 +32,8 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
   const API_PROFILE_URL = '/api/user/profile';
+  const API_RESEND_EMAIL_CHANGE_URL = '/api/user/resend-email-change';
+  const API_CANCEL_EMAIL_CHANGE_URL = '/api/user/cancel-email-change';
 
   // ==================== PROFILE FORM ====================
   const profileForm = document.getElementById('profile-form');
@@ -122,6 +124,106 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
         addToast('An error occurred. Please check your connection and try again.', 'error');
       } finally {
         setButtonLoading(profileSubmitButton, false);
+      }
+    });
+  }
+
+  // ==================== RESEND EMAIL CHANGE ====================
+  const resendBtn = document.getElementById('resend-email-change-btn');
+
+  if (resendBtn instanceof HTMLButtonElement) {
+    let cooldownTimer: ReturnType<typeof setTimeout> | null = null;
+
+    resendBtn.addEventListener('click', async () => {
+      if (resendBtn.disabled) return;
+
+      resendBtn.disabled = true;
+      const originalText = resendBtn.textContent;
+      resendBtn.textContent = 'Sending…';
+
+      try {
+        const response = await fetch(API_RESEND_EMAIL_CHANGE_URL, {
+          method: 'POST',
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'include',
+        });
+
+        const result = await response.json();
+
+        if (response.status === 429) {
+          const msg =
+            result.error?.message || result.error || 'Too many requests. Please try again later.';
+          addToast(msg, 'warning');
+          resendBtn.textContent = originalText;
+          resendBtn.disabled = false;
+          return;
+        }
+
+        if (!response.ok || !result.success) {
+          addToast(result.error?.message || 'Failed to resend verification email.', 'error');
+          resendBtn.textContent = originalText;
+          resendBtn.disabled = false;
+          return;
+        }
+
+        addToast('Verification email resent. Check your inbox.', 'success');
+
+        // Start 60-second cooldown
+        let seconds = 60;
+        resendBtn.textContent = `Resend (${seconds}s)`;
+
+        cooldownTimer = setInterval(() => {
+          seconds--;
+          if (seconds <= 0) {
+            if (cooldownTimer) clearInterval(cooldownTimer);
+            resendBtn.textContent = originalText;
+            resendBtn.disabled = false;
+          } else {
+            resendBtn.textContent = `Resend (${seconds}s)`;
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Resend email change error:', error);
+        addToast('An error occurred. Please try again.', 'error');
+        resendBtn.textContent = originalText;
+        resendBtn.disabled = false;
+      }
+    });
+  }
+
+  // ==================== CANCEL EMAIL CHANGE ====================
+  const cancelBtn = document.getElementById('cancel-email-change-btn');
+
+  if (cancelBtn instanceof HTMLButtonElement) {
+    cancelBtn.addEventListener('click', async () => {
+      if (cancelBtn.disabled) return;
+
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = 'Cancelling…';
+
+      try {
+        const response = await fetch(API_CANCEL_EMAIL_CHANGE_URL, {
+          method: 'POST',
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+          credentials: 'include',
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          addToast(result.error?.message || 'Failed to cancel email change.', 'error');
+          cancelBtn.disabled = false;
+          cancelBtn.textContent = 'Cancel change';
+          return;
+        }
+
+        addToast('Email change cancelled.', 'success');
+        window.location.reload();
+      } catch (error) {
+        console.error('Cancel email change error:', error);
+        addToast('An error occurred. Please try again.', 'error');
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'Cancel change';
       }
     });
   }
