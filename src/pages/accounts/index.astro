@@ -20,7 +20,7 @@ import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueMod
 import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Search } from '@lucide/astro';
+import { CalendarDays, Info, Search } from '@lucide/astro';
 import { accountService, accountCategoryService, workspaceService } from '@/services';
 import type { AccountOutput, AccountType, AccountClass } from '@/lib/types/account';
 import { formatAccountType, deriveAccountClass, ACCOUNT_CLASS_LABELS } from '@/lib/types/account';
@@ -141,7 +141,8 @@ const closedCount = await accountService.countClosed(user.workspaceId, ownerUser
 // Fetch accounts and categories from database
 const categories = await accountCategoryService.findAll(user.workspaceId);
 const isAdmin = user.role === 'admin';
-const workspaceMembers = isAdmin ? await workspaceService.getMembers(user.workspaceId) : [];
+const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
+const memberNamesById = new Map(workspaceMembers.map((m) => [m.id, m.name]));
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
 const defaultCategoryId =
   categories.find((category) => category.is_system && !category.is_liability)?.id ||
@@ -279,23 +280,14 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
     {/* Personal view indicator */}
     {
       isPersonalView && (
-        <div class="alert alert-info text-sm" data-testid="personal-view-banner">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            class="stroke-current shrink-0 w-5 h-5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+        <div
+          class="bg-info/10 border border-info/20 rounded-card px-4 py-3 text-sm text-info font-medium flex items-center gap-2"
+          data-testid="personal-view-banner"
+        >
+          <Info size={16} class="stroke-current shrink-0" />
           <span>
             Showing your accounts only. Values reflect your portfolio.
-            <a href={allAccountsHref} class="link link-primary font-medium ml-1">
+            <a href={allAccountsHref} class="underline font-bold ml-1">
               View all accounts &rarr;
             </a>
           </span>
@@ -374,6 +366,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
                         account.initial_balance ? parseFloat(account.initial_balance) : undefined
                       }
                       ownerUserId={account.created_by_user_id}
+                      ownerName={memberNamesById.get(account.created_by_user_id)}
                       lastUpdated={account.last_updated}
                       isHistoricalView={!isViewingCurrentMonth}
                     />

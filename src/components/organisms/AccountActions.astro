@@ -10,7 +10,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Settings, ArrowRightLeft, Archive } from '@lucide/astro';
+import { Plus, Settings, ArrowRightLeft, Archive, Users, User } from '@lucide/astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
 
 export interface Props {
@@ -42,32 +42,36 @@ const accentGhostBtn =
 
 <ActionBar className={className} ariaLabel="Account actions" edgeBleed>
   {/* View Toggle */}
-  <div class="join" role="group" aria-label="Account view toggle">
+  <div class="tooltip tooltip-bottom" data-tip="View all accounts">
     <a
       href={allAccountsHref}
       class:list={[
-        'join-item btn btn-sm md:btn-md min-h-[44px] rounded-lg md:rounded-xl text-xs md:text-sm px-3 md:px-4',
-        !isPersonalView
-          ? 'btn-active bg-base-content/10 font-semibold'
-          : 'btn-ghost text-base-content/70 hover:text-base-content hover:bg-base-200',
+        ghostBtn,
+        !isPersonalView && 'bg-base-content/10 !text-base-content font-semibold',
       ]}
       aria-current={!isPersonalView ? 'page' : undefined}
+      aria-label="View all accounts"
       data-testid="view-all-accounts-btn"
     >
-      All
+      <Users size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Users size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="text-xs md:text-sm">All</span>
     </a>
+  </div>
+  <div class="tooltip tooltip-bottom" data-tip="View my accounts">
     <a
       href={myAccountsHref}
       class:list={[
-        'join-item btn btn-sm md:btn-md min-h-[44px] rounded-lg md:rounded-xl text-xs md:text-sm px-3 md:px-4',
-        isPersonalView
-          ? 'btn-active bg-base-content/10 font-semibold'
-          : 'btn-ghost text-base-content/70 hover:text-base-content hover:bg-base-200',
+        ghostBtn,
+        isPersonalView && 'bg-base-content/10 !text-base-content font-semibold',
       ]}
       aria-current={isPersonalView ? 'page' : undefined}
+      aria-label="View my accounts"
       data-testid="view-my-accounts-btn"
     >
-      Mine
+      <User size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <User size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="text-xs md:text-sm">Mine</span>
     </a>
   </div>
 
