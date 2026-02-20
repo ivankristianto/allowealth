@@ -10,6 +10,8 @@
 
 **Design:** `docs/plans/2026-02-20-multi-currency-support-design.md`
 
+**Implementation Order Note:** This plan starts with constants/service/schema (Tasks 1-5) before UI (Tasks 8-11). This deviates from the usual UI-first order (`.claude/rules/principles.md:16`) because the UI changes depend on the `Currency` type, `CURRENCY_OPTIONS`, and service methods that must exist first. The foundational types are the prerequisite for all UI work.
+
 ---
 
 ## Task 1: Expand Currency Constants
@@ -74,6 +76,8 @@ Add corresponding entries for all 12 currencies following the pattern:
 ```ts
 { value: 'SGD', label: 'SGD - Singapore Dollar', symbol: '$' },
 ```
+
+**Note:** The settings page uses `CURRENCY_META[code].flagEmoji` for display labels (e.g., "🇸🇬 SGD — Singapore Dollar"). Ensure `flagEmoji` is present in every `CURRENCY_META` entry.
 
 **Step 4: Run typecheck**
 
@@ -144,8 +148,8 @@ Add validation for `SECONDARY_CURRENCY` in the `validateMetaValue` function (aft
 ```ts
 case WORKSPACE_META_KEYS.SECONDARY_CURRENCY:
   // Secondary currency can be empty string (disabled) or a valid currency code
-  if (value.length > 0 && value.length > 10) {
-    throw new Error('Currency code too long');
+  if (value.length > 0 && !isValidCurrency(value)) {
+    throw new Error(`Invalid currency code: ${value}`);
   }
   break;
 ```
@@ -186,14 +190,12 @@ async getWorkspaceCurrencies(workspaceId: string): Promise<{ primary: string; se
 }
 
 async canChangeCurrencySettings(workspaceId: string): Promise<boolean> {
+  // IMPORTANT: Include soft-deleted records to prevent create→delete→change bypass
   const schema = this.schema;
   const [accountCount] = await (this.db as any)
     .select({ count: sql<number>`COUNT(*)` })
     .from(schema.accounts)
-    .where(and(
-      eq(schema.accounts.workspace_id, workspaceId),
-      sql`${schema.accounts.deleted_at} IS NULL`
-    ));
+    .where(eq(schema.accounts.workspace_id, workspaceId));
   if (accountCount.count > 0) return false;
 
   const [budgetCount] = await (this.db as any)
@@ -205,10 +207,7 @@ async canChangeCurrencySettings(workspaceId: string): Promise<boolean> {
   const [txCount] = await (this.db as any)
     .select({ count: sql<number>`COUNT(*)` })
     .from(schema.transactions)
-    .where(and(
-      eq(schema.transactions.workspace_id, workspaceId),
-      sql`${schema.transactions.deleted_at} IS NULL`
-    ));
+    .where(eq(schema.transactions.workspace_id, workspaceId));
   return txCount.count === 0;
 }
 ```
@@ -277,6 +276,54 @@ async setSecondaryCurrency(workspaceId: string, currency: string): Promise<void>
     );
   }
   await this.set(workspaceId, WORKSPACE_META_KEYS.SECONDARY_CURRENCY, currency);
+}
+
+/**
+ * Atomically set both currency fields in a single transaction.
+ * Prevents partial state if one write fails.
+ * Only checks lock if values are actually changing.
+ */
+async setCurrencySettings(
+  workspaceId: string,
+  primary: string,
+  secondary: string,
+): Promise<void> {
+  const current = await this.getWorkspaceCurrencies(workspaceId);
+  const primaryChanging = primary !== current.primary;
+  const secondaryChanging = secondary !== (current.secondary ?? '');
+
+  if (!primaryChanging && !secondaryChanging) return;
+
+  const canChange = await this.canChangeCurrencySettings(workspaceId);
+  if (!canChange) {
+    throw new WorkspaceMetaServiceError(
+      ServiceErrorCode.INVALID_META_VALUE,
+      'Currency settings cannot be changed after creating accounts, budgets, or transactions',
+      400
+    );
+  }
+
+  if (secondary.length > 0 && secondary === primary) {
+    throw new WorkspaceMetaServiceError(
+      ServiceErrorCode.INVALID_META_VALUE,
+      'Secondary currency must differ from primary currency',
+      400
+    );
+  }
+
+  // Atomic: both writes in a single transaction
+  await this.db.transaction(async (tx) => {
+    const schema = this.schema;
+    await tx
+      .insert(schema.workspaceMeta)
+      .values({ id: nanoid(), workspace_id: workspaceId, meta_key: WORKSPACE_META_KEYS.CURRENCY, meta_value: primary, created_at: new Date(), updated_at: new Date() })
+      .onConflictDoUpdate({ target: [schema.workspaceMeta.workspace_id, schema.workspaceMeta.meta_key], set: { meta_value: primary, updated_at: new Date() } });
+
+    await tx
+      .insert(schema.workspaceMeta)
+      .values({ id: nanoid(), workspace_id: workspaceId, meta_key: WORKSPACE_META_KEYS.SECONDARY_CURRENCY, meta_value: secondary, created_at: new Date(), updated_at: new Date() })
+      .onConflictDoUpdate({ target: [schema.workspaceMeta.workspace_id, schema.workspaceMeta.meta_key], set: { meta_value: secondary, updated_at: new Date() } });
+  });
 }
 ```
 
@@ -436,18 +483,9 @@ export interface TotalAccounts {
 }
 ```
 
-**Note:** This interface will be further refactored in Task 7 to be currency-generic. For now, just remove the conversion fields.
+**Note:** This interface will be further refactored in Task 7 to be currency-generic. For now, just remove the conversion fields. Keep `totalDebt` — the dashboard still shows debt totals.
 
-Update `DashboardData` interface — remove `totalDebt`:
-
-```ts
-export interface DashboardData {
-  totalAccounts: TotalAccounts;
-  // ... keep rest
-}
-```
-
-**Wait — actually keep totalDebt for now.** The dashboard still shows debt. Just remove conversion from `getAccountsOptimized`:
+Remove conversion logic from `getAccountsOptimized`:
 
 In `getAccountsOptimized`, remove lines 313-325 (exchange rate fetch and conversion calculation). Replace with:
 
@@ -525,19 +563,23 @@ const updateWorkspaceSettingsSchema = z.object({
 
 **Step 2: Update PUT handler**
 
-Add secondary currency handling after the currency update (after line 95):
-
-```ts
-if (secondaryCurrency !== undefined) {
-  await workspaceMetaService.setSecondaryCurrency(auth.workspaceId, secondaryCurrency);
-}
-```
-
-Update destructuring to include `secondaryCurrency`:
+Use the atomic `setCurrencySettings` method for currency updates. This ensures both values are set in a single transaction and only checks lock when values are actually changing (so weekStart/compactNumbers updates aren't blocked):
 
 ```ts
 const { name, currency, secondaryCurrency, weekStart, compactNumbers } = validation.data;
+
+// Currency updates: atomic, only lock-checked when values change
+if (currency !== undefined || secondaryCurrency !== undefined) {
+  const currentSettings = await workspaceMetaService.getSettings(auth.workspaceId);
+  await workspaceMetaService.setCurrencySettings(
+    auth.workspaceId,
+    currency ?? currentSettings.currency,
+    secondaryCurrency ?? currentSettings.secondaryCurrency
+  );
+}
 ```
+
+Remove the individual `setCurrency` / `setSecondaryCurrency` calls from the PUT handler — they are replaced by the atomic method above.
 
 **Step 3: Update GET and PUT response**
 
@@ -575,13 +617,22 @@ git commit -m "feat(api): add secondary_currency to workspace settings endpoint 
 
 **Context:** After removing the enum from DB schemas, Drizzle infers `string` instead of `'IDR' | 'USD'`. All hardcoded `'IDR' | 'USD'` type annotations need to be replaced with the `Currency` type from `@/lib/constants/currency`.
 
+**IMPORTANT — Execute in waves to reduce blast radius:**
+
+- **Wave A** (types/enums/constants): `src/lib/types/`, `src/lib/enums.ts`, `src/lib/forecast/types.ts`
+- **Wave B** (services + API validation): `src/services/`, `src/pages/api/`
+- **Wave C** (UI/components/client scripts): `src/components/`, `src/pages/`, `src/lib/stores/`, `src/lib/api/`
+- **Wave D** (tests/mocks/MCP): `src/services/__tests__/`, `e2e/`, `mcp-server/`
+
+Run `bun run typecheck` after each wave before proceeding to the next.
+
 **Strategy:** This is a bulk search-and-replace task. The agent should:
 
 1. Find all files with `'IDR' | 'USD'` type annotations
 2. Add `import type { Currency } from '@/lib/constants/currency';` where missing
 3. Replace `'IDR' | 'USD'` with `Currency`
 4. For Zod schemas using `z.enum(['IDR', 'USD'])`, replace with `z.string().refine(val => isValidCurrency(val))` or use `AVAILABLE_CURRENCIES` array
-5. For `as 'IDR' | 'USD'` type casts, replace with `as Currency`
+5. For `as 'IDR' | 'USD'` type casts, prefer runtime validation with `isValidCurrency(val)` guard over unsafe `as Currency` casts. Use `as Currency` only when the value is known-safe (e.g., from a validated DB column)
 
 **Key files to update (grouped by area):**
 
@@ -714,11 +765,14 @@ For `z.enum(['IDR', 'USD'])` in API endpoints, either:
 - Use `z.string().refine((val): val is Currency => isValidCurrency(val))`, or
 - If in a query param cast `as 'IDR' | 'USD'`, change to `as Currency`
 
-For the local `Currency` type in `src/lib/types/account.ts:63`, remove it and re-export from constants:
+For the local `Currency` type in `src/lib/types/account.ts:63`, remove it and import + re-export from constants:
 
 ```ts
-export type { Currency } from '@/lib/constants/currency';
+import type { Currency } from '@/lib/constants/currency';
+export type { Currency };
 ```
+
+**Note:** `export type { Currency } from '...'` re-exports but does NOT create a local binding. If the same file uses `currency: Currency`, you need a separate `import type` statement.
 
 For the local `Currency` type in `src/lib/currency/conversion.ts` — already deleted in Task 4.
 
@@ -886,11 +940,11 @@ git commit -m "refactor(dashboard): replace hardcoded currency fields with dynam
 In `src/pages/settings/index.astro`, replace hardcoded options (lines 135-138):
 
 ```ts
-import { CURRENCY_OPTIONS } from '@/lib/constants/currency';
+import { CURRENCY_OPTIONS, CURRENCY_META } from '@/lib/constants/currency';
 
 const currencyOptions = CURRENCY_OPTIONS.map((opt) => ({
   value: opt.value,
-  label: `${opt.symbol} ${opt.value} — ${opt.label.split(' - ')[1]}`,
+  label: `${CURRENCY_META[opt.value].flagEmoji} ${opt.value} — ${CURRENCY_META[opt.value].name}`,
 }));
 ```
 
@@ -971,22 +1025,14 @@ Replace the single currency select (lines 316-335) with two selects in a grid:
 Below the currency grid, add a warning when locked:
 
 ```astro
+---
+import { Info } from '@lucide/astro';
+---
+
 {
   !canChangeCurrency && (
     <div class="alert alert-info text-sm">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="stroke-current shrink-0 h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
+      <Info class="size-5 shrink-0" />
       <span>Currency settings are locked after creating accounts, budgets, or transactions.</span>
     </div>
   )
@@ -1007,15 +1053,36 @@ And during onboarding (when `canChangeCurrency` is true), show a tip:
 
 **Step 5: Update client-side save handler**
 
-In the `<script>` section, update `handleSave` payload to include `secondaryCurrency`:
+Move the save logic to a `.client.ts` file (per project rules — `.claude/rules/frontend/astro.md:30`). If the settings page already has a `.client.ts`, add to it; otherwise create `src/pages/settings/settings.client.ts`.
+
+**IMPORTANT:** Disabled form fields are excluded from `FormData` by browsers. Read values directly from the DOM elements instead:
 
 ```ts
+const currencySelect = document.getElementById('primary-currency') as HTMLSelectElement;
+const secondaryCurrencySelect = document.getElementById('secondary-currency') as HTMLSelectElement;
+
 const payload: Record<string, unknown> = {
-  currency: formData.get('currency'),
-  secondaryCurrency: formData.get('secondaryCurrency'),
+  currency: currencySelect.value,
+  secondaryCurrency: secondaryCurrencySelect.value,
   weekStart: formData.get('weekStart'),
   compactNumbers: formData.get('compactNumbers') === 'on',
 };
+```
+
+Also wire up primary currency `change` event to re-filter secondary options (exclude selected primary):
+
+```ts
+currencySelect.addEventListener('change', () => {
+  const selectedPrimary = currencySelect.value;
+  for (const option of secondaryCurrencySelect.options) {
+    if (option.value === '') continue; // "None" option
+    option.hidden = option.value === selectedPrimary;
+  }
+  // If secondary matches new primary, reset to "None"
+  if (secondaryCurrencySelect.value === selectedPrimary) {
+    secondaryCurrencySelect.value = '';
+  }
+});
 ```
 
 **Step 6: Run typecheck and verify**
@@ -1061,11 +1128,9 @@ const secondaryValue = await workspaceMetaService.getSecondaryCurrency(user.work
 secondaryCurrency = secondaryValue && isValidCurrency(secondaryValue) ? secondaryValue : null;
 ```
 
-Pass `secondaryCurrency` to components. Fetch dashboard data for both currencies if secondary exists:
+Fetch dashboard data once — `getAccountsOptimized` now returns `CurrencyAmount[]` (grouped dynamically by currency), so no need to double-fetch. The `currency` parameter is still used for filtering budgets/spending widgets:
 
 ```ts
-let dashboardDataSecondary: DashboardData | null = null;
-
 if (primaryCurrency) {
   dashboardData = await dashboardService.getDashboardData(
     user.workspaceId,
@@ -1074,22 +1139,14 @@ if (primaryCurrency) {
     primaryCurrency,
     perf
   );
-
-  if (secondaryCurrency) {
-    dashboardDataSecondary = await dashboardService.getDashboardData(
-      user.workspaceId,
-      currentMonth,
-      currentYear,
-      secondaryCurrency,
-      perf
-    );
-  }
 }
 ```
 
-**Step 2: Update SummaryCards.astro**
+Pass `primaryCurrency` and `secondaryCurrency` to summary components.
 
-Update the `SummaryCards` component to accept and display multi-currency totals. The component should show both primary and secondary currency lines when available.
+**Step 2: Update AccountsWidget (NOT SummaryCards)**
+
+**IMPORTANT:** The dashboard page (`dashboard.astro:25, 235`) renders `AccountsWidget`, not `SummaryCards`. Update `AccountsWidget` to accept and display multi-currency totals from the new `CurrencyAmount[]` structure.
 
 Update Props:
 
@@ -1102,7 +1159,7 @@ interface Props {
 }
 ```
 
-Display both currency totals side-by-side in the summary cards.
+Display both currency totals side-by-side in the summary area. If `SummaryCards.astro` is also used elsewhere, update it too — but verify which components the dashboard actually renders before modifying.
 
 **Step 3: Update OnboardingChecklist**
 
@@ -1275,30 +1332,33 @@ git commit -m "feat(accounts): restrict currency options to workspace currencies
 
 **Context:** The seeder should create a workspace with both primary and secondary currencies set, and seed accounts/transactions in both currencies.
 
-**Step 1: Add workspace meta seeding**
+**Step 1: Update workspace meta seeding**
 
-After creating the workspace, seed the currency settings:
+**IMPORTANT:** The seeder already inserts `currency` meta key (around `seed.ts:713`). Do NOT insert it again — this causes a unique constraint violation on `(workspace_id, meta_key)`.
+
+Instead, find the existing currency insert and update it to also insert `secondary_currency`. Use upsert to be safe:
 
 ```ts
-// Set workspace currencies
-await db.insert(workspaceMeta).values([
-  {
-    id: nanoid(),
-    workspace_id: workspaceId,
-    meta_key: 'currency',
-    meta_value: 'IDR',
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-  {
-    id: nanoid(),
-    workspace_id: workspaceId,
-    meta_key: 'secondary_currency',
-    meta_value: 'USD',
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-]);
+// Set workspace currencies (upsert to avoid unique constraint on re-seed)
+for (const entry of [
+  { key: 'currency', value: 'IDR' },
+  { key: 'secondary_currency', value: 'USD' },
+]) {
+  await db
+    .insert(workspaceMeta)
+    .values({
+      id: nanoid(),
+      workspace_id: workspaceId,
+      meta_key: entry.key,
+      meta_value: entry.value,
+      created_at: new Date(),
+      updated_at: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [workspaceMeta.workspace_id, workspaceMeta.meta_key],
+      set: { meta_value: entry.value, updated_at: new Date() },
+    });
+}
 ```
 
 **Step 2: Verify existing seed data**
@@ -1323,20 +1383,20 @@ git commit -m "feat(seed): add workspace currency settings to seeder"
 
 **Files:**
 
-- Generated: `src/db/migrations/sqlite/XXXX-multi-currency.sql`
-- Generated: `src/db/migrations/postgresql/XXXX-multi-currency.sql`
+- Generated: `drizzle/sqlite/XXXX-multi-currency.sql` (Drizzle outputs to `drizzle/sqlite/` per `drizzle.config.ts:27`)
+- Generated: `drizzle/postgresql/XXXX-multi-currency.sql` (Drizzle outputs to `drizzle/postgresql/` per `drizzle.config.ts:35`)
 
-**Context:** Drizzle generates migrations by comparing current schema to the last snapshot. Since we removed the enum constraint (which is TypeScript-only for text columns in SQLite), the actual SQL migration may be minimal or empty for SQLite. PostgreSQL may need ALTER TABLE statements.
+**Context:** Drizzle generates migrations by comparing current schema to the last snapshot. Since we removed the enum constraint (which is TypeScript-only for text columns in SQLite), the actual SQL migration may be minimal or empty for SQLite. PostgreSQL may need ALTER TABLE statements. The exchange_rates table drop will appear in both dialects.
 
 **Step 1: Generate SQLite migration**
 
 Run: `bun run db:generate`
-Review the generated migration SQL.
+Review the generated migration SQL in `drizzle/sqlite/`.
 
 **Step 2: Generate PostgreSQL migration**
 
 Run: `bun run db:generate:prod`
-Review the generated migration SQL.
+Review the generated migration SQL in `drizzle/postgresql/`.
 
 **Step 3: Apply SQLite migration (dev)**
 
@@ -1430,23 +1490,174 @@ git commit -m "docs: update architecture and MCP server for multi-currency suppo
 
 ---
 
+## Task 16: Update OpenAPI Schemas
+
+**Files:**
+
+- Modify: `openapi/schemas/WorkspaceSettings.yml`
+- Modify: `openapi/schemas/UpdateWorkspaceSettingsRequest.yml`
+- Modify: `openapi/paths/workspace.yml`
+- Test: `bun run typecheck`
+
+**Context:** Rules require OpenAPI updates for API changes (`.claude/rules/workflow.md:7`, `.claude/rules/backend/api.md:11`). Current schemas hardcode IDR/USD and don't include `secondaryCurrency`.
+
+**Step 1: Update WorkspaceSettings.yml**
+
+Replace the hardcoded `enum: [IDR, USD]` with a `type: string` + description listing supported currencies. Add `secondaryCurrency` field (nullable string).
+
+**Step 2: Update UpdateWorkspaceSettingsRequest.yml**
+
+Add `secondaryCurrency` optional field. Update `currency` from enum to string with validation description.
+
+**Step 3: Update workspace.yml**
+
+Update response examples to include `secondaryCurrency`.
+
+**Step 4: Commit**
+
+```bash
+git add openapi/
+git commit -m "docs(openapi): add secondaryCurrency and expand currency validation"
+```
+
+---
+
+## Task 17: Add Service-Layer Currency Validation
+
+**Files:**
+
+- Modify: `src/services/account.service.ts`
+- Modify: `src/services/budget.service.ts`
+- Test: `bun run typecheck`
+
+**Context:** Design requires service-layer validation that account/budget currency is in workspace's configured currencies (design:130, 135). The plan previously only did UI filtering — services must also enforce this.
+
+**Step 1: Add workspace currency validation to AccountService**
+
+In the account creation method, after validating other fields, check:
+
+```ts
+const { primary, secondary } = await workspaceMetaService.getWorkspaceCurrencies(workspaceId);
+const allowedCurrencies = [primary, ...(secondary ? [secondary] : [])];
+if (!allowedCurrencies.includes(currency)) {
+  throw new AccountServiceError(
+    ServiceErrorCode.INVALID_META_VALUE,
+    `Currency '${currency}' is not configured for this workspace. Allowed: ${allowedCurrencies.join(', ')}`,
+    400
+  );
+}
+```
+
+Also add transfer validation: block cross-currency transfers (source/destination accounts must have same currency).
+
+**Step 2: Add workspace currency validation to BudgetService**
+
+Same pattern in budget creation — currency must be in workspace's configured currencies.
+
+**Step 3: Run typecheck**
+
+Run: `bun run typecheck`
+
+**Step 4: Commit**
+
+```bash
+git add src/services/account.service.ts src/services/budget.service.ts
+git commit -m "feat(services): enforce workspace currency validation on account/budget creation"
+```
+
+---
+
+## Task 18: Fix Transaction Form — Auto-Set Currency from Account
+
+**Files:**
+
+- Modify: `src/components/molecules/TransactionEntryForm.astro`
+- Modify: Related `.client.ts` files
+- Test: `bun run typecheck`, verify in browser
+
+**Context:** Design requirement (design:96): "Transaction form: currency auto-set from selected account (no manual override)." Current form has a manual currency toggle (`TransactionEntryForm.astro:615-620`) that must be removed.
+
+**Step 1: Remove manual currency toggle**
+
+In `TransactionEntryForm.astro`, remove the currency toggle/dropdown. The currency should be derived from the selected account's currency — read-only display only.
+
+**Step 2: Auto-set currency on account selection**
+
+In the client-side script (`.client.ts`), when the user selects an account, automatically set the transaction currency to match that account's currency. Display it as a read-only badge next to the amount field.
+
+**Step 3: Run typecheck and verify**
+
+Run: `bun run typecheck`
+Verify in browser that selecting an account auto-sets the currency.
+
+**Step 4: Commit**
+
+```bash
+git add src/components/molecules/TransactionEntryForm.astro
+git commit -m "feat(transactions): auto-set currency from selected account, remove manual override"
+```
+
+---
+
+## Task 19: Update Existing Tests
+
+**Files:**
+
+- Modify: `src/db/index.integration.test.ts`
+- Modify: `src/services/dashboard.service.test.ts`
+- Modify: Other test files that reference removed/changed interfaces
+- Test: `bun run test`
+
+**Context:** Exchange rate removal and dashboard interface changes will break existing tests. This task explicitly updates them.
+
+**Step 1: Fix integration test**
+
+In `src/db/index.integration.test.ts:431`, remove assertions referencing `exchangeRates` schema export.
+
+**Step 2: Fix dashboard service test**
+
+In `src/services/dashboard.service.test.ts:57`, update assertions from `convertedCurrency` and hardcoded `idr`/`usd` fields to the new `CurrencyAmount[]` structure.
+
+**Step 3: Fix any other broken test files**
+
+Run `bun run test` and fix all failures related to:
+
+- Removed `exchangeRates` references
+- Changed `TotalAccounts`/`TotalDebt` interfaces
+- Changed `Currency` type imports
+
+**Step 4: Commit**
+
+```bash
+git add -A
+git commit -m "test: update tests for multi-currency interface changes"
+```
+
+---
+
 ## Summary of Task Dependencies
 
 ```
 Task 1 (Constants) ─┐
                      ├── Task 3 (Schema) ──── Task 13 (Migrations)
 Task 2 (Meta Svc) ──┤
-                     ├── Task 4 (Removals) ── Task 6 (Bulk Types) ── Task 7 (Dashboard Svc)
-                     │                                                    │
-                     ├── Task 5 (API) ────────────────────────────────────┤
-                     │                                                    │
-                     └── Task 8 (Settings UI) ── Task 9 (Dashboard UI) ──┤
-                                                                          │
-                                                  Task 10 (Tabs) ────────┤
-                                                  Task 11 (Accounts) ────┤
-                                                  Task 12 (Seeder) ──────┤
-                                                                          │
-                                                  Task 14 (QA) ──────────┘
+                     ├── Task 4 (Removals) ── Task 6 (Bulk Types, waves A→D) ── Task 7 (Dashboard Svc)
+                     │                                                               │
+                     ├── Task 5 (API) ───────────────────────────────────────────────┤
+                     │                                                               │
+                     ├── Task 16 (OpenAPI) ──────────────────────────────────────────┤
+                     │                                                               │
+                     ├── Task 17 (Service Validation) ──────────────────────────────┤
+                     │                                                               │
+                     └── Task 8 (Settings UI) ── Task 9 (Dashboard UI) ─────────────┤
+                                                                                     │
+                                                  Task 10 (Tabs) ───────────────────┤
+                                                  Task 11 (Accounts) ───────────────┤
+                                                  Task 18 (Transaction Form) ───────┤
+                                                  Task 12 (Seeder) ─────────────────┤
+                                                                                     │
+                                                  Task 19 (Test Updates) ───────────┤
+                                                  Task 14 (QA) ────────────────────┘
                                                   Task 15 (Docs)
 ```
 
@@ -1454,5 +1665,13 @@ Task 2 (Meta Svc) ──┤
 
 - Tasks 1 + 2 can run in parallel (independent foundation)
 - Tasks 3 + 4 can run in parallel after 1+2 (schema + removals)
-- Tasks 8 + 10 + 11 can run in parallel (UI changes)
-- Tasks 12 + 13 + 15 can run in parallel (cleanup)
+- Tasks 5 + 16 + 17 can run in parallel (API + OpenAPI + service validation)
+- Tasks 8 + 10 + 11 + 18 can run in parallel (UI changes)
+- Tasks 12 + 13 + 15 + 19 can run in parallel (cleanup + tests)
+
+**Highest-risk tasks (add review checkpoints):**
+
+- Task 2 + 5: Lock atomicity — verify atomic transaction works in both SQLite and PostgreSQL
+- Task 6: Mass typing (~80 files) — run typecheck after each wave
+- Task 9: Dashboard architecture — verify which components dashboard.astro actually renders
+- Task 7: Dashboard service — verify interface changes don't break consumers

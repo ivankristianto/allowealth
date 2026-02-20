@@ -48,16 +48,17 @@ Extensible — adding a currency means adding one entry to `CURRENCY_META`.
 **Workspace Meta:**
 
 - Existing key `currency` = primary currency (unchanged)
-- New key `secondary_currency` (nullable — absent or empty = single-currency mode)
-- Validation: must be valid currency code, must differ from primary
+- New key `secondary_currency` (empty string = single-currency mode, consistent with meta store pattern)
+- Validation: must pass `isValidCurrency()`, must differ from primary
 
 #### Lock Mechanism
 
 Before updating `currency` or `secondary_currency`:
 
-1. Check if any accounts, budgets, or transactions exist in the workspace
+1. Check if any accounts, budgets, or transactions have **ever** existed in the workspace (including soft-deleted records — prevents create→delete→change bypass)
 2. If data exists → reject with 400 error
 3. UI disables dropdowns and shows warning
+4. Both currency fields must be updated **atomically** in a single transaction to prevent partial state on failure
 
 ### 2. UI Changes
 
@@ -65,7 +66,7 @@ Before updating `currency` or `secondary_currency`:
 
 - **Primary Currency** dropdown — all 12 currencies, required
 - **Secondary Currency** dropdown — all currencies minus selected primary, optional ("None" default)
-- Options show: flag emoji + code + name (e.g., "🇮🇩 IDR — Indonesian Rupiah")
+- Options show: flag emoji + code + name (e.g., "🇮🇩 IDR — Indonesian Rupiah") — use `CURRENCY_META[code].flagEmoji`
 - Lock state: disabled dropdowns + info alert when data exists
 - Warning during onboarding: "Choose carefully — cannot be changed after adding data"
 
@@ -122,7 +123,7 @@ Before updating `currency` or `secondary_currency`:
 
 **DashboardService:**
 
-- New `getDashboardSummary(workspaceId)` — multi-currency totals for summary cards
+- Modify `getAccountsOptimized` to group totals dynamically by currency (returns `CurrencyAmount[]` instead of hardcoded `idr`/`usd` fields)
 - Remove converted total calculation and exchange rate lookups
 
 **AccountService:**
@@ -140,7 +141,8 @@ Before updating `currency` or `secondary_currency`:
 
 - Expand currency validation from enum to `isValidCurrency()` check
 - Add `secondary_currency` field (optional, nullable)
-- Lock check: 400 if data exists and currencies changing
+- Lock check: 400 if data exists **and** currency values are actually changing (skip lock when currencies unchanged to allow weekStart/compactNumbers updates)
+- Currency updates must be atomic (single transaction for both primary + secondary)
 
 **GET /api/workspace/settings:**
 
@@ -163,7 +165,7 @@ Before updating `currency` or `secondary_currency`:
 
 **Schema:** Alter currency columns (remove enum), drop exchange_rates table.
 **Data:** No transformation needed — existing IDR/USD values remain valid.
-**Workspace defaults:** Existing workspaces keep primary='IDR', secondary=null.
+**Workspace defaults:** Existing workspaces preserve their current `currency` meta value as primary (may be IDR, USD, or any previously set value), secondary=null.
 
 ### 7. Testing
 
