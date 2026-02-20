@@ -45,11 +45,11 @@ Aggregates transaction data grouped by `created_by_user_id` for all workspace me
 
 ### API Endpoints
 
-| Endpoint                           | Method   | Description                             |
-| ---------------------------------- | -------- | --------------------------------------- |
-| `GET /api/transactions`            | Modified | Accept `?user_id=` query param          |
-| `GET /api/reports/members`         | New      | Returns member summary array for period |
-| `GET /api/reports/members/:userId` | New      | Returns `ReportData` scoped to one user |
+| Endpoint                   | Method   | Description                                 |
+| -------------------------- | -------- | ------------------------------------------- |
+| `GET /api/transactions`    | Modified | Accept `?user_id=` query param              |
+| `GET /api/reports/members` | New      | Returns member summary array for period     |
+| `GET /api/reports`         | Modified | Accepts `?user_id=` for scoped `ReportData` |
 
 ## Transactions Page — User Filter
 

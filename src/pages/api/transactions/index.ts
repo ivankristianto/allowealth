@@ -95,7 +95,7 @@ export const GET: APIRoute = async (context) => {
     }
 
     const userId = url.searchParams.get('user_id');
-    if (userId && typeof userId === 'string' && userId.trim() !== '') {
+    if (userId && userId.trim() !== '') {
       filters.created_by_user_id = userId;
     }
 

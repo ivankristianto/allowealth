@@ -648,6 +648,8 @@ const mainSearchInputClass = [
 
     const memberFilter = document.getElementById('member-filter') as HTMLInputElement | null;
     if (memberFilter) memberFilter.value = '';
+    const memberLabel = document.querySelector('[data-member-label]');
+    if (memberLabel) memberLabel.textContent = 'All Members';
 
     selectedPeriod = getCurrentMonth();
 

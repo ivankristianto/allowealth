@@ -6,7 +6,7 @@ import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 import { reportService, workspaceService } from '@/services';
-import type { ReportData } from '@/services/report.service';
+import type { MemberSummaryRow, ReportData } from '@/services/report.service';
 import { formatMonthYear } from '@/lib/utils/date';
 import { formatCurrency } from '@/lib/formatting';
 import { safeParseDecimal } from '@/lib/utils/decimal';
@@ -60,27 +60,32 @@ if (urlPeriod) {
 
 const currency: Currency = urlCurrency === 'USD' ? 'USD' : 'IDR';
 
-const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
-const memberNameMap = new Map(
-  workspaceMembers.map((member) => [member.id, member.name || member.email || 'Unknown'])
-);
-const selectedMemberName = urlUserId ? memberNameMap.get(urlUserId) || 'Unknown' : '';
+let selectedMemberName = '';
+let memberSummary: MemberSummaryRow[] = [];
+let totals = { income: 0, expenses: 0, count: 0 };
 
-const memberSummary = await reportService.getMemberSummary(
-  user.workspaceId,
-  defaultPeriod,
-  range,
-  currency
-);
-
-const totals = memberSummary.reduce(
-  (acc, row) => ({
-    income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
-    expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
-    count: acc.count + row.transactionCount,
-  }),
-  { income: 0, expenses: 0, count: 0 }
-);
+if (urlUserId) {
+  const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
+  const memberNameMap = new Map(
+    workspaceMembers.map((member) => [member.id, member.name || member.email || 'Unknown'])
+  );
+  selectedMemberName = memberNameMap.get(urlUserId) || 'Unknown';
+} else {
+  memberSummary = await reportService.getMemberSummary(
+    user.workspaceId,
+    defaultPeriod,
+    range,
+    currency
+  );
+  totals = memberSummary.reduce(
+    (acc, row) => ({
+      income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
+      expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
+      count: acc.count + row.transactionCount,
+    }),
+    { income: 0, expenses: 0, count: 0 }
+  );
+}
 
 let userReportData: ReportData | null = null;
 if (urlUserId) {

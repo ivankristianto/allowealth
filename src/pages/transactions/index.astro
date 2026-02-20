@@ -18,7 +18,7 @@ import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { tokenClasses } from '@/lib/tokens';
 import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
-import { transactionService, categoryService, workspaceService } from '@/services';
+import { transactionService, categoryService } from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
@@ -100,11 +100,6 @@ const total = await transactionService.count(countFilters, perf);
 const categories = await trackPhase('categoryService.findAll', perf, () =>
   categoryService.findAll(user.workspaceId, { is_active: true }, perf)
 );
-const members = await workspaceService.getMembers(user.workspaceId);
-const memberOptions = members.map((member) => ({
-  id: member.id,
-  name: member.name || member.email,
-}));
 
 // For month selector, fetch all months available (optimized query)
 const allUserTransactions = await transactionService.findAll(
@@ -115,6 +110,26 @@ const allUserTransactions = await transactionService.findAll(
   },
   perf
 );
+
+const memberNameMap = new Map<string, string>();
+for (const tx of allUserTransactions as any[]) {
+  const memberId = tx.created_by_user_id;
+  if (!memberId || memberNameMap.has(memberId)) continue;
+
+  const memberName = tx.createdBy?.name?.trim() || 'Unknown';
+  memberNameMap.set(memberId, memberName);
+}
+
+// Keep the currently selected filter visible even if it has no transactions in this data window.
+if (userId && !memberNameMap.has(userId)) {
+  const fallbackName = userId === user.id ? user.name || user.email || 'Unknown' : 'Unknown';
+  memberNameMap.set(userId, fallbackName);
+}
+
+const memberOptions = Array.from(memberNameMap, ([id, name]) => ({ id, name })).sort((a, b) =>
+  a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+);
+const showMemberFilter = memberOptions.length > 1 || Boolean(userId);
 
 // Extract available months using utility function
 const availableMonthsWithLabels = trackPhaseSync('extractAvailableMonths', perf, () =>
@@ -291,7 +306,7 @@ perf?.recordMilestone('preRender.elapsed');
         showCategoryFilter={true}
         userId={userId}
         members={memberOptions}
-        showMemberFilter={true}
+        showMemberFilter={showMemberFilter}
         selectedMonth={effectiveMonth}
         currentMonth={currentMonthKey}
         baseUrl={baseUrl}

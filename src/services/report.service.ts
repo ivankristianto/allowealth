@@ -426,119 +426,114 @@ export class ReportService {
     range: 'monthly' | 'yearly',
     currency: 'IDR' | 'USD' = 'IDR'
   ): Promise<MemberSummaryRow[]> {
-    try {
-      this.validateWorkspaceId(workspaceId);
-      this.validateCurrency(currency);
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
-      let startDate: Date;
-      let endDate: Date;
+    let startDate: Date;
+    let endDate: Date;
 
-      if (range === 'monthly') {
-        const { year, month } = validatePeriod(period, 'monthly');
-        if (!month) throw new Error(`Invalid monthly period: ${period}`);
-        startDate = new Date(year, month - 1, 1);
-        endDate = new Date(year, month, 0, 23, 59, 59);
-      } else {
-        const { year } = validatePeriod(period, 'yearly');
-        startDate = new Date(year, 0, 1);
-        endDate = new Date(year, 11, 31, 23, 59, 59);
-      }
-
-      const incomeByUser = await (this.db as any)
-        .select({
-          user_id: this.schema.transactions.created_by_user_id,
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
-          count: sql<number>`COUNT(*)`,
-        })
-        .from(this.schema.transactions)
-        .where(
-          and(
-            eq(this.schema.transactions.workspace_id, workspaceId),
-            eq(this.schema.transactions.type, 'income'),
-            eq(this.schema.transactions.currency, currency),
-            gte(this.schema.transactions.transaction_date, startDate),
-            lte(this.schema.transactions.transaction_date, endDate),
-            sql`${this.schema.transactions.deleted_at} IS NULL`
-          )
-        )
-        .groupBy(this.schema.transactions.created_by_user_id);
-
-      const expensesByUser = await (this.db as any)
-        .select({
-          user_id: this.schema.transactions.created_by_user_id,
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
-          count: sql<number>`COUNT(*)`,
-        })
-        .from(this.schema.transactions)
-        .where(
-          and(
-            eq(this.schema.transactions.workspace_id, workspaceId),
-            eq(this.schema.transactions.type, 'expense'),
-            eq(this.schema.transactions.currency, currency),
-            gte(this.schema.transactions.transaction_date, startDate),
-            lte(this.schema.transactions.transaction_date, endDate),
-            sql`${this.schema.transactions.deleted_at} IS NULL`
-          )
-        )
-        .groupBy(this.schema.transactions.created_by_user_id);
-
-      const members = await this.db.query.users.findMany({
-        where: and(
-          eq(this.schema.users.workspace_id, workspaceId),
-          sql`${this.schema.users.deleted_at} IS NULL`
-        ),
-      });
-
-      const memberMap = new Map(
-        members.map((member: any) => [member.id, member.name || member.email])
-      );
-
-      const incomeMap = new Map<string, { total: string; count: number }>();
-      for (const row of incomeByUser) {
-        incomeMap.set(row.user_id, {
-          total: row.total?.toString() || '0',
-          count: Number(row.count) || 0,
-        });
-      }
-
-      const expenseMap = new Map<string, { total: string; count: number }>();
-      for (const row of expensesByUser) {
-        expenseMap.set(row.user_id, {
-          total: row.total?.toString() || '0',
-          count: Number(row.count) || 0,
-        });
-      }
-
-      const allUserIds = new Set([...incomeMap.keys(), ...expenseMap.keys()]);
-
-      const results: MemberSummaryRow[] = [];
-      for (const userId of allUserIds) {
-        const income = incomeMap.get(userId)?.total || '0';
-        const expenses = expenseMap.get(userId)?.total || '0';
-        const incomeCount = incomeMap.get(userId)?.count || 0;
-        const expenseCount = expenseMap.get(userId)?.count || 0;
-
-        results.push({
-          userId,
-          userName: memberMap.get(userId) || 'Unknown',
-          totalIncome: income,
-          totalExpenses: expenses,
-          netSavings: decimalSubtract(income, expenses),
-          transactionCount: incomeCount + expenseCount,
-        });
-      }
-
-      results.sort((a, b) => {
-        const aExp = parseFloat(a.totalExpenses) || 0;
-        const bExp = parseFloat(b.totalExpenses) || 0;
-        return bExp - aExp;
-      });
-
-      return results;
-    } catch (error) {
-      log.error('error getting member summary:', error);
-      return [];
+    if (range === 'monthly') {
+      const { year, month } = validatePeriod(period, 'monthly');
+      if (!month) throw new Error(`Invalid monthly period: ${period}`);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0, 23, 59, 59);
+    } else {
+      const { year } = validatePeriod(period, 'yearly');
+      startDate = new Date(year, 0, 1);
+      endDate = new Date(year, 11, 31, 23, 59, 59);
     }
+
+    const incomeByUser = await (this.db as any)
+      .select({
+        user_id: this.schema.transactions.created_by_user_id,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'income'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.transactions.created_by_user_id);
+
+    const expensesByUser = await (this.db as any)
+      .select({
+        user_id: this.schema.transactions.created_by_user_id,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'expense'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.transactions.created_by_user_id);
+
+    const members = await this.db.query.users.findMany({
+      where: and(
+        eq(this.schema.users.workspace_id, workspaceId),
+        sql`${this.schema.users.deleted_at} IS NULL`
+      ),
+    });
+
+    const memberMap = new Map(
+      members.map((member: any) => [member.id, member.name || member.email])
+    );
+
+    const incomeMap = new Map<string, { total: string; count: number }>();
+    for (const row of incomeByUser) {
+      incomeMap.set(row.user_id, {
+        total: row.total?.toString() || '0',
+        count: Number(row.count) || 0,
+      });
+    }
+
+    const expenseMap = new Map<string, { total: string; count: number }>();
+    for (const row of expensesByUser) {
+      expenseMap.set(row.user_id, {
+        total: row.total?.toString() || '0',
+        count: Number(row.count) || 0,
+      });
+    }
+
+    const allUserIds = new Set([...incomeMap.keys(), ...expenseMap.keys()]);
+
+    const results: MemberSummaryRow[] = [];
+    for (const userId of allUserIds) {
+      const income = incomeMap.get(userId)?.total || '0';
+      const expenses = expenseMap.get(userId)?.total || '0';
+      const incomeCount = incomeMap.get(userId)?.count || 0;
+      const expenseCount = expenseMap.get(userId)?.count || 0;
+
+      results.push({
+        userId,
+        userName: memberMap.get(userId) || 'Unknown',
+        totalIncome: income,
+        totalExpenses: expenses,
+        netSavings: decimalSubtract(income, expenses),
+        transactionCount: incomeCount + expenseCount,
+      });
+    }
+
+    results.sort((a, b) => {
+      const aExp = parseFloat(a.totalExpenses) || 0;
+      const bExp = parseFloat(b.totalExpenses) || 0;
+      return bExp - aExp;
+    });
+
+    return results;
   }
 
   // ============================================
