@@ -5,6 +5,8 @@ import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsP
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
+import StatCard from '@/components/atoms/StatCard.astro';
+import Button from '@/components/atoms/Button.astro';
 import { reportService, workspaceService } from '@/services';
 import type { MemberSummaryRow, ReportData } from '@/services/report.service';
 import { formatMonthYear } from '@/lib/utils/date';
@@ -59,6 +61,12 @@ if (urlPeriod) {
 }
 
 const currency: Currency = urlCurrency === 'USD' ? 'USD' : 'IDR';
+
+// Period label for header subtitle
+const selectedPeriodLabel =
+  range === 'monthly'
+    ? monthlyPeriods.find((p) => p.key === defaultPeriod)?.label || defaultPeriod
+    : yearlyPeriods.find((p) => p.key === defaultPeriod)?.label || defaultPeriod;
 
 let selectedMemberName = '';
 let memberSummary: MemberSummaryRow[] = [];
@@ -135,179 +143,296 @@ const userReportForPartials = userReportData
   : null;
 
 const overviewUrl = `/reports/members?range=${range}&period=${defaultPeriod}&currency=${currency}`;
+
+// Header subtitle: member name for detail, period for overview
+const subtitleText = urlUserId
+  ? `${selectedMemberName} · ${selectedPeriodLabel}`
+  : selectedPeriodLabel;
+
+// Avatar helpers for member table
+const avatarColors = [
+  'bg-success/15 text-success',
+  'bg-info/15 text-info',
+  'bg-warning/15 text-warning',
+  'bg-accent/15 text-accent',
+  'bg-error/15 text-error',
+];
+const getInitials = (name: string) =>
+  name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+const getMemberColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length];
+
+// Currency badge classes (matches reports page pattern)
+const badge =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
+const currencyBadge =
+  currency === 'USD' ? `${badge} bg-info/10 text-info` : `${badge} bg-success/10 text-success`;
+
+const totalNet = totals.income - totals.expenses;
 ---
 
-<ProtectedLayout title="Member Spending" currentPath={currentPath}>
-  <div
-    class="max-w-5xl mx-auto px-4 py-6 space-y-6"
-    data-reports-members-page
-    data-current-range={range}
-    data-current-period={defaultPeriod}
-    data-current-currency={currency}
-    data-current-user-id={urlUserId}
-  >
+<ProtectedLayout title="Member Spending" currentPath={currentPath} subtitle={subtitleText}>
+  <div slot="header" class="flex items-center gap-2">
     {
-      urlUserId && userReportForPartials ? (
-        <>
-          <div class="flex items-center gap-3">
-            <a href={overviewUrl} class="btn btn-ghost btn-sm" aria-label="Back to member overview">
-              <ArrowLeft class="w-4 h-4" />
-            </a>
-            <div>
-              <h1 class="text-2xl font-bold">{selectedMemberName}'s Spending</h1>
-              <p class="text-base-content/60 text-sm">Detailed spending report</p>
-            </div>
-          </div>
-
-          <ReportSelector
-            selectedRange={range}
-            selectedPeriod={defaultPeriod}
-            monthlyPeriods={monthlyPeriods}
-            yearlyPeriods={yearlyPeriods}
-          />
-
-          <ReportSummaryCardsPartial
-            totalIncome={userReportForPartials.totalIncome}
-            totalExpenses={userReportForPartials.totalExpenses}
-            netSavings={userReportForPartials.netSavings}
-            budgetHealth={userReportForPartials.budgetHealth}
-            expenseCategories={userReportForPartials.expenseCategories}
-            currency={currency}
-          />
-
-          <ReportChartsPartial
-            expenseByCategory={userReportForPartials.expenseByCategory}
-            trendData={userReportForPartials.trendData}
-            resourceAllocationSubtitle={range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX'}
-            financialVelocitySubtitle={range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
-          />
-
-          <CategoryTablePartial
-            categories={userReportForPartials.categoryIntelligence}
-            subtitle="SORTED BY FUNCTIONAL VOLUME"
-            range={range}
-          />
-
-          <CategoryDrillDownModal id="member-category-drilldown-modal" />
-        </>
+      urlUserId ? (
+        <Button variant="ghost" size="sm" href={overviewUrl} aria-label="Back to member overview">
+          <ArrowLeft class="w-4 h-4" />
+          <span class="hidden sm:inline">Overview</span>
+        </Button>
       ) : (
-        <>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <a href="/reports" class="btn btn-ghost btn-sm" aria-label="Back to reports">
-                <ArrowLeft class="w-4 h-4" />
-              </a>
-              <div>
-                <h1 class="text-2xl font-bold">Member Spending</h1>
-                <p class="text-base-content/60 text-sm">Per-member spending overview</p>
-              </div>
-            </div>
-          </div>
-
-          <ReportSelector
-            selectedRange={range}
-            selectedPeriod={defaultPeriod}
-            monthlyPeriods={monthlyPeriods}
-            yearlyPeriods={yearlyPeriods}
-          />
-
-          <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-0">
-              <div class="overflow-x-auto">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Member</th>
-                      <th class="text-right">Income</th>
-                      <th class="text-right">Expenses</th>
-                      <th class="text-right">Net</th>
-                      <th class="text-right">Transactions</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {memberSummary.length === 0 ? (
-                      <tr>
-                        <td colspan="6" class="text-center py-8 text-base-content/50">
-                          <Users class="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p>No transactions found for this period</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      memberSummary.map((row) => {
-                        const net = safeParseDecimal(row.netSavings) || 0;
-                        const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${defaultPeriod}&currency=${currency}`;
-
-                        return (
-                          <tr class="hover">
-                            <td class="font-medium">
-                              <a
-                                href={drillUrl}
-                                class="link link-hover no-underline hover:underline"
-                              >
-                                {row.userName}
-                              </a>
-                            </td>
-                            <td class="text-right text-success">
-                              {formatCurrency(safeParseDecimal(row.totalIncome) || 0, currency)}
-                            </td>
-                            <td class="text-right text-error">
-                              {formatCurrency(safeParseDecimal(row.totalExpenses) || 0, currency)}
-                            </td>
-                            <td
-                              class={`text-right font-medium ${net >= 0 ? 'text-success' : 'text-error'}`}
-                            >
-                              {formatCurrency(net, currency)}
-                            </td>
-                            <td class="text-right">{row.transactionCount}</td>
-                            <td class="text-right">
-                              <a
-                                href={drillUrl}
-                                class="btn btn-ghost btn-xs"
-                                aria-label={`View ${row.userName} report`}
-                              >
-                                <ChevronRight class="w-4 h-4 text-base-content/40" />
-                              </a>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                  {memberSummary.length > 0 && (
-                    <tfoot>
-                      <tr class="font-bold">
-                        <td>Total</td>
-                        <td class="text-right text-success">
-                          {formatCurrency(totals.income, currency)}
-                        </td>
-                        <td class="text-right text-error">
-                          {formatCurrency(totals.expenses, currency)}
-                        </td>
-                        <td
-                          class={`text-right ${totals.income - totals.expenses >= 0 ? 'text-success' : 'text-error'}`}
-                        >
-                          {formatCurrency(totals.income - totals.expenses, currency)}
-                        </td>
-                        <td class="text-right">{totals.count}</td>
-                        <td />
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
-            </div>
-          </div>
-        </>
+        <Button variant="ghost" size="sm" href="/reports" aria-label="Back to reports">
+          <ArrowLeft class="w-4 h-4" />
+          <span class="hidden sm:inline">Reports</span>
+        </Button>
       )
     }
+    <ReportSelector
+      selectedRange={range}
+      selectedPeriod={defaultPeriod}
+      monthlyPeriods={monthlyPeriods}
+      yearlyPeriods={yearlyPeriods}
+    />
   </div>
+
+  {
+    urlUserId && userReportForPartials ? (
+      <div
+        class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+        data-reports-members-page
+        data-current-range={range}
+        data-current-period={defaultPeriod}
+        data-current-currency={currency}
+        data-current-user-id={urlUserId}
+      >
+        <ReportSummaryCardsPartial
+          totalIncome={userReportForPartials.totalIncome}
+          totalExpenses={userReportForPartials.totalExpenses}
+          netSavings={userReportForPartials.netSavings}
+          budgetHealth={userReportForPartials.budgetHealth}
+          expenseCategories={userReportForPartials.expenseCategories}
+          currency={currency}
+        />
+
+        <ReportChartsPartial
+          expenseByCategory={userReportForPartials.expenseByCategory}
+          trendData={userReportForPartials.trendData}
+          resourceAllocationSubtitle={range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX'}
+          financialVelocitySubtitle={range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
+        />
+
+        <CategoryTablePartial
+          categories={userReportForPartials.categoryIntelligence}
+          subtitle="SORTED BY FUNCTIONAL VOLUME"
+          range={range}
+        />
+
+        <CategoryDrillDownModal id="member-category-drilldown-modal" />
+      </div>
+    ) : (
+      <div
+        class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+        data-reports-members-page
+        data-current-range={range}
+        data-current-period={defaultPeriod}
+        data-current-currency={currency}
+        data-current-user-id=""
+      >
+        {/* Summary Stat Cards */}
+        <div class="@container">
+          <div class="grid grid-cols-1 @2xl:grid-cols-3 gap-4 @2xl:gap-6">
+            <StatCard title="FAMILY INCOME">
+              <Fragment slot="details">
+                <div class="flex items-center gap-2">
+                  <span class={currencyBadge}>{currency}</span>
+                  <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                    {formatCurrency(totals.income, currency)}
+                  </p>
+                </div>
+              </Fragment>
+            </StatCard>
+
+            <StatCard title="FAMILY EXPENSES">
+              <Fragment slot="details">
+                <div class="space-y-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class={currencyBadge}>{currency}</span>
+                    <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                      {formatCurrency(totals.expenses, currency)}
+                    </p>
+                  </div>
+                  <p class="text-xs font-bold uppercase text-base-content/40">
+                    {totals.count} TRANSACTIONS
+                  </p>
+                </div>
+              </Fragment>
+            </StatCard>
+
+            <StatCard title="FAMILY NET">
+              <Fragment slot="details">
+                <div class="flex items-center gap-2">
+                  <span class={currencyBadge}>{currency}</span>
+                  <p
+                    class={`text-lg font-bold tracking-tight leading-none truncate ${totalNet >= 0 ? 'text-success' : 'text-error'}`}
+                  >
+                    {formatCurrency(totalNet, currency)}
+                  </p>
+                </div>
+              </Fragment>
+            </StatCard>
+          </div>
+        </div>
+
+        {/* Member Spending Table */}
+        <div class="bg-base-100 rounded-2xl md:rounded-3xl border border-base-300 shadow-sm overflow-hidden">
+          <div class="px-5 md:px-6 pt-5 md:pt-6 pb-3">
+            <h2 class="text-lg font-bold">Spending by Member</h2>
+            <p class="text-xs font-bold uppercase text-base-content/40 tracking-widest mt-1">
+              {memberSummary.length} MEMBERS
+            </p>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th class="text-right">Income</th>
+                  <th class="text-right">Expenses</th>
+                  <th class="text-right hidden sm:table-cell">Share</th>
+                  <th class="text-right">Net</th>
+                  <th class="text-right hidden sm:table-cell">Txns</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {memberSummary.length === 0 ? (
+                  <tr>
+                    <td colspan="7" class="text-center py-12 text-base-content/50">
+                      <div class="flex flex-col items-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center">
+                          <Users class="w-6 h-6 opacity-40" />
+                        </div>
+                        <p class="font-medium">No transactions found</p>
+                        <p class="text-sm">Try selecting a different period</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  memberSummary.map((row) => {
+                    const income = safeParseDecimal(row.totalIncome) || 0;
+                    const expenses = safeParseDecimal(row.totalExpenses) || 0;
+                    const net = safeParseDecimal(row.netSavings) || 0;
+                    const expenseShare =
+                      totals.expenses > 0 ? (expenses / totals.expenses) * 100 : 0;
+                    const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${defaultPeriod}&currency=${currency}`;
+
+                    return (
+                      <tr
+                        class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                        data-href={drillUrl}
+                      >
+                        <td>
+                          <a href={drillUrl} class="flex items-center gap-3 no-underline">
+                            <div
+                              class={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getMemberColor(row.userName)}`}
+                            >
+                              {getInitials(row.userName)}
+                            </div>
+                            <span class="font-semibold link-hover">{row.userName}</span>
+                          </a>
+                        </td>
+                        <td class="text-right text-success font-medium">
+                          {formatCurrency(income, currency)}
+                        </td>
+                        <td class="text-right text-error font-medium">
+                          {formatCurrency(expenses, currency)}
+                        </td>
+                        <td class="text-right hidden sm:table-cell">
+                          <div class="flex items-center justify-end gap-2">
+                            <div class="w-16 h-1.5 rounded-full bg-base-200 overflow-hidden">
+                              <div
+                                class="h-full bg-error/60 rounded-full"
+                                style={`width: ${expenseShare}%`}
+                              />
+                            </div>
+                            <span class="text-xs font-medium text-base-content/60 w-10 text-right tabular-nums">
+                              {expenseShare.toFixed(0)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td
+                          class={`text-right font-semibold ${net >= 0 ? 'text-success' : 'text-error'}`}
+                        >
+                          {formatCurrency(net, currency)}
+                        </td>
+                        <td class="text-right hidden sm:table-cell">
+                          <span class="text-base-content/60 tabular-nums">
+                            {row.transactionCount}
+                          </span>
+                        </td>
+                        <td class="text-right w-8">
+                          <a
+                            href={drillUrl}
+                            class="btn btn-ghost btn-xs"
+                            aria-label={`View ${row.userName} report`}
+                          >
+                            <ChevronRight class="w-4 h-4 text-base-content/30 group-hover:text-base-content/60 transition-colors" />
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+              {memberSummary.length > 0 && (
+                <tfoot>
+                  <tr class="border-t-2 border-base-300">
+                    <td class="font-bold">
+                      <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-base-200 flex items-center justify-center text-xs font-bold text-base-content/40 shrink-0">
+                          ALL
+                        </div>
+                        <span>Total</span>
+                      </div>
+                    </td>
+                    <td class="text-right text-success font-bold">
+                      {formatCurrency(totals.income, currency)}
+                    </td>
+                    <td class="text-right text-error font-bold">
+                      {formatCurrency(totals.expenses, currency)}
+                    </td>
+                    <td class="text-right hidden sm:table-cell">
+                      <span class="text-xs font-medium text-base-content/40">100%</span>
+                    </td>
+                    <td
+                      class={`text-right font-bold ${totalNet >= 0 ? 'text-success' : 'text-error'}`}
+                    >
+                      {formatCurrency(totalNet, currency)}
+                    </td>
+                    <td class="text-right hidden sm:table-cell font-bold tabular-nums">
+                      {totals.count}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
 </ProtectedLayout>
 
 <script>
-  const container = document.querySelector('[data-reports-members-page]') as HTMLElement | null;
+  function initMembersPage() {
+    const container = document.querySelector('[data-reports-members-page]') as HTMLElement | null;
+    if (!container) return;
 
-  if (container) {
     let currentRange = (container.dataset.currentRange as 'monthly' | 'yearly') || 'monthly';
     let currentPeriod = container.dataset.currentPeriod || '';
     const currency = container.dataset.currentCurrency || 'IDR';
@@ -344,5 +469,17 @@ const overviewUrl = `/reports/members?range=${range}&period=${defaultPeriod}&cur
       currentPeriod = customEvent.detail.period;
       navigate();
     });
+
+    // Clickable rows — navigate on click unless clicking an interactive element
+    document.querySelectorAll<HTMLTableRowElement>('tr[data-href]').forEach((row) => {
+      row.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('a, button')) return;
+        const href = row.dataset.href;
+        if (href) window.location.href = href;
+      });
+    });
   }
+
+  initMembersPage();
+  document.addEventListener('astro:page-load', initMembersPage);
 </script>
