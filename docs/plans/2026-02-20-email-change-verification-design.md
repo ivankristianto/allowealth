@@ -11,7 +11,7 @@ Users can change their email from the profile page. The new email must be verifi
 
 - **Storage:** Reuse existing `user_meta` table (new `PENDING_EMAIL` key) + existing `email_verification_tokens` table. No new tables or migrations.
 - **Verification endpoint:** Reuse `GET /api/auth/verify-email` with branching logic based on `pending_email` presence in `user_meta`.
-- **API trigger:** Modify existing `PUT /api/user/profile` — when email differs, trigger verification flow instead of direct update. Other fields (name, phone, bio) update immediately.
+- **API trigger:** Modify existing `PUT /api/user/profile` — when email differs, trigger verification flow first (fail-fast). Only update other fields (name, phone, bio) after email change succeeds or is skipped. This prevents partial writes on email validation failure.
 - **Service:** Extend `EmailVerificationService` with `requestEmailChange()`, `getPendingEmailChange()`, and modify `verifyEmail()` to branch.
 
 ## Flow
@@ -20,15 +20,15 @@ Users can change their email from the profile page. The new email must be verifi
 
 ```
 User edits email on profile -> PUT /api/user/profile
-  +-- name/phone/bio -> update immediately
-  +-- email differs from current?
-        +-- Check new email not taken (409 if taken)
-        +-- Store pending_email in user_meta
-        +-- Delete old verification tokens for user
-        +-- Create new verification token
-        +-- Send verification email to NEW email
-        +-- Unlink ALL OAuth accounts
-        +-- Return { ...profile, pendingEmail: "new@example.com" }
+  +-- email differs from current? (check FIRST, fail-fast)
+  |     +-- Check new email not taken (409 if taken, no other changes made)
+  |     +-- Store pending_email in user_meta
+  |     +-- Delete old verification tokens for user (token factory handles this)
+  |     +-- Create new verification token
+  |     +-- Send verification email to NEW email
+  |     +-- Unlink ALL OAuth accounts
+  +-- Update name/phone/bio (only after email change succeeds or is skipped)
+  +-- Return { ...profile, pendingEmail: "new@example.com" }
 ```
 
 ### Email Change Verification
@@ -38,11 +38,12 @@ User clicks verification link -> GET /api/auth/verify-email?token=...
   +-- Validate token (existing logic)
   +-- Check user_meta for pending_email
   +-- If pending_email exists:
+  |     +-- Re-check pending_email not taken by another user (409-safe)
   |     +-- Update user.email to pending_email
   |     +-- Set email_verified_at = now
   |     +-- Delete pending_email from user_meta
-  |     +-- Consume token
-  |     +-- Invalidate all user sessions (force re-login)
+  |     +-- Delete all verification tokens for user
+  |     +-- Invalidate all user sessions — DB (lucia) + cache
   |     +-- Redirect to /login?email-changed=true
   +-- If no pending_email:
         +-- Existing signup verification flow (unchanged)
@@ -119,23 +120,26 @@ Validation: `z.string().email().max(255)`
 
 ## Error Handling & Edge Cases
 
-| Scenario                                          | Behavior                                                  |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| New email already taken                           | 409 error, no changes made                                |
-| New email same as current                         | No-op, just update other fields                           |
-| Change requested while one pending                | Overwrites pending_email, new token, resends verification |
-| Token expired (24h)                               | Validation fails, redirect with error. User re-requests   |
-| Email changed back to current while pending       | Clear pending_email, delete token, no verification needed |
-| OAuth unlinked but user requests different change | OAuth stays unlinked (by design)                          |
-| User not logged in when clicking link             | Token consumed, email updated, redirect to login          |
+| Scenario                                             | Behavior                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------- |
+| New email already taken (at request time)            | 409 error, no other profile changes made (fail-fast)       |
+| New email same as current                            | No-op, just update other fields                            |
+| Change requested while one pending                   | Overwrites pending_email, new token, resends verification  |
+| Token expired (24h)                                  | Validation fails, redirect with error. User re-requests    |
+| Email changed back to current while pending          | Clear pending_email, delete tokens, no verification needed |
+| Email claimed by another user between request/verify | Verification fails gracefully, redirect with error         |
+| OAuth unlinked but user requests different change    | OAuth stays unlinked (by design)                           |
+| User not logged in when clicking link                | Token consumed, email updated, redirect to login           |
 
 ## Security
 
 - **Email enumeration:** Acceptable since user is authenticated (unlike signup)
 - **Session invalidation:** All sessions invalidated after email change completes
 - **OAuth unlinking:** Happens at request time (not verification time) per spec
-- **Token single-use:** Existing factory deletes previous tokens
+- **Token single-use:** Existing factory deletes previous tokens on new token creation
+- **Uniqueness re-check:** Email uniqueness verified at both request time AND verification time (race-safe)
 - **Case normalization:** Email lowercased before storage (existing pattern)
+- **Fail-fast profile update:** Email change errors prevent any profile changes (no partial writes)
 
 ## Out of Scope
 
@@ -159,3 +163,4 @@ Validation: `z.string().email().max(255)`
 | `src/pages/api/auth/verify-email.ts`                | Add email change branch                                                       |
 | `src/components/organisms/ManageAccountForms.astro` | Show pending email state, OAuth warning                                       |
 | `src/pages/login.astro`                             | Handle `?email-changed=true` query param                                      |
+| `openapi/user.yaml` (or equivalent)                 | Update profile GET/PUT response schema with `pendingEmail` field              |
