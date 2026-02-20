@@ -245,10 +245,16 @@ test.describe('Accounts Redesign Journey', () => {
     const accountItem = page
       .locator('[data-testid="account-item"]')
       .filter({ has: page.locator('h4', { hasText: bankData.name }) });
-    // The component has dual mobile/desktop layouts, both contain h4 > a
-    // Pick the visible one based on viewport
+    // The component has dual mobile/desktop layouts, both containing h4 > a.
+    // Use viewport width to deterministically pick the correct link instead of
+    // a point-in-time isVisible() check that can flake during page transitions.
+    // nth(0) = mobile layout (sm:hidden, shown below 640px)
+    // nth(1) = desktop layout (hidden sm:flex, shown at 640px+)
+    const viewport = page.viewportSize();
+    const isMobile = !viewport || viewport.width < 640;
     const nameLinks = accountItem.locator('h4 a');
-    const nameLink = (await nameLinks.nth(0).isVisible()) ? nameLinks.nth(0) : nameLinks.nth(1);
+    const nameLink = isMobile ? nameLinks.nth(0) : nameLinks.nth(1);
+    await expect(nameLink).toBeVisible({ timeout: 5000 });
     await nameLink.click();
 
     // Verify we navigated to the detail page
