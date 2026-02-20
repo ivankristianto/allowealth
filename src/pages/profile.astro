@@ -130,15 +130,41 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
 
   // ==================== RESEND EMAIL CHANGE ====================
   const resendBtn = document.getElementById('resend-email-change-btn');
+  const COOLDOWN_KEY = 'resend-email-change-cooldown';
+  const COOLDOWN_SECONDS = 60;
+
+  function startCooldown(btn: HTMLButtonElement, endsAt: number) {
+    btn.disabled = true;
+    const tick = () => {
+      const remaining = Math.ceil((endsAt - Date.now()) / 1000);
+      if (remaining <= 0) {
+        localStorage.removeItem(COOLDOWN_KEY);
+        btn.textContent = 'Resend email';
+        btn.disabled = false;
+      } else {
+        btn.textContent = `Resend (${remaining}s)`;
+        requestAnimationFrame(() => setTimeout(tick, 1000));
+      }
+    };
+    tick();
+  }
 
   if (resendBtn instanceof HTMLButtonElement) {
-    let cooldownTimer: ReturnType<typeof setTimeout> | null = null;
+    // Restore cooldown from previous page load
+    const savedCooldown = localStorage.getItem(COOLDOWN_KEY);
+    if (savedCooldown) {
+      const endsAt = parseInt(savedCooldown, 10);
+      if (endsAt > Date.now()) {
+        startCooldown(resendBtn, endsAt);
+      } else {
+        localStorage.removeItem(COOLDOWN_KEY);
+      }
+    }
 
     resendBtn.addEventListener('click', async () => {
       if (resendBtn.disabled) return;
 
       resendBtn.disabled = true;
-      const originalText = resendBtn.textContent;
       resendBtn.textContent = 'Sending…';
 
       try {
@@ -154,38 +180,28 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
           const msg =
             result.error?.message || result.error || 'Too many requests. Please try again later.';
           addToast(msg, 'warning');
-          resendBtn.textContent = originalText;
+          resendBtn.textContent = 'Resend email';
           resendBtn.disabled = false;
           return;
         }
 
         if (!response.ok || !result.success) {
           addToast(result.error?.message || 'Failed to resend verification email.', 'error');
-          resendBtn.textContent = originalText;
+          resendBtn.textContent = 'Resend email';
           resendBtn.disabled = false;
           return;
         }
 
         addToast('Verification email resent. Check your inbox.', 'success');
 
-        // Start 60-second cooldown
-        let seconds = 60;
-        resendBtn.textContent = `Resend (${seconds}s)`;
-
-        cooldownTimer = setInterval(() => {
-          seconds--;
-          if (seconds <= 0) {
-            if (cooldownTimer) clearInterval(cooldownTimer);
-            resendBtn.textContent = originalText;
-            resendBtn.disabled = false;
-          } else {
-            resendBtn.textContent = `Resend (${seconds}s)`;
-          }
-        }, 1000);
+        // Start cooldown persisted in localStorage
+        const endsAt = Date.now() + COOLDOWN_SECONDS * 1000;
+        localStorage.setItem(COOLDOWN_KEY, String(endsAt));
+        startCooldown(resendBtn, endsAt);
       } catch (error) {
         console.error('Resend email change error:', error);
         addToast('An error occurred. Please try again.', 'error');
-        resendBtn.textContent = originalText;
+        resendBtn.textContent = 'Resend email';
         resendBtn.disabled = false;
       }
     });
@@ -218,6 +234,7 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
         }
 
         addToast('Email change cancelled.', 'success');
+        localStorage.removeItem(COOLDOWN_KEY);
         window.location.reload();
       } catch (error) {
         console.error('Cancel email change error:', error);
