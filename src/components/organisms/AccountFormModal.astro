@@ -199,7 +199,7 @@ const categoryOptions = categories.length
         {/* Owner transfer (admin only, edit mode) */}
         {
           isAdmin && members.length > 1 && (
-            <div class="form-control w-full hidden" data-account-owner-field>
+            <div class="form-control w-full" data-account-owner-field style="display: none;">
               <label class="label" for={`${id}-owner`}>
                 <span class="label-text font-medium">Owner</span>
               </label>
