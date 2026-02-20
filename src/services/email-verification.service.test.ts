@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { EmailVerificationService } from './email-verification.service';
 import { db } from '@/db/index';
-import { users, workspaces, emailVerificationTokens, userMeta } from '@/db/schema';
+import { users, workspaces, emailVerificationTokens, userMeta, oauthAccounts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
@@ -18,6 +18,7 @@ describe('EmailVerificationService', () => {
 
   async function cleanupTestData() {
     if (testUserId) {
+      await db.delete(oauthAccounts).where(eq(oauthAccounts.user_id, testUserId));
       await db.delete(userMeta).where(eq(userMeta.user_id, testUserId));
       await db
         .delete(emailVerificationTokens)
@@ -157,6 +158,37 @@ describe('EmailVerificationService', () => {
         .from(emailVerificationTokens)
         .where(eq(emailVerificationTokens.user_id, testUserId));
       expect(tokens.length).toBe(1);
+    });
+
+    it('should unlink all OAuth accounts when requesting email change', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await db.insert(oauthAccounts).values([
+        {
+          id: nanoid(),
+          user_id: testUserId,
+          provider: 'google',
+          provider_account_id: `google-${nanoid(8)}`,
+          email: 'oauth-google@example.com',
+          created_at: new Date(),
+        },
+        {
+          id: nanoid(),
+          user_id: testUserId,
+          provider: 'github',
+          provider_account_id: `github-${nanoid(8)}`,
+          email: 'oauth-github@example.com',
+          created_at: new Date(),
+        },
+      ]);
+
+      await service.requestEmailChange(testUserId, 'oauth-unlink@example.com');
+
+      const remainingOauthAccounts = await db
+        .select()
+        .from(oauthAccounts)
+        .where(eq(oauthAccounts.user_id, testUserId));
+      expect(remainingOauthAccounts.length).toBe(0);
     });
   });
 

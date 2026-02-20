@@ -54,6 +54,8 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
     profileEmailInput instanceof HTMLInputElement &&
     profileSubmitButton instanceof HTMLButtonElement
   ) {
+    const hadPendingEmailOnLoad = profileForm.dataset.hadPendingEmail === 'true';
+
     profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -104,6 +106,12 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
             result.data.message || `Verification email sent to ${result.data.pendingEmail}`,
             'info'
           );
+          window.location.reload();
+          return;
+        }
+
+        if (hadPendingEmailOnLoad) {
+          addToast('Profile updated successfully!', 'success');
           window.location.reload();
           return;
         }
