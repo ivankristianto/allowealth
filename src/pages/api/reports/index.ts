@@ -13,6 +13,7 @@ import { formatMonthYear } from '@/lib/utils/date';
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
 import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.astro';
 
 /**
@@ -24,7 +25,7 @@ import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.a
  *   - period: string (required) - 'YYYY-MM' for monthly, 'YYYY' for yearly
  *   - currency: 'IDR' | 'USD' (optional, defaults to 'IDR')
  *   - _render: 'html' | 'json' (optional, defaults to 'json')
- *   - _partial: 'summary' | 'charts' | 'table' | 'all' (optional, defaults to 'all')
+ *   - _partial: 'summary' | 'charts' | 'table' | 'members' | 'selector' | 'all' (optional, defaults to 'all')
  *
  * Security:
  *   - Requires authentication (validates userId from session)
@@ -46,7 +47,7 @@ export const GET: APIRoute = async (context) => {
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD' | null) || 'IDR';
 
     // Validate _partial parameter
-    const VALID_PARTIALS = ['summary', 'charts', 'table', 'selector', 'all'] as const;
+    const VALID_PARTIALS = ['summary', 'charts', 'table', 'members', 'selector', 'all'] as const;
     type PartialType = (typeof VALID_PARTIALS)[number];
     const partialParam = url.searchParams.get('_partial') || 'all';
     if (!VALID_PARTIALS.includes(partialParam as PartialType)) {
@@ -212,6 +213,34 @@ export const GET: APIRoute = async (context) => {
           },
         });
         htmlParts.push(`<!-- PARTIAL:table -->\n${tableHtml}`);
+      }
+
+      // Render member spending table partial (always shows all members, ignores user_id)
+      if (partial === 'all' || partial === 'members') {
+        const memberSummary = await reportService.getMemberSummary(
+          auth.workspaceId,
+          period,
+          range,
+          currency
+        );
+        const memberTotals = memberSummary.reduce(
+          (acc, row) => ({
+            income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
+            expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
+            count: acc.count + row.transactionCount,
+          }),
+          { income: 0, expenses: 0, count: 0 }
+        );
+        const membersHtml = await container.renderToString(MemberSpendingTablePartial, {
+          props: {
+            members: memberSummary,
+            totals: memberTotals,
+            currency,
+            range,
+            period,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:members -->\n${membersHtml}`);
       }
 
       // Render selector partial

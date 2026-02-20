@@ -18,9 +18,16 @@ export function parseHtmlPartials(html: string): {
   summary?: string;
   charts?: string;
   table?: string;
+  members?: string;
   selector?: string;
 } {
-  const partials: { summary?: string; charts?: string; table?: string; selector?: string } = {};
+  const partials: {
+    summary?: string;
+    charts?: string;
+    table?: string;
+    members?: string;
+    selector?: string;
+  } = {};
 
   // Extract summary partial
   const summaryMatch = html.match(/<!-- PARTIAL:summary -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
@@ -33,6 +40,10 @@ export function parseHtmlPartials(html: string): {
   // Extract table partial
   const tableMatch = html.match(/<!-- PARTIAL:table -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   if (tableMatch) partials.table = tableMatch[1].trim();
+
+  // Extract members partial
+  const membersMatch = html.match(/<!-- PARTIAL:members -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (membersMatch) partials.members = membersMatch[1].trim();
 
   // Extract selector partial
   const selectorMatch = html.match(/<!-- PARTIAL:selector -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
@@ -120,6 +131,30 @@ export function renderChartsHtml(html: string): void {
  */
 export function renderTableHtml(html: string): void {
   const container = document.querySelector('[data-table-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
+}
+
+/**
+ * Render member spending table with fade-in animation
+ */
+export function renderMembersHtml(html: string): void {
+  const container = document.querySelector('[data-member-table-container]') as HTMLElement;
   if (!container) return;
 
   // Fade out existing content

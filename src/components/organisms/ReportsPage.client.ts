@@ -12,6 +12,7 @@ import {
   renderSummaryHtml,
   renderChartsHtml,
   renderTableHtml,
+  renderMembersHtml,
   renderSelectorHtml,
   showLoadingState,
   hideLoadingState,
@@ -105,7 +106,7 @@ function readStateFromUrl(): Partial<ReportState> {
 async function fetchReportHtml(
   range: 'monthly' | 'yearly',
   period: string
-): Promise<{ summary?: string; charts?: string; table?: string }> {
+): Promise<{ summary?: string; charts?: string; table?: string; members?: string }> {
   const params = new URLSearchParams();
   params.set('_render', 'html');
   params.set('_partial', 'all');
@@ -130,6 +131,7 @@ async function fetchAndRenderReports(): Promise<void> {
   showLoadingState('[data-summary-container]');
   showLoadingState('[data-charts-container]');
   showLoadingState('[data-table-container]');
+  showLoadingState('[data-member-table-container]');
 
   try {
     // Fetch HTML fragments
@@ -153,6 +155,11 @@ async function fetchAndRenderReports(): Promise<void> {
     } else {
       hideLoadingState('[data-table-container]');
     }
+    if (partials.members) {
+      renderMembersHtml(partials.members);
+    } else {
+      hideLoadingState('[data-member-table-container]');
+    }
 
     // Accessibility announcement
     const rangeLabel = currentState.range === 'monthly' ? 'Monthly' : 'Yearly';
@@ -164,6 +171,7 @@ async function fetchAndRenderReports(): Promise<void> {
     hideLoadingState('[data-summary-container]');
     hideLoadingState('[data-charts-container]');
     hideLoadingState('[data-table-container]');
+    hideLoadingState('[data-member-table-container]');
 
     // Show error toast
     addToast('Failed to load report data. Please try again.', 'error');
@@ -237,6 +245,20 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
 
   // Fetch and render new data
   fetchAndRenderReports();
+}
+
+/**
+ * Handle clickable table row navigation using event delegation
+ * Supports rows with data-href attribute (e.g., member spending table)
+ */
+function handleRowClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+  // Don't navigate if clicking an interactive element within the row
+  if (target.closest('a, button')) return;
+  const row = target.closest('tr[data-href]') as HTMLElement;
+  if (!row) return;
+  const href = row.dataset.href;
+  if (href) window.location.href = href;
 }
 
 /**
@@ -317,6 +339,9 @@ export function initReportsPage(): void {
     // Set up drill-down click delegation (once, at document level)
     document.addEventListener('click', handleDrillDownClick);
 
+    // Clickable member table rows via event delegation (handles dynamic content)
+    document.addEventListener('click', handleRowClick);
+
     listenersAttached = true;
   }
 }
@@ -336,5 +361,6 @@ document.addEventListener('astro:before-swap', () => {
   window.removeEventListener('reportRangeChange', handleRangeChange as EventListener);
   window.removeEventListener('reportPeriodChange', handlePeriodChange as EventListener);
   document.removeEventListener('click', handleDrillDownClick);
+  document.removeEventListener('click', handleRowClick);
   listenersAttached = false;
 });

@@ -3,12 +3,13 @@
  * Breadcrumb Component (Atom)
  *
  * Reusable breadcrumb navigation using DaisyUI's `breadcrumbs` class.
- * Last item renders as plain text (current page), all others as links.
+ * Items without href render as the current page with active styling.
+ * Items with href render as navigable links.
  *
  * @example
  * <Breadcrumb items={[
- *   { label: "Reports", href: "/reports" },
- *   { label: "Member Spending" }
+ *   { label: "Reports" },
+ *   { label: "Member Spending", href: "/reports/members" }
  * ]} />
  */
 
@@ -22,6 +23,9 @@ export interface Props {
 }
 
 const { items } = Astro.props;
+
+// Find the last non-link item index for aria-current="page"
+const lastNonLinkIndex = items.reduce((acc, item, i) => (!item.href ? i : acc), -1);
 ---
 
 <nav aria-label="Breadcrumb">
@@ -33,7 +37,10 @@ const { items } = Astro.props;
             {item.href ? (
               <a href={item.href}>{item.label}</a>
             ) : (
-              <span aria-current={index === items.length - 1 ? 'page' : undefined}>
+              <span
+                class="font-semibold text-base-content"
+                aria-current={index === lastNonLinkIndex ? 'page' : undefined}
+              >
                 {item.label}
               </span>
             )}

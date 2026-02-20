@@ -28,9 +28,11 @@ import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsP
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 
+import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
+
 // Import report service and types
 import { reportService, accountService } from '@/services';
-import type { ReportData } from '@/services/report.service';
+import type { ReportData, MemberSummaryRow } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
@@ -145,6 +147,30 @@ try {
   // Non-critical: continue with zeros
 }
 
+// Fetch member spending summary for the member table
+let memberSummary: MemberSummaryRow[] = [];
+let memberTotals = { income: 0, expenses: 0, count: 0 };
+
+try {
+  memberSummary = await reportService.getMemberSummary(
+    user.workspaceId,
+    defaultPeriod,
+    defaultRange,
+    currency
+  );
+  memberTotals = memberSummary.reduce(
+    (acc, row) => ({
+      income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
+      expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
+      count: acc.count + row.transactionCount,
+    }),
+    { income: 0, expenses: 0, count: 0 }
+  );
+} catch (error) {
+  console.error('Error fetching member summary:', error);
+  // Non-critical: continue with empty list
+}
+
 // Keep data as strings for formatCurrency utility
 // Only convert to numbers for chart rendering (handled by chart components)
 const reportDataForPartials = {
@@ -205,7 +231,7 @@ const selectedPeriodLabel =
 
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10">
     <Breadcrumb
-      items={[{ label: 'Reports' }, { label: 'Member Spending', href: '/reports/members' }]}
+      items={[{ label: 'Overview' }, { label: 'Member Spending', href: '/reports/members' }]}
     />
 
     {/* Summary Metric Cards Container */}
@@ -242,6 +268,17 @@ const selectedPeriodLabel =
         categories={reportDataForPartials.categoryIntelligence}
         subtitle="SORTED BY AMOUNT SPENT"
         range={defaultRange}
+      />
+    </div>
+
+    {/* Spending by Member Table */}
+    <div data-member-table-container>
+      <MemberSpendingTablePartial
+        members={memberSummary}
+        totals={memberTotals}
+        currency={currency}
+        range={defaultRange}
+        period={defaultPeriod}
       />
     </div>
 
