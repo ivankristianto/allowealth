@@ -33,8 +33,7 @@ import { reportService, accountService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
-import Button from '@/components/atoms/Button.astro';
-import { Users } from '@lucide/astro';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 
 const currentPath = '/reports';
 
@@ -195,11 +194,7 @@ const selectedPeriodLabel =
 ---
 
 <ProtectedLayout title="Reports" currentPath={currentPath} subtitle={selectedPeriodLabel}>
-  <div slot="header" class="flex items-center gap-2" data-selector-container>
-    <Button variant="ghost" size="sm" href="/reports/members">
-      <Users class="w-4 h-4" />
-      Member Spending
-    </Button>
+  <div slot="header" data-selector-container>
     <ReportSelector
       selectedRange={defaultRange}
       selectedPeriod={defaultPeriod}
@@ -209,6 +204,10 @@ const selectedPeriodLabel =
   </div>
 
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10">
+    <Breadcrumb
+      items={[{ label: 'Reports' }, { label: 'Member Spending', href: '/reports/members' }]}
+    />
+
     {/* Summary Metric Cards Container */}
     <div data-summary-container>
       <ReportSummaryCardsPartial
