@@ -326,7 +326,11 @@ const dataActions = [
                       <select
                         id="primary-currency"
                         name="currency"
-                        class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                        class:list={[
+                          'select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+                          !canChangeCurrency &&
+                            'cursor-not-allowed opacity-70 appearance-none bg-none pr-6',
+                        ]}
                         disabled={!canChangeCurrency}
                       >
                         {
@@ -347,7 +351,11 @@ const dataActions = [
                       <select
                         id="secondary-currency"
                         name="secondaryCurrency"
-                        class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                        class:list={[
+                          'select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+                          !canChangeCurrency &&
+                            'cursor-not-allowed opacity-70 appearance-none bg-none pr-6',
+                        ]}
                         disabled={!canChangeCurrency}
                       >
                         <option value="" selected={!workspaceData.settings.secondaryCurrency}>
@@ -386,10 +394,13 @@ const dataActions = [
                   }
                   {
                     canChangeCurrency && (
-                      <p class="text-xs text-warning/80 mt-1 ml-1">
-                        Choose carefully — currency settings cannot be changed after you add
-                        accounts or transactions.
-                      </p>
+                      <div class="alert alert-warning text-sm">
+                        <Info class="size-5 shrink-0" />
+                        <span>
+                          Choose carefully. Currency settings cannot be changed after you add
+                          accounts or transactions.
+                        </span>
+                      </div>
                     )
                   }
 

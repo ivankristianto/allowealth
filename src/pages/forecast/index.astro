@@ -10,15 +10,23 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import WealthTrajectory from '@/components/organisms/WealthTrajectory.astro';
 import LedgerProjections from '@/components/organisms/LedgerProjections.astro';
 import type { ForecastResult } from '@/lib/forecast';
+import { workspaceMetaService } from '@/services';
+import type { Currency } from '@/lib/constants/currency';
 
 const currentPath = '/forecast';
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+
+const primaryCurrency: Currency = await workspaceMetaService.getCurrency(user.workspaceId);
 
 // Fetch initial forecast data from API
 let forecastData: ForecastResult | null = null;
 let error: string | null = null;
 
 try {
-  // Default parameters: 5M IDR monthly, 7% APY, 10 years
+  // Default parameters: 5,000,000 monthly, 7% APY, 10 years
   const apiUrl = `${Astro.url.origin}/api/forecast?monthlyTopup=5000000&annualRate=7&years=10`;
 
   const response = await fetch(apiUrl, {
@@ -67,12 +75,14 @@ try {
           data={forecastData.dataPoints}
           summary={forecastData.summary}
           input={forecastData.input}
+          currency={primaryCurrency}
         />
       ) : (
         <WealthTrajectory
           data={[]}
           summary={{ year10Target: 0, totalInterest: 0, growthMultiple: 0, currentTotal: 0 }}
           input={{ monthlyTopup: 5000000, annualRate: 7, years: 10 }}
+          currency={primaryCurrency}
           error={error || 'Failed to load forecast data'}
         />
       )
@@ -81,9 +91,13 @@ try {
     {/* Ledger Projections Section */}
     {
       forecastData ? (
-        <LedgerProjections data={forecastData.dataPoints} />
+        <LedgerProjections data={forecastData.dataPoints} currency={primaryCurrency} />
       ) : (
-        <LedgerProjections data={[]} error={error || 'Failed to load projection data'} />
+        <LedgerProjections
+          data={[]}
+          currency={primaryCurrency}
+          error={error || 'Failed to load projection data'}
+        />
       )
     }
   </div>

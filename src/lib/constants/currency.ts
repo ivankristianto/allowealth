@@ -266,62 +266,62 @@ export const CURRENCY_META = {
 export const CURRENCY_OPTIONS: readonly CurrencyOption[] = [
   {
     value: 'IDR',
-    label: 'IDR - Indonesian Rupiah',
+    label: 'IDR — Indonesian Rupiah',
     symbol: 'Rp',
   },
   {
     value: 'USD',
-    label: 'USD - US Dollar',
+    label: 'USD — US Dollar',
     symbol: '$',
   },
   {
     value: 'SGD',
-    label: 'SGD - Singapore Dollar',
+    label: 'SGD — Singapore Dollar',
     symbol: '$',
   },
   {
     value: 'PHP',
-    label: 'PHP - Philippine Peso',
+    label: 'PHP — Philippine Peso',
     symbol: '₱',
   },
   {
     value: 'EUR',
-    label: 'EUR - Euro',
+    label: 'EUR — Euro',
     symbol: '€',
   },
   {
     value: 'GBP',
-    label: 'GBP - British Pound',
+    label: 'GBP — British Pound',
     symbol: '£',
   },
   {
     value: 'MYR',
-    label: 'MYR - Malaysian Ringgit',
+    label: 'MYR — Malaysian Ringgit',
     symbol: 'RM',
   },
   {
     value: 'THB',
-    label: 'THB - Thai Baht',
+    label: 'THB — Thai Baht',
     symbol: '฿',
   },
   {
     value: 'JPY',
-    label: 'JPY - Japanese Yen',
+    label: 'JPY — Japanese Yen',
     symbol: '¥',
   },
   {
     value: 'AUD',
-    label: 'AUD - Australian Dollar',
+    label: 'AUD — Australian Dollar',
     symbol: 'A$',
   },
   {
     value: 'KRW',
-    label: 'KRW - South Korean Won',
+    label: 'KRW — South Korean Won',
     symbol: '₩',
   },
   {
     value: 'INR',
-    label: 'INR - Indian Rupee',
+    label: 'INR — Indian Rupee',
     symbol: '₹',
   },
 ] as const;

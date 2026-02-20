@@ -14,10 +14,15 @@ import Label from '@/components/atoms/Label.astro';
 import Input from '@/components/atoms/Input.astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import type { Tab } from '@/components/molecules/TabSwitcher.astro';
+import { workspaceMetaService } from '@/services';
+import type { Currency } from '@/lib/constants/currency';
 
 const currentPath = '/calculators';
-
-// const primaryCurrency: Currency = 'IDR'; // @TODO: Use user settings for API currency selection
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+const primaryCurrency: Currency = await workspaceMetaService.getCurrency(user.workspaceId);
 
 // Tab configuration - icons must match the keys in TabSwitcher's iconMap
 const tabs: Tab[] = [
@@ -42,7 +47,7 @@ const tabs: Tab[] = [
         data-calculator="compound"
         class="space-y-8"
       >
-        <form id="compound-calculator-form">
+        <form id="compound-calculator-form" data-primary-currency={primaryCurrency}>
           <!-- Input Form Card -->
           <div class="bg-base-100 p-6 sm:p-8 rounded-card border border-base-300 shadow-sm">
             <div class="mb-6">
@@ -66,7 +71,7 @@ const tabs: Tab[] = [
                 <AmountInput
                   id="principal"
                   name="principal"
-                  currency="IDR"
+                  currency={primaryCurrency}
                   placeholder="Enter amount"
                   required
                   className="input-bordered h-10 rounded-lg border border-base-300 bg-base-200 pt-2 pb-2 pl-3 pr-10 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"

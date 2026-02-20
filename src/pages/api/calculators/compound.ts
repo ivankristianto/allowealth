@@ -8,6 +8,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { workspaceMetaService } from '@/services';
 import type { YearlyData } from '@/components/molecules/GrowthScheduleTable.astro';
 
 // Validation schema for request body
@@ -23,7 +24,8 @@ const compoundInputSchema = z.object({
 export const POST: APIRoute = async (context) => {
   try {
     // Auth check - user must be logged in
-    getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
+    const currency = await workspaceMetaService.getCurrency(auth.workspaceId);
 
     // Parse and validate request body
     const body = await context.request.json();
@@ -66,7 +68,7 @@ export const POST: APIRoute = async (context) => {
       totalInterest,
       finalBalance,
       yearlyData,
-      currency: 'IDR' as const,
+      currency,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

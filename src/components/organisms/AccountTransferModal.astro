@@ -187,6 +187,16 @@ const { id, accounts = [] } = Astro.props;
         let selectedCurrency: Currency = 'IDR';
         const amountFormatter = attachAmountFormatter(amountInput, selectedCurrency);
 
+        function updateTransferValidity() {
+          const fromOpt = fromSelect.options[fromSelect.selectedIndex];
+          const toOpt = toSelect.options[toSelect.selectedIndex];
+          const fromCurrency = fromOpt?.dataset.currency || '';
+          const toCurrency = toOpt?.dataset.currency || '';
+          const hasSelection = !!fromSelect.value && !!toSelect.value;
+          const sameCurrency = fromCurrency.length > 0 && fromCurrency === toCurrency;
+          submitBtn.disabled = !hasSelection || !sameCurrency;
+        }
+
         // Filter "To" options based on "From" selection (same currency, different account)
         function updateToOptions() {
           if (!fromSelect || !toSelect) return;
@@ -211,9 +221,12 @@ const { id, accounts = [] } = Astro.props;
             const bal = parseFloat(selectedFrom.dataset.balance);
             balanceHint.textContent = `Available: ${bal.toLocaleString()} ${fromCurrency}`;
           }
+
+          updateTransferValidity();
         }
 
         fromSelect.addEventListener('change', updateToOptions);
+        toSelect.addEventListener('change', updateTransferValidity);
         updateToOptions();
 
         // Cancel button
@@ -222,6 +235,7 @@ const { id, accounts = [] } = Astro.props;
           form.reset();
           errorEl?.classList.add('hidden');
           if (balanceHint) balanceHint.textContent = '';
+          updateTransferValidity();
           modal.close();
         });
 
@@ -248,6 +262,19 @@ const { id, accounts = [] } = Astro.props;
           if (fromAccountId === toAccountId) {
             if (errorEl) {
               errorEl.textContent = 'Source and destination must be different';
+              errorEl.classList.remove('hidden');
+            }
+            return;
+          }
+
+          const fromOption = fromSelect.options[fromSelect.selectedIndex];
+          const toOption = toSelect.options[toSelect.selectedIndex];
+          const fromCurrency = fromOption?.dataset.currency || '';
+          const toCurrency = toOption?.dataset.currency || '';
+          if (!fromCurrency || !toCurrency || fromCurrency !== toCurrency) {
+            if (errorEl) {
+              errorEl.textContent =
+                'Transfer requires source and destination with the same currency';
               errorEl.classList.remove('hidden');
             }
             return;

@@ -9,6 +9,7 @@ import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
 import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import type { ForecastResult } from '@/lib/forecast';
 
 // Track in-flight requests per chart ID to prevent race conditions
@@ -29,8 +30,6 @@ export function initWealthTrajectoryInputs(): void {
 
     if (!topupInput || !apyInput) return;
 
-    attachAmountFormatter(topupInput, 'IDR');
-
     // Get the chart container to find the chart ID
     const chartContainer = container
       .closest('[role="region"]')
@@ -39,10 +38,14 @@ export function initWealthTrajectoryInputs(): void {
 
     const chartId = chartContainer.getAttribute('data-chart-id');
     if (!chartId) return;
+    const currencyAttr = chartContainer.getAttribute('data-currency');
+    const currency: Currency = currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+
+    attachAmountFormatter(topupInput, currency);
 
     // Debounced fetch function (500ms delay)
     const debouncedFetch = debounce(async () => {
-      const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, 'IDR')) || 0;
+      const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, currency)) || 0;
       const annualRate = parseFloat(apyInput.value) || 0;
 
       // Validate inputs
@@ -50,7 +53,7 @@ export function initWealthTrajectoryInputs(): void {
         return;
       }
 
-      await fetchAndUpdateForecast(chartId, monthlyTopup, annualRate);
+      await fetchAndUpdateForecast(chartId, monthlyTopup, annualRate, currency);
     }, 500);
 
     // Attach input event listeners
@@ -65,7 +68,8 @@ export function initWealthTrajectoryInputs(): void {
 async function fetchAndUpdateForecast(
   chartId: string,
   monthlyTopup: number,
-  annualRate: number
+  annualRate: number,
+  currency: Currency
 ): Promise<void> {
   try {
     // Cancel previous request for this chart if exists
@@ -106,7 +110,7 @@ async function fetchAndUpdateForecast(
     updateChart(chartId, forecastData);
 
     // Update summary cards
-    updateSummaryCards(chartId, forecastData.summary, forecastData.input);
+    updateSummaryCards(chartId, forecastData.summary, forecastData.input, currency);
 
     // Remove loading state
     if (chartContainer) {
@@ -176,7 +180,8 @@ function updateSummaryCards(
     growthMultiple: number;
     currentTotal: number;
   },
-  input: { monthlyTopup: number; annualRate: number; years: number }
+  input: { monthlyTopup: number; annualRate: number; years: number },
+  currency: Currency
 ): void {
   // Find the chart container's parent region
   const chartContainer = document.querySelector(`[data-chart-id="${chartId}"]`);
@@ -191,7 +196,7 @@ function updateSummaryCards(
     const year10TargetCard = summaryCards[0];
     const year10TargetValue = year10TargetCard.querySelector('h3');
     if (year10TargetValue) {
-      year10TargetValue.textContent = formatCurrencyCompact(summary.year10Target);
+      year10TargetValue.textContent = formatCurrencyCompact(summary.year10Target, currency);
     }
     // Update label with correct year
     const year10Label = year10TargetCard.querySelector('[class*="StatLabel"]');
@@ -203,7 +208,7 @@ function updateSummaryCards(
     const totalInterestCard = summaryCards[1];
     const totalInterestValue = totalInterestCard.querySelector('h3');
     if (totalInterestValue) {
-      totalInterestValue.textContent = formatCurrencyCompact(summary.totalInterest);
+      totalInterestValue.textContent = formatCurrencyCompact(summary.totalInterest, currency);
     }
 
     // Update Growth Multiple
