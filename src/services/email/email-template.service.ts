@@ -39,6 +39,15 @@ export interface EmailVerificationOptions {
 }
 
 /**
+ * Email change verification template options
+ */
+export interface EmailChangeVerificationOptions {
+  verificationUrl: string;
+  userName: string;
+  newEmail: string;
+}
+
+/**
  * Email Template Service
  */
 /** Escape HTML special characters to prevent injection */
@@ -144,6 +153,34 @@ ${this.button('Verify Email', verificationUrl)}
 
     return {
       subject: 'Verify your email',
+      html: this.wrap(content),
+    };
+  }
+
+  /**
+   * Generate email change verification template
+   */
+  emailChangeVerification(options: EmailChangeVerificationOptions): EmailTemplate {
+    const { verificationUrl, userName, newEmail } = options;
+
+    const content = `
+<h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600; color: #18181b;">
+  Confirm your new email
+</h1>
+<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+  Hi ${escapeHtml(userName)}, you requested to change your email address to <strong>${escapeHtml(newEmail)}</strong>. Click the button below to confirm this change.
+</p>
+${this.button('Confirm Email Change', verificationUrl)}
+<p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
+  This link expires in 24 hours.
+</p>
+<p style="margin: 0; font-size: 13px; color: #71717a;">
+  If you didn't request this change, you can safely ignore this email. Your current email will remain unchanged.
+</p>
+`.trim();
+
+    return {
+      subject: sanitizeSubject('Confirm your new email address'),
       html: this.wrap(content),
     };
   }

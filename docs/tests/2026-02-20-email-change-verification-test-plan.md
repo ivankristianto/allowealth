@@ -256,26 +256,30 @@ This feature adds email change functionality via a verify-first flow. Users edit
 
 ## Summary Checklist
 
-| #   | Area                        | Key Assertion                                                         | Pass |
-| --- | --------------------------- | --------------------------------------------------------------------- | ---- |
-| 1   | Initial state               | No pending badge when no change is pending                            | [ ]  |
-| 2   | Email change request        | Verification sent, email NOT changed immediately, pending badge shown | [ ]  |
-| 3   | Email verification          | Email updated, sessions invalidated, redirect to login                | [ ]  |
-| 4   | Non-email profile update    | Name/phone/bio update without triggering email verification           | [ ]  |
-| 5   | Duplicate email (fail-fast) | 409 error, NO profile changes persisted                               | [ ]  |
-| 6   | Overwrite pending change    | New request invalidates old token, new token works                    | [ ]  |
-| 7   | Cancel pending change       | Revert to current email clears pending state and tokens               | [ ]  |
-| 8   | OAuth unlinking             | OAuth accounts unlinked on email change request                       | [ ]  |
-| 9   | OAuth warning UI            | Warning shows/hides based on email field changes                      | [ ]  |
-| 10  | Expired token               | Expired token rejected with appropriate error                         | [ ]  |
-| 11  | Invalid token               | Invalid/missing token rejected                                        | [ ]  |
-| 12  | Session invalidation        | ALL sessions invalidated after email change completes                 | [ ]  |
-| 13  | Login banners               | Correct banners for email-changed, email_taken, token errors          | [ ]  |
-| 14  | API response shape          | pendingEmail included/excluded correctly in GET and PUT               | [ ]  |
-| 15  | Member user                 | Email change works for non-admin users                                | [ ]  |
-| 16  | Mobile                      | Pending badge, OAuth warning, and toasts render correctly on mobile   | [ ]  |
+| #   | Area                        | Key Assertion                                                         | Result  | Notes                                                                                                                       |
+| --- | --------------------------- | --------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Initial state               | No pending badge when no change is pending                            | PASS    | All 4 steps verified including API response shape                                                                           |
+| 2   | Email change request        | Verification sent, email NOT changed immediately, pending badge shown | PARTIAL | Steps 2.1-2.3, 2.6-2.7 PASS. Steps 2.4-2.5 require server console for token URL                                             |
+| 3   | Email verification          | Email updated, sessions invalidated, redirect to login                | PARTIAL | Requires verification token URL from server console                                                                         |
+| 4   | Non-email profile update    | Name/phone/bio update without triggering email verification           | PASS    | All 3 steps verified. Note: submitting with current email cancels pending change (by-design)                                |
+| 5   | Duplicate email (fail-fast) | 409 error, NO profile changes persisted                               | PASS    | Error toast shown, name NOT persisted, 409 confirmed via network                                                            |
+| 6   | Overwrite pending change    | New request invalidates old token, new token works                    | PARTIAL | Requires server console for token URLs                                                                                      |
+| 7   | Cancel pending change       | Revert to current email clears pending state and tokens               | PASS    | Steps 7.1, 7.3 verified. API confirms pendingEmail cleared. Minor UI note: stale badge until reload                         |
+| 8   | OAuth unlinking             | OAuth accounts unlinked on email change request                       | SKIP    | Google OAuth not configured in dev environment                                                                              |
+| 9   | OAuth warning UI            | Warning shows/hides based on email field changes                      | SKIP    | No OAuth accounts linked (prerequisite not met)                                                                             |
+| 10  | Expired token               | Expired token rejected with appropriate error                         | PARTIAL | Requires DB access to manually expire token                                                                                 |
+| 11  | Invalid token               | Invalid/missing token rejected                                        | PASS    | Both invalid token and missing token redirect to /login?error=invalid_token with correct banner                             |
+| 12  | Session invalidation        | ALL sessions invalidated after email change completes                 | PARTIAL | Requires two browser sessions and server console token                                                                      |
+| 13  | Login banners               | Correct banners for email-changed, email_taken, token errors          | PASS    | All 5 banner variations verified: email-changed (green), email_taken, invalid_token, expired_token (red), no params (clean) |
+| 14  | API response shape          | pendingEmail included/excluded correctly in GET and PUT               | PASS    | GET without pending: no pendingEmail. GET with pending: pendingEmail present. PUT duplicate: 409                            |
+| 15  | Member user                 | Email change works for non-admin users                                | PARTIAL | Requires server console for verification token                                                                              |
+| 16  | Mobile                      | Pending badge, OAuth warning, and toasts render correctly on mobile   | PARTIAL | Browser automation cannot resize viewport; badge text wraps cleanly at desktop width                                        |
 
 **Critical paths:** Steps 2, 3, 5, 8, and 12 are highest priority.
+
+**Execution date:** 2026-02-20
+**Executed by:** Chrome browser automation (Claude Code)
+**Environment:** `http://feat-223-email-change-verification.expenses.local:4321`
 
 ## Automated Test Coverage
 

@@ -5,10 +5,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { EmailVerificationService } from './email-verification.service';
 import { db } from '@/db/index';
-import { users, workspaces, emailVerificationTokens } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, workspaces, emailVerificationTokens, userMeta } from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
+import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 
 describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
@@ -17,6 +18,7 @@ describe('EmailVerificationService', () => {
 
   async function cleanupTestData() {
     if (testUserId) {
+      await db.delete(userMeta).where(eq(userMeta.user_id, testUserId));
       await db
         .delete(emailVerificationTokens)
         .where(eq(emailVerificationTokens.user_id, testUserId));
@@ -77,6 +79,105 @@ describe('EmailVerificationService', () => {
       const expiresIn = dbToken[0].expires_at.getTime() - Date.now();
       expect(expiresIn).toBeGreaterThan(23 * 60 * 60 * 1000);
       expect(expiresIn).toBeLessThan(25 * 60 * 60 * 1000);
+    });
+  });
+
+  describe('requestEmailChange', () => {
+    it('should store pending email in user_meta and create verification token', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await service.requestEmailChange(testUserId, 'newemail@example.com');
+
+      const meta = await db.query.userMeta.findFirst({
+        where: and(
+          eq(userMeta.user_id, testUserId),
+          eq(userMeta.meta_key, USER_META_KEYS.PENDING_EMAIL)
+        ),
+      });
+      expect(meta).toBeTruthy();
+      expect(meta?.meta_value).toBe('newemail@example.com');
+
+      const token = await db.query.emailVerificationTokens.findFirst({
+        where: eq(emailVerificationTokens.user_id, testUserId),
+      });
+      expect(token).toBeTruthy();
+    });
+
+    it('should throw if new email is already taken', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      const otherUserId = nanoid();
+      await db.insert(users).values({
+        id: otherUserId,
+        email: 'taken@example.com',
+        password_hash: await hashPassword('TestPassword123!'),
+        name: 'Other User',
+        workspace_id: testWorkspaceId,
+        role: 'member',
+      });
+
+      await expect(service.requestEmailChange(testUserId, 'taken@example.com')).rejects.toThrow(
+        'Email already exists'
+      );
+
+      await db.delete(users).where(eq(users.id, otherUserId));
+    });
+
+    it('should no-op when new email equals current email', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      const user = await db.query.users.findFirst({ where: eq(users.id, testUserId) });
+      await service.requestEmailChange(testUserId, user!.email);
+
+      const meta = await db.query.userMeta.findFirst({
+        where: and(
+          eq(userMeta.user_id, testUserId),
+          eq(userMeta.meta_key, USER_META_KEYS.PENDING_EMAIL)
+        ),
+      });
+      expect(meta).toBeUndefined();
+    });
+
+    it('should overwrite pending change when requesting again', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await service.requestEmailChange(testUserId, 'first@example.com');
+      await service.requestEmailChange(testUserId, 'second@example.com');
+
+      const meta = await db.query.userMeta.findFirst({
+        where: and(
+          eq(userMeta.user_id, testUserId),
+          eq(userMeta.meta_key, USER_META_KEYS.PENDING_EMAIL)
+        ),
+      });
+      expect(meta?.meta_value).toBe('second@example.com');
+
+      const tokens = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.user_id, testUserId));
+      expect(tokens.length).toBe(1);
+    });
+  });
+
+  describe('getPendingEmailChange', () => {
+    it('should return pending email when set', async () => {
+      await db.insert(userMeta).values({
+        meta_id: nanoid(),
+        user_id: testUserId,
+        meta_key: USER_META_KEYS.PENDING_EMAIL,
+        meta_value: 'pending@example.com',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const result = await service.getPendingEmailChange(testUserId);
+      expect(result).toBe('pending@example.com');
+    });
+
+    it('should return null when no pending change', async () => {
+      const result = await service.getPendingEmailChange(testUserId);
+      expect(result).toBeNull();
     });
   });
 
@@ -151,6 +252,91 @@ describe('EmailVerificationService', () => {
         .where(eq(emailVerificationTokens.user_id, testUserId));
 
       expect(remainingTokens.length).toBe(0);
+    });
+  });
+
+  describe('verifyEmail - email change', () => {
+    it('should update user email when pending_email exists', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await db.insert(userMeta).values({
+        meta_id: nanoid(),
+        user_id: testUserId,
+        meta_key: USER_META_KEYS.PENDING_EMAIL,
+        meta_value: 'changed@example.com',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const token = await service.createVerificationToken(testUserId);
+      const result = await service.verifyEmail(token);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.user.email).toBe('changed@example.com');
+        expect(result.emailChanged).toBe(true);
+      }
+
+      const updatedUser = await db.query.users.findFirst({ where: eq(users.id, testUserId) });
+      expect(updatedUser?.email).toBe('changed@example.com');
+
+      const meta = await db.query.userMeta.findFirst({
+        where: and(
+          eq(userMeta.user_id, testUserId),
+          eq(userMeta.meta_key, USER_META_KEYS.PENDING_EMAIL)
+        ),
+      });
+      expect(meta).toBeUndefined();
+
+      const tokens = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.user_id, testUserId));
+      expect(tokens.length).toBe(0);
+    });
+
+    it('should fail gracefully if pending email was claimed by another user', async () => {
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await db.insert(userMeta).values({
+        meta_id: nanoid(),
+        user_id: testUserId,
+        meta_key: USER_META_KEYS.PENDING_EMAIL,
+        meta_value: 'race@example.com',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const token = await service.createVerificationToken(testUserId);
+
+      const otherUserId = nanoid();
+      await db.insert(users).values({
+        id: otherUserId,
+        email: 'race@example.com',
+        password_hash: await hashPassword('TestPassword123!'),
+        name: 'Race User',
+        workspace_id: testWorkspaceId,
+        role: 'member',
+      });
+
+      const result = await service.verifyEmail(token);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect('error' in result && result.error).toBe('EMAIL_ALREADY_EXISTS');
+      }
+
+      await db.delete(users).where(eq(users.id, otherUserId));
+    });
+
+    it('should not set emailChanged for regular signup verification', async () => {
+      const token = await service.createVerificationToken(testUserId);
+      const result = await service.verifyEmail(token);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.emailChanged).toBeUndefined();
+      }
     });
   });
 });

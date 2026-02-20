@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { userService, userMetaService } from '@/services';
+import { db, getActiveSchema } from '@/db';
+import { userService, userMetaService, emailVerificationService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -9,6 +10,8 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { UserServiceError, UserMetaServiceError } from '@/services/service-errors';
+import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 /**
@@ -37,6 +40,7 @@ export const GET: APIRoute = async (context) => {
 
     // Get user settings from meta
     const settings = await userMetaService.getUserSettings(auth.userId);
+    const pendingEmail = await emailVerificationService.getPendingEmailChange(auth.userId);
 
     return successResponse({
       id: user.id,
@@ -44,6 +48,7 @@ export const GET: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       bio: settings.bio,
+      ...(pendingEmail && { pendingEmail }),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -58,7 +63,8 @@ export const GET: APIRoute = async (context) => {
  * PUT /api/user/profile
  *
  * Updates all profile fields in one request:
- * - name, email -> users table
+ * - name -> users table
+ * - email -> verification flow (pending change + token)
  * - phone, bio -> user_meta table
  *
  * @example
@@ -83,9 +89,40 @@ export const PUT: APIRoute = async (context) => {
     }
 
     const { name, email, phone, bio } = validation.data;
+    const currentUser = await userService.getById(auth.userId);
 
-    // Update user table (name, email)
-    const user = await userService.updateProfile(auth.userId, { name, email });
+    if (!currentUser) {
+      return errorResponse('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    let pendingEmail: string | undefined;
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (normalizedEmail !== currentUser.email.toLowerCase()) {
+      await emailVerificationService.requestEmailChange(auth.userId, normalizedEmail);
+      pendingEmail = normalizedEmail;
+    } else {
+      const existingPending = await emailVerificationService.getPendingEmailChange(auth.userId);
+
+      if (existingPending) {
+        const schema = getActiveSchema();
+        await db
+          .delete(schema.userMeta)
+          .where(
+            and(
+              eq(schema.userMeta.user_id, auth.userId),
+              eq(schema.userMeta.meta_key, USER_META_KEYS.PENDING_EMAIL)
+            )
+          );
+
+        await db
+          .delete(schema.emailVerificationTokens)
+          .where(eq(schema.emailVerificationTokens.user_id, auth.userId));
+      }
+    }
+
+    // Update user table (name only; email changes are verification-driven)
+    const user = await userService.updateProfile(auth.userId, { name });
 
     // Update meta values (phone, bio)
     const metaPromises: Promise<void>[] = [];
@@ -108,6 +145,8 @@ export const PUT: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       bio: settings.bio,
+      ...(pendingEmail && { pendingEmail }),
+      ...(pendingEmail && { message: `Verification email sent to ${pendingEmail}` }),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

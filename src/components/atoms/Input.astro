@@ -48,6 +48,10 @@ export interface Props {
    * Test ID for E2E testing
    */
   'data-testid'?: string;
+  /**
+   * Optional current email marker used by profile form change-detection logic.
+   */
+  'data-current-email'?: string;
 }
 
 const {
@@ -70,6 +74,7 @@ const {
   required = false,
   icon = false,
   'data-testid': dataTestId = '',
+  'data-current-email': dataCurrentEmail = '',
 } = Astro.props;
 
 // Check if input has an icon slot
@@ -149,6 +154,7 @@ const selectOptions = type === 'select' ? options : [];
         aria-describedby={ariaDescribeIds || undefined}
         aria-required={required}
         data-testid={dataTestId || undefined}
+        data-current-email={dataCurrentEmail || undefined}
       />
     )
   }

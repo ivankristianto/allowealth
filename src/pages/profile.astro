@@ -8,16 +8,21 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ManageAccountForms from '@/components/organisms/ManageAccountForms.astro';
 import type { User } from '@/lib/auth/lucia';
+import { emailVerificationService } from '@/services';
+import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
 const currentPath = '/profile';
 
 // User is authenticated (enforced by ProtectedLayout)
 const user = Astro.locals.user! as User;
+const pendingEmail = await emailVerificationService.getPendingEmailChange(user.id);
+const oauthAccounts = await getLinkedOAuthAccounts(user.id);
+const hasLinkedOAuth = oauthAccounts.length > 0;
 ---
 
 <ProtectedLayout title="Profile" currentPath={currentPath} subtitle="Manage your account details">
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <ManageAccountForms user={user} />
+    <ManageAccountForms user={user} pendingEmail={pendingEmail} hasLinkedOAuth={hasLinkedOAuth} />
   </div>
 </ProtectedLayout>
 
@@ -32,7 +37,16 @@ const user = Astro.locals.user! as User;
   const profileForm = document.getElementById('profile-form');
   const profileNameInput = document.getElementById('full-name');
   const profileEmailInput = document.getElementById('email');
+  const oauthWarning = document.getElementById('oauth-warning');
   const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
+
+  if (profileEmailInput instanceof HTMLInputElement && oauthWarning instanceof HTMLElement) {
+    profileEmailInput.addEventListener('input', () => {
+      const currentEmail = profileEmailInput.dataset.currentEmail || '';
+      const isChanged = profileEmailInput.value.toLowerCase() !== currentEmail.toLowerCase();
+      oauthWarning.style.display = isChanged ? 'flex' : 'none';
+    });
+  }
 
   if (
     profileForm instanceof HTMLFormElement &&
@@ -82,6 +96,15 @@ const user = Astro.locals.user! as User;
 
         if (!response.ok || !result.success) {
           addToast(result.error?.message || 'Failed to update profile.', 'error');
+          return;
+        }
+
+        if (result.data?.pendingEmail) {
+          addToast(
+            result.data.message || `Verification email sent to ${result.data.pendingEmail}`,
+            'info'
+          );
+          window.location.reload();
           return;
         }
 

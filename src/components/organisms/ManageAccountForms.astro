@@ -11,16 +11,18 @@ import Input from '@/components/atoms/Input.astro';
 import Button from '@/components/atoms/Button.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
-import { User } from '@lucide/astro';
+import { User, Info, TriangleAlert } from '@lucide/astro';
 import type { User as UserType } from '@/lib/auth/lucia';
 import { patterns } from '@/lib/validation/patterns';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 
 export interface Props {
   user: UserType;
+  pendingEmail?: string | null;
+  hasLinkedOAuth?: boolean;
 }
 
-const { user } = Astro.props;
+const { user, pendingEmail = null, hasLinkedOAuth = false } = Astro.props;
 
 // Get user settings from SSR (loaded in ProtectedLayout)
 const userSettings = Astro.locals.userSettings as UserSettings;
@@ -89,8 +91,33 @@ const profileDetails = {
                 pattern={patterns.email.html}
                 title={patterns.email.title}
                 required
+                data-current-email={displayEmail}
                 className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
+              {
+                pendingEmail && (
+                  <div class="mt-2 flex items-center gap-2 text-sm text-info">
+                    <Info size={16} class="shrink-0" />
+                    <span>
+                      Pending verification: <strong>{pendingEmail}</strong>
+                    </span>
+                  </div>
+                )
+              }
+              {
+                hasLinkedOAuth && (
+                  <div
+                    class="mt-2 flex items-center gap-2 text-sm text-warning"
+                    id="oauth-warning"
+                    style="display: none;"
+                  >
+                    <TriangleAlert size={16} class="shrink-0" />
+                    <span>
+                      Changing your email will unlink all connected OAuth accounts (e.g., Google).
+                    </span>
+                  </div>
+                )
+              }
             </div>
 
             <div class="form-control md:col-span-2">
