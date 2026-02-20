@@ -1624,6 +1624,156 @@ async function seedExchangeRates(): Promise<void> {
   console.log('✓ Created 90 exchange rate entries');
 }
 
+/**
+ * Seed transactions created by the member user (Mom's spending pattern)
+ *
+ * Gives the member user a realistic but smaller transaction profile so that
+ * the member dropdown and /reports/members page have multi-user data.
+ */
+async function seedMemberTransactions(
+  workspaceId: string,
+  memberUserId: string,
+  categoryMap: Map<string, string>,
+  accountMap: Map<string, string>
+): Promise<number> {
+  console.log('👩 Seeding member (Mom) transactions...');
+
+  let count = 0;
+  const seedMonths = getSeedMonths();
+  const paymentAccountNames = PAYMENT_ACCOUNTS.map((a) => a.name);
+
+  // Member income templates per month pattern
+  const memberIncomeTemplates = [
+    // Pattern A: current month
+    [
+      { description: 'Mom Salary', amount: 8000000, day: 25 },
+      { description: 'Side Business', amount: 1500000, day: 12 },
+    ],
+    // Pattern B: 1 month ago
+    [
+      { description: 'Mom Salary', amount: 8000000, day: 25 },
+      { description: 'Side Business', amount: 2000000, day: 10 },
+      { description: 'Side Business', amount: 1000000, day: 18 },
+    ],
+    // Pattern C: 2 months ago
+    [
+      { description: 'Mom Salary', amount: 7500000, day: 25 },
+      { description: 'Side Business', amount: 1800000, day: 8 },
+    ],
+  ];
+
+  // Member expense templates (subset of family expenses)
+  const memberExpenseTemplates: Array<{
+    description: string;
+    category: string;
+    amount: number | [number, number];
+  }> = [
+    { description: 'Supermarket', category: 'Food & Groceries', amount: [200000, 600000] },
+    { description: 'Minimarket', category: 'Food & Groceries', amount: [100000, 350000] },
+    { description: 'Bakery', category: 'Food & Groceries', amount: [80000, 250000] },
+    { description: 'Fruit Market', category: 'Food & Groceries', amount: [100000, 300000] },
+    { description: 'Cafe Lunch', category: 'Dine Out', amount: [80000, 200000] },
+    { description: 'Family Dinner', category: 'Dine Out', amount: [150000, 400000] },
+    { description: 'Coffee Shop', category: 'Dine Out', amount: [50000, 120000] },
+    { description: 'Kids School Supplies', category: 'Kids Expenses', amount: [100000, 500000] },
+    { description: 'Kids Activities', category: 'Kids Expenses', amount: [200000, 600000] },
+    { description: 'Indoor Playground', category: 'Kids Expenses', amount: [150000, 400000] },
+    { description: 'Personal Care', category: 'Pocket Money', amount: [100000, 300000] },
+    { description: 'Clothing', category: 'Pocket Money', amount: [150000, 500000] },
+    { description: 'Online Shopping', category: 'Misc. Cost', amount: [100000, 400000] },
+    { description: 'Household Items', category: 'House Expenses', amount: [100000, 350000] },
+    { description: 'Movie Tickets', category: 'Entertainment', amount: [100000, 200000] },
+    { description: 'Ride-hailing', category: 'Transportation', amount: [30000, 100000] },
+  ];
+
+  for (let i = 0; i < seedMonths.length; i++) {
+    const { year, month } = seedMonths[i];
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const templateIndex = seedMonths.length - 1 - i;
+
+    // Seed member income
+    const incomeTemplate = memberIncomeTemplates[templateIndex] || memberIncomeTemplates[0];
+    for (const income of incomeTemplate) {
+      const categoryId = categoryMap.get(income.description);
+      if (!categoryId) continue;
+
+      const day = Math.min(income.day, daysInMonth);
+      const transactionDate = specificDate(year, month, day);
+      if (!transactionDate) continue;
+
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+
+      const accountName =
+        paymentAccountNames[Math.floor(Math.random() * paymentAccountNames.length)];
+      const accountId = accountMap.get(accountName || 'Transfer')!;
+
+      await db.insert(transactions).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: memberUserId,
+        category_id: categoryId,
+        account_id: accountId,
+        type: 'income',
+        amount: amt(income.amount),
+        currency: 'IDR',
+        description: income.description,
+        transaction_date: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+      count++;
+    }
+
+    // Seed member expenses
+    for (const expense of memberExpenseTemplates) {
+      const categoryId = categoryMap.get(expense.category);
+      if (!categoryId) continue;
+
+      let amount: number;
+      if (Array.isArray(expense.amount)) {
+        amount = expense.amount[0] + Math.random() * (expense.amount[1] - expense.amount[0]);
+      } else {
+        amount = expense.amount;
+      }
+
+      const day = 1 + Math.floor(Math.random() * daysInMonth);
+      const transactionDate = specificDate(year, month, day);
+      if (!transactionDate) continue;
+
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
+
+      let accountName = paymentAccountNames[Math.floor(Math.random() * paymentAccountNames.length)];
+      if (amount > 300000) {
+        accountName = Math.random() > 0.5 ? 'Transfer' : 'Mandiri Credit Card';
+      }
+
+      const accountId = accountMap.get(accountName || 'Cash');
+      if (!accountId) continue;
+
+      await db.insert(transactions).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: memberUserId,
+        category_id: categoryId,
+        account_id: accountId,
+        type: 'expense',
+        amount: amt(Math.round(amount)),
+        currency: 'IDR',
+        description: expense.description,
+        transaction_date: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+      count++;
+    }
+  }
+
+  console.log(`✓ Created ${count} member transactions`);
+  return count;
+}
+
 // ============================================================================
 // BACKFILL FUNCTIONS
 // ============================================================================
@@ -1856,10 +2006,13 @@ async function seed() {
     // Seed accounts FIRST (transactions now depend on accounts)
     const accountMap = await seedAccounts(workspaceId, userId, accountCategoryMap);
 
-    // Seed transactions for the 3 months
+    // Seed transactions for the 3 months (admin user = Dad)
     await seedIncomeTransactions(workspaceId, userId, categoryMap, accountMap);
     await seedExpenseTransactions(workspaceId, userId, categoryMap, accountMap);
     await seedTransferTransactions(workspaceId, userId, accountMap);
+
+    // Seed member transactions (member user = Mom)
+    await seedMemberTransactions(workspaceId, memberUserId, categoryMap, accountMap);
 
     // Seed audit trail for some transactions
     await seedTransactionAuditLogs(workspaceId, userId, memberUserId);

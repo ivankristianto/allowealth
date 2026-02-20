@@ -141,10 +141,10 @@ const overviewUrl = `/reports/members?range=${range}&period=${defaultPeriod}&cur
   <div
     class="max-w-5xl mx-auto px-4 py-6 space-y-6"
     data-reports-members-page
-    data-range={range}
-    data-period={defaultPeriod}
-    data-currency={currency}
-    data-user-id={urlUserId}
+    data-current-range={range}
+    data-current-period={defaultPeriod}
+    data-current-currency={currency}
+    data-current-user-id={urlUserId}
   >
     {
       urlUserId && userReportForPartials ? (
@@ -308,10 +308,10 @@ const overviewUrl = `/reports/members?range=${range}&period=${defaultPeriod}&cur
   const container = document.querySelector('[data-reports-members-page]') as HTMLElement | null;
 
   if (container) {
-    let currentRange = (container.dataset.range as 'monthly' | 'yearly') || 'monthly';
-    let currentPeriod = container.dataset.period || '';
-    const currency = container.dataset.currency || 'IDR';
-    const userId = container.dataset.userId || '';
+    let currentRange = (container.dataset.currentRange as 'monthly' | 'yearly') || 'monthly';
+    let currentPeriod = container.dataset.currentPeriod || '';
+    const currency = container.dataset.currentCurrency || 'IDR';
+    const userId = container.dataset.currentUserId || '';
 
     const navigate = () => {
       const nextUrl = new URL(window.location.href);
