@@ -199,7 +199,7 @@ const categoryOptions = categories.length
         {/* Owner transfer (admin only, edit mode) */}
         {
           isAdmin && members.length > 1 && (
-            <div class="form-control w-full" data-account-owner-field style="display: none;">
+            <div class="form-control w-full hidden" data-account-owner-field>
               <label class="label" for={`${id}-owner`}>
                 <span class="label-text font-medium">Owner</span>
               </label>
@@ -368,7 +368,7 @@ const categoryOptions = categories.length
         }
 
         if (ownerField) {
-          ownerField.style.display = data.id ? '' : 'none';
+          ownerField.classList.toggle('hidden', !data.id);
         }
         if (ownerSelect && data.ownerId) {
           ownerSelect.value = data.ownerId;
@@ -401,7 +401,7 @@ const categoryOptions = categories.length
         }
 
         if (ownerField) {
-          ownerField.style.display = 'none';
+          ownerField.classList.add('hidden');
         }
       };
 
