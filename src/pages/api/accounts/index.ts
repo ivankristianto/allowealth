@@ -63,6 +63,13 @@ export const GET: APIRoute = async (context) => {
       filters.currency = currency;
     }
     if (owner) {
+      if (owner !== auth.userId && auth.role !== 'admin') {
+        return errorResponse(
+          'Only admins can filter accounts by another owner',
+          403,
+          'INSUFFICIENT_PERMISSIONS'
+        );
+      }
       filters.owner_user_id = owner;
     }
 

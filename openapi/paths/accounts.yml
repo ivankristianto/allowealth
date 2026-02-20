@@ -27,7 +27,9 @@ paths:
             enum: [IDR, USD]
         - name: owner
           in: query
-          description: Filter by owner user ID
+          description: |
+            Filter by owner user ID.
+            Non-admin users may only use their own user ID.
           schema:
             type: string
       responses:
@@ -41,6 +43,12 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Insufficient permissions for requested owner filter
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     post:

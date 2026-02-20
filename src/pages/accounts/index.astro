@@ -148,8 +148,7 @@ const defaultCategoryId =
   categories[0]?.id ||
   '';
 // Fetch accounts - use snapshot for historical views, current data for present
-type AccountView = AccountOutput & { created_by_user_id: string };
-let accounts: AccountView[];
+let accounts: AccountOutput[];
 
 if (!isViewingCurrentMonth) {
   // Historical view: get snapshot for the selected month

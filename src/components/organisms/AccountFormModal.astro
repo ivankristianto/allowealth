@@ -544,7 +544,7 @@ const categoryOptions = categories.length
               throw new Error(
                 transferErrorData.error?.message ||
                   transferErrorData.message ||
-                  'Failed to transfer account ownership'
+                  'Account updated, but ownership transfer failed'
               );
             }
           }

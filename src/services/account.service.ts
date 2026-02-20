@@ -929,6 +929,21 @@ export class AccountService {
       throw new AccountServiceError(ServiceErrorCode.ACCOUNT_NOT_FOUND, 'Account not found', 404);
     }
 
+    const owner = await this.db.query.users.findFirst({
+      where: and(
+        eq(this.schema.users.id, newOwnerId),
+        eq(this.schema.users.workspace_id, workspaceId),
+        sql`${this.schema.users.deleted_at} IS NULL`
+      ),
+    });
+    if (!owner) {
+      throw new AccountServiceError(
+        ServiceErrorCode.USER_NOT_FOUND,
+        'Owner user not found in workspace',
+        404
+      );
+    }
+
     await this.db
       .update(this.schema.accounts)
       .set({

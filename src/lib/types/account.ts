@@ -96,6 +96,7 @@ export interface Account {
  */
 export interface AccountOutput {
   id: string;
+  created_by_user_id?: string;
   name: string;
   type: AccountType;
   account_class: AccountClass;

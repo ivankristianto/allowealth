@@ -26,6 +26,7 @@ describe('AccountService.transferOwnership()', () => {
     });
 
     (mockDb.query.accounts.findFirst as any).mockResolvedValue(account);
+    (mockDb.query.users.findFirst as any).mockResolvedValue({ id: 'user-2' });
 
     const where = mock(() => Promise.resolve());
     const set = mock(() => ({ where }));
@@ -59,6 +60,7 @@ describe('AccountService.transferOwnership()', () => {
     });
 
     (mockDb.query.accounts.findFirst as any).mockResolvedValue(account);
+    (mockDb.query.users.findFirst as any).mockResolvedValue({ id: 'user-2' });
     (mockDb.update as any).mockReturnValue({
       set: mock(() => ({ where: mock(() => Promise.resolve()) })),
     });
@@ -67,5 +69,26 @@ describe('AccountService.transferOwnership()', () => {
     await accountService.transferOwnership('account-1', 'user-2', 'ws-1');
 
     expect(cache.invalidateByTags).toHaveBeenCalled();
+  });
+
+  it('should throw USER_NOT_FOUND when new owner is not in workspace', async () => {
+    const account = createMockAccount({
+      id: 'account-1',
+      workspace_id: 'ws-1',
+      created_by_user_id: 'user-1',
+    });
+
+    (mockDb.query.accounts.findFirst as any).mockResolvedValue(account);
+    (mockDb.query.users.findFirst as any).mockResolvedValue(null);
+
+    let caughtError: any;
+    try {
+      await accountService.transferOwnership('account-1', 'user-2', 'ws-1');
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError?.code).toBe(ServiceErrorCode.USER_NOT_FOUND);
+    expect(mockDb.update).not.toHaveBeenCalled();
   });
 });
