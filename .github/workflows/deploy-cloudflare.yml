@@ -37,6 +37,49 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Generate wrangler.toml
+        run: |
+          cat > wrangler.toml << WRANGLER_EOF
+          name = "allowealth"
+          main = "dist/_worker.js/index.js"
+          compatibility_date = "2026-02-01"
+          compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
+
+          [assets]
+          directory = "./dist"
+          binding = "ASSETS"
+
+          [vars]
+          NODE_ENV = "production"
+          PUBLIC_URL = "${PUBLIC_URL:-https://allowealth.workers.dev}"
+          SIGNUP_MODE = "invite_only"
+          CACHE_DRIVER = "upstash"
+          PERF_DEBUG = "true"
+          LOG_LEVEL = "warn"
+          EMAIL_MODE = "real"
+          EMAIL_PROVIDER = "resend"
+          EMAIL_SENDER_NAME = "Allowealth"
+          EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
+
+          [[d1_databases]]
+          binding = "DB"
+          database_name = "allowealth-db"
+          database_id = "${D1_DATABASE_ID}"
+
+          [observability]
+          enabled = true
+          head_sampling_rate = 1
+          WRANGLER_EOF
+
+          # Add custom domain route if configured
+          if [ -n "${CUSTOM_DOMAIN}" ]; then
+            sed -i "/^compatibility_flags/a routes = [{ pattern = \"${CUSTOM_DOMAIN}\", custom_domain = true }]" wrangler.toml
+          fi
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+
       - name: Get deployment metadata
         id: metadata
         run: |
