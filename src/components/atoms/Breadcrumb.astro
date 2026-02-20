@@ -1,0 +1,37 @@
+---
+/**
+ * Breadcrumb Component (Atom)
+ *
+ * Reusable breadcrumb navigation using DaisyUI's `breadcrumbs` class.
+ * Last item renders as plain text (current page), all others as links.
+ *
+ * @example
+ * <Breadcrumb items={[
+ *   { label: "Reports", href: "/reports" },
+ *   { label: "Member Spending" }
+ * ]} />
+ */
+
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+export interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb">
+  <div class="breadcrumbs text-sm">
+    <ul>
+      {
+        items.map((item) => (
+          <li>{item.href ? <a href={item.href}>{item.label}</a> : <span>{item.label}</span>}</li>
+        ))
+      }
+    </ul>
+  </div>
+</nav>
