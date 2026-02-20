@@ -477,6 +477,35 @@ const totalNet = totals.income - totals.expenses;
         if (href) window.location.href = href;
       });
     });
+
+    // Category drill-down — handle [data-view-details] clicks via event delegation
+    document.addEventListener('click', (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const btn = target.closest('[data-view-details]') as HTMLElement;
+      if (!btn) return;
+
+      const categoryId = btn.getAttribute('data-category-id');
+      const categoryName = btn.getAttribute('data-category-name');
+      const categoryIcon = btn.getAttribute('data-category-icon');
+      const categoryColor = btn.getAttribute('data-category-color');
+      const spent = parseFloat(btn.getAttribute('data-spent') || '0');
+      const budgetLimitAttr = btn.getAttribute('data-budget-limit');
+
+      if (categoryId && categoryName) {
+        const customEvent = new CustomEvent('open-category-drilldown', {
+          detail: {
+            categoryId,
+            categoryName,
+            categoryIcon,
+            categoryColor,
+            spent,
+            budgetLimit: budgetLimitAttr ? parseFloat(budgetLimitAttr) : null,
+            period: currentPeriod,
+          },
+        });
+        document.dispatchEvent(customEvent);
+      }
+    });
   }
 
   initMembersPage();
