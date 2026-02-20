@@ -229,7 +229,7 @@ export class DashboardService {
           // Budget health (requires budgets + spending per category)
           this.getBudgetHealthOptimized(workspaceId, currentMonth, currentYear, currency, perf),
           // Recent transactions
-          this.getRecentTransactionsOptimized(workspaceId, 10, perf),
+          this.getRecentTransactionsOptimized(workspaceId, currency, 10, perf),
         ]);
 
       const result: DashboardData = {
@@ -611,6 +611,7 @@ export class DashboardService {
    */
   private async getRecentTransactionsOptimized(
     workspaceId: string,
+    currency: Currency,
     limit: number,
     perf?: PerfCollector
   ): Promise<DashboardData['recentTransactions']> {
@@ -633,6 +634,7 @@ export class DashboardService {
           this.db.query.transactions.findMany({
             where: and(
               eq(this.schema.transactions.workspace_id, workspaceId),
+              eq(this.schema.transactions.currency, currency),
               sql`${this.schema.transactions.deleted_at} IS NULL`
             ),
             with: {

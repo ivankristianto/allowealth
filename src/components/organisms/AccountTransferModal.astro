@@ -97,6 +97,9 @@ const { id, accounts = [] } = Astro.props;
               ))
             }
           </select>
+          <p class="text-xs text-base-content/50 mt-1 ml-1" data-currency-rule>
+            Both accounts must use the same currency.
+          </p>
         </FormField>
 
         {/* Amount */}
@@ -179,10 +182,20 @@ const { id, accounts = [] } = Astro.props;
         const toSelect = container.querySelector<HTMLSelectElement>('[data-to-select]');
         const amountInput = container.querySelector<HTMLInputElement>('[data-amount-input]');
         const balanceHint = container.querySelector<HTMLElement>('[data-balance-hint]');
+        const currencyRule = container.querySelector<HTMLElement>('[data-currency-rule]');
         const errorEl = container.querySelector<HTMLElement>('[data-form-error]');
         const submitBtn = container.querySelector<HTMLButtonElement>('[data-submit-transfer]');
 
         if (!modal || !form || !fromSelect || !toSelect || !amountInput || !submitBtn) return;
+
+        const toOptionTemplates = Array.from(toSelect.options)
+          .filter((opt) => opt.value)
+          .map((opt) => ({
+            value: opt.value,
+            label: opt.textContent || '',
+            currency: opt.dataset.currency || '',
+            balance: opt.dataset.balance || '',
+          }));
 
         let selectedCurrency: Currency = 'IDR';
         const amountFormatter = attachAmountFormatter(amountInput, selectedCurrency);
@@ -194,7 +207,47 @@ const { id, accounts = [] } = Astro.props;
           const toCurrency = toOpt?.dataset.currency || '';
           const hasSelection = !!fromSelect.value && !!toSelect.value;
           const sameCurrency = fromCurrency.length > 0 && fromCurrency === toCurrency;
-          submitBtn.disabled = !hasSelection || !sameCurrency;
+          submitBtn.disabled = toSelect.disabled || !hasSelection || !sameCurrency;
+        }
+
+        function rebuildToOptions(fromCurrency: string, fromId: string) {
+          const previousToValue = toSelect.value;
+          toSelect.value = '';
+
+          while (toSelect.options.length > 1) {
+            toSelect.remove(1);
+          }
+
+          if (!fromCurrency) {
+            toSelect.disabled = true;
+            if (currencyRule) {
+              currencyRule.textContent = 'Select source account first.';
+            }
+            return;
+          }
+
+          let allowedCount = 0;
+          for (const optionData of toOptionTemplates) {
+            if (optionData.currency !== fromCurrency || optionData.value === fromId) continue;
+            const option = document.createElement('option');
+            option.value = optionData.value;
+            option.textContent = optionData.label;
+            option.dataset.currency = optionData.currency;
+            option.dataset.balance = optionData.balance;
+            if (optionData.value === previousToValue) {
+              option.selected = true;
+            }
+            toSelect.append(option);
+            allowedCount++;
+          }
+
+          toSelect.disabled = allowedCount === 0;
+          if (currencyRule) {
+            currencyRule.textContent =
+              allowedCount > 0
+                ? `Both accounts must use the same currency. Showing ${fromCurrency} destinations only.`
+                : `No other ${fromCurrency} account is available for transfer.`;
+          }
         }
 
         // Filter "To" options based on "From" selection (same currency, different account)
@@ -207,19 +260,14 @@ const { id, accounts = [] } = Astro.props;
           selectedCurrency = isValidCurrency(fromCurrency) ? fromCurrency : 'IDR';
           amountFormatter.updateCurrency(selectedCurrency);
 
-          Array.from(toSelect.options).forEach((opt) => {
-            if (!opt.value) return; // skip placeholder
-            const optCurrency = opt.dataset.currency || '';
-            opt.hidden = optCurrency !== fromCurrency || opt.value === fromId;
-            if (opt.hidden && opt.selected) {
-              toSelect.value = '';
-            }
-          });
+          rebuildToOptions(fromCurrency, fromId);
 
           // Show balance hint
           if (balanceHint && selectedFrom?.dataset.balance) {
             const bal = parseFloat(selectedFrom.dataset.balance);
             balanceHint.textContent = `Available: ${bal.toLocaleString()} ${fromCurrency}`;
+          } else if (balanceHint) {
+            balanceHint.textContent = '';
           }
 
           updateTransferValidity();
@@ -235,7 +283,7 @@ const { id, accounts = [] } = Astro.props;
           form.reset();
           errorEl?.classList.add('hidden');
           if (balanceHint) balanceHint.textContent = '';
-          updateTransferValidity();
+          updateToOptions();
           modal.close();
         });
 

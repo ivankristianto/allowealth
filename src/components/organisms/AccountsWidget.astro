@@ -43,16 +43,27 @@ const sortByWorkspacePreference = (
   return a.currency.localeCompare(b.currency);
 };
 
-const visibleAccountTotals = accountTotals
-  .filter((row) => row.amount > 0)
-  .sort(sortByWorkspacePreference);
-const visibleDebtTotals = debtTotals
-  .filter((row) => row.amount > 0)
-  .sort(sortByWorkspacePreference);
+const normalizeTotals = (
+  totals: Array<{ currency: Currency; amount: number }>
+): Array<{ currency: Currency; amount: number }> => {
+  const preferred = orderedCurrencies.map((currency) => ({
+    currency,
+    amount: totals.find((row) => row.currency === currency)?.amount ?? 0,
+  }));
+  const extras = totals
+    .filter((row) => !orderedCurrencies.includes(row.currency))
+    .sort(sortByWorkspacePreference);
+  return [...preferred, ...extras];
+};
 
-const isEmpty = visibleAccountTotals.length === 0 && visibleDebtTotals.length === 0;
-const hasDebt = visibleDebtTotals.length > 0;
-const hasNoAccounts = visibleAccountTotals.length === 0;
+const normalizedAccountTotals = normalizeTotals(accountTotals);
+const normalizedDebtTotals = normalizeTotals(debtTotals);
+const hasAccountValue = normalizedAccountTotals.some((row) => row.amount > 0);
+const hasDebtValue = normalizedDebtTotals.some((row) => row.amount > 0);
+
+const isEmpty = !hasAccountValue && !hasDebtValue;
+const hasDebt = hasDebtValue;
+const hasNoAccounts = !hasAccountValue;
 
 const badge =
   'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
@@ -128,7 +139,7 @@ const cardClasses = [
       </div>
       <div class="space-y-2">
         {
-          visibleAccountTotals.map((row, index) => (
+          normalizedAccountTotals.map((row, index) => (
             <div class="flex items-center gap-2.5">
               <span
                 class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
@@ -157,7 +168,7 @@ const cardClasses = [
             </StatLabel>
           </div>
           <div class="space-y-2">
-            {visibleDebtTotals.map((row, index) => (
+            {normalizedDebtTotals.map((row, index) => (
               <div class="flex items-center gap-2.5">
                 <span
                   class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}

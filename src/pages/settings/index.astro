@@ -735,13 +735,17 @@ const dataActions = [
 
     try {
       const formData = new FormData(settingsForm!);
+      const canEditCurrencySettings =
+        !primaryCurrencySelect?.disabled && !secondaryCurrencySelect?.disabled;
 
       const payload: Record<string, unknown> = {
-        currency: primaryCurrencySelect?.value ?? formData.get('currency'),
-        secondaryCurrency: secondaryCurrencySelect?.value ?? '',
         weekStart: formData.get('weekStart'),
         compactNumbers: formData.get('compactNumbers') === 'on',
       };
+      if (canEditCurrencySettings) {
+        payload.currency = primaryCurrencySelect?.value ?? formData.get('currency');
+        payload.secondaryCurrency = secondaryCurrencySelect?.value ?? '';
+      }
 
       // Include workspace name only if admin
       if (isAdmin) {

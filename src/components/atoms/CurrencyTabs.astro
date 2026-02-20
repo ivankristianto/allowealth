@@ -12,12 +12,18 @@ const showTabs = tabs.length > 1;
 
 {
   showTabs && (
-    <div class="tabs tabs-boxed tabs-sm bg-base-200 w-fit">
+    <div class="tabs tabs-boxed tabs-sm bg-base-200 w-fit p-1 rounded-xl" role="tablist">
       {tabs.map((tab) => (
         <a
           href={tab.href}
-          class:list={['tab', selected === tab.currency && 'tab-active']}
+          class:list={[
+            'tab font-semibold transition-colors',
+            selected === tab.currency
+              ? 'tab-active !bg-accent !text-accent-content shadow-sm'
+              : 'text-base-content/70 hover:text-base-content',
+          ]}
           data-currency-tab={tab.currency}
+          aria-current={selected === tab.currency ? 'page' : undefined}
         >
           {getCurrencyMeta(tab.currency).flagEmoji} {tab.currency}
         </a>
