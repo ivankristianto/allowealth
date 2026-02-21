@@ -16,7 +16,9 @@ import { Menu, Plus } from '@lucide/astro';
 // import NotificationDropdown from '../molecules/NotificationDropdown.astro';
 import ThemeToggle from '../atoms/ThemeToggle.astro';
 import Button from '../atoms/Button.astro';
+import CurrencySwitcher from '../atoms/CurrencySwitcher.astro';
 import type { User } from '@/lib/auth/lucia';
+import type { Currency } from '@/lib/constants/currency';
 
 interface Props {
   /** Page title displayed in header (required) */
@@ -29,9 +31,20 @@ interface Props {
   user?: User | null;
   /** Current URL path (passed through from layout) */
   currentPath?: string;
+  /** Workspace primary currency */
+  primaryCurrency?: Currency;
+  /** Workspace secondary currency */
+  secondaryCurrency?: Currency | null;
 }
 
-const { title, subtitle, showMenuToggle = true, user } = Astro.props;
+const {
+  title,
+  subtitle,
+  showMenuToggle = true,
+  user,
+  primaryCurrency,
+  secondaryCurrency,
+} = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 ---
 
@@ -80,6 +93,16 @@ const hasHeaderSlot = Astro.slots.has('header');
           <div class="hidden lg:block" data-header-slot-desktop>
             <slot name="header" />
           </div>
+        )
+      }
+
+      {/* Currency Switcher */}
+      {
+        primaryCurrency && (
+          <CurrencySwitcher
+            primaryCurrency={primaryCurrency}
+            secondaryCurrency={secondaryCurrency ?? null}
+          />
         )
       }
 

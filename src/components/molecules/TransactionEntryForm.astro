@@ -20,7 +20,12 @@
 import Button from '../atoms/Button.astro';
 import AmountInput from '../atoms/AmountInput.astro';
 import { CalendarDays } from '@lucide/astro';
-import { CURRENCY_META, DEFAULT_CURRENCY, isValidCurrency } from '@/lib/constants/currency';
+import {
+  CURRENCY_META,
+  DEFAULT_CURRENCY,
+  isValidCurrency,
+  type Currency,
+} from '@/lib/constants/currency';
 
 export interface Props {
   type: 'expense' | 'income';
@@ -48,6 +53,7 @@ export interface Props {
   modalId?: string;
   bulk?: boolean;
   formId?: string;
+  activeCurrency?: Currency;
 }
 
 const {
@@ -63,6 +69,7 @@ const {
   modalId = '',
   bulk = false,
   formId: propFormId,
+  activeCurrency,
 } = Astro.props;
 
 const isEditMode = mode === 'edit';
@@ -70,10 +77,19 @@ const isEditMode = mode === 'edit';
 // Filter accounts based on transaction type:
 // - Expense: liquid + credit_card (you can spend from these)
 // - Income: liquid only (income goes to liquid accounts)
-const filteredAccounts =
+const classFiltered =
   type === 'income'
     ? accounts.filter((a) => a.account_class === 'liquid')
     : accounts.filter((a) => a.account_class === 'liquid' || a.type === 'credit_card');
+
+// Sort: active currency accounts first so the default selection matches the header switcher
+const filteredAccounts = activeCurrency
+  ? [...classFiltered].sort((a, b) => {
+      const aMatch = a.currency === activeCurrency ? 0 : 1;
+      const bMatch = b.currency === activeCurrency ? 0 : 1;
+      return aMatch - bMatch;
+    })
+  : classFiltered;
 
 const today = new Date().toISOString().split('T')[0];
 const yesterdayDate = new Date();
@@ -425,9 +441,9 @@ const defaultDatePick =
           aria-required="true"
           data-testid="transaction-account-select"
         >
-          <option value="">Select account...</option>
+          {!selectedAccountId && <option value="">Select account...</option>}
           {filteredAccounts.map((account) => (
-            <option value={account.id} selected={account.id === (values.account_id || '')}>
+            <option value={account.id} selected={account.id === selectedAccountId}>
               {account.name}
             </option>
           ))}

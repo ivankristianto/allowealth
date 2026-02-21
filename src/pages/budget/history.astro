@@ -12,7 +12,6 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTablePartial.astro';
 import YearToggle from '@/components/molecules/YearToggle.astro';
-import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
 import { budgetService, workspaceMetaService, type MonthlyBudgetHistory } from '@/services';
 import { isValidCurrency } from '@/lib/constants/currency';
 import { CircleX, Download, History as HistoryIcon } from '@lucide/astro';
@@ -23,7 +22,6 @@ const currentPath = '/budget/history';
 // Get query parameters
 const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
-const currencyParam = url.searchParams.get('currency');
 
 // Current date info
 const now = new Date();
@@ -38,9 +36,12 @@ const workspaceCurrencies = [
   workspaceCurrencyConfig.primary,
   ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
 ];
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
 const selectedCurrency =
-  currencyParam && isValidCurrency(currencyParam) && workspaceCurrencies.includes(currencyParam)
-    ? currencyParam
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
     : workspaceCurrencyConfig.primary;
 
 // Get budget history from service (24 months to cover 2 years)
@@ -76,13 +77,6 @@ const ssrData = {
   availableYears,
   currency: selectedCurrency,
 };
-
-const currencyTabs = workspaceCurrencies.map((currencyCode) => {
-  const params = new URLSearchParams(url.searchParams);
-  params.set('currency', currencyCode);
-  params.set('year', selectedYear.toString());
-  return { currency: currencyCode, href: `/budget/history?${params.toString()}` };
-});
 ---
 
 <ProtectedLayout
@@ -95,8 +89,6 @@ const currencyTabs = workspaceCurrencies.map((currencyCode) => {
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
     data-ssr-data={JSON.stringify(ssrData)}
   >
-    <CurrencyTabs tabs={currencyTabs} selected={selectedCurrency} />
-
     {/* Header Section */}
     <div class="flex flex-col @2xl:flex-row justify-between items-start @2xl:items-center gap-6">
       <div>

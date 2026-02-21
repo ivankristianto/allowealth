@@ -73,13 +73,22 @@ function syncHeaderSubtitle(): void {
 }
 
 /**
+ * Read active currency from cookie
+ */
+function getActiveCurrencyFromCookie(): Currency | null {
+  const match = document.cookie.match(/(?:^|;\s*)activeCurrency=([^;]*)/);
+  const value = match?.[1];
+  return value && isValidCurrency(value) ? value : null;
+}
+
+/**
  * Update URL query params without page reload
  */
-function updateUrl(range: 'monthly' | 'yearly', period: string, currency: Currency): void {
+function updateUrl(range: 'monthly' | 'yearly', period: string): void {
   const url = new URL(window.location.href);
   url.searchParams.set('range', range);
   url.searchParams.set('period', period);
-  url.searchParams.set('currency', currency);
+  url.searchParams.delete('currency');
   window.history.replaceState({}, '', url.toString());
 }
 
@@ -90,7 +99,6 @@ function readStateFromUrl(): Partial<ReportState> {
   const url = new URL(window.location.href);
   const range = url.searchParams.get('range');
   const period = url.searchParams.get('period');
-  const currency = url.searchParams.get('currency');
 
   const state: Partial<ReportState> = {};
 
@@ -100,10 +108,6 @@ function readStateFromUrl(): Partial<ReportState> {
 
   if (period) {
     state.period = period;
-  }
-
-  if (currency && isValidCurrency(currency)) {
-    state.currency = currency;
   }
 
   return state;
@@ -240,7 +244,7 @@ function handleRangeChange(event: CustomEvent<{ range: 'monthly' | 'yearly' }>):
   }
 
   // Update URL with new state
-  updateUrl(currentState.range, currentState.period, currentState.currency);
+  updateUrl(currentState.range, currentState.period);
   syncHeaderSubtitle();
 
   // Fetch and render selector first, then data
@@ -256,7 +260,7 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
   currentState.period = event.detail.period;
 
   // Update URL with new state
-  updateUrl(currentState.range, currentState.period, currentState.currency);
+  updateUrl(currentState.range, currentState.period);
   syncHeaderSubtitle();
 
   // Fetch and render new data
@@ -343,7 +347,11 @@ export function initReportsPage(): void {
     }
   }
 
-  if (!urlState.currency) {
+  // Read currency from cookie (header-level switcher manages this)
+  const cookieCurrency = getActiveCurrencyFromCookie();
+  if (cookieCurrency) {
+    currentState.currency = cookieCurrency;
+  } else {
     const containerCurrency = document
       .querySelector('[data-current-currency]')
       ?.getAttribute('data-current-currency');

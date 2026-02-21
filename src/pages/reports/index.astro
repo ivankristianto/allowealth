@@ -36,7 +36,6 @@ import type { ReportData, MemberSummaryRow } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
-import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
 import { workspaceMetaService } from '@/services';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
@@ -52,16 +51,17 @@ if (!user?.id) {
 const url = Astro.url;
 const urlRange = url.searchParams.get('range');
 const urlPeriod = url.searchParams.get('period');
-const urlCurrency = url.searchParams.get('currency');
-
 const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
 const workspaceCurrencies = [
   workspaceCurrencyConfig.primary,
   ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
 ];
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
 const selectedCurrency =
-  urlCurrency && isValidCurrency(urlCurrency) && workspaceCurrencies.includes(urlCurrency)
-    ? urlCurrency
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
     : workspaceCurrencyConfig.primary;
 
 // Default view configuration
@@ -228,12 +228,6 @@ const selectedPeriodLabel =
   defaultRange === 'monthly'
     ? monthlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod
     : yearlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod;
-
-const currencyTabs = workspaceCurrencies.map((currencyCode) => {
-  const params = new URLSearchParams(url.searchParams);
-  params.set('currency', currencyCode);
-  return { currency: currencyCode, href: `/reports?${params.toString()}` };
-});
 ---
 
 <ProtectedLayout title="Reports" currentPath={currentPath} subtitle={selectedPeriodLabel}>
@@ -250,8 +244,6 @@ const currencyTabs = workspaceCurrencies.map((currencyCode) => {
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
     data-current-currency={currency}
   >
-    <CurrencyTabs tabs={currencyTabs} selected={selectedCurrency} />
-
     <Breadcrumb
       items={[{ label: 'Overview' }, { label: 'Member Spending', href: '/reports/members' }]}
     />

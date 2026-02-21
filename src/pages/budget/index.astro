@@ -36,7 +36,6 @@ import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
 import { getMonthName } from '@/lib/utils/date';
 import { buildBudgetPeriodOptions } from '@/lib/utils/budget-period';
 import { CircleX } from '@lucide/astro';
-import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
 import { isValidCurrency } from '@/lib/constants/currency';
 
 const user = Astro.locals.user;
@@ -52,7 +51,6 @@ if (!user) {
 const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
-const currencyParam = url.searchParams.get('currency');
 
 // Parse and validate year/month parameters with strict numeric validation
 const now = new Date();
@@ -79,9 +77,12 @@ const workspaceCurrencies = [
   ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
 ];
 
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
 const selectedCurrency =
-  currencyParam && isValidCurrency(currencyParam) && workspaceCurrencies.includes(currencyParam)
-    ? currencyParam
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
     : workspaceCurrencyConfig.primary;
 
 // Canonicalize URL if invalid params were provided
@@ -92,17 +93,8 @@ if (hasInvalidParams) {
   const canonicalUrl = new URL(Astro.request.url);
   canonicalUrl.searchParams.set('year', selectedYear.toString());
   canonicalUrl.searchParams.set('month', selectedMonth.toString());
-  canonicalUrl.searchParams.set('currency', selectedCurrency);
   return Astro.redirect(canonicalUrl.pathname + '?' + canonicalUrl.searchParams.toString());
 }
-
-const currencyTabs = workspaceCurrencies.map((currencyCode) => {
-  const params = new URLSearchParams(url.searchParams);
-  params.set('currency', currencyCode);
-  params.set('year', selectedYear.toString());
-  params.set('month', selectedMonth.toString());
-  return { currency: currencyCode, href: `/budget?${params.toString()}` };
-});
 
 // Get budget data from service
 let budgetData: BudgetSummaryType | null = null;
@@ -310,8 +302,6 @@ const copyDisabledTooltip =
     data-currency={selectedCurrency}
     data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
   >
-    <CurrencyTabs tabs={currencyTabs} selected={selectedCurrency} />
-
     {
       shouldShowAccountNextStep && (
         <div class="alert bg-success/10 border border-success/30 rounded-card">
@@ -627,10 +617,7 @@ const copyDisabledTooltip =
       const { period } = (event as CustomEvent<{ period?: string }>).detail || {};
       if (!period) return;
 
-      const container = document.querySelector('[data-budget-page]') as HTMLElement | null;
-      const rawCurrency = container?.dataset.currency ?? null;
-      const currency = rawCurrency && isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
-      const targetUrl = buildBudgetUrlForPeriod(period, currency);
+      const targetUrl = buildBudgetUrlForPeriod(period);
 
       const current = new URL(window.location.href);
       const target = new URL(targetUrl, window.location.origin);

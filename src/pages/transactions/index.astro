@@ -13,7 +13,6 @@ import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCa
 import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
-import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
@@ -62,12 +61,12 @@ const categoryIds = categoryIdsParam ? categoryIdsParam.split(',').filter(Boolea
 const searchValue = searchParams.search || '';
 const selectedMonth = searchParams.month || '';
 const userId = searchParams.user_id || '';
-const selectedCurrencyParam = searchParams.currency || '';
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
 const selectedCurrency =
-  selectedCurrencyParam &&
-  isValidCurrency(selectedCurrencyParam) &&
-  workspaceCurrencies.includes(selectedCurrencyParam)
-    ? selectedCurrencyParam
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
     : workspaceCurrencyConfig.primary;
 
 // Calculate current month key from today's date (used as default)
@@ -204,7 +203,6 @@ trackPhaseSync('monthlySummary', perf, () => {
 const buildBaseUrl = () => {
   const params = new URLSearchParams();
   params.set('type', typeFilter);
-  params.set('currency', selectedCurrency);
   if (searchValue) params.set('search', searchValue);
   if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
   if (userId) params.set('user_id', userId);
@@ -213,11 +211,6 @@ const buildBaseUrl = () => {
 };
 
 const baseUrl = buildBaseUrl();
-const currencyTabs = workspaceCurrencies.map((currencyCode) => {
-  const params = new URLSearchParams(url.searchParams);
-  params.set('currency', currencyCode);
-  return { currency: currencyCode, href: `/transactions?${params.toString()}` };
-});
 const dateGroups = groupTransactionsByDate(transactions);
 const paginationCurrentClass =
   'inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 font-medium text-base-content';
@@ -282,8 +275,6 @@ perf?.recordMilestone('preRender.elapsed');
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
     data-ssr-data={JSON.stringify(ssrData)}
   >
-    <CurrencyTabs tabs={currencyTabs} selected={selectedCurrency} />
-
     <!-- Summary Cards -->
     <TransactionSummaryCards
       monthlyIncome={monthlyIncome}

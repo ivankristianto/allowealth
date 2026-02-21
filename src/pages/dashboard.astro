@@ -28,7 +28,6 @@ import RecentTransactionsList from '@/components/molecules/RecentTransactionsLis
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import OnboardingChecklist from '@/components/organisms/OnboardingChecklist.astro';
 import MfaEnableBanner from '@/components/molecules/MfaEnableBanner.astro';
-import CurrencyTabs from '@/components/atoms/CurrencyTabs.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
@@ -42,8 +41,7 @@ const perf = Astro.locals.perf;
 const now = new Date();
 const currentMonth = now.getMonth() + 1;
 const currentYear = now.getFullYear();
-const url = Astro.url;
-const currencyParam = url.searchParams.get('currency');
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value;
 
 // Check onboarding status and get currency
 let onboardingStatus: OnboardingStatus | null = null;
@@ -87,8 +85,10 @@ try {
       ...(secondaryCurrency ? [secondaryCurrency] : []),
     ];
     selectedDetailCurrency =
-      currencyParam && isValidCurrency(currencyParam) && availableCurrencies.includes(currencyParam)
-        ? currencyParam
+      activeCurrencyCookie &&
+      isValidCurrency(activeCurrencyCookie) &&
+      availableCurrencies.includes(activeCurrencyCookie)
+        ? activeCurrencyCookie
         : primaryCurrency;
 
     dashboardData = await dashboardService.getDashboardData(
@@ -173,14 +173,6 @@ const debtTotalsByCurrency = (dashboardData?.totalDebt.byCurrency ?? []).map((ro
   currency: row.currency,
   amount: safeParseFloat(row.amount),
 }));
-const dashboardCurrencyTabs =
-  primaryCurrency && secondaryCurrency
-    ? [
-        { currency: primaryCurrency, href: '/dashboard' },
-        { currency: secondaryCurrency, href: `/dashboard?currency=${secondaryCurrency}` },
-      ]
-    : [];
-
 // Filter out transfer transactions for cash flow widget (only supports income/expense)
 const cashFlowItems: CashFlowEntry[] =
   dashboardData?.recentTransactions
@@ -234,11 +226,6 @@ const spendingCategories =
     {
       !error && primaryCurrency && (
         <>
-          <CurrencyTabs
-            tabs={dashboardCurrencyTabs}
-            selected={selectedDetailCurrency || primaryCurrency}
-          />
-
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
             <SpendingCard

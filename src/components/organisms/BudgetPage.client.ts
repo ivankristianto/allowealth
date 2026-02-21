@@ -187,7 +187,6 @@ function handleBudgetsCopied(
     const params = new URLSearchParams();
     params.set('year', targetYear.toString());
     params.set('month', targetMonth.toString());
-    params.set('currency', state.currency);
     window.location.href = `/budget?${params.toString()}`;
   }
 }

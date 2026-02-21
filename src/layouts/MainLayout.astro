@@ -19,15 +19,25 @@ import Footer from '../components/layouts/Footer.astro';
 import MobileNavigation from '../components/layouts/MobileNavigation.astro';
 import ThemeToggle from '../components/atoms/ThemeToggle.astro';
 import type { User } from '@/lib/auth/lucia';
+import type { Currency } from '@/lib/constants/currency';
 
 interface Props {
   title?: string;
   currentPath?: string;
   user?: User | null;
   subtitle?: string;
+  primaryCurrency?: Currency;
+  secondaryCurrency?: Currency | null;
 }
 
-const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
+const {
+  title = 'allowealth',
+  currentPath = '/',
+  user,
+  subtitle,
+  primaryCurrency,
+  secondaryCurrency,
+} = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 ---
 
@@ -42,7 +52,14 @@ const hasHeaderSlot = Astro.slots.has('header');
     <!-- Page content -->
     <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
       <!-- Header -->
-      <Header title={title} user={user} subtitle={subtitle} currentPath={currentPath}>
+      <Header
+        title={title}
+        user={user}
+        subtitle={subtitle}
+        currentPath={currentPath}
+        primaryCurrency={primaryCurrency}
+        secondaryCurrency={secondaryCurrency}
+      >
         {hasHeaderSlot && <slot name="header" slot="header" />}
       </Header>
 
