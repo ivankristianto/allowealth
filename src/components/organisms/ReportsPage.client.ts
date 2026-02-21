@@ -19,6 +19,7 @@ import {
   announceToScreenReader,
 } from './ReportsRenderer.client';
 import { addToast } from '@/lib/stores/toastStore';
+import { navigate } from 'astro:transitions/client';
 import { isValidCurrency } from '@/lib/constants/currency';
 
 // Current report state
@@ -278,7 +279,7 @@ function handleRowClick(event: MouseEvent): void {
   const row = target.closest('tr[data-href]') as HTMLElement;
   if (!row) return;
   const href = row.dataset.href;
-  if (href) window.location.href = href;
+  if (href) navigate(href);
 }
 
 /**

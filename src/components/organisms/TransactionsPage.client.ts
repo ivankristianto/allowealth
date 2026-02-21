@@ -45,6 +45,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 // Track initialization to prevent duplicate event listeners
 let initialized = false;
+let eventController: AbortController | null = null;
 
 // Buffer for events received before initialization completes
 const pendingFilterEvents: CustomEvent[] = [];
@@ -619,17 +620,39 @@ function handlePopState(): void {
   fetchAndRender();
 }
 
+function cleanupTransactionsPage(): void {
+  eventController?.abort();
+  eventController = null;
+  cancelPendingRequest();
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+  initialized = false;
+
+  const liveRegion = document.getElementById('transactions-live-region');
+  liveRegion?.remove();
+}
+
 /**
  * Set up event listeners
  */
 function setupEventListeners(): void {
+  eventController?.abort();
+  eventController = new AbortController();
+  const { signal } = eventController;
+
   // Type filter buttons
   document.querySelectorAll('[data-filter-type]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      const type = btn.getAttribute('data-filter-type') as 'income' | 'expense';
-      handleTypeFilterChange(type);
-    });
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        const type = btn.getAttribute('data-filter-type') as 'income' | 'expense';
+        handleTypeFilterChange(type);
+      },
+      { signal }
+    );
   });
 
   // filterChange events are handled by the global listener set up at module load time
@@ -643,82 +666,106 @@ function setupEventListeners(): void {
   // Search input
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const value = (e.target as HTMLInputElement).value;
-      handleSearchInput(value);
-    });
+    searchInput.addEventListener(
+      'input',
+      (e) => {
+        const value = (e.target as HTMLInputElement).value;
+        handleSearchInput(value);
+      },
+      { signal }
+    );
 
     // Prevent form submission on Enter
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-      }
-    });
+    searchInput.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+        }
+      },
+      { signal }
+    );
   }
 
   // Prevent form submission (we handle everything client-side)
   const filterForm = document.getElementById('transaction-filters-form');
   if (filterForm) {
-    filterForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-    });
+    filterForm.addEventListener(
+      'submit',
+      (e) => {
+        e.preventDefault();
+      },
+      { signal }
+    );
   }
 
   // Pagination buttons
   const prevBtn = document.querySelector('[data-pagination-prev]');
   if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-      const page = transactionFiltersStore.get().page;
-      handlePageChange(page - 1);
-    });
+    prevBtn.addEventListener(
+      'click',
+      () => {
+        const page = transactionFiltersStore.get().page;
+        handlePageChange(page - 1);
+      },
+      { signal }
+    );
   }
 
   const nextBtn = document.querySelector('[data-pagination-next]');
   if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      const page = transactionFiltersStore.get().page;
-      handlePageChange(page + 1);
-    });
+    nextBtn.addEventListener(
+      'click',
+      () => {
+        const page = transactionFiltersStore.get().page;
+        handlePageChange(page + 1);
+      },
+      { signal }
+    );
   }
 
   // Delete buttons (use event delegation for dynamically rendered rows)
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
+  document.addEventListener(
+    'click',
+    (e) => {
+      const target = e.target as HTMLElement;
 
-    const editBtn = target.closest('[data-edit-transaction]');
-    if (editBtn) {
-      e.preventDefault();
-      const transactionData = editBtn.getAttribute('data-transaction-data');
-      if (!transactionData) return;
+      const editBtn = target.closest('[data-edit-transaction]');
+      if (editBtn) {
+        e.preventDefault();
+        const transactionData = editBtn.getAttribute('data-transaction-data');
+        if (!transactionData) return;
 
-      try {
-        const parsed = JSON.parse(transactionData);
-        if (!isTransactionFormData(parsed)) {
-          console.error('Invalid transaction payload:', parsed);
+        try {
+          const parsed = JSON.parse(transactionData);
+          if (!isTransactionFormData(parsed)) {
+            console.error('Invalid transaction payload:', parsed);
+            addToast('Failed to load transaction details', 'error');
+            return;
+          }
+          openEditDrawer(parsed);
+        } catch (error) {
+          console.error('Failed to parse transaction data:', error);
           addToast('Failed to load transaction details', 'error');
-          return;
         }
-        openEditDrawer(parsed);
-      } catch (error) {
-        console.error('Failed to parse transaction data:', error);
-        addToast('Failed to load transaction details', 'error');
+        return;
       }
-      return;
-    }
 
-    const deleteBtn = target.closest('[data-delete-transaction]');
-    if (deleteBtn) {
-      e.preventDefault();
-      const transactionId = deleteBtn.getAttribute('data-delete-transaction');
-      const transactionDetails = deleteBtn.getAttribute('data-transaction-details') || '';
-      if (transactionId) {
-        handleDelete(transactionId, transactionDetails);
+      const deleteBtn = target.closest('[data-delete-transaction]');
+      if (deleteBtn) {
+        e.preventDefault();
+        const transactionId = deleteBtn.getAttribute('data-delete-transaction');
+        const transactionDetails = deleteBtn.getAttribute('data-transaction-details') || '';
+        if (transactionId) {
+          handleDelete(transactionId, transactionDetails);
+        }
+        return;
       }
-      return;
-    }
 
-    // History toggle handled by TransactionHistory.client.ts (shared, global)
-  });
+      // History toggle handled by TransactionHistory.client.ts (shared, global)
+    },
+    { signal }
+  );
 
   // Confirm delete button in dialog
   const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
@@ -726,96 +773,107 @@ function setupEventListeners(): void {
     '[data-confirm-action]'
   ) as HTMLButtonElement | null;
   if (confirmDeleteBtn) {
-    confirmDeleteBtn.addEventListener('click', () => {
-      executeDelete(confirmDeleteBtn);
-    });
+    confirmDeleteBtn.addEventListener(
+      'click',
+      () => {
+        executeDelete(confirmDeleteBtn);
+      },
+      { signal }
+    );
   }
 
   const cancelDeleteBtn = deleteDialog?.querySelector(
     '[data-confirm-cancel]'
   ) as HTMLButtonElement | null;
-  cancelDeleteBtn?.addEventListener('click', () => {
-    clearConfirmError(deleteDialog?.querySelector('[data-confirm-error]') as HTMLElement | null);
-    closeConfirmationModal(deleteDialog);
-  });
+  cancelDeleteBtn?.addEventListener(
+    'click',
+    () => {
+      clearConfirmError(deleteDialog?.querySelector('[data-confirm-error]') as HTMLElement | null);
+      closeConfirmationModal(deleteDialog);
+    },
+    { signal }
+  );
 
   // Reset filters button
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const resetBtn = target.closest('[data-reset-filters]') as HTMLElement | null;
-    if (resetBtn) {
-      e.preventDefault();
+  document.addEventListener(
+    'click',
+    (e) => {
+      const target = e.target as HTMLElement;
+      const resetBtn = target.closest('[data-reset-filters]') as HTMLElement | null;
+      if (resetBtn) {
+        e.preventDefault();
 
-      // Get current month from the button's data attribute, with fallback to SSR data
-      const ssrContainer = document.getElementById('transactions-page');
-      const ssrDataAttr = ssrContainer?.dataset.ssrData;
-      let fallbackMonth = '';
-      if (ssrDataAttr) {
-        try {
-          fallbackMonth = JSON.parse(ssrDataAttr).currentMonth || '';
-        } catch {
-          // ignore parse errors
+        // Get current month from the button's data attribute, with fallback to SSR data
+        const ssrContainer = document.getElementById('transactions-page');
+        const ssrDataAttr = ssrContainer?.dataset.ssrData;
+        let fallbackMonth = '';
+        if (ssrDataAttr) {
+          try {
+            fallbackMonth = JSON.parse(ssrDataAttr).currentMonth || '';
+          } catch {
+            // ignore parse errors
+          }
         }
+        const currentMonth = resetBtn.dataset.currentMonth || fallbackMonth;
+
+        transactionFiltersStore.set({
+          type: 'expense',
+          search: '',
+          user_id: '',
+          category_id: '',
+          category_ids: [],
+          account_id: '',
+          account_ids: [],
+          currency: '',
+          start_date: '',
+          end_date: '',
+          page: 1,
+          month: currentMonth,
+        });
+
+        // Reset UI
+        const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+        if (searchInput) searchInput.value = '';
+
+        const categoryInput = document.getElementById('category-filter') as HTMLInputElement | null;
+        if (categoryInput) categoryInput.value = '';
+
+        updateTypeFilterUI('expense');
+        updateUrl();
+        fetchAndRender();
+
+        // Dispatch filtersReset so PeriodNavigator and TransactionFiltersBar can sync their internal state
+        window.dispatchEvent(
+          new CustomEvent(FILTERS_RESET_EVENT, { detail: { month: currentMonth } })
+        );
       }
-      const currentMonth = resetBtn.dataset.currentMonth || fallbackMonth;
-
-      transactionFiltersStore.set({
-        type: 'expense',
-        search: '',
-        user_id: '',
-        category_id: '',
-        category_ids: [],
-        account_id: '',
-        account_ids: [],
-        currency: '',
-        start_date: '',
-        end_date: '',
-        page: 1,
-        month: currentMonth,
-      });
-
-      // Reset UI
-      const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
-      if (searchInput) searchInput.value = '';
-
-      const categoryInput = document.getElementById('category-filter') as HTMLInputElement | null;
-      if (categoryInput) categoryInput.value = '';
-
-      updateTypeFilterUI('expense');
-      updateUrl();
-      fetchAndRender();
-
-      // Dispatch filtersReset so PeriodNavigator and TransactionFiltersBar can sync their internal state
-      window.dispatchEvent(
-        new CustomEvent(FILTERS_RESET_EVENT, { detail: { month: currentMonth } })
-      );
-    }
-  });
+    },
+    { signal }
+  );
 
   // Refresh list when transactions are added/edited in the drawer
-  document.addEventListener('transactions-changed', () => {
-    invalidateAllCache();
-    transactionFiltersStore.setKey('page', 1);
-    updateUrl();
-    fetchAndRender();
-  });
+  document.addEventListener(
+    'transactions-changed',
+    () => {
+      invalidateAllCache();
+      transactionFiltersStore.setKey('page', 1);
+      updateUrl();
+      fetchAndRender();
+    },
+    { signal }
+  );
 
   // Browser back/forward
-  window.addEventListener('popstate', handlePopState);
-
-  // Cleanup on page unload
-  window.addEventListener('beforeunload', () => {
-    cancelPendingRequest();
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
-  });
+  window.addEventListener('popstate', handlePopState, { signal });
+  window.addEventListener('beforeunload', cleanupTransactionsPage, { signal });
 }
 
 /**
  * Initialize the transactions page
  */
 export function initTransactionsPage(): void {
+  if (!document.getElementById('transactions-page')) return;
+
   // Prevent duplicate initialization (important for SPA navigation)
   if (initialized) {
     return;
@@ -834,6 +892,9 @@ export function initTransactionsPage(): void {
   // Set up event listeners
   setupEventListeners();
 
+  // Re-register cleanup listeners for each initialization cycle.
+  document.addEventListener('astro:before-swap', cleanupTransactionsPage, { once: true });
+
   // Process any filterChange events that were buffered before initialization
   while (pendingFilterEvents.length > 0) {
     const event = pendingFilterEvents.shift();
@@ -851,3 +912,5 @@ export function initTransactionsPage(): void {
   liveRegion.id = 'transactions-live-region';
   document.body.appendChild(liveRegion);
 }
+
+document.addEventListener('astro:page-load', initTransactionsPage);

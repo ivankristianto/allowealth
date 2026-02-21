@@ -444,3 +444,7 @@ export function cleanupInlineEdit(): void {
     container.removeEventListener('keydown', handleEditableKeydown);
   }
 }
+
+document.addEventListener('astro:before-swap', () => {
+  cancelEditMode();
+});

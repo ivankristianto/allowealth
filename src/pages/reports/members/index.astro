@@ -293,7 +293,15 @@ const totalNet = totals.income - totals.expenses;
 </ProtectedLayout>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
+
+  let controller: AbortController | null = null;
+
   function initMembersPage() {
+    controller?.abort();
+    controller = new AbortController();
+    const { signal } = controller;
+
     const container = document.querySelector('[data-reports-members-page]') as HTMLElement | null;
     if (!container) return;
 
@@ -302,7 +310,7 @@ const totalNet = totals.income - totals.expenses;
     const currency = container.dataset.currentCurrency || 'IDR';
     const userId = container.dataset.currentUserId || '';
 
-    const navigate = () => {
+    const navigateWithFilters = () => {
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.set('range', currentRange);
       nextUrl.searchParams.set('period', currentPeriod);
@@ -312,68 +320,87 @@ const totalNet = totals.income - totals.expenses;
       } else {
         nextUrl.searchParams.delete('user_id');
       }
-      window.location.href = nextUrl.toString();
+      navigate(nextUrl.toString());
     };
 
-    window.addEventListener('reportRangeChange', (event: Event) => {
-      const customEvent = event as CustomEvent<{ range: 'monthly' | 'yearly' }>;
-      currentRange = customEvent.detail.range;
+    window.addEventListener(
+      'reportRangeChange',
+      (event: Event) => {
+        const customEvent = event as CustomEvent<{ range: 'monthly' | 'yearly' }>;
+        currentRange = customEvent.detail.range;
 
-      if (currentRange === 'yearly') {
-        currentPeriod = currentPeriod.split('-')[0];
-      } else if (/^\d{4}$/.test(currentPeriod)) {
-        currentPeriod = `${currentPeriod}-01`;
-      }
+        if (currentRange === 'yearly') {
+          currentPeriod = currentPeriod.split('-')[0];
+        } else if (/^\d{4}$/.test(currentPeriod)) {
+          currentPeriod = `${currentPeriod}-01`;
+        }
 
-      navigate();
-    });
+        navigateWithFilters();
+      },
+      { signal }
+    );
 
-    window.addEventListener('reportPeriodChange', (event: Event) => {
-      const customEvent = event as CustomEvent<{ period: string }>;
-      currentPeriod = customEvent.detail.period;
-      navigate();
-    });
+    window.addEventListener(
+      'reportPeriodChange',
+      (event: Event) => {
+        const customEvent = event as CustomEvent<{ period: string }>;
+        currentPeriod = customEvent.detail.period;
+        navigateWithFilters();
+      },
+      { signal }
+    );
 
     // Clickable rows — navigate on click unless clicking an interactive element
     document.querySelectorAll<HTMLTableRowElement>('tr[data-href]').forEach((row) => {
-      row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('a, button')) return;
-        const href = row.dataset.href;
-        if (href) window.location.href = href;
-      });
+      row.addEventListener(
+        'click',
+        (e) => {
+          if ((e.target as HTMLElement).closest('a, button')) return;
+          const href = row.dataset.href;
+          if (href) navigate(href);
+        },
+        { signal }
+      );
     });
 
     // Category drill-down — handle [data-view-details] clicks via event delegation
-    document.addEventListener('click', (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const btn = target.closest('[data-view-details]') as HTMLElement;
-      if (!btn) return;
+    document.addEventListener(
+      'click',
+      (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        const btn = target.closest('[data-view-details]') as HTMLElement;
+        if (!btn) return;
 
-      const categoryId = btn.getAttribute('data-category-id');
-      const categoryName = btn.getAttribute('data-category-name');
-      const categoryIcon = btn.getAttribute('data-category-icon');
-      const categoryColor = btn.getAttribute('data-category-color');
-      const spent = parseFloat(btn.getAttribute('data-spent') || '0');
-      const budgetLimitAttr = btn.getAttribute('data-budget-limit');
+        const categoryId = btn.getAttribute('data-category-id');
+        const categoryName = btn.getAttribute('data-category-name');
+        const categoryIcon = btn.getAttribute('data-category-icon');
+        const categoryColor = btn.getAttribute('data-category-color');
+        const spent = parseFloat(btn.getAttribute('data-spent') || '0');
+        const budgetLimitAttr = btn.getAttribute('data-budget-limit');
 
-      if (categoryId && categoryName) {
-        const customEvent = new CustomEvent('open-category-drilldown', {
-          detail: {
-            categoryId,
-            categoryName,
-            categoryIcon,
-            categoryColor,
-            spent,
-            budgetLimit: budgetLimitAttr ? parseFloat(budgetLimitAttr) : null,
-            period: currentPeriod,
-            currency,
-          },
-        });
-        document.dispatchEvent(customEvent);
-      }
-    });
+        if (categoryId && categoryName) {
+          const customEvent = new CustomEvent('open-category-drilldown', {
+            detail: {
+              categoryId,
+              categoryName,
+              categoryIcon,
+              categoryColor,
+              spent,
+              budgetLimit: budgetLimitAttr ? parseFloat(budgetLimitAttr) : null,
+              period: currentPeriod,
+              currency,
+            },
+          });
+          document.dispatchEvent(customEvent);
+        }
+      },
+      { signal }
+    );
   }
 
   initMembersPage();
   document.addEventListener('astro:page-load', initMembersPage);
+  document.addEventListener('astro:before-swap', () => {
+    controller?.abort();
+  });
 </script>

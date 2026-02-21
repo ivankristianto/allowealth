@@ -92,6 +92,8 @@ const { users } = Astro.props;
 </Card>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
+
   function initUserTable() {
     const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-href]'));
     for (const row of rows) {
@@ -107,13 +109,13 @@ const { users } = Astro.props;
       row.addEventListener('click', (e: MouseEvent) => {
         // Don't navigate if clicking a workspace link inside the row
         if (e.target instanceof HTMLElement && e.target.closest('[data-workspace-link]')) return;
-        if (href) window.location.href = href;
+        if (href) navigate(href);
       });
 
       row.addEventListener('keydown', (e: KeyboardEvent) => {
         if ((e.key === 'Enter' || e.key === ' ') && href) {
           e.preventDefault();
-          window.location.href = href;
+          navigate(href);
         }
       });
     }

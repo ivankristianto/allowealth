@@ -93,6 +93,138 @@ const hasHeaderSlot = Astro.slots.has('header');
   </script>
 
   <script>
+    import '@/lib/stores/view-transition-cleanup';
+  </script>
+
+  <script>
+    import '@/lib/view-transitions/nav-active-state';
+  </script>
+
+  <script>
+    import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
+
+    const SCROLL_INIT_KEY = '__vtScrollRestorationInit';
+    const SCROLL_PREFIX = 'vt-scroll:';
+    const scopedWindow = window as Window & {
+      [SCROLL_INIT_KEY]?: boolean;
+      __vtPendingScroll?: number | null;
+      __vtLastScrollTop?: number;
+      __vtScrollHandler?: (() => void) | null;
+    };
+
+    function getScrollContainer(): HTMLElement | null {
+      return document.querySelector('.drawer-content');
+    }
+
+    if (!scopedWindow[SCROLL_INIT_KEY]) {
+      scopedWindow[SCROLL_INIT_KEY] = true;
+      scopedWindow.__vtPendingScroll = null;
+      scopedWindow.__vtLastScrollTop = 0;
+      scopedWindow.__vtScrollHandler = null;
+
+      // Track scroll position continuously. The View Transitions API resets
+      // container.scrollTop to 0 before astro:before-swap fires, so reading
+      // scrollTop inside that handler always yields 0. Instead, we cache the
+      // latest value on every scroll event and use that cached value when saving.
+      function attachScrollTracker() {
+        const container = getScrollContainer();
+        if (!container) return;
+
+        // Remove previous listener to prevent stacking
+        if (scopedWindow.__vtScrollHandler) {
+          container.removeEventListener('scroll', scopedWindow.__vtScrollHandler);
+        }
+
+        const handler = () => {
+          scopedWindow.__vtLastScrollTop = container.scrollTop;
+        };
+        scopedWindow.__vtScrollHandler = handler;
+        container.addEventListener('scroll', handler, { passive: true });
+      }
+
+      attachScrollTracker();
+
+      document.addEventListener('astro:before-swap', (e: TransitionBeforeSwapEvent) => {
+        // Use e.from for the outgoing URL — window.location may already
+        // reflect the destination during Navigation API traversals.
+        // e.from and e.to are URL objects from TransitionBeforeSwapEvent.
+        const fromKey = SCROLL_PREFIX + e.from.pathname + e.from.search;
+
+        // For traversals (back/forward), read the target scroll BEFORE we
+        // overwrite any entry (the from/to keys could theoretically collide).
+        if (e.navigationType === 'traverse') {
+          const targetKey = SCROLL_PREFIX + e.to.pathname + e.to.search;
+          const saved = sessionStorage.getItem(targetKey);
+          if (saved) {
+            const parsed = parseInt(saved, 10);
+            scopedWindow.__vtPendingScroll = Number.isNaN(parsed) ? null : parsed;
+          } else {
+            scopedWindow.__vtPendingScroll = null;
+          }
+        } else {
+          scopedWindow.__vtPendingScroll = null;
+        }
+
+        // Save the cached scroll position for the page we're leaving.
+        sessionStorage.setItem(fromKey, String(scopedWindow.__vtLastScrollTop ?? 0));
+      });
+
+      // Restore scroll in astro:page-load. Client scripts may re-fetch data
+      // and re-render content (due to store resets), which can reset scrollTop.
+      // Guard against this by re-applying scroll whenever it's reset to 0
+      // within a brief window after navigation.
+      document.addEventListener('astro:page-load', () => {
+        const pendingScroll = scopedWindow.__vtPendingScroll;
+        scopedWindow.__vtPendingScroll = null;
+
+        // Reset cached scroll for the new page
+        scopedWindow.__vtLastScrollTop = 0;
+
+        // Re-attach scroll tracker to the (possibly new) container
+        attachScrollTracker();
+
+        const container = getScrollContainer();
+        if (!container) return;
+
+        if (pendingScroll != null && pendingScroll > 0) {
+          // Limit re-apply attempts to avoid fighting intentional user scrolls.
+          const MAX_REAPPLY = 3;
+          let reapplyCount = 0;
+
+          function applyScroll() {
+            const c = getScrollContainer();
+            if (c) c.scrollTop = pendingScroll;
+          }
+
+          function stopWatching() {
+            container.removeEventListener('scroll', onScroll);
+          }
+
+          function onScroll() {
+            const c = getScrollContainer();
+            // If scroll was reset to near-top by client re-render, re-apply
+            if (c && c.scrollTop < 10 && reapplyCount < MAX_REAPPLY) {
+              reapplyCount++;
+              applyScroll();
+            } else {
+              stopWatching();
+            }
+          }
+
+          // Apply immediately
+          applyScroll();
+          // Watch for resets caused by async re-renders
+          container.addEventListener('scroll', onScroll);
+          // Stop watching after 2s — any content loads should be done by then
+          window.setTimeout(stopWatching, 2000);
+        } else {
+          container.scrollTop = 0;
+        }
+      });
+    }
+  </script>
+
+  <script>
     // Dynamically sync main content padding-top to the actual header height.
     // The fixed header height varies: title may wrap on narrow viewports and some
     // pages inject extra rows (e.g. PeriodicSelector) via the header slot.

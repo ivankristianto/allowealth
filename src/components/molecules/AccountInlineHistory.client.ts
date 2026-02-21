@@ -111,3 +111,13 @@ export function initInlineHistory() {
     });
   });
 }
+
+function cleanupInlineHistoryState(): void {
+  if (activeAccountId) {
+    setExpandedState(activeAccountId, false);
+  }
+  activeAccountId = null;
+}
+
+document.addEventListener('astro:page-load', initInlineHistory);
+document.addEventListener('astro:before-swap', cleanupInlineHistoryState);

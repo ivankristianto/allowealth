@@ -264,6 +264,7 @@ const categoryOptions = categories.length
 <script>
   import { addToast } from '@lib/stores/toastStore';
   import { csrfFetch } from '@/lib/csrf-client';
+  import { navigate } from 'astro:transitions/client';
   import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
   import type { Currency } from '@/lib/constants/currency';
 
@@ -336,7 +337,7 @@ const categoryOptions = categories.length
         if (typeof (window as any).openAccountCategoryModal === 'function') {
           (window as any).openAccountCategoryModal('create');
         } else {
-          window.location.href = '/accounts/categories';
+          navigate('/accounts/categories');
         }
       });
 

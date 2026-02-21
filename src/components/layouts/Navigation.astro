@@ -90,6 +90,7 @@ const isActive = (href: string) => {
   class="bg-base-100 w-64 min-w-64 h-full border-r border-base-300 flex flex-col transition-[width,min-width] duration-300 ease-out lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative pb-20 lg:pb-0"
   role="navigation"
   aria-label="Main navigation"
+  transition:persist="main-nav"
 >
   <!-- Skip link for keyboard users -->
   <a
@@ -167,6 +168,7 @@ const isActive = (href: string) => {
           <li class="shrink-0">
             <a
               href={item.href}
+              data-nav-href={item.href}
               title={item.label}
               aria-label={item.label}
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -184,12 +186,11 @@ const isActive = (href: string) => {
                 aria-hidden="true"
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
-              {active && (
-                <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
-                  aria-hidden="true"
-                />
-              )}
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
               {item.badge && (
                 <span class="badge badge-sm badge-accent group-data-[sidebar-collapsed=true]:hidden">
                   {item.badge}
@@ -211,6 +212,7 @@ const isActive = (href: string) => {
           <li class="shrink-0">
             <a
               href="/admin"
+              data-nav-href="/admin"
               title="Dashboard"
               aria-label="Admin Dashboard"
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -228,17 +230,17 @@ const isActive = (href: string) => {
                 aria-hidden="true"
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Dashboard</span>
-              {currentPath === '/admin' && (
-                <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
-                  aria-hidden="true"
-                />
-              )}
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${currentPath === '/admin' ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
             </a>
           </li>
           <li class="shrink-0">
             <a
               href="/admin/workspaces"
+              data-nav-href="/admin/workspaces"
               title="Workspaces"
               aria-label="Workspaces"
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -256,17 +258,17 @@ const isActive = (href: string) => {
                 aria-hidden="true"
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Workspaces</span>
-              {currentPath?.startsWith('/admin/workspaces') && (
-                <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
-                  aria-hidden="true"
-                />
-              )}
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${currentPath?.startsWith('/admin/workspaces') ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
             </a>
           </li>
           <li class="shrink-0">
             <a
               href="/admin/users"
+              data-nav-href="/admin/users"
               title="Users"
               aria-label="Users"
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -284,17 +286,17 @@ const isActive = (href: string) => {
                 aria-hidden="true"
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Users</span>
-              {currentPath?.startsWith('/admin/users') && (
-                <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
-                  aria-hidden="true"
-                />
-              )}
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${currentPath?.startsWith('/admin/users') ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
             </a>
           </li>
           <li class="shrink-0">
             <a
               href="/admin/audit-logs"
+              data-nav-href="/admin/audit-logs"
               title="Audit Logs"
               aria-label="Audit Logs"
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -312,17 +314,17 @@ const isActive = (href: string) => {
                 aria-hidden="true"
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Audit Logs</span>
-              {currentPath?.startsWith('/admin/audit-logs') && (
-                <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
-                  aria-hidden="true"
-                />
-              )}
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${currentPath?.startsWith('/admin/audit-logs') ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
             </a>
           </li>
           <li class="shrink-0">
             <a
               href="/admin/diagnostics"
+              data-nav-href="/admin/diagnostics"
               title="Diagnostics"
               aria-label="Diagnostics"
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -340,12 +342,11 @@ const isActive = (href: string) => {
                 aria-hidden="true"
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Diagnostics</span>
-              {currentPath?.startsWith('/admin/diagnostics') && (
-                <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
-                  aria-hidden="true"
-                />
-              )}
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${currentPath?.startsWith('/admin/diagnostics') ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
             </a>
           </li>
         </>

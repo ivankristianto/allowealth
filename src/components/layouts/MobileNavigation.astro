@@ -46,6 +46,7 @@ const isActive = (href: string) => {
   class="mobile-nav-surface fixed inset-x-0 bottom-0 z-50 border-t border-base-300 px-4 pt-2 pb-safe-bottom-nav backdrop-blur-2xl lg:hidden"
   role="navigation"
   aria-label="Mobile navigation"
+  transition:persist="mobile-nav"
 >
   <div
     aria-hidden="true"
@@ -84,6 +85,7 @@ const isActive = (href: string) => {
         return (
           <a
             href={item.href}
+            data-mobile-nav-href={item.href}
             class={`group flex min-h-11 min-w-11 flex-col items-center justify-end gap-1 rounded-xl px-0.5 pt-1 text-base-content/80 no-underline transition-colors transition-transform duration-200 active:scale-95 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
               active ? 'text-accent' : ''
             }`}

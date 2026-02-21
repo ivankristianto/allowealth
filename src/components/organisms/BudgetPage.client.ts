@@ -26,6 +26,7 @@ import {
   cleanupInlineEdit,
   cancelEditMode,
 } from './BudgetInlineEdit.client';
+import { navigate } from 'astro:transitions/client';
 import { isValidCurrency } from '@/lib/constants/currency';
 
 // =============================================================================
@@ -40,6 +41,7 @@ interface PageState {
 
 let state: PageState | null = null;
 let isCleanedUp = false;
+let initialized = false;
 
 // Preserved filter/sort state across DOM replacements
 let savedFilterQuery = '';
@@ -187,7 +189,8 @@ function handleBudgetsCopied(
     const params = new URLSearchParams();
     params.set('year', targetYear.toString());
     params.set('month', targetMonth.toString());
-    window.location.href = `/budget?${params.toString()}`;
+    params.set('currency', state.currency);
+    navigate(`/budget?${params.toString()}`);
   }
 }
 
@@ -464,14 +467,18 @@ function setupSortHandler(): void {
  * Sets up state, event listeners, and prepares for dynamic updates.
  */
 export function initBudgetPage(): void {
-  // Reset cleanup flag on initialization
-  isCleanedUp = false;
+  if (initialized) return;
 
   state = getPageState();
   if (!state) {
     console.error('[BudgetPage] Failed to initialize - page state not found');
     return;
   }
+
+  initialized = true;
+
+  // Reset cleanup flag on initialization
+  isCleanedUp = false;
 
   // Set up inline edit handlers for editing existing budgets
   setupInlineEditHandlers();
@@ -500,7 +507,9 @@ export function initBudgetPage(): void {
  * Removes event listeners, cancels pending requests, and clears timers.
  */
 export function cleanup(): void {
+  if (isCleanedUp) return;
   isCleanedUp = true;
+  initialized = false;
   cleanupInlineEdit();
   cancelPendingRequest();
 
@@ -525,3 +534,6 @@ export function cleanup(): void {
  * Re-export for use in inline scripts
  */
 export { initBudgetPage as init };
+
+document.addEventListener('astro:page-load', initBudgetPage);
+document.addEventListener('astro:before-swap', cleanup);

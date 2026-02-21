@@ -8,7 +8,13 @@ import {
   showConfirmError,
 } from '@/components/molecules/ConfirmationModal.client';
 
-document.addEventListener('DOMContentLoaded', () => {
+let controller: AbortController | null = null;
+
+function initTransactionList(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
   // Delete transaction handler using ConfirmationModal
   let transactionToDelete: string | null = null;
   let rowToDelete: HTMLElement | null = null;
@@ -25,132 +31,150 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add click handlers to delete buttons
   document.querySelectorAll<HTMLButtonElement>('[data-delete-transaction]').forEach((button) => {
-    button.addEventListener('click', (e) => {
-      const target = e.currentTarget as HTMLButtonElement;
-      const transactionId = target.getAttribute('data-delete-transaction');
-      const row = target.closest('[data-transaction-row]') as HTMLElement;
-      const transactionData = target.getAttribute('data-transaction-details');
+    button.addEventListener(
+      'click',
+      (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const transactionId = target.getAttribute('data-delete-transaction');
+        const row = target.closest('[data-transaction-row]') as HTMLElement;
+        const transactionData = target.getAttribute('data-transaction-details');
 
-      if (!transactionId || !row || !transactionData) return;
+        if (!transactionId || !row || !transactionData) return;
 
-      // Parse transaction data
-      let transaction: any;
-      try {
-        transaction = JSON.parse(transactionData);
-      } catch (err) {
-        console.error('Failed to parse transaction data', err);
-        return;
-      }
+        // Parse transaction data
+        let transaction: any;
+        try {
+          transaction = JSON.parse(transactionData);
+        } catch (err) {
+          console.error('Failed to parse transaction data', err);
+          return;
+        }
 
-      transactionToDelete = transactionId;
-      rowToDelete = row;
+        transactionToDelete = transactionId;
+        rowToDelete = row;
+
+        // Hide any previous errors
+        clearConfirmError(errorDiv);
+
+        // Populate details section with transaction info (using DOM methods to prevent XSS)
+        if (detailsDiv) {
+          const amount = parseFloat(transaction.amount) || 0;
+          const formattedAmount = formatCurrency(amount, transaction.currency);
+
+          // Clear existing content
+          detailsDiv.innerHTML = '';
+
+          const grid = document.createElement('div');
+          grid.className = 'grid grid-cols-2 gap-2';
+
+          // Helper to add rows safely using textContent
+          const addRow = (label: string, value: string) => {
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'text-base-content/70';
+            labelDiv.textContent = label;
+            grid.appendChild(labelDiv);
+
+            const valueDiv = document.createElement('div');
+            valueDiv.className = 'font-medium';
+            valueDiv.textContent = value;
+            grid.appendChild(valueDiv);
+          };
+
+          addRow('Category:', transaction.category?.name || 'Unknown');
+          addRow('Amount:', formattedAmount);
+          addRow('Date:', new Date(transaction.transaction_date).toLocaleDateString());
+          if (transaction.description) {
+            addRow('Description:', transaction.description);
+          }
+
+          detailsDiv.appendChild(grid);
+          detailsDiv.classList.remove('hidden');
+        }
+
+        // Show modal using native dialog API (triggers animations)
+        if (!modal.open) {
+          modal.showModal();
+        }
+      },
+      { signal }
+    );
+  });
+
+  cancelBtn?.addEventListener(
+    'click',
+    () => {
+      clearConfirmError(errorDiv);
+      closeConfirmationModal(modal);
+    },
+    { signal }
+  );
+
+  // Handle confirm delete button
+  confirmDeleteBtn.addEventListener(
+    'click',
+    async () => {
+      if (!transactionToDelete) return;
 
       // Hide any previous errors
       clearConfirmError(errorDiv);
 
-      // Populate details section with transaction info (using DOM methods to prevent XSS)
-      if (detailsDiv) {
-        const amount = parseFloat(transaction.amount) || 0;
-        const formattedAmount = formatCurrency(amount, transaction.currency);
+      // Disable button during request
+      setConfirmLoading(confirmDeleteBtn, true);
 
-        // Clear existing content
-        detailsDiv.innerHTML = '';
+      try {
+        const response = await fetch(`/api/transactions/${transactionToDelete}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: getCsrfHeaders(),
+        });
 
-        const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-2 gap-2';
+        const data = await response.json();
 
-        // Helper to add rows safely using textContent
-        const addRow = (label: string, value: string) => {
-          const labelDiv = document.createElement('div');
-          labelDiv.className = 'text-base-content/70';
-          labelDiv.textContent = label;
-          grid.appendChild(labelDiv);
+        if (response.ok && data.success) {
+          // Show success toast
+          addToast('Transaction deleted successfully', 'success');
 
-          const valueDiv = document.createElement('div');
-          valueDiv.className = 'font-medium';
-          valueDiv.textContent = value;
-          grid.appendChild(valueDiv);
-        };
+          // Remove row from DOM with animation
+          if (rowToDelete) {
+            rowToDelete.style.transition = 'opacity 0.3s, transform 0.3s';
+            rowToDelete.style.opacity = '0';
+            rowToDelete.style.transform = 'translateX(-100%)';
 
-        addRow('Category:', transaction.category?.name || 'Unknown');
-        addRow('Amount:', formattedAmount);
-        addRow('Date:', new Date(transaction.transaction_date).toLocaleDateString());
-        if (transaction.description) {
-          addRow('Description:', transaction.description);
+            setTimeout(() => {
+              if (rowToDelete) rowToDelete.remove();
+
+              // Check if list is empty and reload if needed
+              const remainingRows = document.querySelectorAll('[data-transaction-row]');
+              if (remainingRows.length === 0) {
+                window.location.reload();
+              }
+            }, 300);
+          }
+
+          // Close modal using CSS class for consistency with Modal.astro pattern
+          closeConfirmationModal(modal);
+
+          // Clear references only on success so user can retry on failure
+          transactionToDelete = null;
+          rowToDelete = null;
+        } else {
+          // Show inline error
+          showConfirmError(errorDiv, data.error?.message || 'Failed to delete transaction');
         }
-
-        detailsDiv.appendChild(grid);
-        detailsDiv.classList.remove('hidden');
-      }
-
-      // Show modal using native dialog API (triggers animations)
-      if (!modal.open) {
-        modal.showModal();
-      }
-    });
-  });
-
-  cancelBtn?.addEventListener('click', () => {
-    clearConfirmError(errorDiv);
-    closeConfirmationModal(modal);
-  });
-
-  // Handle confirm delete button
-  confirmDeleteBtn.addEventListener('click', async () => {
-    if (!transactionToDelete) return;
-
-    // Hide any previous errors
-    clearConfirmError(errorDiv);
-
-    // Disable button during request
-    setConfirmLoading(confirmDeleteBtn, true);
-
-    try {
-      const response = await fetch(`/api/transactions/${transactionToDelete}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: getCsrfHeaders(),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Show success toast
-        addToast('Transaction deleted successfully', 'success');
-
-        // Remove row from DOM with animation
-        if (rowToDelete) {
-          rowToDelete.style.transition = 'opacity 0.3s, transform 0.3s';
-          rowToDelete.style.opacity = '0';
-          rowToDelete.style.transform = 'translateX(-100%)';
-
-          setTimeout(() => {
-            if (rowToDelete) rowToDelete.remove();
-
-            // Check if list is empty and reload if needed
-            const remainingRows = document.querySelectorAll('[data-transaction-row]');
-            if (remainingRows.length === 0) {
-              window.location.reload();
-            }
-          }, 300);
-        }
-
-        // Close modal using CSS class for consistency with Modal.astro pattern
-        closeConfirmationModal(modal);
-
-        // Clear references only on success so user can retry on failure
-        transactionToDelete = null;
-        rowToDelete = null;
-      } else {
+      } catch (error) {
         // Show inline error
-        showConfirmError(errorDiv, data.error?.message || 'Failed to delete transaction');
+        showConfirmError(errorDiv, 'Failed to delete transaction. Please try again.');
+      } finally {
+        // Re-enable button
+        setConfirmLoading(confirmDeleteBtn, false);
       }
-    } catch (error) {
-      // Show inline error
-      showConfirmError(errorDiv, 'Failed to delete transaction. Please try again.');
-    } finally {
-      // Re-enable button
-      setConfirmLoading(confirmDeleteBtn, false);
-    }
-  });
+    },
+    { signal }
+  );
+}
+
+initTransactionList();
+document.addEventListener('astro:page-load', initTransactionList);
+document.addEventListener('astro:before-swap', () => {
+  controller?.abort();
 });

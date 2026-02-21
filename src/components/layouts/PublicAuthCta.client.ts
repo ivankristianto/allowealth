@@ -8,6 +8,7 @@
  * - [data-auth-cta-text] → swap textContent to value of data-auth-text
  * - [data-auth-hide]     → hide element (display: none)
  */
+let controller: AbortController | null = null;
 
 function isAuthenticated(): boolean {
   return document.cookie.split('; ').some((c) => c === 'auth_hint=1');
@@ -44,9 +45,22 @@ function applyAuthState(): void {
   });
 }
 
-applyAuthState();
+function initPublicAuthCta(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
 
-// Re-evaluate on bfcache restore (user may have logged in/out in another tab)
-window.addEventListener('pageshow', (e) => {
-  if (e.persisted) applyAuthState();
-});
+  applyAuthState();
+
+  // Re-evaluate on bfcache restore (user may have logged in/out in another tab)
+  window.addEventListener(
+    'pageshow',
+    (e) => {
+      if (e.persisted) applyAuthState();
+    },
+    { signal }
+  );
+}
+
+initPublicAuthCta();
+document.addEventListener('astro:page-load', initPublicAuthCta);

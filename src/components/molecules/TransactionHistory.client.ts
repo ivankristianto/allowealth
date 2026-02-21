@@ -10,6 +10,7 @@
  */
 
 import { addToast } from '@/lib/stores/toastStore';
+let controller: AbortController | null = null;
 
 /**
  * Toggle transaction history timeline.
@@ -72,6 +73,29 @@ async function toggleHistory(transactionId: string, showAll = false): Promise<vo
 
 let initialized = false;
 
+function handleHistoryToggleClick(e: Event): void {
+  const target = e.target as HTMLElement;
+
+  const historyBtn = target.closest('[data-toggle-history]');
+  if (historyBtn) {
+    e.preventDefault();
+    const transactionId = historyBtn.getAttribute('data-toggle-history');
+    if (transactionId) {
+      toggleHistory(transactionId);
+    }
+    return;
+  }
+
+  const showAllBtn = target.closest('[data-show-all-history]');
+  if (showAllBtn) {
+    e.preventDefault();
+    const transactionId = showAllBtn.getAttribute('data-show-all-history');
+    if (transactionId) {
+      toggleHistory(transactionId, true);
+    }
+  }
+}
+
 /**
  * Initialize document-level click delegation for history toggle buttons.
  * Safe to call multiple times — only attaches listener once.
@@ -79,27 +103,16 @@ let initialized = false;
 export function initTransactionHistory(): void {
   if (initialized) return;
   initialized = true;
-
-  document.addEventListener('click', (e: Event) => {
-    const target = e.target as HTMLElement;
-
-    const historyBtn = target.closest('[data-toggle-history]');
-    if (historyBtn) {
-      e.preventDefault();
-      const transactionId = historyBtn.getAttribute('data-toggle-history');
-      if (transactionId) {
-        toggleHistory(transactionId);
-      }
-      return;
-    }
-
-    const showAllBtn = target.closest('[data-show-all-history]');
-    if (showAllBtn) {
-      e.preventDefault();
-      const transactionId = showAllBtn.getAttribute('data-show-all-history');
-      if (transactionId) {
-        toggleHistory(transactionId, true);
-      }
-    }
-  });
+  controller = new AbortController();
+  const { signal } = controller;
+  document.addEventListener('click', handleHistoryToggleClick, { signal });
 }
+
+function cleanupTransactionHistory(): void {
+  controller?.abort();
+  controller = null;
+  initialized = false;
+}
+
+document.addEventListener('astro:page-load', initTransactionHistory);
+document.addEventListener('astro:before-swap', cleanupTransactionHistory);

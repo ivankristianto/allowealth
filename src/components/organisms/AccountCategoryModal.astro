@@ -148,6 +148,7 @@ const subtitle = isEditMode
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { navigate } from 'astro:transitions/client';
 
   // Track which modal containers have been initialized
   const initializedContainers = new WeakSet<Element>();
@@ -284,7 +285,7 @@ const subtitle = isEditMode
 
           // Reload page to show updated categories
           const urlParams = new URL(window.location.href);
-          window.location.href = urlParams.pathname + urlParams.search;
+          navigate(urlParams.pathname + urlParams.search);
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Failed to save category';
           if (errorDiv) {

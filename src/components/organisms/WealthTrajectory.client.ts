@@ -5,7 +5,6 @@
  * and updates the chart dynamically with debouncing for performance.
  */
 
-import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
 import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
@@ -14,6 +13,7 @@ import type { ForecastResult } from '@/lib/forecast';
 
 // Track in-flight requests per chart ID to prevent race conditions
 const requestControllers = new Map<string, AbortController>();
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
  * Initialize wealth trajectory input handlers
@@ -43,22 +43,28 @@ export function initWealthTrajectoryInputs(): void {
 
     attachAmountFormatter(topupInput, currency);
 
-    // Debounced fetch function (500ms delay)
-    const debouncedFetch = debounce(async () => {
-      const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, currency)) || 0;
-      const annualRate = parseFloat(apyInput.value) || 0;
+    const scheduleForecastFetch = () => {
+      const existingTimer = debounceTimers.get(chartId);
+      if (existingTimer) clearTimeout(existingTimer);
 
-      // Validate inputs
-      if (monthlyTopup < 0 || annualRate < 0 || annualRate > 100) {
-        return;
-      }
+      const timer = setTimeout(async () => {
+        const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, currency)) || 0;
+        const annualRate = parseFloat(apyInput.value) || 0;
 
-      await fetchAndUpdateForecast(chartId, monthlyTopup, annualRate, currency);
-    }, 500);
+        // Validate inputs
+        if (monthlyTopup < 0 || annualRate < 0 || annualRate > 100) {
+          return;
+        }
+
+        await fetchAndUpdateForecast(chartId, monthlyTopup, annualRate, currency);
+      }, 500);
+
+      debounceTimers.set(chartId, timer);
+    };
 
     // Attach input event listeners
-    topupInput.addEventListener('input', debouncedFetch);
-    apyInput.addEventListener('input', debouncedFetch);
+    topupInput.addEventListener('input', scheduleForecastFetch);
+    apyInput.addEventListener('input', scheduleForecastFetch);
   });
 }
 
@@ -220,12 +226,14 @@ function updateSummaryCards(
   }
 }
 
-// Initialize on page load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initWealthTrajectoryInputs);
-} else {
-  initWealthTrajectoryInputs();
+function cleanupWealthTrajectory(): void {
+  debounceTimers.forEach((timer) => clearTimeout(timer));
+  debounceTimers.clear();
+
+  requestControllers.forEach((controller) => controller.abort());
+  requestControllers.clear();
 }
 
-// For Astro View Transitions
-document.addEventListener('astro:after-swap', initWealthTrajectoryInputs);
+initWealthTrajectoryInputs();
+document.addEventListener('astro:page-load', initWealthTrajectoryInputs);
+document.addEventListener('astro:before-swap', cleanupWealthTrajectory);
