@@ -259,7 +259,7 @@ export class EmailVerificationService {
    * Send verification email to user
    * @param userId - User ID
    */
-  async sendVerificationEmail(userId: string): Promise<void> {
+  async sendVerificationEmail(userId: string, baseUrl?: string): Promise<void> {
     // Validate user and email service before creating token
     const user = await this.db.query.users.findFirst({
       where: eq(this.schema.users.id, userId),
@@ -282,9 +282,9 @@ export class EmailVerificationService {
     // Create token only after validating user and email service
     const token = await this.createVerificationToken(userId);
 
-    // Build verification URL
-    const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
-    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+    // Build verification URL — prefer caller-supplied origin, then env var, then dev default
+    const resolvedBaseUrl = baseUrl || getEnv('PUBLIC_URL') || 'http://localhost:4321';
+    const verificationUrl = `${resolvedBaseUrl}/api/auth/verify-email?token=${token}`;
 
     // Send email via workspace email service
     await this.emailSvc.sendEmailVerification({
