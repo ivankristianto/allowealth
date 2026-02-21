@@ -327,6 +327,13 @@ const copyDisabledTooltip =
                 totalSpent={Number(budgetData.total_spent || '0')}
                 distribution={allocationDistribution}
                 currency={selectedCurrency}
+                totalCategories={budgetData.categories.length}
+                overBudgetCount={
+                  budgetData.categories.filter((cat) => cat.status === 'exceeded').length
+                }
+                criticalCount={
+                  budgetData.categories.filter((cat) => cat.percentage_used >= 150).length
+                }
               />
             )}
           </div>

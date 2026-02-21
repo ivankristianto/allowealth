@@ -29,9 +29,20 @@ export interface Props {
   totalSpent: number;
   distribution: DistributionItem[] | AllocationDistribution[];
   currency: 'IDR' | 'USD';
+  totalCategories?: number;
+  overBudgetCount?: number;
+  criticalCount?: number;
 }
 
-const { totalAllocated, totalSpent, distribution, currency } = Astro.props;
+const {
+  totalAllocated,
+  totalSpent,
+  distribution,
+  currency,
+  totalCategories = 0,
+  overBudgetCount = 0,
+  criticalCount = 0,
+} = Astro.props;
 ---
 
 <BudgetSummary
@@ -40,4 +51,7 @@ const { totalAllocated, totalSpent, distribution, currency } = Astro.props;
   distribution={distribution}
   currency={currency}
   loading={false}
+  totalCategories={totalCategories}
+  overBudgetCount={overBudgetCount}
+  criticalCount={criticalCount}
 />
