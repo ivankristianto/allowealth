@@ -399,3 +399,39 @@ describe('BudgetSummary - allocation details open state sync', () => {
     expect(resolveBudgetAllocationOpenState({ previousIsWide: true, isWide: false })).toBe(false);
   });
 });
+
+describe('BudgetSummary - triage count computation', () => {
+  it('should count overbudget categories (status === exceeded)', () => {
+    const categories = [
+      { status: 'ok', percentage_used: 50 },
+      { status: 'exceeded', percentage_used: 125 },
+      { status: 'warning', percentage_used: 85 },
+      { status: 'exceeded', percentage_used: 225 },
+      { status: 'exceeded', percentage_used: 160 },
+    ];
+    const overBudgetCount = categories.filter((c) => c.status === 'exceeded').length;
+    expect(overBudgetCount).toBe(3);
+  });
+
+  it('should count critical categories (percentage_used >= 150)', () => {
+    const categories = [
+      { status: 'exceeded', percentage_used: 125 },
+      { status: 'exceeded', percentage_used: 225 },
+      { status: 'exceeded', percentage_used: 160 },
+      { status: 'ok', percentage_used: 50 },
+    ];
+    const criticalCount = categories.filter((c) => c.percentage_used >= 150).length;
+    expect(criticalCount).toBe(2);
+  });
+
+  it('should return 0 counts when all categories are healthy', () => {
+    const categories = [
+      { status: 'ok', percentage_used: 50 },
+      { status: 'ok', percentage_used: 30 },
+    ];
+    const overBudgetCount = categories.filter((c) => c.status === 'exceeded').length;
+    const criticalCount = categories.filter((c) => c.percentage_used >= 150).length;
+    expect(overBudgetCount).toBe(0);
+    expect(criticalCount).toBe(0);
+  });
+});

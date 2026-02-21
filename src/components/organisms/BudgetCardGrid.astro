@@ -56,12 +56,8 @@ const {
   className = '',
 } = Astro.props;
 
-// Sort budgets by budget_amount in descending order (highest first)
-const sortedBudgets = [...budgets].sort((a, b) => {
-  const amountA = typeof a.budget_amount === 'string' ? Number(a.budget_amount) : a.budget_amount;
-  const amountB = typeof b.budget_amount === 'string' ? Number(b.budget_amount) : b.budget_amount;
-  return amountB - amountA;
-});
+// Sort budgets by percentage_used in descending order (highest usage first — triage order)
+const sortedBudgets = [...budgets].sort((a, b) => b.percentage_used - a.percentage_used);
 
 const gridClasses = [
   // Container-query grid: 1 col → 2 cols at 672px → 3 cols at 1024px container width
@@ -114,7 +110,7 @@ const gridClasses = [
     )
   }
 
-  {/* Budget grid - sorted by highest budget amount first */}
+  {/* Budget grid - sorted by highest % used first (triage order) */}
   {
     !error && !loading && sortedBudgets.length > 0 && (
       <div
@@ -139,6 +135,8 @@ const gridClasses = [
               data-sort-title={budget.category_name}
               data-sort-budget={budgetAmt}
               data-sort-spent={spentAmt}
+              data-sort-usage={budget.percentage_used}
+              data-budget-status={budget.status}
             >
               <BudgetCard
                 categoryId={budget.category_id}

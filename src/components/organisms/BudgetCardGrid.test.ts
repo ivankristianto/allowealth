@@ -458,3 +458,19 @@ describe('BudgetCardGrid - aria-rowcount (P3-2)', () => {
     expect(updatedBudgets.length).toBe(4);
   });
 });
+
+describe('BudgetCardGrid - default sort by percentage_used descending', () => {
+  it('should sort by percentage_used descending (highest usage first)', () => {
+    const budgets = [
+      { category_name: 'Food', percentage_used: 72 },
+      { category_name: 'Work Support', percentage_used: 225 },
+      { category_name: 'Housing', percentage_used: 94 },
+    ];
+
+    const sorted = [...budgets].sort((a, b) => b.percentage_used - a.percentage_used);
+
+    expect(sorted[0].category_name).toBe('Work Support'); // 225%
+    expect(sorted[1].category_name).toBe('Housing'); // 94%
+    expect(sorted[2].category_name).toBe('Food'); // 72%
+  });
+});

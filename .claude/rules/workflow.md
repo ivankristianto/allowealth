@@ -106,6 +106,11 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Clean up dead error handling after simplifying methods** - when removing functionality (e.g., balance mutation), also remove corresponding error handlers in API routes
 - ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
 - ✅ **Exclude debt from account allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
+- ✅ **New client-side filters must compose with existing filters** - when adding a filter (e.g., overbudget toggle), ensure it composes with text search and applies to both card and table views; a card should only be visible when it passes ALL active filters
+- ✅ **Update E2E tests when changing conditional rendering** - when changing from disabled-but-visible to conditionally-absent (`{condition && ...}` instead of disabled prop), E2E tests that assert `toBeVisible()` will fail; update to check visibility first and skip gracefully
+- ✅ **Use `??` not `||` when 0 is a valid value** - `value || fallback` treats 0 as falsy; use `value ?? fallback` for budget limits, amounts, or any numeric field where 0 is meaningful
+- ✅ **Keyboard event handlers must check activeElement** - when intercepting arrow keys or other navigation in modals/overlays, check if `document.activeElement` is input/textarea/select and skip to allow normal typing behavior
+- ✅ **Scope DOM queries to the active view container** - when both card view and table view exist in DOM (one hidden), global `querySelectorAll` returns duplicates; scope queries to the visible view's container element
 
 ## CLI Conventions
 
@@ -123,6 +128,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 
 ## Subagent Patterns
 
+- ✅ **Check `git log` after subagent connection errors** - ConnectionRefused errors may occur after the subagent already committed; always verify with `git log` before assuming work was lost
 - ✅ **Verify file state after subagent completes** - subagents may make partial changes; always read files and run typecheck before trusting their report
 - ✅ **Run typecheck immediately after subagent work** - stale diagnostics from mid-edit can appear; fresh typecheck reveals actual state
 - ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
@@ -141,6 +147,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
 - ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
 - ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
+- ✅ **Check dev server port when using worktrees** - multiple worktrees run dev servers on different ports (4321, 4322, 4323...); use `lsof -i -P | grep LISTEN | grep 432` to find the correct port for your worktree before browser testing
 
 ## Component Refactoring Pattern
 

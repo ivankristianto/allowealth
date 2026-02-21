@@ -44,6 +44,9 @@ export interface Props {
   currency?: Currency;
   loading?: boolean;
   className?: string;
+  totalCategories?: number;
+  overBudgetCount?: number;
+  criticalCount?: number;
 }
 
 const {
@@ -53,6 +56,9 @@ const {
   currency = 'IDR',
   loading = false,
   className = '',
+  totalCategories = 0,
+  overBudgetCount = 0,
+  criticalCount = 0,
 } = Astro.props;
 
 // Calculate derived values
@@ -166,7 +172,7 @@ const cardClasses = [
 
               {/* Aggregate Spending */}
               <div>
-                <StatLabel size="sm" color="warning" className="uppercase tracking-widest">
+                <StatLabel size="sm" className="uppercase tracking-widest">
                   Total Budget Spent
                 </StatLabel>
                 <div class="flex items-baseline gap-2 mt-2 @3xl:mt-3">
@@ -186,11 +192,7 @@ const cardClasses = [
 
               {/* Remaining / Overbudget */}
               <div>
-                <StatLabel
-                  size="sm"
-                  color={remainingMetric.tone === 'error' ? 'error' : 'success'}
-                  className="uppercase tracking-widest"
-                >
+                <StatLabel size="sm" className="uppercase tracking-widest">
                   {remainingMetric.label}
                 </StatLabel>
                 <p
@@ -203,6 +205,46 @@ const cardClasses = [
                 </p>
               </div>
             </div>
+
+            {/* Triage summary strip */}
+            {totalCategories > 0 && (
+              <div
+                class:list={[
+                  'p-3 @3xl:p-4 rounded-xl @3xl:rounded-2xl border',
+                  overBudgetCount > 0
+                    ? 'bg-error/5 border-error/10'
+                    : 'bg-success/5 border-success/10',
+                ]}
+                data-triage-strip
+              >
+                {overBudgetCount > 0 ? (
+                  <div class="space-y-2">
+                    <p class="text-xs font-bold text-base-content leading-tight">
+                      <span class="text-error">{overBudgetCount}</span>
+                      <span class="text-base-content/60"> of {totalCategories} over budget</span>
+                      {criticalCount > 0 && (
+                        <span class="text-base-content/60">
+                          {' · '}
+                          <span class="text-error">{criticalCount}</span> critical
+                        </span>
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      class="text-xs font-bold text-accent hover:text-accent/80 transition-colors uppercase tracking-wider"
+                      data-overbudget-filter-toggle
+                      aria-pressed="false"
+                    >
+                      Show overbudget only
+                    </button>
+                  </div>
+                ) : (
+                  <p class="text-xs font-bold text-success leading-tight">
+                    All categories within budget
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Budget Allocations — collapsed on mobile/tablet, open on wide desktop */}

@@ -238,6 +238,8 @@ function handleContentUpdated(): void {
   setupInlineEditHandlers();
   setupFilterHandler();
   setupSortHandler();
+  setupOverbudgetFilterToggle();
+  overbudgetFilterActive = false; // Reset filter on content update
 
   // Re-initialize budget allocations details element (auto-open on desktop).
   // The inline script in BudgetSummary.astro only runs on initial page load,
@@ -285,8 +287,14 @@ function filterBudgetCards(query: string): void {
     if (!cardElement) return;
 
     const categoryName = card.querySelector('h3')?.textContent?.toLowerCase() || '';
+    const matchesText = !normalizedQuery || categoryName.includes(normalizedQuery);
 
-    if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
+    // Compose with overbudget filter: if overbudget filter is active,
+    // only cards with status="exceeded" can be visible
+    const status = (cardElement as HTMLElement).getAttribute('data-budget-status');
+    const matchesOverbudget = !overbudgetFilterActive || status === 'exceeded';
+
+    if (matchesText && matchesOverbudget) {
       (cardElement as HTMLElement).style.display = '';
       (cardElement as HTMLElement).removeAttribute('aria-hidden');
     } else {
@@ -299,8 +307,13 @@ function filterBudgetCards(query: string): void {
   const tableRows = document.querySelectorAll('[data-budget-table-row]');
   tableRows.forEach((row) => {
     const categoryName = (row.getAttribute('data-category-name') || '').toLowerCase();
+    const matchesText = !normalizedQuery || categoryName.includes(normalizedQuery);
 
-    if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
+    // Compose with overbudget filter
+    const status = (row as HTMLElement).getAttribute('data-budget-status');
+    const matchesOverbudget = !overbudgetFilterActive || status === 'exceeded';
+
+    if (matchesText && matchesOverbudget) {
       (row as HTMLElement).style.display = '';
       (row as HTMLElement).removeAttribute('aria-hidden');
     } else {
@@ -387,6 +400,98 @@ function setupFilterHandler(): void {
 }
 
 // =============================================================================
+// OVERBUDGET FILTER TOGGLE
+// =============================================================================
+
+let overbudgetFilterActive = false;
+
+/**
+ * Toggle overbudget-only filter
+ *
+ * Shows/hides cards based on data-budget-status attribute.
+ * When active, only shows cards with status="exceeded".
+ */
+function toggleOverbudgetFilter(): void {
+  overbudgetFilterActive = !overbudgetFilterActive;
+
+  // Update button text and ARIA state
+  const toggleBtn = document.querySelector('[data-overbudget-filter-toggle]');
+  if (toggleBtn) {
+    toggleBtn.textContent = overbudgetFilterActive ? 'Show all categories' : 'Show overbudget only';
+    toggleBtn.setAttribute('aria-pressed', String(overbudgetFilterActive));
+  }
+
+  // Filter card view
+  const cards = document.querySelectorAll<HTMLElement>('[role="listitem"][data-budget-status]');
+  cards.forEach((card) => {
+    if (!overbudgetFilterActive) {
+      card.style.display = '';
+      card.removeAttribute('aria-hidden');
+    } else {
+      const status = card.getAttribute('data-budget-status');
+      if (status === 'exceeded') {
+        card.style.display = '';
+        card.removeAttribute('aria-hidden');
+      } else {
+        card.style.display = 'none';
+        card.setAttribute('aria-hidden', 'true');
+      }
+    }
+  });
+
+  // Filter table view
+  const tableRows = document.querySelectorAll<HTMLElement>(
+    '[data-budget-table-row][data-budget-status]'
+  );
+  tableRows.forEach((row) => {
+    if (!overbudgetFilterActive) {
+      row.style.display = '';
+      row.removeAttribute('aria-hidden');
+    } else {
+      const status = row.getAttribute('data-budget-status');
+      if (status === 'exceeded') {
+        row.style.display = '';
+        row.removeAttribute('aria-hidden');
+      } else {
+        row.style.display = 'none';
+        row.setAttribute('aria-hidden', 'true');
+      }
+    }
+  });
+
+  // Re-apply text filter to compose with overbudget filter
+  const filterInput = document.querySelector<HTMLInputElement>('#budget-filter-input');
+  if (filterInput && filterInput.value) {
+    filterBudgetCards(filterInput.value);
+  }
+
+  // Update empty state
+  const cardGrid = document.getElementById('budget-cards-container');
+  if (cardGrid) {
+    const visibleCards = cardGrid.querySelectorAll(
+      '[role="listitem"]:not([style*="display: none"])'
+    ).length;
+    const noResultsEl = cardGrid.querySelector('[data-filter-no-results]');
+    if (noResultsEl) {
+      noResultsEl.classList.toggle('hidden', visibleCards > 0);
+    }
+  }
+}
+
+/**
+ * Set up overbudget filter toggle handler
+ */
+function setupOverbudgetFilterToggle(): void {
+  const toggleBtn = document.querySelector('[data-overbudget-filter-toggle]');
+  if (!toggleBtn) return;
+
+  // Remove existing listener by cloning (same pattern as setupFilterHandler/setupSortHandler)
+  const newBtn = toggleBtn.cloneNode(true) as Element;
+  toggleBtn.parentNode?.replaceChild(newBtn, toggleBtn);
+  newBtn.addEventListener('click', toggleOverbudgetFilter);
+}
+
+// =============================================================================
 // CLIENT-SIDE SORTING
 // =============================================================================
 
@@ -401,6 +506,9 @@ function sortBudgets(sortKey: string): void {
       cardGrid.querySelectorAll<HTMLElement>('[role="listitem"][data-sort-title]')
     );
     items.sort((a, b) => {
+      if (sortKey === 'usage-desc') {
+        return parseFloat(b.dataset.sortUsage || '0') - parseFloat(a.dataset.sortUsage || '0');
+      }
       if (sortKey === 'title-asc') {
         return (a.dataset.sortTitle || '').localeCompare(b.dataset.sortTitle || '');
       }
@@ -423,6 +531,9 @@ function sortBudgets(sortKey: string): void {
   if (tableBody) {
     const rows = Array.from(tableBody.querySelectorAll<HTMLElement>('[data-budget-table-row]'));
     rows.sort((a, b) => {
+      if (sortKey === 'usage-desc') {
+        return parseFloat(b.dataset.sortUsage || '0') - parseFloat(a.dataset.sortUsage || '0');
+      }
       if (sortKey === 'title-asc') {
         return (a.dataset.sortTitle || '').localeCompare(b.dataset.sortTitle || '');
       }
@@ -458,6 +569,14 @@ function setupSortHandler(): void {
 }
 
 // =============================================================================
+// CATEGORY ORDER FOR MODAL NAVIGATION
+// =============================================================================
+
+// Re-export from dedicated module to avoid leaking side effects
+// when other pages (reports) import only getOrderedCategories.
+export { getOrderedCategories, type CategoryNavItem } from './BudgetCategoryNav.client';
+
+// =============================================================================
 // INITIALIZATION
 // =============================================================================
 
@@ -488,6 +607,9 @@ export function initBudgetPage(): void {
 
   // Set up sort handler
   setupSortHandler();
+
+  // Set up overbudget filter toggle
+  setupOverbudgetFilterToggle();
 
   // Listen for budget updates
   document.addEventListener('budget-updated', handleBudgetUpdated as EventListener);
@@ -522,6 +644,7 @@ export function cleanup(): void {
   // Clear saved filter/sort state to prevent stale values on re-init
   savedFilterQuery = '';
   savedSortKey = '';
+  overbudgetFilterActive = false;
 
   document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
   document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);

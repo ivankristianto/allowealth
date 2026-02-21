@@ -121,12 +121,23 @@ export const GET: APIRoute = async (context) => {
             ? `Budgets already exist for ${nextMonthDisplay}`
             : '';
 
+        const totalCategories = budgetData.categories.length;
+        const overBudgetCount = budgetData.categories.filter(
+          (cat) => cat.status === 'exceeded'
+        ).length;
+        const criticalCount = budgetData.categories.filter(
+          (cat) => cat.percentage_used >= 150
+        ).length;
+
         const summaryHtml = await container.renderToString(BudgetSummaryPartial, {
           props: {
             totalAllocated: parseFloat(budgetData.total_budget || '0'),
             totalSpent: parseFloat(budgetData.total_spent || '0'),
             distribution,
             currency: selectedCurrency,
+            totalCategories,
+            overBudgetCount,
+            criticalCount,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);

@@ -252,9 +252,11 @@ const cardClasses = [
               <Badge
                 variant={budgetStatus.badgeVariant}
                 size="sm"
-                className="text-xs md:text-xs uppercase tracking-wider"
+                className={`text-xs md:text-xs uppercase tracking-wider ${budgetStatus.isCritical ? 'font-extrabold' : ''}`}
               >
-                {Math.round(percentageUsed)}% Used
+                {budgetStatus.isCritical
+                  ? `CRITICAL ${Math.round(percentageUsed)}%`
+                  : `${Math.round(percentageUsed)}% Used`}
               </Badge>
             </span>
           </div>
@@ -279,32 +281,22 @@ const cardClasses = [
         </div>
       </div>
 
-      {/* Body: Spent/Budget amounts and Progress bar */}
+      {/* Body: Budget/Spent amounts and Progress bar */}
       <div class="space-y-2 @xs:space-y-3 flex-grow flex flex-col">
         <div class="flex justify-between items-end">
           <div>
             <StatLabel size="sm" className="text-xs md:text-xs">
-              Spent
+              {' '}
+              Budget{' '}
             </StatLabel>
-            <p
-              class="text-base md:text-lg font-bold mt-0.5 md:mt-1 text-base-content leading-none"
-              data-testid="budget-spent"
-            >
-              {formatCurrency(spent, currency)}
-            </p>
-          </div>
-          <div class="text-right">
-            <StatLabel size="sm" className="text-xs md:text-xs">
-              Budget
-            </StatLabel>
-            <div class="flex items-center justify-end gap-1 mt-0.5 md:mt-1">
-              <span
-                class="text-xs md:text-sm font-bold text-base-content/60 leading-none"
+            <div class="flex items-center gap-1 mt-0.5 md:mt-1">
+              <p
+                class="text-base md:text-lg font-bold text-base-content leading-none"
                 data-budget-amount
                 data-testid="budget-amount"
               >
                 {formatCurrency(budget, currency)}
-              </span>
+              </p>
               <button
                 type="button"
                 class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
@@ -317,6 +309,18 @@ const cardClasses = [
                 <Pencil size={14} class="stroke-current hidden md:block" aria-hidden="true" />
               </button>
             </div>
+          </div>
+          <div class="text-right">
+            <StatLabel size="sm" className="text-xs md:text-xs">
+              {' '}
+              Spent{' '}
+            </StatLabel>
+            <p
+              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none"
+              data-testid="budget-spent"
+            >
+              {formatCurrency(spent, currency)}
+            </p>
           </div>
         </div>
 

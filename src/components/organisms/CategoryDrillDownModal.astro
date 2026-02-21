@@ -26,17 +26,16 @@ const { id } = Astro.props;
       </div>
 
       {/* Content container - will be populated with server-rendered HTML */}
-      <div data-modal-content class="hidden"></div>
+      <div data-drilldown-content class="hidden"></div>
     </div>
   </Modal>
 </div>
 
 <script>
-  // Ensure history toggle is available for dynamically injected TransactionCards
   import { initTransactionHistory } from '../molecules/TransactionHistory.client';
+  import { getOrderedCategories } from './BudgetCategoryNav.client';
   initTransactionHistory();
 
-  // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
 
   interface CategoryDrillDownData {
@@ -52,7 +51,6 @@ const { id } = Astro.props;
 
   function initCategoryDrillDownModal() {
     document.querySelectorAll('[data-category-drilldown-modal-container]').forEach((container) => {
-      // Skip if already initialized
       if (initializedModals.has(container)) return;
       initializedModals.add(container);
 
@@ -62,21 +60,17 @@ const { id } = Astro.props;
       const modal = document.getElementById(id) as HTMLDialogElement | null;
       if (!modal) return;
 
-      // Loading and content containers
       const loadingContainer = container.querySelector('[data-modal-loading]');
-      const contentContainer = container.querySelector('[data-modal-content]');
+      const contentContainer = container.querySelector('[data-drilldown-content]');
 
       let currentData: CategoryDrillDownData | null = null;
+      let activeFetchController: AbortController | null = null;
 
-      /**
-       * Fetch complete drilldown modal content as HTML from backend API
-       * @param data - Category drilldown data
-       * @returns Promise with HTML string
-       */
-      async function fetchDrilldownHTML(data: CategoryDrillDownData): Promise<string> {
-        // Determine range from period format (YYYY-MM = monthly, YYYY = yearly)
+      async function fetchDrilldownHTML(
+        data: CategoryDrillDownData,
+        signal?: AbortSignal
+      ): Promise<string> {
         const range = data.period.includes('-') ? 'monthly' : 'yearly';
-
         const params = new URLSearchParams({
           categoryId: data.categoryId,
           categoryName: data.categoryName,
@@ -88,46 +82,132 @@ const { id } = Astro.props;
           currency: data.currency,
           _render: 'html',
         });
-
-        // Add budgetLimit if present
         if (data.budgetLimit !== null && data.budgetLimit !== undefined) {
           params.set('budgetLimit', String(data.budgetLimit));
         }
-
-        const response = await fetch(`/api/reports/category-drilldown?${params.toString()}`);
-
+        const response = await fetch(`/api/reports/category-drilldown?${params.toString()}`, {
+          signal,
+        });
         if (!response.ok) {
           throw new Error(`Failed to fetch drilldown content: ${response.statusText}`);
         }
-
         return await response.text();
       }
 
-      // Listen for open-category-drilldown event
+      /**
+       * Navigate to adjacent category in the modal
+       */
+      function navigateToCategory(direction: 'prev' | 'next'): void {
+        if (!currentData) return;
+        const categories = getOrderedCategories();
+        const currentIndex = categories.findIndex((c) => c.categoryId === currentData!.categoryId);
+        if (currentIndex === -1) return;
+
+        const targetIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= categories.length) return;
+
+        const target = categories[targetIndex];
+        document.dispatchEvent(
+          new CustomEvent('open-category-drilldown', {
+            detail: {
+              categoryId: target.categoryId,
+              categoryName: target.categoryName,
+              categoryIcon: target.categoryIcon,
+              categoryColor: '', // Drilldown API defaults to bg-base-300; hex from cards is not compatible
+              spent: target.spent,
+              budgetLimit: target.budgetLimit ?? null,
+              period: target.period,
+              currency: currentData.currency,
+            },
+          })
+        );
+      }
+
+      /**
+       * Inject prev/next nav buttons into content
+       */
+      function injectNavButtons(): void {
+        if (!contentContainer || !currentData) return;
+        const categories = getOrderedCategories();
+        const currentIndex = categories.findIndex((c) => c.categoryId === currentData!.categoryId);
+        if (currentIndex === -1) return;
+
+        const hasPrev = currentIndex > 0;
+        const hasNext = currentIndex < categories.length - 1;
+
+        // Only add nav if there are multiple categories
+        if (categories.length <= 1) return;
+
+        // Inject nav as direct child of modal-box for reliable sticky positioning.
+        // modal-box is the scroll container; sticky bottom-0 keeps nav visible during scroll.
+        const modalBox = modal.querySelector('.modal-box');
+        if (!modalBox) return;
+
+        const navHtml = `
+          <div class="sticky bottom-0 z-10 -mx-6 -mb-6 px-6 pb-4 pt-3 border-t border-base-300 bg-base-100/90 backdrop-blur-sm" data-modal-nav>
+            <div class="flex justify-between items-center">
+              <button
+                type="button"
+                class="btn btn-ghost rounded-2xl font-bold gap-2 ${hasPrev ? '' : 'invisible'}"
+                data-nav-prev
+                aria-label="Previous category"
+              >
+                ← Prev
+              </button>
+              <span class="text-xs text-base-content/40 font-bold">
+                ${currentIndex + 1} / ${categories.length}
+              </span>
+              <button
+                type="button"
+                class="btn btn-ghost rounded-2xl font-bold gap-2 ${hasNext ? '' : 'invisible'}"
+                data-nav-next
+                aria-label="Next category"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        `;
+
+        // Remove existing nav if any (from modal-box, not contentContainer)
+        modalBox.querySelector('[data-modal-nav]')?.remove();
+        modalBox.insertAdjacentHTML('beforeend', navHtml);
+
+        // Attach click handlers
+        modalBox
+          .querySelector('[data-nav-prev]')
+          ?.addEventListener('click', () => navigateToCategory('prev'));
+        modalBox
+          .querySelector('[data-nav-next]')
+          ?.addEventListener('click', () => navigateToCategory('next'));
+      }
+
       const handleOpenDrillDown = (async (e: CustomEvent<CategoryDrillDownData>) => {
         currentData = e.detail;
 
-        // Show modal with loading state
+        // Abort any in-flight fetch to prevent stale content from overwriting
+        activeFetchController?.abort();
+        const controller = new AbortController();
+        activeFetchController = controller;
+
         loadingContainer?.classList.remove('hidden');
         contentContainer?.classList.add('hidden');
-        modal.showModal();
+        if (!modal.open) modal.showModal();
 
         try {
-          // Fetch server-rendered HTML
-          const html = await fetchDrilldownHTML(currentData);
-
-          // Inject HTML into content container
+          const html = await fetchDrilldownHTML(currentData, controller.signal);
+          // Guard: if aborted between fetch and render, skip DOM update
+          if (controller.signal.aborted) return;
           if (contentContainer) {
             contentContainer.innerHTML = html;
           }
-
-          // Hide loading, show content
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');
+          injectNavButtons();
         } catch (error) {
+          // Silently ignore aborted requests — a newer navigation superseded this one
+          if (error instanceof DOMException && error.name === 'AbortError') return;
           console.error('Error fetching category drilldown:', error);
-
-          // Show error state
           if (contentContainer) {
             contentContainer.innerHTML = `
               <div class="flex flex-col items-center justify-center py-12 text-center">
@@ -144,35 +224,50 @@ const { id } = Astro.props;
         }
       }) as EventListener;
 
-      document.addEventListener('open-category-drilldown', handleOpenDrillDown);
+      // Keyboard navigation
+      function handleKeyDown(e: KeyboardEvent): void {
+        if (!modal.open) return;
+        // Don't hijack arrow keys when user is focused on form elements
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          navigateToCategory('prev');
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          navigateToCategory('next');
+        }
+      }
 
-      // Clean up event listener on Astro page transitions to prevent memory leaks
+      document.addEventListener('open-category-drilldown', handleOpenDrillDown);
+      document.addEventListener('keydown', handleKeyDown);
+
       document.addEventListener(
         'astro:before-swap',
         () => {
           document.removeEventListener('open-category-drilldown', handleOpenDrillDown);
+          document.removeEventListener('keydown', handleKeyDown);
         },
         { once: true }
       );
 
-      // Reset data when modal closes
       modal.addEventListener('close', () => {
         currentData = null;
-        // Clear content to free memory
+        activeFetchController?.abort();
+        activeFetchController = null;
         if (contentContainer) {
           contentContainer.innerHTML = '';
         }
+        // Clean up nav from modal-box (it's injected outside contentContainer)
+        modal.querySelector('[data-modal-nav]')?.remove();
       });
     });
   }
 
-  // Initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initCategoryDrillDownModal);
   } else {
     initCategoryDrillDownModal();
   }
-
-  // Re-initialize on Astro page transitions
   document.addEventListener('astro:page-load', initCategoryDrillDownModal);
 </script>
