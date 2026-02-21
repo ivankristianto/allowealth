@@ -111,6 +111,7 @@ const { id } = Astro.props;
               spent: target.spent,
               budgetLimit: target.budgetLimit ?? null,
               period: target.period,
+              currency: currentData.currency,
             },
           })
         );
@@ -135,7 +136,7 @@ const { id } = Astro.props;
           <div class="flex justify-between items-center pt-2 border-t border-base-300" data-modal-nav>
             <button
               type="button"
-              class="btn btn-ghost btn-sm gap-1 ${hasPrev ? '' : 'invisible'}"
+              class="btn btn-ghost min-h-[44px] min-w-[44px] md:btn-sm gap-1 ${hasPrev ? '' : 'invisible'}"
               data-nav-prev
               aria-label="Previous category"
             >
@@ -146,7 +147,7 @@ const { id } = Astro.props;
             </span>
             <button
               type="button"
-              class="btn btn-ghost btn-sm gap-1 ${hasNext ? '' : 'invisible'}"
+              class="btn btn-ghost min-h-[44px] min-w-[44px] md:btn-sm gap-1 ${hasNext ? '' : 'invisible'}"
               data-nav-next
               aria-label="Next category"
             >
