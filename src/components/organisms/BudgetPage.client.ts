@@ -235,6 +235,8 @@ function handleContentUpdated(): void {
   setupInlineEditHandlers();
   setupFilterHandler();
   setupSortHandler();
+  setupOverbudgetFilterToggle();
+  overbudgetFilterActive = false; // Reset filter on content update
 
   // Re-initialize budget allocations details element (auto-open on desktop).
   // The inline script in BudgetSummary.astro only runs on initial page load,
@@ -384,6 +386,68 @@ function setupFilterHandler(): void {
 }
 
 // =============================================================================
+// OVERBUDGET FILTER TOGGLE
+// =============================================================================
+
+let overbudgetFilterActive = false;
+
+/**
+ * Toggle overbudget-only filter
+ *
+ * Shows/hides cards based on data-budget-status attribute.
+ * When active, only shows cards with status="exceeded".
+ */
+function toggleOverbudgetFilter(): void {
+  overbudgetFilterActive = !overbudgetFilterActive;
+
+  // Update button text
+  const toggleBtn = document.querySelector('[data-overbudget-filter-toggle]');
+  if (toggleBtn) {
+    toggleBtn.textContent = overbudgetFilterActive ? 'Show all categories' : 'Show overbudget only';
+  }
+
+  // Filter card view
+  const cards = document.querySelectorAll<HTMLElement>('[role="listitem"][data-budget-status]');
+  cards.forEach((card) => {
+    if (!overbudgetFilterActive) {
+      card.style.display = '';
+      card.removeAttribute('aria-hidden');
+    } else {
+      const status = card.getAttribute('data-budget-status');
+      if (status === 'exceeded') {
+        card.style.display = '';
+        card.removeAttribute('aria-hidden');
+      } else {
+        card.style.display = 'none';
+        card.setAttribute('aria-hidden', 'true');
+      }
+    }
+  });
+
+  // Update empty state
+  const cardGrid = document.getElementById('budget-cards-container');
+  if (cardGrid) {
+    const visibleCards = cardGrid.querySelectorAll(
+      '[role="listitem"]:not([style*="display: none"])'
+    ).length;
+    const noResultsEl = cardGrid.querySelector('[data-filter-no-results]');
+    if (noResultsEl) {
+      noResultsEl.classList.toggle('hidden', visibleCards > 0);
+    }
+  }
+}
+
+/**
+ * Set up overbudget filter toggle handler
+ */
+function setupOverbudgetFilterToggle(): void {
+  const toggleBtn = document.querySelector('[data-overbudget-filter-toggle]');
+  if (!toggleBtn) return;
+
+  toggleBtn.addEventListener('click', toggleOverbudgetFilter);
+}
+
+// =============================================================================
 // CLIENT-SIDE SORTING
 // =============================================================================
 
@@ -487,6 +551,9 @@ export function initBudgetPage(): void {
 
   // Set up sort handler
   setupSortHandler();
+
+  // Set up overbudget filter toggle
+  setupOverbudgetFilterToggle();
 
   // Listen for budget updates
   document.addEventListener('budget-updated', handleBudgetUpdated as EventListener);
