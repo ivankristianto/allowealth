@@ -10,7 +10,6 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
 import BudgetFilterControls from '@components/molecules/BudgetFilterControls.astro';
 import BudgetHeaderControls from '@components/molecules/BudgetHeaderControls.astro';
@@ -292,11 +291,6 @@ const copyDisabledTooltip =
     periodOptions={periodOptions}
     selectedPeriod={selectedPeriod}
   />
-
-  {/* Breadcrumb */}
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 pt-2">
-    <Breadcrumb items={[{ label: 'Budget' }, { label: 'History', href: '/budget/history' }]} />
-  </div>
 
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
