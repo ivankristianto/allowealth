@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'bun:test';
 import { formatCurrency } from '@/lib/formatting';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
+import { getBudgetStatus } from '@/lib/utils/budget';
 
 // Status badge styling logic (same as used in component)
 const getStatusBadgeClasses = (status: 'ok' | 'warning' | 'exceeded'): string => {
@@ -266,5 +267,34 @@ describe('BudgetCard - props validation', () => {
     expect(props.budget).toBe(0);
     expect(props.spent).toBe(0);
     expect(props.percentageUsed).toBe(0);
+  });
+});
+
+describe('BudgetCard - CRITICAL badge for 150%+', () => {
+  it('should return exceeded badge for 100-149%', () => {
+    const result = getBudgetStatus(125);
+    expect(result.status).toBe('danger');
+    expect(result.badgeVariant).toBe('exceeded');
+    expect(result.isCritical).toBe(false);
+  });
+
+  it('should return critical badge for 150%+', () => {
+    const result = getBudgetStatus(150);
+    expect(result.status).toBe('danger');
+    expect(result.badgeVariant).toBe('exceeded');
+    expect(result.isCritical).toBe(true);
+  });
+
+  it('should return critical badge for 225%', () => {
+    const result = getBudgetStatus(225);
+    expect(result.isCritical).toBe(true);
+  });
+
+  it('should not be critical below 150%', () => {
+    expect(getBudgetStatus(0).isCritical).toBe(false);
+    expect(getBudgetStatus(79).isCritical).toBe(false);
+    expect(getBudgetStatus(80).isCritical).toBe(false);
+    expect(getBudgetStatus(100).isCritical).toBe(false);
+    expect(getBudgetStatus(149).isCritical).toBe(false);
   });
 });

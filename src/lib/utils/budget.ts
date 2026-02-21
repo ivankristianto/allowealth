@@ -15,6 +15,7 @@ export interface BudgetStatusSummary {
   status: BudgetUsageStatus;
   badgeVariant: 'optimal' | 'review' | 'exceeded';
   label: string;
+  isCritical: boolean;
 }
 
 export function getBudgetStatus(percentage: number): BudgetStatusSummary {
@@ -23,6 +24,7 @@ export function getBudgetStatus(percentage: number): BudgetStatusSummary {
       status: 'danger',
       badgeVariant: 'exceeded',
       label: 'Over Budget',
+      isCritical: percentage >= 150,
     };
   }
 
@@ -31,6 +33,7 @@ export function getBudgetStatus(percentage: number): BudgetStatusSummary {
       status: 'warning',
       badgeVariant: 'review',
       label: 'On Budget',
+      isCritical: false,
     };
   }
 
@@ -39,6 +42,7 @@ export function getBudgetStatus(percentage: number): BudgetStatusSummary {
       status: 'warning',
       badgeVariant: 'review',
       label: 'Near Limit',
+      isCritical: false,
     };
   }
 
@@ -46,6 +50,7 @@ export function getBudgetStatus(percentage: number): BudgetStatusSummary {
     status: 'ok',
     badgeVariant: 'optimal',
     label: 'On Track',
+    isCritical: false,
   };
 }
 
