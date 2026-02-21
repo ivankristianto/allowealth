@@ -113,30 +113,52 @@ Auth flows and file uploads must bypass the ClientRouter to ensure full page rel
 
 **Files:**
 
+Login links (`href="/login"`):
+
 - Modify: `src/components/layouts/PublicNavbar.astro` (line ~65, "Sign in" button)
 - Modify: `src/components/molecules/ForgotPasswordForm.astro` (line ~76, "Sign in" link)
 - Modify: `src/components/molecules/MfaVerifyForm.astro` (line ~103, "Back to login" link)
 - Modify: `src/pages/signup.astro` (lines ~137, ~155, ~326, login links)
 - Modify: `src/pages/auth/link-account.astro` (line ~81 login link, line ~75 form)
+
+Signup links (`href="/signup"`) — **CSP critical: signup page has `is:inline` scripts with nonces**:
+
+- Modify: `src/components/molecules/landing/HeroSection.astro` (line ~65, "Get Started" button)
+- Modify: `src/components/molecules/LoginForm.astro` (line ~158, "Sign up" link)
+- Modify: `src/components/layouts/PublicNavbar.astro` (line ~67, "Sign up" button)
+- Modify: `src/components/organisms/landing/PricingSection.astro` (line ~106, pricing CTA buttons)
+
+Forms:
+
 - Modify: `src/components/molecules/SecurityConnectedAccountsCard.astro` (line ~46, form POST)
 - Modify: `src/components/molecules/CSVImportForm.astro` (line ~50, form with file upload)
 
-**Step 1: Add `data-astro-reload` to auth links**
+**Step 1: Add `data-astro-reload` to auth links (login AND signup)**
 
-For each `<a href="/login">` and `<a href="/login/...">` in auth-related pages, add the attribute:
+For each `<a href="/login">`, `<a href="/login/...">`, and `<a href="/signup">` in auth-related pages, add the attribute:
 
 ```html
 <!-- Before -->
 <a href="/login">Sign in</a>
+<a href="/signup">Sign up</a>
 
 <!-- After -->
 <a href="/login" data-astro-reload>Sign in</a>
+<a href="/signup" data-astro-reload>Sign up</a>
 ```
 
-Apply to all files listed above. Search pattern to find them all:
+**Why signup needs hard reload:** `/signup` contains `<script is:inline nonce={cspNonce}>` (lines 353-498). On soft navigation, the browser's CSP header from the original page has a different nonce, so these inline scripts would be blocked.
+
+For `<Button>` components that render as `<a>` tags, add the attribute to the Button:
+
+```astro
+<Button href="/signup" data-astro-reload>Get Started</Button>
+```
+
+Search patterns to find all links:
 
 ```bash
-grep -rn 'href="/login' src/ --include='*.astro' | grep -v node_modules | grep -v stories
+grep -rn 'href="/login\|href="/signup' src/ --include='*.astro' | grep -v node_modules | grep -v stories
 ```
 
 **Step 2: Add `data-astro-reload` to POST forms and file uploads**
@@ -507,7 +529,11 @@ Create `src/lib/stores/view-transition-cleanup.ts`:
  * Store shapes verified from source files (2026-02-21 Codex review).
  */
 import { resetFilters } from './transactionFiltersStore';
-import { transactionsDataStore, isLoading as transactionsLoading } from './transactionsDataStore';
+import {
+  transactionsDataStore,
+  isLoading as transactionsLoading,
+  invalidateAllCache,
+} from './transactionsDataStore';
 import {
   selectedYear,
   isLoading as budgetLoading,
@@ -533,6 +559,10 @@ function resetPageStores() {
     currency: 'IDR',
   });
   transactionsLoading.set(false);
+
+  // Invalidate the internal monthCache Map — prevents stale cached months
+  // from being served when returning to transactions page
+  invalidateAllCache();
 
   // Reset budget history atoms
   selectedYear.set(new Date().getFullYear());
@@ -598,34 +628,57 @@ Add a `<script>` tag in `MainLayout.astro`:
 ```typescript
 // Desktop scroll restoration for view transitions
 // ClientRouter only restores window.scrollY, but our scroll container is .drawer-content
-const SCROLL_KEY = 'vt-scroll-pos';
+// Uses route-keyed sessionStorage so each page remembers its own scroll position.
+// Only restores on history traversal (back/forward), not on fresh link clicks.
+
+const SCROLL_PREFIX = 'vt-scroll:';
+let isTraversal = false;
 
 function getScrollContainer(): HTMLElement | null {
   return document.querySelector('.drawer-content');
 }
 
-// Save scroll position before swap
+// Detect history traversal via popstate (fires before astro:before-swap)
+// popstate ONLY fires on back/forward, never on link clicks or navigate() calls
+window.addEventListener('popstate', () => {
+  isTraversal = true;
+});
+
+// Save scroll position keyed by current route before swap
 document.addEventListener('astro:before-swap', () => {
   const container = getScrollContainer();
   if (container) {
-    sessionStorage.setItem(SCROLL_KEY, String(container.scrollTop));
+    const key = SCROLL_PREFIX + window.location.pathname;
+    sessionStorage.setItem(key, String(container.scrollTop));
   }
 });
 
-// Restore scroll position after page load (only on back/forward navigation)
+// Restore scroll position after page load — only on back/forward
 document.addEventListener('astro:page-load', () => {
-  const saved = sessionStorage.getItem(SCROLL_KEY);
-  if (saved && window.navigation?.currentEntry?.index !== undefined) {
-    const container = getScrollContainer();
-    if (container) {
+  const container = getScrollContainer();
+  if (!container) return;
+
+  if (isTraversal) {
+    const key = SCROLL_PREFIX + window.location.pathname;
+    const saved = sessionStorage.getItem(key);
+    if (saved) {
       container.scrollTop = parseInt(saved, 10);
     }
+  } else {
+    // Fresh navigation: scroll to top (ClientRouter handles window, we handle .drawer-content)
+    container.scrollTop = 0;
   }
-  sessionStorage.removeItem(SCROLL_KEY);
+
+  isTraversal = false;
 });
 ```
 
-Note: This is a simplified approach. For full history-aware restoration, consider using the Navigation API's `currentEntry` to track direction. Test and refine based on actual behavior.
+**Why this approach:**
+
+- Uses `popstate` event to detect back/forward — this is a standard API available in all browsers (unlike `window.navigation` which is Chromium-only)
+- Route-keyed storage (`vt-scroll:/transactions`, `vt-scroll:/budget`) so each page remembers its own scroll position independently
+- Fresh link clicks scroll `.drawer-content` to top (matching expected behavior)
+- `isTraversal` flag resets after each `astro:page-load` to prevent stale state
 
 **Step 2: Verify**
 
