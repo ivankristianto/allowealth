@@ -72,7 +72,7 @@ const sortedHistory = [...history].sort((a, b) => {
 <div class="@container">
   {
     sortedHistory.length > 0 ? (
-      <div class="divide-y divide-base-100">
+      <div class="divide-y divide-base-200">
         {sortedHistory.map((monthData, index) => {
           const budgetAmount = parseFloat(monthData.total_budget);
           const spentAmount = parseFloat(monthData.total_spent);
@@ -194,14 +194,14 @@ const sortedHistory = [...history].sort((a, b) => {
               </div>
 
               {/* Desktop View - Table Row */}
-              <div class="hidden @3xl:grid grid-cols-7 items-center">
+              <div class="hidden @3xl:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_0.8fr_0.6fr] items-center">
                 <div class="px-4 @4xl:px-8 py-5 @4xl:py-6">
                   <div class="flex items-center gap-2 @4xl:gap-3">
                     <span class="text-sm @4xl:text-base font-bold">{monthData.month_name}</span>
                     <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
                     {isCurrentMonth && (
-                      <span class="bg-primary text-primary-content text-xs px-1.5 @4xl:px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                        Current
+                      <span class="bg-primary text-primary-content text-xs px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">
+                        Now
                       </span>
                     )}
                   </div>

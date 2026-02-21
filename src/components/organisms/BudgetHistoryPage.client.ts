@@ -2,18 +2,22 @@
  * Budget History Page Orchestrator
  *
  * Handles event coordination and data flow for the budget history page.
- * Manages year selection, data fetching, and rendering.
+ * Manages year selection, view mode switching, data fetching, and rendering.
  */
 
 import {
   initBudgetHistoryStore,
   setSelectedYear,
   setLoading,
+  setViewMode,
+  setMonthRange,
   selectedYear,
   isLoading,
+  viewMode,
+  monthRange,
   getState,
 } from '@/lib/stores/budgetHistoryStore';
-import { fetchBudgetHistoryHtml } from '@/lib/api/budgetHistoryApiClient';
+import { fetchBudgetHistoryHtml, fetchCategoryTrendsHtml } from '@/lib/api/budgetHistoryApiClient';
 import {
   showLoadingState,
   hideLoadingState,
@@ -25,12 +29,16 @@ import { addToast } from '@/lib/stores/toastStore';
 let controller: AbortController | null = null;
 let unsubscribeSelectedYear: (() => void) | null = null;
 let unsubscribeLoading: (() => void) | null = null;
+let unsubscribeViewMode: (() => void) | null = null;
+let unsubscribeMonthRange: (() => void) | null = null;
 
 // SSR data interface
 interface SSRData {
   selectedYear: number;
   availableYears: number[];
   currency: Currency;
+  viewMode?: 'monthly' | 'trends';
+  monthRange?: 3 | 6 | 12;
 }
 
 /**
@@ -67,10 +75,14 @@ export function initBudgetHistoryPage(): void {
     selectedYear: ssrData.selectedYear,
     availableYears: ssrData.availableYears,
     currency: ssrData.currency,
+    viewMode: ssrData.viewMode,
+    monthRange: ssrData.monthRange,
   });
 
-  // Set up event listeners
+  // Set up event listeners (all use AbortController signal for cleanup)
   setupYearToggleListeners(signal);
+  setupViewTabListeners(signal);
+  setupMonthRangeListeners(signal);
 
   // Subscribe to store changes
   unsubscribeSelectedYear = selectedYear.subscribe((year) => {
@@ -83,6 +95,19 @@ export function initBudgetHistoryPage(): void {
       showLoadingState();
     } else {
       hideLoadingState();
+    }
+  });
+
+  unsubscribeViewMode = viewMode.subscribe((mode) => {
+    updateViewMode(mode);
+  });
+
+  // monthRange.subscribe fires immediately with current value (Nano Stores behavior).
+  // When initial viewMode is 'trends', this handles the initial fetch — no separate call needed.
+  unsubscribeMonthRange = monthRange.subscribe(() => {
+    if (viewMode.get() === 'trends') {
+      const state = getState();
+      fetchAndRenderTrends(state.monthRange, state.currency);
     }
   });
 }
@@ -118,6 +143,90 @@ function setupYearToggleListeners(signal: AbortSignal): void {
 }
 
 /**
+ * Set up event listeners for view mode tab buttons
+ */
+function setupViewTabListeners(signal: AbortSignal): void {
+  const tabs = document.querySelectorAll('[data-view-tab]');
+  tabs.forEach((tab) => {
+    tab.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        const mode = tab.getAttribute('data-view-tab') as 'monthly' | 'trends';
+        if (!mode || mode === viewMode.get()) return;
+        setViewMode(mode);
+
+        if (mode === 'trends') {
+          const state = getState();
+          fetchAndRenderTrends(state.monthRange, state.currency);
+        } else {
+          const state = getState();
+          fetchAndRender(state.selectedYear, state.currency);
+        }
+      },
+      { signal }
+    );
+  });
+}
+
+/**
+ * Set up event listeners for month range selector buttons
+ */
+function setupMonthRangeListeners(signal: AbortSignal): void {
+  const buttons = document.querySelectorAll('[data-month-range]');
+  buttons.forEach((btn) => {
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        const range = parseInt(btn.getAttribute('data-month-range') || '6', 10) as 3 | 6 | 12;
+        if (range === monthRange.get()) return;
+        setMonthRange(range);
+      },
+      { signal }
+    );
+  });
+}
+
+/**
+ * Update the UI when view mode changes
+ */
+function updateViewMode(mode: 'monthly' | 'trends'): void {
+  const isTrends = mode === 'trends';
+
+  // Update tab visual state
+  document.querySelectorAll('[data-view-tab]').forEach((tab) => {
+    const isActive = tab.getAttribute('data-view-tab') === mode;
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tab.classList.toggle('bg-base-100', isActive);
+    tab.classList.toggle('shadow', isActive);
+    tab.classList.toggle('text-primary', isActive);
+    tab.classList.toggle('text-base-content/50', !isActive);
+    tab.classList.toggle('hover:text-base-content/70', !isActive);
+  });
+
+  // Toggle year toggle vs month range visibility
+  const yearToggle = document.querySelector('[data-year-toggle-group]');
+  const monthRangeGroup = document.querySelector('[data-month-range-group]');
+  const monthlyHeader = document.querySelector('[data-monthly-header]');
+
+  if (yearToggle) yearToggle.classList.toggle('hidden', isTrends);
+  if (monthRangeGroup) monthRangeGroup.classList.toggle('hidden', !isTrends);
+  if (monthlyHeader) monthlyHeader.classList.toggle('hidden', isTrends);
+
+  // Update URL
+  const url = new URL(window.location.href);
+  if (isTrends) {
+    url.searchParams.set('view', 'trends');
+    url.searchParams.delete('year');
+  } else {
+    url.searchParams.delete('view');
+    url.searchParams.set('year', String(selectedYear.get()));
+  }
+  window.history.replaceState({}, '', url.toString());
+}
+
+/**
  * Fetch budget history and render the results
  */
 async function fetchAndRender(year: number, currencyCode: Currency): Promise<void> {
@@ -149,9 +258,51 @@ async function fetchAndRender(year: number, currencyCode: Currency): Promise<voi
 }
 
 /**
+ * Fetch category trends and render the results
+ */
+async function fetchAndRenderTrends(months: 3 | 6 | 12, currencyCode: Currency): Promise<void> {
+  setLoading(true);
+
+  try {
+    const response = await fetchCategoryTrendsHtml(months, currencyCode);
+
+    // Don't render if view mode switched or month range changed during fetch
+    if (viewMode.get() !== 'trends' || monthRange.get() !== months) return;
+
+    renderFromHtmlResponse(response);
+
+    // Update month range button states
+    document.querySelectorAll('[data-month-range]').forEach((btn) => {
+      const range = parseInt(btn.getAttribute('data-month-range') || '0', 10);
+      const isActive = range === months;
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      btn.classList.toggle('bg-base-100', isActive);
+      btn.classList.toggle('shadow', isActive);
+      btn.classList.toggle('text-primary', isActive);
+      btn.classList.toggle('text-base-content/50', !isActive);
+      btn.classList.toggle('hover:text-base-content/70', !isActive);
+    });
+  } catch (error) {
+    if (viewMode.get() === 'trends' && monthRange.get() === months) {
+      const message = error instanceof Error ? error.message : 'Failed to load category trends';
+      addToast(message, 'error');
+      console.error('[BudgetHistoryPage] Trends fetch error:', error);
+    }
+  } finally {
+    // Only reset loading if this is still the active request
+    if (viewMode.get() === 'trends' && monthRange.get() === months) {
+      setLoading(false);
+    }
+  }
+}
+
+/**
  * Update URL with current year selection
  */
 function updateUrlState(year: number): void {
+  // Only update URL with year if in monthly view
+  if (viewMode.get() !== 'monthly') return;
+
   const url = new URL(window.location.href);
   url.searchParams.set('year', String(year));
 
@@ -166,6 +317,10 @@ function cleanupBudgetHistoryPage(): void {
   unsubscribeSelectedYear = null;
   unsubscribeLoading?.();
   unsubscribeLoading = null;
+  unsubscribeViewMode?.();
+  unsubscribeViewMode = null;
+  unsubscribeMonthRange?.();
+  unsubscribeMonthRange = null;
 }
 
 /**

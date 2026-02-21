@@ -310,3 +310,9 @@ const token = document.cookie.split('csrf_token=')[1];
 **Rules:**
 
 - ✅ **Read CSRF token with proper decoding loop** - don't use `split('=')[1]` (breaks on base64)
+
+## Client-Side Visibility & Data Attributes
+
+- ✅ **Rely on Nano Stores `subscribe()` for initial visibility** - `subscribe()` fires immediately with current value, so SSR→client hydration handles visibility of elements like toggles and tab panels without SSR-side hacks
+- ❌ **Wrap components in a div for SSR visibility when client toggles on the component's data attribute** - client code uses `querySelector('[data-year-toggle-group]')` to toggle `hidden` on the component's own root element; wrapping in an outer div means the client toggles the inner element while the outer div remains hidden
+- ✅ **Make tab/toggle SSR state dynamic via `class:list`** - use `class:list={[condition && 'active-class']}` for SSR-correct initial tab states so `subscribe()` doesn't need to correct visual state

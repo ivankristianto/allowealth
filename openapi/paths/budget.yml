@@ -120,6 +120,110 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/budget/category-trends:
+    get:
+      tags: [Budget]
+      summary: Get category trends
+      description: |
+        Retrieve category spending trends across multiple months.
+        Returns a matrix of categories (rows) × months (columns), sorted by worst budget adherence.
+
+        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
+        When requesting HTML (`_render=html`), the response contains a server-rendered HTML table fragment.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+        - name: months
+          in: query
+          description: Number of months to display (3, 6, or 12)
+          schema:
+            type: integer
+            enum: [3, 6, 12]
+            default: 6
+        - name: _render
+          in: query
+          description: Response format (json or html)
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      months:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            month:
+                              type: integer
+                            year:
+                              type: integer
+                            month_name:
+                              type: string
+                      categories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            category_id:
+                              type: string
+                            category_name:
+                              type: string
+                            category_icon:
+                              type: string
+                            category_color:
+                              type: string
+                            avg_percentage_used:
+                              type: number
+                            months:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  month:
+                                    type: integer
+                                  year:
+                                    type: integer
+                                  month_name:
+                                    type: string
+                                  spent_amount:
+                                    type: string
+                                  budget_amount:
+                                    type: string
+                                  percentage_used:
+                                    type: number
+                                  status:
+                                    type: string
+                                    enum: [ok, warning, exceeded]
+            text/html:
+              schema:
+                type: string
+                description: Server-rendered HTML table fragment with PARTIAL marker.
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/budget/category/{id}/remaining:
     get:
       tags: [Budget]

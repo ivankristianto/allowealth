@@ -14,7 +14,8 @@ import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTableP
 import YearToggle from '@/components/molecules/YearToggle.astro';
 import { budgetService, workspaceMetaService, type MonthlyBudgetHistory } from '@/services';
 import { isValidCurrency } from '@/lib/constants/currency';
-import { CircleX, Download, History as HistoryIcon } from '@lucide/astro';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
+import { CircleX, History as HistoryIcon } from '@lucide/astro';
 
 const user = Astro.locals.user!;
 const currentPath = '/budget/history';
@@ -22,6 +23,8 @@ const currentPath = '/budget/history';
 // Get query parameters
 const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
+const viewParam = url.searchParams.get('view');
+const initialViewMode = viewParam === 'trends' ? ('trends' as const) : ('monthly' as const);
 
 // Current date info
 const now = new Date();
@@ -76,6 +79,8 @@ const ssrData = {
   selectedYear,
   availableYears,
   currency: selectedCurrency,
+  viewMode: initialViewMode,
+  monthRange: 6 as const,
 };
 ---
 
@@ -89,38 +94,87 @@ const ssrData = {
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
     data-ssr-data={JSON.stringify(ssrData)}
   >
-    {/* Header Section */}
-    <div class="flex flex-col @2xl:flex-row justify-between items-start @2xl:items-center gap-6">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight leading-none">Budget History</h2>
-        <p class="text-sm text-base-content/50 mt-2 font-medium">
-          Compare your budget performance over time
-        </p>
+    {/* Breadcrumb */}
+    <Breadcrumb items={[{ label: 'Budget', href: '/budget' }, { label: 'History' }]} />
+
+    {/* Tab Bar & Controls */}
+    <div class="flex flex-col @sm:flex-row items-start @sm:items-center justify-between gap-4">
+      {/* View Mode Tabs */}
+      <div
+        class="flex bg-base-200 p-1 rounded-xl shrink-0"
+        role="tablist"
+        aria-label="History view mode"
+        data-view-tabs
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={initialViewMode === 'monthly'}
+          class:list={[
+            'px-4 py-2.5 min-h-11 text-xs font-bold rounded-lg transition-all',
+            initialViewMode === 'monthly'
+              ? 'bg-base-100 shadow text-primary'
+              : 'text-base-content/50 hover:text-base-content/70',
+          ]}
+          data-view-tab="monthly"
+        >
+          Monthly Totals
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={initialViewMode === 'trends'}
+          class:list={[
+            'px-4 py-2.5 min-h-11 text-xs font-bold rounded-lg transition-all',
+            initialViewMode === 'trends'
+              ? 'bg-base-100 shadow text-primary'
+              : 'text-base-content/50 hover:text-base-content/70',
+          ]}
+          data-view-tab="trends"
+        >
+          Category Trends
+        </button>
       </div>
 
-      <div class="flex items-center gap-4">
-        {/* Year Toggle */}
+      {/* Right-side controls: year toggle (monthly) or month range (trends) */}
+      <div class="flex items-center">
+        {/* Year Toggle (shown when monthly tab active) */}
         {
           availableYears.length > 1 && (
-            <YearToggle years={availableYears} selectedYear={selectedYear} />
+            <YearToggle
+              years={availableYears}
+              selectedYear={selectedYear}
+              className={initialViewMode !== 'monthly' ? 'hidden' : ''}
+            />
           )
         }
 
-        {/* Export Button (disabled, coming soon) */}
-        <div class="relative">
-          <button
-            class="flex items-center gap-2 px-5 py-2.5 bg-base-200 text-base-content/40 rounded-2xl text-xs font-bold border border-base-300 cursor-not-allowed"
-            disabled
-            title="Coming soon"
-          >
-            <Download size={18} class="stroke-current" aria-hidden="true" />
-            <span class="hidden @sm:inline">Export Report</span>
-          </button>
-          <span
-            class="absolute -top-2 -right-2 bg-base-content/50 text-base-100 text-xs px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest shadow-lg"
-          >
-            Soon
-          </span>
+        {/* Month Range Selector (shown when trends tab active) */}
+        <div
+          class:list={[initialViewMode !== 'trends' && 'hidden']}
+          data-month-range-group
+          role="group"
+          aria-label="Month range"
+        >
+          <div class="flex bg-base-200 p-1 rounded-xl shrink-0">
+            {
+              [3, 6, 12].map((range) => (
+                <button
+                  type="button"
+                  class:list={[
+                    'px-3 py-2.5 min-h-11 text-xs font-bold rounded-lg transition-all',
+                    range === 6
+                      ? 'bg-base-100 shadow text-primary'
+                      : 'text-base-content/50 hover:text-base-content/70',
+                  ]}
+                  data-month-range={range}
+                  aria-pressed={range === 6 ? 'true' : 'false'}
+                >
+                  {range}mo
+                </button>
+              ))
+            }
+          </div>
         </div>
       </div>
     </div>
@@ -135,28 +189,30 @@ const ssrData = {
       ) : (
         /* Table Card */
         <div class="@container bg-base-100 rounded-card border border-base-300 shadow-sm">
-          {/* Desktop Header Row */}
-          <div class="hidden @3xl:grid grid-cols-7 border-b border-base-200">
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest">
-              Month
-            </div>
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-              Budget
-            </div>
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-              Spent
-            </div>
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-              Balance
-            </div>
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
-              Status
-            </div>
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-              Change
-            </div>
-            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
-              Actions
+          {/* Desktop Header Row (monthly view only) */}
+          <div data-monthly-header>
+            <div class="hidden @3xl:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_0.8fr_0.6fr] border-b border-base-200">
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest">
+                Month
+              </div>
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                Budget
+              </div>
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                Spent
+              </div>
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                Balance
+              </div>
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
+                Status
+              </div>
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                Change
+              </div>
+              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
+                Actions
+              </div>
             </div>
           </div>
 

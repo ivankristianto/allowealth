@@ -72,6 +72,30 @@ export interface MonthlyBudgetHistory {
   percentage_used: number;
 }
 
+export interface CategoryMonthData {
+  month: number;
+  year: number;
+  month_name: string;
+  spent_amount: string;
+  budget_amount: string;
+  percentage_used: number;
+  status: 'ok' | 'warning' | 'exceeded';
+}
+
+export interface CategoryTrendRow {
+  category_id: string;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  avg_percentage_used: number;
+  months: CategoryMonthData[];
+}
+
+export interface CategoryTrendData {
+  months: { month: number; year: number; month_name: string }[];
+  categories: CategoryTrendRow[];
+}
+
 export class BudgetService {
   /** Max rows per INSERT to stay within D1's 100 bound-parameter limit (9 × 10 cols = 90 params for copyBudgets which has 10 bound fields) */
   private static readonly BULK_INSERT_CHUNK_SIZE = 9;
@@ -317,6 +341,117 @@ export class BudgetService {
     }
 
     return history;
+  }
+
+  /**
+   * Get category trends across multiple months
+   * Pivots the data: rows = categories, columns = months
+   * Sorted by worst average adherence (highest percentage_used first)
+   */
+  async getCategoryTrends(
+    workspaceId: string,
+    currency: Currency,
+    months: number = 6,
+    perf?: PerfCollector
+  ): Promise<CategoryTrendData> {
+    if (!Number.isInteger(months) || months < 1 || months > 24) {
+      throw new Error('Invalid months parameter (must be 1-24)');
+    }
+
+    const now = new Date();
+    const monthColumns: CategoryTrendData['months'] = [];
+    const categoryMap = new Map<
+      string,
+      {
+        category_id: string;
+        category_name: string;
+        category_icon: string;
+        category_color: string;
+        months: CategoryMonthData[];
+        totalPercentage: number;
+        monthCount: number;
+      }
+    >();
+
+    // Collect per-category data for each month (oldest first)
+    for (let i = months - 1; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthName = MONTH_NAMES[month - 1] ?? `Month ${month}`;
+
+      monthColumns.push({ month, year, month_name: monthName });
+
+      const overview = await this.getMonthlyOverview(workspaceId, year, month, currency, perf);
+
+      for (const cat of overview.categories) {
+        let entry = categoryMap.get(cat.category_id);
+        if (!entry) {
+          entry = {
+            category_id: cat.category_id,
+            category_name: cat.category_name,
+            category_icon: cat.category_icon,
+            category_color: cat.category_color,
+            months: [],
+            totalPercentage: 0,
+            monthCount: 0,
+          };
+          categoryMap.set(cat.category_id, entry);
+        }
+
+        entry.months.push({
+          month,
+          year,
+          month_name: monthName,
+          spent_amount: cat.spent_amount,
+          budget_amount: cat.budget_amount,
+          percentage_used: cat.percentage_used,
+          status: cat.status,
+        });
+        entry.totalPercentage += cat.percentage_used;
+        entry.monthCount += 1;
+      }
+    }
+
+    // Fill missing months with zeroes for categories not present every month
+    for (const entry of categoryMap.values()) {
+      for (const col of monthColumns) {
+        const hasMonth = entry.months.some((m) => m.month === col.month && m.year === col.year);
+        if (!hasMonth) {
+          entry.months.push({
+            month: col.month,
+            year: col.year,
+            month_name: col.month_name,
+            spent_amount: '0',
+            budget_amount: '0',
+            percentage_used: 0,
+            status: 'ok',
+          });
+        }
+      }
+      // Sort months chronologically
+      entry.months.sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+    }
+
+    // Build sorted category rows (worst adherence first)
+    const categories: CategoryTrendRow[] = Array.from(categoryMap.values())
+      .map((entry) => ({
+        category_id: entry.category_id,
+        category_name: entry.category_name,
+        category_icon: entry.category_icon,
+        category_color: entry.category_color,
+        avg_percentage_used:
+          entry.monthCount > 0
+            ? Math.round((entry.totalPercentage / entry.monthCount) * 100) / 100
+            : 0,
+        months: entry.months,
+      }))
+      .sort((a, b) => b.avg_percentage_used - a.avg_percentage_used);
+
+    return { months: monthColumns, categories };
   }
 
   /**

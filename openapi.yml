@@ -171,6 +171,8 @@ paths:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1overview'
   /api/budget/history:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1history'
+  /api/budget/category-trends:
+    $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1category-trends'
   /api/budget/category/{id}/remaining:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1category~1{id}~1remaining'
   /api/budget/import:
