@@ -104,9 +104,9 @@ const accentGhostBtn =
     />
   </div>
 
-  {/* Initialize All Budgets */}
+  {/* Initialize All Budgets — only shown when there are uninitialized categories */}
   {
-    uninitializedCount > 0 ? (
+    uninitializedCount > 0 && (
       <div class="tooltip tooltip-bottom" data-tip="Initialize all uninitialized budgets">
         <button
           type="button"
@@ -114,21 +114,6 @@ const accentGhostBtn =
           id="initialize-budgets-btn"
           data-target-modal="initialize-budgets-modal"
           aria-label="Initialize all budgets"
-          data-testid="initialize-budgets-btn"
-        >
-          <Zap size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Zap size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs sm:text-sm">Initialize All</span>
-        </button>
-      </div>
-    ) : (
-      <div class="tooltip tooltip-bottom" data-tip="All categories already have budgets">
-        <button
-          type="button"
-          class={ghostBtn + ' opacity-30 cursor-not-allowed'}
-          disabled
-          aria-label="Initialize all budgets (all categories already have budgets)"
-          aria-disabled="true"
           data-testid="initialize-budgets-btn"
         >
           <Zap size={16} class="stroke-current md:hidden" aria-hidden="true" />

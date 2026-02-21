@@ -55,7 +55,8 @@ const containerClasses = [
   }
   {
     hasPrimary && (
-      <div class="order-first md:order-last md:ml-auto shrink-0">
+      <div class="order-first md:order-last md:ml-auto shrink-0 flex items-center gap-1 md:gap-2">
+        <div class="hidden md:block w-px h-6 bg-base-300" aria-hidden="true" />
         <slot name="primary" />
       </div>
     )
