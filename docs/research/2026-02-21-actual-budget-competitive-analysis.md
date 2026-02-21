@@ -118,13 +118,50 @@ Actual lets you auto-fill budget amounts based on 3-month, 6-month, or 12-month 
 
 **Recommendation:** Add an "Average" option to budget initialization. Calculate average spending per category for trailing N months, pre-fill as budget amounts. The service already has the data to compute this.
 
-### 3c. No Multi-Month Budget View
+### 3c. Budget History Has the Wrong Axis
 
-Actual displays multiple months side by side. Allowealth shows one month at a time.
+**Correction from initial analysis:** Allowealth has a budget history page (`/budget/history`) showing the last 24 months with year filtering. It works well for answering "how did I do overall each month?" — rows are months, columns are totals (budget, spent, balance, % used, alert counts, MoM change).
 
-**User impact:** Spotting trends (is dining out creeping up month over month?) requires clicking back and forth. Side-by-side comparison is essential for identifying patterns.
+The gap is that this view has the **wrong primary axis** for spotting category trends.
 
-**Recommendation:** Add a "Trend view" toggle to the budget page showing the last 3–6 months side by side per category. Could launch as a report rather than replacing the main budget view.
+**The two information architectures:**
+
+| View                 | Rows       | Columns                                       | Answers                                       |
+| -------------------- | ---------- | --------------------------------------------- | --------------------------------------------- |
+| **Allowealth today** | Months     | Total budget / spent / balance                | "How did I do this month overall?"            |
+| **Actual Budget**    | Categories | Months (budgeted / spent / balance per month) | "Is dining out creeping up month over month?" |
+
+Both views have value. Allowealth has the first. The second is what users actually need for pattern recognition — and it doesn't exist yet.
+
+When you want to know if a category is trending upward, you open budget history today, see January was 64% spent, February was 71%, March was 89% — but you have to mentally map that across three rows of total numbers. You can't see all your categories at once across months.
+
+**What Actual shows:** A matrix where each row is a category, and each column is a month. You scan horizontally and immediately see "Food & Groceries has been 90%+ for three months straight." The pattern is spatial, not sequential.
+
+**Specific gaps in the current history view:**
+
+1. No per-category breakdown — you see totals per month, not which categories drove the overspend
+2. No charts — the table is data-dense but not scannable at a glance
+3. No sortable columns — can't rank months by highest spending or most categories exceeded
+4. Export is disabled ("Coming soon")
+5. No sparklines per row to show direction of trend
+
+**Recommendations:**
+
+1. **Add a "Category Trends" tab to the budget history page.** Same URL, second tab. Pivot the layout: rows = categories, columns = last 3 / 6 / 12 months (user-selectable). Each cell shows spent amount + color status (green/yellow/red). The data is already computed per-category in `getMonthlyOverview()` — this is a presentation pivot, not a new data problem.
+
+   ```
+   Category         | Jan    | Feb    | Mar    | Apr    |
+   ─────────────────┼────────┼────────┼────────┼────────┤
+   Food & Groceries | 82% ⚠️ | 91% ⚠️ | 88% ⚠️ | 45% ✓ |
+   Transport        | 34% ✓  | 41% ✓  | 29% ✓  | 38% ✓ |
+   Dining Out       | 110% 🔴| 67% ✓  | 99% ⚠️ | 12% ✓ |
+   ```
+
+2. **Add a bar/line chart to the existing monthly view.** A simple Chart.js bar chart (spending vs budget per month) makes the existing table scannable in 2 seconds instead of 10. Show months on x-axis, spent and budget as grouped bars or overlaid lines.
+
+3. **Make the history table sortable.** Allow sorting by: % used (highest first), spending (highest first), month. Useful for finding "which month had my worst budget adherence?"
+
+4. **Enable export.** The button is already there — wire it to a CSV export of the history data.
 
 ### 3d. Budget Carryover Not Default
 
@@ -164,21 +201,41 @@ No way to mark which transactions have cleared the bank vs. are still pending. R
 
 ## 5. Reporting Gaps
 
-### 5a. No Explicit Net Worth View
+### 5a. Net Worth Exists But Is Buried
 
-Allowealth tracks assets and shows history, but there's no clean "Net Worth over Time" chart. Actual's Net Worth report explicitly shows assets minus liabilities plotted over time.
+**Correction from initial analysis:** Allowealth has solid debt infrastructure. `account_class: 'debt'` exists for `credit_card` and `loan` types. Net worth is calculated correctly as assets − debt in `AccountPortfolioSummary`. Debt is displayed as a negative in red, excluded from allocation charts, and shown separately on both the accounts page and dashboard widget. The data model is sound.
 
-**User impact:** Net worth is the most motivating personal finance number. Watching it grow over years is what keeps people engaged. Burying this in asset history charts is a missed emotional hook.
+The gap is **visibility and narrative**, not presence.
 
-**Recommendation:** Create a dedicated Net Worth page (or prominent dashboard widget): single line chart, total assets minus total liabilities (debt accounts), plotted monthly from first snapshot. Show the number prominently. Make it the hero metric for long-term users.
+The net worth number currently lives inside the Accounts page as one of three summary cards. It doesn't appear on the dashboard as a headline metric. There is no time-series chart showing net worth growth over months. Users who care most about financial progress — those tracking investments alongside debt — have to navigate to Accounts to see the number that most captures their financial health.
 
-### 5b. No Liabilities / Debt Tracking
+**User impact:** Net worth is the most motivating personal finance number. Watching it grow over years is what keeps people engaged. A user paying down a loan while growing investments has a compelling story — but the app doesn't tell it.
 
-Allowealth tracks assets (bank accounts, investments). There's no explicit "debt" account type — credit card balances, loans, mortgages.
+**Recommendations:**
 
-**User impact:** Net worth is meaningless without tracking what you owe. Someone with Rp 100M in assets and Rp 80M in debt has very different financial health than someone with the same assets and Rp 0 in debt.
+1. **Dashboard hero widget** — Add a Net Worth time-series chart to the dashboard, plotted from monthly snapshots. Show the current number large. This is already computable: `account_snapshots` + `account_snapshot_items` have the data, and `calculateDebtTotals()` exists.
 
-**Recommendation:** Add a `liability` account type (credit card, mortgage, car loan, personal loan). Include in net worth calculation as a negative. Show debt paydown over time as a positive trend on the net worth chart.
+2. **Net Worth trend in Reports** — Add a dedicated "Net Worth" report: assets line, debt line, and net worth line on the same chart over time. Actual's equivalent is their most-used report type.
+
+3. **Debt paydown progress** — For each debt account, show a progress bar from opening balance to zero. "You've paid off 34% of this loan." This turns debt from a static number into a narrative of progress.
+
+### 5b. Debt Depth Gaps
+
+The debt model exists; the missing features are around **depth of analysis**.
+
+**Credit utilization is untracked:** The schema has a `credit_limit` field on accounts, but there's no UI surface showing utilization (balance ÷ limit). High utilization (>30%) is a key financial health signal. A credit card at Rp 9M of a Rp 10M limit is dangerous; Allowealth shows only the balance.
+
+**No debt breakdown report:** Total debt is shown, but there's no report comparing CC debt vs. loan debt over time, or showing which debt is growing vs. shrinking.
+
+**No debt payoff forecast:** The savings forecast calculator projects asset growth. There's no equivalent for "if I pay Rp 500k/month extra toward this loan, when will it be paid off?" Debt payoff forecasting is a high-value feature for users actively managing liabilities.
+
+**No debt-to-income ratio:** No metric relating total debt to monthly income. This is a standard financial health indicator.
+
+**Recommendations:**
+
+1. Surface `credit_limit` on credit card account cards — show utilization % and a color-coded bar (green <30%, yellow 30–70%, red >70%).
+2. Add a Debt section to Reports showing debt by type over time.
+3. Add debt payoff projection to the Forecast page — inputs: current balance, interest rate, monthly payment; output: months to payoff and total interest paid.
 
 ### 5c. No Custom / Saved Reports
 
@@ -289,8 +346,9 @@ These are areas where Allowealth leads Actual. They are the product's moat.
 | Bulk transaction operations        | High   | Low    | P1       |
 | Payee system + auto-categorization | High   | Medium | P2       |
 | Category groups                    | Medium | Low    | P2       |
-| Liability / debt accounts          | High   | Medium | P2       |
-| Net Worth chart (dedicated)        | High   | Low    | P2       |
+| Net Worth as dashboard hero metric | High   | Low    | P2       |
+| Credit utilization display         | Medium | Low    | P2       |
+| Debt payoff forecast               | Medium | Medium | P3       |
 | OFX/QFX import formats             | High   | Low    | P2       |
 | Budget fill from averages          | Medium | Low    | P2       |
 | Reconciliation workflow            | Medium | Medium | P3       |
