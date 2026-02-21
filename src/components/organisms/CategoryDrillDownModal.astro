@@ -107,7 +107,7 @@ const { id } = Astro.props;
               categoryIcon: target.categoryIcon,
               categoryColor: target.categoryColor,
               spent: target.spent,
-              budgetLimit: target.budgetLimit || null,
+              budgetLimit: target.budgetLimit ?? null,
               period: target.period,
             },
           })
@@ -202,6 +202,9 @@ const { id } = Astro.props;
       // Keyboard navigation
       function handleKeyDown(e: KeyboardEvent): void {
         if (!modal.open) return;
+        // Don't hijack arrow keys when user is focused on form elements
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
         if (e.key === 'ArrowLeft') {
           e.preventDefault();
           navigateToCategory('prev');

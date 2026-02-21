@@ -284,8 +284,14 @@ function filterBudgetCards(query: string): void {
     if (!cardElement) return;
 
     const categoryName = card.querySelector('h3')?.textContent?.toLowerCase() || '';
+    const matchesText = !normalizedQuery || categoryName.includes(normalizedQuery);
 
-    if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
+    // Compose with overbudget filter: if overbudget filter is active,
+    // only cards with status="exceeded" can be visible
+    const status = (cardElement as HTMLElement).getAttribute('data-budget-status');
+    const matchesOverbudget = !overbudgetFilterActive || status === 'exceeded';
+
+    if (matchesText && matchesOverbudget) {
       (cardElement as HTMLElement).style.display = '';
       (cardElement as HTMLElement).removeAttribute('aria-hidden');
     } else {
@@ -298,8 +304,13 @@ function filterBudgetCards(query: string): void {
   const tableRows = document.querySelectorAll('[data-budget-table-row]');
   tableRows.forEach((row) => {
     const categoryName = (row.getAttribute('data-category-name') || '').toLowerCase();
+    const matchesText = !normalizedQuery || categoryName.includes(normalizedQuery);
 
-    if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
+    // Compose with overbudget filter
+    const status = (row as HTMLElement).getAttribute('data-budget-status');
+    const matchesOverbudget = !overbudgetFilterActive || status === 'exceeded';
+
+    if (matchesText && matchesOverbudget) {
       (row as HTMLElement).style.display = '';
       (row as HTMLElement).removeAttribute('aria-hidden');
     } else {
@@ -424,6 +435,32 @@ function toggleOverbudgetFilter(): void {
     }
   });
 
+  // Filter table view
+  const tableRows = document.querySelectorAll<HTMLElement>(
+    '[data-budget-table-row][data-budget-status]'
+  );
+  tableRows.forEach((row) => {
+    if (!overbudgetFilterActive) {
+      row.style.display = '';
+      row.removeAttribute('aria-hidden');
+    } else {
+      const status = row.getAttribute('data-budget-status');
+      if (status === 'exceeded') {
+        row.style.display = '';
+        row.removeAttribute('aria-hidden');
+      } else {
+        row.style.display = 'none';
+        row.setAttribute('aria-hidden', 'true');
+      }
+    }
+  });
+
+  // Re-apply text filter to compose with overbudget filter
+  const filterInput = document.querySelector<HTMLInputElement>('#budget-filter-input');
+  if (filterInput && filterInput.value) {
+    filterBudgetCards(filterInput.value);
+  }
+
   // Update empty state
   const cardGrid = document.getElementById('budget-cards-container');
   if (cardGrid) {
@@ -444,7 +481,10 @@ function setupOverbudgetFilterToggle(): void {
   const toggleBtn = document.querySelector('[data-overbudget-filter-toggle]');
   if (!toggleBtn) return;
 
-  toggleBtn.addEventListener('click', toggleOverbudgetFilter);
+  // Remove existing listener by cloning (same pattern as setupFilterHandler/setupSortHandler)
+  const newBtn = toggleBtn.cloneNode(true) as Element;
+  toggleBtn.parentNode?.replaceChild(newBtn, toggleBtn);
+  newBtn.addEventListener('click', toggleOverbudgetFilter);
 }
 
 // =============================================================================
@@ -545,7 +585,11 @@ export interface CategoryNavItem {
  * Used by CategoryDrillDownModal for prev/next navigation.
  */
 export function getOrderedCategories(): CategoryNavItem[] {
-  const cards = document.querySelectorAll<HTMLElement>('[data-view-details]');
+  // Scope to card grid only to avoid duplicates from table view
+  const cardGrid = document.querySelector('[role="list"][aria-label="Budget categories"]');
+  if (!cardGrid) return [];
+
+  const cards = cardGrid.querySelectorAll<HTMLElement>('[data-view-details]');
   const items: CategoryNavItem[] = [];
 
   cards.forEach((btn) => {
@@ -629,6 +673,7 @@ export function cleanup(): void {
   // Clear saved filter/sort state to prevent stale values on re-init
   savedFilterQuery = '';
   savedSortKey = '';
+  overbudgetFilterActive = false;
 
   document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
   document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);
