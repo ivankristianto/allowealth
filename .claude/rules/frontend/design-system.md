@@ -71,6 +71,11 @@ import { animate } from 'motion/mini';
 - Each step is 6-10% luminance apart for visible card elevation and borders
 - Body text `base-content` (`#cbd5e1`) targets ~12:1 contrast (was ~15:1)
 
+**Dividers:**
+
+- ✅ **Use `divide-base-200` or `border-base-200` for visible dividers** - `base-200` provides subtle contrast against `base-100` background
+- ❌ **Use `divide-base-100` for row separators** - `base-100` is the same as the background color, making dividers invisible
+
 **Color Tokens (JavaScript):**
 
 ```typescript
