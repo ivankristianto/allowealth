@@ -311,10 +311,6 @@ function initCategories() {
   }
 }
 
-// Run initialization when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCategories);
-} else {
-  // DOM is already loaded, run immediately
-  initCategories();
-}
+// Run initialization
+initCategories();
+document.addEventListener('astro:page-load', initCategories);

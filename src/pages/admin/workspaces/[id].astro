@@ -161,37 +161,43 @@ try {
   import { getCsrfHeaders } from '@/lib/csrf-client';
   import { navigate } from 'astro:transitions/client';
 
-  let initialized = false;
+  let controller: AbortController | null = null;
+
   function initWorkspaceDetails() {
-    if (initialized) return;
-    initialized = true;
+    controller?.abort();
+    controller = new AbortController();
+    const { signal } = controller;
     // Archive button handler
     const archiveBtn = document.querySelector('[data-archive-btn]') as HTMLButtonElement | null;
     if (archiveBtn) {
-      archiveBtn.addEventListener('click', async () => {
-        const workspaceId = archiveBtn.dataset.workspaceId;
-        if (!workspaceId) return;
+      archiveBtn.addEventListener(
+        'click',
+        async () => {
+          const workspaceId = archiveBtn.dataset.workspaceId;
+          if (!workspaceId) return;
 
-        archiveBtn.classList.add('loading');
-        try {
-          const response = await fetch(`/api/admin/workspaces/${workspaceId}/archive`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: getCsrfHeaders(),
-          });
-          const result = await response.json();
-          if (!response.ok || !result.success) {
-            throw new Error(result.error?.message || 'Failed to archive workspace');
+          archiveBtn.classList.add('loading');
+          try {
+            const response = await fetch(`/api/admin/workspaces/${workspaceId}/archive`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: getCsrfHeaders(),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to archive workspace');
+            }
+            addToast('Workspace archived successfully', 'success');
+            window.location.reload();
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to archive workspace';
+            addToast(message, 'error');
+          } finally {
+            archiveBtn.classList.remove('loading');
           }
-          addToast('Workspace archived successfully', 'success');
-          window.location.reload();
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to archive workspace';
-          addToast(message, 'error');
-        } finally {
-          archiveBtn.classList.remove('loading');
-        }
-      });
+        },
+        { signal }
+      );
     }
 
     // Delete button and modal handlers
@@ -210,49 +216,60 @@ try {
       const workspaceName = deleteBtn.dataset.workspaceName || '';
       const workspaceId = deleteBtn.dataset.workspaceId || '';
 
-      deleteBtn.addEventListener('click', () => {
-        confirmInput.value = '';
-        confirmDeleteBtn.disabled = true;
-        deleteModal.showModal();
-      });
+      deleteBtn.addEventListener(
+        'click',
+        () => {
+          confirmInput.value = '';
+          confirmDeleteBtn.disabled = true;
+          deleteModal.showModal();
+        },
+        { signal }
+      );
 
-      confirmInput.addEventListener('input', () => {
-        confirmDeleteBtn.disabled = confirmInput.value !== workspaceName;
-      });
+      confirmInput.addEventListener(
+        'input',
+        () => {
+          confirmDeleteBtn.disabled = confirmInput.value !== workspaceName;
+        },
+        { signal }
+      );
 
-      confirmDeleteBtn.addEventListener('click', async () => {
-        confirmDeleteBtn.classList.add('loading');
-        try {
-          const response = await fetch(`/api/admin/workspaces/${workspaceId}/delete`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...getCsrfHeaders(),
-            },
-            body: JSON.stringify({ confirmName: confirmInput.value }),
-          });
-          const result = await response.json();
-          if (!response.ok || !result.success) {
-            throw new Error(result.error?.message || 'Failed to delete workspace');
+      confirmDeleteBtn.addEventListener(
+        'click',
+        async () => {
+          confirmDeleteBtn.classList.add('loading');
+          try {
+            const response = await fetch(`/api/admin/workspaces/${workspaceId}/delete`, {
+              method: 'DELETE',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getCsrfHeaders(),
+              },
+              body: JSON.stringify({ confirmName: confirmInput.value }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to delete workspace');
+            }
+            addToast('Workspace deleted successfully', 'success');
+            navigate('/admin/workspaces');
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to delete workspace';
+            addToast(message, 'error');
+            deleteModal.close();
+          } finally {
+            confirmDeleteBtn.classList.remove('loading');
           }
-          addToast('Workspace deleted successfully', 'success');
-          navigate('/admin/workspaces');
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to delete workspace';
-          addToast(message, 'error');
-          deleteModal.close();
-        } finally {
-          confirmDeleteBtn.classList.remove('loading');
-        }
-      });
+        },
+        { signal }
+      );
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initWorkspaceDetails);
-  } else {
-    initWorkspaceDetails();
-  }
+  initWorkspaceDetails();
   document.addEventListener('astro:page-load', initWorkspaceDetails);
+  document.addEventListener('astro:before-swap', () => {
+    controller?.abort();
+  });
 </script>

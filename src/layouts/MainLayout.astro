@@ -101,12 +101,15 @@ const hasHeaderSlot = Astro.slots.has('header');
   </script>
 
   <script>
+    import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
+
     const SCROLL_INIT_KEY = '__vtScrollRestorationInit';
     const SCROLL_PREFIX = 'vt-scroll:';
     const scopedWindow = window as Window & {
       [SCROLL_INIT_KEY]?: boolean;
       __vtPendingScroll?: number | null;
       __vtLastScrollTop?: number;
+      __vtScrollHandler?: (() => void) | null;
     };
 
     function getScrollContainer(): HTMLElement | null {
@@ -117,6 +120,7 @@ const hasHeaderSlot = Astro.slots.has('header');
       scopedWindow[SCROLL_INIT_KEY] = true;
       scopedWindow.__vtPendingScroll = null;
       scopedWindow.__vtLastScrollTop = 0;
+      scopedWindow.__vtScrollHandler = null;
 
       // Track scroll position continuously. The View Transitions API resets
       // container.scrollTop to 0 before astro:before-swap fires, so reading
@@ -124,49 +128,45 @@ const hasHeaderSlot = Astro.slots.has('header');
       // latest value on every scroll event and use that cached value when saving.
       function attachScrollTracker() {
         const container = getScrollContainer();
-        if (container) {
-          container.addEventListener(
-            'scroll',
-            () => {
-              scopedWindow.__vtLastScrollTop = container.scrollTop;
-            },
-            { passive: true }
-          );
+        if (!container) return;
+
+        // Remove previous listener to prevent stacking
+        if (scopedWindow.__vtScrollHandler) {
+          container.removeEventListener('scroll', scopedWindow.__vtScrollHandler);
         }
+
+        const handler = () => {
+          scopedWindow.__vtLastScrollTop = container.scrollTop;
+        };
+        scopedWindow.__vtScrollHandler = handler;
+        container.addEventListener('scroll', handler, { passive: true });
       }
 
       attachScrollTracker();
 
-      document.addEventListener('astro:before-swap', (e: any) => {
-        try {
-          // Use e.from for the outgoing URL — window.location may already
-          // reflect the destination during Navigation API traversals.
-          const fromUrl = new URL(e.from);
-          const fromKey = SCROLL_PREFIX + fromUrl.pathname + fromUrl.search;
+      document.addEventListener('astro:before-swap', (e: TransitionBeforeSwapEvent) => {
+        // Use e.from for the outgoing URL — window.location may already
+        // reflect the destination during Navigation API traversals.
+        // e.from and e.to are URL objects from TransitionBeforeSwapEvent.
+        const fromKey = SCROLL_PREFIX + e.from.pathname + e.from.search;
 
-          // For traversals (back/forward), read the target scroll BEFORE we
-          // overwrite any entry (the from/to keys could theoretically collide).
-          if (e.navigationType === 'traverse') {
-            const targetUrl = new URL(e.to);
-            const targetKey = SCROLL_PREFIX + targetUrl.pathname + targetUrl.search;
-            const saved = sessionStorage.getItem(targetKey);
-            if (saved) {
-              const parsed = parseInt(saved, 10);
-              scopedWindow.__vtPendingScroll = Number.isNaN(parsed) ? null : parsed;
-            } else {
-              scopedWindow.__vtPendingScroll = null;
-            }
+        // For traversals (back/forward), read the target scroll BEFORE we
+        // overwrite any entry (the from/to keys could theoretically collide).
+        if (e.navigationType === 'traverse') {
+          const targetKey = SCROLL_PREFIX + e.to.pathname + e.to.search;
+          const saved = sessionStorage.getItem(targetKey);
+          if (saved) {
+            const parsed = parseInt(saved, 10);
+            scopedWindow.__vtPendingScroll = Number.isNaN(parsed) ? null : parsed;
           } else {
             scopedWindow.__vtPendingScroll = null;
           }
-
-          // Save the cached scroll position for the page we're leaving.
-          sessionStorage.setItem(fromKey, String(scopedWindow.__vtLastScrollTop ?? 0));
-        } catch {
-          // Fallback: if e.from/e.to are missing or malformed, skip
-          // scroll save/restore for this navigation rather than breaking.
+        } else {
           scopedWindow.__vtPendingScroll = null;
         }
+
+        // Save the cached scroll position for the page we're leaving.
+        sessionStorage.setItem(fromKey, String(scopedWindow.__vtLastScrollTop ?? 0));
       });
 
       // Restore scroll in astro:page-load. Client scripts may re-fetch data
