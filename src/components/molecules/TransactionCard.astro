@@ -188,13 +188,15 @@ const cardClasses = [
                     role="menuitem"
                     class="flex items-center gap-2"
                     aria-label={
-                      hasHistory ? `View history for: ${primaryText}` : 'No history available'
+                      hasHistory
+                        ? `View edit history for: ${primaryText}`
+                        : 'No edit history available'
                     }
                     aria-disabled={!hasHistory}
                     {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
                   >
                     <History size={16} class="stroke-current" aria-hidden="true" />
-                    History
+                    View edit history
                   </button>
                 </li>
                 {showActions && !isDeleted && (
