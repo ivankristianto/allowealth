@@ -149,11 +149,15 @@ For each `<a href="/login">`, `<a href="/login/...">`, and `<a href="/signup">` 
 
 **Why signup needs hard reload:** `/signup` contains `<script is:inline nonce={cspNonce}>` (lines 353-498). On soft navigation, the browser's CSP header from the original page has a different nonce, so these inline scripts would be blocked.
 
-For `<Button>` components that render as `<a>` tags, add the attribute to the Button:
+**Important:** `data-astro-reload` only works on `<a>`, `<form>`, and `<area>` elements (Astro warning `astro(2000)`). For `<Button>` components that render as `<a>` tags, you have two options:
+
+1. Replace the `<Button>` with a plain `<a>` tag styled with DaisyUI button classes:
 
 ```astro
-<Button href="/signup" data-astro-reload>Get Started</Button>
+<a href="/signup" data-astro-reload class="btn btn-primary">Get Started</a>
 ```
+
+2. Or modify the `Button` component to pass through `data-astro-reload` to its inner `<a>` tag (if it supports spread props).
 
 Search patterns to find all links:
 
