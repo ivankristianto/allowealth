@@ -69,7 +69,7 @@ import { animate } from 'motion/mini';
 
 - `base-100` (`#111827`) → `base-200` (`#1e293b`) → `base-300` (`#334155`)
 - Each step is 6-10% luminance apart for visible card elevation and borders
-- Body text `base-content` (`#cbd5e1`) targets ~10:1 contrast (was ~15:1)
+- Body text `base-content` (`#cbd5e1`) targets ~12:1 contrast (was ~15:1)
 
 **Color Tokens (JavaScript):**
 

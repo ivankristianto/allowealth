@@ -54,15 +54,15 @@ Dark mode uses raised backgrounds, softer text, and desaturated accents for exte
 | `base-100`     | `#111827` | gray-900  | Body, sidebar                 |
 | `base-200`     | `#1e293b` | slate-800 | Cards, elevated surfaces      |
 | `base-300`     | `#334155` | slate-700 | Borders, hover states         |
-| `base-content` | `#cbd5e1` | slate-300 | Body text (~10:1 on base-100) |
+| `base-content` | `#cbd5e1` | slate-300 | Body text (~12:1 on base-100) |
 
 **Text hierarchy:**
 
 | Token          | Hex       | Contrast on base-100 | Role             |
 | -------------- | --------- | -------------------- | ---------------- |
-| `primary`      | `#e2e8f0` | ~12:1                | Headings         |
-| `base-content` | `#cbd5e1` | ~10:1                | Body text        |
-| `neutral`      | `#94a3b8` | ~6.5:1               | Secondary, muted |
+| `primary`      | `#e2e8f0` | ~14:1                | Headings         |
+| `base-content` | `#cbd5e1` | ~12:1                | Body text        |
+| `neutral`      | `#94a3b8` | ~7:1                 | Secondary, muted |
 
 **Semantic colors — dark mode adjusted:**
 

@@ -54,7 +54,7 @@
 
 /* Dark Theme - Comfortable Dark v1.2.0
    Raised floor, lowered ceiling, widened surface steps.
-   Targets ~10:1 body text, ~12:1 headings, visible card elevation. */
+   Targets ~12:1 body text, ~14:1 headings, visible card elevation. */
 @plugin "daisyui/theme" {
   name: 'dark';
   prefersdark: true;
@@ -64,10 +64,10 @@
   --color-base-100: #111827; /* gray-900  — body, sidebar */
   --color-base-200: #1e293b; /* slate-800 — cards, elevated surfaces */
   --color-base-300: #334155; /* slate-700 — borders, hover states */
-  --color-base-content: #cbd5e1; /* slate-300 — comfortable ~10:1 on base-100 */
+  --color-base-content: #cbd5e1; /* slate-300 — comfortable ~12:1 on base-100 */
 
   /* Primary / secondary — headings, emphasized text */
-  --color-primary: #e2e8f0; /* slate-200 — ~12:1 on base-100 */
+  --color-primary: #e2e8f0; /* slate-200 — ~14:1 on base-100 */
   --color-primary-content: #111827;
   --color-secondary: #e2e8f0;
   --color-secondary-content: #111827;
@@ -77,7 +77,7 @@
   --color-accent-content: #052e16; /* dark green for contrast on accent bg */
 
   /* Neutral — secondary text, icons, muted labels */
-  --color-neutral: #94a3b8; /* slate-400 — ~6.5:1 on base-100 */
+  --color-neutral: #94a3b8; /* slate-400 — ~7:1 on base-100 */
   --color-neutral-content: #111827;
 
   /* Semantic colors — tuned for dark mode comfort */
