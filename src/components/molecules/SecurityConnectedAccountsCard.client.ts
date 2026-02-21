@@ -16,9 +16,6 @@ function initConnectedAccounts() {
   const { signal } = controller;
 
   document.querySelectorAll<HTMLFormElement>('[data-unlink-form]').forEach((form) => {
-    if (form.dataset.initialized) return;
-    form.dataset.initialized = 'true';
-
     form.addEventListener(
       'submit',
       async (e) => {

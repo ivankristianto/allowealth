@@ -51,10 +51,6 @@ function initAccountSearch(): void {
   const input = document.querySelector<HTMLInputElement>('[data-account-search]');
   if (!input) return;
 
-  // Prevent duplicate listeners
-  if (input.dataset.initialized === 'true') return;
-  input.dataset.initialized = 'true';
-
   input.addEventListener(
     'input',
     () => {

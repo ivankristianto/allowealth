@@ -8,9 +8,6 @@ function initNotificationDropdown() {
   const containers = document.querySelectorAll('[data-notification-dropdown-container]');
 
   containers.forEach((container) => {
-    if ((container as HTMLElement).dataset.dropdownInitialized === 'true') return;
-    (container as HTMLElement).dataset.dropdownInitialized = 'true';
-
     const button = container.querySelector('[data-notification-button]');
     const panel = container.querySelector('[data-notification-panel]');
     const closeBtn = container.querySelector('[data-close-notifications]');
