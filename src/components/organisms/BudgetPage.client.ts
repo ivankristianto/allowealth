@@ -398,6 +398,9 @@ function sortBudgets(sortKey: string): void {
       cardGrid.querySelectorAll<HTMLElement>('[role="listitem"][data-sort-title]')
     );
     items.sort((a, b) => {
+      if (sortKey === 'usage-desc') {
+        return parseFloat(b.dataset.sortUsage || '0') - parseFloat(a.dataset.sortUsage || '0');
+      }
       if (sortKey === 'title-asc') {
         return (a.dataset.sortTitle || '').localeCompare(b.dataset.sortTitle || '');
       }
@@ -420,6 +423,9 @@ function sortBudgets(sortKey: string): void {
   if (tableBody) {
     const rows = Array.from(tableBody.querySelectorAll<HTMLElement>('[data-budget-table-row]'));
     rows.sort((a, b) => {
+      if (sortKey === 'usage-desc') {
+        return parseFloat(b.dataset.sortUsage || '0') - parseFloat(a.dataset.sortUsage || '0');
+      }
       if (sortKey === 'title-asc') {
         return (a.dataset.sortTitle || '').localeCompare(b.dataset.sortTitle || '');
       }
