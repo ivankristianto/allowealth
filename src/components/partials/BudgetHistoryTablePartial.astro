@@ -72,7 +72,7 @@ const sortedHistory = [...history].sort((a, b) => {
 <div class="@container">
   {
     sortedHistory.length > 0 ? (
-      <div class="divide-y divide-base-100">
+      <div class="divide-y divide-base-200">
         {sortedHistory.map((monthData, index) => {
           const budgetAmount = parseFloat(monthData.total_budget);
           const spentAmount = parseFloat(monthData.total_spent);
