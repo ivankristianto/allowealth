@@ -1,6 +1,6 @@
 # Design System
 
-**Version:** 1.1.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.2.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
 
 ## Quick Start
 
@@ -20,6 +20,14 @@ This guide reflects the **Oasis Finance** design system (v1.0.0).
 - **Warning:** `#f59e0b` (amber-500) - budget alerts, caution states
 - **Error:** `#f43f5e` (rose-500) - errors, over budget, danger states
 - **Info:** `#0ea5e9` (sky-500) - informational messages (distinct from accent)
+
+**Dark mode update (v1.2.0 - Comfortable Dark):**
+
+- **Base surfaces:** Raised floor with visible 3-step elevation (gray-900 → slate-800 → slate-700)
+- **Text:** Reduced glare — body text ~10:1, headings ~12:1 contrast (was ~15:1)
+- **Accent:** `#22c55e` (green-500) — desaturated from green-400 to reduce neon glare
+- **Error:** `#f87171` (red-400) — warmer, less pink than rose-400
+- **Borders:** Visible `#334155` (slate-700) — was nearly invisible `#131d30`
 
 See `styles.json` for complete token definitions and theme configurations.
 
