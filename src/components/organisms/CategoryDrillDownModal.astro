@@ -18,7 +18,7 @@ const { id } = Astro.props;
 ---
 
 <div data-category-drilldown-modal-container data-id={id}>
-  <Modal id={id} size="xl" closable={true} backdropClose={true}>
+  <Modal id={id} size="xl" closable={false} backdropClose={true}>
     <div slot="default" class="flex flex-col gap-6">
       {/* Loading state */}
       <div class="flex items-center justify-center py-8" data-modal-loading>
@@ -26,7 +26,7 @@ const { id } = Astro.props;
       </div>
 
       {/* Content container - will be populated with server-rendered HTML */}
-      <div data-modal-content class="hidden"></div>
+      <div data-drilldown-content class="hidden"></div>
     </div>
   </Modal>
 </div>
@@ -61,7 +61,7 @@ const { id } = Astro.props;
       if (!modal) return;
 
       const loadingContainer = container.querySelector('[data-modal-loading]');
-      const contentContainer = container.querySelector('[data-modal-content]');
+      const contentContainer = container.querySelector('[data-drilldown-content]');
 
       let currentData: CategoryDrillDownData | null = null;
       let activeFetchController: AbortController | null = null;
