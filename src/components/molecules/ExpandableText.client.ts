@@ -9,21 +9,24 @@
  * - Click/keyboard toggle between truncated and expanded states
  * - Dynamic role/tabindex/aria-expanded only when text actually overflows
  * - MutationObserver to re-scan when new elements are injected
- * - Idempotent — safe to call multiple times
+ * - Idempotent lifecycle with cleanup for view transitions
  */
 
-const EXPAND_INIT_KEY = '__expandableTextInit';
 const SELECTOR = '[data-expandable-text]';
 
+let initialized = false;
+let controller: AbortController | null = null;
+let observers: MutationObserver[] = [];
+
 /** Toggle expand/collapse on a target element. */
-function toggleExpand(target: HTMLElement, e: Event): void {
+function toggleExpand(target: HTMLElement, event: Event): void {
   const isTruncated = target.scrollWidth > target.clientWidth;
   const isExpanded = target.dataset.expanded === 'true';
 
   if (!isTruncated && !isExpanded) return;
 
-  e.stopPropagation();
-  e.preventDefault();
+  event.stopPropagation();
+  event.preventDefault();
 
   if (isExpanded) {
     target.classList.add('truncate');
@@ -38,50 +41,63 @@ function toggleExpand(target: HTMLElement, e: Event): void {
   }
 }
 
-/** Register document-level click and keyboard listeners (runs once). */
+/** Register document-level click and keyboard listeners (runs once per init cycle). */
 export function initExpandableText(): void {
-  const docAny = document as unknown as Record<string, unknown>;
-  if (docAny[EXPAND_INIT_KEY]) return;
-  docAny[EXPAND_INIT_KEY] = true;
+  if (initialized) return;
+  initialized = true;
 
-  document.addEventListener('click', (e: Event) => {
-    const target = (e.target as HTMLElement).closest(SELECTOR) as HTMLElement | null;
-    if (target) toggleExpand(target, e);
-  });
+  controller = new AbortController();
+  const { signal } = controller;
 
-  document.addEventListener('keydown', (e: Event) => {
-    const event = e as KeyboardEvent;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
+  document.addEventListener(
+    'click',
+    (event: Event) => {
+      const target = (event.target as HTMLElement).closest(SELECTOR) as HTMLElement | null;
+      if (target) toggleExpand(target, event);
+    },
+    { signal }
+  );
 
-    const target = (event.target as HTMLElement).closest(SELECTOR) as HTMLElement | null;
-    if (target) toggleExpand(target, event);
-  });
+  document.addEventListener(
+    'keydown',
+    (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') return;
+
+      const target = (keyboardEvent.target as HTMLElement).closest(SELECTOR) as HTMLElement | null;
+      if (target) toggleExpand(target, keyboardEvent);
+    },
+    { signal }
+  );
 }
 
 /** Mark truncated elements as interactive (role, tabindex, cursor). */
 export function markTruncated(): void {
-  document.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
-    const isTruncated = el.scrollWidth > el.clientWidth;
-    const isExpanded = el.dataset.expanded === 'true';
+  document.querySelectorAll<HTMLElement>(SELECTOR).forEach((element) => {
+    const isTruncated = element.scrollWidth > element.clientWidth;
+    const isExpanded = element.dataset.expanded === 'true';
 
     if (isTruncated || isExpanded) {
-      el.setAttribute('role', 'button');
-      el.setAttribute('tabindex', '0');
-      el.classList.add('cursor-pointer');
-      if (!el.hasAttribute('aria-expanded')) {
-        el.setAttribute('aria-expanded', 'false');
+      element.setAttribute('role', 'button');
+      element.setAttribute('tabindex', '0');
+      element.classList.add('cursor-pointer');
+      if (!element.hasAttribute('aria-expanded')) {
+        element.setAttribute('aria-expanded', 'false');
       }
     } else {
-      el.removeAttribute('role');
-      el.removeAttribute('tabindex');
-      el.removeAttribute('aria-expanded');
-      el.classList.remove('cursor-pointer');
+      element.removeAttribute('role');
+      element.removeAttribute('tabindex');
+      element.removeAttribute('aria-expanded');
+      element.classList.remove('cursor-pointer');
     }
   });
 }
 
 /** Observe containers that may inject TransactionCards dynamically. */
 export function observeExpandableContainers(): void {
+  observers.forEach((observer) => observer.disconnect());
+  observers = [];
+
   const containerSelectors = [
     '#transaction-list',
     '[data-modal-content]',
@@ -90,11 +106,31 @@ export function observeExpandableContainers(): void {
 
   for (const selector of containerSelectors) {
     const container = document.querySelector(selector);
-    if (container) {
-      new MutationObserver(markTruncated).observe(container, {
-        childList: true,
-        subtree: true,
-      });
-    }
+    if (!container) continue;
+
+    const observer = new MutationObserver(markTruncated);
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+    });
+    observers.push(observer);
   }
 }
+
+function cleanupExpandableText(): void {
+  controller?.abort();
+  controller = null;
+  initialized = false;
+  observers.forEach((observer) => observer.disconnect());
+  observers = [];
+}
+
+function initExpandableTextLifecycle(): void {
+  initExpandableText();
+  markTruncated();
+  observeExpandableContainers();
+}
+
+initExpandableTextLifecycle();
+document.addEventListener('astro:page-load', initExpandableTextLifecycle);
+document.addEventListener('astro:before-swap', cleanupExpandableText);

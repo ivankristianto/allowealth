@@ -31,7 +31,6 @@ const tablesToEmpty = [
   schema.categories,
   schema.accountCategories,
   schema.auditLogs,
-  schema.exchangeRates,
   schema.apiKeys,
   schema.passwordResetTokens,
   schema.sessions,

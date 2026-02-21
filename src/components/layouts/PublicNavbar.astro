@@ -62,9 +62,16 @@ const navLinks = [
     <!-- Auth Buttons -->
     <div class="flex items-center gap-3 sm:gap-4">
       <span data-auth-hide>
-        <Button variant="ghost" href="/login" size="md"> Sign in </Button>
+        <Button variant="ghost" href="/login" size="md" dataAstroReload> Sign in </Button>
       </span>
-      <Button variant="primary" href="/signup" size="md" data-auth-cta data-auth-href="/dashboard">
+      <Button
+        variant="primary"
+        href="/signup"
+        size="md"
+        data-auth-cta
+        data-auth-href="/dashboard"
+        dataAstroReload
+      >
         <span data-auth-cta-text data-auth-text="Enter Dashboard">Start Free</span>
       </Button>
     </div>

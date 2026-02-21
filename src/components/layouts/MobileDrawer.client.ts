@@ -19,14 +19,20 @@
 
 const LG_BREAKPOINT = 1024;
 
-const initializedDrawers = new WeakSet<HTMLElement>();
+let controller: AbortController | null = null;
+let closeDrawer: (() => void) | null = null;
 
 function initMobileDrawer(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
   const checkbox = document.getElementById('drawer-toggle') as HTMLInputElement | null;
   const drawerSide = document.querySelector('.drawer-side') as HTMLElement | null;
-  if (!checkbox || !drawerSide) return;
-  if (initializedDrawers.has(drawerSide)) return;
-  initializedDrawers.add(drawerSide);
+  if (!checkbox || !drawerSide) {
+    closeDrawer = null;
+    return;
+  }
   drawerSide.setAttribute('data-mobile-drawer-js', 'true');
 
   let isOpen = false;
@@ -49,6 +55,8 @@ function initMobileDrawer(): void {
     document.body.style.overflow = previousOverflow;
   }
 
+  closeDrawer = close;
+
   // Sever the native label→checkbox coupling on mobile.
   // Removing the `for` attribute guarantees labels cannot toggle the checkbox,
   // preventing DaisyUI's :root:has(.drawer-toggle:checked) from ever evaluating.
@@ -63,39 +71,62 @@ function initMobileDrawer(): void {
   }
 
   // Handle drawer toggle via delegated click on the re-attributed labels.
-  document.addEventListener('click', (e: Event) => {
-    if (!isMobile()) return;
+  document.addEventListener(
+    'click',
+    (e: Event) => {
+      if (!isMobile()) return;
 
-    const target = e.target as HTMLElement;
-    const label = target.closest('[data-drawer-toggle]');
-    if (!label) return;
+      const target = e.target as HTMLElement;
+      const label = target.closest('[data-drawer-toggle]');
+      if (!label) return;
 
-    isOpen ? close() : open();
-  });
+      isOpen ? close() : open();
+    },
+    { signal }
+  );
 
   // Safety net: if checkbox somehow gets checked, immediately reset it.
-  checkbox.addEventListener('change', () => {
-    if (isMobile()) checkbox.checked = false;
-  });
+  checkbox.addEventListener(
+    'change',
+    () => {
+      if (isMobile()) checkbox.checked = false;
+    },
+    { signal }
+  );
 
   // Close on Escape key
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && isOpen) {
-      e.preventDefault();
-      close();
-    }
-  });
+  document.addEventListener(
+    'keydown',
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
+        close();
+      }
+    },
+    { signal }
+  );
 
   // Close drawer when resizing from mobile to desktop
-  window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`).addEventListener('change', (e) => {
-    if (e.matches && isOpen) close();
-  });
+  window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`).addEventListener(
+    'change',
+    (e) => {
+      if (e.matches && isOpen) close();
+    },
+    { signal }
+  );
+
+  signal.addEventListener(
+    'abort',
+    () => {
+      close();
+      closeDrawer = null;
+    },
+    { once: true }
+  );
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initMobileDrawer, { once: true });
-} else {
-  initMobileDrawer();
-}
-
+initMobileDrawer();
 document.addEventListener('astro:page-load', initMobileDrawer);
+document.addEventListener('astro:before-swap', () => {
+  closeDrawer?.();
+});

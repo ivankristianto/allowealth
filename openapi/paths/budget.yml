@@ -32,7 +32,7 @@ paths:
           description: Currency (defaults to IDR)
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
             default: IDR
         - name: _render
           in: query
@@ -96,7 +96,7 @@ paths:
           description: Currency (defaults to IDR)
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
             default: IDR
         - name: months
           in: query
@@ -185,7 +185,7 @@ paths:
                   description: Target year
                 currency:
                   type: string
-                  enum: [IDR, USD]
+                  enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
                   description: Target currency
       responses:
         '200':
@@ -249,7 +249,7 @@ paths:
           description: Currency (defaults to IDR)
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
             default: IDR
       responses:
         '200':

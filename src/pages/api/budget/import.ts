@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { budgetService } from '@/services';
+import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * POST /api/budget/import
@@ -16,7 +17,15 @@ export const POST: APIRoute = async (context) => {
     const csvFile = formData.get('csv_file') as File | null;
     const month = parseInt(formData.get('month') as string, 10);
     const year = parseInt(formData.get('year') as string, 10);
-    const currency = formData.get('currency') as 'IDR' | 'USD';
+    const currencyParam = formData.get('currency');
+    const currency = typeof currencyParam === 'string' ? currencyParam : '';
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
 
     if (!csvFile) {
       return errorResponse('CSV file is required', 400);
@@ -35,7 +44,7 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Invalid year parameter', 400);
     }
 
-    if (currency !== 'IDR' && currency !== 'USD') {
+    if (!isValidCurrency(currency) || !allowedCurrencies.includes(currency)) {
       return errorResponse('Invalid currency parameter', 400);
     }
 
@@ -80,7 +89,14 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('No valid data rows found in CSV', 400);
     }
 
-    const result = await budgetService.importFromCSV(auth.workspaceId, rows, month, year, currency);
+    const selectedCurrency = currency as Currency;
+    const result = await budgetService.importFromCSV(
+      auth.workspaceId,
+      rows,
+      month,
+      year,
+      selectedCurrency
+    );
 
     return successResponse(result);
   } catch (error) {

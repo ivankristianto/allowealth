@@ -3,14 +3,23 @@ WorkspaceSettings:
   type: object
   required:
     - currency
+    - secondaryCurrency
     - weekStart
     - compactNumbers
   properties:
     currency:
       type: string
-      enum: [IDR, USD]
-      description: Default currency for the workspace
+      description: >
+        Primary workspace currency. Supported values: IDR, USD, SGD, PHP, EUR, GBP, MYR, THB,
+        JPY, AUD, KRW, INR.
       example: "IDR"
+    secondaryCurrency:
+      type: string
+      nullable: true
+      description: >
+        Optional secondary workspace currency. Must differ from primary currency.
+        Null or empty means single-currency mode.
+      example: "USD"
     weekStart:
       type: string
       enum: [sunday, monday]

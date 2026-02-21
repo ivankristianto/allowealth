@@ -43,7 +43,7 @@ const { accounts } = Astro.props;
             </div>
           </div>
           {account.connected ? (
-            <form method="POST" data-unlink-form data-provider={account.id}>
+            <form method="POST" data-unlink-form data-provider={account.id} data-astro-reload>
               <Button type="submit" variant="outline" size="sm" data-unlink-btn>
                 Disconnect
               </Button>

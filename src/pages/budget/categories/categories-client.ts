@@ -1,6 +1,7 @@
 // Categories Management Client-side script
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
+import { navigate } from 'astro:transitions/client';
 
 // Initialize when DOM is ready
 function initCategories() {
@@ -26,7 +27,7 @@ function initCategories() {
     const url = new URL(window.location.href);
     url.searchParams.set('search', (formData.get('search') as string) || '');
     url.searchParams.set('type', (formData.get('type') as string) || '');
-    window.location.href = url.toString();
+    navigate(url.toString());
   });
 
   // Event delegation for edit buttons
@@ -295,7 +296,7 @@ function initCategories() {
         addToast(`${successCount} categories created successfully!`, 'success');
         bulkModal.close();
         const urlParams = new URL(window.location.href);
-        window.location.href = urlParams.pathname + urlParams.search;
+        navigate(urlParams.pathname + urlParams.search);
       } else if (errors.length > 0) {
         // Partial or full failure — keep modal open so user can retry
         if (successCount > 0) {
@@ -310,10 +311,6 @@ function initCategories() {
   }
 }
 
-// Run initialization when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCategories);
-} else {
-  // DOM is already loaded, run immediately
-  initCategories();
-}
+// Run initialization
+initCategories();
+document.addEventListener('astro:page-load', initCategories);

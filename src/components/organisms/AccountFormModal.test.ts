@@ -12,7 +12,7 @@ interface AccountFormData {
   id?: string;
   name: string;
   type: AccountType;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   balance: string;
 }
 
@@ -25,7 +25,7 @@ const validateAccountType = (type: string): type is AccountType => {
   return Object.keys(ACCOUNT_TYPE_LABELS).includes(type);
 };
 
-const validateCurrency = (currency: string): currency is 'IDR' | 'USD' => {
+const validateCurrency = (currency: string): currency is Currency => {
   return currency === 'IDR' || currency === 'USD';
 };
 

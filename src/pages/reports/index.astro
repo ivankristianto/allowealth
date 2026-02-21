@@ -36,6 +36,8 @@ import type { ReportData, MemberSummaryRow } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
+import { workspaceMetaService } from '@/services';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 const currentPath = '/reports';
 
@@ -49,6 +51,18 @@ if (!user?.id) {
 const url = Astro.url;
 const urlRange = url.searchParams.get('range');
 const urlPeriod = url.searchParams.get('period');
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
+const selectedCurrency =
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
+    : workspaceCurrencyConfig.primary;
 
 // Default view configuration
 const defaultRange: 'monthly' | 'yearly' =
@@ -107,7 +121,7 @@ if (urlPeriod) {
 }
 
 // Fetch report data from backend service
-const currency: 'IDR' | 'USD' = 'IDR'; // P2: TODO - Support currency from user preferences (Issue #5 from code review)
+const currency: Currency = selectedCurrency;
 let reportData: ReportData;
 
 try {
@@ -123,23 +137,20 @@ try {
   return Astro.redirect('/reports?error=failed-to-load');
 }
 
-// Fetch account totals by class for summary cards
-let totalAccountsIdr = 0;
-let totalAccountsUsd = 0;
-let totalDebtIdr = 0;
-let totalDebtUsd = 0;
+// Fetch account totals by class for summary cards (selected report currency only)
+let totalAccounts = 0;
+let totalDebt = 0;
 
 try {
   const classTotals = await accountService.getTotalByClass(user.workspaceId);
   for (const row of classTotals) {
     const total = parseFloat(row.total || '0');
     if (isNaN(total)) continue;
+    if (row.currency !== currency) continue;
     if (row.account_class === 'debt') {
-      if (row.currency === 'USD') totalDebtUsd += Math.abs(total);
-      else totalDebtIdr += Math.abs(total);
+      totalDebt += Math.abs(total);
     } else {
-      if (row.currency === 'USD') totalAccountsUsd += total;
-      else totalAccountsIdr += total;
+      totalAccounts += total;
     }
   }
 } catch (error) {
@@ -229,7 +240,10 @@ const selectedPeriodLabel =
     />
   </div>
 
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10">
+  <div
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+    data-current-currency={currency}
+  >
     <Breadcrumb
       items={[{ label: 'Overview' }, { label: 'Member Spending', href: '/reports/members' }]}
     />
@@ -243,10 +257,8 @@ const selectedPeriodLabel =
         budgetHealth={reportDataForPartials.budgetHealth}
         expenseCategories={reportDataForPartials.expenseCategories}
         currency={reportDataForPartials.currency}
-        totalAccountsIdr={totalAccountsIdr}
-        totalAccountsUsd={totalAccountsUsd}
-        totalDebtIdr={totalDebtIdr}
-        totalDebtUsd={totalDebtUsd}
+        totalAccounts={totalAccounts}
+        totalDebt={totalDebt}
       />
     </div>
 
@@ -255,6 +267,7 @@ const selectedPeriodLabel =
       <ReportChartsPartial
         expenseByCategory={reportDataForPartials.expenseByCategory}
         trendData={reportDataForPartials.trendData}
+        currency={currency}
         resourceAllocationSubtitle={defaultRange === 'monthly'
           ? 'EXPENSE MIX'
           : 'YEARLY EXPENSE MIX'}

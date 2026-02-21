@@ -1,14 +1,15 @@
 import type { APIRoute } from 'astro';
-import { budgetService } from '@/services';
+import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * GET /api/budget/category/:id/remaining
  * Get remaining budget for a specific category in current month
  *
  * Query params:
- * - currency: 'IDR' | 'USD' (required) - Currency to use for budget lookup
+ * - currency: Currency (required) - Currency to use for budget lookup
  */
 export const GET: APIRoute = async (context) => {
   try {
@@ -21,8 +22,18 @@ export const GET: APIRoute = async (context) => {
 
     // Get currency from query param (required since categories no longer have currency)
     const currency = context.url.searchParams.get('currency');
-    if (!currency || (currency !== 'IDR' && currency !== 'USD')) {
-      return errorResponse('Currency is required and must be IDR or USD', 400);
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    if (!currency || !isValidCurrency(currency) || !allowedCurrencies.includes(currency)) {
+      return errorResponse(
+        'Currency is required and must match this workspace configured currencies',
+        400
+      );
     }
 
     const remaining = await budgetService.getCategoryRemaining(id, auth.workspaceId, currency);

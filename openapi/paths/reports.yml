@@ -48,10 +48,14 @@ paths:
           example: "2024-02"
         - name: currency
           in: query
-          description: Currency (defaults to IDR)
+          description: |
+            Currency for report aggregation.
+            Supported values: IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR.
+            Defaults to workspace primary currency when omitted.
+            Must match one of the workspace configured currencies (primary or secondary).
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
             default: IDR
         - name: user_id
           in: query
@@ -171,7 +175,7 @@ paths:
                   value:
                     success: false
                     error:
-                      message: "Invalid currency parameter. Must be 'IDR' or 'USD'."
+                      message: "Invalid currency parameter for this workspace."
                       code: "INVALID_CURRENCY"
                 invalidPartial:
                   value:
@@ -217,10 +221,14 @@ paths:
             pattern: '^\d{4}(-\d{2})?$'
         - name: currency
           in: query
-          description: Currency (defaults to IDR)
+          description: |
+            Currency for report aggregation.
+            Supported values: IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR.
+            Defaults to workspace primary currency when omitted.
+            Must match one of the workspace configured currencies (primary or secondary).
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
             default: IDR
       responses:
         '200':

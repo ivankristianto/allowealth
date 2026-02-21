@@ -5,14 +5,15 @@
  * and updates the chart dynamically with debouncing for performance.
  */
 
-import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
 import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import type { ForecastResult } from '@/lib/forecast';
 
 // Track in-flight requests per chart ID to prevent race conditions
 const requestControllers = new Map<string, AbortController>();
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
  * Initialize wealth trajectory input handlers
@@ -29,8 +30,6 @@ export function initWealthTrajectoryInputs(): void {
 
     if (!topupInput || !apyInput) return;
 
-    attachAmountFormatter(topupInput, 'IDR');
-
     // Get the chart container to find the chart ID
     const chartContainer = container
       .closest('[role="region"]')
@@ -39,23 +38,33 @@ export function initWealthTrajectoryInputs(): void {
 
     const chartId = chartContainer.getAttribute('data-chart-id');
     if (!chartId) return;
+    const currencyAttr = chartContainer.getAttribute('data-currency');
+    const currency: Currency = currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
 
-    // Debounced fetch function (500ms delay)
-    const debouncedFetch = debounce(async () => {
-      const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, 'IDR')) || 0;
-      const annualRate = parseFloat(apyInput.value) || 0;
+    attachAmountFormatter(topupInput, currency);
 
-      // Validate inputs
-      if (monthlyTopup < 0 || annualRate < 0 || annualRate > 100) {
-        return;
-      }
+    const scheduleForecastFetch = () => {
+      const existingTimer = debounceTimers.get(chartId);
+      if (existingTimer) clearTimeout(existingTimer);
 
-      await fetchAndUpdateForecast(chartId, monthlyTopup, annualRate);
-    }, 500);
+      const timer = setTimeout(async () => {
+        const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, currency)) || 0;
+        const annualRate = parseFloat(apyInput.value) || 0;
+
+        // Validate inputs
+        if (monthlyTopup < 0 || annualRate < 0 || annualRate > 100) {
+          return;
+        }
+
+        await fetchAndUpdateForecast(chartId, monthlyTopup, annualRate, currency);
+      }, 500);
+
+      debounceTimers.set(chartId, timer);
+    };
 
     // Attach input event listeners
-    topupInput.addEventListener('input', debouncedFetch);
-    apyInput.addEventListener('input', debouncedFetch);
+    topupInput.addEventListener('input', scheduleForecastFetch);
+    apyInput.addEventListener('input', scheduleForecastFetch);
   });
 }
 
@@ -65,7 +74,8 @@ export function initWealthTrajectoryInputs(): void {
 async function fetchAndUpdateForecast(
   chartId: string,
   monthlyTopup: number,
-  annualRate: number
+  annualRate: number,
+  currency: Currency
 ): Promise<void> {
   try {
     // Cancel previous request for this chart if exists
@@ -106,7 +116,7 @@ async function fetchAndUpdateForecast(
     updateChart(chartId, forecastData);
 
     // Update summary cards
-    updateSummaryCards(chartId, forecastData.summary, forecastData.input);
+    updateSummaryCards(chartId, forecastData.summary, forecastData.input, currency);
 
     // Remove loading state
     if (chartContainer) {
@@ -176,7 +186,8 @@ function updateSummaryCards(
     growthMultiple: number;
     currentTotal: number;
   },
-  input: { monthlyTopup: number; annualRate: number; years: number }
+  input: { monthlyTopup: number; annualRate: number; years: number },
+  currency: Currency
 ): void {
   // Find the chart container's parent region
   const chartContainer = document.querySelector(`[data-chart-id="${chartId}"]`);
@@ -191,7 +202,7 @@ function updateSummaryCards(
     const year10TargetCard = summaryCards[0];
     const year10TargetValue = year10TargetCard.querySelector('h3');
     if (year10TargetValue) {
-      year10TargetValue.textContent = formatCurrencyCompact(summary.year10Target);
+      year10TargetValue.textContent = formatCurrencyCompact(summary.year10Target, currency);
     }
     // Update label with correct year
     const year10Label = year10TargetCard.querySelector('[class*="StatLabel"]');
@@ -203,7 +214,7 @@ function updateSummaryCards(
     const totalInterestCard = summaryCards[1];
     const totalInterestValue = totalInterestCard.querySelector('h3');
     if (totalInterestValue) {
-      totalInterestValue.textContent = formatCurrencyCompact(summary.totalInterest);
+      totalInterestValue.textContent = formatCurrencyCompact(summary.totalInterest, currency);
     }
 
     // Update Growth Multiple
@@ -215,12 +226,14 @@ function updateSummaryCards(
   }
 }
 
-// Initialize on page load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initWealthTrajectoryInputs);
-} else {
-  initWealthTrajectoryInputs();
+function cleanupWealthTrajectory(): void {
+  debounceTimers.forEach((timer) => clearTimeout(timer));
+  debounceTimers.clear();
+
+  requestControllers.forEach((controller) => controller.abort());
+  requestControllers.clear();
 }
 
-// For Astro View Transitions
-document.addEventListener('astro:after-swap', initWealthTrajectoryInputs);
+initWealthTrajectoryInputs();
+document.addEventListener('astro:page-load', initWealthTrajectoryInputs);
+document.addEventListener('astro:before-swap', cleanupWealthTrajectory);

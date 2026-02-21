@@ -22,7 +22,7 @@ export const transactions = sqliteTable(
     to_account_id: text('to_account_id').references(() => accounts.id), // Destination account (for transfers only)
     type: text('type', { enum: ['expense', 'income', 'transfer'] }).notNull(),
     amount: text('amount').notNull(), // Stored as string for decimal precision
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
     description: text('description'),
     transaction_date: integer('transaction_date', { mode: 'timestamp' }).notNull(),
     updated_by_user_id: text('updated_by_user_id').references(() => users.id),

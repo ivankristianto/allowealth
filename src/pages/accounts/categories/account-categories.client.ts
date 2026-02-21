@@ -18,12 +18,14 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from '@/components/organisms/AccountCategoriesRenderer.client';
+import { navigate } from 'astro:transitions/client';
 
 // Store current filter state
 let currentTypeFilter: 'account' | 'liability' = 'account';
 
 // Prevent duplicate listener attachment
 let listenersAttached = false;
+let controller: AbortController | null = null;
 
 /**
  * Get current type filter from URL or default
@@ -160,87 +162,115 @@ function initAccountCategoriesPage(): void {
   // All listeners guarded — prevents duplication on astro:page-load re-init
   if (listenersAttached) return;
   listenersAttached = true;
+  controller = new AbortController();
+  const { signal } = controller;
 
   // Search form — full page reload (API has no search param; SSR handles filtering)
   const searchForm = document.getElementById(
     'account-category-search-form'
   ) as HTMLFormElement | null;
 
-  searchForm?.addEventListener('submit', (event: SubmitEvent) => {
-    event.preventDefault();
-    const formData = new FormData(searchForm);
-    const url = new URL(window.location.href);
-    url.searchParams.set('search', (formData.get('search') as string) || '');
-    url.searchParams.set('type', currentTypeFilter);
-    window.location.href = url.toString();
-  });
+  searchForm?.addEventListener(
+    'submit',
+    (event: SubmitEvent) => {
+      event.preventDefault();
+      const formData = new FormData(searchForm);
+      const url = new URL(window.location.href);
+      url.searchParams.set('search', (formData.get('search') as string) || '');
+      url.searchParams.set('type', currentTypeFilter);
+      navigate(url.toString());
+    },
+    { signal }
+  );
 
   // Tab toggle — AJAX fetch (type filter is supported by API)
   document.querySelectorAll('[name="type"][data-tab-toggle]').forEach((toggle) => {
-    toggle.addEventListener('change', async (event: Event) => {
-      const target = event.currentTarget as HTMLInputElement;
-      const newType = target.value as 'account' | 'liability';
+    toggle.addEventListener(
+      'change',
+      async (event: Event) => {
+        const target = event.currentTarget as HTMLInputElement;
+        const newType = target.value as 'account' | 'liability';
 
-      if (newType !== currentTypeFilter) {
-        currentTypeFilter = newType;
+        if (newType !== currentTypeFilter) {
+          currentTypeFilter = newType;
 
-        const url = new URL(window.location.href);
-        url.searchParams.set('type', currentTypeFilter);
-        window.history.replaceState({}, '', url.toString());
+          const url = new URL(window.location.href);
+          url.searchParams.set('type', currentTypeFilter);
+          window.history.replaceState({}, '', url.toString());
 
-        await fetchAndRenderCategories();
-      }
-    });
+          await fetchAndRenderCategories();
+        }
+      },
+      { signal }
+    );
   });
 
   // Create category button
   document.querySelectorAll('[data-action="create-account-category"]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      openCategoryModal('create');
-    });
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        openCategoryModal('create');
+      },
+      { signal }
+    );
   });
 
   // Edit & delete — event delegation on document
   // (needed because AJAX injection replaces table rows)
 
   // Edit category
-  document.addEventListener('click', (event: Event) => {
-    if (!(event.target instanceof Element)) return;
-    const target = event.target.closest(
-      '[data-action="edit-account-category"]'
-    ) as HTMLElement | null;
-    if (!target) return;
-    if ((target as HTMLButtonElement).disabled) return;
+  document.addEventListener(
+    'click',
+    (event: Event) => {
+      if (!(event.target instanceof Element)) return;
+      const target = event.target.closest(
+        '[data-action="edit-account-category"]'
+      ) as HTMLElement | null;
+      if (!target) return;
+      if ((target as HTMLButtonElement).disabled) return;
 
-    const categoryId = target.dataset.categoryId || '';
-    if (!categoryId) return;
+      const categoryId = target.dataset.categoryId || '';
+      if (!categoryId) return;
 
-    openCategoryModal('edit', {
-      id: categoryId,
-      name: target.dataset.categoryName || '',
-      description: target.dataset.categoryDescription || '',
-      type: (target.dataset.categoryType as 'account' | 'liability') || 'account',
-    });
-  });
+      openCategoryModal('edit', {
+        id: categoryId,
+        name: target.dataset.categoryName || '',
+        description: target.dataset.categoryDescription || '',
+        type: (target.dataset.categoryType as 'account' | 'liability') || 'account',
+      });
+    },
+    { signal }
+  );
 
   // Delete category
-  document.addEventListener('click', (event: Event) => {
-    if (!(event.target instanceof Element)) return;
-    const target = event.target.closest(
-      '[data-action="delete-account-category"]'
-    ) as HTMLElement | null;
-    if (!target) return;
-    if ((target as HTMLButtonElement).disabled) return;
+  document.addEventListener(
+    'click',
+    (event: Event) => {
+      if (!(event.target instanceof Element)) return;
+      const target = event.target.closest(
+        '[data-action="delete-account-category"]'
+      ) as HTMLElement | null;
+      if (!target) return;
+      if ((target as HTMLButtonElement).disabled) return;
 
-    const categoryId = target.dataset.categoryId || '';
-    const categoryName = target.dataset.categoryName || '';
-    const categoryMeta = target.dataset.categoryMeta || '';
+      const categoryId = target.dataset.categoryId || '';
+      const categoryName = target.dataset.categoryName || '';
+      const categoryMeta = target.dataset.categoryMeta || '';
 
-    if (categoryId) {
-      openDeleteDialog(categoryId, categoryName, categoryMeta);
-    }
-  });
+      if (categoryId) {
+        openDeleteDialog(categoryId, categoryName, categoryMeta);
+      }
+    },
+    { signal }
+  );
+}
+
+function cleanupAccountCategoriesPage(): void {
+  controller?.abort();
+  controller = null;
+  listenersAttached = false;
 }
 
 // Initialize on DOM ready
@@ -252,3 +282,4 @@ if (document.readyState === 'loading') {
 
 // Re-initialize on Astro page navigation (updates filter state from URL)
 document.addEventListener('astro:page-load', initAccountCategoriesPage);
+document.addEventListener('astro:before-swap', cleanupAccountCategoriesPage);

@@ -11,14 +11,14 @@ export interface BudgetHistoryState {
   selectedYear: number;
   isLoading: boolean;
   availableYears: number[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 // Individual atoms for granular reactivity
 export const selectedYear = atom<number>(new Date().getFullYear());
 export const isLoading = atom<boolean>(false);
 export const availableYears = atom<number[]>([]);
-export const currency = atom<'IDR' | 'USD'>('IDR');
+export const currency = atom<Currency>('IDR');
 
 // Computed value for checking if current year is selected
 export const isCurrentYear = computed(selectedYear, (year) => year === new Date().getFullYear());

@@ -21,7 +21,7 @@ Account:
       pattern: '^\d+(\.\d{1,2})?$'
     currency:
       type: string
-      enum: [IDR, USD]
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     status:
       type: string
       enum: [active, closed]

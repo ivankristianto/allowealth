@@ -16,6 +16,7 @@
 
 import BudgetSummary from '@components/organisms/BudgetSummary.astro';
 import type { AllocationDistribution } from '@/lib/utils/budget';
+import type { Currency } from '@/lib/enums';
 
 // Re-export the distribution item interface from the organism for external use
 export interface DistributionItem {
@@ -28,7 +29,7 @@ export interface Props {
   totalAllocated: number;
   totalSpent: number;
   distribution: DistributionItem[] | AllocationDistribution[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   totalCategories?: number;
   overBudgetCount?: number;
   criticalCount?: number;

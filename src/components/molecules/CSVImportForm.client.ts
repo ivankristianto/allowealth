@@ -10,7 +10,7 @@
 
 import { getCsrfToken } from '@/lib/csrf-client';
 
-(function () {
+function initCsvImportForm() {
   'use strict';
 
   // Helper function to clone icon templates
@@ -31,6 +31,10 @@ import { getCsrfToken } from '@/lib/csrf-client';
 
   // Get action URL from the hidden form's data attribute
   const importForm = document.getElementById('csv-import-form');
+  if (!(importForm instanceof HTMLFormElement)) return;
+  if (importForm.dataset.initialized === 'true') return;
+  importForm.dataset.initialized = 'true';
+
   const action = importForm ? importForm.getAttribute('data-action') || '' : '';
 
   if (!action) {
@@ -788,4 +792,7 @@ import { getCsrfToken } from '@/lib/csrf-client';
     hideError();
     showStep('upload');
   });
-})();
+}
+
+initCsvImportForm();
+document.addEventListener('astro:page-load', initCsvImportForm);

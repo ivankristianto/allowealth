@@ -17,7 +17,7 @@ import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting/currency
 
 export interface Props {
   amount: number;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   compact?: boolean;
   showSign?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';

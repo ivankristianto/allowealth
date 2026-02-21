@@ -33,12 +33,15 @@ interface EditDrawerDetail {
 
 const ACTIVE_TAB_CLASSES = ['bg-white', 'shadow-sm', 'text-primary'] as const;
 const INACTIVE_TAB_CLASSES = ['bg-transparent', 'text-neutral'] as const;
+let controller: AbortController | null = null;
 
 function initTransactionDrawer(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
   const drawer = document.getElementById('transaction-drawer');
   if (!(drawer instanceof HTMLElement)) return;
-  if (drawer.dataset.initialized === 'true') return;
-  drawer.dataset.initialized = 'true';
 
   const expenseBtn = drawer.querySelector('[data-tab="expense"]') as HTMLButtonElement | null;
   const incomeBtn = drawer.querySelector('[data-tab="income"]') as HTMLButtonElement | null;
@@ -82,8 +85,8 @@ function initTransactionDrawer(): void {
     expenseForm.setAttribute('aria-hidden', 'true');
   };
 
-  expenseBtn.addEventListener('click', () => setActiveTab('expense'));
-  incomeBtn.addEventListener('click', () => setActiveTab('income'));
+  expenseBtn.addEventListener('click', () => setActiveTab('expense'), { signal });
+  incomeBtn.addEventListener('click', () => setActiveTab('income'), { signal });
 
   const list = document.getElementById('drawer-recent-list') as HTMLUListElement | null;
   const emptyState = document.getElementById('empty-state-message');
@@ -206,146 +209,159 @@ function initTransactionDrawer(): void {
       updateSessionSummary();
     };
 
-    form.addEventListener('transaction-submitted', handleTransactionSubmitted);
+    form.addEventListener('transaction-submitted', handleTransactionSubmitted, { signal });
   });
 
   // Open drawer in create mode
-  document.addEventListener('open-transaction-drawer', ((event: CustomEvent<OpenDrawerDetail>) => {
-    resetEditMode();
-    const requestedType: TransactionType | undefined = event.detail?.type;
-    if (requestedType === 'expense' || requestedType === 'income') {
-      setActiveTab(requestedType);
-    }
-    drawer.dispatchEvent(new CustomEvent('drawer:open'));
-  }) as EventListener);
+  document.addEventListener(
+    'open-transaction-drawer',
+    ((event: CustomEvent<OpenDrawerDetail>) => {
+      resetEditMode();
+      const requestedType: TransactionType | undefined = event.detail?.type;
+      if (requestedType === 'expense' || requestedType === 'income') {
+        setActiveTab(requestedType);
+      }
+      drawer.dispatchEvent(new CustomEvent('drawer:open'));
+    }) as EventListener,
+    { signal }
+  );
 
   // Open drawer in edit mode with transaction data
-  document.addEventListener('edit-transaction-drawer', ((event: CustomEvent<EditDrawerDetail>) => {
-    const detail: EditDrawerDetail = event.detail;
-    if (!detail?.id) return;
+  document.addEventListener(
+    'edit-transaction-drawer',
+    ((event: CustomEvent<EditDrawerDetail>) => {
+      const detail: EditDrawerDetail = event.detail;
+      if (!detail?.id) return;
 
-    const type: TransactionType = detail.type === 'income' ? 'income' : 'expense';
-    setActiveTab(type);
+      const type: TransactionType = detail.type === 'income' ? 'income' : 'expense';
+      setActiveTab(type);
 
-    // Hide tabs and recent items for edit mode
-    const tabContainer: HTMLElement | null = drawer.querySelector('[role="tablist"]');
-    const recentSection: HTMLElement | null = drawer.querySelector('[data-recent-section]');
-    if (tabContainer) tabContainer.classList.add('hidden');
-    if (recentSection) recentSection.classList.add('hidden');
+      // Hide tabs and recent items for edit mode
+      const tabContainer: HTMLElement | null = drawer.querySelector('[role="tablist"]');
+      const recentSection: HTMLElement | null = drawer.querySelector('[data-recent-section]');
+      if (tabContainer) tabContainer.classList.add('hidden');
+      if (recentSection) recentSection.classList.add('hidden');
 
-    // Get the active form
-    const formContainer = type === 'expense' ? expenseForm : incomeForm;
-    const form = formContainer?.querySelector(
-      'form[data-transaction-form]'
-    ) as HTMLFormElement | null;
-    if (!form) return;
+      // Get the active form
+      const formContainer = type === 'expense' ? expenseForm : incomeForm;
+      const form = formContainer?.querySelector(
+        'form[data-transaction-form]'
+      ) as HTMLFormElement | null;
+      if (!form) return;
 
-    // Set edit mode on form
-    form.dataset.mode = 'edit';
-    form.dataset.transactionId = detail.id;
+      // Set edit mode on form
+      form.dataset.mode = 'edit';
+      form.dataset.transactionId = detail.id;
 
-    // Populate form fields
-    const setInput = (name: string, value: string | number | null | undefined): void => {
-      const input = form.querySelector(`[name="${name}"]`) as
-        | HTMLInputElement
-        | HTMLSelectElement
-        | null;
-      if (input) {
-        input.value = value == null ? '' : String(value);
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+      // Populate form fields
+      const setInput = (name: string, value: string | number | null | undefined): void => {
+        const input = form.querySelector(`[name="${name}"]`) as
+          | HTMLInputElement
+          | HTMLSelectElement
+          | null;
+        if (input) {
+          input.value = value == null ? '' : String(value);
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      };
+
+      setInput('title', detail.title ?? detail.description ?? '');
+      setInput('amount', detail.amount ?? '');
+      setInput('currency', detail.currency ?? DEFAULT_CURRENCY);
+      setInput('category_id', detail.category_id ?? '');
+      setInput('account_id', detail.account_id ?? '');
+      setInput('transaction_date', detail.transaction_date ?? '');
+
+      // Update category chip active state
+      if (detail.category_id) {
+        const chips = form.querySelectorAll<HTMLButtonElement>('[data-category-chip]');
+        // Auto-expand overflow if selected category is hidden
+        const overflowChips = form.querySelectorAll<HTMLButtonElement>('[data-category-overflow]');
+        const isOverflow = Array.from(overflowChips).some(
+          (c) => c.dataset.categoryChip === detail.category_id
+        );
+        if (isOverflow) {
+          overflowChips.forEach((chip) => chip.classList.remove('hidden'));
+          const catToggle = form.querySelector(
+            '[data-category-toggle]'
+          ) as HTMLButtonElement | null;
+          if (catToggle) {
+            catToggle.setAttribute('aria-expanded', 'true');
+            catToggle.textContent = 'Less';
+          }
+        }
+        chips.forEach((chip) => {
+          const isActive = chip.dataset.categoryChip === detail.category_id;
+          chip.classList.toggle('bg-accent', isActive);
+          chip.classList.toggle('text-white', isActive);
+          chip.classList.toggle('bg-base-200', !isActive);
+          chip.classList.toggle('text-base-content/70', !isActive);
+          chip.classList.toggle('hover:bg-accent/10', !isActive);
+          chip.classList.toggle('hover:text-accent', !isActive);
+          chip.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
       }
-    };
 
-    setInput('title', detail.title ?? detail.description ?? '');
-    setInput('amount', detail.amount ?? '');
-    setInput('currency', detail.currency ?? DEFAULT_CURRENCY);
-    setInput('category_id', detail.category_id ?? '');
-    setInput('account_id', detail.account_id ?? '');
-    setInput('transaction_date', detail.transaction_date ?? '');
+      // Update date quick-pick active state
+      if (detail.transaction_date) {
+        const todayStr = form.dataset.today || '';
+        const yesterdayStr = form.dataset.yesterday || '';
+        const datePickBtns = form.querySelectorAll<HTMLElement>('[data-date-pick]');
+        const dateCustomInput = form.querySelector('[data-date-custom]') as HTMLInputElement | null;
+        const dateLabel = form.querySelector('[data-date-label]') as HTMLElement | null;
 
-    // Update category chip active state
-    if (detail.category_id) {
-      const chips = form.querySelectorAll<HTMLButtonElement>('[data-category-chip]');
-      // Auto-expand overflow if selected category is hidden
-      const overflowChips = form.querySelectorAll<HTMLButtonElement>('[data-category-overflow]');
-      const isOverflow = Array.from(overflowChips).some(
-        (c) => c.dataset.categoryChip === detail.category_id
-      );
-      if (isOverflow) {
-        overflowChips.forEach((chip) => chip.classList.remove('hidden'));
-        const catToggle = form.querySelector('[data-category-toggle]') as HTMLButtonElement | null;
-        if (catToggle) {
-          catToggle.setAttribute('aria-expanded', 'true');
-          catToggle.textContent = 'Less';
+        let activePick = 'custom';
+        if (detail.transaction_date === todayStr) activePick = 'today';
+        else if (detail.transaction_date === yesterdayStr) activePick = 'yesterday';
+
+        datePickBtns.forEach((btn) => {
+          const pick = btn.dataset.datePick || '';
+          const isActive = pick === activePick;
+          btn.classList.toggle('btn-accent', isActive);
+          btn.classList.toggle('text-accent-content', isActive);
+          btn.classList.toggle('btn-ghost', !isActive);
+          btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+
+        if (dateCustomInput) {
+          dateCustomInput.value = detail.transaction_date;
+        }
+        if (dateLabel) {
+          if (activePick === 'custom') {
+            const d = new Date(detail.transaction_date + 'T00:00:00');
+            dateLabel.textContent = d.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+            });
+          } else {
+            dateLabel.textContent = 'Other';
+          }
         }
       }
-      chips.forEach((chip) => {
-        const isActive = chip.dataset.categoryChip === detail.category_id;
-        chip.classList.toggle('bg-accent', isActive);
-        chip.classList.toggle('text-white', isActive);
-        chip.classList.toggle('bg-base-200', !isActive);
-        chip.classList.toggle('text-base-content/70', !isActive);
-        chip.classList.toggle('hover:bg-accent/10', !isActive);
-        chip.classList.toggle('hover:text-accent', !isActive);
-        chip.setAttribute('aria-checked', isActive ? 'true' : 'false');
-      });
-    }
 
-    // Update date quick-pick active state
-    if (detail.transaction_date) {
-      const todayStr = form.dataset.today || '';
-      const yesterdayStr = form.dataset.yesterday || '';
-      const datePickBtns = form.querySelectorAll<HTMLElement>('[data-date-pick]');
-      const dateCustomInput = form.querySelector('[data-date-custom]') as HTMLInputElement | null;
-      const dateLabel = form.querySelector('[data-date-label]') as HTMLElement | null;
-
-      let activePick = 'custom';
-      if (detail.transaction_date === todayStr) activePick = 'today';
-      else if (detail.transaction_date === yesterdayStr) activePick = 'yesterday';
-
-      datePickBtns.forEach((btn) => {
-        const pick = btn.dataset.datePick || '';
-        const isActive = pick === activePick;
-        btn.classList.toggle('btn-accent', isActive);
-        btn.classList.toggle('text-accent-content', isActive);
-        btn.classList.toggle('btn-ghost', !isActive);
-        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-      });
-
-      if (dateCustomInput) {
-        dateCustomInput.value = detail.transaction_date;
-      }
-      if (dateLabel) {
-        if (activePick === 'custom') {
-          const d = new Date(detail.transaction_date + 'T00:00:00');
-          dateLabel.textContent = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        } else {
-          dateLabel.textContent = 'Other';
+      // Update currency badge
+      if (detail.currency) {
+        const currencyBadge = form.querySelector('[data-currency-badge]') as HTMLElement | null;
+        if (currencyBadge) {
+          const meta = CURRENCY_META[detail.currency as Currency];
+          if (meta) {
+            currencyBadge.textContent = `${meta.symbol} ${detail.currency}`;
+          }
         }
       }
-    }
 
-    // Update currency badge
-    if (detail.currency) {
-      const currencyBadge = form.querySelector('[data-currency-badge]') as HTMLElement | null;
-      if (currencyBadge) {
-        const meta = CURRENCY_META[detail.currency as Currency];
-        if (meta) {
-          currencyBadge.textContent = `${meta.symbol} ${detail.currency}`;
-        }
-      }
-    }
+      // Update submit button text
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (submitBtn) submitBtn.textContent = 'Save Changes';
 
-    // Update submit button text
-    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-    if (submitBtn) submitBtn.textContent = 'Save Changes';
+      // Update drawer title
+      const titleEl = drawer.querySelector('[id$="-title"]');
+      if (titleEl) titleEl.textContent = `Edit ${type === 'expense' ? 'Expense' : 'Income'}`;
 
-    // Update drawer title
-    const titleEl = drawer.querySelector('[id$="-title"]');
-    if (titleEl) titleEl.textContent = `Edit ${type === 'expense' ? 'Expense' : 'Income'}`;
-
-    drawer.dispatchEvent(new CustomEvent('drawer:open'));
-  }) as EventListener);
+      drawer.dispatchEvent(new CustomEvent('drawer:open'));
+    }) as EventListener,
+    { signal }
+  );
 
   function resetEditMode(): void {
     // Restore tabs and recent section
@@ -458,17 +474,24 @@ function initTransactionDrawer(): void {
   }
 
   // Reset when drawer closes
-  drawer.addEventListener('drawer-closed', () => {
-    const hadSubmissions = hasSubmittedInSession;
-    resetEditMode();
-    resetSessionState();
-    hasSubmittedInSession = false;
+  drawer.addEventListener(
+    'drawer-closed',
+    () => {
+      const hadSubmissions = hasSubmittedInSession;
+      resetEditMode();
+      resetSessionState();
+      hasSubmittedInSession = false;
 
-    if (hadSubmissions) {
-      document.dispatchEvent(new CustomEvent('transactions-changed'));
-    }
-  });
+      if (hadSubmissions) {
+        document.dispatchEvent(new CustomEvent('transactions-changed'));
+      }
+    },
+    { signal }
+  );
 }
 
 initTransactionDrawer();
 document.addEventListener('astro:page-load', initTransactionDrawer);
+document.addEventListener('astro:before-swap', () => {
+  controller?.abort();
+});

@@ -3,6 +3,7 @@ import { AccountService } from '../account.service';
 import { createMockDatabase, createMockAccount, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager } from '@/lib/cache';
 import { ServiceErrorCode } from '../service-errors';
+import type { Currency } from '@/lib/constants/currency';
 
 describe('AccountService.update() - currency lock', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
@@ -13,9 +14,18 @@ describe('AccountService.update() - currency lock', () => {
     mockDb = createMockDatabase();
     resetMockDatabase(mockDb);
     accountService = new AccountService(mockDb);
+    (mockDb.query.workspaces.findFirst as any).mockResolvedValue({ id: 'workspace-1' });
   });
 
+  function mockWorkspaceCurrencies(primary: Currency, secondary: Currency | null = null): void {
+    (mockDb.query.workspaceMeta.findFirst as any)
+      .mockResolvedValueOnce({ meta_value: primary })
+      .mockResolvedValueOnce(secondary ? { meta_value: secondary } : undefined);
+  }
+
   it('should throw CURRENCY_LOCKED when changing currency with history beyond initial entry', async () => {
+    mockWorkspaceCurrencies('IDR', 'USD');
+
     const account = createMockAccount({
       id: 'account-1',
       currency: 'IDR',
@@ -43,6 +53,8 @@ describe('AccountService.update() - currency lock', () => {
   });
 
   it('should allow currency change when only initial history entry exists', async () => {
+    mockWorkspaceCurrencies('IDR', 'USD');
+
     const account = createMockAccount({
       id: 'account-1',
       currency: 'IDR',
@@ -76,6 +88,8 @@ describe('AccountService.update() - currency lock', () => {
   });
 
   it('should allow currency change when no history exists at all', async () => {
+    mockWorkspaceCurrencies('IDR', 'USD');
+
     const account = createMockAccount({
       id: 'account-1',
       currency: 'IDR',

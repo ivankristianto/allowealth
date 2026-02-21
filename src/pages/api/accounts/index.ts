@@ -12,6 +12,7 @@ import { logError } from '@/lib/utils';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
 import { getCacheManager, CacheTags } from '@/lib/cache';
+import { AVAILABLE_CURRENCIES, isValidCurrency } from '@/lib/constants/currency';
 
 // Valid account types derived from the canonical source of truth
 const VALID_ACCOUNT_TYPES = Object.keys(ACCOUNT_TYPE_LABELS) as [AccountType, ...AccountType[]];
@@ -30,7 +31,7 @@ const createAccountSchema = z
     categoryId: z.string().min(1).optional(),
     type: z.enum(VALID_ACCOUNT_TYPES).optional(),
     balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
-    currency: z.enum(['IDR', 'USD']),
+    currency: z.enum(AVAILABLE_CURRENCIES),
   })
   .refine((data) => data.categoryId || data.type, {
     message: 'Category or type is required',
@@ -59,7 +60,7 @@ export const GET: APIRoute = async (context) => {
     if (categoryId) {
       filters.category_id = categoryId;
     }
-    if (currency && (currency === 'IDR' || currency === 'USD')) {
+    if (currency && isValidCurrency(currency)) {
       filters.currency = currency;
     }
     if (owner) {

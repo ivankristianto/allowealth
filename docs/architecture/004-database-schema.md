@@ -45,7 +45,7 @@ The application uses a **workspace-centric** multi-tenant model:
 ## Schema Overview
 
 ```
-21 TABLES
+20 TABLES
 
   WORKSPACE MANAGEMENT          AUTH & USERS                FINANCIAL DATA
   ─────────────────────         ────────────                ──────────────
@@ -56,9 +56,8 @@ The application uses a **workspace-centric** multi-tenant model:
                                 email_verification_tokens   account_categories
   SECURITY & AUDIT              oauth_accounts              account_history
   ────────────────                                          account_update_reminders
-  api_keys                      REFERENCE DATA              account_snapshots
-  audit_logs                    ──────────────              account_snapshot_items
-                                exchange_rates
+  api_keys                                                 account_snapshots
+  audit_logs                                               account_snapshot_items
 ```
 
 ## Entity Relationship Diagram
@@ -377,11 +376,12 @@ Flexible key-value storage for workspace settings (currency preferences, display
 - **Primary Key**: `id` (text)
 - **Foreign Keys**: `workspace_id` → `workspaces.id` (cascade delete)
 - **Key Fields**:
-  - `meta_key`: Setting key (e.g., 'currency', 'weekStart', 'compactNumbers')
+  - `meta_key`: Setting key (e.g., 'currency', 'secondary_currency', 'weekStart', 'compactNumbers')
   - `meta_value`: Setting value (JSON string or simple value)
 - **Unique Constraint**: (`workspace_id`, `meta_key`)
 - **Common Settings**:
-  - `currency`: Default currency ('IDR' | 'USD')
+  - `currency`: Primary workspace currency (IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR)
+  - `secondary_currency`: Optional secondary workspace currency (empty string means disabled)
   - `weekStart`: Week start day ('sunday' | 'monday')
   - `compactNumbers`: Whether to show compact numbers (boolean as string)
 
@@ -528,7 +528,7 @@ Period-specific budget allocations for categories. Shared across the workspace.
   - `month`: Month (1-12)
   - `year`: Year (YYYY)
   - `budget_amount`: Budget limit for this period (string for precision)
-  - `currency`: IDR | USD
+  - `currency`: Currency code (e.g., IDR, USD)
   - `is_closed`: Whether this budget period is closed (for book closing)
   - `notes`: Optional notes for this budget period
 - **Unique Constraint**: (workspace_id, category_id, month, year)
@@ -550,7 +550,7 @@ Financial transactions (income/expenses/transfers). Shared across the workspace.
   - `created_by_user_id`: User who created this transaction
   - `type`: 'expense' | 'income' | 'transfer'
   - `amount`: Transaction amount (string for precision)
-  - `currency`: IDR | USD
+  - `currency`: Currency code (e.g., IDR, USD)
   - `description`: Optional notes
   - `transaction_date`: When transaction occurred
   - `updated_by_user_id`: User who last updated (audit trail)
@@ -595,7 +595,7 @@ Accounts representing both accounts (what you own) and liabilities (what you owe
   - `account_class`: Classification for allocation calculations ('liquid' | 'non_liquid' | 'debt')
   - `balance`: Current value (positive for accounts, positive for liabilities - represents amount owed) (string for precision)
   - `initial_balance`: Original balance at creation (string for precision)
-  - `currency`: IDR | USD
+  - `currency`: Currency code (e.g., IDR, USD)
   - `credit_limit`: For credit cards only, the maximum credit limit (string for precision)
   - `is_cash_account`: Flag for cash-type accounts (used for liquidity calculations)
   - `status`: 'active' | 'closed'
@@ -664,23 +664,8 @@ Individual account values within a snapshot.
   - `account_id` → `accounts.id`
 - **Key Fields**:
   - `balance`: Account value at snapshot time (string for precision)
-  - `currency`: IDR | USD
+  - `currency`: Currency code (e.g., IDR, USD)
 - **Use Case**: Detailed breakdown of monthly net worth
-
-### Reference Data
-
-#### `exchange_rates`
-
-Currency conversion rates (global, not per-user).
-
-- **Primary Key**: `id` (text)
-- **Key Fields**:
-  - `from_currency`: IDR | USD
-  - `to_currency`: IDR | USD
-  - `rate`: Conversion rate (string for precision)
-  - `effective_date`: When this rate became effective
-- **No User Relation**: Shared across all users
-- **Use Case**: Currency conversion for multi-currency support
 
 ## Data Type Conventions
 
@@ -715,11 +700,11 @@ const sqliteTimestampNow = sql`(cast((julianday('now') - 2440587.5)*86400000 as 
 
 ### Enums
 
-**Defined at schema level for type safety.**
+**Use enums for bounded values; keep currency open as text.**
 
 ```typescript
 type: text('type', { enum: ['expense', 'income'] }).notNull();
-currency: text('currency', { enum: ['IDR', 'USD'] }).notNull();
+currency: text('currency').notNull(); // Validate allowed currencies in app/service layer
 ```
 
 ### Booleans
@@ -823,22 +808,22 @@ As data grows, consider adding:
 
 ### Currency Fields
 
-Two currencies supported: `IDR` (Indonesian Rupiah) and `USD` (US Dollar).
+Supported currencies are configurable from the shared currency constants:
+`IDR`, `USD`, `SGD`, `PHP`, `EUR`, `GBP`, `MYR`, `THB`, `JPY`, `AUD`, `KRW`, `INR`.
 
 ### Storage Strategy
 
 1. **Native Currency**: Store amounts in their original currency
-2. **User Preference**: User's primary currency stored in `user_meta` for display
-3. **Conversion**: Use `exchange_rates` for real-time conversion
+2. **Workspace Preferences**: Primary/secondary display currencies stored in `workspace_meta`
+3. **No Stored FX Table**: Dashboard/API aggregates by native currency
 4. **Display Options**:
-   - Show converted totals only
    - Show individual currency breakdowns
-   - Show both
+   - Show selected workspace currencies side-by-side
 
 ### Example Query Pattern
 
 ```typescript
-// Fetch transactions with conversion
+// Fetch transactions (native currencies)
 const txns = await db.query.transactions.findMany({
   where: eq(transactions.user_id, userId),
   with: {
@@ -848,12 +833,15 @@ const txns = await db.query.transactions.findMany({
   },
 });
 
-// Convert to primary currency
-const rates = await getExchangeRates();
-const converted = txns.map((txn) => ({
-  ...txn,
-  convertedAmount: convertCurrency(txn.amount, txn.currency, user.settings.primary_currency, rates),
-}));
+// Aggregate by currency
+const totalsByCurrency = txns.reduce(
+  (acc, txn) => {
+    const current = Number(acc[txn.currency] ?? 0);
+    acc[txn.currency] = (current + Number(txn.amount)).toString();
+    return acc;
+  },
+  {} as Record<string, string>
+);
 ```
 
 ## Migration Strategy
@@ -871,7 +859,7 @@ drizzle/
 ```
 
 > **Note**: Migrations were consolidated on 2026-02-16 into a single initial migration per dialect.
-> All 21 tables are defined in the initial migration.
+> All 20 tables are defined in the initial migration.
 
 ### Migration Commands
 
@@ -1008,7 +996,6 @@ src/db/schema/
 │   ├── account-snapshot-items.ts   # Snapshot details
 │   ├── audit-logs.ts             # Audit trail
 │   ├── api-keys.ts               # API key management
-│   └── exchange-rates.ts         # Currency conversion
 └── postgresql/                   # PostgreSQL schema (production)
     └── ... (mirrors sqlite structure)
 ```
@@ -1020,7 +1007,7 @@ src/db/schema/
 3. **Role-Based Access**: Users have `admin` or `member` role within their workspace
 4. **Decimal Precision**: Money stored as strings to prevent floating-point errors
 5. **Soft Deletes**: Transactions, accounts, and users use `deleted_at` for audit trail
-6. **Multi-Currency**: Native currency storage with conversion at query time
+6. **Multi-Currency**: Native currency storage with per-currency aggregation
 7. **Type Safety**: Drizzle schema provides end-to-end TypeScript types
 8. **Modular Organization**: One file per table for maintainability
 

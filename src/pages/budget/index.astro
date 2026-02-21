@@ -27,6 +27,7 @@ import BudgetAdviceBannerPartial from '@components/partials/BudgetAdviceBannerPa
 import {
   budgetService,
   categoryService,
+  workspaceMetaService,
   type BudgetSummary as BudgetSummaryType,
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
@@ -35,6 +36,7 @@ import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
 import { getMonthName } from '@/lib/utils/date';
 import { buildBudgetPeriodOptions } from '@/lib/utils/budget-period';
 import { CircleX } from '@lucide/astro';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 const user = Astro.locals.user;
 const currentPath = '/budget';
@@ -49,7 +51,6 @@ if (!user) {
 const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
-const currencyParam = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
 
 // Parse and validate year/month parameters with strict numeric validation
 const now = new Date();
@@ -70,7 +71,19 @@ const isValidMonth =
   parsedMonth !== null && Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12;
 const selectedMonth = isValidMonth ? parsedMonth : currentMonth;
 
-const selectedCurrency = currencyParam || 'IDR';
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
+const selectedCurrency =
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
+    : workspaceCurrencyConfig.primary;
 
 // Canonicalize URL if invalid params were provided
 const hasInvalidParams =
@@ -80,7 +93,6 @@ if (hasInvalidParams) {
   const canonicalUrl = new URL(Astro.request.url);
   canonicalUrl.searchParams.set('year', selectedYear.toString());
   canonicalUrl.searchParams.set('month', selectedMonth.toString());
-  canonicalUrl.searchParams.set('currency', selectedCurrency);
   return Astro.redirect(canonicalUrl.pathname + '?' + canonicalUrl.searchParams.toString());
 }
 
@@ -441,9 +453,11 @@ const copyDisabledTooltip =
    * - Edit budget handlers: Opens the modal with pre-filled data
    */
   import { initBudgetPage, cleanup } from '@components/organisms/BudgetPage.client';
+  import { navigate } from 'astro:transitions/client';
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   import { buildBudgetUrlForPeriod } from '@/lib/utils/budget-period';
   import { addToast } from '@/lib/stores/toastStore';
+  import { isValidCurrency } from '@/lib/constants/currency';
 
   // Track if page-load listener is registered to prevent accumulation
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
@@ -487,7 +501,8 @@ const copyDisabledTooltip =
         const container = document.querySelector('[data-budget-page]') as HTMLElement;
         const year = container?.dataset.year;
         const month = container?.dataset.month;
-        const currency = container?.dataset.currency || 'IDR';
+        const rawCurrency = container?.dataset.currency ?? null;
+        const currency = rawCurrency && isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
 
         try {
           const res = await fetch(
@@ -569,6 +584,9 @@ const copyDisabledTooltip =
       const categoryName = btn.dataset.categoryName;
       const period = btn.dataset.period;
       if (!categoryId || !categoryName || !period) return;
+      const container = document.querySelector('[data-budget-page]') as HTMLElement | null;
+      const rawCurrency = container?.dataset.currency ?? null;
+      const currency = rawCurrency && isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
 
       document.dispatchEvent(
         new CustomEvent('open-category-drilldown', {
@@ -580,6 +598,7 @@ const copyDisabledTooltip =
             spent: parseFloat(btn.dataset.spent || '0'),
             budgetLimit: btn.dataset.budgetLimit ? parseFloat(btn.dataset.budgetLimit) : null,
             period,
+            currency,
           },
         })
       );
@@ -606,9 +625,7 @@ const copyDisabledTooltip =
       const { period } = (event as CustomEvent<{ period?: string }>).detail || {};
       if (!period) return;
 
-      const container = document.querySelector('[data-budget-page]') as HTMLElement | null;
-      const currency = container?.dataset.currency === 'USD' ? 'USD' : 'IDR';
-      const targetUrl = buildBudgetUrlForPeriod(period, currency);
+      const targetUrl = buildBudgetUrlForPeriod(period);
 
       const current = new URL(window.location.href);
       const target = new URL(targetUrl, window.location.origin);
@@ -621,7 +638,7 @@ const copyDisabledTooltip =
       });
       if (samePath && sameParams) return;
 
-      window.location.href = targetUrl;
+      navigate(targetUrl);
     };
 
     scopedWindow[PERIOD_NAV_HANDLER_KEY] = handler;

@@ -24,7 +24,7 @@ paths:
           description: Filter by currency
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
         - name: owner
           in: query
           description: |
@@ -306,7 +306,7 @@ paths:
           description: Filter by currency
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
       responses:
         '200':
           description: List of closed accounts

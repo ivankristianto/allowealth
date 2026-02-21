@@ -1,10 +1,6 @@
 import { FILTERS_RESET_EVENT, PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
 
-const HEADER_LISTENER_KEY = '__headerListenerInitialized';
-
-interface HeaderWindow extends Window {
-  [HEADER_LISTENER_KEY]?: boolean;
-}
+let controller: AbortController | null = null;
 
 function dispatchDrawerOpenEvent(): void {
   document.dispatchEvent(new CustomEvent('open-transaction-drawer'));
@@ -31,27 +27,35 @@ function resolvePeriodLabel(period: string): string | null {
 }
 
 function initHeaderListeners(): void {
-  const scopedWindow = window as HeaderWindow;
-  if (scopedWindow[HEADER_LISTENER_KEY]) return;
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
 
-  document.addEventListener('click', handleHeaderClick);
+  document.addEventListener('click', handleHeaderClick, { signal });
 
   // Update subtitle when period changes (e.g., month navigation)
-  window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
-    const { label } = (e as CustomEvent).detail;
-    if (!label) return;
-    setHeaderSubtitle(label);
-  });
+  window.addEventListener(
+    PERIOD_CHANGE_EVENT,
+    (e: Event) => {
+      const { label } = (e as CustomEvent).detail;
+      if (!label) return;
+      setHeaderSubtitle(label);
+    },
+    { signal }
+  );
 
   // Reset filters emits month key only; resolve to human-readable label for subtitle.
-  window.addEventListener(FILTERS_RESET_EVENT, (e: Event) => {
-    const { month } = (e as CustomEvent).detail || {};
-    if (!month) return;
-    const label = resolvePeriodLabel(month);
-    if (label) setHeaderSubtitle(label);
-  });
-
-  scopedWindow[HEADER_LISTENER_KEY] = true;
+  window.addEventListener(
+    FILTERS_RESET_EVENT,
+    (e: Event) => {
+      const { month } = (e as CustomEvent).detail || {};
+      if (!month) return;
+      const label = resolvePeriodLabel(month);
+      if (label) setHeaderSubtitle(label);
+    },
+    { signal }
+  );
 }
 
 initHeaderListeners();
+document.addEventListener('astro:page-load', initHeaderListeners);

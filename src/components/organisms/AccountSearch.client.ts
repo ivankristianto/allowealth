@@ -8,6 +8,8 @@
  */
 
 const DEBOUNCE_MS = 150;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let controller: AbortController | null = null;
 
 function filterAccounts(query: string): void {
   const normalizedQuery = query.trim().toLowerCase();
@@ -42,30 +44,46 @@ function filterAccounts(query: string): void {
 }
 
 function initAccountSearch(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
   const input = document.querySelector<HTMLInputElement>('[data-account-search]');
   if (!input) return;
 
-  // Prevent duplicate listeners
-  if (input.dataset.initialized === 'true') return;
-  input.dataset.initialized = 'true';
-
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  input.addEventListener('input', () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      filterAccounts(input.value);
-    }, DEBOUNCE_MS);
-  });
+  input.addEventListener(
+    'input',
+    () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        filterAccounts(input.value);
+      }, DEBOUNCE_MS);
+    },
+    { signal }
+  );
 
   // Support clearing via Escape key
-  input.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && input.value) {
-      e.preventDefault();
-      input.value = '';
-      filterAccounts('');
-    }
-  });
+  input.addEventListener(
+    'keydown',
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && input.value) {
+        e.preventDefault();
+        input.value = '';
+        filterAccounts('');
+      }
+    },
+    { signal }
+  );
+}
+
+function cleanupAccountSearch(): void {
+  controller?.abort();
+  controller = null;
+
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = null;
 }
 
 export { initAccountSearch };
+document.addEventListener('astro:page-load', initAccountSearch);
+document.addEventListener('astro:before-swap', cleanupAccountSearch);

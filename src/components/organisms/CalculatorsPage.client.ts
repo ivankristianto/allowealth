@@ -9,15 +9,17 @@ import { csrfFetch } from '@/lib/csrf-client';
 // @TODO: P2 - Use import alias syntax instead of re-export
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
-// DOM Elements
-const form = document.getElementById('compound-calculator-form') as HTMLFormElement;
-const resultsContainer = document.getElementById('results-container');
-const principalInput = form?.querySelector('input[name="principal"]') as HTMLInputElement | null;
+let controller: AbortController | null = null;
+let primaryCurrency: Currency = 'IDR';
 
-if (principalInput && principalInput.dataset.amountFormatterInitialized !== 'true') {
-  attachAmountFormatter(principalInput, 'IDR');
-  principalInput.dataset.amountFormatterInitialized = 'true';
+function getCalculatorForm(): HTMLFormElement | null {
+  return document.getElementById('compound-calculator-form') as HTMLFormElement | null;
+}
+
+function getResultsContainer(): HTMLElement | null {
+  return document.getElementById('results-container');
 }
 
 /**
@@ -35,8 +37,9 @@ function renderResults(data: {
     interest: number;
     closingBalance: number;
   }>;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }): void {
+  const resultsContainer = getResultsContainer();
   if (!resultsContainer) return;
 
   const { totalInterest, finalBalance, yearlyData, currency } = data;
@@ -147,6 +150,7 @@ function renderResults(data: {
 
 // Show loading state
 function showLoadingState(): void {
+  const form = getCalculatorForm();
   if (!form) return;
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
   if (submitButton) {
@@ -157,6 +161,7 @@ function showLoadingState(): void {
 
 // Hide loading state
 function hideLoadingState(): void {
+  const form = getCalculatorForm();
   if (!form) return;
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
   if (submitButton) {
@@ -167,6 +172,8 @@ function hideLoadingState(): void {
 
 // Show error message
 function showError(message: string): void {
+  const form = getCalculatorForm();
+
   // Check if there's already an error alert
   let errorAlert = document.getElementById('calculator-error');
   if (!errorAlert) {
@@ -197,9 +204,12 @@ function showError(message: string): void {
 async function handleFormSubmit(e: Event): Promise<void> {
   e.preventDefault();
 
+  const form = getCalculatorForm();
+  if (!form) return;
+
   const formData = new FormData(form);
   const principalRaw = String(formData.get('principal') || '');
-  const principal = parseFloat(stripAmountFormatting(principalRaw, 'IDR'));
+  const principal = parseFloat(stripAmountFormatting(principalRaw, primaryCurrency));
   const rate = parseFloat(formData.get('rate') as string);
   const years = parseInt(formData.get('years') as string);
 
@@ -241,7 +251,30 @@ async function handleFormSubmit(e: Event): Promise<void> {
   }
 }
 
-// Initialize
-form?.addEventListener('submit', handleFormSubmit);
+function initCalculatorsPage(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
+  const form = getCalculatorForm();
+  if (!form) return;
+
+  // Read primary currency from form data attribute
+  const currencyAttr = form.dataset.primaryCurrency;
+  primaryCurrency = currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+
+  const principalInput = form.querySelector('input[name="principal"]') as HTMLInputElement | null;
+  if (principalInput) {
+    attachAmountFormatter(principalInput, primaryCurrency);
+  }
+
+  form.addEventListener('submit', handleFormSubmit, { signal });
+}
+
+initCalculatorsPage();
+document.addEventListener('astro:page-load', initCalculatorsPage);
+document.addEventListener('astro:before-swap', () => {
+  controller?.abort();
+});
 
 export {};

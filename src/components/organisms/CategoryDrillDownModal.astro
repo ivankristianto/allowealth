@@ -46,6 +46,7 @@ const { id } = Astro.props;
     spent: number;
     budgetLimit?: number | null;
     period: string;
+    currency: string;
   }
 
   function initCategoryDrillDownModal() {
@@ -74,6 +75,7 @@ const { id } = Astro.props;
           spent: String(data.spent),
           period: data.period,
           range,
+          currency: data.currency,
           _render: 'html',
         });
         if (data.budgetLimit !== null && data.budgetLimit !== undefined) {

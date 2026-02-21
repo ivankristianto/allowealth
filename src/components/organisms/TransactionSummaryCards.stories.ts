@@ -6,7 +6,7 @@ interface TransactionSummaryCardsArgs {
   monthlyExpenses?: number;
   transactionCount?: number;
   periodLabel?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   loading?: boolean;
   error?: string;
 }

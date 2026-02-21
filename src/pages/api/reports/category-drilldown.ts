@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { reportService } from '@/services';
+import { reportService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { BudgetServiceError } from '@/services/service-errors';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { isValidNanoid } from '@/lib/validation/nanoid';
 import { createRenderHelper } from '@/lib/api/renderResponse';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import CategoryDrillDownPartial from '@/components/partials/CategoryDrillDownPartial.astro';
 
 /**
@@ -22,6 +23,7 @@ import CategoryDrillDownPartial from '@/components/partials/CategoryDrillDownPar
  *   - categoryColor: string (required) - Category color class
  *   - spent: number (required) - Amount spent
  *   - budgetLimit: number (optional) - Budget limit
+ *   - currency: Currency (required)
  *
  * Returns HTML or JSON with complete modal content
  *
@@ -49,6 +51,7 @@ export const GET: APIRoute = async (context) => {
     const spent = parseFloat(url.searchParams.get('spent') || '0');
     const budgetLimitParam = url.searchParams.get('budgetLimit');
     const budgetLimit = budgetLimitParam ? parseFloat(budgetLimitParam) : null;
+    const currencyParam = url.searchParams.get('currency');
 
     // Validate categoryId
     if (!categoryId || typeof categoryId !== 'string' || categoryId.trim() === '') {
@@ -82,6 +85,28 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Period parameter is required.', 400, 'MISSING_PERIOD');
     }
 
+    if (!currencyParam || !isValidCurrency(currencyParam)) {
+      return errorResponse(
+        'Invalid currency code. Must be one of supported currencies.',
+        400,
+        'INVALID_CURRENCY'
+      );
+    }
+
+    const workspaceCurrencies = await workspaceMetaService.getWorkspaceCurrencies(auth.workspaceId);
+    const allowedCurrencies = [
+      workspaceCurrencies.primary,
+      ...(workspaceCurrencies.secondary ? [workspaceCurrencies.secondary] : []),
+    ];
+    if (!allowedCurrencies.includes(currencyParam)) {
+      return errorResponse(
+        'Currency must match workspace primary or secondary currency.',
+        400,
+        'UNSUPPORTED_WORKSPACE_CURRENCY'
+      );
+    }
+    const currency = currencyParam as Currency;
+
     try {
       validatePeriod(period, range);
     } catch (error) {
@@ -102,7 +127,8 @@ export const GET: APIRoute = async (context) => {
       auth.workspaceId,
       categoryId,
       period,
-      range
+      range,
+      currency
     );
 
     // 4. Transform transactions to TransactionOutput format
@@ -150,6 +176,7 @@ export const GET: APIRoute = async (context) => {
           spent,
           budgetLimit,
           period,
+          currency,
           transactions,
         },
       });
@@ -166,6 +193,7 @@ export const GET: APIRoute = async (context) => {
       spent,
       budgetLimit,
       period,
+      currency,
       transactions,
     });
   } catch (error) {

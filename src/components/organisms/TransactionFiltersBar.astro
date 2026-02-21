@@ -2,19 +2,14 @@
 /**
  * Transaction Filters Bar
  *
- * Unified filter bar with type toggle, category dropdown, and search input.
+ * Unified filter bar with type toggle, category dropdown, account dropdown, and search input.
  * Matches POC design with pill-style buttons and clean rounded elements.
- *
- * @param {string} typeFilter - Current type filter (all/income/expense)
- * @param {string} searchValue - Current search query
- * @param {string} categoryId - Current category filter
- * @param {Array} categories - Available categories
- * @param {boolean} showCategoryFilter - Show category dropdown
  */
 
-import { Search, ChevronDown, Tag, Check, RotateCcw, Users } from '@lucide/astro';
+import { ChevronDown, Tag, RotateCcw, Users, Wallet } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
 import SearchInput from '@/components/atoms/SearchInput.astro';
+import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro';
 
 export interface Props {
   typeFilter?: 'income' | 'expense';
@@ -22,6 +17,9 @@ export interface Props {
   categoryIds?: string[];
   categories?: Array<{ id: string; name: string; type: string }>;
   showCategoryFilter?: boolean;
+  accountIds?: string[];
+  accounts?: Array<{ id: string; name: string; type: string }>;
+  showAccountFilter?: boolean;
   userId?: string;
   members?: Array<{ id: string; name: string }>;
   showMemberFilter?: boolean;
@@ -36,6 +34,9 @@ const {
   categoryIds = [],
   categories = [],
   showCategoryFilter = true,
+  accountIds = [],
+  accounts = [],
+  showAccountFilter = false,
   userId = '',
   members = [],
   showMemberFilter = false,
@@ -49,18 +50,9 @@ const hasActiveFilters =
   typeFilter !== 'expense' ||
   searchValue !== '' ||
   categoryIds.length > 0 ||
+  accountIds.length > 0 ||
   userId !== '' ||
   (selectedMonth !== '' && selectedMonth !== currentMonth);
-
-// Get selected category names for display
-const getSelectedCategoriesLabel = () => {
-  if (categoryIds.length === 0) return 'All Categories';
-  if (categoryIds.length === 1) {
-    const cat = categories.find((c) => c.id === categoryIds[0]);
-    return cat?.name || 'All Categories';
-  }
-  return `${categoryIds.length} Categories`;
-};
 
 // Build URL with current filters
 const buildFilterUrl = (updates: Record<string, string>) => {
@@ -70,6 +62,7 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   params.set('type', typeFilter);
   if (searchValue) params.set('search', searchValue);
   if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
+  if (accountIds.length > 0) params.set('account_ids', accountIds.join(','));
   if (userId) params.set('user_id', userId);
   if (selectedMonth) params.set('month', selectedMonth);
 
@@ -87,15 +80,6 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
-const categorySearchLabelClass = ['mb-1 block text-base-content/70', tokenClasses.textXs].join(' ');
-const categorySearchInputClass = [
-  'input w-full rounded-lg',
-  tokenClasses.inputSurfaceBase,
-  tokenClasses.inputFocusAccent,
-  tokenClasses.inputPaddingSearchCompact,
-  tokenClasses.textXs,
-  tokenClasses.placeholderMuted,
-].join(' ');
 const mainSearchInputClass = [
   'input w-full rounded-lg font-medium shadow-sm',
   tokenClasses.inputSurfaceDefault,
@@ -142,7 +126,7 @@ const mainSearchInputClass = [
     </button>
   </div>
 
-  {/* Row 2: Type filter + Category */}
+  {/* Row 2: Type filter + Category + Account + Member */}
   <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
     <input type="hidden" name="type" value={typeFilter} id="type-filter-hidden" />
     <div
@@ -180,101 +164,47 @@ const mainSearchInputClass = [
       </button>
     </div>
 
-    {/* Category dropdown */}
     {
       showCategoryFilter && categories.length > 0 && (
-        <div class="dropdown dropdown-end" id="category-dropdown">
-          <input
-            type="hidden"
-            name="category_ids"
-            id="category-filter"
-            value={categoryIds.join(',')}
+        <MultiSelectDropdown
+          id="category"
+          label="All Categories"
+          inputName="category_ids"
+          selectedIds={categoryIds}
+          items={categories.map((c) => ({ id: c.id, name: c.name, filterType: c.type }))}
+          searchable={true}
+          searchPlaceholder="Search categories..."
+          filterEventType="category_ids"
+        >
+          <Tag
+            size={16}
+            class="stroke-current text-base-content/40"
+            aria-hidden="true"
+            slot="icon"
           />
-          <button
-            type="button"
-            tabindex={0}
-            class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[160px]"
-            aria-label="Filter by category"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            data-category-trigger
-          >
-            <Tag size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
-            <span class="flex-1 text-left truncate" data-category-label>
-              {getSelectedCategoriesLabel()}
-            </span>
-            <ChevronDown
-              size={14}
-              class="stroke-current text-base-content/40 shrink-0"
-              aria-hidden="true"
-            />
-          </button>
-          <div
-            tabindex={0}
-            class="dropdown-content z-50 p-3 shadow-lg bg-base-100 rounded-2xl w-72 border border-base-300 mt-2"
-            role="listbox"
-            aria-multiselectable="true"
-            aria-label="Select categories"
-          >
-            {/* Search input */}
-            <div class="mb-2">
-              <label for="category-search" class={categorySearchLabelClass}>
-                Search categories
-              </label>
-              <div class="relative">
-                <Search
-                  size={14}
-                  class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
-                  id="category-search"
-                  type="text"
-                  placeholder="Search categories..."
-                  class={categorySearchInputClass}
-                  data-category-search
-                />
-              </div>
-            </div>
-            {/* Clear All / Count */}
-            <div class="flex items-center justify-between pb-2 mb-2 border-b border-base-200">
-              <button
-                type="button"
-                class="text-xs font-medium text-accent hover:text-accent/80 transition-colors"
-                data-category-clear-all
-              >
-                Clear all
-              </button>
-              <span class="text-xs text-base-content/50" data-category-count>
-                {categoryIds.length} selected
-              </span>
-            </div>
-            {/* Category Options - visibility filtered client-side by current type */}
-            <div class="space-y-1 max-h-52 overflow-y-auto" data-category-list>
-              {categories.map((cat) => {
-                const isSelected = categoryIds.includes(cat.id);
-                return (
-                  <label
-                    class={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${isSelected ? 'bg-accent/10' : ''}`}
-                    data-category-option={cat.id}
-                    data-category-type={cat.type}
-                    data-category-name={cat.name.toLowerCase()}
-                  >
-                    <div
-                      class={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-accent border-accent' : 'border-base-300'}`}
-                      data-checkbox-visual={cat.id}
-                    >
-                      {isSelected && (
-                        <Check size={12} class="stroke-white stroke-3" aria-hidden="true" />
-                      )}
-                    </div>
-                    <span class="text-sm font-medium text-base-content truncate">{cat.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        </MultiSelectDropdown>
+      )
+    }
+
+    {
+      showAccountFilter && accounts.length > 0 && (
+        <MultiSelectDropdown
+          id="account"
+          label="All Accounts"
+          inputName="account_ids"
+          selectedIds={accountIds}
+          items={accounts.map((a) => ({ id: a.id, name: a.name, group: a.type }))}
+          searchable={true}
+          searchPlaceholder="Search accounts..."
+          filterEventType="account_ids"
+        >
+          <Wallet
+            size={16}
+            class="stroke-current text-base-content/40"
+            aria-hidden="true"
+            slot="icon"
+          />
+        </MultiSelectDropdown>
       )
     }
 
@@ -338,8 +268,7 @@ const mainSearchInputClass = [
 
 <script>
   import { PERIOD_CHANGE_EVENT, FILTERS_RESET_EVENT } from '@/lib/constants/events';
-  // Track selected category IDs
-  let selectedCategoryIds: string[] = [];
+
   let selectedPeriod = '';
 
   // Get current month from reset button
@@ -368,22 +297,6 @@ const mainSearchInputClass = [
     return currentType;
   }
 
-  function updateCategoryVisibility(filterType: string = getCurrentTypeFilter()) {
-    const categorySearchInput = document.querySelector(
-      '[data-category-search]'
-    ) as HTMLInputElement | null;
-    const query = categorySearchInput?.value.toLowerCase().trim() || '';
-
-    document.querySelectorAll('[data-category-option]').forEach((option) => {
-      const optionEl = option as HTMLElement;
-      const optionType = optionEl.dataset.categoryType || '';
-      const name = optionEl.dataset.categoryName || '';
-      const matchesType = optionType === filterType;
-      const matchesSearch = name.includes(query);
-      optionEl.style.display = matchesType && matchesSearch ? '' : 'none';
-    });
-  }
-
   // Check if filters are active and update reset button visibility
   function updateResetButtonVisibility() {
     const resetBtn = document.querySelector('[data-reset-filters]');
@@ -392,126 +305,26 @@ const mainSearchInputClass = [
     const searchInput = document.getElementById('search-input') as HTMLInputElement;
     const currentMonth = getCurrentMonth();
     const currentType = getCurrentTypeFilter();
+    const categoryFilter = document.getElementById('category-filter') as HTMLInputElement | null;
+    const hasCategories = categoryFilter ? categoryFilter.value.trim() !== '' : false;
+    const accountFilter = document.getElementById('account-filter') as HTMLInputElement | null;
+    const hasAccounts = accountFilter ? accountFilter.value.trim() !== '' : false;
 
     const hasFilters =
       currentType !== 'expense' ||
       (searchInput && searchInput.value.trim() !== '') ||
-      selectedCategoryIds.length > 0 ||
+      hasCategories ||
+      hasAccounts ||
       getCurrentUserFilter() !== '' ||
       (selectedPeriod !== '' && selectedPeriod !== currentMonth);
 
     resetBtn.classList.toggle('hidden', !hasFilters);
   }
 
-  // Initialize from hidden input
-  function initCategorySelection() {
-    const hiddenInput = document.getElementById('category-filter') as HTMLInputElement;
-    if (hiddenInput && hiddenInput.value) {
-      selectedCategoryIds = hiddenInput.value.split(',').filter(Boolean);
-    }
-
-    const currentType = getCurrentTypeFilter();
-    selectedCategoryIds = selectedCategoryIds.filter((id) => {
-      const option = document.querySelector(`[data-category-option="${id}"]`) as HTMLElement | null;
-      return option?.dataset.categoryType === currentType;
-    });
-    updateCategoryVisibility(currentType);
-    updateCategoryUI();
-    updateResetButtonVisibility();
-  }
-
-  // Update the UI to reflect current selection
-  function updateCategoryUI() {
-    const hiddenInput = document.getElementById('category-filter') as HTMLInputElement;
-    const label = document.querySelector('[data-category-label]');
-    const countEl = document.querySelector('[data-category-count]');
-
-    // Update hidden input
-    if (hiddenInput) {
-      hiddenInput.value = selectedCategoryIds.join(',');
-    }
-
-    // Update label
-    if (label) {
-      if (selectedCategoryIds.length === 0) {
-        label.textContent = 'All Categories';
-      } else if (selectedCategoryIds.length === 1) {
-        const option = document.querySelector(
-          `[data-category-option="${selectedCategoryIds[0]}"]`
-        ) as HTMLElement;
-        const name = option?.querySelector('span')?.textContent || 'All Categories';
-        label.textContent = name;
-      } else {
-        label.textContent = `${selectedCategoryIds.length} Categories`;
-      }
-    }
-
-    // Update count
-    if (countEl) {
-      countEl.textContent = `${selectedCategoryIds.length} selected`;
-    }
-
-    // Update checkbox visuals
-    document.querySelectorAll('[data-category-option]').forEach((option) => {
-      const optionEl = option as HTMLElement;
-      const catId = optionEl.dataset.categoryOption || '';
-      const isSelected = selectedCategoryIds.includes(catId);
-      const checkboxVisual = optionEl.querySelector(`[data-checkbox-visual="${catId}"]`);
-
-      // Update option background
-      optionEl.classList.toggle('bg-accent/10', isSelected);
-
-      // Update checkbox visual
-      if (checkboxVisual) {
-        checkboxVisual.classList.toggle('bg-accent', isSelected);
-        checkboxVisual.classList.toggle('border-accent', isSelected);
-        checkboxVisual.classList.toggle('border-base-300', !isSelected);
-
-        // Toggle check icon visibility
-        const checkIcon = checkboxVisual.querySelector('svg');
-        if (checkIcon) {
-          checkIcon.style.display = isSelected ? 'block' : 'none';
-        } else if (isSelected) {
-          // Create check icon if not present (using createElementNS to avoid innerHTML)
-          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.setAttribute('width', '12');
-          svg.setAttribute('height', '12');
-          svg.setAttribute('viewBox', '0 0 24 24');
-          svg.setAttribute('fill', 'none');
-          svg.setAttribute('stroke', 'white');
-          svg.setAttribute('stroke-width', '3');
-          svg.setAttribute('stroke-linecap', 'round');
-          svg.setAttribute('stroke-linejoin', 'round');
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', 'M20 6 9 17l-5-5');
-          svg.appendChild(path);
-          checkboxVisual.appendChild(svg);
-        }
-      }
-    });
-
-    // Update reset button visibility
-    updateResetButtonVisibility();
-  }
-
-  // Handle category search input
-  const categorySearch = document.querySelector('[data-category-search]') as HTMLInputElement;
-  if (categorySearch) {
-    categorySearch.addEventListener('input', () => {
-      updateCategoryVisibility();
-    });
-
-    // Prevent dropdown from closing when typing
-    categorySearch.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-  }
-
   // Handle type filter button clicks
   document.querySelectorAll<HTMLButtonElement>('[data-filter-type]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const filterType = btn.dataset.filterType;
-      const previousCategoryIds = [...selectedCategoryIds];
       const hiddenInput = document.getElementById('type-filter-hidden') as HTMLInputElement;
 
       // Update hidden input
@@ -520,92 +333,37 @@ const mainSearchInputClass = [
       }
 
       // Update aria-pressed states on all buttons
-      document.querySelectorAll('[data-filter-type]').forEach((b) => {
-        b.setAttribute(
+      document.querySelectorAll('[data-filter-type]').forEach((button) => {
+        button.setAttribute(
           'aria-pressed',
-          b.getAttribute('data-filter-type') === filterType ? 'true' : 'false'
+          button.getAttribute('data-filter-type') === filterType ? 'true' : 'false'
         );
 
         // Update visual styles
-        const isActive = b.getAttribute('data-filter-type') === filterType;
-        b.classList.toggle('bg-base-100', isActive);
-        b.classList.toggle('shadow', isActive);
-        b.classList.toggle('text-primary', isActive);
-        b.classList.toggle('text-base-content/50', !isActive);
+        const isActive = button.getAttribute('data-filter-type') === filterType;
+        button.classList.toggle('bg-base-100', isActive);
+        button.classList.toggle('shadow', isActive);
+        button.classList.toggle('text-primary', isActive);
+        button.classList.toggle('text-base-content/50', !isActive);
       });
 
       if (filterType) {
-        updateCategoryVisibility(filterType);
-        selectedCategoryIds = selectedCategoryIds.filter((id) => {
-          const option = document.querySelector(
-            `[data-category-option="${id}"]`
-          ) as HTMLElement | null;
-          return option?.dataset.categoryType === filterType;
-        });
-        updateCategoryUI();
+        window.dispatchEvent(
+          new CustomEvent('multiselect:filter', {
+            detail: { id: 'category', filterType },
+          })
+        );
       }
 
-      // Dispatch after pruning category IDs so listeners receive consistent state.
       window.dispatchEvent(
         new CustomEvent('filterChange', {
           detail: { type: 'type', value: filterType },
         })
       );
 
-      if (previousCategoryIds.join(',') !== selectedCategoryIds.join(',')) {
-        window.dispatchEvent(
-          new CustomEvent('filterChange', {
-            detail: { type: 'category_ids', value: [...selectedCategoryIds] },
-          })
-        );
-      }
+      updateResetButtonVisibility();
     });
   });
-
-  // Handle category option clicks (multi-select)
-  document.querySelectorAll('[data-category-option]').forEach((option) => {
-    option.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const optionEl = option as HTMLElement;
-      const catId = optionEl.dataset.categoryOption || '';
-
-      // Toggle selection
-      if (selectedCategoryIds.includes(catId)) {
-        selectedCategoryIds = selectedCategoryIds.filter((id) => id !== catId);
-      } else {
-        selectedCategoryIds.push(catId);
-      }
-
-      updateCategoryUI();
-
-      // Dispatch custom event for client-side handling
-      window.dispatchEvent(
-        new CustomEvent('filterChange', {
-          detail: { type: 'category_ids', value: [...selectedCategoryIds] },
-        })
-      );
-    });
-  });
-
-  // Handle clear all button
-  const clearAllBtn = document.querySelector('[data-category-clear-all]');
-  if (clearAllBtn) {
-    clearAllBtn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-      selectedCategoryIds = [];
-      updateCategoryUI();
-
-      // Dispatch custom event
-      window.dispatchEvent(
-        new CustomEvent('filterChange', {
-          detail: { type: 'category_ids', value: [] },
-        })
-      );
-    });
-  }
 
   // Listen for period changes from PeriodNavigator component
   window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
@@ -630,18 +388,13 @@ const mainSearchInputClass = [
     });
   }
 
-  // Listen for filters reset to clear category state and UI
+  // Listen for generic filterChange events to keep reset visibility in sync
+  window.addEventListener('filterChange', () => {
+    updateResetButtonVisibility();
+  });
+
+  // Listen for filters reset to clear non-multiselect state/UI
   window.addEventListener(FILTERS_RESET_EVENT, () => {
-    selectedCategoryIds = [];
-    updateCategoryUI();
-
-    const categorySearchEl = document.querySelector(
-      '[data-category-search]'
-    ) as HTMLInputElement | null;
-    if (categorySearchEl) categorySearchEl.value = '';
-
-    updateCategoryVisibility();
-
     // Clear search input
     const searchEl = document.getElementById('search-input') as HTMLInputElement;
     if (searchEl) searchEl.value = '';
@@ -657,7 +410,5 @@ const mainSearchInputClass = [
   });
 
   selectedPeriod = getInitialSelectedMonth();
-
-  // Initialize on load
-  initCategorySelection();
+  updateResetButtonVisibility();
 </script>

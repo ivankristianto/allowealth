@@ -20,7 +20,8 @@ import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
 export interface Props {
   id: string;
   mode?: 'add' | 'edit';
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
+  availableCurrencies?: Currency[];
   categories?: Array<{
     id: string;
     name: string;
@@ -36,10 +37,16 @@ const {
   id,
   mode = 'add',
   currency = 'IDR',
+  availableCurrencies = [currency],
   categories = [],
   members = [],
   isAdmin = false,
 } = Astro.props;
+
+const resolvedCurrencies = availableCurrencies.length > 0 ? availableCurrencies : [currency];
+const defaultSelectedCurrency = resolvedCurrencies.includes(currency)
+  ? currency
+  : resolvedCurrencies[0];
 
 const isEditMode = mode === 'edit';
 const title = isEditMode ? 'Edit Account' : 'Register Account';
@@ -172,8 +179,13 @@ const categoryOptions = categories.length
               class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
               data-testid="account-currency-select"
             >
-              <option value="IDR" selected={currency === 'IDR'}>IDR</option>
-              <option value="USD" selected={currency === 'USD'}>USD</option>
+              {
+                resolvedCurrencies.map((currencyCode) => (
+                  <option value={currencyCode} selected={currencyCode === defaultSelectedCurrency}>
+                    {currencyCode}
+                  </option>
+                ))
+              }
             </select>
           </div>
 
@@ -188,7 +200,7 @@ const categoryOptions = categories.length
             <AmountInput
               id={`${id}-balance`}
               name="balance"
-              currency={currency}
+              currency={defaultSelectedCurrency}
               required
               placeholder="0"
               className="input-lg bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
@@ -252,6 +264,7 @@ const categoryOptions = categories.length
 <script>
   import { addToast } from '@lib/stores/toastStore';
   import { csrfFetch } from '@/lib/csrf-client';
+  import { navigate } from 'astro:transitions/client';
   import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
   import type { Currency } from '@/lib/constants/currency';
 
@@ -264,7 +277,7 @@ const categoryOptions = categories.length
     categoryId?: string;
     categoryName?: string;
     ownerId?: string;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
     balance: string;
   }
 
@@ -324,7 +337,7 @@ const categoryOptions = categories.length
         if (typeof (window as any).openAccountCategoryModal === 'function') {
           (window as any).openAccountCategoryModal('create');
         } else {
-          window.location.href = '/accounts/categories';
+          navigate('/accounts/categories');
         }
       });
 

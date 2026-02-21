@@ -1,3 +1,5 @@
+import type { Currency } from '@/lib/constants/currency';
+
 /**
  * Account Types
  *
@@ -60,7 +62,7 @@ export const ACCOUNT_CLASS_LABELS: Record<AccountClass, string> = {
 /**
  * Currency type (same as in other modules)
  */
-export type Currency = 'IDR' | 'USD';
+export type { Currency };
 
 /** Account lifecycle status */
 export const ACCOUNT_STATUSES = ['active', 'closed'] as const;

@@ -16,6 +16,16 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/WorkspaceSettingsResponse.yml#/WorkspaceSettingsResponse'
+              example:
+                success: true
+                data:
+                  id: "ws_123e4567-e89b-12d3-a456-426614174000"
+                  name: "Family Budget"
+                  settings:
+                    currency: "IDR"
+                    secondaryCurrency: "USD"
+                    weekStart: "monday"
+                    compactNumbers: true
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '500':
@@ -26,7 +36,7 @@ paths:
       summary: Update workspace settings
       description: |
         Update workspace settings. Only workspace admins can update settings.
-        Available settings: name, currency, weekStart, compactNumbers.
+        Available settings: name, currency, secondaryCurrency, weekStart, compactNumbers.
       security:
         - sessionAuth: []
       requestBody:
@@ -42,6 +52,16 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/WorkspaceSettingsResponse.yml#/WorkspaceSettingsResponse'
+              example:
+                success: true
+                data:
+                  id: "ws_123e4567-e89b-12d3-a456-426614174000"
+                  name: "Family Budget"
+                  settings:
+                    currency: "IDR"
+                    secondaryCurrency: "USD"
+                    weekStart: "monday"
+                    compactNumbers: true
         '400':
           description: Validation error or invalid input
           content:

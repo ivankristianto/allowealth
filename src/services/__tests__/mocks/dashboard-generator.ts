@@ -55,7 +55,7 @@ export interface MockTransaction {
   accountName: string;
   type: 'expense' | 'income';
   amount: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   description: string;
   transactionDate: Date;
   createdAt: Date;
@@ -125,18 +125,13 @@ class SeededRandom {
 function generateMockTotalAccounts(userId: string, rng: SeededRandom): MockTotalAccounts {
   const idr = rng.nextFloat(10_000_000, 100_000_000);
   const usd = rng.nextFloat(1_000, 10_000);
-  const convertedCurrency: 'IDR' | 'USD' = 'IDR';
-
-  // Convert USD to IDR for total (using rate of 15000)
-  const rate = 15000;
-  const converted = idr + usd * rate;
 
   return {
     userId,
-    idr: String(Math.round(idr)),
-    usd: String(Math.round(usd * 100) / 100),
-    converted: String(Math.round(converted)),
-    convertedCurrency,
+    byCurrency: [
+      { currency: 'IDR', amount: String(Math.round(idr)) },
+      { currency: 'USD', amount: String(Math.round(usd * 100) / 100) },
+    ],
   };
 }
 
@@ -443,7 +438,7 @@ export function generateMockAccounts(userId: string, count: number = 5) {
 /**
  * Generate mock exchange rate
  */
-export function generateMockExchangeRate(from: 'IDR' | 'USD', to: 'IDR' | 'USD') {
+export function generateMockExchangeRate(from: Currency, to: Currency) {
   return {
     id: `rate-${from}-${to}-${Date.now()}`,
     fromCurrency: from,

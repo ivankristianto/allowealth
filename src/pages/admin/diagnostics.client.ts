@@ -7,6 +7,8 @@
 
 import { addToast } from '@/lib/stores/toastStore';
 
+let controller: AbortController | null = null;
+
 export async function refreshDiagnostics() {
   const refreshButton = document.getElementById('refresh-diagnostics') as HTMLButtonElement | null;
   if (!refreshButton) return;
@@ -44,8 +46,16 @@ export async function refreshDiagnostics() {
   }
 }
 
-// Attach event listener to refresh button on load
-const refreshButton = document.getElementById('refresh-diagnostics');
-if (refreshButton) {
-  refreshButton.addEventListener('click', refreshDiagnostics);
+function initDiagnosticsPage(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
+  const refreshButton = document.getElementById('refresh-diagnostics');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', refreshDiagnostics, { signal });
+  }
 }
+
+initDiagnosticsPage();
+document.addEventListener('astro:page-load', initDiagnosticsPage);

@@ -134,7 +134,7 @@ const invitationErrorMessage =
               Signup is currently invite-only. Ask your workspace admin for an invitation link.
             </p>
             <div class="flex gap-4 mt-4">
-              <a href="/login" class="btn btn-accent rounded-2xl">
+              <a href="/login" class="btn btn-accent rounded-2xl" data-astro-reload>
                 Sign In
               </a>
             </div>
@@ -152,7 +152,7 @@ const invitationErrorMessage =
             <h2 class="text-2xl font-bold text-error">Invalid Invitation</h2>
             <p class="text-base-content/70">{invitationErrorMessage}</p>
             <div class="flex gap-4 mt-4">
-              <a href="/login" class="btn btn-ghost rounded-2xl">
+              <a href="/login" class="btn btn-ghost rounded-2xl" data-astro-reload>
                 Sign In
               </a>
             </div>
@@ -323,7 +323,7 @@ const invitationErrorMessage =
 
             <div class="text-center text-sm pt-4 border-t border-base-300">
               <span class="text-base-content/60">Already have an account?</span>
-              <a href="/login" class="link link-primary font-semibold ml-1">
+              <a href="/login" class="link link-primary font-semibold ml-1" data-astro-reload>
                 Sign in
               </a>
             </div>

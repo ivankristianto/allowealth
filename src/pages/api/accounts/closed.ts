@@ -8,6 +8,8 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { ACCOUNT_TYPE_LABELS, type AccountType, type Currency } from '@/lib/types/account';
+import { isValidCurrency } from '@/lib/constants/currency';
+import { workspaceMetaService } from '@/services';
 
 /**
  * GET /api/accounts/closed
@@ -19,11 +21,21 @@ export const GET: APIRoute = async (context) => {
     const params = getQueryParams(new URL(context.request.url));
 
     const validTypes = Object.keys(ACCOUNT_TYPE_LABELS);
-    const validCurrencies = ['IDR', 'USD'];
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
 
     const filters: { type?: AccountType; currency?: Currency } = {};
     if (params.type && validTypes.includes(params.type)) filters.type = params.type as AccountType;
-    if (params.currency && validCurrencies.includes(params.currency))
+    if (
+      params.currency &&
+      isValidCurrency(params.currency) &&
+      allowedCurrencies.includes(params.currency)
+    )
       filters.currency = params.currency as Currency;
 
     const accounts = await accountService.findAllClosed(auth.workspaceId, filters);

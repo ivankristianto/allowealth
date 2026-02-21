@@ -12,6 +12,7 @@
 
 import ResourceAllocationChart from '@/components/organisms/ResourceAllocationChart.astro';
 import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
+import type { Currency } from '@/lib/constants/currency';
 
 export interface ExpenseCategory {
   name: string;
@@ -27,6 +28,7 @@ export interface TrendData {
 export interface Props {
   expenseByCategory: ExpenseCategory[];
   trendData: TrendData[];
+  currency: Currency;
   resourceAllocationSubtitle?: string;
   financialVelocitySubtitle?: string;
 }
@@ -34,6 +36,7 @@ export interface Props {
 const {
   expenseByCategory,
   trendData,
+  currency,
   resourceAllocationSubtitle = 'EXPENSE MIX',
   financialVelocitySubtitle = 'TRAILING 3 MONTHS',
 } = Astro.props;
@@ -46,6 +49,10 @@ const {
     <ResourceAllocationChart data={expenseByCategory} subtitle={resourceAllocationSubtitle} />
 
     <!-- Income vs. Expenses Chart -->
-    <FinancialVelocityChart data={trendData} subtitle={financialVelocitySubtitle} />
+    <FinancialVelocityChart
+      data={trendData}
+      currency={currency}
+      subtitle={financialVelocitySubtitle}
+    />
   </div>
 </div>

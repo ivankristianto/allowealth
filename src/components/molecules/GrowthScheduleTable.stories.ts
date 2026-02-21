@@ -102,7 +102,7 @@ function createMockData(years: number) {
  */
 function createGrowthScheduleTable(args: {
   data?: Array<{ year: number; openingBalance: number; interest: number; closingBalance: number }>;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }): HTMLElement {
   const { data = createMockData(3), currency = 'IDR' } = args;
 

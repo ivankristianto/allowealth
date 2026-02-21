@@ -12,6 +12,7 @@ import { logError } from '@/lib/utils';
 import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { AccountServiceError } from '@/services/service-errors';
+import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 
 // Validation schemas
 const LEGACY_TYPE_BY_NAME = new Map(
@@ -38,7 +39,7 @@ const updateAccountSchema = z.object({
       'loan',
     ])
     .optional(),
-  currency: z.enum(['IDR', 'USD']).optional(),
+  currency: z.enum(AVAILABLE_CURRENCIES).optional(),
 });
 
 /**

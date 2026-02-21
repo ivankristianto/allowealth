@@ -43,6 +43,10 @@ export interface Props extends ButtonAttributes, AnchorAttributes {
    * Test ID for E2E testing
    */
   'data-testid'?: string;
+  /**
+   * Render data-astro-reload on anchor variant only.
+   */
+  dataAstroReload?: boolean;
 }
 
 const {
@@ -55,11 +59,11 @@ const {
   id = '',
   href = '',
   'data-testid': dataTestId = '',
+  dataAstroReload = false,
   ...rest
 } = Astro.props;
 
 const isDisabled = disabled || loading;
-const Tag = href ? 'a' : 'button';
 
 // Base classes - focus ring uses accent color for theme-aware consistency
 // rounded-2xl (1rem) follows design system borderRadius.2xl
@@ -103,22 +107,36 @@ const buttonClasses = [
 ]
   .filter(Boolean)
   .join(' ');
-
-const typeAttr = Tag === 'button' ? type : undefined;
-const hrefAttr = Tag === 'a' ? href : undefined;
 ---
 
-<Tag
-  class={buttonClasses}
-  id={id}
-  disabled={isDisabled}
-  type={typeAttr}
-  href={hrefAttr}
-  aria-disabled={isDisabled}
-  aria-busy={loading}
-  data-testid={dataTestId || undefined}
-  {...rest}
->
-  {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
-  <slot />
-</Tag>
+{
+  href ? (
+    <a
+      class={buttonClasses}
+      id={id}
+      href={href}
+      aria-disabled={isDisabled}
+      aria-busy={loading}
+      data-testid={dataTestId || undefined}
+      data-astro-reload={dataAstroReload ? true : undefined}
+      {...rest}
+    >
+      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
+      <slot />
+    </a>
+  ) : (
+    <button
+      class={buttonClasses}
+      id={id}
+      disabled={isDisabled}
+      type={type}
+      aria-disabled={isDisabled}
+      aria-busy={loading}
+      data-testid={dataTestId || undefined}
+      {...rest}
+    >
+      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
+      <slot />
+    </button>
+  )
+}

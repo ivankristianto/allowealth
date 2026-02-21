@@ -18,13 +18,12 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import type { Currency } from '@/lib/constants/currency';
 
 const log = createLogger('dashboard');
-import { getLatestExchangeRate } from '@/lib/currency/conversion';
 import { calculateBudgetAlert } from '@/lib/budget/alerts';
 import { calculateAccountPriority } from '@/lib/accounts/priority';
 import {
-  decimalAdd,
   decimalSubtract,
   decimalDivide,
   decimalMultiply,
@@ -35,22 +34,23 @@ import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery, trackService } from '@/lib/perf';
 
-/**
- * Total accounts by currency
- */
-export interface TotalAccounts {
-  idr: string;
-  usd: string;
-  converted: string; // Total in primary currency (IDR)
-  convertedCurrency: 'IDR' | 'USD';
+export interface CurrencyAmount {
+  currency: Currency;
+  amount: string;
 }
 
 /**
- * Total debt by currency
+ * Total accounts grouped by currency
+ */
+export interface TotalAccounts {
+  byCurrency: CurrencyAmount[];
+}
+
+/**
+ * Total debt grouped by currency
  */
 export interface TotalDebt {
-  idr: string;
-  usd: string;
+  byCurrency: CurrencyAmount[];
 }
 
 /**
@@ -132,7 +132,7 @@ export interface DashboardData {
     id: string;
     type: 'expense' | 'income' | 'transfer';
     amount: string;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
     description: string | null;
     transactionDate: Date;
     category: {
@@ -186,7 +186,7 @@ export class DashboardService {
     workspaceId: string,
     month?: number,
     year?: number,
-    currency: 'IDR' | 'USD' = 'IDR',
+    currency: Currency = 'IDR',
     perf?: PerfCollector
   ): Promise<DashboardData> {
     return trackService('DashboardService.getDashboardData', perf, async () => {
@@ -215,7 +215,7 @@ export class DashboardService {
       const [accountsData, transactionAggregates, budgetHealthData, recentTransactions] =
         await Promise.all([
           // Combined accounts query
-          this.getAccountsOptimized(workspaceId, currency, perf),
+          this.getAccountsOptimized(workspaceId, perf),
           // Combined transaction aggregates (budget, spent, income, top categories)
           this.getTransactionAggregatesOptimized(
             workspaceId,
@@ -229,7 +229,7 @@ export class DashboardService {
           // Budget health (requires budgets + spending per category)
           this.getBudgetHealthOptimized(workspaceId, currentMonth, currentYear, currency, perf),
           // Recent transactions
-          this.getRecentTransactionsOptimized(workspaceId, 10, perf),
+          this.getRecentTransactionsOptimized(workspaceId, currency, 10, perf),
         ]);
 
       const result: DashboardData = {
@@ -264,7 +264,6 @@ export class DashboardService {
    */
   private async getAccountsOptimized(
     workspaceId: string,
-    primaryCurrency: 'IDR' | 'USD',
     perf?: PerfCollector
   ): Promise<{
     totalAccounts: TotalAccounts;
@@ -286,43 +285,35 @@ export class DashboardService {
         })
       );
 
-      // Separate accounts from debt by account_class
-      const accountAccounts = workspaceAccounts.filter((a) => a.account_class !== 'debt');
-      const debtAccounts = workspaceAccounts.filter((a) => a.account_class === 'debt');
+      // Group totals by currency dynamically (supports any configured currency code)
+      const accountBalancesByCurrency = new Map<Currency, string[]>();
+      const debtBalancesByCurrency = new Map<Currency, string[]>();
 
-      // Calculate account totals (excluding debt)
-      const idrAccountBalances = accountAccounts
-        .filter((a) => a.currency === 'IDR')
-        .map((a) => a.balance);
-      const usdAccountBalances = accountAccounts
-        .filter((a) => a.currency === 'USD')
-        .map((a) => a.balance);
-      const idrTotal = decimalSum(idrAccountBalances);
-      const usdTotal = decimalSum(usdAccountBalances);
-
-      // Calculate debt totals (absolute values)
-      const idrDebtBalances = debtAccounts
-        .filter((a) => a.currency === 'IDR')
-        .map((a) => a.balance);
-      const usdDebtBalances = debtAccounts
-        .filter((a) => a.currency === 'USD')
-        .map((a) => a.balance);
-      const idrDebt = decimalSum(idrDebtBalances.map((b) => b.replace(/^-/, '')));
-      const usdDebt = decimalSum(usdDebtBalances.map((b) => b.replace(/^-/, '')));
-
-      // Get exchange rate for conversion
-      const rate = await getLatestExchangeRate();
-      const rateString = rate.toString();
-
-      // Convert to primary currency
-      let convertedTotal: string;
-      if (primaryCurrency === 'IDR') {
-        const usdConverted = decimalMultiply(usdTotal, rateString);
-        convertedTotal = decimalAdd(idrTotal, usdConverted);
-      } else {
-        const idrConverted = decimalDivide(idrTotal, rateString);
-        convertedTotal = decimalAdd(usdTotal, idrConverted);
+      for (const account of workspaceAccounts) {
+        if (account.account_class === 'debt') {
+          const balances = debtBalancesByCurrency.get(account.currency as Currency) || [];
+          balances.push(account.balance.replace(/^-/, ''));
+          debtBalancesByCurrency.set(account.currency as Currency, balances);
+        } else {
+          const balances = accountBalancesByCurrency.get(account.currency as Currency) || [];
+          balances.push(account.balance);
+          accountBalancesByCurrency.set(account.currency as Currency, balances);
+        }
       }
+
+      const totalAccountsByCurrency: CurrencyAmount[] = Array.from(accountBalancesByCurrency).map(
+        ([currency, balances]) => ({
+          currency,
+          amount: decimalSum(balances),
+        })
+      );
+
+      const totalDebtByCurrency: CurrencyAmount[] = Array.from(debtBalancesByCurrency).map(
+        ([currency, balances]) => ({
+          currency,
+          amount: decimalSum(balances),
+        })
+      );
 
       // Calculate account reminders from the same data
       const reminders: AccountReminder[] = [];
@@ -351,23 +342,15 @@ export class DashboardService {
       });
 
       return {
-        totalAccounts: {
-          idr: idrTotal,
-          usd: usdTotal,
-          converted: convertedTotal,
-          convertedCurrency: primaryCurrency,
-        },
-        totalDebt: {
-          idr: idrDebt,
-          usd: usdDebt,
-        },
+        totalAccounts: { byCurrency: totalAccountsByCurrency },
+        totalDebt: { byCurrency: totalDebtByCurrency },
         accountReminders: reminders,
       };
     } catch (error) {
       log.error('error getting optimized accounts:', error);
       return {
-        totalAccounts: { idr: '0', usd: '0', converted: '0', convertedCurrency: primaryCurrency },
-        totalDebt: { idr: '0', usd: '0' },
+        totalAccounts: { byCurrency: [] },
+        totalDebt: { byCurrency: [] },
         accountReminders: [],
       };
     }
@@ -383,7 +366,7 @@ export class DashboardService {
     year: number,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     perf?: PerfCollector
   ): Promise<{
     monthlySpent: MonthlySpent;
@@ -514,7 +497,7 @@ export class DashboardService {
     workspaceId: string,
     month: number,
     year: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     perf?: PerfCollector
   ): Promise<BudgetHealth> {
     try {
@@ -628,6 +611,7 @@ export class DashboardService {
    */
   private async getRecentTransactionsOptimized(
     workspaceId: string,
+    currency: Currency,
     limit: number,
     perf?: PerfCollector
   ): Promise<DashboardData['recentTransactions']> {
@@ -650,6 +634,7 @@ export class DashboardService {
           this.db.query.transactions.findMany({
             where: and(
               eq(this.schema.transactions.workspace_id, workspaceId),
+              eq(this.schema.transactions.currency, currency),
               sql`${this.schema.transactions.deleted_at} IS NULL`
             ),
             with: {
@@ -681,7 +666,7 @@ export class DashboardService {
         id: tx.id,
         type: tx.type,
         amount: tx.amount,
-        currency: tx.currency,
+        currency: tx.currency as Currency,
         description: tx.description,
         transactionDate: tx.transaction_date,
         category: tx.category

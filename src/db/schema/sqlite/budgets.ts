@@ -20,7 +20,7 @@ export const budgets = sqliteTable(
     month: integer('month').notNull(), // 1-12
     year: integer('year').notNull(), // e.g., 2025, 2026
     budget_amount: text('budget_amount').notNull(), // Stored as string for decimal precision
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
     is_closed: integer('is_closed', { mode: 'boolean' }).default(false).notNull(), // For book closing
     notes: text('notes'), // Optional notes for this budget period
     created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),

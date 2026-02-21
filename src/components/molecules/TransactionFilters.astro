@@ -18,6 +18,7 @@ import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
 import FormField from '../molecules/FormField.astro';
 import { Search } from '@lucide/astro';
+import { AVAILABLE_CURRENCIES, isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 export interface Props {
   action: string;
@@ -28,14 +29,25 @@ export interface Props {
     type?: 'expense' | 'income' | '';
     category_id?: string;
     account_id?: string;
-    currency?: 'IDR' | 'USD' | '';
+    currency?: Currency | '';
     start_date?: string;
     end_date?: string;
   };
+  currencyOptions?: Currency[];
   count?: number;
 }
 
-const { action, categories = [], accounts = [], values = {}, count = 0 } = Astro.props;
+const {
+  action,
+  categories = [],
+  accounts = [],
+  values = {},
+  currencyOptions,
+  count = 0,
+} = Astro.props;
+const normalizedCurrencyOptions = (currencyOptions || AVAILABLE_CURRENCIES).filter((currency) =>
+  isValidCurrency(currency)
+);
 ---
 
 <form action={action} method="GET" class="space-y-4">
@@ -70,8 +82,13 @@ const { action, categories = [], accounts = [], values = {}, count = 0 } = Astro
     <FormField label="Currency" htmlFor="currency">
       <select id="currency" name="currency" class="select select-bordered">
         <option value="">All Currencies</option>
-        <option value="IDR" selected={values.currency === 'IDR'}>IDR</option>
-        <option value="USD" selected={values.currency === 'USD'}>USD</option>
+        {
+          normalizedCurrencyOptions.map((currencyCode) => (
+            <option value={currencyCode} selected={values.currency === currencyCode}>
+              {currencyCode}
+            </option>
+          ))
+        }
       </select>
     </FormField>
 

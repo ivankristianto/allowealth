@@ -1,15 +1,16 @@
 type Theme = 'light' | 'dark';
 
-type WindowWithThemeToggle = Window & {
-  __themeToggleSystemListenerAdded?: boolean;
-};
-
 const THEME_STORAGE_KEY = 'theme';
 const THEME_ATTRIBUTE = 'data-theme';
 const TOGGLE_SELECTOR = '[data-theme-toggle]';
 const INIT_ATTRIBUTE = 'data-theme-toggle-init';
+let controller: AbortController | null = null;
 
 function initThemeToggle() {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
   const toggles = document.querySelectorAll(TOGGLE_SELECTOR);
   if (toggles.length === 0) return;
 
@@ -58,17 +59,16 @@ function initThemeToggle() {
     toggle.addEventListener('click', toggleTheme);
   });
 
-  const windowWithFlag = window as WindowWithThemeToggle;
-  if (!windowWithFlag.__themeToggleSystemListenerAdded) {
-    windowWithFlag.__themeToggleSystemListenerAdded = true;
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener(
+    'change',
+    (event) => {
       if (!localStorage.getItem(THEME_STORAGE_KEY)) {
         setTheme(event.matches ? 'dark' : 'light');
       }
-    });
-  }
+    },
+    { signal }
+  );
 }
 
 initThemeToggle();
-
-document.addEventListener('astro:after-swap', initThemeToggle);
+document.addEventListener('astro:page-load', initThemeToggle);

@@ -10,13 +10,17 @@ import {
 import { logError } from '@/lib/utils';
 import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/service-errors';
 import { z } from 'zod';
+import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
+
+const currencySchema = z.enum(AVAILABLE_CURRENCIES);
 
 /**
  * Schema for PUT request body - workspace settings update
  */
 const updateWorkspaceSettingsSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  currency: z.enum(['IDR', 'USD']).optional(),
+  currency: currencySchema.optional(),
+  secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
   weekStart: z.enum(['monday', 'sunday']).optional(),
   compactNumbers: z.boolean().optional(),
 });
@@ -45,6 +49,7 @@ export const GET: APIRoute = async (context) => {
       createdAt: workspace.created_at,
       settings: {
         currency: settings.currency,
+        secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
       },
@@ -77,7 +82,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, currency, weekStart, compactNumbers } = validation.data;
+    const { name, currency, secondaryCurrency, weekStart, compactNumbers } = validation.data;
 
     // Name changes require admin role
     if (name !== undefined && auth.role !== 'admin') {
@@ -89,9 +94,18 @@ export const PUT: APIRoute = async (context) => {
       await workspaceService.updateName(auth.workspaceId, name);
     }
 
-    // Update meta values
-    if (currency !== undefined) {
-      await workspaceMetaService.setCurrency(auth.workspaceId, currency);
+    // Currency updates are atomic across primary+secondary to prevent partial updates.
+    if (currency !== undefined || secondaryCurrency !== undefined) {
+      const currentSettings = await workspaceMetaService.getSettings(auth.workspaceId);
+      const nextPrimaryCurrency = currency ?? currentSettings.currency;
+      const nextSecondaryCurrency =
+        secondaryCurrency === null ? '' : (secondaryCurrency ?? currentSettings.secondaryCurrency);
+
+      await workspaceMetaService.setCurrencySettings(
+        auth.workspaceId,
+        nextPrimaryCurrency,
+        nextSecondaryCurrency
+      );
     }
     if (weekStart !== undefined) {
       await workspaceMetaService.setWeekStart(auth.workspaceId, weekStart);
@@ -110,6 +124,7 @@ export const PUT: APIRoute = async (context) => {
       createdAt: workspace!.created_at,
       settings: {
         currency: settings.currency,
+        secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
       },
