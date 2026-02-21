@@ -131,7 +131,7 @@ export const POST: APIRoute = async (context) => {
     // Invitation-based signups are auto-verified (token proves email ownership)
     if (!invitationToken) {
       try {
-        await emailVerificationService.sendVerificationEmail(user.id);
+        await emailVerificationService.sendVerificationEmail(user.id, url.origin);
       } catch (emailError) {
         logError('Failed to send verification email', emailError);
       }

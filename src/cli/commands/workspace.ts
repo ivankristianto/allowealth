@@ -41,6 +41,10 @@ export default defineCommand({
           description: 'Compact number formatting (true or false)',
           default: 'true',
         },
+        'public-url': {
+          type: 'string',
+          description: 'Base URL for the signup link (overrides PUBLIC_URL env var)',
+        },
       },
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
@@ -94,7 +98,10 @@ export default defineCommand({
           role: 'admin',
         });
 
-        const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
+        const baseUrl =
+          (args['public-url'] as string | undefined) ||
+          getEnv('PUBLIC_URL') ||
+          'http://localhost:4321';
         const signupLink = `${baseUrl}/signup?token=${invitation.token}`;
 
         console.log(`  Created admin invitation for: ${normalizedEmail}`);

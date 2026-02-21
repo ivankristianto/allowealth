@@ -1,8 +1,8 @@
 {
   "design": {
     "name": "allowealth - Modern Finance Dashboard",
-    "version": "1.1.0",
-    "description": "Premium design system for allowealth finance application with forest green accent and light/dark mode support"
+    "version": "1.2.0",
+    "description": "Premium design system for allowealth finance application with forest green accent, comfortable dark mode, and light/dark theme support"
   },
   "colors": {
     "light": {
@@ -69,13 +69,14 @@
       }
     },
     "dark": {
-      "primary": "#f8fafc",
-      "accent": "#4ade80",
-      "background": "#020617",
-      "cardBg": "#0f172a",
-      "border": "#1e293b",
-      "textMain": "#f1f5f9",
+      "primary": "#e2e8f0",
+      "accent": "#22c55e",
+      "background": "#111827",
+      "cardBg": "#1e293b",
+      "border": "#334155",
+      "textMain": "#cbd5e1",
       "textMuted": "#94a3b8",
+      "_note": "Comfortable Dark v1.2.0 — raised floor, visible surface steps, reduced glare",
       "slate": {
         "50": "#f8fafc",
         "100": "#f1f5f9",
@@ -83,9 +84,10 @@
         "300": "#cbd5e1",
         "400": "#94a3b8",
         "500": "#64748b",
+        "600": "#475569",
         "700": "#334155",
         "800": "#1e293b",
-        "900": "#0f172a"
+        "900": "#111827"
       },
       "emerald": {
         "400": "#34d399",
@@ -266,11 +268,11 @@
       "border": "1px solid",
       "borderColor": {
         "light": "#e2e8f0",
-        "dark": "#1e293b"
+        "dark": "#334155"
       },
       "background": {
         "light": "#ffffff",
-        "dark": "#0f172a"
+        "dark": "#1e293b"
       },
       "shadow": "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)"
     },
@@ -281,7 +283,7 @@
       "borderRadius": "var(--radius-field)",
       "background": {
         "light": "#f1f5f9",
-        "dark": "#1e293b"
+        "dark": "#334155"
       },
       "focusRing": "2px solid rgba(21, 128, 61, 0.25)"
     },
@@ -296,11 +298,11 @@
       "width": "16rem",
       "background": {
         "light": "#ffffff",
-        "dark": "#0f172a"
+        "dark": "#111827"
       },
       "border": {
         "light": "#e2e8f0",
-        "dark": "#1e293b"
+        "dark": "#334155"
       },
       "navItem": {
         "padding": "0.625rem 1rem",
@@ -313,11 +315,11 @@
     "table": {
       "headerBackground": {
         "light": "rgba(248, 250, 252, 0.5)",
-        "dark": "rgba(30, 41, 59, 0.5)"
+        "dark": "rgba(51, 65, 85, 0.5)"
       },
       "rowHover": {
         "light": "#f8fafc",
-        "dark": "rgba(30, 41, 59, 0.4)"
+        "dark": "rgba(51, 65, 85, 0.4)"
       },
       "cellPadding": "1rem 1.5rem",
       "iconSize": "22px"
@@ -782,7 +784,7 @@
       "backdropFilter": "blur(12px)",
       "background": {
         "light": "rgba(255, 255, 255, 0.8)",
-        "dark": "rgba(15, 23, 42, 0.8)"
+        "dark": "rgba(17, 24, 39, 0.8)"
       }
     },
     "gradient": {

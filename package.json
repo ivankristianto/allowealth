@@ -1,6 +1,6 @@
 {
   "name": "allowealth",
-  "version": "0.13.0",
+  "version": "0.14.2",
   "type": "module",
   "private": true,
   "scripts": {

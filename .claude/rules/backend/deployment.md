@@ -274,6 +274,60 @@ custom_domain = true
 - ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
 - ✅ **Use bare domain in `custom_domain` routes**
 
+## CI/CD — Generated wrangler.toml
+
+`wrangler.toml` is **gitignored** (contains user-specific config like `database_id`). The deploy workflow generates it at runtime from GitHub secrets and variables.
+
+### Required GitHub Secrets
+
+| Secret                 | Description                 |
+| ---------------------- | --------------------------- |
+| `CLOUDFLARE_API_TOKEN` | Wrangler deploy token       |
+| `D1_DATABASE_ID`       | Cloudflare D1 database UUID |
+
+### Required GitHub Variables
+
+| Variable        | Default                          | Description                                 |
+| --------------- | -------------------------------- | ------------------------------------------- |
+| `PUBLIC_URL`    | `https://allowealth.workers.dev` | Public base URL                             |
+| `CUSTOM_DOMAIN` | _(empty)_                        | Custom domain (optional, adds `[[routes]]`) |
+
+### Generated Structure
+
+```toml
+name = "allowealth"
+main = "dist/_worker.js/index.js"
+compatibility_date = "2026-02-01"
+compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[vars]
+NODE_ENV = "production"
+PUBLIC_URL = "https://your-domain.io"
+SIGNUP_MODE = "invite_only"
+CACHE_DRIVER = "upstash"
+# ... other vars
+
+[[d1_databases]]
+binding = "DB"
+database_name = "allowealth-db"
+database_id = "<D1_DATABASE_ID secret>"
+
+# Added only when CUSTOM_DOMAIN variable is set:
+routes = [{ pattern = "your-domain.io", custom_domain = true }]
+```
+
+**Rules:**
+
+- ✅ **Generate `wrangler.toml` in CI from secrets/variables** - never commit it; it's gitignored to allow open-source forkers to configure their own deployment
+- ✅ **Use `D1_DATABASE_ID` as a GitHub secret** - UUID is user-specific and must not be in source
+- ✅ **Use `PUBLIC_URL` and `CUSTOM_DOMAIN` as GitHub variables** - not secrets, safe to be non-sensitive
+- ✅ **Conditionally append `[[routes]]` only when `CUSTOM_DOMAIN` is set** - workers.dev subdomain needs no routes block
+- ❌ **Commit `wrangler.toml` to the repo** - it's gitignored by design
+
 ## Deployment Checklist
 
 Before deploying to Workers:

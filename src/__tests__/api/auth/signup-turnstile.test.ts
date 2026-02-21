@@ -213,7 +213,7 @@ describe('POST /api/auth/signup - Turnstile and invitation mode behavior', () =>
       })
     );
 
-    expect(sendVerificationEmailMock).toHaveBeenCalledWith('user-public');
+    expect(sendVerificationEmailMock).toHaveBeenCalledWith('user-public', 'http://localhost');
   });
 
   test('seeds default categories for invited admin users', async () => {

@@ -61,6 +61,7 @@ export interface TransactionFilters {
   category_id?: string;
   category_ids?: string[]; // Multiple category filter
   account_id?: string;
+  account_ids?: string[]; // Multiple account filter
   created_by_user_id?: string;
   currency?: Currency;
   start_date?: Date;
@@ -330,6 +331,10 @@ export class TransactionService {
 
     if (filters.account_id) {
       conditions.push(eq(this.schema.transactions.account_id, filters.account_id));
+    }
+
+    if (filters.account_ids && filters.account_ids.length > 0) {
+      conditions.push(inArray(this.schema.transactions.account_id, filters.account_ids));
     }
 
     if (filters.created_by_user_id) {
@@ -704,6 +709,10 @@ export class TransactionService {
 
     if (filters.account_id) {
       conditions.push(eq(this.schema.transactions.account_id, filters.account_id));
+    }
+
+    if (filters.account_ids && filters.account_ids.length > 0) {
+      conditions.push(inArray(this.schema.transactions.account_id, filters.account_ids));
     }
 
     if (filters.created_by_user_id) {

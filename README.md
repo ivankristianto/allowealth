@@ -171,6 +171,7 @@ Invitation link:
 - `--currency, -c` - Default currency code (default: IDR)
 - `--week-start, -w` - Week start day: `monday` or `sunday` (default: monday)
 - `--compact-numbers` - Use compact formatting: `true` or `false` (default: true)
+- `--public-url` - Base URL for the signup link (overrides `PUBLIC_URL` env var)
 
 #### List Workspaces
 
