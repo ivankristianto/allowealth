@@ -81,7 +81,7 @@ if (!hasBudget) {
 const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok';
 ---
 
-<div data-category-drilldown-content>
+<div data-category-drilldown-content class="flex flex-col gap-6">
   {/* Header with category info */}
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
     <div class="flex items-center gap-4">
@@ -179,7 +179,7 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
   </div>
 
   {/* Close button */}
-  <div class="flex justify-end pt-2">
+  <div class="flex justify-end">
     <form method="dialog">
       <button
         type="submit"
