@@ -29,6 +29,8 @@ import { addToast } from '@/lib/stores/toastStore';
 let controller: AbortController | null = null;
 let unsubscribeSelectedYear: (() => void) | null = null;
 let unsubscribeLoading: (() => void) | null = null;
+let unsubscribeViewMode: (() => void) | null = null;
+let unsubscribeMonthRange: (() => void) | null = null;
 
 // SSR data interface
 interface SSRData {
@@ -77,10 +79,10 @@ export function initBudgetHistoryPage(): void {
     monthRange: ssrData.monthRange,
   });
 
-  // Set up event listeners
+  // Set up event listeners (all use AbortController signal for cleanup)
   setupYearToggleListeners(signal);
-  setupViewTabListeners();
-  setupMonthRangeListeners();
+  setupViewTabListeners(signal);
+  setupMonthRangeListeners(signal);
 
   // Subscribe to store changes
   unsubscribeSelectedYear = selectedYear.subscribe((year) => {
@@ -96,22 +98,18 @@ export function initBudgetHistoryPage(): void {
     }
   });
 
-  viewMode.subscribe((mode) => {
+  unsubscribeViewMode = viewMode.subscribe((mode) => {
     updateViewMode(mode);
   });
 
-  monthRange.subscribe(() => {
-    // Re-fetch trends when month range changes (only if in trends mode)
+  // monthRange.subscribe fires immediately with current value (Nano Stores behavior).
+  // When initial viewMode is 'trends', this handles the initial fetch — no separate call needed.
+  unsubscribeMonthRange = monthRange.subscribe(() => {
     if (viewMode.get() === 'trends') {
       const state = getState();
       fetchAndRenderTrends(state.monthRange, state.currency);
     }
   });
-
-  // If initial view mode is trends (from URL ?view=trends), fetch trends data
-  if (ssrData.viewMode === 'trends') {
-    fetchAndRenderTrends(ssrData.monthRange ?? 6, ssrData.currency);
-  }
 }
 
 /**
@@ -147,38 +145,46 @@ function setupYearToggleListeners(signal: AbortSignal): void {
 /**
  * Set up event listeners for view mode tab buttons
  */
-function setupViewTabListeners(): void {
+function setupViewTabListeners(signal: AbortSignal): void {
   const tabs = document.querySelectorAll('[data-view-tab]');
   tabs.forEach((tab) => {
-    tab.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      const mode = tab.getAttribute('data-view-tab') as 'monthly' | 'trends';
-      if (!mode || mode === viewMode.get()) return;
-      setViewMode(mode);
+    tab.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        const mode = tab.getAttribute('data-view-tab') as 'monthly' | 'trends';
+        if (!mode || mode === viewMode.get()) return;
+        setViewMode(mode);
 
-      if (mode === 'trends') {
-        const state = getState();
-        fetchAndRenderTrends(state.monthRange, state.currency);
-      } else {
-        const state = getState();
-        fetchAndRender(state.selectedYear, state.currency);
-      }
-    });
+        if (mode === 'trends') {
+          const state = getState();
+          fetchAndRenderTrends(state.monthRange, state.currency);
+        } else {
+          const state = getState();
+          fetchAndRender(state.selectedYear, state.currency);
+        }
+      },
+      { signal }
+    );
   });
 }
 
 /**
  * Set up event listeners for month range selector buttons
  */
-function setupMonthRangeListeners(): void {
+function setupMonthRangeListeners(signal: AbortSignal): void {
   const buttons = document.querySelectorAll('[data-month-range]');
   buttons.forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      const range = parseInt(btn.getAttribute('data-month-range') || '6', 10) as 3 | 6 | 12;
-      if (range === monthRange.get()) return;
-      setMonthRange(range);
-    });
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        const range = parseInt(btn.getAttribute('data-month-range') || '6', 10) as 3 | 6 | 12;
+        if (range === monthRange.get()) return;
+        setMonthRange(range);
+      },
+      { signal }
+    );
   });
 }
 
@@ -310,6 +316,10 @@ function cleanupBudgetHistoryPage(): void {
   unsubscribeSelectedYear = null;
   unsubscribeLoading?.();
   unsubscribeLoading = null;
+  unsubscribeViewMode?.();
+  unsubscribeViewMode = null;
+  unsubscribeMonthRange?.();
+  unsubscribeMonthRange = null;
 }
 
 /**
