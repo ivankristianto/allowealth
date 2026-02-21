@@ -33,7 +33,7 @@ const { id } = Astro.props;
 
 <script>
   import { initTransactionHistory } from '../molecules/TransactionHistory.client';
-  import { getOrderedCategories } from './BudgetPage.client';
+  import { getOrderedCategories } from './BudgetCategoryNav.client';
   initTransactionHistory();
 
   const initializedModals = new WeakSet<Element>();
@@ -64,8 +64,12 @@ const { id } = Astro.props;
       const contentContainer = container.querySelector('[data-modal-content]');
 
       let currentData: CategoryDrillDownData | null = null;
+      let activeFetchController: AbortController | null = null;
 
-      async function fetchDrilldownHTML(data: CategoryDrillDownData): Promise<string> {
+      async function fetchDrilldownHTML(
+        data: CategoryDrillDownData,
+        signal?: AbortSignal
+      ): Promise<string> {
         const range = data.period.includes('-') ? 'monthly' : 'yearly';
         const params = new URLSearchParams({
           categoryId: data.categoryId,
@@ -81,7 +85,9 @@ const { id } = Astro.props;
         if (data.budgetLimit !== null && data.budgetLimit !== undefined) {
           params.set('budgetLimit', String(data.budgetLimit));
         }
-        const response = await fetch(`/api/reports/category-drilldown?${params.toString()}`);
+        const response = await fetch(`/api/reports/category-drilldown?${params.toString()}`, {
+          signal,
+        });
         if (!response.ok) {
           throw new Error(`Failed to fetch drilldown content: ${response.statusText}`);
         }
@@ -107,7 +113,7 @@ const { id } = Astro.props;
               categoryId: target.categoryId,
               categoryName: target.categoryName,
               categoryIcon: target.categoryIcon,
-              categoryColor: target.categoryColor,
+              categoryColor: '', // Drilldown API defaults to bg-base-300; hex from cards is not compatible
               spent: target.spent,
               budgetLimit: target.budgetLimit ?? null,
               period: target.period,
@@ -172,12 +178,19 @@ const { id } = Astro.props;
       const handleOpenDrillDown = (async (e: CustomEvent<CategoryDrillDownData>) => {
         currentData = e.detail;
 
+        // Abort any in-flight fetch to prevent stale content from overwriting
+        activeFetchController?.abort();
+        const controller = new AbortController();
+        activeFetchController = controller;
+
         loadingContainer?.classList.remove('hidden');
         contentContainer?.classList.add('hidden');
         if (!modal.open) modal.showModal();
 
         try {
-          const html = await fetchDrilldownHTML(currentData);
+          const html = await fetchDrilldownHTML(currentData, controller.signal);
+          // Guard: if aborted between fetch and render, skip DOM update
+          if (controller.signal.aborted) return;
           if (contentContainer) {
             contentContainer.innerHTML = html;
           }
@@ -185,6 +198,8 @@ const { id } = Astro.props;
           contentContainer?.classList.remove('hidden');
           injectNavButtons();
         } catch (error) {
+          // Silently ignore aborted requests — a newer navigation superseded this one
+          if (error instanceof DOMException && error.name === 'AbortError') return;
           console.error('Error fetching category drilldown:', error);
           if (contentContainer) {
             contentContainer.innerHTML = `
@@ -231,6 +246,8 @@ const { id } = Astro.props;
 
       modal.addEventListener('close', () => {
         currentData = null;
+        activeFetchController?.abort();
+        activeFetchController = null;
         if (contentContainer) {
           contentContainer.innerHTML = '';
         }

@@ -162,18 +162,18 @@ Six UX improvements to the budget page: severity-based default sort with CRITICA
 
 ## Summary Checklist
 
-| #   | Area              | Key Assertion                                                           | Pass |
-| --- | ----------------- | ----------------------------------------------------------------------- | ---- |
-| 1   | Default Sort      | Cards sorted by % used descending on page load                          | [ ]  |
-| 2   | CRITICAL Badge    | 150%+ categories show "CRITICAL X%" in red bold                         | [ ]  |
-| 3   | Card Layout       | Budget amount is left/prominent, Spent is right/muted                   | [ ]  |
-| 4   | Triage Summary    | "X of Y over budget · Z critical" matches actual card counts            | [ ]  |
-| 5   | Overbudget Filter | Toggle shows only exceeded cards, button text updates                   | [ ]  |
-| 6   | Sort Dropdown     | "% Used ↓" is default, all 5 sort options work                          | [ ]  |
-| 7   | Toolbar Grouping  | Visual divider before New Budget, Initialize All hidden when 0          | [ ]  |
-| 8   | Modal Prev/Next   | Navigate between categories, keyboard arrows work, counter updates      | [ ]  |
-| 9   | Responsive        | Mobile single column, tablet 2-col, desktop 3-col with expanded summary | [ ]  |
-| 10  | Data Consistency  | Inline edit updates badge/sort/triage counts correctly                  | [ ]  |
+| #   | Area              | Key Assertion                                                           | Result  |
+| --- | ----------------- | ----------------------------------------------------------------------- | ------- |
+| 1   | Default Sort      | Cards sorted by % used descending on page load                          | PASS    |
+| 2   | CRITICAL Badge    | 150%+ categories show "CRITICAL X%" in red bold                         | PASS    |
+| 3   | Card Layout       | Budget amount is left/prominent, Spent is right/muted                   | PASS    |
+| 4   | Triage Summary    | "X of Y over budget · Z critical" matches actual card counts            | PASS    |
+| 5   | Overbudget Filter | Toggle shows only exceeded cards, button text updates                   | PASS    |
+| 6   | Sort Dropdown     | "% Used ↓" is default, all 5 sort options work                          | PASS    |
+| 7   | Toolbar Grouping  | Visual divider before New Budget, Initialize All hidden when 0          | PASS    |
+| 8   | Modal Prev/Next   | Navigate between categories, keyboard arrows work, counter updates      | PASS    |
+| 9   | Responsive        | Mobile single column, tablet 2-col, desktop 3-col with expanded summary | PARTIAL |
+| 10  | Data Consistency  | Inline edit updates badge/sort/triage counts correctly                  | PARTIAL |
 
 **Critical paths:** Steps 1 (sort), 2 (CRITICAL badge), 4 (triage counts), and 8 (modal navigation) are highest priority.
 
