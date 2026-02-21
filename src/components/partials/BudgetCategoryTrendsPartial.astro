@@ -15,11 +15,11 @@ import { formatCurrencyCompact } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
 import EmptyState from '../atoms/EmptyState.astro';
-import type { CategoryTrendData } from '@/services';
+import type { CategoryTrendData, CategoryTrendRow, CategoryMonthData } from '@/services';
 
 export interface Props {
   trends: CategoryTrendData;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 const { trends, currency } = Astro.props;
@@ -69,7 +69,7 @@ for (const cat of categories) {
               >
                 Category
               </th>
-              {months.map((col) => (
+              {months.map((col: { month: number; year: number; month_name: string }) => (
                 <th
                   scope="col"
                   class="px-3 @4xl:px-4 py-4 text-center text-xs font-bold text-base-content/40 uppercase tracking-widest min-w-[100px] @3xl:min-w-[120px]"
@@ -83,12 +83,15 @@ for (const cat of categories) {
 
           {/* Category rows */}
           <tbody class="divide-y divide-base-200">
-            {categories.map((cat) => {
+            {categories.map((cat: CategoryTrendRow) => {
               const IconComp = categoryIconComponents.get(cat.category_id);
               return (
                 <tr class="group hover:bg-base-200/30 transition-colors" data-trend-row>
                   {/* Sticky category column */}
-                  <td class="sticky left-0 z-10 bg-base-100 group-hover:bg-base-200/30 transition-colors px-4 @4xl:px-6 py-4">
+                  <th
+                    scope="row"
+                    class="sticky left-0 z-10 bg-base-100 group-hover:bg-base-200/30 transition-colors px-4 @4xl:px-6 py-4 text-left font-normal"
+                  >
                     <div class="flex items-center gap-2.5">
                       <div
                         class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -108,10 +111,10 @@ for (const cat of categories) {
                         </div>
                       </div>
                     </div>
-                  </td>
+                  </th>
 
                   {/* Month cells */}
-                  {cat.months.map((m) => {
+                  {cat.months.map((m: CategoryMonthData) => {
                     const spentAmount = parseFloat(m.spent_amount);
                     const budgetAmount = parseFloat(m.budget_amount);
                     const hasData = spentAmount > 0 || budgetAmount > 0;

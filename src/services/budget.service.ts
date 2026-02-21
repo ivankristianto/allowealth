@@ -350,7 +350,7 @@ export class BudgetService {
    */
   async getCategoryTrends(
     workspaceId: string,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     months: number = 6,
     perf?: PerfCollector
   ): Promise<CategoryTrendData> {

@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { budgetService } from '@/services';
+import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 import BudgetCategoryTrendsPartial from '@/components/partials/BudgetCategoryTrendsPartial.astro';
 
@@ -11,7 +12,7 @@ import BudgetCategoryTrendsPartial from '@/components/partials/BudgetCategoryTre
  * GET /api/budget/category-trends
  * Get category trend data (categories × months matrix)
  * Query params:
- *   - currency: 'IDR' | 'USD' (default: 'IDR')
+ *   - currency: Currency (default: workspace primary)
  *   - months: 3 | 6 | 12 (default: 6)
  *   - _render: 'html' | 'json' (default: 'json')
  */
@@ -23,11 +24,26 @@ export const GET: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const perf = context.locals.perf;
 
-    const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
+    const currencyParam = url.searchParams.get('currency');
     const monthsParam = url.searchParams.get('months');
     const months = monthsParam ? parseInt(monthsParam, 10) : 6;
 
-    if (currency !== 'IDR' && currency !== 'USD') {
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    const currency =
+      currencyParam && isValidCurrency(currencyParam) && allowedCurrencies.includes(currencyParam)
+        ? currencyParam
+        : workspaceCurrencyConfig.primary;
+
+    if (
+      currencyParam &&
+      (!isValidCurrency(currencyParam) || !allowedCurrencies.includes(currencyParam))
+    ) {
       return render.wantsHtml()
         ? render.error('Invalid currency parameter', 400)
         : errorResponse('Invalid currency parameter', 400);

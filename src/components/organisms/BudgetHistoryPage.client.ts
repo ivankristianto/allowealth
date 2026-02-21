@@ -266,8 +266,8 @@ async function fetchAndRenderTrends(months: 3 | 6 | 12, currencyCode: Currency):
   try {
     const response = await fetchCategoryTrendsHtml(months, currencyCode);
 
-    // Don't render if view mode switched during fetch
-    if (viewMode.get() !== 'trends') return;
+    // Don't render if view mode switched or month range changed during fetch
+    if (viewMode.get() !== 'trends' || monthRange.get() !== months) return;
 
     renderFromHtmlResponse(response);
 
@@ -283,13 +283,14 @@ async function fetchAndRenderTrends(months: 3 | 6 | 12, currencyCode: Currency):
       btn.classList.toggle('hover:text-base-content/70', !isActive);
     });
   } catch (error) {
-    if (viewMode.get() === 'trends') {
+    if (viewMode.get() === 'trends' && monthRange.get() === months) {
       const message = error instanceof Error ? error.message : 'Failed to load category trends';
       addToast(message, 'error');
       console.error('[BudgetHistoryPage] Trends fetch error:', error);
     }
   } finally {
-    if (viewMode.get() === 'trends') {
+    // Only reset loading if this is still the active request
+    if (viewMode.get() === 'trends' && monthRange.get() === months) {
       setLoading(false);
     }
   }
