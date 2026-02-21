@@ -94,9 +94,9 @@ export function renderTableHtml(html: string): void {
   // Inject the HTML
   tableBody.innerHTML = html;
 
-  // Animate new rows
+  // Animate new rows (both monthly and trend views)
   if (!prefersReducedMotion) {
-    const rows = tableBody.querySelectorAll('[data-history-row]');
+    const rows = tableBody.querySelectorAll('[data-history-row], [data-trend-row]');
     rows.forEach((row, index) => {
       animate(
         row as HTMLElement,
@@ -109,9 +109,15 @@ export function renderTableHtml(html: string): void {
   // Announce to screen readers
   const liveRegion = document.getElementById('budget-history-live-region');
   if (liveRegion) {
-    const count = tableBody.querySelectorAll('[data-history-row]').length;
-    liveRegion.textContent =
-      count > 0 ? `Showing ${count} months of budget history` : 'No budget history available';
+    const historyRows = tableBody.querySelectorAll('[data-history-row]');
+    const trendRows = tableBody.querySelectorAll('[data-trend-row]');
+    if (historyRows.length > 0) {
+      liveRegion.textContent = `Showing ${historyRows.length} months of budget history`;
+    } else if (trendRows.length > 0) {
+      liveRegion.textContent = `Showing trends for ${trendRows.length} budget categories`;
+    } else {
+      liveRegion.textContent = 'No budget data available';
+    }
   }
 }
 

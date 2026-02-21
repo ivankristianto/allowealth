@@ -196,6 +196,54 @@ export async function fetchBudgetHistoryJson(
 }
 
 /**
+ * Fetch category trends as HTML fragment
+ *
+ * @param months - Number of months to show (3, 6, or 12)
+ * @param currency - Currency code
+ */
+export async function fetchCategoryTrendsHtml(
+  months: 3 | 6 | 12,
+  currency: Currency
+): Promise<FetchBudgetHistoryHtmlResponse> {
+  cancelPendingRequest();
+  activeController = new AbortController();
+
+  const params = new URLSearchParams();
+  params.set('months', String(months));
+  params.set('currency', currency);
+  params.set('_render', 'html');
+
+  const url = `/api/budget/category-trends?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'text/html' },
+      signal: activeController.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(errorText || `HTTP error ${response.status}`);
+    }
+
+    const html = await response.text();
+    activeController = null;
+
+    return {
+      html,
+      partials: parseHtmlPartials(html),
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return { html: '', partials: {} };
+    }
+    activeController = null;
+    throw error;
+  }
+}
+
+/**
  * Check if a request is currently in progress
  */
 export function isRequestPending(): boolean {

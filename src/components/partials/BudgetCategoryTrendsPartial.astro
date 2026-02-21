@@ -1,0 +1,151 @@
+---
+/**
+ * Budget Category Trends Partial
+ *
+ * Renders the category x month matrix as an HTML fragment.
+ * Used for server-rendered HTML responses (HTMX-style).
+ *
+ * Rows = categories (sorted by worst adherence)
+ * Columns = months (chronological, oldest -> newest)
+ * Each cell = compact spent amount + colored status dot
+ */
+
+import { formatCurrencyCompact } from '@/lib/formatting';
+import { sanitizeColor } from '@/lib/utils/budget';
+import EmptyState from '../atoms/EmptyState.astro';
+import type { CategoryTrendData } from '@/services';
+
+export interface Props {
+  trends: CategoryTrendData;
+  currency: 'IDR' | 'USD';
+}
+
+const { trends, currency } = Astro.props;
+const { months, categories } = trends;
+
+const getStatusDotClass = (status: 'ok' | 'warning' | 'exceeded'): string => {
+  switch (status) {
+    case 'exceeded':
+      return 'bg-error';
+    case 'warning':
+      return 'bg-warning';
+    default:
+      return 'bg-success';
+  }
+};
+
+const buildBudgetUrl = (year: number, month: number): string =>
+  `/budget?year=${year}&month=${month}`;
+---
+
+<div class="@container" data-trends-view>
+  {
+    categories.length > 0 ? (
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse min-w-max">
+          {/* Header row: Category + month columns */}
+          <thead>
+            <tr class="border-b border-base-200">
+              <th
+                scope="col"
+                class="sticky left-0 z-10 bg-base-100 px-4 @4xl:px-6 py-4 text-left text-xs font-bold text-base-content/40 uppercase tracking-widest min-w-[140px] @3xl:min-w-[180px]"
+              >
+                Category
+              </th>
+              {months.map((col) => (
+                <th
+                  scope="col"
+                  class="px-3 @4xl:px-4 py-4 text-center text-xs font-bold text-base-content/40 uppercase tracking-widest min-w-[80px] @3xl:min-w-[100px]"
+                >
+                  <div>{col.month_name.slice(0, 3)}</div>
+                  <div class="text-base-content/25 font-medium">{col.year}</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          {/* Category rows */}
+          <tbody class="divide-y divide-base-200">
+            {categories.map((cat) => (
+              <tr class="group hover:bg-base-200/30 transition-colors" data-trend-row>
+                {/* Sticky category column */}
+                <td class="sticky left-0 z-10 bg-base-100 group-hover:bg-base-200/30 transition-colors px-4 @4xl:px-6 py-4">
+                  <div class="flex items-center gap-2.5">
+                    <span
+                      class="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={`background-color: ${sanitizeColor(cat.category_color)}`}
+                      aria-hidden="true"
+                    />
+                    <div class="min-w-0">
+                      <div class="text-sm font-bold truncate">{cat.category_name}</div>
+                      <div class="text-xs text-base-content/40 font-medium">
+                        avg: {cat.avg_percentage_used.toFixed(0)}%
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Month cells */}
+                {cat.months.map((m) => {
+                  const spentAmount = parseFloat(m.spent_amount);
+                  const hasData = spentAmount > 0 || parseFloat(m.budget_amount) > 0;
+                  return (
+                    <td class="px-3 @4xl:px-4 py-4 text-center">
+                      {hasData ? (
+                        <a
+                          href={buildBudgetUrl(m.year, m.month)}
+                          class="inline-flex items-center gap-1.5 text-sm font-bold hover:underline decoration-base-content/20 underline-offset-2"
+                          title={`${cat.category_name} — ${m.month_name} ${m.year}: ${m.percentage_used.toFixed(0)}% of budget`}
+                        >
+                          <span
+                            class={`w-2 h-2 rounded-full shrink-0 ${getStatusDotClass(m.status)}`}
+                            aria-label={
+                              m.status === 'exceeded'
+                                ? 'Over budget'
+                                : m.status === 'warning'
+                                  ? 'Near limit'
+                                  : 'On track'
+                            }
+                          />
+                          <span>{formatCurrencyCompact(spentAmount, currency)}</span>
+                        </a>
+                      ) : (
+                        <span class="text-sm text-base-content/20 font-bold">&mdash;</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Legend */}
+        <div class="flex items-center justify-center gap-6 py-4 border-t border-base-200">
+          <div class="flex items-center gap-1.5 text-xs text-base-content/50">
+            <span class="w-2 h-2 rounded-full bg-success" aria-hidden="true" />
+            <span>&lt;80%</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-base-content/50">
+            <span class="w-2 h-2 rounded-full bg-warning" aria-hidden="true" />
+            <span>80&ndash;99%</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-base-content/50">
+            <span class="w-2 h-2 rounded-full bg-error" aria-hidden="true" />
+            <span>&ge;100%</span>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class="py-16 text-center">
+        <EmptyState
+          title="No category data available"
+          message="Category trends will appear here once you have budget data for at least one month."
+          iconName="trending"
+          variant="centered"
+          className="py-0"
+        />
+      </div>
+    )
+  }
+</div>
