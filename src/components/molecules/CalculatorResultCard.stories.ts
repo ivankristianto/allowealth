@@ -90,7 +90,7 @@ function createCalculatorResultCard(args: {
   label?: string;
   value?: number;
   variant?: 'success' | 'primary' | 'warning' | 'error';
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }): HTMLElement {
   const {
     label = 'Total Interest',
@@ -243,7 +243,7 @@ export const AllCurrencies: StoryObj = {
     const container = document.createElement('div');
     container.className = 'flex flex-col sm:flex-row gap-6';
 
-    const currencies: Array<'IDR' | 'USD'> = ['IDR', 'USD'];
+    const currencies: Array<Currency> = ['IDR', 'USD'];
 
     currencies.forEach((currency) => {
       const card = createCalculatorResultCard({

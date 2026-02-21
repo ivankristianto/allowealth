@@ -193,7 +193,7 @@ const getChangeIndicator = (
 
 const createBudgetHistoryComparison = (args: {
   history?: MonthlyBudgetData[];
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   currentMonth?: number;
   currentYear?: number;
 }): HTMLElement => {

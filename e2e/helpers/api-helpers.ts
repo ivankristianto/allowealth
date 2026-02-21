@@ -93,7 +93,7 @@ export async function createTransactionViaAPI(
     categoryId: string;
     accountId: string;
     date?: string;
-    currency?: 'IDR' | 'USD';
+    currency?: Currency;
     description?: string;
   }
 ): Promise<{ id: string }> {
@@ -186,7 +186,7 @@ export async function createAccountViaAPI(
     name: string;
     type: AccountType;
     balance: number;
-    currency?: 'IDR' | 'USD';
+    currency?: Currency;
   }
 ): Promise<{ id: string }> {
   const response = await request.post(`${E2E_BASE_URL}/api/accounts`, {
@@ -227,7 +227,7 @@ export async function setBudgetViaAPI(
   request: APIRequestContext,
   categoryId: string,
   amount: number,
-  currency: 'IDR' | 'USD' = 'IDR',
+  currency: Currency = 'IDR',
   month?: number,
   year?: number
 ): Promise<void> {

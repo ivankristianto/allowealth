@@ -54,7 +54,7 @@ const createCashFlowItem = (args: {
   amount?: number;
   type?: 'income' | 'expense';
   icon?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }): HTMLElement => {
   const {
     name = 'Cash flow item',

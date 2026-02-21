@@ -38,6 +38,7 @@ import {
 } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * Summary metric for expense/income categories
@@ -88,7 +89,7 @@ export interface ReportData {
 export interface CategoryTransaction {
   id: string;
   amount: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   description: string | null;
   transactionDate: Date;
   accountName: string;
@@ -148,8 +149,8 @@ export class ReportService {
    * @throws Error if currency is invalid
    */
   private validateCurrency(currency: string): void {
-    if (!['IDR', 'USD'].includes(currency)) {
-      throw new Error(`Invalid currency: ${currency}. Must be IDR or USD.`);
+    if (!isValidCurrency(currency)) {
+      throw new Error(`Invalid currency: ${currency}.`);
     }
   }
 
@@ -167,7 +168,7 @@ export class ReportService {
   async getMonthlyReport(
     workspaceId: string,
     period: string,
-    currency: 'IDR' | 'USD' = 'IDR',
+    currency: Currency = 'IDR',
     userId?: string
   ): Promise<ReportData> {
     try {
@@ -239,7 +240,7 @@ export class ReportService {
   async getYearlyReport(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD' = 'IDR',
+    currency: Currency = 'IDR',
     userId?: string
   ): Promise<ReportData> {
     try {
@@ -304,16 +305,19 @@ export class ReportService {
    * @param categoryId - Category ID
    * @param period - Period string ('YYYY-MM' for monthly, 'YYYY' for yearly)
    * @param range - Report range type
+   * @param currency - Currency to filter by
    * @returns Category transactions data
    */
   async getCategoryTransactions(
     workspaceId: string,
     categoryId: string,
     period: string,
-    range: 'monthly' | 'yearly'
+    range: 'monthly' | 'yearly',
+    currency: Currency
   ): Promise<CategoryTransactionsData> {
     // Validate inputs
     this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
     // Verify category exists and belongs to workspace (access control)
     const category = await this.db.query.categories.findFirst({
@@ -354,6 +358,7 @@ export class ReportService {
           eq(this.schema.transactions.workspace_id, workspaceId),
           eq(this.schema.transactions.category_id, categoryId),
           eq(this.schema.transactions.type, 'expense'),
+          eq(this.schema.transactions.currency, currency),
           gte(this.schema.transactions.transaction_date, startDate),
           lte(this.schema.transactions.transaction_date, endDate),
           sql`${this.schema.transactions.deleted_at} IS NULL`
@@ -424,7 +429,7 @@ export class ReportService {
     workspaceId: string,
     period: string,
     range: 'monthly' | 'yearly',
-    currency: 'IDR' | 'USD' = 'IDR'
+    currency: Currency = 'IDR'
   ): Promise<MemberSummaryRow[]> {
     this.validateWorkspaceId(workspaceId);
     this.validateCurrency(currency);
@@ -548,7 +553,7 @@ export class ReportService {
     workspaceId: string,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<string> {
     const [result] = await (this.db as any)
@@ -580,7 +585,7 @@ export class ReportService {
     workspaceId: string,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<string> {
     const [result] = await (this.db as any)
@@ -612,7 +617,7 @@ export class ReportService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<number> {
     // Get total budget for the month
@@ -667,7 +672,7 @@ export class ReportService {
   private async getYearlyBudgetHealth(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<number> {
     // Get total budget for all months in the year
@@ -722,7 +727,7 @@ export class ReportService {
     workspaceId: string,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<CategoryExpense[]> {
     const categoryExpenses = await (this.db as any)
@@ -767,7 +772,7 @@ export class ReportService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<CategoryIntelligence[]> {
     const startDate = new Date(year, month - 1, 1);
@@ -837,7 +842,7 @@ export class ReportService {
   private async getYearlyCategoryIntelligence(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<CategoryIntelligence[]> {
     const startDate = new Date(year, 0, 1);
@@ -929,7 +934,7 @@ export class ReportService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     trailingMonths: number,
     userId?: string
   ): Promise<TrendDataPoint[]> {
@@ -966,7 +971,7 @@ export class ReportService {
   private async getYearlyTrendData(
     workspaceId: string,
     year: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     userId?: string
   ): Promise<TrendDataPoint[]> {
     const trendData: TrendDataPoint[] = [];

@@ -27,6 +27,7 @@ import {
   cancelEditMode,
 } from './BudgetInlineEdit.client';
 import { navigate } from 'astro:transitions/client';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -35,7 +36,7 @@ import { navigate } from 'astro:transitions/client';
 interface PageState {
   year: number;
   month: number;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 let state: PageState | null = null;
@@ -49,9 +50,9 @@ let savedSortKey = '';
 /**
  * Validate and parse currency value (P1: runtime validation)
  */
-function getValidCurrency(value: string | null): 'IDR' | 'USD' {
-  if (value === 'USD') return 'USD';
-  return 'IDR'; // Default to IDR for any invalid value
+function getValidCurrency(value: string | null): Currency {
+  if (value && isValidCurrency(value)) return value;
+  return 'IDR';
 }
 
 /**

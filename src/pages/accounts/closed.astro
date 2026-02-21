@@ -159,6 +159,8 @@ const formatClosedDate = (date: Date | null): string => {
 </ProtectedLayout>
 
 <script>
+  import { isValidCurrency } from '@/lib/constants/currency';
+
   const initializedReopenButtons = new WeakSet<Element>();
 
   function initReopenButtons() {
@@ -174,7 +176,9 @@ const formatClosedDate = (date: Date | null): string => {
         const accountId = btn.getAttribute('data-reopen-account');
         const accountName = btn.getAttribute('data-account-name') || 'Account';
         const accountType = btn.getAttribute('data-account-type') || 'Unknown';
-        const accountCurrency = btn.getAttribute('data-account-currency') || 'IDR';
+        const rawAccountCurrency = btn.getAttribute('data-account-currency');
+        const accountCurrency =
+          rawAccountCurrency && isValidCurrency(rawAccountCurrency) ? rawAccountCurrency : 'IDR';
         const accountClosedAt = btn.getAttribute('data-account-closed-at') || '';
 
         if (!accountId) return;

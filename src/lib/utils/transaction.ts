@@ -14,7 +14,7 @@ export interface DrizzleTransactionResult {
   id: string;
   type: 'income' | 'expense' | 'transfer';
   amount: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   description: string | null;
   transaction_date: Date;
   updated_by_user_id?: string | null;

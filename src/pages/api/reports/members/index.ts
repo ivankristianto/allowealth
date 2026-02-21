@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
-import { reportService } from '@/services';
+import { reportService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { validatePeriod } from '@/lib/utils/period-validation';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * GET /api/reports/members
@@ -11,7 +12,7 @@ import { validatePeriod } from '@/lib/utils/period-validation';
  * Query params:
  *   - range: 'monthly' | 'yearly' (required)
  *   - period: string (required) - 'YYYY-MM' for monthly, 'YYYY' for yearly
- *   - currency: 'IDR' | 'USD' (optional, defaults to 'IDR')
+ *   - currency: Currency (optional, defaults to 'IDR')
  */
 export const GET: APIRoute = async (context) => {
   try {
@@ -20,7 +21,18 @@ export const GET: APIRoute = async (context) => {
 
     const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;
     const period = url.searchParams.get('period');
-    const currency = (url.searchParams.get('currency') as 'IDR' | 'USD' | null) || 'IDR';
+    const currencyParam = url.searchParams.get('currency');
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    const currency =
+      currencyParam && isValidCurrency(currencyParam) && allowedCurrencies.includes(currencyParam)
+        ? currencyParam
+        : workspaceCurrencyConfig.primary;
 
     if (!range || (range !== 'monthly' && range !== 'yearly')) {
       return errorResponse("Invalid range. Must be 'monthly' or 'yearly'.", 400, 'INVALID_RANGE');
@@ -37,8 +49,15 @@ export const GET: APIRoute = async (context) => {
       return errorResponse(message, 400, 'INVALID_PERIOD');
     }
 
-    if (currency !== 'IDR' && currency !== 'USD') {
-      return errorResponse("Invalid currency. Must be 'IDR' or 'USD'.", 400, 'INVALID_CURRENCY');
+    if (
+      currencyParam &&
+      (!isValidCurrency(currencyParam) || !allowedCurrencies.includes(currencyParam))
+    ) {
+      return errorResponse(
+        'Invalid currency. Must match this workspace configured currencies.',
+        400,
+        'INVALID_CURRENCY'
+      );
     }
 
     const summary = await reportService.getMemberSummary(auth.workspaceId, period, range, currency);

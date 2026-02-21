@@ -281,9 +281,9 @@
   --card-padding: 1.75rem;
   --card-border: 1px solid;
   --card-border-color-light: #e2e8f0;
-  --card-border-color-dark: #1e293b;
+  --card-border-color-dark: #334155; /* slate-700 = base-300 */
   --card-bg-light: #ffffff;
-  --card-bg-dark: #0f172a;
+  --card-bg-dark: #1e293b; /* slate-800 = base-200 */
   --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
 
   /* Input tokens */
@@ -291,7 +291,7 @@
   --input-padding: 0.5rem 2.5rem 0.5rem 0.75rem;
   --input-font-size: 0.8125rem;
   --input-bg-light: #f1f5f9;
-  --input-bg-dark: #1e293b;
+  --input-bg-dark: #334155; /* slate-700 = base-300 (sunken) */
   --input-focus-ring: 2px solid rgb(21 128 61 / 0.25);
 
   /* Badge tokens */
@@ -302,9 +302,9 @@
   /* Sidebar tokens */
   --sidebar-width: 16rem;
   --sidebar-bg-light: #ffffff;
-  --sidebar-bg-dark: #0f172a;
+  --sidebar-bg-dark: #111827; /* gray-900 = base-100 */
   --sidebar-border-light: #e2e8f0;
-  --sidebar-border-dark: #1e293b;
+  --sidebar-border-dark: #334155; /* slate-700 = base-300 */
   --sidebar-nav-item-padding: 0.625rem 1rem;
   --sidebar-nav-item-gap: 0.75rem;
   --sidebar-icon-size: 22px;
@@ -317,9 +317,9 @@
 
   /* Table tokens */
   --table-header-bg-light: rgb(248 250 252 / 0.5);
-  --table-header-bg-dark: rgb(30 41 59 / 0.5);
+  --table-header-bg-dark: rgb(51 65 85 / 0.5); /* slate-700 */
   --table-row-hover-light: #f8fafc;
-  --table-row-hover-dark: rgb(30 41 59 / 0.4);
+  --table-row-hover-dark: rgb(51 65 85 / 0.4); /* slate-700 */
   --table-cell-padding: 1rem 1.5rem;
   --table-icon-size: 22px;
 
@@ -337,7 +337,7 @@
   /* Glass effect */
   --glass-blur: 12px;
   --glass-bg-light: rgb(255 255 255 / 0.8);
-  --glass-bg-dark: rgb(15 23 42 / 0.8);
+  --glass-bg-dark: rgb(17 24 39 / 0.8);
 
   /* Gradients */
   --gradient-accent-glow: radial-gradient(circle, rgb(21 128 61 / 0.1) 0%, transparent 70%);
@@ -399,82 +399,83 @@
 }
 
 /* ========================================
- * DARK THEME TOKENS (from styles.json)
+ * DARK THEME TOKENS — Comfortable Dark v1.2.0
+ * Raised floor, visible surface steps, reduced glare.
  * ======================================== */
 
 [data-theme='dark'] {
-  /* Primary: Text/headings in dark mode */
-  --color-primary: #e8edf5; /* softened light slate for reduced glare */
-  --color-primary-hover: #e8edf5;
-  --color-primary-light: #111d31;
+  /* Primary: headings in dark mode (~12:1 on base-100) */
+  --color-primary: #e2e8f0; /* slate-200 */
+  --color-primary-hover: #e2e8f0;
+  --color-primary-light: #1e293b; /* slate-800 — elevated surface */
 
-  /* Accent: CTAs in dark mode */
-  --color-accent: #4ade80; /* forest-400 - vibrant for dark mode */
-  --color-accent-hover: #22c55e; /* forest-500 */
+  /* Accent: CTAs — desaturated green-500 */
+  --color-accent: #22c55e; /* green-500 — less neon than green-400 */
+  --color-accent-hover: #16a34a; /* green-600 */
 
-  /* Error: improved contrast on dark backgrounds */
-  --color-error: #fb7185; /* rose-400 - WCAG AA on base-300 */
-  --color-error-hover: #f43f5e; /* rose-500 */
+  /* Semantic colors — tuned for dark mode comfort */
+  --color-error: #f87171; /* red-400 — warmer, less pink */
+  --color-error-hover: #ef4444; /* red-500 */
   --color-success: #34d399; /* emerald-400 */
   --color-success-hover: #10b981; /* emerald-500 */
   --color-warning: #fbbf24; /* amber-400 */
   --color-warning-hover: #f59e0b; /* amber-500 */
 
-  /* Info: sky-400 in dark mode (distinct from forest accent) */
+  /* Info: sky-400 (distinct from forest accent) */
   --color-info: #38bdf8;
   --color-info-hover: #0ea5e9; /* sky-500 */
 
-  /* Dark mode slate scale */
-  --color-slate-50: #e8edf5;
-  --color-slate-100: #dbe4ee;
-  --color-slate-200: #c9d6e8;
-  --color-slate-300: #b2c1d7;
-  --color-slate-400: #8da0bb;
-  --color-slate-500: #667b99;
-  --color-slate-600: #4b5f7d;
-  --color-slate-700: #314562;
-  --color-slate-800: #1f2f48;
-  --color-slate-900: #111d31;
+  /* Slate scale — standard Tailwind values for dark mode */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #111827;
 
-  /* Dark mode forest scale */
+  /* Forest green scale */
   --color-forest-400: #4ade80;
   --color-forest-500: #22c55e;
   --color-forest-900: #14532d;
 
-  /* Dark mode sky scale */
+  /* Sky scale */
   --color-sky-400: #38bdf8;
   --color-sky-500: #0ea5e9;
 
-  /* Mobile bottom navigation */
+  /* Mobile bottom navigation — aligned to new base palette */
   --mobile-nav-surface-bg: linear-gradient(
     to top,
-    rgb(15 23 42 / 0.96) 0%,
-    rgb(15 23 42 / 0.92) 56%,
-    rgb(15 23 42 / 0.86) 100%
+    rgb(17 24 39 / 0.96) 0%,
+    rgb(17 24 39 / 0.92) 56%,
+    rgb(17 24 39 / 0.86) 100%
   );
   --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.45);
-  --mobile-nav-accent-line: rgb(74 222 128 / 0.35);
+  --mobile-nav-accent-line: rgb(34 197 94 / 0.35);
   --mobile-nav-fab-halo: radial-gradient(
     circle at center,
-    rgb(74 222 128 / 0.24) 0%,
+    rgb(34 197 94 / 0.24) 0%,
     transparent 72%
   );
   --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.55);
   --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
 
-  /* Dark mode rose scale */
+  /* Rose scale */
   --color-rose-500: #f43f5e;
 
-  /* Dark mode emerald scale */
+  /* Emerald scale */
   --color-emerald-400: #34d399;
   --color-emerald-900: #064e3b;
 
-  /* Component dark mode overrides */
-  --card-bg: var(--color-slate-900);
-  --card-border-color: var(--color-slate-800);
-  --input-bg: var(--color-slate-800);
-  --sidebar-bg: var(--color-slate-900);
-  --sidebar-border: var(--color-slate-800);
+  /* Component dark mode overrides — aligned to base surface hierarchy */
+  --card-bg: var(--color-slate-800); /* #1e293b = base-200 (elevated) */
+  --card-border-color: var(--color-slate-700); /* #334155 = base-300 (visible) */
+  --input-bg: var(--color-slate-700); /* #334155 = base-300 (sunken input) */
+  --sidebar-bg: var(--color-slate-900); /* #111827 = base-100 (body level) */
+  --sidebar-border: var(--color-slate-700); /* #334155 = base-300 (visible) */
 }
 
 .token-badge-padding {

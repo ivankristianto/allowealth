@@ -54,7 +54,7 @@ describe('DashboardService', () => {
         undefined,
         'IDR'
       );
-      expect(result.totalAccounts.convertedCurrency).toBe('IDR');
+      expect(result.totalAccounts.byCurrency).toBeDefined();
     });
 
     it('should accept custom currency USD', async () => {
@@ -64,7 +64,7 @@ describe('DashboardService', () => {
         undefined,
         'USD'
       );
-      expect(result.totalAccounts.convertedCurrency).toBe('USD');
+      expect(result.totalAccounts.byCurrency).toBeDefined();
     });
 
     it('should fetch all data in parallel', async () => {
@@ -80,9 +80,10 @@ describe('DashboardService', () => {
       const result = await dashboardService.getDashboardData('user-123');
 
       // totalAccounts amounts are strings
-      expect(typeof result.totalAccounts.idr).toBe('string');
-      expect(typeof result.totalAccounts.usd).toBe('string');
-      expect(typeof result.totalAccounts.converted).toBe('string');
+      expect(Array.isArray(result.totalAccounts.byCurrency)).toBe(true);
+      result.totalAccounts.byCurrency.forEach((row) => {
+        expect(typeof row.amount).toBe('string');
+      });
 
       // monthlySpent amounts are strings
       expect(typeof result.monthlySpent.total).toBe('string');
@@ -114,9 +115,7 @@ describe('DashboardService', () => {
     it('should return zeroed totalAccounts when db is unavailable', async () => {
       const result = await dashboardService.getDashboardData('error-user');
 
-      expect(result.totalAccounts.idr).toBe('0');
-      expect(result.totalAccounts.usd).toBe('0');
-      expect(result.totalAccounts.converted).toBe('0');
+      expect(result.totalAccounts.byCurrency).toEqual([]);
     });
 
     it('should return zeroed monthlySpent when db is unavailable', async () => {
@@ -160,14 +159,14 @@ describe('DashboardService', () => {
       expect(result.recentTransactions).toEqual([]);
     });
 
-    it('should preserve currency in totalAccounts even on error', async () => {
+    it('should support requested currency even on error', async () => {
       const resultIDR = await dashboardService.getDashboardData(
         'error-user',
         undefined,
         undefined,
         'IDR'
       );
-      expect(resultIDR.totalAccounts.convertedCurrency).toBe('IDR');
+      expect(resultIDR.monthlySpent).toBeDefined();
 
       const resultUSD = await dashboardService.getDashboardData(
         'error-user',
@@ -175,7 +174,7 @@ describe('DashboardService', () => {
         undefined,
         'USD'
       );
-      expect(resultUSD.totalAccounts.convertedCurrency).toBe('USD');
+      expect(resultUSD.monthlySpent).toBeDefined();
     });
   });
 

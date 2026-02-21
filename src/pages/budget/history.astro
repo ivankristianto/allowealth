@@ -12,7 +12,8 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTablePartial.astro';
 import YearToggle from '@/components/molecules/YearToggle.astro';
-import { budgetService, type MonthlyBudgetHistory } from '@/services';
+import { budgetService, workspaceMetaService, type MonthlyBudgetHistory } from '@/services';
+import { isValidCurrency } from '@/lib/constants/currency';
 import { CircleX, Download, History as HistoryIcon } from '@lucide/astro';
 
 const user = Astro.locals.user!;
@@ -30,15 +31,25 @@ const currentYear = now.getFullYear();
 // Default to current year, parse from URL if provided
 const selectedYear = yearParam ? parseInt(yearParam, 10) : currentYear;
 
-// Default currency (could be user preference in the future)
-const selectedCurrency: 'IDR' | 'USD' = 'IDR';
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
+const selectedCurrency =
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
+    : workspaceCurrencyConfig.primary;
 
 // Get budget history from service (24 months to cover 2 years)
 let historyData: MonthlyBudgetHistory[] = [];
 let error: string | null = null;
 
 try {
-  const allHistory = await budgetService.getBudgetHistory(user!.id, selectedCurrency, 24);
+  const allHistory = await budgetService.getBudgetHistory(user.workspaceId, selectedCurrency, 24);
 
   // Filter by selected year
   historyData = allHistory.filter((h) => h.year === selectedYear);
@@ -50,7 +61,7 @@ try {
 // Get available years from history data (for toggle)
 const allYears = new Set<number>();
 try {
-  const fullHistory = await budgetService.getBudgetHistory(user!.id, selectedCurrency, 24);
+  const fullHistory = await budgetService.getBudgetHistory(user.workspaceId, selectedCurrency, 24);
   fullHistory.forEach((h) => allYears.add(h.year));
 } catch {
   // If we can't get history, at least show current year

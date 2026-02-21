@@ -161,32 +161,23 @@ describe('review feedback regressions', () => {
     );
   });
 
-  it('transaction filters category search should have visible label and tokenized input classes', () => {
+  it('transaction filters category search should use MultiSelectDropdown with correct props', () => {
     const content = read('src/components/organisms/TransactionFiltersBar.astro');
-    const inputSegments = content.match(/<input\b[\s\S]*?>/g) ?? [];
-    const categorySearchSegment = inputSegments.find((segment) =>
-      segment.includes('data-category-search')
+
+    // Category filter now uses MultiSelectDropdown component (not a raw <input>)
+    expect(content).toContain(
+      "import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro'"
     );
-    // Main search now uses SearchInput component (not a raw <input>)
-    const mainSearchSegment = content.match(/<SearchInput[\s\S]*?\/>/)?.[0];
-
-    expect(content).toContain('<label for="category-search"');
+    expect(content).toContain('inputName="category_ids"');
+    expect(content).toContain('filterEventType="category_ids"');
+    expect(content).toContain('searchable={true}');
     expect(content).toContain('Search categories');
-    expect(content).toContain('id="category-search"');
-    expect(content).toContain('data-category-search');
-    expect(content).toContain('tokenClasses.inputSurfaceBase');
-    expect(content).toContain('tokenClasses.inputFocusAccent');
-    expect(content).toContain('tokenClasses.inputPaddingSearchCompact');
-    expect(content).toContain('tokenClasses.inputPaddingSearchDefault');
 
-    expect(categorySearchSegment).toBeDefined();
+    // Main search still uses SearchInput component
+    const mainSearchSegment = content.match(/<SearchInput[\s\S]*?\/>/)?.[0];
     expect(mainSearchSegment).toBeDefined();
     expect(mainSearchSegment).toContain('data-filter-search');
     expect(mainSearchSegment).toContain('inputClass={mainSearchInputClass}');
-    expect(categorySearchSegment).not.toContain('input-sm');
-    expect(categorySearchSegment).not.toContain('pl-8');
-    expect(categorySearchSegment).not.toContain('pr-3');
-    expect(categorySearchSegment).not.toContain('py-2');
   });
 
   it('header should delegate drawer trigger in Header.client.ts and keep astro markup SSR-only', () => {

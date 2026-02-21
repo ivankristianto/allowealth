@@ -47,11 +47,7 @@ export function cancelPendingRequest(): void {
 /**
  * Build query string from parameters
  */
-function buildQueryString(
-  year: number,
-  currency: 'IDR' | 'USD',
-  options: FetchOptions = {}
-): string {
+function buildQueryString(year: number, currency: Currency, options: FetchOptions = {}): string {
   const params = new URLSearchParams();
 
   params.set('year', String(year));
@@ -96,7 +92,7 @@ function parseHtmlPartials(html: string): FetchBudgetHistoryHtmlResponse['partia
  */
 export async function fetchBudgetHistoryHtml(
   year: number,
-  currency: 'IDR' | 'USD',
+  currency: Currency,
   options: Omit<FetchOptions, 'render'> = {}
 ): Promise<FetchBudgetHistoryHtmlResponse> {
   // Cancel any pending request
@@ -156,7 +152,7 @@ export async function fetchBudgetHistoryHtml(
  */
 export async function fetchBudgetHistoryJson(
   year: number,
-  currency: 'IDR' | 'USD'
+  currency: Currency
 ): Promise<MonthlyBudgetHistory[]> {
   // Cancel any pending request
   cancelPendingRequest();

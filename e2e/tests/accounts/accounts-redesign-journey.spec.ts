@@ -169,7 +169,7 @@ test.describe('Accounts Redesign Journey', () => {
     await accountsPage.createAccount({
       name: creditCardData.name,
       type: creditCardData.type,
-      currency: creditCardData.currency as 'IDR' | 'USD',
+      currency: creditCardData.currency as Currency,
       initialBalance: creditCardBalance,
     });
 
@@ -228,7 +228,7 @@ test.describe('Accounts Redesign Journey', () => {
     await accountsPage.createAccount({
       name: bankData.name,
       type: bankData.type,
-      currency: bankData.currency as 'IDR' | 'USD',
+      currency: bankData.currency as Currency,
       initialBalance: bankData.balance,
     });
 

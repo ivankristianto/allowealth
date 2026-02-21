@@ -30,7 +30,7 @@ let unsubscribeLoading: (() => void) | null = null;
 interface SSRData {
   selectedYear: number;
   availableYears: number[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 /**
@@ -120,7 +120,7 @@ function setupYearToggleListeners(signal: AbortSignal): void {
 /**
  * Fetch budget history and render the results
  */
-async function fetchAndRender(year: number, currencyCode: 'IDR' | 'USD'): Promise<void> {
+async function fetchAndRender(year: number, currencyCode: Currency): Promise<void> {
   setLoading(true);
 
   try {

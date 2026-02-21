@@ -98,7 +98,7 @@ const getMemberColor = (name: string) => {
               const expenses = safeParseDecimal(row.totalExpenses) || 0;
               const net = safeParseDecimal(row.netSavings) || 0;
               const expenseShare = totals.expenses > 0 ? (expenses / totals.expenses) * 100 : 0;
-              const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${period}&currency=${currency}`;
+              const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${period}`;
 
               return (
                 <tr

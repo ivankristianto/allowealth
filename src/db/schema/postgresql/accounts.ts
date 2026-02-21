@@ -40,7 +40,7 @@ export const accounts = pgTable(
     balance: text('balance').notNull(), // Stored as string for decimal precision
     initial_balance: text('initial_balance'), // Original balance at creation, stored as string
     // P2: TODO - Consider using numeric type for PostgreSQL native decimal support
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
     credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision
     is_cash_account: boolean('is_cash_account').default(false).notNull(), // Flag for cash-type accounts
     status: text('status', { enum: ['active', 'closed'] })

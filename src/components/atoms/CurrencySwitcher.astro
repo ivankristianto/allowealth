@@ -1,0 +1,100 @@
+---
+/**
+ * Currency Switcher
+ *
+ * Compact segmented control for switching between primary and secondary currencies.
+ * Renders in the header. Reads active currency from cookie.
+ * Only renders when a secondary currency is configured.
+ *
+ * @param primaryCurrency - Workspace primary currency code
+ * @param secondaryCurrency - Workspace secondary currency code (null if not set)
+ */
+
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+
+interface Props {
+  primaryCurrency: Currency;
+  secondaryCurrency: Currency | null;
+}
+
+const { primaryCurrency, secondaryCurrency } = Astro.props;
+const showSwitcher = !!secondaryCurrency;
+
+// Determine active currency from cookie
+let activeCurrency: Currency = primaryCurrency;
+if (showSwitcher) {
+  const cookieValue = Astro.cookies.get('activeCurrency')?.value;
+  if (
+    cookieValue &&
+    isValidCurrency(cookieValue) &&
+    (cookieValue === primaryCurrency || cookieValue === secondaryCurrency)
+  ) {
+    activeCurrency = cookieValue;
+  }
+}
+
+const inactiveCurrency = activeCurrency === primaryCurrency ? secondaryCurrency : primaryCurrency;
+---
+
+{/* Desktop: segmented pill with both currencies */}
+{
+  showSwitcher && (
+    <div
+      class="hidden sm:flex bg-base-200/80 rounded-full p-0.5 w-fit"
+      data-currency-switcher
+      role="radiogroup"
+      aria-label="Currency selector"
+    >
+      <button
+        type="button"
+        class:list={[
+          'rounded-full px-3.5 py-1.5 text-xs font-bold tracking-wide transition-all duration-150 cursor-pointer leading-none',
+          activeCurrency === primaryCurrency
+            ? 'bg-accent text-accent-content shadow-sm'
+            : 'text-base-content/50 hover:text-base-content/80',
+        ]}
+        data-currency-value={primaryCurrency}
+        role="radio"
+        aria-checked={activeCurrency === primaryCurrency ? 'true' : 'false'}
+        aria-label={`${primaryCurrency} (primary currency)`}
+      >
+        {primaryCurrency}
+      </button>
+      <button
+        type="button"
+        class:list={[
+          'rounded-full px-3.5 py-1.5 text-xs font-bold tracking-wide transition-all duration-150 cursor-pointer leading-none',
+          activeCurrency === secondaryCurrency
+            ? 'bg-accent text-accent-content shadow-sm'
+            : 'text-base-content/50 hover:text-base-content/80',
+        ]}
+        data-currency-value={secondaryCurrency}
+        role="radio"
+        aria-checked={activeCurrency === secondaryCurrency ? 'true' : 'false'}
+        aria-label={`${secondaryCurrency} (secondary currency)`}
+      >
+        {secondaryCurrency}
+      </button>
+    </div>
+  )
+}
+
+{/* Mobile: single toggle button (like ThemeToggle) */}
+{
+  showSwitcher && (
+    <div class="sm:hidden" data-currency-switcher>
+      <button
+        type="button"
+        class="w-11 h-11 rounded-full bg-base-100 border border-base-300 shadow-sm flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer text-neutral hover:bg-base-200"
+        data-currency-value={inactiveCurrency}
+        aria-label={`Currency: ${activeCurrency}. Tap to switch to ${inactiveCurrency}`}
+      >
+        <span class="text-[11px] font-bold leading-none tracking-wide">{activeCurrency}</span>
+      </button>
+    </div>
+  )
+}
+
+<script>
+  import './CurrencySwitcher.client';
+</script>

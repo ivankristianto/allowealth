@@ -34,12 +34,12 @@ export interface SummaryCardsData {
     idr: string;
     usd: string;
     converted: string;
-    convertedCurrency: 'IDR' | 'USD';
+    convertedCurrency: Currency;
   };
   monthlySpent: {
     spent: string;
     budget: string;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
     percentage: number;
   };
   budgetHealth: {

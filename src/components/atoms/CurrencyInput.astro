@@ -22,7 +22,7 @@ import AmountInput from './AmountInput.astro';
 export interface Props {
   name?: string;
   value?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   required?: boolean;
   error?: boolean;
   errorMessage?: string;

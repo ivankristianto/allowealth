@@ -82,7 +82,7 @@ interface AccountHistoryModalArgs {
   accountName?: string;
   accountType?: string;
   balance?: number;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   changePercent?: number;
   timeframe?: 'weekly' | 'monthly';
   isLoading?: boolean;

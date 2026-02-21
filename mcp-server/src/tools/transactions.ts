@@ -3,6 +3,21 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 import { fuzzyMatch } from '../utils/fuzzy-match.js';
 
+const SUPPORTED_CURRENCIES = [
+  'IDR',
+  'USD',
+  'SGD',
+  'PHP',
+  'EUR',
+  'GBP',
+  'MYR',
+  'THB',
+  'JPY',
+  'AUD',
+  'KRW',
+  'INR',
+] as const;
+
 const isoDateString = z.string().refine((val) => !isNaN(new Date(val).getTime()), {
   message: 'Invalid date format. Use YYYY-MM-DD.',
 });
@@ -26,7 +41,7 @@ export const listTransactionsSchema = z
 
 export const addTransactionSchema = z.object({
   amount: z.number().positive(),
-  currency: z.enum(['IDR', 'USD']),
+  currency: z.enum(SUPPORTED_CURRENCIES),
   category_name: z.string(),
   account_name: z.string(),
   date: isoDateString.optional(),
@@ -68,7 +83,7 @@ export const addExpenseTool: Tool = {
     type: 'object',
     properties: {
       amount: { type: 'number', description: 'Amount (positive number)' },
-      currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Currency code' },
+      currency: { type: 'string', enum: [...SUPPORTED_CURRENCIES], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
       account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
       date: { type: 'string', description: 'Transaction date (YYYY-MM-DD). Defaults to today.' },
@@ -86,7 +101,7 @@ export const addIncomeTool: Tool = {
     type: 'object',
     properties: {
       amount: { type: 'number', description: 'Amount (positive number)' },
-      currency: { type: 'string', enum: ['IDR', 'USD'], description: 'Currency code' },
+      currency: { type: 'string', enum: [...SUPPORTED_CURRENCIES], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
       account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
       date: { type: 'string', description: 'Transaction date (YYYY-MM-DD). Defaults to today.' },

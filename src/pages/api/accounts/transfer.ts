@@ -10,6 +10,7 @@ import {
 import { logError } from '@/lib/utils';
 import { ServiceErrorCode } from '@/services/service-errors';
 import { z } from 'zod';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 const transferSchema = z
   .object({
@@ -51,6 +52,10 @@ export const POST: APIRoute = async (context) => {
 
     if (!fromAccount || !toAccount) {
       return errorResponse('Account not found', 404);
+    }
+
+    if (!isValidCurrency(fromAccount.currency)) {
+      return errorResponse(`Invalid account currency: ${fromAccount.currency}`, 400);
     }
 
     const transaction = await transactionService.create({

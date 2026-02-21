@@ -14,4 +14,4 @@ UpdateAccountRequest:
       type: string
     currency:
       type: string
-      enum: [IDR, USD]
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]

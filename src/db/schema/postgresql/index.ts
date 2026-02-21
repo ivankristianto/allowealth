@@ -15,7 +15,6 @@ export * from './account-history';
 export * from './account-update-reminders';
 export * from './account-snapshots';
 export * from './account-snapshot-items';
-export * from './exchange-rates';
 export * from './audit-logs';
 export * from './budgets';
 export * from './api-keys';

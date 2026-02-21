@@ -29,7 +29,7 @@ paths:
           description: Filter by currency (optional)
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
       responses:
         '200':
           description: List of budgets

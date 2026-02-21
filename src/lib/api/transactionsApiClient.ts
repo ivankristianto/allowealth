@@ -55,7 +55,7 @@ export interface FetchOptions {
   /** Which partial(s) to render when using HTML: 'list', 'summary', 'pagination', or 'all' */
   partial?: 'list' | 'summary' | 'pagination' | 'all';
   /** Currency for HTML rendering */
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }
 
 // Track active request for cancellation
@@ -104,6 +104,10 @@ function buildQueryString(
 
   if (filters.account_id) {
     params.set('account_id', filters.account_id);
+  }
+
+  if (filters.account_ids && filters.account_ids.length > 0) {
+    params.set('account_ids', filters.account_ids.join(','));
   }
 
   if (filters.currency) {

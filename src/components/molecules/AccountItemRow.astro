@@ -32,7 +32,7 @@ export interface Props {
   ownerName?: string;
   categoryId?: string | null;
   categoryName?: string | null;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   balance: number;
   initialBalance?: number;
   lastUpdated: Date;
@@ -491,6 +491,8 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
 }
 
 <script>
+  import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+
   // Track initialized elements to avoid duplicate listeners
   const initializedTimelineButtons = new WeakSet<Element>();
   const initializedUpdateValueButtons = new WeakSet<Element>();
@@ -511,9 +513,9 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         const accountId = btn.getAttribute('data-history-account');
         const accountName = btn.getAttribute('data-account-name') || 'Account';
         const accountType = btn.getAttribute('data-account-type') || 'Unknown';
-        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
-          | 'IDR'
-          | 'USD';
+        const rawAccountCurrency = btn.getAttribute('data-account-currency');
+        const accountCurrency: Currency =
+          rawAccountCurrency && isValidCurrency(rawAccountCurrency) ? rawAccountCurrency : 'IDR';
         const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
 
         if (!accountId) return;
@@ -545,9 +547,9 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         const btn = button as HTMLElement;
         const accountId = btn.getAttribute('data-update-value-account');
         const accountName = btn.getAttribute('data-account-name') || 'Account';
-        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
-          | 'IDR'
-          | 'USD';
+        const rawAccountCurrency = btn.getAttribute('data-account-currency');
+        const accountCurrency: Currency =
+          rawAccountCurrency && isValidCurrency(rawAccountCurrency) ? rawAccountCurrency : 'IDR';
         const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
 
         if (!accountId) return;
@@ -581,9 +583,9 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         const accountCategoryId = btn.getAttribute('data-account-category-id') || '';
         const accountCategoryName = btn.getAttribute('data-account-category-name') || '';
         const accountOwnerId = btn.getAttribute('data-account-owner-id') || '';
-        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
-          | 'IDR'
-          | 'USD';
+        const rawAccountCurrency = btn.getAttribute('data-account-currency');
+        const accountCurrency: Currency =
+          rawAccountCurrency && isValidCurrency(rawAccountCurrency) ? rawAccountCurrency : 'IDR';
         const accountBalance = btn.getAttribute('data-account-balance') || '0';
 
         if (!accountId) return;
@@ -619,9 +621,9 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         const accountId = btn.getAttribute('data-close-account');
         const accountName = btn.getAttribute('data-account-name') || 'this account';
         const accountType = btn.getAttribute('data-account-type') || 'Account';
-        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
-          | 'IDR'
-          | 'USD';
+        const rawAccountCurrency = btn.getAttribute('data-account-currency');
+        const accountCurrency: Currency =
+          rawAccountCurrency && isValidCurrency(rawAccountCurrency) ? rawAccountCurrency : 'IDR';
         const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
 
         if (!accountId) return;

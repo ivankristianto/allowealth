@@ -8,7 +8,7 @@
 
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { accountService } from '@/services';
+import { accountService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import {
@@ -31,11 +31,11 @@ const forecastQuerySchema = z.object({
       (val) => {
         if (!val) return true;
         const num = parseFloat(val);
-        return !isNaN(num) && num >= 0 && num <= 1000000000000; // Max 1 trillion IDR
+        return !isNaN(num) && num >= 0 && num <= 1000000000000;
       },
-      { message: 'Monthly top-up must be between 0 and 1 trillion IDR' }
+      { message: 'Monthly top-up must be between 0 and 1 trillion' }
     )
-    .transform((val) => (val ? parseFloat(val) : 5000000)), // Default: 5M IDR
+    .transform((val) => (val ? parseFloat(val) : 5000000)),
   annualRate: z
     .string()
     .optional()
@@ -67,7 +67,7 @@ const forecastQuerySchema = z.object({
  * Calculate and return wealth trajectory forecast
  *
  * Query Parameters:
- * - monthlyTopup: Monthly contribution amount in IDR (default: 5000000)
+ * - monthlyTopup: Monthly contribution amount (default: 5000000)
  * - annualRate: Annual percentage yield (default: 7)
  * - years: Number of years to forecast (default: 10)
  *
@@ -107,15 +107,20 @@ export const GET: APIRoute = async (context) => {
     // This would allow testing the forecast UI without seeding account history data
     // Example: if (isDev && accountsWithHistory.length === 0) return mockForecastResponse()
 
+    // Scope forecast to workspace primary currency (no cross-currency conversion)
+    const primaryCurrency = await workspaceMetaService.getCurrency(auth.workspaceId);
+
     // Fetch workspace's accounts with history
     const accountsWithHistory = await accountService.findAllWithHistory(auth.workspaceId);
 
     // Convert to forecast-compatible format
-    const forecastAccounts: AccountWithHistory[] = accountsWithHistory.map((account) => ({
-      balance: parseFloat(account.balance),
-      currency: account.currency as 'IDR' | 'USD',
-      history: account.history,
-    }));
+    const forecastAccounts: AccountWithHistory[] = accountsWithHistory
+      .filter((account) => account.currency === primaryCurrency)
+      .map((account) => ({
+        balance: parseFloat(account.balance),
+        currency: primaryCurrency,
+        history: account.history,
+      }));
 
     // Calculate current total
     const currentTotal = calculateCurrentTotal(forecastAccounts);

@@ -5,6 +5,8 @@ import type { UserSettings } from '@/lib/constants/user-meta-keys';
 import type { PerfCollector } from '@/lib/perf';
 
 declare global {
+  type Currency = import('@/lib/constants/currency').Currency;
+
   namespace App {
     interface Locals {
       user?: User | null;

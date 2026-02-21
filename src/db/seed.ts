@@ -26,7 +26,6 @@ import {
   accountUpdateReminders,
   accountSnapshots,
   accountSnapshotItems,
-  exchangeRates,
   sessions,
   passwordResetTokens,
   budgets,
@@ -664,7 +663,6 @@ async function clearAllTables() {
     await db.delete(users);
     await db.delete(workspaceMeta);
     await db.delete(workspaces);
-    await db.delete(exchangeRates);
 
     // Re-enable FK checks
     if (dialect === 'sqlite' && !config.isD1) {
@@ -705,33 +703,42 @@ async function seedWorkspace(): Promise<string> {
     updated_at: now,
   });
 
-  // Seed default workspace meta values
-  await db.insert(workspaceMeta).values([
+  // Seed default workspace meta values (upsert-safe)
+  const workspaceMetaEntries = [
     {
-      id: nanoid(),
-      workspace_id: workspaceId,
-      meta_key: WORKSPACE_META_KEYS.CURRENCY,
-      meta_value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY],
-      created_at: now,
-      updated_at: now,
+      key: WORKSPACE_META_KEYS.CURRENCY,
+      value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY],
+    },
+    { key: 'secondary_currency', value: 'USD' },
+    {
+      key: WORKSPACE_META_KEYS.WEEK_START,
+      value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START],
     },
     {
-      id: nanoid(),
-      workspace_id: workspaceId,
-      meta_key: WORKSPACE_META_KEYS.WEEK_START,
-      meta_value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START],
-      created_at: now,
-      updated_at: now,
+      key: WORKSPACE_META_KEYS.COMPACT_NUMBERS,
+      value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
     },
-    {
-      id: nanoid(),
-      workspace_id: workspaceId,
-      meta_key: WORKSPACE_META_KEYS.COMPACT_NUMBERS,
-      meta_value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
-      created_at: now,
-      updated_at: now,
-    },
-  ]);
+  ] as const;
+
+  for (const entry of workspaceMetaEntries) {
+    await db
+      .insert(workspaceMeta)
+      .values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        meta_key: entry.key,
+        meta_value: entry.value,
+        created_at: now,
+        updated_at: now,
+      })
+      .onConflictDoUpdate({
+        target: [workspaceMeta.workspace_id, workspaceMeta.meta_key],
+        set: {
+          meta_value: entry.value,
+          updated_at: now,
+        },
+      });
+  }
 
   console.log(`✓ Created workspace: Demo Family`);
   console.log(`✓ Seeded default workspace meta values`);
@@ -953,7 +960,7 @@ async function seedBudgets(
     month: number;
     year: number;
     budget_amount: string;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
     is_closed: boolean;
     notes: string | null;
     created_at: Date;
@@ -1611,35 +1618,6 @@ async function seedAccountSnapshots(
 }
 
 /**
- * Seed exchange rates (IDR/USD for last 90 days)
- */
-async function seedExchangeRates(): Promise<void> {
-  console.log('💱 Seeding exchange rates...');
-
-  // Base rate: ~1 USD = 15,500 IDR (with daily variation)
-  const baseRate = 15500;
-
-  for (let day = 0; day < 90; day++) {
-    const effectiveDate = daysAgo(day);
-
-    // Add variation to the rate
-    const variation = (Math.random() - 0.5) * 200; // ±100 IDR variation
-    const rate = amt(baseRate + variation);
-
-    await db.insert(exchangeRates).values({
-      id: nanoid(),
-      from_currency: 'USD',
-      to_currency: 'IDR',
-      rate,
-      effective_date: effectiveDate,
-      created_at: effectiveDate,
-    });
-  }
-
-  console.log('✓ Created 90 exchange rate entries');
-}
-
-/**
  * Seed transactions created by the member user (Mom's spending pattern)
  *
  * Gives the member user a realistic but smaller transaction profile so that
@@ -2039,8 +2017,6 @@ async function seed() {
 
     // Backfill initial_balance for any accounts that don't have it
     await backfillInitialBalance();
-
-    await seedExchangeRates();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 

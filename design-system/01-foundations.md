@@ -11,7 +11,7 @@ Visual building blocks. **Always import from `@/lib/tokens`** - never hardcode.
 
 ## Colors
 
-### Semantic Colors (v1.1.0 - Forest Green)
+### Semantic Colors (v1.2.0 - Forest Green + Comfortable Dark)
 
 ```typescript
 import { colors } from '@/lib/tokens';
@@ -42,6 +42,39 @@ colors.info; // #0ea5e9 (sky-500)
 | Warning       | warning | #f59e0b | amber - caution states     |
 | Error         | error   | #f43f5e | rose - destructive actions |
 | Info          | info    | #0ea5e9 | sky - informational        |
+
+### Dark Mode Colors (v1.2.0 - Comfortable Dark)
+
+Dark mode uses raised backgrounds, softer text, and desaturated accents for extended reading comfort.
+
+**Base surfaces — visible 3-step elevation:**
+
+| Token          | Hex       | Tailwind  | Role                          |
+| -------------- | --------- | --------- | ----------------------------- |
+| `base-100`     | `#111827` | gray-900  | Body, sidebar                 |
+| `base-200`     | `#1e293b` | slate-800 | Cards, elevated surfaces      |
+| `base-300`     | `#334155` | slate-700 | Borders, hover states         |
+| `base-content` | `#cbd5e1` | slate-300 | Body text (~12:1 on base-100) |
+
+**Text hierarchy:**
+
+| Token          | Hex       | Contrast on base-100 | Role             |
+| -------------- | --------- | -------------------- | ---------------- |
+| `primary`      | `#e2e8f0` | ~14:1                | Headings         |
+| `base-content` | `#cbd5e1` | ~12:1                | Body text        |
+| `neutral`      | `#94a3b8` | ~7:1                 | Secondary, muted |
+
+**Semantic colors — dark mode adjusted:**
+
+| Usage   | Color   | Hex       | Dark mode note                            |
+| ------- | ------- | --------- | ----------------------------------------- |
+| CTAs    | accent  | `#22c55e` | green-500 — desaturated from green-400    |
+| Success | success | `#34d399` | emerald-400                               |
+| Warning | warning | `#fbbf24` | amber-400                                 |
+| Error   | error   | `#f87171` | red-400 — warmer, less pink than rose-400 |
+| Info    | info    | `#38bdf8` | sky-400                                   |
+
+**Design rationale:** Light mode colors use 500-700 level tokens for good contrast on white. Dark mode shifts to 400-500 level but desaturates where needed to avoid neon glare on near-black backgrounds. Surface stepping uses standard Tailwind gray/slate values proven at scale (GitHub, Linear, Vercel).
 
 ### Currency & Status
 

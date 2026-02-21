@@ -29,7 +29,7 @@ export const budgets = pgTable(
     month: integer('month').notNull(), // 1-12
     year: integer('year').notNull(), // e.g., 2025, 2026
     budget_amount: text('budget_amount').notNull(), // Stored as string for decimal precision
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
     is_closed: boolean('is_closed').default(false).notNull(), // For book closing
     notes: text('notes'), // Optional notes for this budget period
     created_at: timestamp('created_at').defaultNow().notNull(),

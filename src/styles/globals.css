@@ -52,35 +52,43 @@
   --noise: 0;
 }
 
-/* Dark Theme - Oasis Finance v1.1.0 (Forest Green) */
+/* Dark Theme - Comfortable Dark v1.2.0
+   Raised floor, lowered ceiling, widened surface steps.
+   Targets ~12:1 body text, ~14:1 headings, visible card elevation. */
 @plugin "daisyui/theme" {
   name: 'dark';
   prefersdark: true;
   color-scheme: dark;
 
-  /* Color tokens - softened contrast for dark mode comfort */
-  --color-primary: #e8edf5; /* light slate - reduced glare vs pure near-white */
-  --color-primary-content: #0b1426;
-  --color-secondary: #e8edf5;
-  --color-secondary-content: #0b1426;
-  --color-accent: #4ade80; /* green-400 - vibrant for dark mode visibility */
-  --color-accent-content: #052e16; /* dark green for contrast */
-  --color-neutral: #9fb0c8; /* muted informational text/icons */
-  --color-neutral-content: #0b1426;
-  --color-base-100: #0b1426; /* deep navy */
-  --color-base-200: #111d31; /* elevated surface */
-  --color-base-300: #131d30; /* hover and border surface */
-  --color-base-content: #e8edf5; /* softer than slate-50 while retaining AA */
+  /* Base surfaces — visible 3-step elevation (gray-900 → slate-800 → slate-700) */
+  --color-base-100: #111827; /* gray-900  — body, sidebar */
+  --color-base-200: #1e293b; /* slate-800 — cards, elevated surfaces */
+  --color-base-300: #334155; /* slate-700 — borders, hover states */
+  --color-base-content: #cbd5e1; /* slate-300 — comfortable ~12:1 on base-100 */
 
-  /* Semantic colors in dark mode - content uses dark ink for AA on bright fills */
-  --color-info: #38bdf8; /* sky-400 - distinct from accent */
-  --color-info-content: #0b1426;
+  /* Primary / secondary — headings, emphasized text */
+  --color-primary: #e2e8f0; /* slate-200 — ~14:1 on base-100 */
+  --color-primary-content: #111827;
+  --color-secondary: #e2e8f0;
+  --color-secondary-content: #111827;
+
+  /* Accent — desaturated forest green, comfortable on dark surfaces */
+  --color-accent: #22c55e; /* green-500 — less neon than green-400 */
+  --color-accent-content: #052e16; /* dark green for contrast on accent bg */
+
+  /* Neutral — secondary text, icons, muted labels */
+  --color-neutral: #94a3b8; /* slate-400 — ~7:1 on base-100 */
+  --color-neutral-content: #111827;
+
+  /* Semantic colors — tuned for dark mode comfort */
+  --color-info: #38bdf8; /* sky-400 */
+  --color-info-content: #111827;
   --color-success: #34d399; /* emerald-400 */
-  --color-success-content: #0b1426;
+  --color-success-content: #111827;
   --color-warning: #fbbf24; /* amber-400 */
-  --color-warning-content: #0b1426;
-  --color-error: #fb7185; /* rose-400 - improved contrast on dark backgrounds */
-  --color-error-content: #0b1426;
+  --color-warning-content: #111827;
+  --color-error: #f87171; /* red-400 — warmer, less pink than rose-400 */
+  --color-error-content: #111827;
 
   /* Design variables */
   --radius-selector: 1rem;

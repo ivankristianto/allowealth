@@ -21,17 +21,23 @@ import AccountCategoryModal from '@components/organisms/AccountCategoryModal.ast
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
 import { CalendarDays, Info, Search } from '@lucide/astro';
-import { accountService, accountCategoryService, workspaceService } from '@/services';
+import {
+  accountService,
+  accountCategoryService,
+  workspaceMetaService,
+  workspaceService,
+} from '@/services';
 import type { AccountOutput, AccountType, AccountClass } from '@/lib/types/account';
 import { formatAccountType, deriveAccountClass, ACCOUNT_CLASS_LABELS } from '@/lib/types/account';
 import { formatMonthYear } from '@/lib/utils/date';
 import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import {
   calculateAccountAllocation,
-  calculatePortfolioTotals,
-  calculateDebtTotals,
+  calculateAccountTotalsByCurrency,
+  calculateDebtTotalsByCurrency,
   groupAccountsByClass,
-  calculateGroupTotals,
+  calculateGroupTotalsByCurrency,
 } from '@/lib/utils/account';
 
 const user = Astro.locals.user!;
@@ -62,7 +68,7 @@ const filters: {
   user_id: string;
   type?: AccountType;
   category_id?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   owner_user_id?: string;
 } = {
   user_id: user.workspaceId,
@@ -75,7 +81,7 @@ if (searchParams.type && VALID_ACCOUNT_TYPES.includes(searchParams.type as Accou
 if (searchParams.categoryId) {
   filters.category_id = searchParams.categoryId;
 }
-if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
+if (searchParams.currency && isValidCurrency(searchParams.currency)) {
   filters.currency = searchParams.currency;
 }
 if (ownerUserId) {
@@ -143,6 +149,14 @@ const categories = await accountCategoryService.findAll(user.workspaceId);
 const isAdmin = user.role === 'admin';
 const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
 const memberNamesById = new Map(workspaceMembers.map((m) => [m.id, m.name]));
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const orderedWorkspaceCurrencies = workspaceCurrencies.filter((currency): currency is Currency =>
+  isValidCurrency(currency)
+);
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
 const defaultCategoryId =
   categories.find((category) => category.is_system && !category.is_liability)?.id ||
@@ -215,9 +229,21 @@ if (!isViewingCurrentMonth) {
 
 // Calculate portfolio totals and allocation
 // @TODO: Wire with backend - Consider moving calculations to service layer
-const portfolioTotals = calculatePortfolioTotals(accounts);
-const debtTotals = calculateDebtTotals(accounts);
-const accountAllocation = calculateAccountAllocation(accounts);
+const accountTotalsByCurrency = calculateAccountTotalsByCurrency(
+  accounts,
+  orderedWorkspaceCurrencies
+);
+const debtTotalsByCurrency = calculateDebtTotalsByCurrency(accounts, orderedWorkspaceCurrencies);
+const allocationCurrency =
+  orderedWorkspaceCurrencies.find((currency) =>
+    accounts.some((account) => {
+      if (account.account_class === 'debt') return false;
+      if (account.currency !== currency) return false;
+      const balance = parseFloat(account.balance || '0');
+      return Number.isFinite(balance) && balance > 0;
+    })
+  ) ?? orderedWorkspaceCurrencies[0];
+const accountAllocation = calculateAccountAllocation(accounts, allocationCurrency);
 
 // Find latest update date across all accounts
 const latestUpdate = accounts.reduce<Date | null>((latest, account) => {
@@ -310,10 +336,8 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
         <>
           {/* Accounts Summary */}
           <AccountPortfolioSummary
-            totalIdr={portfolioTotals.totalIdr}
-            totalUsd={portfolioTotals.totalUsd}
-            debtIdr={debtTotals.debtIdr}
-            debtUsd={debtTotals.debtUsd}
+            accountTotals={accountTotalsByCurrency}
+            debtTotals={debtTotalsByCurrency}
             distribution={accountAllocation}
             loading={false}
             latestUpdate={latestUpdate}
@@ -339,15 +363,17 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           {/* Account Groups */}
           <div class="space-y-6">
             {sortedGroups.map((group) => {
-              const groupTotals = calculateGroupTotals(group.accounts);
+              const groupTotals = calculateGroupTotalsByCurrency(
+                group.accounts,
+                orderedWorkspaceCurrencies
+              );
 
               return (
                 <AccountGroupCard
                   type={group.label}
                   accountClass={group.groupKey}
                   count={group.accounts.length}
-                  totalIdr={groupTotals.idr}
-                  totalUsd={groupTotals.usd}
+                  totals={groupTotals}
                   groupId={group.groupKey}
                   isDebt={group.groupKey === 'debt'}
                   defaultExpanded={true}
@@ -421,6 +447,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
   <AccountFormModal
     id="account-form-modal"
     mode="add"
+    availableCurrencies={workspaceCurrencies}
     categories={categories}
     members={isAdmin
       ? workspaceMembers.map((member) => ({ id: member.id, name: member.name }))

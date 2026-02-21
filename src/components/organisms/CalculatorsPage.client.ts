@@ -9,8 +9,10 @@ import { csrfFetch } from '@/lib/csrf-client';
 // @TODO: P2 - Use import alias syntax instead of re-export
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 let controller: AbortController | null = null;
+let primaryCurrency: Currency = 'IDR';
 
 function getCalculatorForm(): HTMLFormElement | null {
   return document.getElementById('compound-calculator-form') as HTMLFormElement | null;
@@ -35,7 +37,7 @@ function renderResults(data: {
     interest: number;
     closingBalance: number;
   }>;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }): void {
   const resultsContainer = getResultsContainer();
   if (!resultsContainer) return;
@@ -207,7 +209,7 @@ async function handleFormSubmit(e: Event): Promise<void> {
 
   const formData = new FormData(form);
   const principalRaw = String(formData.get('principal') || '');
-  const principal = parseFloat(stripAmountFormatting(principalRaw, 'IDR'));
+  const principal = parseFloat(stripAmountFormatting(principalRaw, primaryCurrency));
   const rate = parseFloat(formData.get('rate') as string);
   const years = parseInt(formData.get('years') as string);
 
@@ -257,10 +259,13 @@ function initCalculatorsPage(): void {
   const form = getCalculatorForm();
   if (!form) return;
 
+  // Read primary currency from form data attribute
+  const currencyAttr = form.dataset.primaryCurrency;
+  primaryCurrency = currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+
   const principalInput = form.querySelector('input[name="principal"]') as HTMLInputElement | null;
-  if (principalInput && principalInput.dataset.amountFormatterInitialized !== 'true') {
-    attachAmountFormatter(principalInput, 'IDR');
-    principalInput.dataset.amountFormatterInitialized = 'true';
+  if (principalInput) {
+    attachAmountFormatter(principalInput, primaryCurrency);
   }
 
   form.addEventListener('submit', handleFormSubmit, { signal });
