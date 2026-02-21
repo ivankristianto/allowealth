@@ -525,6 +525,49 @@ function setupSortHandler(): void {
 }
 
 // =============================================================================
+// CATEGORY ORDER FOR MODAL NAVIGATION
+// =============================================================================
+
+export interface CategoryNavItem {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  spent: number;
+  budgetLimit: number;
+  period: string;
+}
+
+/**
+ * Get ordered list of categories from current card grid DOM
+ *
+ * Reads from visible cards in their current sort order.
+ * Used by CategoryDrillDownModal for prev/next navigation.
+ */
+export function getOrderedCategories(): CategoryNavItem[] {
+  const cards = document.querySelectorAll<HTMLElement>('[data-view-details]');
+  const items: CategoryNavItem[] = [];
+
+  cards.forEach((btn) => {
+    const listItem = btn.closest('[role="listitem"]');
+    // Skip hidden (filtered out) cards
+    if (listItem && (listItem as HTMLElement).style.display === 'none') return;
+
+    items.push({
+      categoryId: btn.getAttribute('data-category-id') || '',
+      categoryName: btn.getAttribute('data-category-name') || '',
+      categoryIcon: btn.getAttribute('data-category-icon') || 'tag',
+      categoryColor: btn.getAttribute('data-category-color') || '',
+      spent: parseFloat(btn.getAttribute('data-spent') || '0'),
+      budgetLimit: parseFloat(btn.getAttribute('data-budget-limit') || '0'),
+      period: btn.getAttribute('data-period') || '',
+    });
+  });
+
+  return items;
+}
+
+// =============================================================================
 // INITIALIZATION
 // =============================================================================
 
