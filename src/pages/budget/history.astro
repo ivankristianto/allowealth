@@ -14,6 +14,7 @@ import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTableP
 import YearToggle from '@/components/molecules/YearToggle.astro';
 import { budgetService, workspaceMetaService, type MonthlyBudgetHistory } from '@/services';
 import { isValidCurrency } from '@/lib/constants/currency';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import { CircleX, Download, History as HistoryIcon } from '@lucide/astro';
 
 const user = Astro.locals.user!;
@@ -93,39 +94,33 @@ const ssrData = {
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
     data-ssr-data={JSON.stringify(ssrData)}
   >
-    {/* Header Section */}
-    <div class="flex flex-col @2xl:flex-row justify-between items-start @2xl:items-center gap-6">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight leading-none">Budget History</h2>
-        <p class="text-sm text-base-content/50 mt-2 font-medium">
-          Compare your budget performance over time
-        </p>
-      </div>
+    {/* Breadcrumb */}
+    <Breadcrumb items={[{ label: 'Budget', href: '/budget' }, { label: 'History' }]} />
 
-      <div class="flex items-center gap-4">
-        {/* Year Toggle */}
-        {
-          availableYears.length > 1 && (
-            <YearToggle years={availableYears} selectedYear={selectedYear} />
-          )
-        }
+    {/* Controls Section */}
+    <div class="flex items-center gap-4 justify-end">
+      {/* Year Toggle */}
+      {
+        availableYears.length > 1 && (
+          <YearToggle years={availableYears} selectedYear={selectedYear} />
+        )
+      }
 
-        {/* Export Button (disabled, coming soon) */}
-        <div class="relative">
-          <button
-            class="flex items-center gap-2 px-5 py-2.5 bg-base-200 text-base-content/40 rounded-2xl text-xs font-bold border border-base-300 cursor-not-allowed"
-            disabled
-            title="Coming soon"
-          >
-            <Download size={18} class="stroke-current" aria-hidden="true" />
-            <span class="hidden @sm:inline">Export Report</span>
-          </button>
-          <span
-            class="absolute -top-2 -right-2 bg-base-content/50 text-base-100 text-xs px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest shadow-lg"
-          >
-            Soon
-          </span>
-        </div>
+      {/* Export Button (disabled, coming soon) */}
+      <div class="relative">
+        <button
+          class="flex items-center gap-2 px-5 py-2.5 bg-base-200 text-base-content/40 rounded-2xl text-xs font-bold border border-base-300 cursor-not-allowed"
+          disabled
+          title="Coming soon"
+        >
+          <Download size={18} class="stroke-current" aria-hidden="true" />
+          <span class="hidden @sm:inline">Export Report</span>
+        </button>
+        <span
+          class="absolute -top-2 -right-2 bg-base-content/50 text-base-100 text-xs px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest shadow-lg"
+        >
+          Soon
+        </span>
       </div>
     </div>
 

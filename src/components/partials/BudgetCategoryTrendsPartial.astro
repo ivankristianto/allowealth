@@ -7,11 +7,13 @@
  *
  * Rows = categories (sorted by worst adherence)
  * Columns = months (chronological, oldest -> newest)
- * Each cell = compact spent amount + colored status dot
+ * Each cell = spent + budget amounts with colored status dot
  */
 
+import * as LucideIcons from '@lucide/astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
+import { getIconForCategory } from '@/lib/utils/categoryIcons';
 import EmptyState from '../atoms/EmptyState.astro';
 import type { CategoryTrendData } from '@/services';
 
@@ -36,6 +38,21 @@ const getStatusDotClass = (status: 'ok' | 'warning' | 'exceeded'): string => {
 
 const buildBudgetUrl = (year: number, month: number): string =>
   `/budget?year=${year}&month=${month}`;
+
+// Pre-resolve icon components for each category
+const resolveIconComponent = (iconName: string) => {
+  const pascalName = iconName
+    .split('-')
+    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('');
+  return (LucideIcons as Record<string, any>)[pascalName] || LucideIcons.Tag;
+};
+
+const categoryIconComponents = new Map<string, any>();
+for (const cat of categories) {
+  const iconName = cat.category_icon || getIconForCategory(cat.category_name);
+  categoryIconComponents.set(cat.category_id, resolveIconComponent(iconName));
+}
 ---
 
 <div class="@container" data-trends-view>
@@ -55,7 +72,7 @@ const buildBudgetUrl = (year: number, month: number): string =>
               {months.map((col) => (
                 <th
                   scope="col"
-                  class="px-3 @4xl:px-4 py-4 text-center text-xs font-bold text-base-content/40 uppercase tracking-widest min-w-[80px] @3xl:min-w-[100px]"
+                  class="px-3 @4xl:px-4 py-4 text-center text-xs font-bold text-base-content/40 uppercase tracking-widest min-w-[100px] @3xl:min-w-[120px]"
                 >
                   <div>{col.month_name.slice(0, 3)}</div>
                   <div class="text-base-content/25 font-medium">{col.year}</div>
@@ -66,57 +83,74 @@ const buildBudgetUrl = (year: number, month: number): string =>
 
           {/* Category rows */}
           <tbody class="divide-y divide-base-200">
-            {categories.map((cat) => (
-              <tr class="group hover:bg-base-200/30 transition-colors" data-trend-row>
-                {/* Sticky category column */}
-                <td class="sticky left-0 z-10 bg-base-100 group-hover:bg-base-200/30 transition-colors px-4 @4xl:px-6 py-4">
-                  <div class="flex items-center gap-2.5">
-                    <span
-                      class="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={`background-color: ${sanitizeColor(cat.category_color)}`}
-                      aria-hidden="true"
-                    />
-                    <div class="min-w-0">
-                      <div class="text-sm font-bold truncate">{cat.category_name}</div>
-                      <div class="text-xs text-base-content/40 font-medium">
-                        avg: {cat.avg_percentage_used.toFixed(0)}%
+            {categories.map((cat) => {
+              const IconComp = categoryIconComponents.get(cat.category_id);
+              return (
+                <tr class="group hover:bg-base-200/30 transition-colors" data-trend-row>
+                  {/* Sticky category column */}
+                  <td class="sticky left-0 z-10 bg-base-100 group-hover:bg-base-200/30 transition-colors px-4 @4xl:px-6 py-4">
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={`background-color: ${sanitizeColor(cat.category_color)}18`}
+                      >
+                        <IconComp
+                          size={16}
+                          class="stroke-current"
+                          style={`color: ${sanitizeColor(cat.category_color)}`}
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <div class="min-w-0">
+                        <div class="text-sm font-bold truncate">{cat.category_name}</div>
+                        <div class="text-xs text-base-content/40 font-medium">
+                          avg: {cat.avg_percentage_used.toFixed(0)}%
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                {/* Month cells */}
-                {cat.months.map((m) => {
-                  const spentAmount = parseFloat(m.spent_amount);
-                  const hasData = spentAmount > 0 || parseFloat(m.budget_amount) > 0;
-                  return (
-                    <td class="px-3 @4xl:px-4 py-4 text-center">
-                      {hasData ? (
-                        <a
-                          href={buildBudgetUrl(m.year, m.month)}
-                          class="inline-flex items-center gap-1.5 text-sm font-bold hover:underline decoration-base-content/20 underline-offset-2"
-                          title={`${cat.category_name} — ${m.month_name} ${m.year}: ${m.percentage_used.toFixed(0)}% of budget`}
-                        >
-                          <span
-                            class={`w-2 h-2 rounded-full shrink-0 ${getStatusDotClass(m.status)}`}
-                            aria-label={
-                              m.status === 'exceeded'
-                                ? 'Over budget'
-                                : m.status === 'warning'
-                                  ? 'Near limit'
-                                  : 'On track'
-                            }
-                          />
-                          <span>{formatCurrencyCompact(spentAmount, currency)}</span>
-                        </a>
-                      ) : (
-                        <span class="text-sm text-base-content/20 font-bold">&mdash;</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  {/* Month cells */}
+                  {cat.months.map((m) => {
+                    const spentAmount = parseFloat(m.spent_amount);
+                    const budgetAmount = parseFloat(m.budget_amount);
+                    const hasData = spentAmount > 0 || budgetAmount > 0;
+                    return (
+                      <td class="px-3 @4xl:px-4 py-4 text-center">
+                        {hasData ? (
+                          <a
+                            href={buildBudgetUrl(m.year, m.month)}
+                            class="inline-flex flex-col items-center gap-0.5 hover:underline decoration-base-content/20 underline-offset-2"
+                            title={`${cat.category_name} — ${m.month_name} ${m.year}: ${m.percentage_used.toFixed(0)}% of budget`}
+                          >
+                            <span class="inline-flex items-center gap-1.5">
+                              <span
+                                class={`w-2 h-2 rounded-full shrink-0 ${getStatusDotClass(m.status)}`}
+                                aria-label={
+                                  m.status === 'exceeded'
+                                    ? 'Over budget'
+                                    : m.status === 'warning'
+                                      ? 'Near limit'
+                                      : 'On track'
+                                }
+                              />
+                              <span class="text-sm font-bold">
+                                {formatCurrencyCompact(spentAmount, currency)}
+                              </span>
+                            </span>
+                            <span class="text-xs text-base-content/35 font-medium">
+                              of {formatCurrencyCompact(budgetAmount, currency)}
+                            </span>
+                          </a>
+                        ) : (
+                          <span class="text-sm text-base-content/20 font-bold">&mdash;</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
