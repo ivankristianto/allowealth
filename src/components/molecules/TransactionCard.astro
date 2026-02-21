@@ -4,7 +4,7 @@
  *
  * Unified transaction display component used across dashboard and transaction pages.
  * - Mobile: Stacked layout with dropdown menu for actions
- * - Desktop: Horizontal layout with inline edit/delete buttons
+ * - Desktop: Horizontal layout with kebab dropdown menu for actions
  *
  * @param {Object} transaction - Transaction data (optional when loading)
  * @param {boolean} showActions - Show edit/delete actions
@@ -14,7 +14,7 @@
 
 import Currency from '../atoms/Currency.astro';
 import CategoryIcon from '../atoms/CategoryIcon.astro';
-import { CreditCard, Ellipsis, History, Pencil, Trash2 } from '@lucide/astro';
+import { CreditCard, Ellipsis, EllipsisVertical, History, Pencil, Trash2 } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -326,51 +326,73 @@ const cardClasses = [
           />
         </div>
 
-        {/* Actions (fixed-width column for alignment) */}
-        <div class:list={['flex-shrink-0 flex justify-end gap-0.5', showActions ? 'w-24' : 'w-8']}>
+        {/* Actions - kebab menu (mirrors mobile dropdown pattern) */}
+        <div class="flex-shrink-0 w-10 flex justify-end">
           {transaction && (
-            <div class="tooltip tooltip-bottom" data-tip={hasHistory ? 'History' : 'No history'}>
+            <div class="dropdown dropdown-end">
               <button
                 type="button"
-                class:list={[
-                  'btn btn-ghost btn-sm btn-square',
-                  !hasHistory && 'btn-disabled opacity-30',
-                ]}
-                aria-label={
-                  hasHistory ? `View history for: ${primaryText}` : 'No history available'
-                }
-                aria-disabled={!hasHistory}
-                {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
+                tabindex={0}
+                class="btn btn-ghost btn-sm btn-square"
+                aria-label="Transaction actions"
+                aria-haspopup="menu"
               >
-                <History size={16} class="stroke-current" aria-hidden="true" />
+                <EllipsisVertical size={16} class="stroke-current opacity-40" aria-hidden="true" />
               </button>
+              <ul
+                tabindex={0}
+                class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-48 border border-base-300"
+                role="menu"
+              >
+                <li role="none" class:list={[!hasHistory && 'disabled opacity-40']}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex items-center gap-2"
+                    aria-label={
+                      hasHistory
+                        ? `View edit history for: ${primaryText}`
+                        : 'No edit history available'
+                    }
+                    aria-disabled={!hasHistory}
+                    {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
+                  >
+                    <History size={16} class="stroke-current" aria-hidden="true" />
+                    View edit history
+                  </button>
+                </li>
+                {showActions && !isDeleted && (
+                  <>
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex items-center gap-2"
+                        aria-label={`Edit transaction: ${primaryText}`}
+                        data-edit-transaction={transaction.id}
+                        data-transaction-data={transactionDataJson}
+                      >
+                        <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                        Edit
+                      </button>
+                    </li>
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex items-center gap-2 text-error"
+                        aria-label={`Delete transaction: ${primaryText}`}
+                        data-delete-transaction={transaction.id}
+                        data-transaction-details={transactionDetailsJson}
+                      >
+                        <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                        Delete
+                      </button>
+                    </li>
+                  </>
+                )}
+              </ul>
             </div>
-          )}
-          {transaction && showActions && !isDeleted && (
-            <>
-              <div class="tooltip tooltip-bottom" data-tip="Edit">
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-sm btn-square"
-                  aria-label={`Edit transaction: ${primaryText}`}
-                  data-edit-transaction={transaction.id}
-                  data-transaction-data={transactionDataJson}
-                >
-                  <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                </button>
-              </div>
-              <div class="tooltip tooltip-bottom" data-tip="Delete">
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-sm btn-square text-error"
-                  aria-label={`Delete transaction: ${primaryText}`}
-                  data-delete-transaction={transaction.id}
-                  data-transaction-details={transactionDetailsJson}
-                >
-                  <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-                </button>
-              </div>
-            </>
           )}
         </div>
       </div>
