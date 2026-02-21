@@ -132,6 +132,7 @@ export const GET: APIRoute = async (context) => {
         workspace_id: auth.workspaceId,
         created_by_user_id: filters.created_by_user_id,
         currency: filters.currency,
+        account_id: filters.account_id,
         account_ids: filters.account_ids,
         start_date: filters.start_date,
         end_date: filters.end_date,
