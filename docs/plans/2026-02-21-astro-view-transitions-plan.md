@@ -4,11 +4,21 @@
 
 **Goal:** Add smooth crossfade page transitions with ClientRouter, persist toast container, and safely re-initialize all client-side JavaScript on soft navigation.
 
-**Architecture:** Add `<ClientRouter />` to BaseLayout. Persist only the toast container (sidebar/footer crossfade naturally). Audit all 32 `.client.ts` files for proper lifecycle handling. Reset page-specific nano stores on navigation. Add `data-astro-reload` to auth flows and file upload forms.
+**Architecture:** Add `<ClientRouter />` to BaseLayout. Persist only the toast container (sidebar/footer crossfade naturally). Audit all 31 `.client.ts` files for proper lifecycle handling. Reset page-specific nano stores on navigation. Add `data-astro-reload` to auth flows and file upload forms. Handle desktop scroll restoration for custom scroll container.
 
 **Tech Stack:** Astro 5 ClientRouter, `astro:transitions`, existing nano stores, existing `astro:page-load` patterns.
 
 **Design Doc:** `docs/plans/2026-02-21-astro-view-transitions-design.md`
+
+**Review Notes (Codex gpt-5.3-codex xhigh):**
+
+- CSP nonce: NOT a blocker — all `is:inline` scripts are on auth pages (hard reload) or run once on initial load
+- Chart.js: NOT an issue — SpendingChart, ResourceAllocationChart, FinancialVelocityChart, WealthTrajectory all destroy instances on `astro:before-swap`
+- Store reset shapes: FIXED — now uses exact store types and existing `resetFilters()` function
+- Scroll restoration: ADDED — desktop uses custom scroll container (`.drawer-content`), needs manual handling
+- MobileDrawer scroll lock: ADDED — must close drawer on `astro:before-swap` to restore `body.style.overflow`
+- Prefetch: OK — existing `hover` strategy is conservative, no changes needed
+- `data-astro-reload` on auth: Clarified — only needed on `<a>` tags, not JS `window.location.href` calls (those already bypass router)
 
 ---
 
@@ -133,18 +143,29 @@ grep -rn 'href="/login' src/ --include='*.astro' | grep -v node_modules | grep -
 
 ```html
 <!-- CSVImportForm.astro - file upload form -->
-<form method="POST" enctype="multipart/form-data" data-astro-reload>
-  <!-- SecurityConnectedAccountsCard.astro - OAuth disconnect -->
-  <form method="POST" data-astro-reload>
-    <!-- link-account.astro - OAuth link -->
-    <form method="POST" action="/api/auth/google/link" data-astro-reload></form>
-  </form>
-</form>
+<form method="POST" enctype="multipart/form-data" data-astro-reload>...</form>
+
+<!-- SecurityConnectedAccountsCard.astro - OAuth disconnect -->
+<form method="POST" data-astro-reload>...</form>
+
+<!-- link-account.astro - OAuth link -->
+<form method="POST" action="/api/auth/google/link" data-astro-reload>...</form>
 ```
 
-**Step 3: Add `data-astro-reload` to logout link**
+**Step 3: Clarification on programmatic redirects**
 
-In `src/components/layouts/UserProfile.astro`, find the logout button/link and add `data-astro-reload`. Note: logout uses `window.location.href = '/login'` which already does a hard reload, so this may not be needed. Verify by testing.
+`data-astro-reload` is only needed on **HTML `<a>` tags and `<form>` elements** — it tells the ClientRouter to bypass soft navigation for those elements.
+
+**NOT needed for:**
+
+- `window.location.href = '/login'` — already bypasses ClientRouter (hard reload)
+- `fetch()` + redirect — already bypasses ClientRouter
+- Login form (`LoginForm.astro`) — uses `fetch()` then `window.location.href`
+- Logout (`UserProfile.astro`) — uses `fetch('/api/auth/logout')` then `window.location.href`
+- MFA redirect (`MfaVerifyForm.astro`) — uses `fetch()` then `window.location.href`
+- Registration redirect (`RegistrationForm.astro`) — uses `fetch()` then `window.location.href`
+
+These all use JavaScript to redirect, which inherently bypasses the router.
 
 **Step 4: Verify**
 
@@ -215,13 +236,21 @@ document.addEventListener('astro:page-load', init);
 
 ### 3b: MobileDrawer.client.ts
 
-**Current issue:** Has `astro:page-load` but no cleanup. Document-level click, keydown, and media query listeners accumulate.
+**Current issue:** Has `astro:page-load` but no cleanup. Document-level click, keydown, and media query listeners accumulate. **Critical:** Sets `body.style.overflow = 'hidden'` when open — navigating while drawer is open leaves stale scroll lock.
 
 **Fix:**
 
 1. Add `AbortController` to `init()` function
 2. Pass `{ signal }` to document.addEventListener('click', ...) and keydown listeners
 3. Media query listener: use `{ signal }` on `addEventListener('change', ...)`
+4. **Add `astro:before-swap` handler that calls `close()`** to restore `body.style.overflow` before navigation:
+
+```typescript
+document.addEventListener('astro:before-swap', () => {
+  // Close drawer and restore body overflow before page swap
+  close();
+});
+```
 
 ### 3c: ThemeToggle.client.ts
 
@@ -474,48 +503,46 @@ Create `src/lib/stores/view-transition-cleanup.ts`:
  *
  * Resets page-specific nano stores on navigation to prevent stale state.
  * Global stores (toast, currency, notification) persist across navigations.
+ *
+ * Store shapes verified from source files (2026-02-21 Codex review).
  */
-import { transactionFiltersStore } from './transactionFiltersStore';
+import { resetFilters } from './transactionFiltersStore';
+import { transactionsDataStore, isLoading as transactionsLoading } from './transactionsDataStore';
 import {
-  transactionsDataStore,
-  clearError as clearTransactionsError,
-} from './transactionsDataStore';
-import { budgetHistoryStore } from './budgetHistoryStore';
+  selectedYear,
+  isLoading as budgetLoading,
+  availableYears,
+  currency as budgetCurrency,
+} from './budgetHistoryStore';
 
 function resetPageStores() {
-  // Reset transaction stores
-  transactionFiltersStore.set({
-    type: '',
-    search: '',
-    user_id: '',
-    category_id: '',
-    account_id: '',
-    currency: '',
-    date_from: '',
-    date_to: '',
-    page: 1,
-    month: '',
-  });
+  // Reset transaction filters — uses existing resetFilters() which resets to:
+  // { type: 'expense', search: '', user_id: '', category_id: '', category_ids: [],
+  //   account_id: '', currency: '', start_date: '', end_date: '', page: 1, month: '' }
+  resetFilters();
 
-  // Reset transactions data
+  // Reset transactions data store to initial state
   transactionsDataStore.set({
     transactions: [],
-    summary: null,
-    pagination: null,
+    pagination: { total: 0, limit: 50, offset: 0, page: 1, totalPages: 0 },
+    summary: { income: 0, expenses: 0, transactionCount: 0 },
+    loading: false,
+    error: null,
     categories: [],
     availableMonths: [],
-    error: null,
+    currency: 'IDR',
   });
+  transactionsLoading.set(false);
 
-  // Reset budget history
-  budgetHistoryStore.selectedYear.set(new Date().getFullYear());
-  budgetHistoryStore.isLoading.set(false);
+  // Reset budget history atoms
+  selectedYear.set(new Date().getFullYear());
+  budgetLoading.set(false);
+  availableYears.set([]);
+  budgetCurrency.set('IDR');
 }
 
 document.addEventListener('astro:before-swap', resetPageStores);
 ```
-
-Note: Check exact store shapes by reading the store files. The above is a template — adjust default values to match actual store definitions.
 
 **Step 2: Import cleanup in MainLayout**
 
@@ -556,7 +583,71 @@ stores on astro:before-swap. Global stores (toast, currency) persist."
 
 ---
 
-## Task 7: Integration Testing
+## Task 7: Desktop Scroll Restoration
+
+**Problem:** On desktop, scroll happens on `.drawer-content` container (`lg:h-screen lg:overflow-y-auto`), not on `window`. ClientRouter's automatic scroll restoration only uses `window.scrollY`, so back/forward navigation won't restore scroll position on desktop.
+
+**Files:**
+
+- Modify: `src/layouts/MainLayout.astro` (add scroll save/restore script)
+
+**Step 1: Add scroll restoration script**
+
+Add a `<script>` tag in `MainLayout.astro`:
+
+```typescript
+// Desktop scroll restoration for view transitions
+// ClientRouter only restores window.scrollY, but our scroll container is .drawer-content
+const SCROLL_KEY = 'vt-scroll-pos';
+
+function getScrollContainer(): HTMLElement | null {
+  return document.querySelector('.drawer-content');
+}
+
+// Save scroll position before swap
+document.addEventListener('astro:before-swap', () => {
+  const container = getScrollContainer();
+  if (container) {
+    sessionStorage.setItem(SCROLL_KEY, String(container.scrollTop));
+  }
+});
+
+// Restore scroll position after page load (only on back/forward navigation)
+document.addEventListener('astro:page-load', () => {
+  const saved = sessionStorage.getItem(SCROLL_KEY);
+  if (saved && window.navigation?.currentEntry?.index !== undefined) {
+    const container = getScrollContainer();
+    if (container) {
+      container.scrollTop = parseInt(saved, 10);
+    }
+  }
+  sessionStorage.removeItem(SCROLL_KEY);
+});
+```
+
+Note: This is a simplified approach. For full history-aware restoration, consider using the Navigation API's `currentEntry` to track direction. Test and refine based on actual behavior.
+
+**Step 2: Verify**
+
+1. Navigate to transactions page, scroll down
+2. Click to accounts page
+3. Press browser back button
+4. Verify: scroll position restored on transactions page
+
+**Step 3: Commit**
+
+```bash
+git add src/layouts/MainLayout.astro
+git commit -m "fix: add desktop scroll restoration for view transitions
+
+ClientRouter only restores window scroll, but desktop uses
+.drawer-content as scroll container. Save/restore scroll position
+via sessionStorage on astro:before-swap and astro:page-load."
+```
+
+---
+
+## Task 8: Integration Testing
 
 Manual testing checklist. Run dev server with `bun run dev`.
 
@@ -572,9 +663,15 @@ Manual testing checklist. Run dev server with `bun run dev`.
 **Sidebar & Navigation:**
 
 - [ ] Sidebar active state updates on navigation
-- [ ] Sidebar collapse state persists across navigations
+- [ ] Sidebar collapse state persists across navigations (localStorage)
 - [ ] Mobile bottom nav active state updates
 - [ ] Mobile drawer opens/closes correctly after navigation
+- [ ] Navigate while mobile drawer is open: drawer closes, body scroll restores
+
+**Scroll Restoration:**
+
+- [ ] Desktop: scroll down on page → navigate → back → scroll position restored
+- [ ] Mobile: same test with window scroll
 
 **Interactive Features (after navigation):**
 
@@ -585,6 +682,7 @@ Manual testing checklist. Run dev server with `bun run dev`.
 - [ ] Reports tab toggle works after navigating to reports
 - [ ] Period navigator works after navigating to transactions/budget
 - [ ] Notification dropdown opens/closes
+- [ ] Charts render correctly after navigation (spending, allocation, velocity, wealth trajectory)
 
 **Toast Persistence:**
 
@@ -594,22 +692,36 @@ Manual testing checklist. Run dev server with `bun run dev`.
 
 **Auth Flows (hard navigation):**
 
-- [ ] Click "Sign in" → full page reload to login
-- [ ] Login → redirect to dashboard (full reload)
-- [ ] Logout → redirect to login (full reload)
+- [ ] Click "Sign in" link → full page reload to login
+- [ ] Login → redirect to dashboard (full reload via `window.location.href`)
+- [ ] Logout → redirect to login (full reload via `window.location.href`)
 
 **Forms:**
 
 - [ ] CSV import form submits correctly (hard reload)
 - [ ] OAuth disconnect form works (hard reload)
+- [ ] Fetch-based forms (login, signup) work correctly — these use `window.location.href` to redirect, which already bypasses ClientRouter
+
+**CSP Monitoring:**
+
+- [ ] Open DevTools Console, filter for "Content Security Policy"
+- [ ] Navigate through several pages
+- [ ] Verify: no CSP violation warnings
+
+**Dynamic Routes:**
+
+- [ ] Navigate to `/accounts/[id]` detail page → works
+- [ ] Navigate to `/admin/workspaces/[id]` → works
+- [ ] Back from detail page → works
 
 **Edge Cases:**
 
 - [ ] Rapid clicking between pages: no errors
 - [ ] Navigate during ongoing fetch: no stale data
 - [ ] `prefers-reduced-motion`: transitions disabled
-- [ ] Open drawer → navigate: drawer closes
+- [ ] Open drawer → navigate: drawer closes, body scroll restored
 - [ ] Console: no errors, no listener leak warnings
+- [ ] DaisyUI drawer checkbox state resets correctly on navigation
 
 **Step: Run quality gates**
 
@@ -621,13 +733,25 @@ bun run typecheck
 bun run build
 ```
 
+**Step: Measure bundle impact**
+
+```bash
+# Before (baseline from main branch):
+# Record build output sizes
+
+# After (with ClientRouter):
+bun run build
+# Compare JS bundle sizes — ClientRouter adds ~5-8KB gzipped
+# Verify total stays under 250KB gzipped budget
+```
+
 **Step: Final commit**
 
 Fix any issues found during testing, then commit fixes individually.
 
 ---
 
-## Task 8 (Optional Enhancement): Sidebar Persist with Client-Side Active State
+## Task 9 (Optional Enhancement): Sidebar Persist with Client-Side Active State
 
 > Skip this task for MVP if crossfade already provides smooth enough transitions.
 > The crossfade masks sidebar re-render, so persist provides minimal visual improvement.
@@ -659,7 +783,7 @@ In `Navigation.astro`, add `data-nav-href={item.href}` to each `<a>` tag (line 1
 
 Same for admin nav items.
 
-In `MobileNavigation.astro`, add `data-nav-href={item.href}` to each `<a>` tag (line 86).
+In `MobileNavigation.astro`, add `data-mobile-nav-href={item.href}` to each `<a>` tag (line 86). Note: uses different attribute name (`data-mobile-nav-href`) than sidebar (`data-nav-href`) so the updater script can target them separately.
 
 **Step 2: Add transition:persist directives**
 
@@ -747,7 +871,7 @@ document.addEventListener('astro:after-swap', updateNavActiveState);
 
 ---
 
-## Task 9 (Optional Enhancement): Replace window.location.href with navigate()
+## Task 10 (Optional Enhancement): Replace window.location.href with navigate()
 
 > This makes programmatic navigations use smooth transitions too.
 > Without this, `window.location.href = url` causes a full reload (no transition).
@@ -802,19 +926,20 @@ navigate('/budget?month=2024-01');
 
 **Wave 2 (parallel - independent file groups):**
 
-- Task 3: Layout component scripts (4 files)
+- Task 3: Layout component scripts (4 files, includes MobileDrawer scroll lock fix)
 - Task 4: Page orchestrator scripts (6 files)
 - Task 5: Interactive component scripts (11 files)
 
 **Wave 3 (sequential - depends on Wave 2):**
 
 - Task 6: Nano store lifecycle
+- Task 7: Desktop scroll restoration
 
 **Wave 4:**
 
-- Task 7: Integration testing + quality gates
+- Task 8: Integration testing + quality gates + bundle measurement
 
 **Wave 5 (optional, after core is stable):**
 
-- Task 8: Sidebar persist
-- Task 9: navigate() replacement
+- Task 9: Sidebar persist
+- Task 10: navigate() replacement

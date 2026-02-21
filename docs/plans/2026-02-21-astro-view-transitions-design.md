@@ -8,6 +8,17 @@ Add smooth crossfade page transitions across all pages using Astro's `<ClientRou
 
 Polish and feel — make the app feel native/premium before MVP launch. The codebase is already ~60% prepared (18/31 `.client.ts` files use `astro:page-load`).
 
+## CSP Compatibility
+
+**Status: Compatible.** The project uses nonce-based CSP via HTTP headers (`src/middleware/security-headers.ts`). Astro docs warn CSP headers are unsupported with ClientRouter, but analysis shows this is **not a blocker** for this project:
+
+1. **All `is:inline` scripts are on auth pages** (signup, forgot-password) which use hard reload (`data-astro-reload`) — fresh CSP header on every load.
+2. **The theme script in BaseLayout** (`is:inline nonce={cspNonce}`) runs once on initial hard load. `<html>` element persists across soft navigations, so `data-theme` stays set.
+3. **All other scripts are module scripts** bundled by Vite, loaded as `<script type="module" src="...">` — allowed by `script-src: 'self'` without nonces.
+4. **Nonce injection middleware** adds nonces to all `<script>` tags in HTML responses, but module scripts from `src` are allowed by `'self'` regardless.
+
+**Mitigation:** Monitor browser console for CSP violations after enabling ClientRouter. If issues arise, switch to `Content-Security-Policy-Report-Only` during stabilization.
+
 ## Architecture
 
 ### ClientRouter Setup
@@ -149,11 +160,20 @@ document.addEventListener('astro:before-swap', () => {
 });
 ```
 
+#### MobileDrawer Scroll Lock
+
+MobileDrawer sets `body.style.overflow = 'hidden'` when open. Must close drawer and restore overflow on `astro:before-swap` to prevent stale scroll lock on the next page.
+
 #### Back/Forward Navigation
 
 - Nano stores re-hydrate from SSR `data-ssr-data` attributes on page-load
-- Browser restores scroll position automatically with ClientRouter
 - History state preserved by Astro's router
+
+#### Scroll Restoration
+
+**Desktop:** Scroll happens on `.drawer-content` container (not window). ClientRouter's automatic scroll restoration only works with `window.scrollY`. Desktop needs manual scroll position save/restore via `astro:before-swap` (save) and `astro:page-load` (restore).
+
+**Mobile:** Uses default window scroll — automatic restoration works.
 
 ### Animation Details
 
@@ -174,7 +194,9 @@ No custom `transition:animate` directives needed. Default fade is sufficient for
 | Nano store cleanup/reset                | ~1 hour      | Medium     |
 | Edge cases (forms, auth, drawers)       | ~1 hour      | Medium     |
 | Testing all flows                       | ~2 hours     | Medium     |
-| **Total**                               | **~8 hours** | **Medium** |
+| Scroll restoration (desktop)            | ~30 min      | Medium     |
+| MobileDrawer scroll lock fix            | ~15 min      | Low        |
+| **Total**                               | **~9 hours** | **Medium** |
 
 ## What We're NOT Doing
 
