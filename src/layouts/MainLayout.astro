@@ -55,24 +55,82 @@ const hasHeaderSlot = Astro.slots.has('header');
       </main>
 
       <!-- Footer -->
-      <Footer />
+      <Footer transition:persist="app-footer" />
     </div>
 
     <!-- Sidebar navigation -->
     <div class="drawer-side z-50 lg:overflow-visible h-screen">
       <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
-      <Navigation currentPath={currentPath} user={user} />
+      <Navigation currentPath={currentPath} user={user} transition:persist="main-nav" />
     </div>
   </div>
 
   <!-- Mobile Bottom Navigation -->
-  <MobileNavigation currentPath={currentPath} />
+  <MobileNavigation currentPath={currentPath} transition:persist="mobile-nav" />
 
   <!-- Floating Theme Toggle - bottom right corner, desktop only (mobile toggle in header) -->
   <ThemeToggle className="hidden lg:block fixed bottom-6 right-6 z-50" />
 
   <script>
     import '../components/layouts/MobileDrawer.client';
+  </script>
+
+  <script>
+    import '@/lib/stores/view-transition-cleanup';
+  </script>
+
+  <script>
+    import '@/lib/view-transitions/nav-active-state';
+  </script>
+
+  <script>
+    const SCROLL_INIT_KEY = '__vtScrollRestorationInit';
+    const SCROLL_PREFIX = 'vt-scroll:';
+    const scopedWindow = window as Window & {
+      [SCROLL_INIT_KEY]?: boolean;
+      __vtIsTraversal?: boolean;
+    };
+
+    function getScrollContainer(): HTMLElement | null {
+      return document.querySelector('.drawer-content');
+    }
+
+    if (!scopedWindow[SCROLL_INIT_KEY]) {
+      scopedWindow[SCROLL_INIT_KEY] = true;
+      scopedWindow.__vtIsTraversal = false;
+
+      window.addEventListener('popstate', () => {
+        scopedWindow.__vtIsTraversal = true;
+      });
+
+      document.addEventListener('astro:before-swap', () => {
+        const container = getScrollContainer();
+        if (!container) return;
+
+        const key = SCROLL_PREFIX + window.location.pathname + window.location.search;
+        sessionStorage.setItem(key, String(container.scrollTop));
+      });
+
+      document.addEventListener('astro:page-load', () => {
+        const container = getScrollContainer();
+        if (!container) return;
+
+        if (scopedWindow.__vtIsTraversal) {
+          const key = SCROLL_PREFIX + window.location.pathname + window.location.search;
+          const saved = sessionStorage.getItem(key);
+          if (saved) {
+            const parsed = parseInt(saved, 10);
+            if (!Number.isNaN(parsed)) {
+              container.scrollTop = parsed;
+            }
+          }
+        } else {
+          container.scrollTop = 0;
+        }
+
+        scopedWindow.__vtIsTraversal = false;
+      });
+    }
   </script>
 
   <script>

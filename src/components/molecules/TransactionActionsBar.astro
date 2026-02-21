@@ -84,6 +84,7 @@ const accentGhostBtn =
 
 <script>
   import { addToast } from '@/lib/stores/toastStore';
+  import { navigate } from 'astro:transitions/client';
 
   function initTransactionActionsBar() {
     const actionsBar = document.querySelector(
@@ -124,7 +125,7 @@ const accentGhostBtn =
     // Import CSV button
     const importBtn = container.querySelector('[data-import-csv-button]');
     importBtn?.addEventListener('click', () => {
-      window.location.href = '/transactions/import';
+      navigate('/transactions/import');
     });
 
     // Export CSV button

@@ -434,6 +434,7 @@ const copyDisabledTooltip =
    * - Edit budget handlers: Opens the modal with pre-filled data
    */
   import { initBudgetPage, cleanup } from '@components/organisms/BudgetPage.client';
+  import { navigate } from 'astro:transitions/client';
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   import { buildBudgetUrlForPeriod } from '@/lib/utils/budget-period';
   import { addToast } from '@/lib/stores/toastStore';
@@ -614,7 +615,7 @@ const copyDisabledTooltip =
       });
       if (samePath && sameParams) return;
 
-      window.location.href = targetUrl;
+      navigate(targetUrl);
     };
 
     scopedWindow[PERIOD_NAV_HANDLER_KEY] = handler;

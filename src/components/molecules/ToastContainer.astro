@@ -46,7 +46,7 @@
 <script>
   import { animate } from 'motion/mini';
   import { TOAST_ANIMATION_CONFIG, TOAST_INITIAL_STYLES } from '@/lib/animations';
-  import { toasts, removeToast, clearAllToasts, type ToastMessage } from '@/lib/stores/toastStore';
+  import { toasts, removeToast, type ToastMessage } from '@/lib/stores/toastStore';
 
   const container = document.getElementById('toast-container');
   if (!container) {
@@ -240,16 +240,7 @@
   }
 
   // Subscribe to toast store changes
-  const unsubscribe = toasts.subscribe((currentToasts) => {
+  toasts.subscribe((currentToasts) => {
     reconcileDOM(currentToasts);
-  });
-
-  // Cleanup on page navigation to prevent memory leaks
-  addEventListener('astro:page-load', () => {
-    unsubscribe();
-    renderedToasts.clear();
-    focusRestoreMap.clear(); // Clear focus map
-    clearAllToasts(); // Clear all pending timeouts
-    motionQuery.removeEventListener('change', handleMotionPreferenceChange); // Cleanup motion listener
   });
 </script>

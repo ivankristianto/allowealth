@@ -159,6 +159,7 @@ try {
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { navigate } from 'astro:transitions/client';
 
   let initialized = false;
   function initWorkspaceDetails() {
@@ -236,7 +237,7 @@ try {
             throw new Error(result.error?.message || 'Failed to delete workspace');
           }
           addToast('Workspace deleted successfully', 'success');
-          window.location.href = '/admin/workspaces';
+          navigate('/admin/workspaces');
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Failed to delete workspace';
           addToast(message, 'error');

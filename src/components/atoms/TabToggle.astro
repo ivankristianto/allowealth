@@ -71,6 +71,8 @@ const {
 </div>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
+
   // Client-side tab toggle behavior
   document.querySelectorAll('[data-tab-toggle]').forEach((container) => {
     const buttons = container.querySelectorAll('button[data-tab-value]');
@@ -85,7 +87,7 @@ const {
         // Update URL with new tab value
         const url = new URL(window.location.href);
         url.searchParams.set(name, value);
-        window.location.href = url.toString();
+        navigate(url.toString());
       });
     });
   });

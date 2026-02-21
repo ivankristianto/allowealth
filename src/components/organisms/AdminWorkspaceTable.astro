@@ -62,6 +62,8 @@ const { workspaces } = Astro.props;
 </Card>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
+
   function initWorkspaceTable() {
     const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-href]'));
     for (const row of rows) {
@@ -76,13 +78,13 @@ const { workspaces } = Astro.props;
       }
 
       row.addEventListener('click', () => {
-        if (href) window.location.href = href;
+        if (href) navigate(href);
       });
 
       row.addEventListener('keydown', (e: KeyboardEvent) => {
         if ((e.key === 'Enter' || e.key === ' ') && href) {
           e.preventDefault();
-          window.location.href = href;
+          navigate(href);
         }
       });
     }

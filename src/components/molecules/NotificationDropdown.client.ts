@@ -1,7 +1,16 @@
+let controller: AbortController | null = null;
+
 function initNotificationDropdown() {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
   const containers = document.querySelectorAll('[data-notification-dropdown-container]');
 
   containers.forEach((container) => {
+    if ((container as HTMLElement).dataset.dropdownInitialized === 'true') return;
+    (container as HTMLElement).dataset.dropdownInitialized = 'true';
+
     const button = container.querySelector('[data-notification-button]');
     const panel = container.querySelector('[data-notification-panel]');
     const closeBtn = container.querySelector('[data-close-notifications]');
@@ -39,18 +48,16 @@ function initNotificationDropdown() {
       }
     }
 
-    button.addEventListener('click', handleButtonClick);
-    closeBtn?.addEventListener('click', closeDropdown);
+    button.addEventListener('click', handleButtonClick, { signal });
+    closeBtn?.addEventListener('click', closeDropdown, { signal });
 
-    document.addEventListener('keydown', handleKeydown);
-    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('keydown', handleKeydown, { signal });
+    document.addEventListener('click', handleDocumentClick, { signal });
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initNotificationDropdown);
-} else {
-  initNotificationDropdown();
-}
-
+initNotificationDropdown();
 document.addEventListener('astro:page-load', initNotificationDropdown);
+document.addEventListener('astro:before-swap', () => {
+  controller?.abort();
+});

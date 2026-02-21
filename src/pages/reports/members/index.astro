@@ -282,6 +282,8 @@ const totalNet = totals.income - totals.expenses;
 </ProtectedLayout>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
+
   function initMembersPage() {
     const container = document.querySelector('[data-reports-members-page]') as HTMLElement | null;
     if (!container) return;
@@ -291,7 +293,7 @@ const totalNet = totals.income - totals.expenses;
     const currency = container.dataset.currentCurrency || 'IDR';
     const userId = container.dataset.currentUserId || '';
 
-    const navigate = () => {
+    const navigateWithFilters = () => {
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.set('range', currentRange);
       nextUrl.searchParams.set('period', currentPeriod);
@@ -301,7 +303,7 @@ const totalNet = totals.income - totals.expenses;
       } else {
         nextUrl.searchParams.delete('user_id');
       }
-      window.location.href = nextUrl.toString();
+      navigate(nextUrl.toString());
     };
 
     window.addEventListener('reportRangeChange', (event: Event) => {
@@ -314,13 +316,13 @@ const totalNet = totals.income - totals.expenses;
         currentPeriod = `${currentPeriod}-01`;
       }
 
-      navigate();
+      navigateWithFilters();
     });
 
     window.addEventListener('reportPeriodChange', (event: Event) => {
       const customEvent = event as CustomEvent<{ period: string }>;
       currentPeriod = customEvent.detail.period;
-      navigate();
+      navigateWithFilters();
     });
 
     // Clickable rows — navigate on click unless clicking an interactive element
@@ -328,7 +330,7 @@ const totalNet = totals.income - totals.expenses;
       row.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).closest('a, button')) return;
         const href = row.dataset.href;
-        if (href) window.location.href = href;
+        if (href) navigate(href);
       });
     });
 

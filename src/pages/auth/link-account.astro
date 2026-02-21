@@ -72,13 +72,13 @@ const providerName = pendingLink.provider.charAt(0).toUpperCase() + pendingLink.
           </div>
         </div>
 
-        <form method="POST" action="/api/auth/google/link" class="w-full">
+        <form method="POST" action="/api/auth/google/link" class="w-full" data-astro-reload>
           <Button type="submit" variant="accent" className="w-full h-14 rounded-2xl">
             Link my {providerName} account
           </Button>
         </form>
 
-        <a href="/login" class="btn btn-ghost gap-2 text-sm">
+        <a href="/login" class="btn btn-ghost gap-2 text-sm" data-astro-reload>
           <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
           Cancel and return to login
         </a>

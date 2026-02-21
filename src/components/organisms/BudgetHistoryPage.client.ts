@@ -22,6 +22,10 @@ import {
 } from './BudgetHistoryRenderer.client';
 import { addToast } from '@/lib/stores/toastStore';
 
+let controller: AbortController | null = null;
+let unsubscribeSelectedYear: (() => void) | null = null;
+let unsubscribeLoading: (() => void) | null = null;
+
 // SSR data interface
 interface SSRData {
   selectedYear: number;
@@ -33,6 +37,10 @@ interface SSRData {
  * Initialize the budget history page
  */
 export function initBudgetHistoryPage(): void {
+  cleanupBudgetHistoryPage();
+  controller = new AbortController();
+  const { signal } = controller;
+
   // Get SSR data from the page container
   const pageContainer = document.getElementById('budget-history-page');
   if (!pageContainer) {
@@ -62,15 +70,15 @@ export function initBudgetHistoryPage(): void {
   });
 
   // Set up event listeners
-  setupYearToggleListeners();
+  setupYearToggleListeners(signal);
 
   // Subscribe to store changes
-  selectedYear.subscribe((year) => {
+  unsubscribeSelectedYear = selectedYear.subscribe((year) => {
     updateYearToggleState(year);
     updateUrlState(year);
   });
 
-  isLoading.subscribe((loading) => {
+  unsubscribeLoading = isLoading.subscribe((loading) => {
     if (loading) {
       showLoadingState();
     } else {
@@ -82,26 +90,30 @@ export function initBudgetHistoryPage(): void {
 /**
  * Set up event listeners for year toggle buttons
  */
-function setupYearToggleListeners(): void {
+function setupYearToggleListeners(signal: AbortSignal): void {
   const buttons = document.querySelectorAll('[data-year-option]');
 
   buttons.forEach((btn) => {
-    btn.addEventListener('click', async (e: Event) => {
-      e.preventDefault();
+    btn.addEventListener(
+      'click',
+      async (e: Event) => {
+        e.preventDefault();
 
-      const yearAttr = btn.getAttribute('data-year-option');
-      if (!yearAttr) return;
+        const yearAttr = btn.getAttribute('data-year-option');
+        if (!yearAttr) return;
 
-      const year = parseInt(yearAttr, 10);
-      const state = getState();
+        const year = parseInt(yearAttr, 10);
+        const state = getState();
 
-      // Don't fetch if already selected
-      if (year === state.selectedYear) return;
+        // Don't fetch if already selected
+        if (year === state.selectedYear) return;
 
-      // Update state and fetch new data
-      setSelectedYear(year);
-      await fetchAndRender(year, state.currency);
-    });
+        // Update state and fetch new data
+        setSelectedYear(year);
+        await fetchAndRender(year, state.currency);
+      },
+      { signal }
+    );
   });
 }
 
@@ -147,7 +159,19 @@ function updateUrlState(year: number): void {
   window.history.replaceState({}, '', url.toString());
 }
 
+function cleanupBudgetHistoryPage(): void {
+  controller?.abort();
+  controller = null;
+  unsubscribeSelectedYear?.();
+  unsubscribeSelectedYear = null;
+  unsubscribeLoading?.();
+  unsubscribeLoading = null;
+}
+
 /**
  * Re-export for use in inline scripts
  */
 export { initBudgetHistoryPage as init };
+
+document.addEventListener('astro:page-load', initBudgetHistoryPage);
+document.addEventListener('astro:before-swap', cleanupBudgetHistoryPage);

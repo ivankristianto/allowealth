@@ -1,5 +1,6 @@
 ---
 import '../styles/globals.css';
+import { ClientRouter } from 'astro:transitions';
 import ToastContainer from '@/components/molecules/ToastContainer.astro';
 
 interface Props {
@@ -26,6 +27,7 @@ const perfDebugComment = perf ? perf.toHtmlComment() : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{browserTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <ClientRouter />
     <!-- Prevent flash of wrong theme by setting data-theme early -->
     <script is:inline nonce={cspNonce}>
       (function () {
@@ -46,7 +48,7 @@ const perfDebugComment = perf ? perf.toHtmlComment() : '';
   </head>
   <body>
     <slot />
-    <ToastContainer />
+    <ToastContainer transition:persist="toast-container" />
     {perfDebugComment && <Fragment set:html={perfDebugComment} />}
   </body>
 </html>

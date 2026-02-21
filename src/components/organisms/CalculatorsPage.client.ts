@@ -10,14 +10,14 @@ import { csrfFetch } from '@/lib/csrf-client';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 
-// DOM Elements
-const form = document.getElementById('compound-calculator-form') as HTMLFormElement;
-const resultsContainer = document.getElementById('results-container');
-const principalInput = form?.querySelector('input[name="principal"]') as HTMLInputElement | null;
+let controller: AbortController | null = null;
 
-if (principalInput && principalInput.dataset.amountFormatterInitialized !== 'true') {
-  attachAmountFormatter(principalInput, 'IDR');
-  principalInput.dataset.amountFormatterInitialized = 'true';
+function getCalculatorForm(): HTMLFormElement | null {
+  return document.getElementById('compound-calculator-form') as HTMLFormElement | null;
+}
+
+function getResultsContainer(): HTMLElement | null {
+  return document.getElementById('results-container');
 }
 
 /**
@@ -37,6 +37,7 @@ function renderResults(data: {
   }>;
   currency: 'IDR' | 'USD';
 }): void {
+  const resultsContainer = getResultsContainer();
   if (!resultsContainer) return;
 
   const { totalInterest, finalBalance, yearlyData, currency } = data;
@@ -147,6 +148,7 @@ function renderResults(data: {
 
 // Show loading state
 function showLoadingState(): void {
+  const form = getCalculatorForm();
   if (!form) return;
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
   if (submitButton) {
@@ -157,6 +159,7 @@ function showLoadingState(): void {
 
 // Hide loading state
 function hideLoadingState(): void {
+  const form = getCalculatorForm();
   if (!form) return;
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
   if (submitButton) {
@@ -167,6 +170,8 @@ function hideLoadingState(): void {
 
 // Show error message
 function showError(message: string): void {
+  const form = getCalculatorForm();
+
   // Check if there's already an error alert
   let errorAlert = document.getElementById('calculator-error');
   if (!errorAlert) {
@@ -196,6 +201,9 @@ function showError(message: string): void {
 // Form submission handler
 async function handleFormSubmit(e: Event): Promise<void> {
   e.preventDefault();
+
+  const form = getCalculatorForm();
+  if (!form) return;
 
   const formData = new FormData(form);
   const principalRaw = String(formData.get('principal') || '');
@@ -241,7 +249,27 @@ async function handleFormSubmit(e: Event): Promise<void> {
   }
 }
 
-// Initialize
-form?.addEventListener('submit', handleFormSubmit);
+function initCalculatorsPage(): void {
+  controller?.abort();
+  controller = new AbortController();
+  const { signal } = controller;
+
+  const form = getCalculatorForm();
+  if (!form) return;
+
+  const principalInput = form.querySelector('input[name="principal"]') as HTMLInputElement | null;
+  if (principalInput && principalInput.dataset.amountFormatterInitialized !== 'true') {
+    attachAmountFormatter(principalInput, 'IDR');
+    principalInput.dataset.amountFormatterInitialized = 'true';
+  }
+
+  form.addEventListener('submit', handleFormSubmit, { signal });
+}
+
+initCalculatorsPage();
+document.addEventListener('astro:page-load', initCalculatorsPage);
+document.addEventListener('astro:before-swap', () => {
+  controller?.abort();
+});
 
 export {};
