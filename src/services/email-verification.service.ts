@@ -282,8 +282,8 @@ export class EmailVerificationService {
     // Create token only after validating user and email service
     const token = await this.createVerificationToken(userId);
 
-    // Build verification URL — prefer caller-supplied origin, then env var, then dev default
-    const resolvedBaseUrl = baseUrl || getEnv('PUBLIC_URL') || 'http://localhost:4321';
+    // Build verification URL — PUBLIC_URL (trusted config) takes precedence over request origin
+    const resolvedBaseUrl = getEnv('PUBLIC_URL') || baseUrl || 'http://localhost:4321';
     const verificationUrl = `${resolvedBaseUrl}/api/auth/verify-email?token=${token}`;
 
     // Send email via workspace email service
