@@ -17,10 +17,11 @@
  * - META_NOT_FOUND: Meta key doesn't exist for workspace
  */
 
-import { type IDatabase, getActiveSchema } from '@/db';
-import { eq } from 'drizzle-orm';
+import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
+import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { createMetaService } from './base/meta.factory';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import {
   WORKSPACE_META_KEYS,
   type WorkspaceMetaKey,
@@ -37,6 +38,8 @@ import { WorkspaceMetaServiceError, ServiceErrorCode } from './service-errors';
  * Maximum size for a meta value in bytes (4KB)
  */
 const META_VALUE_MAX_SIZE = 4096;
+const CURRENCY_LOCKED_MESSAGE =
+  'Currency settings cannot be changed after creating accounts, budgets, or transactions';
 
 /**
  * Convert string to boolean for meta values
@@ -66,12 +69,17 @@ function isValidWeekStart(value: string): value is WeekStart {
 function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
   switch (key) {
     case WORKSPACE_META_KEYS.CURRENCY:
-      // Currency should be a non-empty string (e.g., 'IDR', 'USD')
       if (!value || value.length === 0) {
         throw new Error('Currency cannot be empty');
       }
-      if (value.length > 10) {
-        throw new Error('Currency code too long');
+      if (!isValidCurrency(value)) {
+        throw new Error(`Invalid currency code: ${value}`);
+      }
+      break;
+
+    case WORKSPACE_META_KEYS.SECONDARY_CURRENCY:
+      if (value.length > 0 && !isValidCurrency(value)) {
+        throw new Error(`Invalid currency code: ${value}`);
       }
       break;
 
@@ -279,9 +287,12 @@ export class WorkspaceMetaService {
    * @param workspaceId - Workspace ID
    * @returns The currency or default 'IDR'
    */
-  async getCurrency(workspaceId: string): Promise<string> {
+  async getCurrency(workspaceId: string): Promise<Currency> {
     const value = await this.get(workspaceId, WORKSPACE_META_KEYS.CURRENCY);
-    return value ?? DEFAULT_WORKSPACE_SETTINGS.currency;
+    if (value && isValidCurrency(value)) {
+      return value;
+    }
+    return DEFAULT_WORKSPACE_SETTINGS.currency;
   }
 
   /**
@@ -291,7 +302,158 @@ export class WorkspaceMetaService {
    * @param currency - Currency code (e.g., 'IDR', 'USD')
    */
   async setCurrency(workspaceId: string, currency: string): Promise<void> {
+    const current = await this.getWorkspaceCurrencies(workspaceId);
+    if (currency === current.primary) {
+      return;
+    }
+
+    this.assertCurrencyPairValid(currency, current.secondary ?? '');
+    await this.assertCurrencySettingsCanChange(workspaceId);
     await this.set(workspaceId, WORKSPACE_META_KEYS.CURRENCY, currency);
+  }
+
+  /**
+   * Get workspace's secondary currency (optional)
+   *
+   * @param workspaceId - Workspace ID
+   * @returns Secondary currency or null when disabled
+   */
+  async getSecondaryCurrency(workspaceId: string): Promise<Currency | null> {
+    const value = await this.get(workspaceId, WORKSPACE_META_KEYS.SECONDARY_CURRENCY);
+    if (value && isValidCurrency(value)) {
+      return value;
+    }
+    return null;
+  }
+
+  /**
+   * Set workspace's secondary currency (optional, use empty string to disable)
+   *
+   * @param workspaceId - Workspace ID
+   * @param currency - Secondary currency code or empty string
+   */
+  async setSecondaryCurrency(workspaceId: string, currency: string): Promise<void> {
+    const current = await this.getWorkspaceCurrencies(workspaceId);
+    const currentSecondary = current.secondary ?? '';
+    if (currency === currentSecondary) {
+      return;
+    }
+
+    this.assertCurrencyPairValid(current.primary, currency);
+    await this.assertCurrencySettingsCanChange(workspaceId);
+    await this.set(workspaceId, WORKSPACE_META_KEYS.SECONDARY_CURRENCY, currency);
+  }
+
+  /**
+   * Get workspace primary and secondary currencies as a pair
+   */
+  async getWorkspaceCurrencies(
+    workspaceId: string
+  ): Promise<{ primary: Currency; secondary: Currency | null }> {
+    const [primary, secondary] = await Promise.all([
+      this.getCurrency(workspaceId),
+      this.getSecondaryCurrency(workspaceId),
+    ]);
+
+    return { primary, secondary };
+  }
+
+  /**
+   * Check whether workspace currency settings are still editable
+   *
+   * IMPORTANT: includes soft-deleted rows to prevent create->delete->change bypass.
+   */
+  async canChangeCurrencySettings(workspaceId: string): Promise<boolean> {
+    await this.ensureWorkspaceExists(workspaceId);
+
+    const schema = this.schema;
+
+    const [accountCount] = await (this.db as any)
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.accounts)
+      .where(eq(schema.accounts.workspace_id, workspaceId));
+
+    if ((accountCount?.count ?? 0) > 0) {
+      return false;
+    }
+
+    const [budgetCount] = await (this.db as any)
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.budgets)
+      .where(eq(schema.budgets.workspace_id, workspaceId));
+
+    if ((budgetCount?.count ?? 0) > 0) {
+      return false;
+    }
+
+    const [transactionCount] = await (this.db as any)
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.transactions)
+      .where(eq(schema.transactions.workspace_id, workspaceId));
+
+    return (transactionCount?.count ?? 0) === 0;
+  }
+
+  /**
+   * Atomically update workspace primary and secondary currencies.
+   */
+  async setCurrencySettings(
+    workspaceId: string,
+    primary: string,
+    secondary: string
+  ): Promise<void> {
+    const current = await this.getWorkspaceCurrencies(workspaceId);
+    const currentSecondary = current.secondary ?? '';
+    const primaryChanging = primary !== current.primary;
+    const secondaryChanging = secondary !== currentSecondary;
+
+    if (!primaryChanging && !secondaryChanging) {
+      return;
+    }
+
+    this.assertCurrencyPairValid(primary, secondary);
+    await this.assertCurrencySettingsCanChange(workspaceId);
+
+    const schema = this.schema;
+    const now = new Date();
+
+    await runTransaction(this.db, async (tx) => {
+      await tx
+        .insert(schema.workspaceMeta)
+        .values({
+          id: nanoid(),
+          workspace_id: workspaceId,
+          meta_key: WORKSPACE_META_KEYS.CURRENCY,
+          meta_value: primary,
+          created_at: now,
+          updated_at: now,
+        })
+        .onConflictDoUpdate({
+          target: [schema.workspaceMeta.workspace_id, schema.workspaceMeta.meta_key],
+          set: {
+            meta_value: primary,
+            updated_at: now,
+          },
+        });
+
+      await tx
+        .insert(schema.workspaceMeta)
+        .values({
+          id: nanoid(),
+          workspace_id: workspaceId,
+          meta_key: WORKSPACE_META_KEYS.SECONDARY_CURRENCY,
+          meta_value: secondary,
+          created_at: now,
+          updated_at: now,
+        })
+        .onConflictDoUpdate({
+          target: [schema.workspaceMeta.workspace_id, schema.workspaceMeta.meta_key],
+          set: {
+            meta_value: secondary,
+            updated_at: now,
+          },
+        });
+    });
   }
 
   /**
@@ -348,6 +510,17 @@ export class WorkspaceMetaService {
   async getSettings(workspaceId: string): Promise<WorkspaceSettings> {
     const metaAll = await this.getWithDefaults(workspaceId);
 
+    const rawCurrency = metaAll[WORKSPACE_META_KEYS.CURRENCY];
+    const currency = isValidCurrency(rawCurrency)
+      ? rawCurrency
+      : DEFAULT_WORKSPACE_SETTINGS.currency;
+
+    const rawSecondaryCurrency = metaAll[WORKSPACE_META_KEYS.SECONDARY_CURRENCY];
+    const secondaryCurrency =
+      rawSecondaryCurrency.length > 0 && isValidCurrency(rawSecondaryCurrency)
+        ? rawSecondaryCurrency
+        : DEFAULT_WORKSPACE_SETTINGS.secondaryCurrency;
+
     // Validate week_start at runtime
     const rawWeekStart = metaAll[WORKSPACE_META_KEYS.WEEK_START];
     const weekStart = isValidWeekStart(rawWeekStart)
@@ -355,7 +528,8 @@ export class WorkspaceMetaService {
       : DEFAULT_WORKSPACE_SETTINGS.weekStart;
 
     return {
-      currency: metaAll[WORKSPACE_META_KEYS.CURRENCY],
+      currency,
+      secondaryCurrency,
       weekStart,
       compactNumbers: metaValueToBoolean(
         metaAll[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
@@ -367,6 +541,41 @@ export class WorkspaceMetaService {
   // ============================================================================
   // Private helpers
   // ============================================================================
+
+  /**
+   * Validate currency pair values and constraints
+   */
+  private assertCurrencyPairValid(primary: string, secondary: string): void {
+    try {
+      validateMetaValue(WORKSPACE_META_KEYS.CURRENCY, primary);
+      validateMetaValue(WORKSPACE_META_KEYS.SECONDARY_CURRENCY, secondary);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid value';
+      throw new WorkspaceMetaServiceError(ServiceErrorCode.INVALID_META_VALUE, message, 400);
+    }
+
+    if (secondary.length > 0 && primary === secondary) {
+      throw new WorkspaceMetaServiceError(
+        ServiceErrorCode.INVALID_META_VALUE,
+        'Secondary currency must differ from primary currency',
+        400
+      );
+    }
+  }
+
+  /**
+   * Enforce workspace-level currency lock when financial records already exist.
+   */
+  private async assertCurrencySettingsCanChange(workspaceId: string): Promise<void> {
+    const canChange = await this.canChangeCurrencySettings(workspaceId);
+    if (!canChange) {
+      throw new WorkspaceMetaServiceError(
+        ServiceErrorCode.CURRENCY_LOCKED,
+        CURRENCY_LOCKED_MESSAGE,
+        400
+      );
+    }
+  }
 
   /**
    * Check if workspace exists, throw if not

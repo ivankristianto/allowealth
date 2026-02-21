@@ -34,7 +34,7 @@ Budget:
       description: Budget amount as decimal string
     currency:
       type: string
-      enum: [IDR, USD]
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     is_closed:
       type: boolean
       description: Whether the budget period is closed (locked from edits)

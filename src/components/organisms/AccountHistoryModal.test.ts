@@ -16,7 +16,7 @@ interface AccountHistoryData {
   id: string;
   name: string;
   type: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   balance: number;
   history?: HistoryPoint[];
 }

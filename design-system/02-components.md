@@ -49,7 +49,6 @@ Component patterns for atoms, molecules, and organisms.
 | CashFlowItem                  | `src/components/molecules/CashFlowItem.astro`                  | Cash flow row            |
 | ConfirmationModal             | `src/components/molecules/ConfirmationModal.astro`             | Confirmation dialog      |
 | CSVImportForm                 | `src/components/molecules/CSVImportForm.astro`                 | CSV import form          |
-| CurrencySelector              | `src/components/molecules/CurrencySelector.astro`              | Currency selector        |
 | DashboardError                | `src/components/molecules/DashboardError.astro`                | Dashboard error block    |
 | ForgotPasswordForm            | `src/components/molecules/ForgotPasswordForm.astro`            | Password reset form      |
 | FormField                     | `src/components/molecules/FormField.astro`                     | Label + input wrapper    |

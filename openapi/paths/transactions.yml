@@ -34,7 +34,7 @@ paths:
           description: Filter by currency
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
         - name: start_date
           in: query
           description: Filter by start date (ISO 8601)
@@ -265,7 +265,7 @@ paths:
           description: Filter by currency
           schema:
             type: string
-            enum: [IDR, USD]
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
         - name: start_date
           in: query
           description: Filter by start date (ISO 8601)
@@ -328,7 +328,7 @@ paths:
         - `map_date`: Date column (YYYY-MM-DD format)
         - `map_type`: Type column (expense/income)
         - `map_amount`: Amount column (numeric value)
-        - `map_currency`: Currency column (IDR/USD)
+        - `map_currency`: Currency column (e.g., IDR, USD, SGD, EUR)
         - `map_category`: Category column (category name)
         - `map_payment_method`: Payment method column (payment method name)
         - `map_description`: Description column (optional notes)

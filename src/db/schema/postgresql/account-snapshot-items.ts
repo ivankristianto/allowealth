@@ -14,7 +14,7 @@ export const accountSnapshotItems = pgTable(
       .notNull()
       .references(() => accounts.id),
     balance: text('balance').notNull(), // Stored as string for decimal precision
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
   },
   (table) => [
     index('account_snapshot_items_snapshot_id_idx').on(table.snapshot_id),

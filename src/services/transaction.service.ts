@@ -18,6 +18,7 @@ import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache'
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -44,7 +45,7 @@ interface TransactionInsertRow {
   created_by_user_id: string;
   type: 'expense' | 'income' | 'transfer';
   amount: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   category_id: string | null;
   account_id: string;
   to_account_id: string | null;
@@ -62,7 +63,7 @@ export interface TransactionFilters {
   account_id?: string;
   account_ids?: string[]; // Multiple account filter
   created_by_user_id?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   start_date?: Date;
   end_date?: Date;
   search?: string;
@@ -150,6 +151,13 @@ export class TransactionService {
         400
       );
     }
+    if (validated.currency !== account.currency) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Transaction currency must match source account currency',
+        400
+      );
+    }
 
     // For transfers, verify destination account exists and is active
     if (validated.type === 'transfer' && validated.to_account_id) {
@@ -168,6 +176,13 @@ export class TransactionService {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
           'Cannot create transfer — destination account is deactivated',
+          400
+        );
+      }
+      if (toAccount.currency !== account.currency) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.VALIDATION_ERROR,
+          'Transfer accounts must use the same currency',
           400
         );
       }
@@ -427,6 +442,7 @@ export class TransactionService {
     }
 
     // Verify account if being updated
+    let sourceAccountForValidation = existing.account;
     if (validated.account_id !== undefined) {
       const account = await this.accountService.findByIdIncludingClosed(
         validated.account_id,
@@ -446,9 +462,11 @@ export class TransactionService {
           400
         );
       }
+      sourceAccountForValidation = account;
     }
 
     // Verify destination account if being updated
+    let destinationAccountForValidation = existing.toAccount;
     if (validated.to_account_id !== undefined && validated.to_account_id !== null) {
       const toAccount = await this.accountService.findByIdIncludingClosed(
         validated.to_account_id,
@@ -465,6 +483,43 @@ export class TransactionService {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
           'Cannot update transfer — destination account is deactivated',
+          400
+        );
+      }
+      destinationAccountForValidation = toAccount;
+    } else if (validated.to_account_id === null) {
+      destinationAccountForValidation = null;
+    }
+
+    const effectiveCurrency = validated.currency ?? existing.currency;
+    if (!sourceAccountForValidation) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_NOT_FOUND,
+        'Source account not found',
+        404
+      );
+    }
+    if (effectiveCurrency !== sourceAccountForValidation.currency) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Transaction currency must match source account currency',
+        400
+      );
+    }
+
+    const effectiveType = validated.type ?? existing.type;
+    if (effectiveType === 'transfer') {
+      if (!destinationAccountForValidation) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.VALIDATION_ERROR,
+          'Transfer requires destination account',
+          400
+        );
+      }
+      if (destinationAccountForValidation.currency !== sourceAccountForValidation.currency) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.VALIDATION_ERROR,
+          'Transfer accounts must use the same currency',
           400
         );
       }
@@ -902,8 +957,8 @@ export class TransactionService {
       }
 
       // Validate currency
-      if (currencyStr !== 'IDR' && currencyStr !== 'USD') {
-        result.errors.push({ row: i + 1, message: 'Invalid currency (must be IDR or USD)' });
+      if (!currencyStr || !isValidCurrency(currencyStr)) {
+        result.errors.push({ row: i + 1, message: 'Invalid currency code' });
         continue;
       }
 

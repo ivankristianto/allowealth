@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { budgetService, BudgetServiceError } from '@/services';
+import { budgetService, BudgetServiceError, workspaceMetaService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { createBudgetAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * GET /api/budgets
@@ -42,10 +43,21 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Validate currency if provided
-    let currencyFilter: 'IDR' | 'USD' | undefined;
+    let currencyFilter: Currency | undefined;
     if (currency) {
-      if (currency !== 'IDR' && currency !== 'USD') {
-        return errorResponse('currency must be IDR or USD', 400, 'INVALID_CURRENCY');
+      const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+        auth.workspaceId
+      );
+      const allowedCurrencies = [
+        workspaceCurrencyConfig.primary,
+        ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+      ];
+      if (!isValidCurrency(currency) || !allowedCurrencies.includes(currency)) {
+        return errorResponse(
+          'currency must match this workspace configured currencies',
+          400,
+          'INVALID_CURRENCY'
+        );
       }
       currencyFilter = currency;
     }

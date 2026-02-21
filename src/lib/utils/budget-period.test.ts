@@ -76,14 +76,14 @@ describe('budget-period utils', () => {
   });
 
   describe('buildBudgetUrlForPeriod', () => {
-    it('builds canonical budget URL with period and currency', () => {
-      const url = buildBudgetUrlForPeriod('2026-02', 'USD');
-      expect(url).toBe('/budget?year=2026&month=2&currency=USD');
+    it('builds canonical budget URL with period params', () => {
+      const url = buildBudgetUrlForPeriod('2026-02');
+      expect(url).toBe('/budget?year=2026&month=2');
     });
 
-    it('falls back to base budget URL with currency for invalid periods', () => {
-      const url = buildBudgetUrlForPeriod('invalid-period', 'USD');
-      expect(url).toBe('/budget?currency=USD');
+    it('falls back to base budget URL for invalid periods', () => {
+      const url = buildBudgetUrlForPeriod('invalid-period');
+      expect(url).toBe('/budget');
     });
   });
 });

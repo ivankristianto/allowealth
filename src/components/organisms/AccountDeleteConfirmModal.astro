@@ -74,7 +74,7 @@ const { id } = Astro.props;
     name: string;
     type: string;
     balance: number;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
   }
 
   function initAccountDeleteModal() {
@@ -102,7 +102,7 @@ const { id } = Astro.props;
       // Store current account data for closure
       let currentAccountId: string | null = null;
       let currentAccountBalance = 0;
-      let currentAccountCurrency: 'IDR' | 'USD' = 'IDR';
+      let currentAccountCurrency: Currency = 'IDR';
 
       // Function to populate modal with account data
       // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data

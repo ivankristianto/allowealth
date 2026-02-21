@@ -19,6 +19,7 @@ import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
+import type { Currency } from '@/lib/constants/currency';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
 export interface Props {
@@ -34,6 +35,7 @@ export interface Props {
     annualRate: number;
     years: number;
   };
+  currency?: Currency;
   loading?: boolean;
   error?: string;
   className?: string;
@@ -43,6 +45,7 @@ const {
   data = [],
   summary = { year10Target: 0, totalInterest: 0, growthMultiple: 0, currentTotal: 0 },
   input = { monthlyTopup: 5000000, annualRate: 7, years: 10 },
+  currency = 'IDR',
   loading = false,
   error,
   className = '',
@@ -84,15 +87,15 @@ const serializedInput = JSON.stringify(input);
       >
         <div class="flex-1 min-w-[140px] space-y-2">
           <label for={`${chartId}-topup`} class="block">
-            <StatLabel size="sm" color="neutral"> MONTHLY TOP-UP (IDR) </StatLabel>
+            <StatLabel size="sm" color="neutral"> MONTHLY TOP-UP ({currency}) </StatLabel>
           </label>
           <AmountInput
             id={`${chartId}-topup`}
             name="monthlyTopup"
-            currency="IDR"
+            currency={currency}
             className="input-bordered bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
             value={input.monthlyTopup}
-            ariaLabel="Monthly top-up amount in IDR"
+            ariaLabel={`Monthly top-up amount in ${currency}`}
           />
         </div>
 
@@ -159,6 +162,7 @@ const serializedInput = JSON.stringify(input);
             data-chart-data={serializedData}
             data-chart-input={serializedInput}
             data-chart-id={chartId}
+            data-currency={currency}
           >
             <canvas
               id={chartId}
@@ -177,7 +181,7 @@ const serializedInput = JSON.stringify(input);
                 YEAR {input.years} TARGET
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-base-content">
-                {formatCurrencyCompact(summary.year10Target, 'IDR')}
+                {formatCurrencyCompact(summary.year10Target, currency)}
               </h3>
             </div>
 
@@ -188,7 +192,7 @@ const serializedInput = JSON.stringify(input);
                 TOTAL INTEREST EARNED{' '}
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-accent">
-                {formatCurrencyCompact(summary.totalInterest, 'IDR')}
+                {formatCurrencyCompact(summary.totalInterest, currency)}
               </h3>
             </div>
 
@@ -211,7 +215,10 @@ const serializedInput = JSON.stringify(input);
 
 <script>
   import { Chart } from '@/lib/chart-setup';
+  import { isValidCurrency } from '@/lib/constants/currency';
+  import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import type { Currency } from '@/lib/constants/currency';
   import type { ForecastDataPoint } from '@/lib/forecast';
 
   interface ChartInstance {
@@ -244,7 +251,11 @@ const serializedInput = JSON.stringify(input);
   /**
    * Initialize wealth trajectory chart
    */
-  function initWealthTrajectoryChart(chartId: string, data: ForecastDataPoint[]): void {
+  function initWealthTrajectoryChart(
+    chartId: string,
+    data: ForecastDataPoint[],
+    currency: Currency
+  ): void {
     const canvas = document.getElementById(chartId) as HTMLCanvasElement;
     if (!canvas) return;
 
@@ -355,7 +366,7 @@ const serializedInput = JSON.stringify(input);
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
                 if (value === null) return '';
-                return `${label}: Rp ${(value / 1000000).toFixed(1)}M`;
+                return `${label}: ${formatCurrencyCompact(value, currency)}`;
               },
             },
           },
@@ -390,7 +401,7 @@ const serializedInput = JSON.stringify(input);
                 weight: 600 as any,
               },
               callback: (value) => {
-                return `Rp ${(Number(value) / 1000000).toFixed(0)}M`;
+                return formatCurrencyCompact(Number(value), currency);
               },
             },
             border: {
@@ -424,7 +435,10 @@ const serializedInput = JSON.stringify(input);
     onInit: (container, data) => {
       const chartId = container.querySelector('canvas')?.id;
       if (!chartId || charts[chartId]) return;
-      initWealthTrajectoryChart(chartId, data);
+      const currencyAttr = container.getAttribute('data-currency');
+      const currency: Currency =
+        currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+      initWealthTrajectoryChart(chartId, data, currency);
     },
     onThemeChange: updateChartThemeColors,
     onCleanup: () => {

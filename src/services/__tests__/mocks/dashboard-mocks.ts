@@ -13,15 +13,15 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface SummaryCardsData {
   totalAccounts: {
-    idr: number;
-    usd: number;
-    converted: number;
-    convertedCurrency: 'IDR' | 'USD';
+    byCurrency: Array<{
+      currency: Currency;
+      amount: number;
+    }>;
   };
   monthlySpent: {
     spent: number;
     budget: number;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
     percentage: number;
   };
   budgetHealth: {
@@ -32,10 +32,10 @@ export interface SummaryCardsData {
 
 export const mockSummaryCardsData: SummaryCardsData = {
   totalAccounts: {
-    idr: 150_000_000,
-    usd: 10_000,
-    converted: 165_100_000,
-    convertedCurrency: 'IDR',
+    byCurrency: [
+      { currency: 'IDR', amount: 150_000_000 },
+      { currency: 'USD', amount: 10_000 },
+    ],
   },
   monthlySpent: {
     spent: 40_647_000,
@@ -52,10 +52,10 @@ export const mockSummaryCardsData: SummaryCardsData = {
 // Alternative states
 export const mockSummaryCardsHealthy: SummaryCardsData = {
   totalAccounts: {
-    idr: 150_000_000,
-    usd: 10_000,
-    converted: 165_100_000,
-    convertedCurrency: 'IDR',
+    byCurrency: [
+      { currency: 'IDR', amount: 150_000_000 },
+      { currency: 'USD', amount: 10_000 },
+    ],
   },
   monthlySpent: {
     spent: 40_000_000,
@@ -71,10 +71,10 @@ export const mockSummaryCardsHealthy: SummaryCardsData = {
 
 export const mockSummaryCardsExceeded: SummaryCardsData = {
   totalAccounts: {
-    idr: 150_000_000,
-    usd: 10_000,
-    converted: 165_100_000,
-    convertedCurrency: 'IDR',
+    byCurrency: [
+      { currency: 'IDR', amount: 150_000_000 },
+      { currency: 'USD', amount: 10_000 },
+    ],
   },
   monthlySpent: {
     spent: 95_000_000,
@@ -90,10 +90,7 @@ export const mockSummaryCardsExceeded: SummaryCardsData = {
 
 export const mockSummaryCardsEmpty: SummaryCardsData = {
   totalAccounts: {
-    idr: 0,
-    usd: 0,
-    converted: 0,
-    convertedCurrency: 'IDR',
+    byCurrency: [],
   },
   monthlySpent: {
     spent: 0,
@@ -116,7 +113,7 @@ export interface AccountUpdateTodoItem {
   name: string;
   type: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
   balance: number;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   daysSinceUpdate: number;
   lastUpdated: Date;
   priority: 'high' | 'medium' | 'low' | 'none';

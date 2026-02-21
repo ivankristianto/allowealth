@@ -26,6 +26,7 @@ import {
   cleanupInlineEdit,
   cancelEditMode,
 } from './BudgetInlineEdit.client';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -34,7 +35,7 @@ import {
 interface PageState {
   year: number;
   month: number;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
 }
 
 let state: PageState | null = null;
@@ -47,9 +48,9 @@ let savedSortKey = '';
 /**
  * Validate and parse currency value (P1: runtime validation)
  */
-function getValidCurrency(value: string | null): 'IDR' | 'USD' {
-  if (value === 'USD') return 'USD';
-  return 'IDR'; // Default to IDR for any invalid value
+function getValidCurrency(value: string | null): Currency {
+  if (value && isValidCurrency(value)) return value;
+  return 'IDR';
 }
 
 /**
@@ -186,7 +187,6 @@ function handleBudgetsCopied(
     const params = new URLSearchParams();
     params.set('year', targetYear.toString());
     params.set('month', targetMonth.toString());
-    params.set('currency', state.currency);
     window.location.href = `/budget?${params.toString()}`;
   }
 }

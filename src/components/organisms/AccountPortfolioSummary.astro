@@ -8,10 +8,8 @@
  *
  * This avoids the visual tension of line dividers inside rounded cards.
  *
- * @param {number} totalIdr - Total account value in IDR
- * @param {number} totalUsd - Total account value in USD
- * @param {number} debtIdr - Total debt value in IDR
- * @param {number} debtUsd - Total debt value in USD
+ * @param {Array} accountTotals - Total account value by currency
+ * @param {Array} debtTotals - Total debt value by currency
  * @param {Array} distribution - Account type distribution for allocation chart
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} className - Additional CSS classes
@@ -23,6 +21,7 @@ import { Wallet, CreditCard, TrendingUp, Clock, Info } from '@lucide/astro';
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
+import type { Currency } from '@/lib/constants/currency';
 
 // Internal aliases - components
 import Skeleton from '@components/atoms/Skeleton.astro';
@@ -38,10 +37,8 @@ const MAX_LEGEND_ITEMS = 7;
 const OTHERS_COLOR = '#9ca3af';
 
 export interface Props {
-  totalIdr: number;
-  totalUsd: number;
-  debtIdr?: number;
-  debtUsd?: number;
+  accountTotals: Array<{ currency: Currency; amount: number }>;
+  debtTotals?: Array<{ currency: Currency; amount: number }>;
   distribution: AllocationItem[];
   loading?: boolean;
   className?: string;
@@ -50,10 +47,8 @@ export interface Props {
 }
 
 const {
-  totalIdr,
-  totalUsd,
-  debtIdr = 0,
-  debtUsd = 0,
+  accountTotals,
+  debtTotals = [],
   distribution,
   loading = false,
   className = '',
@@ -61,12 +56,34 @@ const {
   isHistoricalView = false,
 } = Astro.props;
 
-// Calculate net worth (accounts - debt)
-const netWorthIdr = totalIdr - debtIdr;
-const netWorthUsd = totalUsd - debtUsd;
-const hasDebt = debtIdr > 0 || debtUsd > 0;
-const hasIdr = totalIdr > 0 || debtIdr > 0;
-const hasUsd = totalUsd > 0 || debtUsd > 0;
+const currencyOrder = [
+  ...new Set([
+    ...accountTotals.map((row) => row.currency),
+    ...debtTotals.map((row) => row.currency),
+  ]),
+];
+const accountTotalsMap = new Map(accountTotals.map((row) => [row.currency, row.amount]));
+const debtTotalsMap = new Map(debtTotals.map((row) => [row.currency, row.amount]));
+
+const visibleAccountTotals = currencyOrder
+  .map((currency) => ({ currency, amount: accountTotalsMap.get(currency) || 0 }))
+  .filter((row) => row.amount > 0);
+
+const visibleDebtTotals = currencyOrder
+  .map((currency) => ({ currency, amount: debtTotalsMap.get(currency) || 0 }))
+  .filter((row) => row.amount > 0);
+
+const netWorthTotals = currencyOrder
+  .map((currency) => ({
+    currency,
+    amount: (accountTotalsMap.get(currency) || 0) - (debtTotalsMap.get(currency) || 0),
+  }))
+  .filter(
+    (row) =>
+      (accountTotalsMap.get(row.currency) || 0) > 0 || (debtTotalsMap.get(row.currency) || 0) > 0
+  );
+
+const hasDebt = visibleDebtTotals.length > 0;
 
 // Format the latest update date if provided
 const formattedLatestUpdate = latestUpdate
@@ -170,22 +187,20 @@ const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
             </span>
           </div>
           <div class="space-y-1.5">
-            {totalIdr > 0 && (
+            {visibleAccountTotals.map((row, index) => (
               <div class="flex items-center gap-2">
-                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-                  {formatCurrency(totalIdr, 'IDR')}
+                <span
+                  class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+                >
+                  {row.currency}
+                </span>
+                <p
+                  class={`text-lg font-bold tracking-tight leading-none truncate ${index === 0 ? 'text-success' : 'text-info'}`}
+                >
+                  {formatCurrency(row.amount, row.currency)}
                 </p>
               </div>
-            )}
-            {totalUsd > 0 && (
-              <div class="flex items-center gap-2">
-                <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
-                  {formatCurrency(totalUsd, 'USD')}
-                </p>
-              </div>
-            )}
+            ))}
           </div>
         </div>
 
@@ -199,22 +214,18 @@ const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
               </span>
             </div>
             <div class="space-y-1.5">
-              {debtIdr > 0 && (
+              {visibleDebtTotals.map((row, index) => (
                 <div class="flex items-center gap-2">
-                  <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                  <span
+                    class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+                  >
+                    {row.currency}
+                  </span>
                   <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                    {formatCurrency(debtIdr, 'IDR')}
+                    {formatCurrency(row.amount, row.currency)}
                   </p>
                 </div>
-              )}
-              {debtUsd > 0 && (
-                <div class="flex items-center gap-2">
-                  <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                    {formatCurrency(debtUsd, 'USD')}
-                  </p>
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
@@ -240,26 +251,20 @@ const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
             </div>
           </div>
           <div class="space-y-1.5">
-            {hasIdr && (
+            {netWorthTotals.map((row, index) => (
               <div class="flex items-center gap-2">
-                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-                <p
-                  class={`text-lg font-bold tracking-tight leading-none truncate ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
+                <span
+                  class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
                 >
-                  {formatCurrency(netWorthIdr, 'IDR')}
+                  {row.currency}
+                </span>
+                <p
+                  class={`text-lg font-bold tracking-tight leading-none truncate ${row.amount >= 0 ? 'text-accent' : 'text-error'}`}
+                >
+                  {formatCurrency(row.amount, row.currency)}
                 </p>
               </div>
-            )}
-            {hasUsd && (
-              <div class="flex items-center gap-2">
-                <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                <p
-                  class={`text-lg font-bold tracking-tight leading-none truncate ${netWorthUsd >= 0 ? 'text-accent' : 'text-error'}`}
-                >
-                  {formatCurrency(netWorthUsd, 'USD')}
-                </p>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       </div>

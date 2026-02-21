@@ -8,16 +8,11 @@
 import Decimal from 'decimal.js';
 import type { ForecastDataPoint, AccountWithHistory, MonthlyHistoricalData } from './types';
 
-// Exchange rate constant (IDR per USD)
-// @TODO: Wire with backend - fetch real exchange rates from database
-// @TODO: Mock data - Consider using environment variable or config for testing with different exchange rates
-const IDR_PER_USD = 15000;
-
 /**
  * Calculate forecast data points for wealth trajectory
  *
- * @param currentTotal - Current total account value in IDR
- * @param monthlyTopup - Monthly contribution amount in IDR
+ * @param currentTotal - Current total account value in the active currency
+ * @param monthlyTopup - Monthly contribution amount in the active currency
  * @param annualRate - Annual percentage yield (e.g., 7 for 7%)
  * @param years - Number of years to forecast
  * @returns Array of forecast data points
@@ -71,7 +66,7 @@ export function calculateForecast(
  * Aggregate account history by month
  *
  * Consolidates multiple accounts' historical data into monthly totals.
- * Converts all amounts to IDR for aggregation.
+ * Assumes all accounts are already scoped to the same currency.
  *
  * @param accounts - Array of accounts with their history
  * @returns Monthly aggregated historical data
@@ -84,16 +79,13 @@ export function aggregateAccountHistory(accounts: AccountWithHistory[]): Monthly
       const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-      // Convert to IDR if needed
-      const amountInIdr = convertCurrency(point.amount, account.currency, 'IDR');
-
       if (!monthlyTotals[key]) {
         monthlyTotals[key] = { balance: 0, interest: 0 };
       }
 
       // Accumulate balance from all accounts for this month
       // Interest calculation from historical data is complex, so we set it to 0
-      monthlyTotals[key].balance += amountInIdr;
+      monthlyTotals[key].balance += point.amount;
       monthlyTotals[key].interest = 0;
     });
   });
@@ -151,42 +143,13 @@ export function calculateGrowthMultiple(finalBalance: number, initialBalance: nu
 }
 
 /**
- * Convert currency amount
- *
- * @param amount - Amount to convert
- * @param fromCurrency - Source currency
- * @param toCurrency - Target currency
- * @param exchangeRate - Optional custom exchange rate (IDR per USD)
- * @returns Converted amount
- */
-export function convertCurrency(
-  amount: number,
-  fromCurrency: 'IDR' | 'USD',
-  toCurrency: 'IDR' | 'USD',
-  exchangeRate: number = IDR_PER_USD
-): number {
-  if (fromCurrency === toCurrency) return amount;
-
-  if (fromCurrency === 'USD' && toCurrency === 'IDR') {
-    return new Decimal(amount).times(exchangeRate).toNumber();
-  }
-
-  if (fromCurrency === 'IDR' && toCurrency === 'USD') {
-    return new Decimal(amount).dividedBy(exchangeRate).toNumber();
-  }
-
-  return amount;
-}
-
-/**
  * Calculate current total from accounts
  *
  * @param accounts - Array of accounts with balance and currency
- * @returns Total value in IDR
+ * @returns Total value in the scoped currency
  */
 export function calculateCurrentTotal(accounts: AccountWithHistory[]): number {
   return accounts.reduce((sum, account) => {
-    const amountInIdr = convertCurrency(account.balance, account.currency, 'IDR');
-    return new Decimal(sum).plus(amountInIdr).toNumber();
+    return new Decimal(sum).plus(account.balance).toNumber();
   }, 0);
 }

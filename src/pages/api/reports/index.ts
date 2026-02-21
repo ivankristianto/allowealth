@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { reportService, accountService } from '@/services';
+import { reportService, accountService, workspaceMetaService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { createRenderHelper } from '@/lib/api/renderResponse';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { formatMonthYear } from '@/lib/utils/date';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // Import partial components for HTML rendering
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
@@ -23,7 +24,7 @@ import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.a
  * Query params:
  *   - range: 'monthly' | 'yearly' (required)
  *   - period: string (required) - 'YYYY-MM' for monthly, 'YYYY' for yearly
- *   - currency: 'IDR' | 'USD' (optional, defaults to 'IDR')
+ *   - currency: Currency (optional, defaults to 'IDR')
  *   - _render: 'html' | 'json' (optional, defaults to 'json')
  *   - _partial: 'summary' | 'charts' | 'table' | 'members' | 'selector' | 'all' (optional, defaults to 'all')
  *
@@ -44,7 +45,18 @@ export const GET: APIRoute = async (context) => {
     // 2. Extract and validate query parameters
     const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;
     const period = url.searchParams.get('period');
-    const currency = (url.searchParams.get('currency') as 'IDR' | 'USD' | null) || 'IDR';
+    const currencyParam = url.searchParams.get('currency');
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    const currency =
+      currencyParam && isValidCurrency(currencyParam) && allowedCurrencies.includes(currencyParam)
+        ? currencyParam
+        : workspaceCurrencyConfig.primary;
 
     // Validate _partial parameter
     const VALID_PARTIALS = ['summary', 'charts', 'table', 'members', 'selector', 'all'] as const;
@@ -94,8 +106,11 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Validate currency
-    if (currency !== 'IDR' && currency !== 'USD') {
-      const errorMsg = "Invalid currency parameter. Must be 'IDR' or 'USD'.";
+    if (
+      currencyParam &&
+      (!isValidCurrency(currencyParam) || !allowedCurrencies.includes(currencyParam))
+    ) {
+      const errorMsg = 'Invalid currency parameter for this workspace.';
       return render.wantsHtml()
         ? render.error(errorMsg, 400)
         : errorResponse(errorMsg, 400, 'INVALID_CURRENCY');
@@ -114,22 +129,19 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Fetch account totals by class for summary cards
-    let totalAccountsIdr = 0;
-    let totalAccountsUsd = 0;
-    let totalDebtIdr = 0;
-    let totalDebtUsd = 0;
+    let totalAccounts = 0;
+    let totalDebt = 0;
 
     try {
       const classTotals = await accountService.getTotalByClass(auth.workspaceId);
       for (const row of classTotals) {
         const total = parseFloat(row.total || '0');
         if (isNaN(total)) continue;
+        if (row.currency !== currency) continue;
         if (row.account_class === 'debt') {
-          if (row.currency === 'USD') totalDebtUsd += Math.abs(total);
-          else totalDebtIdr += Math.abs(total);
+          totalDebt += Math.abs(total);
         } else {
-          if (row.currency === 'USD') totalAccountsUsd += total;
-          else totalAccountsIdr += total;
+          totalAccounts += total;
         }
       }
     } catch (error) {
@@ -181,10 +193,8 @@ export const GET: APIRoute = async (context) => {
             budgetHealth,
             expenseCategories,
             currency,
-            totalAccountsIdr,
-            totalAccountsUsd,
-            totalDebtIdr,
-            totalDebtUsd,
+            totalAccounts,
+            totalDebt,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);
@@ -196,6 +206,7 @@ export const GET: APIRoute = async (context) => {
           props: {
             expenseByCategory,
             trendData,
+            currency,
             resourceAllocationSubtitle: range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX',
             financialVelocitySubtitle: range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW',
           },

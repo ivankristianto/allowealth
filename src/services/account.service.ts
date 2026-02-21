@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { AccountServiceError, ServiceErrorCode } from './service-errors';
 import type { AccountType, Currency } from '@/lib/types/account';
 import { deriveAccountClass } from '@/lib/types/account';
+import { WorkspaceMetaService } from './workspace-meta.service';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
@@ -45,6 +46,8 @@ export class AccountService {
     return getActiveSchema();
   }
 
+  private workspaceMetaService: WorkspaceMetaService;
+
   private chunkIds(ids: string[], size = 500): string[][] {
     if (ids.length === 0) return [];
 
@@ -60,7 +63,23 @@ export class AccountService {
    * Create a new AccountService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.workspaceMetaService = new WorkspaceMetaService(db);
+  }
+
+  private async assertWorkspaceCurrencyAllowed(workspaceId: string, currency: Currency) {
+    const { primary, secondary } =
+      await this.workspaceMetaService.getWorkspaceCurrencies(workspaceId);
+    const allowedCurrencies = [primary, ...(secondary ? [secondary] : [])];
+
+    if (!allowedCurrencies.includes(currency)) {
+      throw new AccountServiceError(
+        ServiceErrorCode.INVALID_META_VALUE,
+        `Currency '${currency}' is not configured for this workspace. Allowed: ${allowedCurrencies.join(', ')}`,
+        400
+      );
+    }
+  }
 
   /**
    * Create a new account
@@ -70,6 +89,8 @@ export class AccountService {
    * Includes compensating transaction on failure to maintain data integrity.
    */
   async create(input: CreateAccountInput) {
+    await this.assertWorkspaceCurrencyAllowed(input.workspace_id, input.currency);
+
     const id = nanoid();
     const now = new Date();
 
@@ -214,6 +235,8 @@ export class AccountService {
     // Currency lock: prevent changing currency if account has history beyond the initial entry
     // Every account starts with 1 history record (initial balance), so threshold is > 1
     if (input.currency !== undefined && input.currency !== currentAccount.currency) {
+      await this.assertWorkspaceCurrencyAllowed(workspaceId, input.currency);
+
       const historyCount = await (this.db as any)
         .select({ count: sql<number>`count(*)` })
         .from(this.schema.accountHistory)

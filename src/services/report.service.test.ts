@@ -852,8 +852,15 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities';
       const period = '2024-02';
       const range = 'monthly';
+      const currency = 'IDR';
 
-      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+      const result = await service.getCategoryTransactions(
+        userId,
+        categoryId,
+        period,
+        range,
+        currency
+      );
 
       expect(result).toBeDefined();
       expect(result.categoryName).toBeDefined();
@@ -866,8 +873,15 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities';
       const period = '2024-02';
       const range = 'monthly';
+      const currency = 'IDR';
 
-      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+      const result = await service.getCategoryTransactions(
+        userId,
+        categoryId,
+        period,
+        range,
+        currency
+      );
 
       // Should only return transactions for this user
       const otherUserTransactions = result.transactions.filter((tx: any) => tx.id === 'tx-other');
@@ -879,10 +893,11 @@ describe('ReportService', () => {
       const otherUserCategoryId = 'cat-other-user'; // Category belonging to different user
       const period = '2024-02';
       const range = 'monthly';
+      const currency = 'IDR';
 
       // Should throw BudgetServiceError for unauthorized access
       await expect(
-        service.getCategoryTransactions(userId, otherUserCategoryId, period, range)
+        service.getCategoryTransactions(userId, otherUserCategoryId, period, range, currency)
       ).rejects.toThrow('Category not found or access denied');
     });
 
@@ -891,8 +906,15 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities';
       const period = '2024';
       const range = 'yearly';
+      const currency = 'IDR';
 
-      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+      const result = await service.getCategoryTransactions(
+        userId,
+        categoryId,
+        period,
+        range,
+        currency
+      );
 
       expect(result).toBeDefined();
       expect(result.categoryName).toBeDefined();
@@ -903,10 +925,11 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities';
       const invalidPeriod = '2024/02';
       const range = 'monthly';
+      const currency = 'IDR';
 
       // Should throw error (validation errors are wrapped in generic message)
       await expect(
-        service.getCategoryTransactions(userId, categoryId, invalidPeriod, range)
+        service.getCategoryTransactions(userId, categoryId, invalidPeriod, range, currency)
       ).rejects.toThrow('Failed to retrieve category transactions');
     });
 
@@ -915,8 +938,15 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities';
       const period = '2024-02';
       const range = 'monthly';
+      const currency = 'IDR';
 
-      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+      const result = await service.getCategoryTransactions(
+        userId,
+        categoryId,
+        period,
+        range,
+        currency
+      );
 
       // Total should be a decimal string
       expect(typeof result.total).toBe('string');
@@ -927,8 +957,15 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities';
       const period = '2024-02';
       const range = 'monthly';
+      const currency = 'IDR';
 
-      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+      const result = await service.getCategoryTransactions(
+        userId,
+        categoryId,
+        period,
+        range,
+        currency
+      );
 
       // Each transaction should have createdByName as string or undefined
       result.transactions.forEach((tx) => {
@@ -986,8 +1023,15 @@ describe('ReportService', () => {
       const categoryId = 'cat-utilities'; // User's category
       const period = '2024-02';
       const range = 'monthly';
+      const currency = 'IDR';
 
-      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+      const result = await service.getCategoryTransactions(
+        userId,
+        categoryId,
+        period,
+        range,
+        currency
+      );
 
       // Should succeed for owned category
       expect(result.categoryName).toBe('Utilities');

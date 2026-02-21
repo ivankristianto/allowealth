@@ -9,8 +9,7 @@
  *
  * @param {string} type - Account type name (e.g., "Bank Account", "Stock")
  * @param {number} count - Number of accounts in this group
- * @param {number} totalIdr - Total value in IDR (if any accounts in IDR)
- * @param {number} totalUsd - Total value in USD (if any accounts in USD)
+ * @param {Array} totals - Group totals by currency
  * @param {boolean} defaultExpanded - Whether to start expanded
  * @param {string} groupId - Unique ID for this group (used for collapse state)
  * @param {string} className - Additional CSS classes
@@ -19,6 +18,7 @@
 import { ChevronUp, Info } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import type { AccountClass } from '@/lib/types/account';
+import type { Currency } from '@/lib/constants/currency';
 
 // Tooltip descriptions for each account class
 const ACCOUNT_CLASS_DESCRIPTIONS: Record<AccountClass, string> = {
@@ -33,8 +33,7 @@ export interface Props {
   type: string;
   accountClass?: AccountClass;
   count: number;
-  totalIdr?: number;
-  totalUsd?: number;
+  totals?: Array<{ currency: Currency; amount: number }>;
   defaultExpanded?: boolean;
   groupId: string;
   isDebt?: boolean;
@@ -45,8 +44,7 @@ const {
   type,
   accountClass,
   count,
-  totalIdr = 0,
-  totalUsd = 0,
+  totals = [],
   defaultExpanded = true,
   groupId,
   isDebt = false,
@@ -59,11 +57,7 @@ const classDescription = accountClass ? ACCOUNT_CLASS_DESCRIPTIONS[accountClass]
 // Display title: append "Accounts" when we have an account class
 const displayTitle = accountClass ? `${type} Accounts` : type;
 
-// Debt groups show negative values in error color
-const displayIdr = isDebt ? -totalIdr : totalIdr;
-const displayUsd = isDebt ? -totalUsd : totalUsd;
-const idrColorClass = isDebt ? 'text-error' : 'text-success';
-const usdColorClass = isDebt ? 'text-error' : 'text-info';
+const visibleTotals = totals.filter((row) => row.amount > 0);
 
 // Generate subtitle based on type
 const subtitle = classDescription || `Managing your ${type.toLowerCase()} holdings`;
@@ -120,24 +114,17 @@ const cardClasses = [
       {/* Totals - hidden on mobile */}
       <div class="text-right hidden sm:block">
         {
-          totalIdr > 0 && (
-            <p class:list={['text-sm font-bold leading-none', idrColorClass]}>
-              {formatCurrency(displayIdr, 'IDR')}
-            </p>
-          )
-        }
-        {
-          totalUsd > 0 && (
+          visibleTotals.map((row, index) => (
             <p
               class:list={[
                 'text-sm font-bold leading-none',
-                usdColorClass,
-                totalIdr > 0 && 'mt-1.5',
+                isDebt ? 'text-error' : index === 0 ? 'text-success' : 'text-info',
+                index > 0 && 'mt-1.5',
               ]}
             >
-              {formatCurrency(displayUsd, 'USD')}
+              {formatCurrency(isDebt ? -row.amount : row.amount, row.currency)}
             </p>
-          )
+          ))
         }
       </div>
 

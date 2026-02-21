@@ -37,6 +37,7 @@ import {
 } from './TransactionsRenderer.client';
 import { FILTERS_RESET_EVENT } from '@/lib/constants/events';
 import type { TransactionFormData } from '@/lib/types/transaction';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // Debounce timer for search
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -93,7 +94,7 @@ interface SSRData {
   };
   categories: import('@/lib/stores/transactionsDataStore').Category[];
   availableMonths: import('@/lib/stores/transactionsDataStore').AvailableMonth[];
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   currentMonth: string;
 }
 
@@ -113,7 +114,8 @@ function isValidSSRData(data: unknown): data is SSRData {
     typeof d.filters === 'object' &&
     Array.isArray(d.categories) &&
     Array.isArray(d.availableMonths) &&
-    (d.currency === 'IDR' || d.currency === 'USD')
+    typeof d.currency === 'string' &&
+    isValidCurrency(d.currency)
   );
 }
 

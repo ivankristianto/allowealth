@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { budgetService } from '@/services';
+import { budgetService, workspaceMetaService } from '@/services';
 import { errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
  * GET /api/budget/export
@@ -15,13 +16,23 @@ export const GET: APIRoute = async (context) => {
 
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');
-    const currency = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
+    const currency = url.searchParams.get('currency') as Currency | null;
 
     // Default to current month if not specified
     const now = new Date();
     const year = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
     const month = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
-    const selectedCurrency = currency || 'IDR';
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    const selectedCurrency =
+      currency && isValidCurrency(currency) && allowedCurrencies.includes(currency)
+        ? currency
+        : workspaceCurrencyConfig.primary;
 
     // Validate inputs
     if (isNaN(year) || year < 2000 || year > 2100) {
@@ -32,7 +43,7 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Invalid month parameter', 400);
     }
 
-    if (selectedCurrency !== 'IDR' && selectedCurrency !== 'USD') {
+    if (currency && (!isValidCurrency(currency) || !allowedCurrencies.includes(currency))) {
       return errorResponse('Invalid currency parameter', 400);
     }
 

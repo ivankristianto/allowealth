@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { budgetService } from '@/services';
+import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
 import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
 import { getMonthName } from '@/lib/utils/date';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // Import partial components for HTML rendering
 import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';
@@ -22,7 +23,7 @@ import BudgetTable from '@/components/organisms/BudgetTable.astro';
  * Query params:
  *   - year: number (optional, defaults to current year)
  *   - month: number (optional, defaults to current month)
- *   - currency: 'IDR' | 'USD' (optional, defaults to 'IDR')
+ *   - currency: Currency (optional, defaults to 'IDR')
  *   - _render: 'html' | 'json' (optional, defaults to 'json')
  *   - _partial: 'summary' | 'cards' | 'advice' | 'all' (optional, defaults to 'all')
  * Note: summary responses also include copy-action HTML for action bar sync.
@@ -37,14 +38,24 @@ export const GET: APIRoute = async (context) => {
 
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');
-    const currency = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
+    const currency = url.searchParams.get('currency') as Currency | null;
     const partial = url.searchParams.get('_partial') || 'all';
 
     // Default to current month if not specified
     const now = new Date();
     const year = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
     const month = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
-    const selectedCurrency = currency || 'IDR';
+    const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
+      auth.workspaceId
+    );
+    const allowedCurrencies = [
+      workspaceCurrencyConfig.primary,
+      ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+    ];
+    const selectedCurrency =
+      currency && isValidCurrency(currency) && allowedCurrencies.includes(currency)
+        ? currency
+        : workspaceCurrencyConfig.primary;
 
     // Validate inputs
     if (isNaN(year) || year < 2000 || year > 2100) {
@@ -59,7 +70,7 @@ export const GET: APIRoute = async (context) => {
         : errorResponse('Invalid month parameter', 400);
     }
 
-    if (selectedCurrency !== 'IDR' && selectedCurrency !== 'USD') {
+    if (currency && (!isValidCurrency(currency) || !allowedCurrencies.includes(currency))) {
       return render.wantsHtml()
         ? render.error('Invalid currency parameter', 400)
         : errorResponse('Invalid currency parameter', 400);
@@ -207,7 +218,7 @@ interface AdviceData {
 
 function generateAdviceData(
   alerts: Awaited<ReturnType<typeof budgetService.getAlerts>>,
-  currency: 'IDR' | 'USD'
+  currency: Currency
 ): AdviceData | null {
   if (alerts.length === 0) return null;
 

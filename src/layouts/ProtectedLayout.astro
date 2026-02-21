@@ -32,15 +32,23 @@
 
 import MainLayout from './MainLayout.astro';
 import TransactionDrawer from '@/components/organisms/TransactionDrawer.astro';
-import { categoryService, accountService, userMetaService, transactionService } from '@/services';
+import {
+  categoryService,
+  accountService,
+  userMetaService,
+  transactionService,
+  workspaceMetaService,
+} from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 interface LayoutData {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
   accounts: Array<{ id: string; name: string; type: string; account_class: string }>;
   userSettings: UserSettings;
   categoryUsageCounts: Array<{ category_id: string; count: number }>;
+  workspaceCurrencies: { primary: Currency; secondary: Currency | null };
 }
 
 interface Props {
@@ -57,9 +65,19 @@ const user = Astro.locals.user!;
 // Fetch categories, accounts, and user settings for global transaction drawer
 // Use cache to reduce database round-trips (saves ~400ms per page load)
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
-let accounts: Array<{ id: string; name: string; type: string; account_class: string }> = [];
+let accounts: Array<{
+  id: string;
+  name: string;
+  type: string;
+  account_class: string;
+  currency?: string;
+}> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 let categoryUsageCounts: Array<{ category_id: string; count: number }> = [];
+let workspaceCurrencies: { primary: Currency; secondary: Currency | null } = {
+  primary: 'IDR' as Currency,
+  secondary: null,
+};
 
 // Try to get from cache first (fail-silent: cache errors should never break the page)
 let cached: LayoutData | null = null;
@@ -80,20 +98,23 @@ if (cached) {
   accounts = cached.accounts;
   userSettings = cached.userSettings;
   categoryUsageCounts = cached.categoryUsageCounts;
+  workspaceCurrencies = cached.workspaceCurrencies ?? workspaceCurrencies;
 } else {
   try {
-    [categories, accounts, userSettings, categoryUsageCounts] = await Promise.all([
-      categoryService.findAll(user.workspaceId, { is_active: true }),
-      accountService.findAll(user.workspaceId),
-      userMetaService.getUserSettings(user.id),
-      transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
-    ]);
+    [categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies] =
+      await Promise.all([
+        categoryService.findAll(user.workspaceId, { is_active: true }),
+        accountService.findAll(user.workspaceId),
+        userMetaService.getUserSettings(user.id),
+        transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
+        workspaceMetaService.getWorkspaceCurrencies(user.workspaceId),
+      ]);
     // Cache the results (60 seconds TTL) - fail-silent
     try {
       if (cache && cacheKey) {
         await cache.set<LayoutData>(
           cacheKey,
-          { categories, accounts, userSettings, categoryUsageCounts },
+          { categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies },
           {
             ttl: 60,
             tags: [
@@ -119,9 +140,28 @@ if (cached) {
 
 // Make userSettings available to child pages via Astro.locals (frozen to prevent mutation)
 Astro.locals.userSettings = Object.freeze({ ...userSettings });
+
+// Determine active currency from cookie (for transaction drawer default account selection)
+let activeCurrency: Currency = workspaceCurrencies.primary;
+const currencyCookieValue = Astro.cookies.get('activeCurrency')?.value;
+if (
+  currencyCookieValue &&
+  isValidCurrency(currencyCookieValue) &&
+  (currencyCookieValue === workspaceCurrencies.primary ||
+    currencyCookieValue === workspaceCurrencies.secondary)
+) {
+  activeCurrency = currencyCookieValue;
+}
 ---
 
-<MainLayout title={title} currentPath={currentPath} user={user} subtitle={subtitle}>
+<MainLayout
+  title={title}
+  currentPath={currentPath}
+  user={user}
+  subtitle={subtitle}
+  primaryCurrency={workspaceCurrencies.primary}
+  secondaryCurrency={workspaceCurrencies.secondary}
+>
   <slot name="header" slot="header" />
   <slot />
 </MainLayout>
@@ -136,4 +176,5 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
   categories={categories}
   accounts={accounts}
   categoryUsageCounts={categoryUsageCounts}
+  activeCurrency={activeCurrency}
 />

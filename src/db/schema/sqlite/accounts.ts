@@ -39,7 +39,7 @@ export const accounts = sqliteTable(
     category_id: text('category_id').references(() => accountCategories.id),
     balance: text('balance').notNull(), // Stored as string for decimal precision
     initial_balance: text('initial_balance'), // Original balance at creation, stored as string
-    currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+    currency: text('currency').notNull(),
     credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision
     is_cash_account: integer('is_cash_account', { mode: 'boolean' }).default(false).notNull(), // Flag for cash-type accounts
     status: text('status', { enum: ['active', 'closed'] })

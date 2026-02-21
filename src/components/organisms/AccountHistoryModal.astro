@@ -234,7 +234,7 @@ const { id } = Astro.props;
     id: string;
     name: string;
     type: string;
-    currency: 'IDR' | 'USD';
+    currency: Currency;
     balance: number;
     history?: HistoryPoint[];
   }
@@ -311,7 +311,7 @@ const { id } = Astro.props;
       const SVG_HEIGHT = 300;
 
       // Draw chart
-      const drawChart = (data: HistoryPoint[], currency: 'IDR' | 'USD') => {
+      const drawChart = (data: HistoryPoint[], currency: Currency) => {
         if (!chartSvg || !chartArea || !chartLine || !chartPoints || !xLabels) return;
 
         if (data.length === 0) {

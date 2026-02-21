@@ -30,7 +30,7 @@ interface BudgetRecord {
 export interface Props {
   id: string;
   categories: Array<{ id: string; name: string; type: string }>;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   month: number;
   year: number;
   budgets?: BudgetRecord[];

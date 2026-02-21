@@ -9,7 +9,8 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import { Info, Download } from '@lucide/astro';
-import { categoryService, accountService } from '@/services';
+import { categoryService, accountService, workspaceMetaService } from '@/services';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 const user = Astro.locals.user!;
 const currentPath = '/transactions/export';
@@ -17,13 +18,22 @@ const currentPath = '/transactions/export';
 // Fetch categories and accounts for filters
 const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
 const accounts = await accountService.findAll(user.workspaceId);
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
 
 // Get current filters from query params
 const url = new URL(Astro.url);
 const currentFilters = {
   search: url.searchParams.get('search') || '',
   type: (url.searchParams.get('type') || '') as 'expense' | 'income' | '',
-  currency: (url.searchParams.get('currency') || '') as 'IDR' | 'USD' | '',
+  currency: (() => {
+    const rawCurrency = url.searchParams.get('currency');
+    if (!rawCurrency || !isValidCurrency(rawCurrency)) return '';
+    return workspaceCurrencies.includes(rawCurrency) ? rawCurrency : '';
+  })() as Currency | '',
   category_id: url.searchParams.get('category_id') || '',
   account_id: url.searchParams.get('account_id') || '',
   start_date: url.searchParams.get('start_date') || '',
@@ -73,6 +83,7 @@ const exportUrl = buildExportUrl();
             categories={categories}
             accounts={accounts}
             values={currentFilters}
+            currencyOptions={workspaceCurrencies}
             count={0}
           />
         </div>

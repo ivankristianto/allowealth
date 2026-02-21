@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 
 /**
  * Shared enum definitions using Zod
@@ -6,7 +7,7 @@ import { z } from 'zod';
  */
 
 // Currency enum (shared across Category and Transaction)
-export const currencyEnum = z.enum(['IDR', 'USD']);
+export const currencyEnum = z.enum(AVAILABLE_CURRENCIES);
 export type Currency = z.infer<typeof currencyEnum>;
 
 // Transaction type enum

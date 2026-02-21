@@ -9,14 +9,16 @@
 import Drawer from '../molecules/Drawer.astro';
 import TransactionEntryForm from '../molecules/TransactionEntryForm.astro';
 import { CircleMinus, CirclePlus, Inbox } from '@lucide/astro';
+import type { Currency } from '@/lib/constants/currency';
 
 export interface Props {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
   accounts: Array<{ id: string; name: string; type: string; account_class: string }>;
   categoryUsageCounts?: Array<{ category_id: string; count: number }>;
+  activeCurrency?: Currency;
 }
 
-const { categories, accounts, categoryUsageCounts = [] } = Astro.props;
+const { categories, accounts, categoryUsageCounts = [], activeCurrency } = Astro.props;
 ---
 
 <Drawer id="transaction-drawer" title="Add Transaction" width="w-full sm:max-w-md">
@@ -70,6 +72,7 @@ const { categories, accounts, categoryUsageCounts = [] } = Astro.props;
       categories={categories}
       accounts={accounts}
       categoryUsageCounts={categoryUsageCounts}
+      activeCurrency={activeCurrency}
       bulk={true}
       formId="drawer-form-expense"
     />
@@ -90,6 +93,7 @@ const { categories, accounts, categoryUsageCounts = [] } = Astro.props;
       categories={categories}
       accounts={accounts}
       categoryUsageCounts={categoryUsageCounts}
+      activeCurrency={activeCurrency}
       bulk={true}
       formId="drawer-form-income"
     />

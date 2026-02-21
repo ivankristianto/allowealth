@@ -17,6 +17,9 @@ import {
   convertIdrToUsd,
   calculateDebtTotals,
   groupAccountsByClass,
+  calculateAccountTotalsByCurrency,
+  calculateDebtTotalsByCurrency,
+  calculateGroupTotalsByCurrency,
 } from './account';
 import type { AccountOutput } from '@/lib/types/account';
 
@@ -130,6 +133,22 @@ describe('Account Utils - calculateAccountAllocation', () => {
     expect(allocation[1].percentage).toBe(50);
   });
 
+  it('should scope allocation to a single currency when filter is provided', () => {
+    const accounts: AccountOutput[] = [
+      createMockAccount({ type: 'stock', balance: '3000000', currency: 'IDR' }),
+      createMockAccount({ type: 'bank_account', balance: '1000000', currency: 'IDR' }),
+      createMockAccount({ type: 'other', balance: '500', currency: 'USD' }),
+    ];
+
+    const allocation = calculateAccountAllocation(accounts, 'IDR');
+
+    expect(allocation).toHaveLength(2);
+    expect(allocation[0].type).toBe('Stock');
+    expect(allocation[0].percentage).toBe(75);
+    expect(allocation[1].type).toBe('Bank Account');
+    expect(allocation[1].percentage).toBe(25);
+  });
+
   it('should return empty array for empty input', () => {
     const allocation = calculateAccountAllocation([]);
     expect(allocation).toHaveLength(0);
@@ -237,6 +256,59 @@ describe('Account Utils - calculateGroupTotals', () => {
     const totals = calculateGroupTotals(accounts);
 
     expect(totals.idr).toBe(1000);
+  });
+});
+
+describe('Account Utils - calculateAccountTotalsByCurrency', () => {
+  it('should calculate non-debt totals by currency with preferred ordering', () => {
+    const accounts: AccountOutput[] = [
+      createMockAccount({ balance: '1000000', currency: 'IDR', account_class: 'liquid' }),
+      createMockAccount({ balance: '200', currency: 'USD', account_class: 'liquid' }),
+      createMockAccount({ balance: '-500', currency: 'USD', account_class: 'debt' }),
+      createMockAccount({ balance: '300', currency: 'SGD', account_class: 'non_liquid' }),
+    ];
+
+    const totals = calculateAccountTotalsByCurrency(accounts, ['USD', 'IDR', 'SGD']);
+
+    expect(totals).toEqual([
+      { currency: 'USD', amount: 200 },
+      { currency: 'IDR', amount: 1000000 },
+      { currency: 'SGD', amount: 300 },
+    ]);
+  });
+});
+
+describe('Account Utils - calculateDebtTotalsByCurrency', () => {
+  it('should calculate absolute debt totals by currency', () => {
+    const accounts: AccountOutput[] = [
+      createMockAccount({ balance: '-1000000', currency: 'IDR', account_class: 'debt' }),
+      createMockAccount({ balance: '-200', currency: 'USD', account_class: 'debt' }),
+      createMockAccount({ balance: '300', currency: 'USD', account_class: 'liquid' }),
+    ];
+
+    const totals = calculateDebtTotalsByCurrency(accounts, ['IDR', 'USD']);
+
+    expect(totals).toEqual([
+      { currency: 'IDR', amount: 1000000 },
+      { currency: 'USD', amount: 200 },
+    ]);
+  });
+});
+
+describe('Account Utils - calculateGroupTotalsByCurrency', () => {
+  it('should calculate group totals by currency and normalize debt values', () => {
+    const accounts: AccountOutput[] = [
+      createMockAccount({ balance: '1000000', currency: 'IDR', account_class: 'liquid' }),
+      createMockAccount({ balance: '-200', currency: 'USD', account_class: 'debt' }),
+      createMockAccount({ balance: '50', currency: 'USD', account_class: 'liquid' }),
+    ];
+
+    const totals = calculateGroupTotalsByCurrency(accounts, ['IDR', 'USD']);
+
+    expect(totals).toEqual([
+      { currency: 'IDR', amount: 1000000 },
+      { currency: 'USD', amount: 250 },
+    ]);
   });
 });
 

@@ -36,7 +36,7 @@ export interface BudgetFetchOptions {
   /** Which partial(s) to render when using HTML */
   partial?: 'summary' | 'cards' | 'advice' | 'all';
   /** Currency code */
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }
 
 // Track active request for cancellation
@@ -192,7 +192,7 @@ export async function fetchBudgetOverviewHtml(
 export async function fetchBudgetOverviewJson(
   year: number,
   month: number,
-  currency: 'IDR' | 'USD' = 'IDR'
+  currency: Currency = 'IDR'
 ): Promise<BudgetSummary> {
   // Cancel any pending request
   cancelPendingRequest();

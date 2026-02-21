@@ -126,6 +126,49 @@ describe('TransactionService', () => {
 
       await expect(transactionService.create(input)).rejects.toThrow('Category is inactive');
     });
+
+    it('should throw error when transaction currency does not match source account currency', async () => {
+      const input = {
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
+        type: 'expense' as const,
+        amount: '50000',
+        currency: 'USD' as const,
+        category_id: 'cat-1',
+        account_id: 'account-1',
+        transaction_date: new Date('2026-01-05'),
+      };
+
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
+      (mockDb.query.accounts.findFirst as any).mockResolvedValue(
+        createMockAccount({ currency: 'IDR' })
+      );
+
+      await expect(transactionService.create(input)).rejects.toThrow(
+        'Transaction currency must match source account currency'
+      );
+    });
+
+    it('should throw error when transfer accounts use different currencies', async () => {
+      const input = {
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
+        type: 'transfer' as const,
+        amount: '50000',
+        currency: 'IDR' as const,
+        account_id: 'account-1',
+        to_account_id: 'account-2',
+        transaction_date: new Date('2026-01-05'),
+      };
+
+      (mockDb.query.accounts.findFirst as any)
+        .mockResolvedValueOnce(createMockAccount({ id: 'account-1', currency: 'IDR' }))
+        .mockResolvedValueOnce(createMockAccount({ id: 'account-2', currency: 'USD' }));
+
+      await expect(transactionService.create(input)).rejects.toThrow(
+        'Transfer accounts must use the same currency'
+      );
+    });
   });
 
   describe('findById', () => {
@@ -401,6 +444,39 @@ describe('TransactionService', () => {
 
       expect(result?.amount).toBe('100000');
       expect(result?.description).toBe('Big lunch');
+    });
+
+    it('should reject update when currency does not match source account', async () => {
+      const existing = createMockTransactionWithRelations({}, mockCategory, mockAccount);
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(existing);
+
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          currency: 'USD',
+        })
+      ).rejects.toThrow('Transaction currency must match source account currency');
+    });
+
+    it('should reject transfer update when destination account currency differs', async () => {
+      const existing = {
+        ...createMockTransactionWithRelations(
+          { type: 'transfer', to_account_id: 'account-2' },
+          mockCategory,
+          createMockAccount({ id: 'account-1', currency: 'IDR' })
+        ),
+        toAccount: createMockAccount({ id: 'account-2', currency: 'IDR' }),
+      } as any;
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(existing);
+      (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(
+        createMockAccount({ id: 'account-3', currency: 'USD' })
+      );
+
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          type: 'transfer',
+          to_account_id: 'account-3',
+        })
+      ).rejects.toThrow('Transfer accounts must use the same currency');
     });
   });
 

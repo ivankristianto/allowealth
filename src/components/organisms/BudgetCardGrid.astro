@@ -33,7 +33,7 @@ export interface BudgetData {
 
 export interface Props {
   budgets: BudgetData[];
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   /** Selected month (1-12) for transaction link context */
   month?: number;
   /** Selected year for transaction link context */

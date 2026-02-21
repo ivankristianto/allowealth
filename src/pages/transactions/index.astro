@@ -19,7 +19,12 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 import { tokenClasses } from '@/lib/tokens';
 import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
-import { transactionService, categoryService, accountService } from '@/services';
+import {
+  transactionService,
+  categoryService,
+  workspaceMetaService,
+  accountService,
+} from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
@@ -31,6 +36,7 @@ import {
 } from '@/lib/utils';
 import { trackPhase, trackPhaseSync } from '@/lib/perf';
 import { PAGINATION } from '@/lib/constants/pagination';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 const user = Astro.locals.user!;
 const perf = Astro.locals.perf;
@@ -38,9 +44,11 @@ const perf = Astro.locals.perf;
 perf?.recordMilestone('middleware.elapsed');
 const currentPath = '/transactions';
 
-// TODO: Get workspace currency from workspace settings
-// For now, use IDR as default since currency is now workspace-scoped
-const userCurrency = 'IDR';
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
 
 // Get query parameters for filtering
 const url = new URL(Astro.url);
@@ -59,6 +67,13 @@ const categoryIds = categoryIdsParam ? categoryIdsParam.split(',').filter(Boolea
 const searchValue = searchParams.search || '';
 const selectedMonth = searchParams.month || '';
 const userId = searchParams.user_id || '';
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
+const selectedCurrency =
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
+    : workspaceCurrencyConfig.primary;
 const accountIdsParam = searchParams.account_ids || '';
 const accountIds = accountIdsParam ? accountIdsParam.split(',').filter(Boolean) : [];
 
@@ -78,7 +93,7 @@ const filters = {
   account_id: searchParams.account_id,
   account_ids: accountIds.length > 0 ? accountIds : undefined,
   created_by_user_id: userId || undefined,
-  currency: searchParams.currency as 'IDR' | 'USD' | undefined,
+  currency: selectedCurrency,
   start_date: monthDateRange?.start,
   end_date: monthDateRange?.end,
   search: searchValue || undefined,
@@ -132,6 +147,7 @@ const allUserTransactions = await transactionService.findAll(
   {
     workspace_id: user.workspaceId,
     created_by_user_id: userId || undefined,
+    currency: selectedCurrency,
     limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
   },
   perf
@@ -268,7 +284,7 @@ const ssrData = trackPhaseSync('buildSsrData', perf, () => ({
   currentMonth: currentMonthKey,
   categories: categories.map((c) => ({ id: c.id, name: c.name, type: c.type })),
   availableMonths: availableMonthsWithLabels,
-  currency: userCurrency,
+  currency: selectedCurrency,
 }));
 
 // Milestone: end of frontmatter = middleware + data work done
@@ -301,7 +317,7 @@ perf?.recordMilestone('preRender.elapsed');
       monthlyExpenses={monthlyExpenses}
       transactionCount={expenseCount}
       periodLabel={formatMonthKey(effectiveMonth)}
-      currency={userCurrency}
+      currency={selectedCurrency}
     />
 
     <!-- Summary Cards Skeleton (shown during client-side loading) -->

@@ -42,7 +42,7 @@ export default meta;
 interface AccountItem {
   id: string;
   name: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   balance: number;
   lastUpdated: string;
 }

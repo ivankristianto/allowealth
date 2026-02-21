@@ -15,7 +15,7 @@ CreateAccountRequest:
           pattern: '^\d+(\.\d{1,2})?$'
         currency:
           type: string
-          enum: [IDR, USD]
+          enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     - type: object
       required: [name, type, balance, currency]
       properties:
@@ -32,4 +32,4 @@ CreateAccountRequest:
           pattern: '^\d+(\.\d{1,2})?$'
         currency:
           type: string
-          enum: [IDR, USD]
+          enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]

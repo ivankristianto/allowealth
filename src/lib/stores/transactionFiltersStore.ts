@@ -11,6 +11,7 @@
  */
 
 import { map } from 'nanostores';
+import type { Currency } from '@/lib/constants/currency';
 
 export type TransactionTypeFilter = 'income' | 'expense' | 'transfer';
 
@@ -22,7 +23,7 @@ export interface TransactionFilters {
   category_ids: string[]; // Support multiple categories
   account_id: string;
   account_ids: string[]; // Support multiple accounts
-  currency: 'IDR' | 'USD' | '';
+  currency: Currency | '';
   start_date: string;
   end_date: string;
   page: number;

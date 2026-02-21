@@ -55,7 +55,7 @@ export interface FetchOptions {
   /** Which partial(s) to render when using HTML: 'list', 'summary', 'pagination', or 'all' */
   partial?: 'list' | 'summary' | 'pagination' | 'all';
   /** Currency for HTML rendering */
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
 }
 
 // Track active request for cancellation

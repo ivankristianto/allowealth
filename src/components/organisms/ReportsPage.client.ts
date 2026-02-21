@@ -19,11 +19,13 @@ import {
   announceToScreenReader,
 } from './ReportsRenderer.client';
 import { addToast } from '@/lib/stores/toastStore';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 // Current report state
 interface ReportState {
   range: 'monthly' | 'yearly';
   period: string;
+  currency: Currency;
 }
 
 // Track if listeners are already attached to prevent duplicates
@@ -49,6 +51,7 @@ function getDefaultPeriod(range: 'monthly' | 'yearly'): string {
 let currentState: ReportState = {
   range: 'monthly',
   period: getDefaultPeriod('monthly'),
+  currency: 'IDR',
 };
 
 function resolvePeriodLabel(range: 'monthly' | 'yearly', period: string): string {
@@ -70,12 +73,22 @@ function syncHeaderSubtitle(): void {
 }
 
 /**
+ * Read active currency from cookie
+ */
+function getActiveCurrencyFromCookie(): Currency | null {
+  const match = document.cookie.match(/(?:^|;\s*)activeCurrency=([^;]*)/);
+  const value = match?.[1];
+  return value && isValidCurrency(value) ? value : null;
+}
+
+/**
  * Update URL query params without page reload
  */
 function updateUrl(range: 'monthly' | 'yearly', period: string): void {
   const url = new URL(window.location.href);
   url.searchParams.set('range', range);
   url.searchParams.set('period', period);
+  url.searchParams.delete('currency');
   window.history.replaceState({}, '', url.toString());
 }
 
@@ -105,13 +118,15 @@ function readStateFromUrl(): Partial<ReportState> {
  */
 async function fetchReportHtml(
   range: 'monthly' | 'yearly',
-  period: string
+  period: string,
+  currency: Currency
 ): Promise<{ summary?: string; charts?: string; table?: string; members?: string }> {
   const params = new URLSearchParams();
   params.set('_render', 'html');
   params.set('_partial', 'all');
   params.set('range', range);
   params.set('period', period);
+  params.set('currency', currency);
 
   const response = await fetch(`/api/reports?${params.toString()}`);
 
@@ -135,7 +150,11 @@ async function fetchAndRenderReports(): Promise<void> {
 
   try {
     // Fetch HTML fragments
-    const partials = await fetchReportHtml(currentState.range, currentState.period);
+    const partials = await fetchReportHtml(
+      currentState.range,
+      currentState.period,
+      currentState.currency
+    );
 
     // Render partials — each render function clears its own loading state
     // after animation completes. Only call hideLoadingState as fallback
@@ -188,6 +207,7 @@ async function fetchAndRenderSelector(): Promise<void> {
     params.set('_partial', 'selector');
     params.set('range', currentState.range);
     params.set('period', currentState.period);
+    params.set('currency', currentState.currency);
 
     const response = await fetch(`/api/reports?${params.toString()}`);
 
@@ -290,6 +310,7 @@ function handleDrillDownClick(event: MouseEvent): void {
         spent,
         budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
         period: currentState.period, // Use current period
+        currency: currentState.currency,
       },
     });
     document.dispatchEvent(customEvent);
@@ -323,6 +344,19 @@ export function initReportsPage(): void {
 
     if (periodInput && periodInput.value) {
       currentState.period = periodInput.value;
+    }
+  }
+
+  // Read currency from cookie (header-level switcher manages this)
+  const cookieCurrency = getActiveCurrencyFromCookie();
+  if (cookieCurrency) {
+    currentState.currency = cookieCurrency;
+  } else {
+    const containerCurrency = document
+      .querySelector('[data-current-currency]')
+      ?.getAttribute('data-current-currency');
+    if (containerCurrency && isValidCurrency(containerCurrency)) {
+      currentState.currency = containerCurrency;
     }
   }
 

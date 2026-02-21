@@ -20,7 +20,12 @@
 import Button from '../atoms/Button.astro';
 import AmountInput from '../atoms/AmountInput.astro';
 import { CalendarDays } from '@lucide/astro';
-import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
+import {
+  CURRENCY_META,
+  DEFAULT_CURRENCY,
+  isValidCurrency,
+  type Currency,
+} from '@/lib/constants/currency';
 
 export interface Props {
   type: 'expense' | 'income';
@@ -30,18 +35,25 @@ export interface Props {
   values?: {
     title?: string;
     amount?: string;
-    currency?: 'IDR' | 'USD';
+    currency?: Currency;
     category_id?: string;
     account_id?: string;
     transaction_date?: string;
   };
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  accounts: Array<{ id: string; name: string; type: string; account_class: string }>;
+  accounts: Array<{
+    id: string;
+    name: string;
+    type: string;
+    account_class: string;
+    currency?: Currency;
+  }>;
   categoryUsageCounts?: Array<{ category_id: string; count: number }>;
   errors?: Record<string, string>;
   modalId?: string;
   bulk?: boolean;
   formId?: string;
+  activeCurrency?: Currency;
 }
 
 const {
@@ -57,6 +69,7 @@ const {
   modalId = '',
   bulk = false,
   formId: propFormId,
+  activeCurrency,
 } = Astro.props;
 
 const isEditMode = mode === 'edit';
@@ -64,10 +77,19 @@ const isEditMode = mode === 'edit';
 // Filter accounts based on transaction type:
 // - Expense: liquid + credit_card (you can spend from these)
 // - Income: liquid only (income goes to liquid accounts)
-const filteredAccounts =
+const classFiltered =
   type === 'income'
     ? accounts.filter((a) => a.account_class === 'liquid')
     : accounts.filter((a) => a.account_class === 'liquid' || a.type === 'credit_card');
+
+// Sort: active currency accounts first so the default selection matches the header switcher
+const filteredAccounts = activeCurrency
+  ? [...classFiltered].sort((a, b) => {
+      const aMatch = a.currency === activeCurrency ? 0 : 1;
+      const bMatch = b.currency === activeCurrency ? 0 : 1;
+      return aMatch - bMatch;
+    })
+  : classFiltered;
 
 const today = new Date().toISOString().split('T')[0];
 const yesterdayDate = new Date();
@@ -105,11 +127,14 @@ const categoriesJson = JSON.stringify(
   }))
 );
 const accountsJson = JSON.stringify(
-  filteredAccounts.map((a) => ({ id: a.id, name: a.name, type: a.type }))
+  filteredAccounts.map((a) => ({ id: a.id, name: a.name, type: a.type, currency: a.currency }))
 );
 
-// Default currency
-const defaultCurrency = values.currency || DEFAULT_CURRENCY;
+const selectedAccountId = values.account_id || filteredAccounts[0]?.id || '';
+const selectedAccount = filteredAccounts.find((account) => account.id === selectedAccountId);
+const fallbackCurrency =
+  values.currency && isValidCurrency(values.currency) ? values.currency : DEFAULT_CURRENCY;
+const defaultCurrency = selectedAccount?.currency || fallbackCurrency;
 const currencyMeta = CURRENCY_META[defaultCurrency];
 
 // Generate unique form ID
@@ -170,16 +195,15 @@ const defaultDatePick =
         ariaRequired={true}
         data-testid="transaction-amount-input"
       />
-      <!-- Currency badge -->
-      <button
-        type="button"
-        class="absolute top-1/2 -translate-y-1/2 right-3 text-xs font-bold text-neutral/50 cursor-pointer hover:text-neutral transition-colors"
+      <!-- Currency badge (read-only, derived from selected account) -->
+      <span
+        class="absolute top-1/2 -translate-y-1/2 right-3 text-xs font-bold text-neutral/60"
         data-currency-badge
-        aria-label={`Currency: ${defaultCurrency}. Tap to change`}
+        aria-label={`Currency: ${defaultCurrency}`}
       >
         {currencyMeta.symbol}
         {defaultCurrency}
-      </button>
+      </span>
     </div>
     {
       errors.amount && (
@@ -417,9 +441,9 @@ const defaultDatePick =
           aria-required="true"
           data-testid="transaction-account-select"
         >
-          <option value="">Select account...</option>
+          {!selectedAccountId && <option value="">Select account...</option>}
           {filteredAccounts.map((account) => (
-            <option value={account.id} selected={account.id === (values.account_id || '')}>
+            <option value={account.id} selected={account.id === selectedAccountId}>
               {account.name}
             </option>
           ))}
@@ -449,7 +473,7 @@ const defaultDatePick =
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
-  import { CURRENCY_META, AVAILABLE_CURRENCIES, DEFAULT_CURRENCY } from '@/lib/constants/currency';
+  import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
   import type { Currency } from '@/lib/constants/currency';
   import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
   import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
@@ -471,6 +495,10 @@ const defaultDatePick =
     const yesterdayStr = form.dataset.yesterday || '';
 
     const categories = JSON.parse(form.dataset.categoriesJson || '[]');
+    const accounts = JSON.parse(form.dataset.accountsJson || '[]') as Array<{
+      id: string;
+      currency?: Currency;
+    }>;
 
     // === Category chip handlers ===
     const categoryChips = form.querySelectorAll<HTMLButtonElement>('[data-category-chip]');
@@ -493,7 +521,6 @@ const defaultDatePick =
         categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
       }
       validateField('category_id', categoryId);
-      updateCurrencyForCategory();
       ensureCategoryVisible(categoryId);
     }
 
@@ -611,20 +638,37 @@ const defaultDatePick =
       });
     }
 
-    // === Currency badge toggle ===
-    const currencyBadge = form.querySelector('[data-currency-badge]') as HTMLButtonElement | null;
+    // === Currency derived from selected account ===
+    const currencyBadge = form.querySelector('[data-currency-badge]') as HTMLElement | null;
     const currencyInput = form.querySelector('input[name="currency"]') as HTMLInputElement | null;
 
-    if (currencyBadge && currencyInput) {
-      currencyBadge.addEventListener('click', () => {
-        const currentIdx = AVAILABLE_CURRENCIES.indexOf(currencyInput.value as Currency);
-        const nextIdx = (currentIdx + 1) % AVAILABLE_CURRENCIES.length;
-        const nextCurrency = AVAILABLE_CURRENCIES[nextIdx] as Currency;
-        currencyInput.value = nextCurrency;
-        const meta = CURRENCY_META[nextCurrency];
-        currencyBadge.textContent = `${meta.symbol} ${nextCurrency}`;
-        currencyBadge.setAttribute('aria-label', `Currency: ${nextCurrency}. Tap to change`);
-      });
+    function applyCurrency(currency: Currency) {
+      if (currencyInput) {
+        currencyInput.value = currency;
+      }
+
+      if (currencyBadge) {
+        const meta = CURRENCY_META[currency];
+        currencyBadge.textContent = `${meta.symbol} ${currency}`;
+        currencyBadge.setAttribute('aria-label', `Currency: ${currency}`);
+      }
+
+      amountFormatter?.updateCurrency(currency);
+    }
+
+    function syncCurrencyFromSelectedAccount() {
+      if (!currencyInput) return;
+
+      const accountSelect = form.querySelector(
+        'select[name="account_id"]'
+      ) as HTMLSelectElement | null;
+      const accountId =
+        accountSelect?.value ||
+        (form.querySelector('input[name="account_id"]') as HTMLInputElement | null)?.value ||
+        '';
+      const selectedAccount = accounts.find((account) => account.id === accountId);
+      const currency = (selectedAccount?.currency || DEFAULT_CURRENCY) as Currency;
+      applyCurrency(currency);
     }
 
     // === Validation ===
@@ -801,29 +845,6 @@ const defaultDatePick =
       fieldContainer.appendChild(errorDiv);
     }
 
-    // Update currency based on category selection
-    function updateCurrencyForCategory() {
-      if (!categorySelect || !currencyInput) return;
-
-      const selectedCategoryId = categorySelect.value;
-      const selectedCategory = categories.find(
-        (c: { id: string; currency?: string }) => c.id === selectedCategoryId
-      );
-
-      if (selectedCategory && selectedCategory.currency) {
-        currencyInput.value = selectedCategory.currency;
-        // Update badge text
-        if (currencyBadge) {
-          const meta = CURRENCY_META[selectedCategory.currency as Currency];
-          if (meta) {
-            currencyBadge.textContent = `${meta.symbol} ${selectedCategory.currency}`;
-          }
-        }
-        // Sync amount formatter locale with new currency
-        amountFormatter?.updateCurrency(selectedCategory.currency as Currency);
-      }
-    }
-
     // Attach validation listeners
     function attachValidationListeners() {
       const titleInput = form.querySelector('input[name="title"]');
@@ -843,6 +864,7 @@ const defaultDatePick =
       const accountSelect = form.querySelector('select[name="account_id"]');
       accountSelect?.addEventListener('change', (e: Event) => {
         validateField('account_id', (e.target as HTMLSelectElement).value);
+        syncCurrencyFromSelectedAccount();
       });
     }
 
@@ -1039,8 +1061,7 @@ const defaultDatePick =
         fieldErrors[k] = null;
       });
       clearFieldErrors();
-      // Sync currency in case the auto-restored single category has a non-default currency.
-      updateCurrencyForCategory();
+      syncCurrencyFromSelectedAccount();
       updateSubmitButton();
     });
 
@@ -1052,19 +1073,10 @@ const defaultDatePick =
       amountFormatter = attachAmountFormatter(amountInputEl, initialCurrency);
     }
 
-    // Update formatter currency when currency badge is clicked.
-    // This listener runs AFTER the badge click handler (in initCurrencyToggle)
-    // which updates currencyInput.value, so we read the new value here.
-    if (currencyBadge && amountFormatter) {
-      currencyBadge.addEventListener('click', () => {
-        const newCurrency = (currencyInput?.value || DEFAULT_CURRENCY) as Currency;
-        amountFormatter!.updateCurrency(newCurrency);
-      });
-    }
+    syncCurrencyFromSelectedAccount();
 
     // Auto-select single category on first load (no choice needed, improves UX for fresh installs).
-    // Must run AFTER amountFormatter is initialized: setActiveChip → updateCurrencyForCategory
-    // → amountFormatter?.updateCurrency(), so amountFormatter must exist to avoid TDZ crash.
+    // Must run AFTER amountFormatter is initialized so account-driven currency sync can update locale.
     if (categories.length === 1 && categorySelect && !categorySelect.value) {
       setActiveChip(categories[0].id);
     }

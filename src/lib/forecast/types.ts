@@ -27,7 +27,7 @@ export interface ForecastDataPoint {
  * User inputs for forecast calculation
  */
 export interface ForecastInput {
-  /** Monthly contribution amount in IDR */
+  /** Monthly contribution amount in the active workspace currency */
   monthlyTopup: number;
   /** Annual percentage yield (e.g., 7 for 7%) */
   annualRate: number;
@@ -73,7 +73,7 @@ export interface AccountWithHistory {
   /** Account balance */
   balance: number;
   /** Account currency */
-  currency: 'IDR' | 'USD';
+  currency: Currency;
   /** Historical balance records */
   history?: HistoricalDataPoint[];
 }

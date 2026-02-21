@@ -230,7 +230,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
             showCalculatedHint && (
               <div class="mt-1 flex items-center gap-1.5 justify-end">
                 <span class="text-xs text-base-content/60">
-                  Calculated: {formatCurrency(calcBalanceNum, account.currency as 'IDR' | 'USD')}
+                  Calculated: {formatCurrency(calcBalanceNum, account.currency as Currency)}
                 </span>
                 <div
                   class="tooltip tooltip-left"
@@ -458,6 +458,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
 
 <script>
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   let periodChangeController: AbortController | null = null;
 
@@ -509,9 +510,9 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
         const btn = button as HTMLElement;
         const accountId = btn.getAttribute('data-update-value-account');
         const accountName = btn.getAttribute('data-account-name') || 'Account';
-        const accountCurrency = (btn.getAttribute('data-account-currency') || 'IDR') as
-          | 'IDR'
-          | 'USD';
+        const rawAccountCurrency = btn.getAttribute('data-account-currency');
+        const accountCurrency: Currency =
+          rawAccountCurrency && isValidCurrency(rawAccountCurrency) ? rawAccountCurrency : 'IDR';
         const accountBalance = Number(btn.getAttribute('data-account-balance') || '0');
 
         if (!accountId) return;

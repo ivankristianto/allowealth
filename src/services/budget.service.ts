@@ -32,6 +32,8 @@ import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { createCrudService } from './base/crud.factory';
+import { WorkspaceMetaService } from './workspace-meta.service';
+import type { Currency } from '@/lib/constants/currency';
 
 export interface BudgetOverview {
   budget_id: string;
@@ -79,6 +81,7 @@ export class BudgetService {
   }
 
   private crud: ReturnType<typeof createCrudService<any, any, any>>;
+  private workspaceMetaService: WorkspaceMetaService;
 
   /**
    * Create a new BudgetService with database injection
@@ -91,6 +94,21 @@ export class BudgetService {
       getId: () => getActiveSchema().budgets.id,
       getWorkspaceId: () => getActiveSchema().budgets.workspace_id,
     });
+    this.workspaceMetaService = new WorkspaceMetaService(db);
+  }
+
+  private async assertWorkspaceCurrencyAllowed(workspaceId: string, currency: Currency) {
+    const { primary, secondary } =
+      await this.workspaceMetaService.getWorkspaceCurrencies(workspaceId);
+    const allowedCurrencies = [primary, ...(secondary ? [secondary] : [])];
+
+    if (!allowedCurrencies.includes(currency)) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.INVALID_META_VALUE,
+        `Currency '${currency}' is not configured for this workspace. Allowed: ${allowedCurrencies.join(', ')}`,
+        400
+      );
+    }
   }
 
   /**
@@ -102,7 +120,7 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     perf?: PerfCollector
   ): Promise<BudgetSummary> {
     // Validate inputs first
@@ -136,7 +154,7 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD'
+    currency: Currency
   ): Promise<BudgetSummary> {
     // Get start and end of month
     const startDate = new Date(year, month - 1, 1);
@@ -255,7 +273,7 @@ export class BudgetService {
    */
   async getBudgetHistory(
     workspaceId: string,
-    currency: 'IDR' | 'USD',
+    currency: Currency,
     months: number = 12,
     perf?: PerfCollector
   ): Promise<MonthlyBudgetHistory[]> {
@@ -304,7 +322,7 @@ export class BudgetService {
   /**
    * Get budget alerts for current month
    */
-  async getAlerts(workspaceId: string, currency: 'IDR' | 'USD', perf?: PerfCollector) {
+  async getAlerts(workspaceId: string, currency: Currency, perf?: PerfCollector) {
     const now = new Date();
     const overview = await this.getMonthlyOverview(
       workspaceId,
@@ -338,7 +356,7 @@ export class BudgetService {
    * @param workspaceId - Workspace ID
    * @param currency - Currency to use for budget lookup (required since categories no longer have currency)
    */
-  async getCategoryRemaining(category_id: string, workspaceId: string, currency: 'IDR' | 'USD') {
+  async getCategoryRemaining(category_id: string, workspaceId: string, currency: Currency) {
     const category = await this.db.query.categories.findFirst({
       where: and(
         eq(this.schema.categories.id, category_id),
@@ -410,7 +428,7 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD'
+    currency: Currency
   ): Promise<string> {
     // Query budgets directly to guarantee the id field is present
     const monthBudgets = await this.db.query.budgets.findMany({
@@ -470,7 +488,7 @@ export class BudgetService {
     rows: Array<{ budget_id: string; budget_amount: string }>,
     targetMonth: number,
     targetYear: number,
-    currency: 'IDR' | 'USD'
+    currency: Currency
   ): Promise<{
     updated: number;
     errors: Array<{ row: number; message: string }>;
@@ -597,6 +615,7 @@ export class BudgetService {
    */
   async createBudget(input: CreateBudgetInput): Promise<Budget> {
     const validated = createBudgetSchema.parse(input);
+    await this.assertWorkspaceCurrencyAllowed(validated.workspace_id, validated.currency);
 
     // Check if category exists and belongs to workspace
     const category = await this.db.query.categories.findFirst({
@@ -788,7 +807,7 @@ export class BudgetService {
     workspaceId: string,
     month: number,
     year: number,
-    currency?: 'IDR' | 'USD'
+    currency?: Currency
   ): Promise<BudgetWithCategory[]> {
     const conditions = [
       eq(this.schema.budgets.workspace_id, workspaceId),
@@ -818,7 +837,7 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency?: 'IDR' | 'USD'
+    currency?: Currency
   ): Promise<boolean> {
     // Validate inputs (consistent with other service methods)
     if (!Number.isInteger(year) || year < 2000 || year > 2100) {
@@ -852,6 +871,7 @@ export class BudgetService {
    */
   async initializeAllBudgets(input: InitializeBudgetsInput): Promise<InitializeBudgetsResult> {
     const validated = initializeBudgetsSchema.parse(input);
+    await this.assertWorkspaceCurrencyAllowed(validated.workspace_id, validated.currency);
 
     const result = await runTransaction(this.db, async (tx) => {
       // Get all active expense categories for the workspace

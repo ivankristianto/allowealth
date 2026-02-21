@@ -11,7 +11,6 @@ import {
   aggregateAccountHistory,
   mergeRealAndForecast,
   calculateGrowthMultiple,
-  convertCurrency,
   calculateCurrentTotal,
 } from './calculations';
 import type { AccountWithHistory, MonthlyHistoricalData } from './types';
@@ -102,7 +101,7 @@ describe('aggregateAccountHistory', () => {
     expect(result[0].balance).toBe(1200000); // 800000 + 400000
   });
 
-  test('should convert USD to IDR', () => {
+  test('should keep values in native scoped currency', () => {
     const accounts: AccountWithHistory[] = [
       {
         balance: 100,
@@ -114,7 +113,7 @@ describe('aggregateAccountHistory', () => {
     const result = aggregateAccountHistory(accounts);
 
     expect(result).toHaveLength(1);
-    expect(result[0].balance).toBe(80 * 15000); // 1,200,000 IDR
+    expect(result[0].balance).toBe(80);
   });
 
   test('should handle accounts with no history', () => {
@@ -229,27 +228,6 @@ describe('calculateGrowthMultiple', () => {
   });
 });
 
-describe('convertCurrency', () => {
-  test('should convert USD to IDR', () => {
-    expect(convertCurrency(100, 'USD', 'IDR')).toBe(1500000);
-    expect(convertCurrency(1, 'USD', 'IDR')).toBe(15000);
-  });
-
-  test('should convert IDR to USD', () => {
-    expect(convertCurrency(1500000, 'IDR', 'USD')).toBe(100);
-    expect(convertCurrency(15000, 'IDR', 'USD')).toBe(1);
-  });
-
-  test('should return same amount for same currency', () => {
-    expect(convertCurrency(1000000, 'IDR', 'IDR')).toBe(1000000);
-    expect(convertCurrency(100, 'USD', 'USD')).toBe(100);
-  });
-
-  test('should accept custom exchange rate', () => {
-    expect(convertCurrency(100, 'USD', 'IDR', 16000)).toBe(1600000);
-  });
-});
-
 describe('calculateCurrentTotal', () => {
   test('should calculate total for IDR accounts', () => {
     const accounts: AccountWithHistory[] = [
@@ -260,25 +238,25 @@ describe('calculateCurrentTotal', () => {
     expect(calculateCurrentTotal(accounts)).toBe(1500000);
   });
 
-  test('should calculate total for mixed currencies', () => {
+  test('should calculate total for mixed currencies without conversion', () => {
     const accounts: AccountWithHistory[] = [
       { balance: 1000000, currency: 'IDR' },
       { balance: 100, currency: 'USD' },
     ];
 
-    expect(calculateCurrentTotal(accounts)).toBe(1000000 + 100 * 15000); // 2,500,000
+    expect(calculateCurrentTotal(accounts)).toBe(1000100);
   });
 
   test('should handle empty accounts array', () => {
     expect(calculateCurrentTotal([])).toBe(0);
   });
 
-  test('should handle all USD accounts', () => {
+  test('should handle all USD accounts without conversion', () => {
     const accounts: AccountWithHistory[] = [
       { balance: 100, currency: 'USD' },
       { balance: 50, currency: 'USD' },
     ];
 
-    expect(calculateCurrentTotal(accounts)).toBe((100 + 50) * 15000); // 2,250,000
+    expect(calculateCurrentTotal(accounts)).toBe(150);
   });
 });

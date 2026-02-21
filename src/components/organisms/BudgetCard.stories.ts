@@ -97,7 +97,7 @@ const createBudgetCard = (args: {
   budget?: number;
   percentageUsed?: number;
   status?: 'ok' | 'warning' | 'exceeded';
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
   loading?: boolean;
 }): HTMLElement => {
   const {

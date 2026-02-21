@@ -11,27 +11,25 @@ const compactThresholds = [
   { value: 1_000, suffix: 'K' },
 ] as const;
 
-const numberFormatters: Record<Currency, Intl.NumberFormat> = {
-  IDR: new Intl.NumberFormat(CURRENCY_META.IDR.locale, {
-    minimumFractionDigits: CURRENCY_META.IDR.decimals,
-    maximumFractionDigits: CURRENCY_META.IDR.decimals,
-  }),
-  USD: new Intl.NumberFormat(CURRENCY_META.USD.locale, {
-    minimumFractionDigits: CURRENCY_META.USD.decimals,
-    maximumFractionDigits: CURRENCY_META.USD.decimals,
-  }),
-};
+const numberFormatters = Object.fromEntries(
+  Object.entries(CURRENCY_META).map(([code, meta]) => [
+    code,
+    new Intl.NumberFormat(meta.locale, {
+      minimumFractionDigits: meta.decimals,
+      maximumFractionDigits: meta.decimals,
+    }),
+  ])
+) as Record<Currency, Intl.NumberFormat>;
 
-const smallNumberFormatters: Record<Currency, Intl.NumberFormat> = {
-  IDR: new Intl.NumberFormat(CURRENCY_META.IDR.locale, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }),
-  USD: new Intl.NumberFormat(CURRENCY_META.USD.locale, {
-    minimumFractionDigits: CURRENCY_META.USD.decimals,
-    maximumFractionDigits: CURRENCY_META.USD.decimals,
-  }),
-};
+const smallNumberFormatters = Object.fromEntries(
+  Object.entries(CURRENCY_META).map(([code, meta]) => [
+    code,
+    new Intl.NumberFormat(meta.locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: meta.decimals,
+    }),
+  ])
+) as Record<Currency, Intl.NumberFormat>;
 
 function normalizeCurrency(code?: Currency | string): Currency {
   if (code && isValidCurrency(code)) {
