@@ -254,10 +254,7 @@ async function fetchAndRender(year: number, currencyCode: Currency): Promise<voi
 /**
  * Fetch category trends and render the results
  */
-async function fetchAndRenderTrends(
-  months: 3 | 6 | 12,
-  currencyCode: Currency
-): Promise<void> {
+async function fetchAndRenderTrends(months: 3 | 6 | 12, currencyCode: Currency): Promise<void> {
   setLoading(true);
 
   try {

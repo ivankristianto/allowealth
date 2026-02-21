@@ -168,18 +168,18 @@ This feature adds a "Category Trends" tab to the budget history page (`/budget/h
 
 ## Summary Checklist
 
-| #   | Area            | Key Assertion                                                               | Pass |
-| --- | --------------- | --------------------------------------------------------------------------- | ---- |
-| 1   | Regression      | Monthly Totals view is identical to before (no visual or functional change) | [ ]  |
-| 2   | Tab Switching   | Clicking tabs toggles between Monthly Totals and Category Trends correctly  | [ ]  |
-| 3   | Matrix Layout   | Categories as rows, months as columns, sorted by worst adherence            | [ ]  |
-| 4   | Status Colors   | Green (<80%), Yellow (80-99%), Red (>=100%) dots appear correctly           | [ ]  |
-| 5   | Cell Navigation | Clicking a cell navigates to `/budget?year=YYYY&month=M`                    | [ ]  |
-| 6   | Month Range     | 3/6/12 month selector changes the number of columns and re-fetches data     | [ ]  |
-| 7   | Loading States  | Loading spinner and opacity show during data fetch                          | [ ]  |
-| 8   | Mobile          | Horizontal scroll with sticky category column works on narrow viewports     | [ ]  |
-| 9   | Empty State     | Empty state message shown when no budget data exists                        | [ ]  |
-| 10  | Accessibility   | ARIA attributes, keyboard navigation, screen reader announcements work      | [ ]  |
+| #   | Area            | Key Assertion                                                               | Result  |
+| --- | --------------- | --------------------------------------------------------------------------- | ------- |
+| 1   | Regression      | Monthly Totals view is identical to before (no visual or functional change) | PASS    |
+| 2   | Tab Switching   | Clicking tabs toggles between Monthly Totals and Category Trends correctly  | PASS    |
+| 3   | Matrix Layout   | Categories as rows, months as columns, sorted by worst adherence            | PASS    |
+| 4   | Status Colors   | Green (<80%), Yellow (80-99%), Red (>=100%) dots appear correctly           | PASS    |
+| 5   | Cell Navigation | Clicking a cell navigates to `/budget?year=YYYY&month=M`                    | PASS    |
+| 6   | Month Range     | 3/6/12 month selector changes the number of columns and re-fetches data     | PASS    |
+| 7   | Loading States  | Loading spinner and opacity show during data fetch                          | PARTIAL |
+| 8   | Mobile          | Horizontal scroll with sticky category column works on narrow viewports     | PASS    |
+| 9   | Empty State     | Empty state message shown when no budget data exists                        | PARTIAL |
+| 10  | Accessibility   | ARIA attributes, keyboard navigation, screen reader announcements work      | PASS    |
 
 **Critical paths:** Steps 1 (regression), 2 (tab switching), 4 (status colors), and 6 (month range) are highest priority.
 
