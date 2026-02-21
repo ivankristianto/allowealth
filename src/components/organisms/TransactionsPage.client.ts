@@ -70,6 +70,8 @@ function processFilterChangeEvent(e: CustomEvent): void {
     handleCategoryFilterChange(value);
   } else if (type === 'category_ids') {
     handleCategoryIdsFilterChange(value as string[]);
+  } else if (type === 'account_ids') {
+    handleAccountIdsFilterChange(value as string[]);
   } else if (type === 'month') {
     handleMonthFilterChange(value);
   }
@@ -85,6 +87,7 @@ interface SSRData {
     user_id: string;
     category_id: string;
     category_ids: string[];
+    account_ids: string[];
     month: string;
     page: number;
   };
@@ -186,6 +189,7 @@ async function fetchAndRender(): Promise<void> {
         type: filters.type,
         user_id: filters.user_id || undefined,
         category_ids: filters.category_ids.length > 0 ? filters.category_ids : undefined,
+        account_ids: filters.account_ids.length > 0 ? filters.account_ids : undefined,
         search: filters.search || undefined,
         month: filters.month,
         page: filters.page,
@@ -321,6 +325,16 @@ function handleCategoryFilterChange(categoryId: string): void {
 function handleCategoryIdsFilterChange(categoryIds: string[]): void {
   transactionFiltersStore.setKey('category_ids', categoryIds);
   transactionFiltersStore.setKey('category_id', ''); // Clear single category
+  transactionFiltersStore.setKey('page', 1);
+  updateUrl();
+  fetchAndRender();
+}
+
+/**
+ * Handle account filter changes (multi-select)
+ */
+function handleAccountIdsFilterChange(accountIds: string[]): void {
+  transactionFiltersStore.setKey('account_ids', accountIds);
   transactionFiltersStore.setKey('page', 1);
   updateUrl();
   fetchAndRender();
@@ -517,7 +531,16 @@ function updateUrl(): void {
   const url = new URL(window.location.href);
 
   // Clear all filter params
-  ['type', 'search', 'user_id', 'category_id', 'category_ids', 'month', 'page'].forEach((key) => {
+  [
+    'type',
+    'search',
+    'user_id',
+    'category_id',
+    'category_ids',
+    'account_ids',
+    'month',
+    'page',
+  ].forEach((key) => {
     url.searchParams.delete(key);
   });
 
@@ -528,6 +551,9 @@ function updateUrl(): void {
   if (filters.category_id) url.searchParams.set('category_id', filters.category_id);
   if (filters.category_ids && filters.category_ids.length > 0) {
     url.searchParams.set('category_ids', filters.category_ids.join(','));
+  }
+  if (filters.account_ids && filters.account_ids.length > 0) {
+    url.searchParams.set('account_ids', filters.account_ids.join(','));
   }
   if (filters.month) url.searchParams.set('month', filters.month);
   if (filters.page > 1) url.searchParams.set('page', String(filters.page));
@@ -545,6 +571,8 @@ function handlePopState(): void {
   // Parse category_ids from URL
   const categoryIdsParam = params.category_ids || '';
   const categoryIds = categoryIdsParam ? categoryIdsParam.split(',').filter(Boolean) : [];
+  const accountIdsParam = params.account_ids || '';
+  const accountIds = accountIdsParam ? accountIdsParam.split(',').filter(Boolean) : [];
 
   transactionFiltersStore.set({
     ...transactionFiltersStore.get(),
@@ -553,6 +581,7 @@ function handlePopState(): void {
     user_id: params.user_id || '',
     category_id: params.category_id || '',
     category_ids: categoryIds,
+    account_ids: accountIds,
     month: params.month || '',
     page: parseInt(params.page || '1', 10),
   });
@@ -566,6 +595,20 @@ function handlePopState(): void {
 
   const categoryInput = document.getElementById('category-filter') as HTMLInputElement | null;
   if (categoryInput) categoryInput.value = filters.category_ids.join(',');
+
+  const accountInput = document.getElementById('account-filter') as HTMLInputElement | null;
+  if (accountInput) accountInput.value = filters.account_ids.join(',');
+
+  window.dispatchEvent(
+    new CustomEvent('multiselect:sync', {
+      detail: { id: 'category', selectedIds: filters.category_ids },
+    })
+  );
+  window.dispatchEvent(
+    new CustomEvent('multiselect:sync', {
+      detail: { id: 'account', selectedIds: filters.account_ids },
+    })
+  );
 
   const monthInput = document.getElementById('month-filter') as HTMLInputElement | null;
   if (monthInput && filters.month) monthInput.value = filters.month;
@@ -721,6 +764,7 @@ function setupEventListeners(): void {
         category_id: '',
         category_ids: [],
         account_id: '',
+        account_ids: [],
         currency: '',
         start_date: '',
         end_date: '',

@@ -66,6 +66,11 @@ export const GET: APIRoute = async (context) => {
       filters.account_id = accountId;
     }
 
+    const accountIds = url.searchParams.get('account_ids');
+    if (accountIds) {
+      filters.account_ids = accountIds.split(',').filter(Boolean);
+    }
+
     const currency = url.searchParams.get('currency');
     if (currency && (currency === 'IDR' || currency === 'USD')) {
       filters.currency = currency;
@@ -115,6 +120,7 @@ export const GET: APIRoute = async (context) => {
       const monthTransactions = await transactionService.findAll({
         workspace_id: auth.workspaceId,
         created_by_user_id: filters.created_by_user_id,
+        account_ids: filters.account_ids,
         start_date: filters.start_date,
         end_date: filters.end_date,
         include_deleted: false,

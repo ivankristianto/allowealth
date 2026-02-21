@@ -21,6 +21,7 @@ export interface TransactionFilters {
   category_id: string;
   category_ids: string[]; // Support multiple categories
   account_id: string;
+  account_ids: string[]; // Support multiple accounts
   currency: 'IDR' | 'USD' | '';
   start_date: string;
   end_date: string;
@@ -36,6 +37,7 @@ const initialFilters: TransactionFilters = {
   category_id: '',
   category_ids: [],
   account_id: '',
+  account_ids: [],
   currency: '',
   start_date: '',
   end_date: '',
@@ -55,6 +57,7 @@ export function initFiltersFromSSR(filters: Partial<TransactionFilters>): void {
     ...initialFilters,
     ...filters,
     category_ids: filters.category_ids || [],
+    account_ids: filters.account_ids || [],
   };
   transactionFiltersStore.set(newFilters);
 }
@@ -66,6 +69,7 @@ export function resetFilters(): void {
   const resetState = {
     ...initialFilters,
     category_ids: [] as string[],
+    account_ids: [] as string[],
   };
   transactionFiltersStore.set(resetState);
 }
@@ -83,6 +87,7 @@ export function hasActiveFilters(): boolean {
     filters.category_id !== '' ||
     filters.category_ids.length > 0 ||
     filters.account_id !== '' ||
+    filters.account_ids.length > 0 ||
     filters.currency !== '' ||
     filters.start_date !== '' ||
     filters.end_date !== ''

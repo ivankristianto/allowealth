@@ -106,6 +106,10 @@ function buildQueryString(
     params.set('account_id', filters.account_id);
   }
 
+  if (filters.account_ids && filters.account_ids.length > 0) {
+    params.set('account_ids', filters.account_ids.join(','));
+  }
+
   if (filters.currency) {
     params.set('currency', filters.currency);
   }
