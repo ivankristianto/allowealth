@@ -7,7 +7,7 @@ paths:
 
 # Design System
 
-**Version:** 1.1.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.2.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
 
 ## Visual Debugging with Chrome
 
@@ -51,19 +51,25 @@ import { animate } from 'motion/mini';
 **DaisyUI Semantic Classes (theme-aware):**
 
 ```typescript
-'text-primary'; // Primary brand color (slate-900 light / slate-50 dark)
-'text-accent'; // Accent color (forest-700) - CTAs, interactive elements
-'text-success'; // Success states (emerald-500) - confirmations, IDR
-'text-warning'; // Warning states (amber-500) - budget alerts
-'text-error'; // Error states (rose-500) - over budget, danger
-'text-info'; // Info states (sky-500) - informational
+'text-primary'; // Primary brand color (slate-900 light / slate-200 dark)
+'text-accent'; // Accent color (forest-700 light / green-500 dark)
+'text-success'; // Success states (emerald-500 light / emerald-400 dark)
+'text-warning'; // Warning states (amber-500 light / amber-400 dark)
+'text-error'; // Error states (rose-500 light / red-400 dark)
+'text-info'; // Info states (sky-500 light / sky-400 dark)
 
-'bg-base-100'; // Base background
-'bg-base-200'; // Elevated background (cards, inputs)
-'bg-base-300'; // More elevated (hover states)
-'text-base-content'; // Main text color (auto-adjusts with theme)
-'border-base-300'; // Border color (theme-aware)
+'bg-base-100'; // Base background (white light / gray-900 dark)
+'bg-base-200'; // Elevated background (slate-50 light / slate-800 dark)
+'bg-base-300'; // More elevated (slate-200 light / slate-700 dark)
+'text-base-content'; // Main text color (slate-900 light / slate-300 dark)
+'border-base-300'; // Border color (visible in both themes)
 ```
+
+**Dark mode surface hierarchy (v1.2.0):**
+
+- `base-100` (`#111827`) → `base-200` (`#1e293b`) → `base-300` (`#334155`)
+- Each step is 6-10% luminance apart for visible card elevation and borders
+- Body text `base-content` (`#cbd5e1`) targets ~10:1 contrast (was ~15:1)
 
 **Color Tokens (JavaScript):**
 
