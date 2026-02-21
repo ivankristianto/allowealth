@@ -16,9 +16,10 @@ import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 import { tokenClasses } from '@/lib/tokens';
 import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
-import { transactionService, categoryService } from '@/services';
+import { transactionService, categoryService, accountService } from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
@@ -58,6 +59,8 @@ const categoryIds = categoryIdsParam ? categoryIdsParam.split(',').filter(Boolea
 const searchValue = searchParams.search || '';
 const selectedMonth = searchParams.month || '';
 const userId = searchParams.user_id || '';
+const accountIdsParam = searchParams.account_ids || '';
+const accountIds = accountIdsParam ? accountIdsParam.split(',').filter(Boolean) : [];
 
 // Calculate current month key from today's date (used as default)
 const todayMonthKey = getCurrentMonthKey();
@@ -73,6 +76,7 @@ const filters = {
   category_id: categoryId || undefined,
   category_ids: categoryIds.length > 0 ? categoryIds : undefined,
   account_id: searchParams.account_id,
+  account_ids: accountIds.length > 0 ? accountIds : undefined,
   created_by_user_id: userId || undefined,
   currency: searchParams.currency as 'IDR' | 'USD' | undefined,
   start_date: monthDateRange?.start,
@@ -100,6 +104,28 @@ const total = await transactionService.count(countFilters, perf);
 const categories = await trackPhase('categoryService.findAll', perf, () =>
   categoryService.findAll(user.workspaceId, { is_active: true }, perf)
 );
+const accounts = await trackPhase('accountService.findAll', perf, () =>
+  accountService.findAll(user.workspaceId, undefined, perf)
+);
+
+const ACCOUNT_TYPE_GROUP_LABELS: Record<AccountType, string> = {
+  cash: 'Cash',
+  bank_account: 'Bank Accounts',
+  e_wallet: 'E-Wallets',
+  mutual_fund: 'Mutual Funds',
+  bond: 'Bonds',
+  crypto: 'Crypto',
+  stock: 'Stocks',
+  other: 'Other',
+  credit_card: 'Credit Cards',
+  loan: 'Loans',
+};
+
+const accountOptions = accounts.map((account) => ({
+  id: account.id,
+  name: account.name,
+  type: ACCOUNT_TYPE_GROUP_LABELS[account.type] || ACCOUNT_TYPE_LABELS[account.type],
+}));
 
 // For month selector, fetch all months available (optimized query)
 const allUserTransactions = await transactionService.findAll(
@@ -177,6 +203,9 @@ trackPhaseSync('monthlySummary', perf, () => {
     const txMonthKey = createMonthKey(txDate);
 
     if (txMonthKey === effectiveMonth) {
+      if (accountIds.length > 0 && !accountIds.includes(t.account_id)) {
+        return;
+      }
       const amount = safeParseAmount(t.amount);
       if (t.type === 'income') {
         monthlyIncome += amount;
@@ -194,6 +223,7 @@ const buildBaseUrl = () => {
   params.set('type', typeFilter);
   if (searchValue) params.set('search', searchValue);
   if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
+  if (accountIds.length > 0) params.set('account_ids', accountIds.join(','));
   if (userId) params.set('user_id', userId);
   const queryString = params.toString();
   return queryString ? `/transactions?${queryString}` : '/transactions';
@@ -231,6 +261,7 @@ const ssrData = trackPhaseSync('buildSsrData', perf, () => ({
     user_id: userId,
     category_id: categoryId,
     category_ids: categoryIds,
+    account_ids: accountIds,
     month: effectiveMonth,
     page,
   },
@@ -304,6 +335,9 @@ perf?.recordMilestone('preRender.elapsed');
         categoryIds={categoryIds}
         categories={categories}
         showCategoryFilter={true}
+        accountIds={accountIds}
+        accounts={accountOptions}
+        showAccountFilter={accountOptions.length > 0}
         userId={userId}
         members={memberOptions}
         showMemberFilter={showMemberFilter}
