@@ -271,9 +271,6 @@ const uninitializedCategories = expenseCategories.filter((cat) => !budgetIdsByCa
 // Count budgets with actual limits set
 const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount) > 0).length || 0;
 
-const onboardingStep = url.searchParams.get('onboarding');
-const shouldShowAccountNextStep = onboardingStep === 'budgets';
-
 const copyBudgetAvailability = getCopyBudgetAvailability({
   sourceBudgetCount: budgetCount,
   hasNextMonthBudgets,
@@ -302,26 +299,6 @@ const copyDisabledTooltip =
     data-currency={selectedCurrency}
     data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
   >
-    {
-      shouldShowAccountNextStep && (
-        <div class="alert bg-success/10 border border-success/30 rounded-card">
-          <div class="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 class="text-sm font-semibold text-success">Budgets complete</h3>
-              <p class="text-sm text-base-content/70">
-                After you finish this step, continue by adding your first account or wallet.
-              </p>
-            </div>
-            <a
-              href="/accounts?onboarding=add-account"
-              class="btn btn-accent btn-sm w-full sm:w-auto"
-            >
-              Add Account
-            </a>
-          </div>
-        </div>
-      )
-    }
     {/* Error State */}
     {
       error ? (
