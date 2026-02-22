@@ -490,7 +490,6 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             class="textarea textarea-bordered w-full h-40 text-sm bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 rounded-xl font-mono"
             placeholder={'My Savings, bank_account, IDR, 5000000\nBCA Checking, bank_account, IDR\nGoPay, e_wallet, IDR, 250000\nCash USD, cash, USD, 100'}
             data-testid="bulk-accounts-textarea"
-            data-valid-types={VALID_ACCOUNT_TYPES.join(',')}
             data-valid-currencies={orderedWorkspaceCurrencies.join(',')}></textarea>
           <span class="text-base-content/40 text-xs mt-1">
             Type must be one of: {VALID_ACCOUNT_TYPES.join(', ')}. Balance is optional (defaults to

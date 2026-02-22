@@ -119,8 +119,6 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-let initialized = false;
-
 export function initBulkAddAccounts() {
   const modal = document.getElementById('bulk-add-accounts-modal') as HTMLDialogElement;
   const textarea = document.getElementById('bulk-accounts-input') as HTMLTextAreaElement;
@@ -132,8 +130,10 @@ export function initBulkAddAccounts() {
   const submitText = document.querySelector('[data-bulk-accounts-submit-text]');
   const cancelBtn = document.querySelector('[data-bulk-accounts-cancel]');
 
-  if (!modal || !textarea || initialized) return;
-  initialized = true;
+  if (!modal || !textarea) return;
+  // Track initialization per DOM element to survive Astro view transitions
+  if (modal.dataset.initialized) return;
+  modal.dataset.initialized = 'true';
 
   // Read valid currencies from data attribute
   const validCurrencies = (textarea.dataset.validCurrencies || '').split(',').filter(Boolean);
@@ -259,9 +259,9 @@ export function initBulkAddAccounts() {
       modal.close();
       textarea.value = '';
       if (previewContainer) previewContainer.classList.add('hidden');
-      const urlParams = new URL(window.location.href);
+      const currentUrl = new URL(window.location.href);
       const { navigate } = await import('astro:transitions/client');
-      navigate(urlParams.pathname + urlParams.search);
+      navigate(currentUrl.pathname + currentUrl.search);
     } else if (errors.length > 0) {
       if (successCount > 0) {
         addToast(`${successCount} created, ${errors.length} failed`, 'warning');
