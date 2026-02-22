@@ -13,6 +13,7 @@ import type { MiddlewareHandler } from 'astro';
 const PROTECTED_PREFIXES = [
   '/admin',
   '/dashboard',
+  '/onboarding',
   '/transactions',
   '/budget',
   '/accounts',
