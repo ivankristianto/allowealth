@@ -700,8 +700,10 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Transferring...';
 
+      const { csrfFetch } = await import('@/lib/csrf-client');
+      const { addToast } = await import('@/lib/stores/toastStore');
+
       try {
-        const { csrfFetch } = await import('@/lib/csrf-client');
         const response = await csrfFetch(`/api/accounts/${accountId}/transfer-owner`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -711,11 +713,9 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
         const result = await response.json();
 
         if (response.ok) {
-          const { addToast } = await import('@/lib/stores/toastStore');
           addToast('Ownership transferred successfully!', 'success');
           window.location.reload();
         } else {
-          const { addToast } = await import('@/lib/stores/toastStore');
           addToast(
             result.error?.message || result.error || 'Failed to transfer ownership',
             'error'
@@ -724,7 +724,6 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
           confirmBtn.textContent = 'Yes, Transfer';
         }
       } catch {
-        const { addToast } = await import('@/lib/stores/toastStore');
         addToast('Network error. Please try again.', 'error');
         confirmBtn.disabled = false;
         confirmBtn.textContent = 'Yes, Transfer';
