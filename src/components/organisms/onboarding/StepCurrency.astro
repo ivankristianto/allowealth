@@ -1,0 +1,167 @@
+---
+/**
+ * StepCurrency — Onboarding Step 1
+ *
+ * Currency selection for the workspace.
+ * Primary currency is required, secondary is optional.
+ */
+
+import { CURRENCY_OPTIONS, CURRENCY_META } from '@/lib/constants/currency';
+
+export interface Props {
+  currentCurrency?: string;
+  currentSecondaryCurrency?: string;
+}
+
+const { currentCurrency, currentSecondaryCurrency } = Astro.props;
+---
+
+<div class="space-y-6">
+  <p class="text-base-content/70">
+    Everything in Allowealth is organized by currency. Pick the one you use most — you can add a
+    second one too.
+  </p>
+
+  <form id="onboarding-currency-form" class="space-y-4">
+    {/* Primary currency */}
+    <div class="form-control w-full">
+      <label class="label" for="primary-currency">
+        <span class="label-text font-medium">Primary currency</span>
+        <span class="label-text-alt text-error">Required</span>
+      </label>
+      <select id="primary-currency" name="currency" class="select select-bordered w-full" required>
+        {
+          CURRENCY_OPTIONS.map((opt) => (
+            <option value={opt.value} selected={opt.value === currentCurrency}>
+              {CURRENCY_META[opt.value].flagEmoji} {opt.label}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    {/* Secondary currency toggle */}
+    <div class="form-control">
+      <label class="label cursor-pointer justify-start gap-3" for="use-secondary">
+        <input
+          type="checkbox"
+          id="use-secondary"
+          class="checkbox checkbox-sm"
+          checked={!!currentSecondaryCurrency}
+          data-onboarding-secondary-toggle
+        />
+        <span class="label-text">I also use a second currency</span>
+      </label>
+    </div>
+
+    {/* Secondary currency (hidden by default) */}
+    <div
+      id="secondary-currency-container"
+      class:list={['form-control w-full', !currentSecondaryCurrency && 'hidden']}
+    >
+      <label class="label" for="secondary-currency">
+        <span class="label-text font-medium">Secondary currency</span>
+      </label>
+      <select
+        id="secondary-currency"
+        name="secondaryCurrency"
+        class="select select-bordered w-full"
+      >
+        <option value="">— None —</option>
+        {
+          CURRENCY_OPTIONS.map((opt) => (
+            <option value={opt.value} selected={opt.value === currentSecondaryCurrency}>
+              {CURRENCY_META[opt.value].flagEmoji} {opt.label}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    {/* Error display */}
+    <div id="currency-error" class="text-error text-sm hidden" role="alert"></div>
+
+    {/* Submit */}
+    <div class="flex justify-end pt-4">
+      <button type="submit" class="btn btn-primary">
+        Continue
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg
+        >
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  import { csrfFetch } from '@/lib/csrf-client';
+
+  function initStepCurrency() {
+    const form = document.getElementById('onboarding-currency-form') as HTMLFormElement | null;
+    const toggle = document.querySelector(
+      '[data-onboarding-secondary-toggle]'
+    ) as HTMLInputElement | null;
+    const container = document.getElementById('secondary-currency-container');
+    const errorDiv = document.getElementById('currency-error');
+
+    if (!form || !toggle || !container) return;
+
+    toggle.addEventListener('change', () => {
+      container.classList.toggle('hidden', !toggle.checked);
+      if (!toggle.checked) {
+        const select = container.querySelector('select') as HTMLSelectElement;
+        if (select) select.value = '';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+      }
+
+      const formData = new FormData(form);
+      const currency = formData.get('currency') as string;
+      const secondaryCurrency = toggle.checked ? (formData.get('secondaryCurrency') as string) : '';
+
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        const res = await csrfFetch('/api/workspace/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currency, secondaryCurrency: secondaryCurrency || null }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to save currency');
+        }
+
+        // Navigate to next step (page reload picks up new state)
+        window.location.href = '/onboarding';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+  }
+
+  initStepCurrency();
+  document.addEventListener('astro:page-load', initStepCurrency);
+</script>
