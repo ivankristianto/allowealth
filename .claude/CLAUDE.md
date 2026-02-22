@@ -120,6 +120,8 @@ Architecture decisions in `docs/architecture/`:
 - `009-logger-abstraction.md` - Logging
 - `010-mcp-server-architecture.md` - MCP server
 - `011-oauth-sso-architecture.md` - OAuth/SSO
+- `012-multi-currency-support.md` - Multi-currency baskets
+- `013-astro-view-transitions.md` - ClientRouter view transitions
 
 Design system in `design-system/`:
 
