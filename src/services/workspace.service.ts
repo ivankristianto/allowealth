@@ -58,6 +58,7 @@ export interface OnboardingStatus {
   budgets: boolean;
   accounts: boolean;
   transactions: boolean;
+  income: boolean;
 }
 
 /**
@@ -257,54 +258,65 @@ export class WorkspaceService {
    * @returns OnboardingStatus with boolean for each step
    */
   async getOnboardingStatus(workspaceId: string): Promise<OnboardingStatus> {
-    // Run all 5 checks in parallel for performance
-    const [currencyMeta, expenseCategory, nonZeroBudget, account, transaction] = await Promise.all([
-      // 1. Currency: workspace meta has an explicit currency entry
-      this.db.query.workspaceMeta.findFirst({
-        where: and(
-          eq(this.schema.workspaceMeta.workspace_id, workspaceId),
-          eq(this.schema.workspaceMeta.meta_key, 'currency')
-        ),
-        columns: { id: true },
-      }),
+    // Run all 6 checks in parallel for performance
+    const [currencyMeta, expenseCategory, nonZeroBudget, account, transaction, incomeMeta] =
+      await Promise.all([
+        // 1. Currency: workspace meta has an explicit currency entry
+        this.db.query.workspaceMeta.findFirst({
+          where: and(
+            eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+            eq(this.schema.workspaceMeta.meta_key, 'currency')
+          ),
+          columns: { id: true },
+        }),
 
-      // 2. Categories: at least 1 active expense category
-      this.db.query.categories.findFirst({
-        where: and(
-          eq(this.schema.categories.workspace_id, workspaceId),
-          eq(this.schema.categories.type, 'expense'),
-          eq(this.schema.categories.is_active, true)
-        ),
-        columns: { id: true },
-      }),
+        // 2. Categories: at least 1 active expense category
+        this.db.query.categories.findFirst({
+          where: and(
+            eq(this.schema.categories.workspace_id, workspaceId),
+            eq(this.schema.categories.type, 'expense'),
+            eq(this.schema.categories.is_active, true)
+          ),
+          columns: { id: true },
+        }),
 
-      // 3. Budgets: at least 1 budget with non-zero amount (any month)
-      this.db.query.budgets.findFirst({
-        where: and(
-          eq(this.schema.budgets.workspace_id, workspaceId),
-          sql`CAST(${this.schema.budgets.budget_amount} AS NUMERIC) > 0`
-        ),
-        columns: { id: true },
-      }),
+        // 3. Budgets: at least 1 budget with non-zero amount (any month)
+        this.db.query.budgets.findFirst({
+          where: and(
+            eq(this.schema.budgets.workspace_id, workspaceId),
+            sql`CAST(${this.schema.budgets.budget_amount} AS NUMERIC) > 0`
+          ),
+          columns: { id: true },
+        }),
 
-      // 4. Accounts: at least 1 non-deleted account
-      this.db.query.accounts.findFirst({
-        where: and(
-          eq(this.schema.accounts.workspace_id, workspaceId),
-          isNull(this.schema.accounts.deleted_at)
-        ),
-        columns: { id: true },
-      }),
+        // 4. Accounts: at least 1 non-deleted account
+        this.db.query.accounts.findFirst({
+          where: and(
+            eq(this.schema.accounts.workspace_id, workspaceId),
+            isNull(this.schema.accounts.deleted_at)
+          ),
+          columns: { id: true },
+        }),
 
-      // 5. Transactions: at least 1 non-deleted transaction
-      this.db.query.transactions.findFirst({
-        where: and(
-          eq(this.schema.transactions.workspace_id, workspaceId),
-          isNull(this.schema.transactions.deleted_at)
-        ),
-        columns: { id: true },
-      }),
-    ]);
+        // 5. Transactions: at least 1 non-deleted transaction
+        this.db.query.transactions.findFirst({
+          where: and(
+            eq(this.schema.transactions.workspace_id, workspaceId),
+            isNull(this.schema.transactions.deleted_at)
+          ),
+          columns: { id: true },
+        }),
+
+        // 6. Income: workspace meta has a monthly_income entry with non-empty value
+        this.db.query.workspaceMeta.findFirst({
+          where: and(
+            eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+            eq(this.schema.workspaceMeta.meta_key, 'monthly_income'),
+            sql`LENGTH(${this.schema.workspaceMeta.meta_value}) > 2`
+          ),
+          columns: { id: true },
+        }),
+      ]);
 
     return {
       currency: !!currencyMeta,
@@ -312,6 +324,7 @@ export class WorkspaceService {
       budgets: !!nonZeroBudget,
       accounts: !!account,
       transactions: !!transaction,
+      income: !!incomeMeta,
     };
   }
 }

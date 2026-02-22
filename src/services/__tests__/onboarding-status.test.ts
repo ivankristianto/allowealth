@@ -23,6 +23,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.budgets).toBe(false);
     expect(status.accounts).toBe(false);
     expect(status.transactions).toBe(false);
+    expect(status.income).toBe(false);
   });
 
   it('should detect currency as set when workspace meta has currency entry', async () => {
@@ -37,6 +38,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
 
     expect(status.currency).toBe(true);
     expect(status.categories).toBe(false);
+    expect(status.income).toBe(false);
   });
 
   it('should detect categories as set when at least one expense category exists', async () => {
@@ -50,6 +52,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     const status = await workspaceService.getOnboardingStatus('workspace-1');
 
     expect(status.categories).toBe(true);
+    expect(status.income).toBe(false);
   });
 
   it('should detect budgets as set when a non-zero budget exists', async () => {
@@ -65,6 +68,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     const status = await workspaceService.getOnboardingStatus('workspace-1');
 
     expect(status.budgets).toBe(true);
+    expect(status.income).toBe(false);
   });
 
   it('should detect accounts as set when at least one non-deleted account exists', async () => {
@@ -82,6 +86,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     const status = await workspaceService.getOnboardingStatus('workspace-1');
 
     expect(status.accounts).toBe(true);
+    expect(status.income).toBe(false);
   });
 
   it('should detect transactions as set when at least one non-deleted transaction exists', async () => {
@@ -101,14 +106,32 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     const status = await workspaceService.getOnboardingStatus('workspace-1');
 
     expect(status.transactions).toBe(true);
+    expect(status.income).toBe(false);
+  });
+
+  it('should detect income as set when monthly_income meta has content', async () => {
+    // Currency not set
+    (mockDb.query.workspaceMeta.findFirst as any)
+      .mockResolvedValueOnce(undefined) // currency check
+      .mockResolvedValueOnce({ id: 'meta-income' }); // income check (LENGTH > 2)
+    (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.query.budgets.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(undefined);
+
+    const status = await workspaceService.getOnboardingStatus('workspace-1');
+    expect(status.income).toBe(true);
+    expect(status.currency).toBe(false);
   });
 
   it('should return all true when all steps are complete', async () => {
-    (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce({
-      id: 'meta-1',
-      meta_key: 'currency',
-      meta_value: 'IDR',
-    });
+    (mockDb.query.workspaceMeta.findFirst as any)
+      .mockResolvedValueOnce({
+        id: 'meta-1',
+        meta_key: 'currency',
+        meta_value: 'IDR',
+      })
+      .mockResolvedValueOnce({ id: 'meta-2' }); // income
     (mockDb.query.categories.findFirst as any).mockResolvedValueOnce({ id: 'cat-1' });
     (mockDb.query.budgets.findFirst as any).mockResolvedValueOnce({ id: 'budget-1' });
     (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce({ id: 'account-1' });
@@ -121,5 +144,6 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.budgets).toBe(true);
     expect(status.accounts).toBe(true);
     expect(status.transactions).toBe(true);
+    expect(status.income).toBe(true);
   });
 });
