@@ -97,6 +97,21 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
       }
       break;
 
+    case WORKSPACE_META_KEYS.MONTHLY_INCOME:
+      // JSON string of { currency: amount } pairs, e.g. {"IDR":"10000000"}
+      // Empty string is valid (unset)
+      if (value.length > 0) {
+        try {
+          const parsed = JSON.parse(value);
+          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+            throw new Error('Monthly income must be a JSON object');
+          }
+        } catch {
+          throw new Error('Monthly income must be valid JSON');
+        }
+      }
+      break;
+
     default:
       // Unknown key - should never happen if isValidWorkspaceMetaKey is checked first
       break;
@@ -502,6 +517,32 @@ export class WorkspaceMetaService {
   }
 
   /**
+   * Get workspace's monthly income as a currency-to-amount map
+   *
+   * @param workspaceId - Workspace ID
+   * @returns Record of currency code to amount string (e.g., {"IDR":"10000000"})
+   */
+  async getMonthlyIncome(workspaceId: string): Promise<Record<string, string>> {
+    const value = await this.get(workspaceId, WORKSPACE_META_KEYS.MONTHLY_INCOME);
+    if (!value) return {};
+    try {
+      return JSON.parse(value);
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Set workspace's monthly income
+   *
+   * @param workspaceId - Workspace ID
+   * @param income - Record of currency code to amount string
+   */
+  async setMonthlyIncome(workspaceId: string, income: Record<string, string>): Promise<void> {
+    await this.set(workspaceId, WORKSPACE_META_KEYS.MONTHLY_INCOME, JSON.stringify(income));
+  }
+
+  /**
    * Get all workspace settings as a typed object
    *
    * @param workspaceId - Workspace ID
@@ -535,6 +576,7 @@ export class WorkspaceMetaService {
         metaAll[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
         DEFAULT_WORKSPACE_SETTINGS.compactNumbers
       ),
+      monthlyIncome: metaAll[WORKSPACE_META_KEYS.MONTHLY_INCOME] ?? '',
     };
   }
 
