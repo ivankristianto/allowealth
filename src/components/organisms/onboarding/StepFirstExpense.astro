@@ -1,0 +1,240 @@
+---
+/**
+ * StepFirstExpense — Onboarding Step 5
+ *
+ * Record your first expense to complete the loop.
+ * Shows how budgeting works in action.
+ */
+
+import AmountInput from '@/components/atoms/AmountInput.astro';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface CategoryOption {
+  id: string;
+  name: string;
+}
+
+export interface AccountOption {
+  id: string;
+  name: string;
+  currency: Currency;
+}
+
+export interface Props {
+  categories: CategoryOption[];
+  accounts: AccountOption[];
+  currencies: Currency[];
+}
+
+const { categories, accounts, currencies } = Astro.props;
+const primaryCurrency = currencies[0];
+const today = new Date().toISOString().split('T')[0];
+
+// Default to first account's currency
+const defaultAccount = accounts[0];
+---
+
+<div class="space-y-6">
+  <p class="text-base-content/70">
+    Record your first expense to see budgeting in action. Pick something you spent today — even a
+    coffee counts.
+  </p>
+
+  <form id="onboarding-expense-form" class="space-y-4">
+    {/* Amount */}
+    <div class="form-control">
+      <label class="label" for="expense-amount">
+        <span class="label-text font-medium">Amount</span>
+      </label>
+      <AmountInput
+        id="expense-amount"
+        name="amount"
+        currency={defaultAccount?.currency || primaryCurrency}
+        required={true}
+        placeholder="0"
+      />
+    </div>
+
+    {/* Category */}
+    <div class="form-control">
+      <label class="label" for="expense-category">
+        <span class="label-text font-medium">Category</span>
+      </label>
+      <select
+        id="expense-category"
+        name="categoryId"
+        class="select select-bordered w-full"
+        required
+      >
+        <option value="" disabled selected>Pick a category</option>
+        {categories.map((cat) => <option value={cat.id}>{cat.name}</option>)}
+      </select>
+    </div>
+
+    {/* Account */}
+    <div class="form-control">
+      <label class="label" for="expense-account">
+        <span class="label-text font-medium">Account</span>
+      </label>
+      <select id="expense-account" name="accountId" class="select select-bordered w-full" required>
+        {
+          accounts.map((acc) => (
+            <option value={acc.id} data-currency={acc.currency}>
+              {acc.name} ({acc.currency})
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    {/* Description */}
+    <div class="form-control">
+      <label class="label" for="expense-description">
+        <span class="label-text font-medium">Description</span>
+        <span class="label-text-alt text-base-content/50">Optional</span>
+      </label>
+      <input
+        type="text"
+        id="expense-description"
+        name="description"
+        class="input input-bordered w-full"
+        placeholder="e.g., Morning coffee"
+      />
+    </div>
+
+    {/* Date */}
+    <div class="form-control">
+      <label class="label" for="expense-date">
+        <span class="label-text font-medium">Date</span>
+      </label>
+      <input
+        type="date"
+        id="expense-date"
+        name="transactionDate"
+        class="input input-bordered w-full"
+        value={today}
+        required
+      />
+    </div>
+
+    <div id="expense-error" class="text-error text-sm hidden" role="alert"></div>
+
+    {/* Navigation */}
+    <div class="flex justify-between pt-4">
+      <a href="/onboarding?reset=allocation" class="btn btn-ghost">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+        >
+        Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Complete Setup
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg
+        >
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  import { csrfFetch } from '@/lib/csrf-client';
+  import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+
+  function initStepExpense() {
+    const form = document.getElementById('onboarding-expense-form') as HTMLFormElement | null;
+    const errorDiv = document.getElementById('expense-error');
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+      }
+
+      const formData = new FormData(form);
+      const rawAmount = formData.get('amount') as string;
+      const amount = stripAmountFormatting(rawAmount);
+      const categoryId = formData.get('categoryId') as string;
+      const accountId = formData.get('accountId') as string;
+      const description = (formData.get('description') as string).trim();
+      const transactionDate = formData.get('transactionDate') as string;
+
+      // Get currency from the selected account option
+      const accountSelect = document.getElementById('expense-account') as HTMLSelectElement;
+      const selectedOption = accountSelect.selectedOptions[0];
+      const currency = selectedOption?.dataset.currency || '';
+
+      if (!amount || parseFloat(amount) <= 0) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Please enter an amount';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (!categoryId) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Please select a category';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        const res = await csrfFetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'expense',
+            amount,
+            currency,
+            category_id: categoryId,
+            account_id: accountId,
+            description: description || undefined,
+            transaction_date: transactionDate,
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to record expense');
+        }
+
+        // Onboarding complete! Go to dashboard
+        window.location.href = '/dashboard';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+  }
+
+  initStepExpense();
+  document.addEventListener('astro:page-load', initStepExpense);
+</script>
