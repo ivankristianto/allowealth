@@ -1,0 +1,162 @@
+---
+/**
+ * StepIncome — Onboarding Step 3
+ *
+ * Monthly income entry. This is a planning number, not a transaction.
+ * Used to pre-fill budget allocation percentages in step 4.
+ */
+
+import AmountInput from '@/components/atoms/AmountInput.astro';
+import type { Currency } from '@/lib/constants/currency';
+import { CURRENCY_META } from '@/lib/constants/currency';
+
+export interface Props {
+  currencies: Currency[];
+  currentIncome: Record<string, string>;
+}
+
+const { currencies, currentIncome } = Astro.props;
+---
+
+<div class="space-y-6">
+  <p class="text-base-content/70">
+    This is the total money you have to work with this month. Think of it as the pool you'll divide
+    among your spending categories in the next step.
+  </p>
+
+  <form id="onboarding-income-form" class="space-y-4">
+    {
+      currencies.map((currency) => (
+        <div class="form-control">
+          <label class="label" for={`income-${currency}`}>
+            <span class="label-text font-medium">
+              {CURRENCY_META[currency].flagEmoji} Monthly income ({currency})
+            </span>
+          </label>
+          <div class="join w-full">
+            <span class="btn btn-disabled join-item w-24 text-base font-bold">
+              {CURRENCY_META[currency].symbol}
+            </span>
+            <AmountInput
+              id={`income-${currency}`}
+              name={`income_${currency}`}
+              currency={currency}
+              value={currentIncome[currency] || ''}
+              required={true}
+              placeholder="0"
+              className="join-item"
+            />
+          </div>
+        </div>
+      ))
+    }
+
+    <div class="rounded-lg bg-info/10 p-3 text-sm text-info-content">
+      <strong>Tip:</strong> This is a planning number, not a transaction. You can change it anytime in
+      settings.
+    </div>
+
+    <div id="income-error" class="text-error text-sm hidden" role="alert"></div>
+
+    {/* Navigation */}
+    <div class="flex justify-between pt-4">
+      <a href="/onboarding?reset=accounts" class="btn btn-ghost">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+        >
+        Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Continue
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg
+        >
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  import { csrfFetch } from '@/lib/csrf-client';
+  import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+
+  function initStepIncome() {
+    const form = document.getElementById('onboarding-income-form') as HTMLFormElement | null;
+    const errorDiv = document.getElementById('income-error');
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+      }
+
+      const formData = new FormData(form);
+      const monthlyIncome: Record<string, string> = {};
+
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith('income_')) {
+          const currency = key.replace('income_', '');
+          const amount = stripAmountFormatting(value as string);
+          if (amount && parseFloat(amount) > 0) {
+            monthlyIncome[currency] = amount;
+          }
+        }
+      }
+
+      if (Object.keys(monthlyIncome).length === 0) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Please enter your monthly income';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        const res = await csrfFetch('/api/workspace/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ monthlyIncome }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to save income');
+        }
+
+        window.location.href = '/onboarding';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+  }
+
+  initStepIncome();
+  document.addEventListener('astro:page-load', initStepIncome);
+</script>

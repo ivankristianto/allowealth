@@ -23,6 +23,7 @@ const updateWorkspaceSettingsSchema = z.object({
   secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
   weekStart: z.enum(['monday', 'sunday']).optional(),
   compactNumbers: z.boolean().optional(),
+  monthlyIncome: z.record(z.string(), z.string()).optional(),
 });
 
 /**
@@ -52,6 +53,7 @@ export const GET: APIRoute = async (context) => {
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
+        monthlyIncome: settings.monthlyIncome,
       },
     });
   } catch (error) {
@@ -82,7 +84,8 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, currency, secondaryCurrency, weekStart, compactNumbers } = validation.data;
+    const { name, currency, secondaryCurrency, weekStart, compactNumbers, monthlyIncome } =
+      validation.data;
 
     // Name changes require admin role
     if (name !== undefined && auth.role !== 'admin') {
@@ -113,6 +116,9 @@ export const PUT: APIRoute = async (context) => {
     if (compactNumbers !== undefined) {
       await workspaceMetaService.setCompactNumbers(auth.workspaceId, compactNumbers);
     }
+    if (monthlyIncome !== undefined) {
+      await workspaceMetaService.setMonthlyIncome(auth.workspaceId, monthlyIncome);
+    }
 
     // Get updated workspace and settings
     const workspace = await workspaceService.findById(auth.workspaceId);
@@ -127,6 +133,7 @@ export const PUT: APIRoute = async (context) => {
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
+        monthlyIncome: settings.monthlyIncome,
       },
     });
   } catch (error) {
