@@ -1,0 +1,185 @@
+---
+/**
+ * Onboarding Wizard Container Page
+ *
+ * Main wizard page that determines the current onboarding step based on
+ * workspace completion status and renders the appropriate step component.
+ *
+ * Steps:
+ * 1. Currency selection
+ * 2. Account creation
+ * 3. Monthly income entry
+ * 4. Budget allocation
+ * 5. First expense
+ *
+ * Supports ?reset= query param for Back navigation between steps.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import {
+  workspaceService,
+  workspaceMetaService,
+  accountService,
+  categoryService,
+} from '@/services';
+import type { OnboardingStatus } from '@/services/workspace.service';
+import OnboardingProgress from '@/components/organisms/onboarding/OnboardingProgress.astro';
+import StepCurrency from '@/components/organisms/onboarding/StepCurrency.astro';
+import StepAccounts from '@/components/organisms/onboarding/StepAccounts.astro';
+import StepIncome from '@/components/organisms/onboarding/StepIncome.astro';
+import StepAllocate from '@/components/organisms/onboarding/StepAllocate.astro';
+import StepFirstExpense from '@/components/organisms/onboarding/StepFirstExpense.astro';
+import type { SimpleAccount } from '@/components/organisms/onboarding/StepAccounts.astro';
+import type { CategoryForAllocation } from '@/components/organisms/onboarding/StepAllocate.astro';
+import type {
+  CategoryOption,
+  AccountOption,
+} from '@/components/organisms/onboarding/StepFirstExpense.astro';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+
+const user = Astro.locals.user;
+if (!user || !user.workspaceId) return Astro.redirect('/login', 302);
+
+const workspaceId = user.workspaceId;
+const status: OnboardingStatus = await workspaceService.getOnboardingStatus(workspaceId);
+
+// If all steps complete, redirect to dashboard
+const isComplete =
+  status.currency &&
+  status.categories &&
+  status.budgets &&
+  status.accounts &&
+  status.transactions &&
+  status.income;
+if (isComplete) return Astro.redirect('/dashboard', 302);
+
+// Determine current step from completion status
+let currentStep = 1;
+if (status.currency) currentStep = 2;
+if (status.currency && status.accounts) currentStep = 3;
+if (status.currency && status.accounts && status.income) currentStep = 4;
+if (status.currency && status.accounts && status.income && status.categories && status.budgets)
+  currentStep = 5;
+
+// Handle ?reset= for Back navigation
+const resetParam = Astro.url.searchParams.get('reset');
+if (resetParam === 'currency' && currentStep > 1) currentStep = 1;
+if (resetParam === 'accounts' && currentStep > 2) currentStep = 2;
+if (resetParam === 'income' && currentStep > 3) currentStep = 3;
+if (resetParam === 'allocation' && currentStep > 4) currentStep = 4;
+
+const STEP_TITLES = [
+  '',
+  'What currency do you use?',
+  'Where does your money live?',
+  'How much do you earn this month?',
+  'Allocate your income',
+  'Record your first expense',
+];
+
+// Load workspace settings for steps that need currency info
+let currencies: Currency[] = [];
+let settings: Awaited<ReturnType<typeof workspaceMetaService.getSettings>> | null = null;
+
+if (currentStep >= 2) {
+  settings = await workspaceMetaService.getSettings(workspaceId);
+  currencies = [settings.currency];
+  if (settings.secondaryCurrency && isValidCurrency(settings.secondaryCurrency)) {
+    currencies.push(settings.secondaryCurrency);
+  }
+}
+
+// Step 2 data: existing accounts
+let accounts: SimpleAccount[] = [];
+if (currentStep === 2) {
+  const allAccounts = await accountService.findAll(workspaceId);
+  accounts = allAccounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    type: a.type,
+    balance: a.balance,
+    currency: a.currency,
+  }));
+}
+
+// Step 3 data: current monthly income
+let currentIncome: Record<string, string> = {};
+if (currentStep === 3) {
+  currentIncome = await workspaceMetaService.getMonthlyIncome(workspaceId);
+}
+
+// Step 4 data: seed categories if needed, load income + categories
+let expenseCategories: CategoryForAllocation[] = [];
+let monthlyIncome: Record<string, string> = {};
+if (currentStep === 4) {
+  await categoryService.seedDefaultExpenseCategories(workspaceId, user.id);
+  const allCategories = await categoryService.findAll(workspaceId, { type: 'expense' });
+  expenseCategories = allCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    icon: c.icon ?? null,
+    color: c.color ?? null,
+  }));
+  monthlyIncome = await workspaceMetaService.getMonthlyIncome(workspaceId);
+}
+
+// Step 5 data: categories and accounts for expense form
+let step5Categories: CategoryOption[] = [];
+let step5Accounts: AccountOption[] = [];
+if (currentStep === 5) {
+  const allCategories = await categoryService.findAll(workspaceId, { type: 'expense' });
+  step5Categories = allCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+  }));
+  const allAccounts = await accountService.findAll(workspaceId);
+  step5Accounts = allAccounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    currency: a.currency,
+  }));
+}
+---
+
+<ProtectedLayout title="Set up your workspace" currentPath="/onboarding">
+  <div class="mx-auto max-w-xl px-4 py-8">
+    <OnboardingProgress
+      currentStep={currentStep}
+      totalSteps={5}
+      stepTitle={STEP_TITLES[currentStep]}
+    />
+
+    {
+      currentStep === 1 && (
+        <StepCurrency
+          currentCurrency={settings?.currency}
+          currentSecondaryCurrency={settings?.secondaryCurrency}
+        />
+      )
+    }
+
+    {currentStep === 2 && <StepAccounts accounts={accounts} currencies={currencies} />}
+
+    {currentStep === 3 && <StepIncome currencies={currencies} currentIncome={currentIncome} />}
+
+    {
+      currentStep === 4 && (
+        <StepAllocate
+          categories={expenseCategories}
+          income={monthlyIncome}
+          currencies={currencies}
+        />
+      )
+    }
+
+    {
+      currentStep === 5 && (
+        <StepFirstExpense
+          categories={step5Categories}
+          accounts={step5Accounts}
+          currencies={currencies}
+        />
+      )
+    }
+  </div>
+</ProtectedLayout>
