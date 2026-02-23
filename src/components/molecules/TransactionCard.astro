@@ -457,31 +457,50 @@ const cardClasses = [
   markTruncated();
   observeExpandableContainers();
 
-  // Keyboard navigation for dropdown menus (mobile)
-  document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
-    const menu = dropdown.querySelector('[role="menu"]');
-    if (!menu) return;
+  // Keyboard navigation for transaction dropdown menus.
+  // Use one delegated listener so dynamically injected cards work without re-binding.
+  type TransactionCardWindow = Window & {
+    __transactionCardMenuNavInitialized?: boolean;
+  };
 
-    const items = menu.querySelectorAll('[role="menuitem"]');
+  const transactionCardWindow = window as TransactionCardWindow;
 
-    menu.addEventListener('keydown', (e: Event) => {
-      const event = e as KeyboardEvent;
-      const currentIndex = Array.from(items).indexOf(document.activeElement as Element);
+  if (!transactionCardWindow.__transactionCardMenuNavInitialized) {
+    transactionCardWindow.__transactionCardMenuNavInitialized = true;
+
+    document.addEventListener('keydown', (event) => {
+      if (!['ArrowDown', 'ArrowUp', 'Escape'].includes(event.key)) return;
+
+      const target = event.target as HTMLElement | null;
+      const menu = target?.closest('[role="menu"]') as HTMLElement | null;
+      if (!menu) return;
+
+      const items = Array.from(
+        menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])')
+      );
+      if (items.length === 0) return;
+
+      const currentIndex = items.indexOf(document.activeElement as HTMLElement);
 
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-        (items[nextIndex] as HTMLElement).focus();
-      } else if (event.key === 'ArrowUp') {
+        items[nextIndex]?.focus();
+        return;
+      }
+
+      if (event.key === 'ArrowUp') {
         event.preventDefault();
         const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-        (items[prevIndex] as HTMLElement).focus();
-      } else if (event.key === 'Escape') {
-        event.preventDefault();
-        const trigger = dropdown.querySelector('button[aria-haspopup]') as HTMLElement;
-        trigger?.focus();
-        (document.activeElement as HTMLElement)?.blur();
+        items[prevIndex]?.focus();
+        return;
       }
+
+      event.preventDefault();
+      const dropdown = menu.closest('.dropdown') as HTMLElement | null;
+      const trigger = dropdown?.querySelector('button[aria-haspopup]') as HTMLElement | null;
+      trigger?.focus();
+      (document.activeElement as HTMLElement | null)?.blur();
     });
-  });
+  }
 </script>

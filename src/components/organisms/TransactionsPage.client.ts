@@ -210,8 +210,6 @@ async function fetchAndRender(): Promise<void> {
       }
     );
 
-    hideLoadingState();
-
     // Inject server-rendered HTML directly
     if (response.partials.list) {
       renderTransactionListHtml(response.partials.list);
@@ -225,13 +223,15 @@ async function fetchAndRender(): Promise<void> {
 
     // Re-attach pagination event listeners after HTML replacement
     reattachPaginationListeners();
-    syncCheckboxUI();
   } catch (error) {
-    hideLoadingState();
     if (error instanceof Error && error.name !== 'AbortError') {
       setError(error.message);
       addToast(error.message || 'Failed to load transactions', 'error');
     }
+  } finally {
+    hideLoadingState();
+    // Keep checkbox visuals aligned with store even when fetch fails
+    syncCheckboxUI();
   }
 }
 
