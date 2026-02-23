@@ -28,6 +28,12 @@ export interface CSVImportResult {
   errors: Array<{ row: number; message: string }>;
 }
 
+export interface BulkOperationResult {
+  updated: number;
+  failed: number;
+  errors: Array<{ id: string; error: string }>;
+}
+
 export interface CSVRow {
   date: string;
   type: string;
@@ -74,6 +80,9 @@ export interface TransactionFilters {
 }
 
 export class TransactionService {
+  /** Maximum IDs allowed per bulk operation */
+  private static readonly BULK_OPERATION_LIMIT = 100;
+
   private get schema() {
     return getActiveSchema();
   }
@@ -681,6 +690,145 @@ export class TransactionService {
     ]);
 
     return { success: true };
+  }
+
+  /**
+   * Bulk update category for multiple transactions.
+   * Validates category once, then loops through IDs and uses update() for audit consistency.
+   */
+  async bulkUpdateCategory(
+    ids: string[],
+    categoryId: string,
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
+        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
+        400
+      );
+    }
+
+    const category = await this.categoryService.findById(categoryId, workspaceId);
+    if (!category) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found',
+        404
+      );
+    }
+    if (!category.is_active) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.CATEGORY_INACTIVE,
+        'Category is inactive',
+        400
+      );
+    }
+
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+
+    for (const id of ids) {
+      try {
+        await this.update(id, workspaceId, { category_id: categoryId }, userId);
+        result.updated++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Bulk update account for multiple transactions.
+   * Validates account once, then loops through IDs and uses update() for audit consistency.
+   */
+  async bulkUpdateAccount(
+    ids: string[],
+    accountId: string,
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
+        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
+        400
+      );
+    }
+
+    const account = await this.accountService.findByIdIncludingClosed(accountId, workspaceId);
+    if (!account) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_NOT_FOUND,
+        'Account not found',
+        404
+      );
+    }
+    if (account.status === 'closed') {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_CLOSED,
+        'Cannot update transaction — account is deactivated',
+        400
+      );
+    }
+
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+
+    for (const id of ids) {
+      try {
+        await this.update(id, workspaceId, { account_id: accountId }, userId);
+        result.updated++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Bulk soft-delete multiple transactions.
+   * Loops through IDs and uses delete() for per-transaction audit consistency.
+   */
+  async bulkDelete(
+    ids: string[],
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
+        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
+        400
+      );
+    }
+
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+
+    for (const id of ids) {
+      try {
+        await this.delete(id, workspaceId, userId);
+        result.updated++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
   }
 
   /**
