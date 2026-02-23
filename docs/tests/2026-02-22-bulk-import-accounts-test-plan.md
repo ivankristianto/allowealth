@@ -171,18 +171,18 @@ Two new UI features on the accounts pages:
 
 ## Summary Checklist
 
-| #   | Area                   | Key Assertion                                                           | Pass |
-| --- | ---------------------- | ----------------------------------------------------------------------- | ---- |
-| 1   | Bulk button visibility | Button appears in current view, hidden in historical view               | [ ]  |
-| 2   | Modal open/close       | Modal opens on click, closes on Cancel and backdrop                     | [ ]  |
-| 3   | Input parsing          | Valid lines show in preview, invalid lines show specific error messages | [ ]  |
-| 4   | Successful creation    | All valid accounts appear in list after submission                      | [ ]  |
-| 5   | Partial failure        | Success count + error messages shown, modal stays open                  | [ ]  |
-| 6   | Empty submission       | Error message, no accounts created                                      | [ ]  |
-| 7   | Admin visibility       | Transfer section visible for admin, hidden for member                   | [ ]  |
-| 8   | Dropdown behavior      | Button disabled for current owner, enabled for different selection      | [ ]  |
-| 9   | Successful transfer    | Owner changes, page reloads, account moves to new owner's personal view | [ ]  |
-| 10  | API protection         | Non-admin gets 403 on transfer API                                      | [ ]  |
+| #   | Area                   | Key Assertion                                                           | Pass    |
+| --- | ---------------------- | ----------------------------------------------------------------------- | ------- |
+| 1   | Bulk button visibility | Button appears in current view, hidden in historical view               | PASS    |
+| 2   | Modal open/close       | Modal opens on click, closes on Cancel and backdrop                     | PASS    |
+| 3   | Input parsing          | Valid lines show in preview, invalid lines show specific error messages | PASS    |
+| 4   | Successful creation    | All valid accounts appear in list after submission                      | PASS    |
+| 5   | Partial failure        | Success count + error messages shown, modal stays open                  | PARTIAL |
+| 6   | Empty submission       | Error message, no accounts created                                      | PASS    |
+| 7   | Admin visibility       | Transfer section visible for admin, hidden for member                   | PASS    |
+| 8   | Dropdown behavior      | Button disabled for current owner, enabled for different selection      | PASS    |
+| 9   | Successful transfer    | Owner changes, page reloads, account moves to new owner's personal view | PASS    |
+| 10  | API protection         | Non-admin gets 403 on transfer API                                      | PASS    |
 
 **Critical paths:** Steps 3, 4, 7, and 9 are highest priority.
 
