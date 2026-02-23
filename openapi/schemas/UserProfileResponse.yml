@@ -31,9 +31,6 @@ UserProfileResponse:
             phone:
               type: string
               description: User phone number
-            bio:
-              type: string
-              description: User bio
             pendingEmail:
               type: string
               format: email

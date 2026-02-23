@@ -21,7 +21,6 @@ const updateFullProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
   email: z.email({ message: 'Invalid email format' }),
   phone: z.string().max(50, 'Phone must be at most 50 characters').optional().default(''),
-  bio: z.string().max(500, 'Bio must be at most 500 characters').optional().default(''),
 });
 
 /**
@@ -47,7 +46,6 @@ export const GET: APIRoute = async (context) => {
       name: user.name,
       email: user.email,
       phone: settings.phone,
-      bio: settings.bio,
       ...(pendingEmail && { pendingEmail }),
     });
   } catch (error) {
@@ -65,7 +63,7 @@ export const GET: APIRoute = async (context) => {
  * Updates all profile fields in one request:
  * - name -> users table
  * - email -> verification flow (pending change + token)
- * - phone, bio -> user_meta table
+ * - phone -> user_meta table
  *
  * @example
  * Request:
@@ -73,8 +71,7 @@ export const GET: APIRoute = async (context) => {
  * {
  *   "name": "John Doe",
  *   "email": "john@example.com",
- *   "phone": "+1234567890",
- *   "bio": "Developer"
+ *   "phone": "+1234567890"
  * }
  * ```
  */
@@ -88,7 +85,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, email, phone, bio } = validation.data;
+    const { name, email, phone } = validation.data;
     const currentUser = await userService.getById(auth.userId);
 
     if (!currentUser) {
@@ -124,14 +121,11 @@ export const PUT: APIRoute = async (context) => {
     // Update user table (name only; email changes are verification-driven)
     const user = await userService.updateProfile(auth.userId, { name });
 
-    // Update meta values (phone, bio)
+    // Update meta values (phone)
     const metaPromises: Promise<void>[] = [];
 
     if (phone !== undefined) {
       metaPromises.push(userMetaService.setUserMeta(auth.userId, 'phone', phone));
-    }
-    if (bio !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'bio', bio));
     }
 
     await Promise.all(metaPromises);
@@ -144,7 +138,6 @@ export const PUT: APIRoute = async (context) => {
       name: user.name,
       email: user.email,
       phone: settings.phone,
-      bio: settings.bio,
       ...(pendingEmail && { pendingEmail }),
       ...(pendingEmail && { message: `Verification email sent to ${pendingEmail}` }),
     });
