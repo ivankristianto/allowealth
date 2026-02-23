@@ -23,7 +23,9 @@ const updateWorkspaceSettingsSchema = z.object({
   secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
   weekStart: z.enum(['monday', 'sunday']).optional(),
   compactNumbers: z.boolean().optional(),
-  monthlyIncome: z.record(z.string(), z.string()).optional(),
+  monthlyIncome: z
+    .record(z.enum(AVAILABLE_CURRENCIES), z.string().regex(/^\d+(\.\d{1,2})?$/))
+    .optional(),
 });
 
 /**

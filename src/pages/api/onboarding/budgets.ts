@@ -33,12 +33,17 @@ export const POST: APIRoute = async (context) => {
     }
 
     const { budgets, month, year } = validation.data;
+
+    if (!auth.workspaceId) {
+      return errorResponse('Workspace context required', 403);
+    }
+
     let created = 0;
 
     for (const budget of budgets) {
       if (parseFloat(budget.amount) > 0) {
         await budgetService.createBudget({
-          workspace_id: auth.workspaceId!,
+          workspace_id: auth.workspaceId,
           created_by_user_id: auth.userId,
           category_id: budget.categoryId,
           month,
