@@ -9,6 +9,9 @@
  * border/rounded) and scrolls horizontally when buttons overflow. On md+ it
  * restores the standard card appearance.
  *
+ * A right-edge fade gradient appears on mobile when more content is available
+ * off-screen, providing a visual scroll affordance.
+ *
  * Slots:
  * - default: Secondary action buttons (left-aligned, btn-ghost style)
  * - primary: Primary action button (right-aligned with ml-auto, btn-accent style)
@@ -39,31 +42,80 @@ const containerClasses = [
   .join(' ');
 ---
 
-<div
-  class:list={[
-    containerClasses,
-    'flex items-center',
-    edgeBleed
-      ? 'gap-1 md:gap-3 flex-nowrap md:flex-wrap overflow-x-auto overflow-y-hidden md:overflow-visible scrollbar-hide'
-      : 'gap-2 md:gap-3 flex-wrap',
-  ]}
-  role="toolbar"
-  aria-label={ariaLabel}
->
+<div class={edgeBleed ? 'relative' : ''}>
+  <div
+    class:list={[
+      containerClasses,
+      'flex items-center',
+      edgeBleed
+        ? 'gap-1 md:gap-3 flex-nowrap md:flex-wrap overflow-x-auto overflow-y-hidden md:overflow-visible scrollbar-hide'
+        : 'gap-2 md:gap-3 flex-wrap',
+    ]}
+    role="toolbar"
+    aria-label={ariaLabel}
+    data-action-bar-scroll={edgeBleed || undefined}
+  >
+    {
+      /* Primary Actions — first on mobile (order-first), pushed right on desktop (order-last + ml-auto) */
+    }
+    {
+      hasPrimary && (
+        <div class="order-first md:order-last md:ml-auto shrink-0 flex items-center gap-2 md:gap-3">
+          <div
+            class="hidden md:block border-l border-base-300 h-6 self-center"
+            aria-hidden="true"
+          />
+          <slot name="primary" />
+        </div>
+      )
+    }
+
+    {/* Secondary Actions */}
+    <div class="flex items-center gap-1 md:gap-2 shrink-0">
+      <slot />
+    </div>
+  </div>
+
+  {/* Scroll fade indicator — visible on mobile when content overflows right */}
   {
-    /* Primary Actions — first on mobile (order-first), pushed right on desktop (order-last + ml-auto) */
-  }
-  {
-    hasPrimary && (
-      <div class="order-first md:order-last md:ml-auto shrink-0 flex items-center gap-2 md:gap-3">
-        <div class="hidden md:block border-l border-base-300 h-6 self-center" aria-hidden="true" />
-        <slot name="primary" />
-      </div>
+    edgeBleed && (
+      <div
+        class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-base-100 pointer-events-none hidden md:!hidden"
+        data-action-bar-fade
+        aria-hidden="true"
+      />
     )
   }
-
-  {/* Secondary Actions */}
-  <div class="flex items-center gap-1 md:gap-2 shrink-0">
-    <slot />
-  </div>
 </div>
+
+<script>
+  function initActionBarFades() {
+    document.querySelectorAll<HTMLElement>('[data-action-bar-scroll]').forEach((scrollEl) => {
+      const fade = scrollEl.parentElement?.querySelector<HTMLElement>('[data-action-bar-fade]');
+      if (!fade) return;
+      if (scrollEl.dataset.actionBarBound === 'true') return;
+      scrollEl.dataset.actionBarBound = 'true';
+
+      const update = () => {
+        const hasOverflow = scrollEl.scrollWidth > scrollEl.clientWidth;
+        const atEnd = scrollEl.scrollLeft + scrollEl.clientWidth >= scrollEl.scrollWidth - 4;
+        if (hasOverflow && !atEnd) {
+          fade.classList.remove('hidden');
+        } else {
+          fade.classList.add('hidden');
+        }
+      };
+
+      update();
+      scrollEl.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update, { passive: true });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initActionBarFades, { once: true });
+  } else {
+    initActionBarFades();
+  }
+  document.addEventListener('astro:page-load', initActionBarFades);
+</script>
