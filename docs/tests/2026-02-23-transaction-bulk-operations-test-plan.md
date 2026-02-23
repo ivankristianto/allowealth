@@ -153,19 +153,19 @@ Adds multi-select checkboxes to the transaction list with a sticky bottom action
 
 ## Summary Checklist
 
-| #   | Area            | Key Assertion                                                                   | Pass |
-| --- | --------------- | ------------------------------------------------------------------------------- | ---- |
-| 1   | Checkboxes      | Checkbox visible on every transaction card in both mobile and desktop layouts   | [ ]  |
-| 2   | Select All      | Select-all toggles all visible checkboxes and shows indeterminate state         | [ ]  |
-| 3   | Action Bar      | Appears on first selection, disappears on clear, sticky at bottom               | [ ]  |
-| 4   | Change Category | Bulk recategorize works, toast shown, transactions updated, audit log preserved | [ ]  |
-| 5   | Change Account  | Bulk account change works, toast shown, transactions updated                    | [ ]  |
-| 6   | Bulk Delete     | Confirmation modal shown, soft delete works, transactions removed from list     | [ ]  |
-| 7   | Filter Clear    | Any filter/page change clears selection                                         | [ ]  |
-| 8   | Error Handling  | Network errors show error toast, selection preserved for retry                  | [ ]  |
-| 9   | Mobile          | All bulk operations usable on 375px viewport                                    | [ ]  |
+| #   | Area            | Key Assertion                                                                   | Pass    |
+| --- | --------------- | ------------------------------------------------------------------------------- | ------- |
+| 1   | Checkboxes      | Checkbox visible on every transaction card in both mobile and desktop layouts   | PASS    |
+| 2   | Select All      | Select-all toggles all visible checkboxes and shows indeterminate state         | PASS    |
+| 3   | Action Bar      | Appears on first selection, disappears on clear, sticky at bottom               | PASS    |
+| 4   | Change Category | Bulk recategorize works, toast shown, transactions updated, audit log preserved | PASS    |
+| 5   | Change Account  | Bulk account change works, toast shown, transactions updated                    | PASS    |
+| 6   | Bulk Delete     | Confirmation modal shown, soft delete works, transactions removed from list     | PASS    |
+| 7   | Filter Clear    | Any filter/page change clears selection                                         | PASS    |
+| 8   | Error Handling  | Network errors show error toast, selection preserved for retry                  | PASS    |
+| 9   | Mobile          | All bulk operations usable on 375px viewport                                    | PARTIAL |
 
-**Critical paths:** Steps 4, 5, and 6 are highest priority (data mutations with audit trail).
+**Critical paths:** Steps 4, 5, and 6 are highest priority (data mutations with audit trail). All PASS.
 
 ## Automated Test Coverage
 
