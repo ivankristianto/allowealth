@@ -34,7 +34,6 @@ const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
 // Profile data from SSR - no client-side fetching needed
 const profileDetails = {
   phone: userSettings?.phone || '',
-  bio: userSettings?.bio || '',
 };
 ---
 
@@ -57,8 +56,8 @@ const profileDetails = {
         novalidate
         data-had-pending-email={pendingEmail ? 'true' : 'false'}
       >
-        <div class="flex flex-col gap-6 lg:flex-row">
-          <div class="flex flex-col items-center gap-3 lg:w-40">
+        <div class="space-y-6">
+          <div class="flex flex-col items-center gap-3">
             <div class="avatar placeholder">
               <div
                 class="bg-accent/20 text-accent rounded-full w-20 h-20 flex items-center justify-center"
@@ -71,7 +70,7 @@ const profileDetails = {
             >
           </div>
 
-          <div class="flex-1 grid grid-cols-1 gap-4">
+          <div class="grid grid-cols-1 gap-4">
             <div class="form-control">
               <Label htmlFor="full-name" required>Full Name</Label>
               <Input
@@ -169,17 +168,9 @@ const profileDetails = {
                 value={profileDetails.phone}
                 className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
-            </div>
-
-            <div class="form-control">
-              <Label htmlFor="bio">Short Bio</Label>
-              <textarea
-                id="bio"
-                name="bio"
-                rows={3}
-                class="textarea textarea-bordered w-full bg-base-200 rounded-2xl py-4 px-6 text-base border border-base-300 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
-                placeholder="Tell us a bit about your role">{profileDetails.bio}</textarea
-              >
+              <p class="mt-1.5 text-xs text-base-content/40">
+                Include country code, e.g. +62 812 3456 7890
+              </p>
             </div>
           </div>
         </div>

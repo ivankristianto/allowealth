@@ -86,7 +86,6 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
           name: formData.get('name'),
           email: formData.get('email'),
           phone: formData.get('phone') || '',
-          bio: formData.get('bio') || '',
         };
 
         const response = await fetch(API_PROFILE_URL, {

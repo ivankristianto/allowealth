@@ -215,7 +215,7 @@ describe('UserMetaService', () => {
       const largeValue = 'a'.repeat(META_VALUE_MAX_SIZE + 1);
 
       try {
-        await service.setUserMeta('user-1', USER_META_KEYS.BIO, largeValue);
+        await service.setUserMeta('user-1', USER_META_KEYS.PHONE, largeValue);
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         expect(error).toBeInstanceOf(UserMetaServiceError);
@@ -375,7 +375,6 @@ describe('UserMetaService', () => {
           showConvertedTotals: false,
           showIndividualCurrencies: true,
           phone: '+1234567890',
-          bio: '',
         });
       });
 
@@ -389,7 +388,6 @@ describe('UserMetaService', () => {
           showConvertedTotals: true,
           showIndividualCurrencies: true,
           phone: '',
-          bio: '',
         });
       });
     });
