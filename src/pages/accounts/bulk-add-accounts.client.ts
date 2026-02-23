@@ -87,7 +87,7 @@ export function parseLine(line: string, lineNumber: number, validCurrencies: str
   let balance = '0';
   if (rawBalance !== undefined && rawBalance !== '') {
     const num = Number(rawBalance);
-    if (isNaN(num) || num < 0) {
+    if (isNaN(num) || !isFinite(num) || num < 0) {
       return {
         account: null,
         error: `Line ${lineNumber}: Invalid balance "${rawBalance}". Must be a non-negative number`,
@@ -138,6 +138,8 @@ export function initBulkAddAccounts() {
   // Read valid currencies from data attribute
   const validCurrencies = (textarea.dataset.validCurrencies || '').split(',').filter(Boolean);
 
+  let isSubmitting = false;
+
   // Update preview on input
   textarea.addEventListener('input', () => {
     const parsed = parseTextarea(textarea.value, validCurrencies);
@@ -173,13 +175,13 @@ export function initBulkAddAccounts() {
       }
 
       // Disable submit if there are errors and no valid accounts
-      if (submitBtn) {
+      if (submitBtn && !isSubmitting) {
         submitBtn.disabled = validAccounts.length === 0;
       }
     } else if (previewContainer) {
       previewContainer.classList.add('hidden');
       if (submitText) submitText.textContent = 'Create Accounts';
-      if (submitBtn) submitBtn.disabled = false;
+      if (submitBtn && !isSubmitting) submitBtn.disabled = false;
     }
 
     // Clear error display
@@ -196,6 +198,8 @@ export function initBulkAddAccounts() {
 
   // Submit
   submitBtn?.addEventListener('click', async () => {
+    if (isSubmitting) return;
+
     const parsed = parseTextarea(textarea.value, validCurrencies);
     const validAccounts = parsed.filter((p) => p.account !== null).map((p) => p.account!);
     const parseErrors = parsed.filter((p) => p.error !== null);
@@ -217,6 +221,7 @@ export function initBulkAddAccounts() {
       errorDiv.classList.add('hidden');
     }
 
+    isSubmitting = true;
     submitBtn.disabled = true;
     if (submitText) submitText.textContent = 'Creating...';
 
@@ -248,6 +253,7 @@ export function initBulkAddAccounts() {
       }
     }
 
+    isSubmitting = false;
     submitBtn.disabled = false;
     if (submitText) submitText.textContent = 'Create Accounts';
 

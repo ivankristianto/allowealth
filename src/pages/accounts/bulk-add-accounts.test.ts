@@ -132,6 +132,12 @@ describe('parseLine', () => {
     expect(result.error).toContain('Invalid balance "abc"');
   });
 
+  it('returns error for infinite/scientific-overflow balance', () => {
+    const result = parseLine('Test, cash, IDR, 1e309', 1, VALID_CURRENCIES);
+    expect(result.account).toBeNull();
+    expect(result.error).toContain('Invalid balance "1e309"');
+  });
+
   // All valid account types
   const allTypes = [
     'cash',
