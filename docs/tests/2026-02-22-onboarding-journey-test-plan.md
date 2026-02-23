@@ -176,22 +176,50 @@ Replaces the old 5-step onboarding checklist with a full-page guided wizard at `
 
 ## Summary Checklist
 
+_Last run: 2026-02-23_
+
 | #   | Area                | Key Assertion                                                               | Pass    |
 | --- | ------------------- | --------------------------------------------------------------------------- | ------- |
 | 1   | Signup → Onboarding | New user redirected to `/onboarding` after login, not `/dashboard`          | PASS    |
 | 2   | Dashboard redirect  | `/dashboard` redirects to `/onboarding` when incomplete                     | PASS    |
 | 3   | Step 1 Currency     | Primary + optional secondary currency saved to workspace meta               | PASS    |
 | 4   | Step 2 Accounts     | Accounts created with correct starting balances and types                   | FAIL    |
-| 5   | Step 3 Income       | Monthly income saved as planning number per currency                        | PASS    |
+| 5   | Step 3 Income       | Monthly income saved as planning number per currency                        | PARTIAL |
 | 6   | Step 4 Allocation   | Default categories seeded, smart defaults pre-filled, real-time bar updates | PASS    |
 | 7   | Step 4 Budgets      | Budget records created for current month with user-set amounts              | PASS    |
-| 8   | Step 5 Expense      | Transaction created, account balance reduced, budget spending updated       | PARTIAL |
+| 8   | Step 5 Expense      | Transaction created, account balance reduced, budget spending updated       | PASS    |
 | 9   | Completion          | After step 5, redirected to dashboard with full data                        | PASS    |
 | 10  | Old checklist       | OnboardingChecklist no longer renders anywhere                              | PASS    |
 | 11  | Back nav            | Back buttons return to previous steps with data pre-filled                  | PASS    |
 | 12  | Guard               | `/onboarding` requires auth; complete onboarding redirects to dashboard     | PASS    |
 
 **Critical paths:** Steps 2 (redirect), 4 (accounts), 6-7 (allocation + budgets), 7.5 (expense + redirect).
+
+## Findings — 2026-02-23 Run
+
+### FAIL — #4 Step 2 Accounts: Balance input fields missing thousands-separator formatting
+
+Account balance input fields display raw integers (`Rp 5000000`) instead of formatted values (`Rp 5,000,000`). This affects both the account form during entry and the back-navigation pre-fill on step 2. The accounts page after onboarding displays values correctly formatted. Root cause: the input fields do not apply locale-aware number formatting on render.
+
+**Fixed 2026-02-23:** `StepAccounts.astro` — added `attachAmountFormatter` on `#account-balance` input (formats on type and auto-formats pre-filled back-nav values); added `formatAmountForDisplay` import to frontmatter for server-side balance display in the accounts list; currency select change syncs formatter via `formatter.updateCurrency()`.
+
+### PARTIAL — #5 Step 3 Income: Validation messages differ from spec
+
+- **5.3 (empty field):** Blocked by HTML5 `required` attribute (browser-native tooltip), no inline custom error message rendered in page.
+- **5.4 (zero value):** Shows `"Please enter your monthly income"` — correct message to block zero income but the spec expected `"Please enter a positive amount"` for the zero-specifically case.
+- **5.7 (back-nav pre-fill):** Pre-fills with unformatted `10000000` instead of `10,000,000`.
+
+**Fixed 2026-02-23:** `StepIncome.astro` — added `attachAmountFormatter` on all `[data-amount-input]` fields (fixes 5.7 pre-fill and typing formatting); added `novalidate` to form so custom JS validation handles empty fields (fixes 5.3); separated empty-field check (`"Please enter your monthly income"`) from zero-value check (`"Please enter a positive amount"`) (fixes 5.4).
+
+### BUG — Step 1 Currency: `[object Object]` rendered when navigating back from step 2
+
+When on step 2 (accounts) and clicking Back → `/onboarding?reset=currency`, the currency step renders `[object Object]` as an error string below the form, blocking Continue. Navigating directly to `/onboarding` (without the reset param) correctly advances to the next incomplete step, providing a usable workaround. Root cause: `ApiResponse.error` is `{ message: string }` (an object), not a plain string — `new Error(data.error)` stringifies the object.
+
+**Fixed 2026-02-23:** `StepCurrency.astro` — changed `data.error || 'Failed...'` to `data.error?.message || 'Failed...'` to correctly extract the message string. Same fix applied in `StepAccounts.astro` for the account creation error path.
+
+### SKIP — Section 9 Edge Cases: Requires incomplete onboarding state
+
+All Section 9 edge case tests (9.1–9.6) require the onboarding wizard to be in an incomplete state. After full completion, `?reset=` params redirect to `/dashboard` instead of re-opening wizard steps. To re-test these, start a fresh database.
 
 ## Automated Test Coverage
 

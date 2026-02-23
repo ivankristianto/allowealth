@@ -145,7 +145,7 @@ const { currentCurrency, currentSecondaryCurrency } = Astro.props;
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || 'Failed to save currency');
+          throw new Error(data.error?.message || 'Failed to save currency');
         }
 
         // Navigate to next step (page reload picks up new state)

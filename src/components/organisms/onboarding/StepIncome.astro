@@ -24,7 +24,7 @@ const { currencies, currentIncome } = Astro.props;
     among your spending categories in the next step.
   </p>
 
-  <form id="onboarding-income-form" class="space-y-4">
+  <form id="onboarding-income-form" class="space-y-4" novalidate>
     {
       currencies.map((currency) => (
         <div class="form-control">
@@ -92,13 +92,21 @@ const { currencies, currentIncome } = Astro.props;
 
 <script>
   import { csrfFetch } from '@/lib/csrf-client';
-  import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 
   function initStepIncome() {
     const form = document.getElementById('onboarding-income-form') as HTMLFormElement | null;
     const errorDiv = document.getElementById('income-error');
 
     if (!form) return;
+
+    // Attach formatter to every income input so values format on type and pre-fill formats on load
+    const incomeInputs = form.querySelectorAll<HTMLInputElement>('[data-amount-input]');
+    incomeInputs.forEach((input) => {
+      const currency = (input.dataset.amountCurrency ??
+        'IDR') as import('@/lib/constants/currency').Currency;
+      attachAmountFormatter(input, currency);
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -109,20 +117,30 @@ const { currencies, currentIncome } = Astro.props;
 
       const formData = new FormData(form);
       const monthlyIncome: Record<string, string> = {};
+      let hasAnyValue = false;
 
       for (const [key, value] of formData.entries()) {
         if (key.startsWith('income_')) {
           const currency = key.replace('income_', '');
           const amount = stripAmountFormatting(value as string);
+          if (amount) hasAnyValue = true;
           if (amount && parseFloat(amount) > 0) {
             monthlyIncome[currency] = amount;
           }
         }
       }
 
-      if (Object.keys(monthlyIncome).length === 0) {
+      if (!hasAnyValue) {
         if (errorDiv) {
           errorDiv.textContent = 'Please enter your monthly income';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (Object.keys(monthlyIncome).length === 0) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Please enter a positive amount';
           errorDiv.classList.remove('hidden');
         }
         return;

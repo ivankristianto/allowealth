@@ -10,6 +10,7 @@ import AmountInput from '@/components/atoms/AmountInput.astro';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 import type { Currency } from '@/lib/constants/currency';
 import { CURRENCY_META } from '@/lib/constants/currency';
+import { formatAmountForDisplay } from '@/lib/formatting/amount-input';
 
 export interface SimpleAccount {
   id: string;
@@ -49,7 +50,8 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
             </div>
             <div class="text-right">
               <div class="font-bold text-base-content">
-                {CURRENCY_META[account.currency].symbol} {account.balance}
+                {CURRENCY_META[account.currency].symbol}{' '}
+                {formatAmountForDisplay(account.balance, account.currency)}
               </div>
               <div class="text-xs text-base-content/50">{account.currency}</div>
             </div>
@@ -176,7 +178,7 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
 
 <script>
   import { csrfFetch } from '@/lib/csrf-client';
-  import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 
   function initStepAccounts() {
     const form = document.getElementById('onboarding-account-form') as HTMLFormElement | null;
@@ -184,6 +186,23 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
     const errorDiv = document.getElementById('account-error');
 
     if (!form) return;
+
+    const balanceInput = document.getElementById('account-balance') as HTMLInputElement | null;
+    const currencySelect = document.getElementById('account-currency') as HTMLSelectElement | null;
+
+    if (balanceInput) {
+      const initialCurrency = (currencySelect?.value ??
+        balanceInput.dataset.amountCurrency ??
+        'IDR') as import('@/lib/constants/currency').Currency;
+      const formatter = attachAmountFormatter(balanceInput, initialCurrency);
+
+      // Keep formatter in sync when user changes currency
+      currencySelect?.addEventListener('change', () => {
+        formatter.updateCurrency(
+          currencySelect.value as import('@/lib/constants/currency').Currency
+        );
+      });
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -220,7 +239,7 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || 'Failed to create account');
+          throw new Error(data.error?.message || 'Failed to create account');
         }
 
         // Reload to show new account in list (stay on step 2)
