@@ -24,7 +24,12 @@ const updateWorkspaceSettingsSchema = z.object({
   weekStart: z.enum(['monday', 'sunday']).optional(),
   compactNumbers: z.boolean().optional(),
   monthlyIncome: z
-    .record(z.enum(AVAILABLE_CURRENCIES), z.string().regex(/^\d+(\.\d{1,2})?$/))
+    .record(z.string(), z.string().regex(/^\d+(\.\d{1,2})?$/))
+    .refine(
+      (obj) =>
+        Object.keys(obj).every((k) => (AVAILABLE_CURRENCIES as readonly string[]).includes(k)),
+      { message: 'Invalid currency code' }
+    )
     .optional(),
 });
 

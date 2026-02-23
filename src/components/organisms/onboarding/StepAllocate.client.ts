@@ -43,7 +43,6 @@ function initStepAllocate() {
   updateAllocation();
 }
 
-initStepAllocate();
 document.addEventListener('astro:page-load', initStepAllocate);
 document.addEventListener('astro:before-swap', () => {
   controller?.abort();

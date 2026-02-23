@@ -176,20 +176,20 @@ Replaces the old 5-step onboarding checklist with a full-page guided wizard at `
 
 ## Summary Checklist
 
-| #   | Area                | Key Assertion                                                               | Pass |
-| --- | ------------------- | --------------------------------------------------------------------------- | ---- |
-| 1   | Signup → Onboarding | New user redirected to `/onboarding` after login, not `/dashboard`          | [ ]  |
-| 2   | Dashboard redirect  | `/dashboard` redirects to `/onboarding` when incomplete                     | [ ]  |
-| 3   | Step 1 Currency     | Primary + optional secondary currency saved to workspace meta               | [ ]  |
-| 4   | Step 2 Accounts     | Accounts created with correct starting balances and types                   | [ ]  |
-| 5   | Step 3 Income       | Monthly income saved as planning number per currency                        | [ ]  |
-| 6   | Step 4 Allocation   | Default categories seeded, smart defaults pre-filled, real-time bar updates | [ ]  |
-| 7   | Step 4 Budgets      | Budget records created for current month with user-set amounts              | [ ]  |
-| 8   | Step 5 Expense      | Transaction created, account balance reduced, budget spending updated       | [ ]  |
-| 9   | Completion          | After step 5, redirected to dashboard with full data                        | [ ]  |
-| 10  | Old checklist       | OnboardingChecklist no longer renders anywhere                              | [ ]  |
-| 11  | Back nav            | Back buttons return to previous steps with data pre-filled                  | [ ]  |
-| 12  | Guard               | `/onboarding` requires auth; complete onboarding redirects to dashboard     | [ ]  |
+| #   | Area                | Key Assertion                                                               | Pass    |
+| --- | ------------------- | --------------------------------------------------------------------------- | ------- |
+| 1   | Signup → Onboarding | New user redirected to `/onboarding` after login, not `/dashboard`          | PASS    |
+| 2   | Dashboard redirect  | `/dashboard` redirects to `/onboarding` when incomplete                     | PASS    |
+| 3   | Step 1 Currency     | Primary + optional secondary currency saved to workspace meta               | PASS    |
+| 4   | Step 2 Accounts     | Accounts created with correct starting balances and types                   | FAIL    |
+| 5   | Step 3 Income       | Monthly income saved as planning number per currency                        | PASS    |
+| 6   | Step 4 Allocation   | Default categories seeded, smart defaults pre-filled, real-time bar updates | PASS    |
+| 7   | Step 4 Budgets      | Budget records created for current month with user-set amounts              | PASS    |
+| 8   | Step 5 Expense      | Transaction created, account balance reduced, budget spending updated       | PARTIAL |
+| 9   | Completion          | After step 5, redirected to dashboard with full data                        | PASS    |
+| 10  | Old checklist       | OnboardingChecklist no longer renders anywhere                              | PASS    |
+| 11  | Back nav            | Back buttons return to previous steps with data pre-filled                  | PASS    |
+| 12  | Guard               | `/onboarding` requires auth; complete onboarding redirects to dashboard     | PASS    |
 
 **Critical paths:** Steps 2 (redirect), 4 (accounts), 6-7 (allocation + budgets), 7.5 (expense + redirect).
 

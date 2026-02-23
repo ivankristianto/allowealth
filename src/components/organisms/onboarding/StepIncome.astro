@@ -141,7 +141,8 @@ const { currencies, currentIncome } = Astro.props;
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || 'Failed to save income');
+          const msg = typeof data.error === 'string' ? data.error : data.error?.message;
+          throw new Error(msg || 'Failed to save income');
         }
 
         window.location.href = '/onboarding';
@@ -157,6 +158,5 @@ const { currencies, currentIncome } = Astro.props;
     });
   }
 
-  initStepIncome();
   document.addEventListener('astro:page-load', initStepIncome);
 </script>

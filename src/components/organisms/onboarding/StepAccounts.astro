@@ -223,8 +223,8 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
           throw new Error(data.error || 'Failed to create account');
         }
 
-        // Reload to show new account in list
-        window.location.href = '/onboarding';
+        // Reload to show new account in list (stay on step 2)
+        window.location.href = '/onboarding?reset=accounts';
       } catch (err) {
         if (errorDiv) {
           errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
@@ -241,6 +241,5 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
     });
   }
 
-  initStepAccounts();
   document.addEventListener('astro:page-load', initStepAccounts);
 </script>
