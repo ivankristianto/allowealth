@@ -20,8 +20,15 @@ import {
   deleteTransaction,
   cancelPendingRequest,
 } from '@/lib/api/transactionsApiClient';
+import {
+  initBulkActions,
+  initBulkDeleteConfirmation,
+  setOnBulkActionComplete,
+  syncCheckboxUI,
+} from './BulkActions.client';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { addToast } from '@/lib/stores/toastStore';
+import { clearSelection } from '@/lib/stores/transactionSelectionStore';
 import {
   clearConfirmError,
   closeConfirmationModal,
@@ -218,6 +225,7 @@ async function fetchAndRender(): Promise<void> {
 
     // Re-attach pagination event listeners after HTML replacement
     reattachPaginationListeners();
+    syncCheckboxUI();
   } catch (error) {
     hideLoadingState();
     if (error instanceof Error && error.name !== 'AbortError') {
@@ -281,6 +289,7 @@ function reattachPaginationListeners(): void {
 function handleTypeFilterChange(type: 'income' | 'expense'): void {
   transactionFiltersStore.setKey('type', type);
   transactionFiltersStore.setKey('page', 1);
+  clearSelection();
 
   // Update URL
   updateUrl();
@@ -318,6 +327,7 @@ function handleCategoryFilterChange(categoryId: string): void {
   transactionFiltersStore.setKey('category_id', categoryId);
   transactionFiltersStore.setKey('category_ids', []);
   transactionFiltersStore.setKey('page', 1);
+  clearSelection();
   updateUrl();
   fetchAndRender();
 }
@@ -329,6 +339,7 @@ function handleCategoryIdsFilterChange(categoryIds: string[]): void {
   transactionFiltersStore.setKey('category_ids', categoryIds);
   transactionFiltersStore.setKey('category_id', ''); // Clear single category
   transactionFiltersStore.setKey('page', 1);
+  clearSelection();
   updateUrl();
   fetchAndRender();
 }
@@ -339,6 +350,7 @@ function handleCategoryIdsFilterChange(categoryIds: string[]): void {
 function handleAccountIdsFilterChange(accountIds: string[]): void {
   transactionFiltersStore.setKey('account_ids', accountIds);
   transactionFiltersStore.setKey('page', 1);
+  clearSelection();
   updateUrl();
   fetchAndRender();
 }
@@ -349,6 +361,7 @@ function handleAccountIdsFilterChange(accountIds: string[]): void {
 function handleMonthFilterChange(month: string): void {
   transactionFiltersStore.setKey('month', month);
   transactionFiltersStore.setKey('page', 1);
+  clearSelection();
   updateUrl();
   updateMonthNavigationUI();
   fetchAndRender();
@@ -398,6 +411,7 @@ function handleSearchInput(searchValue: string): void {
   searchDebounceTimer = setTimeout(() => {
     transactionFiltersStore.setKey('search', searchValue);
     transactionFiltersStore.setKey('page', 1);
+    clearSelection();
     updateUrl();
     fetchAndRender();
   }, SEARCH_DEBOUNCE_MS);
@@ -411,6 +425,7 @@ function handlePageChange(page: number): void {
   if (page < 1 || page > state.pagination.totalPages) return;
 
   transactionFiltersStore.setKey('page', page);
+  clearSelection();
   updateUrl();
 
   // Scroll to top of list
@@ -617,6 +632,7 @@ function handlePopState(): void {
   if (monthInput && filters.month) monthInput.value = filters.month;
 
   updateMonthNavigationUI();
+  clearSelection();
   fetchAndRender();
 }
 
@@ -723,6 +739,11 @@ function setupEventListeners(): void {
       { signal }
     );
   }
+
+  // Bulk actions
+  initBulkActions(signal);
+  initBulkDeleteConfirmation(signal);
+  setOnBulkActionComplete(() => fetchAndRender());
 
   // Delete buttons (use event delegation for dynamically rendered rows)
   document.addEventListener(
@@ -840,6 +861,7 @@ function setupEventListeners(): void {
 
         updateTypeFilterUI('expense');
         updateUrl();
+        clearSelection();
         fetchAndRender();
 
         // Dispatch filtersReset so PeriodNavigator and TransactionFiltersBar can sync their internal state
@@ -857,6 +879,7 @@ function setupEventListeners(): void {
     () => {
       invalidateAllCache();
       transactionFiltersStore.setKey('page', 1);
+      clearSelection();
       updateUrl();
       fetchAndRender();
     },
