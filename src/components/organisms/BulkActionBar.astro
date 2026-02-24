@@ -44,92 +44,102 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
         <button
           type="button"
           tabindex={0}
-          class="btn btn-sm btn-outline gap-2"
+          class="btn btn-sm btn-outline gap-2 rounded-lg sm:rounded-xl"
           aria-haspopup="listbox"
           aria-label="Change category for selected transactions"
         >
           <FolderPen size={16} class="stroke-current" aria-hidden="true" />
           <span class="hidden sm:inline">Category</span>
         </button>
-        <ul
+        <div
           tabindex={0}
-          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-56 max-h-64 overflow-y-auto border border-base-300 mb-2"
+          class="dropdown-content z-50 p-3 shadow-lg bg-base-100 rounded-2xl w-72 border border-base-300 mb-2"
           role="listbox"
           data-bulk-category-list
         >
-          {expenseCategories.length > 0 && <li class="menu-title text-xs">Expense</li>}
-          {
-            expenseCategories.map((category) => (
-              <li role="none">
-                <button
-                  type="button"
-                  role="option"
-                  class="text-sm"
-                  data-bulk-action="update_category"
-                  data-bulk-value={category.id}
-                >
-                  {category.name}
-                </button>
-              </li>
-            ))
-          }
-          {incomeCategories.length > 0 && <li class="menu-title text-xs">Income</li>}
-          {
-            incomeCategories.map((category) => (
-              <li role="none">
-                <button
-                  type="button"
-                  role="option"
-                  class="text-sm"
-                  data-bulk-action="update_category"
-                  data-bulk-value={category.id}
-                >
-                  {category.name}
-                </button>
-              </li>
-            ))
-          }
-        </ul>
+          <div class="space-y-2 max-h-72 overflow-y-auto">
+            {
+              expenseCategories.length > 0 && (
+                <div class="space-y-1">
+                  <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
+                    Expense
+                  </div>
+                  {expenseCategories.map((category) => (
+                    <button
+                      type="button"
+                      role="option"
+                      class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
+                      data-bulk-action="update_category"
+                      data-bulk-value={category.id}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              )
+            }
+            {
+              incomeCategories.length > 0 && (
+                <div class="space-y-1">
+                  <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
+                    Income
+                  </div>
+                  {incomeCategories.map((category) => (
+                    <button
+                      type="button"
+                      role="option"
+                      class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
+                      data-bulk-action="update_category"
+                      data-bulk-value={category.id}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              )
+            }
+          </div>
+        </div>
       </div>
 
       <div class="dropdown dropdown-top dropdown-end">
         <button
           type="button"
           tabindex={0}
-          class="btn btn-sm btn-outline gap-2"
+          class="btn btn-sm btn-outline gap-2 rounded-lg sm:rounded-xl"
           aria-haspopup="listbox"
           aria-label="Change account for selected transactions"
         >
           <CreditCard size={16} class="stroke-current" aria-hidden="true" />
           <span class="hidden sm:inline">Account</span>
         </button>
-        <ul
+        <div
           tabindex={0}
-          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-56 max-h-64 overflow-y-auto border border-base-300 mb-2"
+          class="dropdown-content z-50 p-3 shadow-lg bg-base-100 rounded-2xl w-72 border border-base-300 mb-2"
           role="listbox"
           data-bulk-account-list
         >
-          {
-            accounts.map((account) => (
-              <li role="none">
+          <div class="space-y-1 max-h-72 overflow-y-auto">
+            {
+              accounts.map((account) => (
                 <button
                   type="button"
                   role="option"
-                  class="text-sm"
+                  class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
                   data-bulk-action="update_account"
                   data-bulk-value={account.id}
                 >
                   {account.name}
                 </button>
-              </li>
-            ))
-          }
-        </ul>
+              ))
+            }
+          </div>
+        </div>
       </div>
 
       <button
         type="button"
-        class="btn btn-sm btn-error btn-outline gap-2"
+        class="btn btn-sm btn-error btn-outline gap-2 rounded-lg sm:rounded-xl"
         data-bulk-action="delete"
         aria-label="Delete selected transactions"
       >

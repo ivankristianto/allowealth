@@ -134,36 +134,56 @@ Adds multi-select checkboxes to the transaction list with a sticky bottom action
 | 8.2  | Re-enable network, retry the same category change                                               | Success toast, selection clears, transactions updated                                 |
 | 8.3  | (If testable) Trigger a partial failure (e.g., one selected transaction deleted by another tab) | Warning toast: "N updated, 1 failed"                                                  |
 
-### 9. Mobile Responsiveness
+### 9. Dropdown Styling & Scroll (Cutoff Fix)
+
+**Components under test:** `BulkActionBar.astro` (category and account dropdowns)
+
+> **Context:** DaisyUI `menu` class applied `flex-wrap: wrap`, causing list items to wrap into a second column that overflowed the dropdown width. Fix removes `menu` class, switches to `div/button` structure, widens to `w-72`, and uses a separate scroll container.
+
+| Step | Action                                                        | Expected Result                                                                                                         |
+| ---- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 9.1  | Select 1+ transactions, click "Category" button in action bar | Dropdown opens upward with single-column layout, no items wrapping into a second column                                 |
+| 9.2  | Inspect category dropdown visually                            | Rounded corners match filter bar dropdowns (`rounded-2xl`), width matches (`w-72`), padding is `p-3`                    |
+| 9.3  | Verify category group headers ("Expense", "Income")           | Headers styled as small uppercase text (`text-xs font-semibold uppercase tracking-wider`) with muted color              |
+| 9.4  | Verify category item buttons                                  | Items have `px-3 py-2 rounded-xl` padding/rounding, highlight on hover (`hover:bg-base-200`)                            |
+| 9.5  | If many categories exist, scroll within the dropdown          | Items scroll inside the dropdown (max height ~288px / `max-h-72`), dropdown container padding stays outside scroll area |
+| 9.6  | Click a category item                                         | Bulk action executes (toast appears), dropdown closes via action bar hide                                               |
+| 9.7  | Select 1+ transactions, click "Account" button in action bar  | Dropdown opens upward with single-column scrollable list, same styling as category dropdown                             |
+| 9.8  | If many accounts exist, scroll within the account dropdown    | Items scroll without cutoff, no wrapping into multiple columns                                                          |
+| 9.9  | Click an account item                                         | Bulk action executes, dropdown closes                                                                                   |
+| 9.10 | Resize viewport to ~375px, open category dropdown             | Dropdown still fits within viewport, no horizontal overflow                                                             |
+
+### 10. Mobile Responsiveness
 
 **Components under test:** All bulk operation UI on mobile viewport
 
-| Step | Action                                               | Expected Result                                                                   |
-| ---- | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
-| 9.1  | Set viewport to 375px width                          | Transaction list renders in mobile card layout                                    |
-| 9.2  | Checkboxes are visible and tappable on each card     | Checkbox appears to the left of the transaction content, adequate tap target size |
-| 9.3  | Select 2 transactions                                | Action bar appears at bottom with icon-only buttons                               |
-| 9.4  | Tap the Category icon button in the action bar       | Dropdown opens upward (dropdown-top) without clipping at bottom of screen         |
-| 9.5  | Select a category from the dropdown                  | Success toast, transactions updated, selection cleared                            |
-| 9.6  | Select 1 transaction, tap Delete icon button         | Confirmation modal opens, readable and properly sized for mobile                  |
-| 9.7  | Confirm delete                                       | Transaction removed, toast shown                                                  |
-| 9.8  | Set viewport to 768px (tablet), repeat steps 9.2-9.5 | Layout works correctly at tablet breakpoint                                       |
+| Step | Action                                                 | Expected Result                                                                   |
+| ---- | ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| 10.1 | Set viewport to 375px width                            | Transaction list renders in mobile card layout                                    |
+| 10.2 | Checkboxes are visible and tappable on each card       | Checkbox appears to the left of the transaction content, adequate tap target size |
+| 10.3 | Select 2 transactions                                  | Action bar appears at bottom with icon-only buttons                               |
+| 10.4 | Tap the Category icon button in the action bar         | Dropdown opens upward (dropdown-top) without clipping at bottom of screen         |
+| 10.5 | Select a category from the dropdown                    | Success toast, transactions updated, selection cleared                            |
+| 10.6 | Select 1 transaction, tap Delete icon button           | Confirmation modal opens, readable and properly sized for mobile                  |
+| 10.7 | Confirm delete                                         | Transaction removed, toast shown                                                  |
+| 10.8 | Set viewport to 768px (tablet), repeat steps 10.2-10.5 | Layout works correctly at tablet breakpoint                                       |
 
 ---
 
 ## Summary Checklist
 
-| #   | Area            | Key Assertion                                                                   | Pass    |
-| --- | --------------- | ------------------------------------------------------------------------------- | ------- |
-| 1   | Checkboxes      | Checkbox visible on every transaction card in both mobile and desktop layouts   | PASS    |
-| 2   | Select All      | Select-all toggles all visible checkboxes and shows indeterminate state         | PASS    |
-| 3   | Action Bar      | Appears on first selection, disappears on clear, sticky at bottom               | PASS    |
-| 4   | Change Category | Bulk recategorize works, toast shown, transactions updated, audit log preserved | PASS    |
-| 5   | Change Account  | Bulk account change works, toast shown, transactions updated                    | PASS    |
-| 6   | Bulk Delete     | Confirmation modal shown, soft delete works, transactions removed from list     | PASS    |
-| 7   | Filter Clear    | Any filter/page change clears selection                                         | PASS    |
-| 8   | Error Handling  | Network errors show error toast, selection preserved for retry                  | PASS    |
-| 9   | Mobile          | All bulk operations usable on 375px viewport                                    | PARTIAL |
+| #   | Area             | Key Assertion                                                                   | Pass |
+| --- | ---------------- | ------------------------------------------------------------------------------- | ---- |
+| 1   | Checkboxes       | Checkbox visible on every transaction card in both mobile and desktop layouts   | PASS |
+| 2   | Select All       | Select-all toggles all visible checkboxes and shows indeterminate state         | PASS |
+| 3   | Action Bar       | Appears on first selection, disappears on clear, sticky at bottom               | PASS |
+| 4   | Change Category  | Bulk recategorize works, toast shown, transactions updated, audit log preserved | PASS |
+| 5   | Change Account   | Bulk account change works, toast shown, transactions updated                    | PASS |
+| 6   | Bulk Delete      | Confirmation modal shown, soft delete works, transactions removed from list     | PASS |
+| 7   | Filter Clear     | Any filter/page change clears selection                                         | PASS |
+| 8   | Error Handling   | Network errors show error toast, selection preserved for retry                  | PASS |
+| 9   | Dropdown Styling | Single-column layout, no cutoff, matches MultiSelectDropdown design             | PASS |
+| 10  | Mobile           | All bulk operations usable on 375px viewport                                    | PASS |
 
 **Critical paths:** Steps 4, 5, and 6 are highest priority (data mutations with audit trail). All PASS.
 
