@@ -191,6 +191,26 @@ const groupedItems = items.reduce<
 
     if (!hiddenInput || !labelEl || !countEl) return;
 
+    const triggerBtn = container.querySelector('[data-ms-trigger]') as HTMLButtonElement | null;
+    const dropdownPanel = container.querySelector('.dropdown-content') as HTMLElement | null;
+
+    // TODO: Replace with CSS Anchor Positioning API by 2027.
+    // https://developer.chrome.com/docs/css-ui/anchor-positioning-api
+    // As of Feb 2026, browser support is ~77% (no iOS Safari <26).
+    // Once support reaches ~95%, use anchor-name + position-area +
+    // position-try-fallbacks for pure-CSS auto-positioning.
+    function autoPositionDropdown(): void {
+      if (!triggerBtn || !dropdownPanel) return;
+      const rect = triggerBtn.getBoundingClientRect();
+      const panelWidth = dropdownPanel.offsetWidth || 288;
+      const overflowsRight = rect.left + panelWidth > window.innerWidth;
+      container.classList.toggle('dropdown-end', overflowsRight);
+    }
+
+    if (triggerBtn) {
+      triggerBtn.addEventListener('click', autoPositionDropdown);
+    }
+
     const defaultLabel = hiddenInput.dataset.msDefaultLabel || 'All';
     const filterEventType = hiddenInput.dataset.msFilterEventType || '';
     const itemEls = Array.from(container.querySelectorAll<HTMLElement>('[data-ms-item]'));
