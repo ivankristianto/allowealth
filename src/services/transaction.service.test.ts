@@ -688,4 +688,153 @@ describe('TransactionService', () => {
       expect(updateEntry?.newValue?.account_id).toBe('BCA Savings');
     });
   });
+
+  describe('bulk operations', () => {
+    describe('bulkUpdateCategory', () => {
+      it('should update category for multiple transactions', async () => {
+        const ids = ['txn-1', 'txn-2', 'txn-3'];
+        const newCategoryId = 'cat-new';
+
+        (mockDb.query.categories.findFirst as any).mockResolvedValue(
+          createMockCategory({ id: newCategoryId, is_active: true })
+        );
+
+        const mockTxn = createMockTransactionWithRelations({}, mockCategory, mockAccount);
+        (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockTxn);
+
+        (mockDb.update as any).mockReturnValue({
+          set: mock(() => ({
+            where: mock(() => Promise.resolve()),
+          })),
+        });
+
+        const result = await transactionService.bulkUpdateCategory(
+          ids,
+          newCategoryId,
+          'workspace-1',
+          'user-1'
+        );
+
+        expect(result.updated).toBe(3);
+        expect(result.failed).toBe(0);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should return error if category not found', async () => {
+        (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
+
+        await expect(
+          transactionService.bulkUpdateCategory(['txn-1'], 'bad-cat', 'workspace-1', 'user-1')
+        ).rejects.toThrow('Category not found');
+      });
+
+      it('should handle partial failures', async () => {
+        const newCategoryId = 'cat-new';
+        (mockDb.query.categories.findFirst as any).mockResolvedValue(
+          createMockCategory({ id: newCategoryId, is_active: true })
+        );
+
+        (mockDb.query.transactions.findFirst as any)
+          .mockResolvedValueOnce(createMockTransactionWithRelations({}, mockCategory, mockAccount))
+          .mockResolvedValueOnce(undefined);
+
+        (mockDb.update as any).mockReturnValue({
+          set: mock(() => ({
+            where: mock(() => Promise.resolve()),
+          })),
+        });
+
+        const result = await transactionService.bulkUpdateCategory(
+          ['txn-1', 'txn-missing'],
+          newCategoryId,
+          'workspace-1',
+          'user-1'
+        );
+
+        expect(result.updated).toBe(1);
+        expect(result.failed).toBe(1);
+        expect(result.errors).toHaveLength(1);
+        expect(result.errors[0].id).toBe('txn-missing');
+      });
+
+      it('should reject if IDs exceed limit', async () => {
+        const ids = Array.from({ length: 101 }, (_, i) => `txn-${i}`);
+
+        await expect(
+          transactionService.bulkUpdateCategory(ids, 'cat-1', 'workspace-1', 'user-1')
+        ).rejects.toThrow('Bulk operations limited to 100');
+      });
+    });
+
+    describe('bulkUpdateAccount', () => {
+      it('should update account for multiple transactions', async () => {
+        const ids = ['txn-1', 'txn-2'];
+        const newAccountId = 'acc-new';
+
+        (mockDb.query.accounts.findFirst as any).mockResolvedValue(
+          createMockAccount({ id: newAccountId, status: 'active' })
+        );
+
+        const mockTxn = createMockTransactionWithRelations({}, mockCategory, mockAccount);
+        (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockTxn);
+
+        (mockDb.update as any).mockReturnValue({
+          set: mock(() => ({
+            where: mock(() => Promise.resolve()),
+          })),
+        });
+
+        const result = await transactionService.bulkUpdateAccount(
+          ids,
+          newAccountId,
+          'workspace-1',
+          'user-1'
+        );
+
+        expect(result.updated).toBe(2);
+        expect(result.failed).toBe(0);
+      });
+    });
+
+    describe('bulkDelete', () => {
+      it('should soft delete multiple transactions', async () => {
+        const ids = ['txn-1', 'txn-2'];
+
+        const mockTxn = createMockTransactionWithRelations({}, mockCategory, mockAccount);
+        (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockTxn);
+
+        (mockDb.update as any).mockReturnValue({
+          set: mock(() => ({
+            where: mock(() => Promise.resolve()),
+          })),
+        });
+
+        const result = await transactionService.bulkDelete(ids, 'workspace-1', 'user-1');
+
+        expect(result.updated).toBe(2);
+        expect(result.failed).toBe(0);
+      });
+
+      it('should handle partial failures on delete', async () => {
+        (mockDb.query.transactions.findFirst as any)
+          .mockResolvedValueOnce(createMockTransactionWithRelations({}, mockCategory, mockAccount))
+          .mockResolvedValueOnce(undefined);
+
+        (mockDb.update as any).mockReturnValue({
+          set: mock(() => ({
+            where: mock(() => Promise.resolve()),
+          })),
+        });
+
+        const result = await transactionService.bulkDelete(
+          ['txn-1', 'txn-missing'],
+          'workspace-1',
+          'user-1'
+        );
+
+        expect(result.updated).toBe(1);
+        expect(result.failed).toBe(1);
+      });
+    });
+  });
 });

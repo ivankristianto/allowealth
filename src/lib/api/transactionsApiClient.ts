@@ -310,6 +310,43 @@ export async function deleteTransaction(id: string): Promise<void> {
   }
 }
 
+export interface BulkActionPayload {
+  action: 'update_category' | 'update_account' | 'delete';
+  ids: string[];
+  payload?: {
+    category_id?: string;
+    account_id?: string;
+  };
+}
+
+export interface BulkActionResult {
+  updated: number;
+  failed: number;
+  errors?: Array<{ id: string; error: string }>;
+}
+
+/**
+ * Execute a bulk action on multiple transactions.
+ */
+export async function bulkTransactionAction(payload: BulkActionPayload): Promise<BulkActionResult> {
+  const response = await fetch('/api/transactions/bulk', {
+    method: 'POST',
+    headers: getCsrfHeaders({
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    }),
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || errorData.message || 'Bulk operation failed');
+  }
+
+  const json = await response.json();
+  return json.data || json;
+}
+
 /**
  * Check if a request is currently in progress
  */
