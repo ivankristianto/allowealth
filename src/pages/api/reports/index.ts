@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService, accountService, workspaceMetaService } from '@/services';
-import type { ReportData } from '@/services/report.service';
+import type { ReportData, RecurringBreakdown } from '@/services/report.service';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
@@ -121,8 +121,16 @@ export const GET: APIRoute = async (context) => {
 
     // 3. Call service with workspaceId to fetch report data
     let reportData: ReportData;
+    let recurringBreakdown: RecurringBreakdown | null = null;
     if (range === 'monthly') {
       reportData = await reportService.getMonthlyReport(auth.workspaceId, period, currency, userId);
+      const [year, month] = period.split('-').map(Number);
+      recurringBreakdown = await reportService.getRecurringBreakdown(
+        auth.workspaceId,
+        year,
+        month,
+        currency
+      );
     } else {
       const year = parseInt(period, 10);
       reportData = await reportService.getYearlyReport(auth.workspaceId, year, currency, userId);
@@ -173,6 +181,13 @@ export const GET: APIRoute = async (context) => {
         expenses: safeParseDecimal(trend.expenses),
       }));
 
+      const recurringBreakdownData = recurringBreakdown
+        ? {
+            recurringTotal: safeParseDecimal(recurringBreakdown.recurringTotal),
+            oneTimeTotal: safeParseDecimal(recurringBreakdown.oneTimeTotal),
+          }
+        : undefined;
+
       // Convert categoryIntelligence (decimal strings to numbers)
       const categories = reportData.categoryIntelligence.map((cat) => ({
         id: cat.id,
@@ -206,6 +221,7 @@ export const GET: APIRoute = async (context) => {
           props: {
             expenseByCategory,
             trendData,
+            recurringBreakdown: recurringBreakdownData,
             currency,
             resourceAllocationSubtitle: range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX',
             financialVelocitySubtitle: range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW',

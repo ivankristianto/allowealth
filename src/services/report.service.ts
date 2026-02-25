@@ -35,6 +35,7 @@ import {
   decimalMultiply,
   decimalSum,
   decimalIsZero,
+  decimalCompare,
 } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
@@ -116,6 +117,16 @@ export interface MemberSummaryRow {
   totalExpenses: string;
   netSavings: string;
   transactionCount: number;
+}
+
+export interface RecurringBreakdown {
+  recurringTotal: string;
+  oneTimeTotal: string;
+  recurringByCategory: Array<{
+    category_id: string;
+    category_name: string;
+    amount: string;
+  }>;
 }
 
 /**
@@ -293,6 +304,99 @@ export class ReportService {
       // Return safe defaults on error
       return this.getEmptyReport();
     }
+  }
+
+  async getRecurringBreakdown(
+    workspaceId: string,
+    year: number,
+    month: number,
+    currency: Currency = 'IDR'
+  ): Promise<RecurringBreakdown> {
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new Error('Invalid year');
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new Error('Invalid month');
+    }
+
+    const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
+    const monthEnd = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
+
+    const confirmedOccurrences = await this.db.query.recurringOccurrences.findMany({
+      where: and(
+        eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+        eq(this.schema.recurringOccurrences.status, 'confirmed'),
+        gte(this.schema.recurringOccurrences.due_date, monthStart),
+        lte(this.schema.recurringOccurrences.due_date, monthEnd)
+      ),
+      with: {
+        template: {
+          with: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    const recurringAmountParts: string[] = [];
+    const recurringByCategory = new Map<string, { category_name: string; amounts: string[] }>();
+
+    for (const occurrence of confirmedOccurrences) {
+      const template = occurrence.template;
+      if (template.type !== 'expense' || template.currency !== currency) {
+        continue;
+      }
+
+      const amount = occurrence.confirmed_amount || template.amount || '0';
+      recurringAmountParts.push(amount);
+
+      const key = template.category_id;
+      const entry = recurringByCategory.get(key) || {
+        category_name: template.category?.name || 'Unknown',
+        amounts: [],
+      };
+      entry.amounts.push(amount);
+      recurringByCategory.set(key, entry);
+    }
+
+    const recurringTotal = decimalSum(recurringAmountParts);
+
+    const totalExpenseRows = await (this.db as any)
+      .select({
+        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS NUMERIC))`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'expense'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, new Date(year, month - 1, 1)),
+          lte(this.schema.transactions.transaction_date, new Date(year, month, 0, 23, 59, 59)),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        )
+      );
+
+    const totalExpenses = totalExpenseRows[0]?.total || '0';
+    let oneTimeTotal = decimalSubtract(totalExpenses, recurringTotal);
+    if (decimalCompare(oneTimeTotal, '0') < 0) {
+      oneTimeTotal = '0';
+    }
+
+    return {
+      recurringTotal,
+      oneTimeTotal,
+      recurringByCategory: Array.from(recurringByCategory.entries()).map(
+        ([category_id, value]) => ({
+          category_id,
+          category_name: value.category_name,
+          amount: decimalSum(value.amounts),
+        })
+      ),
+    };
   }
 
   /**

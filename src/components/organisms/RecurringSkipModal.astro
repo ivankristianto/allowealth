@@ -1,0 +1,30 @@
+---
+import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
+import { CircleMinus } from '@lucide/astro';
+---
+
+<ConfirmationModal
+  id="recurring-skip-modal"
+  title="Skip this occurrence?"
+  description="You can optionally provide a reason."
+  icon={CircleMinus}
+  iconVariant="warning"
+  confirmLabel="Skip"
+  confirmVariant="warning"
+  confirmLoadingLabel="Skipping..."
+>
+  <div slot="details" class="space-y-3">
+    <p class="text-sm text-base-content/70" data-skip-template-name></p>
+    <label class="form-control">
+      <span class="label-text text-sm font-medium">Reason (optional)</span>
+      <textarea
+        class="textarea textarea-bordered min-h-24"
+        maxlength="200"
+        placeholder="Add a note for why this occurrence is skipped"
+        data-skip-reason></textarea>
+      <span class="text-xs text-base-content/60" aria-live="polite" data-skip-counter>
+        0 / 200 characters
+      </span>
+    </label>
+  </div>
+</ConfirmationModal>

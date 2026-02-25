@@ -14,7 +14,15 @@
 
 import Currency from '../atoms/Currency.astro';
 import CategoryIcon from '../atoms/CategoryIcon.astro';
-import { CreditCard, Ellipsis, EllipsisVertical, History, Pencil, Trash2 } from '@lucide/astro';
+import {
+  CreditCard,
+  Ellipsis,
+  EllipsisVertical,
+  History,
+  Pencil,
+  RefreshCw,
+  Trash2,
+} from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -38,6 +46,7 @@ const amount = transaction ? parseFloat(transaction.amount) || 0 : 0;
 const isExpense = transaction?.type === 'expense';
 const isDeleted = !!transaction?.deleted_at;
 const hasHistory = !!transaction?.has_history;
+const isRecurring = !!transaction?.is_recurring;
 // Parse date as local date to avoid timezone shift (UTC midnight → previous day in UTC- zones)
 const parseLocalDate = (dateStr: string | Date): Date => {
   if (dateStr instanceof Date) {
@@ -271,6 +280,15 @@ const cardClasses = [
                   {transaction?.category?.name || 'Transfer'}
                 </span>
               )}
+              {isRecurring && (
+                <span
+                  class="badge badge-sm badge-outline badge-accent gap-1"
+                  title="From recurring template"
+                >
+                  <RefreshCw size={12} aria-hidden="true" />
+                  Recurring
+                </span>
+              )}
               {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
               <span class="inline-flex items-center gap-1 min-w-0">
                 <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
@@ -334,6 +352,15 @@ const cardClasses = [
                   style={categoryPillStyle}
                 >
                   {transaction?.category?.name || 'Transfer'}
+                </span>
+              )}
+              {isRecurring && (
+                <span
+                  class="badge badge-sm badge-outline badge-accent gap-1"
+                  title="From recurring template"
+                >
+                  <RefreshCw size={12} aria-hidden="true" />
+                  Recurring
                 </span>
               )}
               {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}

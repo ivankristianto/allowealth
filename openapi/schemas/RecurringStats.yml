@@ -1,0 +1,29 @@
+RecurringStats:
+  type: object
+  required:
+    - pendingCount
+    - pendingByCurrency
+    - overdueCount
+    - confirmedThisMonth
+  properties:
+    pendingCount:
+      type: integer
+      minimum: 0
+    pendingByCurrency:
+      type: array
+      items:
+        type: object
+        required: [currency, amount]
+        properties:
+          currency:
+            type: string
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+          amount:
+            type: string
+            description: Decimal amount as string
+    overdueCount:
+      type: integer
+      minimum: 0
+    confirmedThisMonth:
+      type: integer
+      minimum: 0

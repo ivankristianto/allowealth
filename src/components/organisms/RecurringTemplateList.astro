@@ -1,0 +1,172 @@
+---
+import { RefreshCw, CircleMinus, CirclePlus, Pause, Play, Ban, Pencil } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+import ProgressBar from '@/components/atoms/ProgressBar.astro';
+import RecurringTemplateRow from '@/components/molecules/RecurringTemplateRow.astro';
+import type { RecurringTemplateOutput } from '@/lib/types/recurring';
+
+export interface Props {
+  templates: RecurringTemplateOutput[];
+}
+
+const { templates = [] } = Astro.props;
+
+const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
+  active: 'badge-success',
+  paused: 'badge-warning',
+  completed: 'badge-ghost',
+  cancelled: 'badge-error',
+};
+---
+
+<section class="space-y-4" data-testid="recurring-template-list">
+  <div class="flex items-center justify-between">
+    <h2 class="text-sm font-bold uppercase tracking-widest text-base-content/50">
+      All Templates ({templates.length})
+    </h2>
+  </div>
+
+  {
+    templates.length === 0 ? (
+      <div class="rounded-card border border-base-300 bg-base-100 p-8 text-center">
+        <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
+          <RefreshCw size={24} aria-hidden="true" />
+        </div>
+        <h3 class="text-lg font-semibold text-base-content">No recurring templates yet</h3>
+        <p class="mt-2 text-sm text-base-content/60">
+          Create a template to start generating recurring bill or income occurrences.
+        </p>
+      </div>
+    ) : (
+      <>
+        <div class="hidden md:block overflow-x-auto rounded-card border border-base-300 bg-base-100">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Amount</th>
+                <th>Day</th>
+                <th>Next Due</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {templates.map((template) => (
+                <RecurringTemplateRow template={template} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="md:hidden space-y-3">
+          {templates.map((template) => {
+            const payload = JSON.stringify(template);
+            const installmentProgress =
+              template.is_installment && template.total_occurrences
+                ? Math.min(
+                    100,
+                    Math.round((template.confirmedCount / template.total_occurrences) * 100)
+                  )
+                : 0;
+
+            return (
+              <article
+                class:list={[
+                  'rounded-card border border-base-300 bg-base-100 p-4 space-y-3',
+                  template.status === 'paused' && 'opacity-60',
+                ]}
+                data-testid="recurring-template-row"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      {template.type === 'expense' ? (
+                        <CircleMinus size={16} class="text-error" aria-hidden="true" />
+                      ) : (
+                        <CirclePlus size={16} class="text-success" aria-hidden="true" />
+                      )}
+                      <h3 class="font-semibold truncate" title={template.name}>
+                        {template.name}
+                      </h3>
+                    </div>
+                    <p class="text-sm text-base-content/60 mt-1">
+                      {formatCurrency(template.amount, template.currency)}
+                    </p>
+                  </div>
+                  <span class={`badge badge-sm ${statusClassMap[template.status]}`}>
+                    {template.status}
+                  </span>
+                </div>
+
+                {template.is_installment && template.total_occurrences && (
+                  <div class="flex items-center gap-2">
+                    <ProgressBar value={installmentProgress} size="sm" className="w-16" />
+                    <span class="text-xs text-base-content/60">
+                      {template.confirmedCount}/{template.total_occurrences}
+                    </span>
+                  </div>
+                )}
+
+                <div class="text-xs text-base-content/60">
+                  <span>Day {template.day_of_month}</span>
+                  <span class="mx-2">·</span>
+                  <span>Next due: {template.nextDueDate ?? '—'}</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    class="btn btn-outline btn-sm"
+                    type="button"
+                    data-template-action="edit"
+                    data-template={payload}
+                  >
+                    <Pencil size={14} aria-hidden="true" />
+                    Edit
+                  </button>
+
+                  {template.status === 'active' ? (
+                    <button
+                      class="btn btn-outline btn-sm"
+                      type="button"
+                      data-template-action="pause"
+                      data-template-id={template.id}
+                    >
+                      <Pause size={14} aria-hidden="true" />
+                      Pause
+                    </button>
+                  ) : template.status === 'paused' ? (
+                    <button
+                      class="btn btn-outline btn-sm"
+                      type="button"
+                      data-template-action="resume"
+                      data-template-id={template.id}
+                    >
+                      <Play size={14} aria-hidden="true" />
+                      Resume
+                    </button>
+                  ) : (
+                    <div />
+                  )}
+
+                  {template.status !== 'cancelled' && template.status !== 'completed' && (
+                    <button
+                      class="btn btn-outline btn-error btn-sm col-span-2"
+                      type="button"
+                      data-template-action="cancel"
+                      data-template-id={template.id}
+                      data-template-name={template.name}
+                    >
+                      <Ban size={14} aria-hidden="true" />
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </>
+    )
+  }
+</section>

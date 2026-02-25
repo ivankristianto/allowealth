@@ -1,0 +1,161 @@
+---
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
+import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
+import RecurringPendingList from '@/components/organisms/RecurringPendingList.astro';
+import RecurringTemplateList from '@/components/organisms/RecurringTemplateList.astro';
+import RecurringCalendar from '@/components/organisms/RecurringCalendar.astro';
+import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.astro';
+import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
+import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
+import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
+import {
+  recurringTemplateService,
+  recurringOccurrenceService,
+  categoryService,
+  accountService,
+} from '@/services';
+import type { RecurringCalendarDay } from '@/lib/types/recurring';
+
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+
+const url = Astro.url;
+const view = url.searchParams.get('view') === 'calendar' ? 'calendar' : 'list';
+
+const now = new Date();
+const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+const monthParam = url.searchParams.get('month') || currentMonth;
+const monthMatch = monthParam.match(/^(\d{4})-(\d{2})$/);
+const safeMonth = monthMatch ? monthParam : currentMonth;
+const [year, month] = safeMonth.split('-').map(Number);
+
+const periodOptions: PeriodOption[] = [];
+for (let offset = -1; offset <= 18; offset += 1) {
+  const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+  const value = `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+  const label = date.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+  periodOptions.push({ value, label });
+}
+
+const selectedPeriod = `${String(month).padStart(2, '0')}-${year}`;
+const selectedMonthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+  month: 'long',
+  year: 'numeric',
+});
+
+const perf = Astro.locals.perf;
+
+const [templateResult, pendingResult, stats, categories, accounts] = await Promise.all([
+  recurringTemplateService.findAll(user.workspaceId, { status: 'all', page: 1, limit: 100 }, perf),
+  recurringOccurrenceService.findPending(user.workspaceId, {
+    month: safeMonth,
+    status: 'pending',
+  }),
+  recurringOccurrenceService.getStats(user.workspaceId),
+  categoryService.findAll(user.workspaceId, { is_active: true }, perf),
+  accountService.findAll(user.workspaceId, undefined, perf),
+]);
+
+let calendarData: RecurringCalendarDay[] = [];
+if (view === 'calendar') {
+  calendarData = await recurringOccurrenceService.getCalendarData(user.workspaceId, year, month);
+}
+
+const currencies = Array.from(new Set(accounts.map((account) => account.currency))).filter(Boolean);
+---
+
+<ProtectedLayout title="Recurring" currentPath="/recurring" subtitle={selectedMonthLabel}>
+  <div
+    id="recurring-page"
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 pb-10"
+    data-initial-view={view}
+    data-initial-month={safeMonth}
+  >
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold tracking-tight">Recurring Transactions</h1>
+        <p class="text-sm text-base-content/60">
+          Manage templates and confirm monthly occurrences.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          class="btn btn-ghost btn-sm"
+          data-recurring-view="list"
+          aria-pressed={view === 'list'}
+        >
+          List
+        </button>
+        <button
+          class="btn btn-ghost btn-sm"
+          data-recurring-view="calendar"
+          aria-pressed={view === 'calendar'}
+        >
+          Calendar
+        </button>
+        <button class="btn btn-primary btn-sm" data-open-recurring-template>
+          + New Template
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-start">
+      <PeriodNavigator
+        options={periodOptions}
+        selected={selectedPeriod}
+        inputName="month"
+        newestFirst={true}
+        compactMobile={true}
+      />
+    </div>
+
+    <div id="recurring-stats-container">
+      <RecurringStatsPartial stats={stats} />
+    </div>
+
+    <div id="recurring-list-view" class:list={[view !== 'list' && 'hidden']}>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div id="recurring-pending-list-container">
+          <RecurringPendingList
+            occurrences={pendingResult.occurrences}
+            hasTemplates={templateResult.total > 0}
+            monthLabel={selectedMonthLabel}
+          />
+        </div>
+        <div id="recurring-template-list-container">
+          <RecurringTemplateList templates={templateResult.templates} />
+        </div>
+      </div>
+    </div>
+
+    <div id="recurring-calendar-view" class:list={[view !== 'calendar' && 'hidden']}>
+      <div id="recurring-calendar-container">
+        <RecurringCalendar calendarData={calendarData} year={year} month={month} />
+      </div>
+    </div>
+  </div>
+
+  <RecurringTemplateForm categories={categories} accounts={accounts} currencies={currencies} />
+  <RecurringConfirmModal categories={categories} accounts={accounts} />
+  <RecurringSkipModal />
+
+  <ConfirmationModal
+    id="recurring-cancel-modal"
+    title="Cancel recurring template"
+    description="This removes only future pending occurrences."
+    confirmLabel="Cancel template"
+    confirmVariant="error"
+    confirmLoadingLabel="Cancelling..."
+  />
+</ProtectedLayout>
+
+<script>
+  import '@/components/organisms/RecurringPage.client';
+</script>

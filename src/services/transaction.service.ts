@@ -9,6 +9,7 @@ import { CategoryService } from './category.service';
 import { AccountService } from './account.service';
 import {
   createTransactionSchema,
+  createTransactionSchemaNoFutureDate,
   updateTransactionSchema,
   type CreateTransactionInput,
   type UpdateTransactionInput,
@@ -115,9 +116,12 @@ export class TransactionService {
   /**
    * Create a new transaction
    */
-  async create(input: CreateTransactionInput) {
+  async create(input: CreateTransactionInput, options: { skipDateValidation?: boolean } = {}) {
     // Validate input using Zod schema
-    const validated = createTransactionSchema.parse(input);
+    const createSchema = options.skipDateValidation
+      ? createTransactionSchemaNoFutureDate
+      : createTransactionSchema;
+    const validated = createSchema.parse(input);
 
     // For non-transfer transactions, verify category exists and belongs to workspace
     if (validated.type !== 'transfer' && validated.category_id) {
@@ -390,19 +394,28 @@ export class TransactionService {
       offset: filters.offset || 0,
     };
 
-    if (filters.include_history_flag) {
+    const extras: Record<string, any> = {
       // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
-      queryOptions.extras = {
-        has_history: sql<number>`EXISTS (
+      is_recurring: sql<number>`EXISTS (
+        SELECT 1 FROM recurring_occurrences
+        WHERE recurring_occurrences.transaction_id = transactions.id
+        AND recurring_occurrences.workspace_id = transactions.workspace_id
+        LIMIT 1
+      )`.as('is_recurring'),
+    };
+
+    if (filters.include_history_flag) {
+      extras.has_history = sql<number>`EXISTS (
           SELECT 1 FROM audit_logs
           WHERE audit_logs.entity_type = 'transaction'
           AND audit_logs.entity_id = transactions.id
           AND audit_logs.workspace_id = transactions.workspace_id
           AND audit_logs.action IN ('update', 'delete')
           LIMIT 1
-        )`.as('has_history'),
-      };
+        )`.as('has_history');
     }
+
+    queryOptions.extras = extras;
 
     const result = await this.db.query.transactions.findMany(queryOptions);
 

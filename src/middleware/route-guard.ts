@@ -14,6 +14,7 @@ const PROTECTED_PREFIXES = [
   '/admin',
   '/dashboard',
   '/transactions',
+  '/recurring',
   '/budget',
   '/accounts',
   '/reports',

@@ -24,6 +24,7 @@ import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import AccountsWidget from '@/components/organisms/AccountsWidget.astro';
 import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
+import RecurringBillsWidget from '@/components/organisms/RecurringBillsWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import OnboardingChecklist from '@/components/organisms/OnboardingChecklist.astro';
@@ -174,7 +175,7 @@ const debtTotalsByCurrency = (dashboardData?.totalDebt.byCurrency ?? []).map((ro
   amount: safeParseFloat(row.amount),
 }));
 // Filter out transfer transactions for cash flow widget (only supports income/expense)
-const cashFlowItems: CashFlowEntry[] =
+const transactionCashFlowItems: CashFlowEntry[] =
   dashboardData?.recentTransactions
     .filter((tx) => tx.type === 'income' || tx.type === 'expense')
     .slice(0, 2)
@@ -186,6 +187,25 @@ const cashFlowItems: CashFlowEntry[] =
       icon: (tx.type === 'income' ? 'trending-up' : 'calendar') as CashFlowIconName,
       currency: tx.currency,
     })) || [];
+
+const recurringCashFlowItems: CashFlowEntry[] =
+  dashboardData?.upcomingRecurringBills.map((occurrence) => ({
+    name: occurrence.templateName,
+    date: formatCashFlowDate(occurrence.due_date),
+    amount: safeParseFloat(occurrence.templateAmount),
+    type: occurrence.templateType as 'income' | 'expense',
+    icon: 'calendar' as const,
+    currency: occurrence.currency,
+  })) || [];
+
+const cashFlowItems: CashFlowEntry[] = [...transactionCashFlowItems, ...recurringCashFlowItems]
+  .sort((a, b) => {
+    const left = new Date(a.date).getTime();
+    const right = new Date(b.date).getTime();
+    if (Number.isNaN(left) || Number.isNaN(right)) return 0;
+    return left - right;
+  })
+  .slice(0, 6);
 
 // Get spending categories from dashboard data (top 4 + Other)
 const spendingCategories =
@@ -262,6 +282,12 @@ const spendingCategories =
                 secondaryCurrency={secondaryCurrency}
                 loading={!dashboardData}
               />
+              {dashboardData && (
+                <RecurringBillsWidget
+                  stats={dashboardData.recurringStats}
+                  className="border border-base-300"
+                />
+              )}
               <CashFlowWidget items={cashFlowItems} loading={!dashboardData} />
             </div>
           </div>

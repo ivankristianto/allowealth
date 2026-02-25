@@ -1,0 +1,81 @@
+---
+import Modal from '@/components/molecules/Modal.astro';
+
+interface CategoryOption {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface AccountOption {
+  id: string;
+  name: string;
+  type: string;
+  currency?: string;
+}
+
+export interface Props {
+  categories: CategoryOption[];
+  accounts: AccountOption[];
+}
+
+const { categories = [], accounts = [] } = Astro.props;
+---
+
+<Modal id="recurring-confirm-modal" size="sm" closable={false} backdropClose={false}>
+  <form id="recurring-confirm-form" class="space-y-4" novalidate>
+    <input type="hidden" name="occurrence_id" />
+
+    <div>
+      <h3 class="text-lg font-bold" data-modal-title>Confirm recurring occurrence</h3>
+      <p class="text-sm text-base-content/60" data-modal-subtitle></p>
+    </div>
+
+    <div role="alert" class="alert alert-error hidden" data-confirm-error></div>
+
+    <label class="form-control w-full">
+      <span class="label-text text-sm font-medium">Amount</span>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        name="amount"
+        class="input input-bordered w-full"
+        required
+      />
+      <p class="text-xs text-base-content/60 hidden" data-original-amount></p>
+    </label>
+
+    <label class="form-control w-full">
+      <span class="label-text text-sm font-medium">Date</span>
+      <input type="date" name="transaction_date" class="input input-bordered w-full" required />
+    </label>
+
+    <label class="form-control w-full">
+      <span class="label-text text-sm font-medium">Category</span>
+      <select name="category_id" class="select select-bordered w-full" required>
+        <option value="">Select category</option>
+        {
+          categories.map((category) => (
+            <option value={category.id} data-type={category.type}>
+              {category.name}
+            </option>
+          ))
+        }
+      </select>
+    </label>
+
+    <label class="form-control w-full">
+      <span class="label-text text-sm font-medium">Account</span>
+      <select name="account_id" class="select select-bordered w-full" required>
+        <option value="">Select account</option>
+        {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
+      </select>
+    </label>
+
+    <div class="flex gap-3 pt-2">
+      <button type="button" class="btn btn-ghost flex-1" data-confirm-cancel> Cancel </button>
+      <button type="submit" class="btn btn-primary flex-1" data-confirm-submit> Confirm </button>
+    </div>
+  </form>
+</Modal>

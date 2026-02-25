@@ -32,7 +32,15 @@ export type AuditAction =
   | 'mfa_setup_init'
   | 'mfa_enable'
   | 'mfa_disable'
-  | 'mfa_backup_regenerate';
+  | 'mfa_backup_regenerate'
+  | 'recurring_template.create'
+  | 'recurring_template.update'
+  | 'recurring_template.pause'
+  | 'recurring_template.resume'
+  | 'recurring_template.cancel'
+  | 'recurring_template.delete'
+  | 'recurring_occurrence.confirm'
+  | 'recurring_occurrence.skip';
 
 /**
  * Types of entities that can be audited
@@ -42,6 +50,8 @@ export type AuditEntityType =
   | 'category'
   | 'account'
   | 'budget'
+  | 'recurring_template'
+  | 'recurring_occurrence'
   | 'user'
   | 'workspace'
   | 'session'

@@ -1,0 +1,42 @@
+---
+import StatCard from '@/components/atoms/StatCard.astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { RecurringStats } from '@/lib/types/recurring';
+
+export interface Props {
+  stats: RecurringStats;
+}
+
+const { stats } = Astro.props;
+const pendingAmountLabel =
+  stats.pendingByCurrency.length > 0
+    ? stats.pendingByCurrency
+        .map((entry) => formatCurrency(entry.amount, entry.currency))
+        .join(' + ')
+    : '0';
+---
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="recurring-stats-row">
+  <StatCard
+    title="Pending Amount"
+    value={pendingAmountLabel}
+    subtitle={`${stats.pendingCount} pending items`}
+    subtitleIcon="trending-up"
+    iconVariant="warning"
+  />
+  <StatCard
+    title="Overdue"
+    value={String(stats.overdueCount)}
+    subtitle="Needs review"
+    subtitleIcon="trending-up"
+    valueColor={stats.overdueCount > 0 ? 'text-error' : 'text-base-content'}
+    iconVariant={stats.overdueCount > 0 ? 'error' : 'success'}
+  />
+  <StatCard
+    title="Confirmed This Month"
+    value={String(stats.confirmedThisMonth)}
+    subtitle="Completed"
+    subtitleIcon="trending-up"
+    iconVariant="success"
+  />
+</div>

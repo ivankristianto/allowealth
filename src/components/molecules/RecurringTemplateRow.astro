@@ -1,0 +1,130 @@
+---
+import { CircleMinus, CirclePlus, EllipsisVertical, Pause, Play, Ban, Pencil } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+import ProgressBar from '@/components/atoms/ProgressBar.astro';
+import type { RecurringTemplateOutput } from '@/lib/types/recurring';
+
+export interface Props {
+  template: RecurringTemplateOutput;
+}
+
+const { template } = Astro.props;
+
+const templatePayload = JSON.stringify(template);
+
+const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
+  active: 'badge-success',
+  paused: 'badge-warning',
+  completed: 'badge-ghost',
+  cancelled: 'badge-error',
+};
+
+const statusClass = statusClassMap[template.status];
+
+function daySuffix(day: number): string {
+  const mod10 = day % 10;
+  const mod100 = day % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${day}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${day}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${day}rd`;
+  return `${day}th`;
+}
+
+const installmentProgress =
+  template.is_installment && template.total_occurrences
+    ? Math.min(100, Math.round((template.confirmedCount / template.total_occurrences) * 100))
+    : 0;
+---
+
+<tr
+  class:list={[
+    'border-b border-base-300 last:border-b-0',
+    template.status === 'paused' && 'opacity-60',
+  ]}
+  data-testid="recurring-template-row"
+>
+  <td class="py-3 px-3">
+    <div class="flex items-center gap-2 min-w-0">
+      {
+        template.type === 'expense' ? (
+          <CircleMinus size={16} class="text-error shrink-0" aria-hidden="true" />
+        ) : (
+          <CirclePlus size={16} class="text-success shrink-0" aria-hidden="true" />
+        )
+      }
+      <span class="font-semibold truncate" title={template.name}>{template.name}</span>
+    </div>
+    {
+      template.is_installment && template.total_occurrences && (
+        <div class="mt-2 flex items-center gap-2">
+          <ProgressBar value={installmentProgress} size="sm" className="w-16" />
+          <span class="text-xs text-base-content/60">
+            {template.confirmedCount}/{template.total_occurrences}
+          </span>
+        </div>
+      )
+    }
+  </td>
+  <td class="py-3 px-3 text-sm font-bold">{formatCurrency(template.amount, template.currency)}</td>
+  <td class="py-3 px-3 text-sm text-base-content/70">{daySuffix(template.day_of_month)}</td>
+  <td class="py-3 px-3 text-sm text-base-content/70">{template.nextDueDate ?? '—'}</td>
+  <td class="py-3 px-3">
+    <span class={`badge badge-sm ${statusClass}`}>{template.status}</span>
+  </td>
+  <td class="py-3 px-3 text-right">
+    <div class="dropdown dropdown-end">
+      <button
+        type="button"
+        tabindex={0}
+        class="btn btn-ghost btn-sm btn-square"
+        aria-label="Template actions"
+      >
+        <EllipsisVertical size={16} aria-hidden="true" />
+      </button>
+      <ul
+        tabindex={0}
+        class="dropdown-content z-40 menu p-2 shadow-lg bg-base-100 rounded-box w-44 border border-base-300"
+      >
+        <li>
+          <button type="button" data-template-action="edit" data-template={templatePayload}>
+            <Pencil size={15} aria-hidden="true" />
+            Edit
+          </button>
+        </li>
+        {
+          template.status === 'active' ? (
+            <li>
+              <button type="button" data-template-action="pause" data-template-id={template.id}>
+                <Pause size={15} aria-hidden="true" />
+                Pause
+              </button>
+            </li>
+          ) : template.status === 'paused' ? (
+            <li>
+              <button type="button" data-template-action="resume" data-template-id={template.id}>
+                <Play size={15} aria-hidden="true" />
+                Resume
+              </button>
+            </li>
+          ) : null
+        }
+        {
+          template.status !== 'cancelled' && template.status !== 'completed' && (
+            <li>
+              <button
+                type="button"
+                data-template-action="cancel"
+                data-template-id={template.id}
+                data-template-name={template.name}
+                class="text-error"
+              >
+                <Ban size={15} aria-hidden="true" />
+                Cancel
+              </button>
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </td>
+</tr>

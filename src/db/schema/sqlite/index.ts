@@ -10,6 +10,8 @@ export * from './email-verification-tokens';
 export * from './categories';
 export * from './account-categories';
 export * from './transactions';
+export * from './recurring-templates';
+export * from './recurring-occurrences';
 export * from './accounts';
 export * from './account-history';
 export * from './account-update-reminders';

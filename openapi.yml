@@ -64,6 +64,8 @@ tags:
     description: Wealth trajectory forecasting and projections
   - name: Reports
     description: Financial intelligence reports (monthly and yearly aggregations)
+  - name: Recurring
+    description: Recurring template and occurrence management
   - name: Admin
     description: Admin-only endpoints for system monitoring and diagnostics
 
@@ -187,6 +189,26 @@ paths:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'
   /api/reports/members:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1members'
+  /api/recurring:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring'
+  /api/recurring/{id}:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1{id}'
+  /api/recurring/{id}/pause:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1{id}~1pause'
+  /api/recurring/{id}/resume:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1{id}~1resume'
+  /api/recurring/{id}/cancel:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1{id}~1cancel'
+  /api/recurring/occurrences:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1occurrences'
+  /api/recurring/occurrences/{id}/confirm:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1occurrences~1{id}~1confirm'
+  /api/recurring/occurrences/{id}/skip:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1occurrences~1{id}~1skip'
+  /api/recurring/calendar:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1calendar'
+  /api/recurring/stats:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1stats'
 
   # Admin endpoints
   /api/admin/diagnostics:
@@ -385,6 +407,16 @@ components:
       $ref: './openapi/schemas/TrendDataPoint.yml#/TrendDataPoint'
     CategoryIntelligence:
       $ref: './openapi/schemas/CategoryIntelligence.yml#/CategoryIntelligence'
+
+    # Recurring Schemas
+    RecurringTemplate:
+      $ref: './openapi/schemas/RecurringTemplate.yml#/RecurringTemplate'
+    RecurringOccurrence:
+      $ref: './openapi/schemas/RecurringOccurrence.yml#/RecurringOccurrence'
+    RecurringStats:
+      $ref: './openapi/schemas/RecurringStats.yml#/RecurringStats'
+    ConfirmOccurrenceRequest:
+      $ref: './openapi/schemas/ConfirmOccurrenceRequest.yml#/ConfirmOccurrenceRequest'
 
     # Admin Schemas
     RuntimeInfo:

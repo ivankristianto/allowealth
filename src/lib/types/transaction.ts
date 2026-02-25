@@ -56,6 +56,7 @@ export interface TransactionOutput extends Omit<
     type: string;
   } | null;
   has_history?: boolean;
+  is_recurring?: boolean;
   created_by_user_name?: string;
 }
 

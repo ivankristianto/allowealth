@@ -1,0 +1,215 @@
+---
+import Drawer from '@/components/molecules/Drawer.astro';
+
+interface CategoryOption {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface AccountOption {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export interface Props {
+  categories: CategoryOption[];
+  accounts: AccountOption[];
+  currencies?: string[];
+}
+
+const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
+---
+
+<Drawer id="recurring-template-drawer" title="Recurring Template" width="w-full sm:max-w-md">
+  <form id="recurring-template-form" class="space-y-4" novalidate>
+    <input type="hidden" name="template_id" />
+    <input type="hidden" name="status" value="active" />
+
+    <div role="alert" class="alert alert-error hidden" data-template-form-error></div>
+
+    <label class="form-control">
+      <span class="label-text text-sm font-medium">Name</span>
+      <input
+        name="name"
+        class="input input-bordered"
+        required
+        maxlength="200"
+        placeholder="e.g., Rent"
+      />
+    </label>
+
+    <div class="grid grid-cols-2 gap-2">
+      <label
+        class="label cursor-pointer justify-start gap-2 border border-base-300 rounded-lg px-3 py-2"
+      >
+        <input type="radio" class="radio radio-sm" name="type" value="expense" checked />
+        <span class="label-text">Expense</span>
+      </label>
+      <label
+        class="label cursor-pointer justify-start gap-2 border border-base-300 rounded-lg px-3 py-2"
+      >
+        <input type="radio" class="radio radio-sm" name="type" value="income" />
+        <span class="label-text">Income</span>
+      </label>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2">
+      <label class="form-control">
+        <span class="label-text text-sm font-medium">Amount</span>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          name="amount"
+          class="input input-bordered"
+          required
+        />
+      </label>
+      <label class="form-control">
+        <span class="label-text text-sm font-medium">Currency</span>
+        <select name="currency" class="select select-bordered" required>
+          {currencies.map((currency) => <option value={currency}>{currency}</option>)}
+        </select>
+      </label>
+    </div>
+
+    <label class="form-control">
+      <span class="label-text text-sm font-medium">Category</span>
+      <select name="category_id" class="select select-bordered" required>
+        <option value="">Select category</option>
+        {
+          categories.map((category) => (
+            <option value={category.id} data-type={category.type}>
+              {category.name}
+            </option>
+          ))
+        }
+      </select>
+    </label>
+
+    <label class="form-control">
+      <span class="label-text text-sm font-medium">Account</span>
+      <select name="account_id" class="select select-bordered" required>
+        <option value="">Select account</option>
+        {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
+      </select>
+    </label>
+
+    <div class="grid grid-cols-2 gap-2">
+      <label class="form-control">
+        <span class="label-text text-sm font-medium">Day of month</span>
+        <select name="day_of_month" class="select select-bordered" required>
+          {
+            Array.from({ length: 31 }).map((_, index) => (
+              <option value={index + 1}>{index + 1}</option>
+            ))
+          }
+        </select>
+      </label>
+      <label class="form-control">
+        <span class="label-text text-sm font-medium">Start month</span>
+        <input type="month" name="start_month" class="input input-bordered" required />
+      </label>
+    </div>
+
+    <fieldset class="space-y-2 rounded-lg border border-base-300 p-3">
+      <legend class="px-1 text-xs font-semibold uppercase tracking-widest text-base-content/60"
+        >End condition</legend
+      >
+
+      <label class="label cursor-pointer justify-start gap-2 px-0">
+        <input
+          type="checkbox"
+          class="checkbox checkbox-sm"
+          name="use_count"
+          data-end-condition="count"
+        />
+        <span class="label-text">By count</span>
+      </label>
+
+      <div class="hidden" data-end-input="count">
+        <input
+          type="number"
+          min="1"
+          name="total_occurrences"
+          class="input input-bordered w-full"
+          placeholder="Total occurrences"
+        />
+      </div>
+
+      <label class="label cursor-pointer justify-start gap-2 px-0">
+        <input
+          type="checkbox"
+          class="checkbox checkbox-sm"
+          name="use_date"
+          data-end-condition="date"
+        />
+        <span class="label-text">By date</span>
+      </label>
+
+      <div class="hidden" data-end-input="date">
+        <input type="date" name="end_date" class="input input-bordered w-full" />
+      </div>
+
+      <p class="text-xs text-base-content/60" data-end-validation-hint>
+        At least one end condition is required.
+      </p>
+    </fieldset>
+
+    <fieldset class="space-y-2 rounded-lg border border-base-300 p-3">
+      <legend class="px-1 text-xs font-semibold uppercase tracking-widest text-base-content/60"
+        >Installment</legend
+      >
+
+      <label class="label cursor-pointer justify-start gap-2 px-0">
+        <input
+          type="checkbox"
+          class="checkbox checkbox-sm"
+          name="is_installment"
+          data-installment-toggle
+          disabled
+        />
+        <span class="label-text">Treat as installment</span>
+      </label>
+
+      <div class="hidden space-y-2" data-installment-fields>
+        <label class="form-control">
+          <span class="label-text text-sm font-medium">Starting occurrence number</span>
+          <input
+            type="number"
+            min="1"
+            name="starting_occurrence_number"
+            value="1"
+            class="input input-bordered"
+          />
+        </label>
+        <label class="form-control">
+          <span class="label-text text-sm font-medium">Installment label</span>
+          <input
+            name="installment_label"
+            class="input input-bordered"
+            maxlength="100"
+            placeholder="Installment"
+          />
+        </label>
+      </div>
+    </fieldset>
+
+    <label class="form-control">
+      <span class="label-text text-sm font-medium">Description (optional)</span>
+      <textarea name="description" class="textarea textarea-bordered min-h-20" maxlength="500"
+      ></textarea>
+    </label>
+
+    <div class="grid grid-cols-2 gap-2 pt-2">
+      <button type="button" class="btn btn-ghost" data-template-form-cancel>Cancel</button>
+      <button type="submit" class="btn btn-primary" data-template-form-submit> Save </button>
+    </div>
+  </form>
+</Drawer>
+
+<script>
+  import './RecurringTemplateForm.client';
+</script>
