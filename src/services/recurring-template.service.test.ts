@@ -43,6 +43,9 @@ describe('RecurringTemplateService', () => {
     const category = createMockCategory();
     const account = createMockAccount();
 
+    (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(category);
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(account);
+
     (mockDb.query.recurringTemplates.findFirst as any)
       .mockResolvedValueOnce(template)
       .mockResolvedValueOnce({
@@ -75,6 +78,42 @@ describe('RecurringTemplateService', () => {
     expect(result.id).toBeDefined();
     expect(result.pendingCount).toBe(1);
     expect(mockDb.insert).toHaveBeenCalled();
+  });
+
+  it('rejects create when category does not belong to workspace', async () => {
+    (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(undefined);
+
+    await expect(
+      recurringTemplateService.create({
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
+        name: 'Rent',
+        type: 'expense',
+        amount: '5000000',
+        currency: 'IDR',
+        category_id: 'cat-unknown',
+        account_id: 'account-1',
+        day_of_month: 1,
+        start_date: '2026-01-01',
+        total_occurrences: 12,
+        is_installment: false,
+        starting_occurrence_number: 1,
+      })
+    ).rejects.toThrow('Category not found');
+  });
+
+  it('rejects update when account does not belong to workspace', async () => {
+    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
+      createMockRecurringTemplate()
+    );
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(undefined);
+
+    await expect(
+      recurringTemplateService.update('rt-1', 'workspace-1', {
+        workspace_id: 'workspace-1',
+        account_id: 'account-foreign',
+      })
+    ).rejects.toThrow('Account not found');
   });
 
   it('cancels template and deletes only future pending occurrences', async () => {
@@ -138,6 +177,22 @@ describe('RecurringTemplateService', () => {
     expect(second.created).toBe(0);
   });
 
+  it('rejects resume when template is not paused', async () => {
+    const category = createMockCategory();
+    const account = createMockAccount();
+
+    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce({
+      ...createMockRecurringTemplate({ status: 'cancelled' }),
+      category,
+      account,
+    });
+    (mockDb.query.recurringOccurrences.findMany as any).mockResolvedValueOnce([]);
+
+    await expect(recurringTemplateService.resume('rt-1', 'workspace-1')).rejects.toThrow(
+      'Only paused templates can be resumed'
+    );
+  });
+
   it('rejects enabling installment when merged template has no total_occurrences', async () => {
     (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
       createMockRecurringTemplate({
@@ -169,6 +224,15 @@ describe('RecurringTemplateService', () => {
         starting_occurrence_number: 7,
       })
     ).rejects.toThrow('Starting occurrence number must be less than or equal to total occurrences');
+  });
+
+  it('rejects direct status mutation in update payload', async () => {
+    await expect(
+      recurringTemplateService.update('rt-1', 'workspace-1', {
+        workspace_id: 'workspace-1',
+        status: 'paused',
+      } as any)
+    ).rejects.toThrow('unrecognized_keys');
   });
 
   it('rejects clearing total_occurrences when no end_date remains', async () => {

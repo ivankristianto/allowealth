@@ -25,7 +25,6 @@ const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
 <Drawer id="recurring-template-drawer" title="Recurring Template" width="w-full sm:max-w-md">
   <form id="recurring-template-form" class="space-y-4" novalidate>
     <input type="hidden" name="template_id" />
-    <input type="hidden" name="status" value="active" />
 
     <div role="alert" class="alert alert-error hidden" data-template-form-error></div>
 

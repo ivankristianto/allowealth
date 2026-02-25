@@ -11,7 +11,7 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Recurring template ID is required', 400);
     }
 
-    const result = await recurringTemplateService.resume(id, auth.workspaceId);
+    const result = await recurringTemplateService.resume(id, auth.workspaceId, auth.userId);
     return successResponse(result);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

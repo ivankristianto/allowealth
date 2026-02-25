@@ -183,7 +183,12 @@ export class RecurringOccurrenceService {
         ],
       });
 
-      const output = occurrences.map((occurrence) => this.mapOccurrenceOutput(occurrence));
+      // Pending occurrences from non-active templates are not actionable.
+      const filtered = occurrences.filter(
+        (occurrence) => occurrence.status !== 'pending' || occurrence.template.status === 'active'
+      );
+
+      const output = filtered.map((occurrence) => this.mapOccurrenceOutput(occurrence));
       return { occurrences: output, total: output.length };
     });
 
@@ -390,7 +395,12 @@ export class RecurringOccurrenceService {
     return result;
   }
 
-  async skip(id: string, workspaceId: string, reason?: string): Promise<RecurringOccurrenceOutput> {
+  async skip(
+    id: string,
+    workspaceId: string,
+    reason?: string,
+    performedByUserId?: string
+  ): Promise<RecurringOccurrenceOutput> {
     const validated = skipOccurrenceSchema.parse({ skip_reason: reason });
 
     const occurrence = await this.db.query.recurringOccurrences.findFirst({
@@ -449,7 +459,7 @@ export class RecurringOccurrenceService {
 
     void logAuditEvent({
       workspaceId,
-      userId: occurrence.template.created_by_user_id,
+      userId: performedByUserId ?? occurrence.template.created_by_user_id,
       action: 'recurring_occurrence.skip',
       entityType: 'recurring_occurrence',
       entityId: id,
@@ -494,9 +504,13 @@ export class RecurringOccurrenceService {
     const cache = getCacheManager();
     const cacheKey = CacheKeys.recurringCalendar(workspaceId, year, month);
 
-    const cached = await cache.get<RecurringCalendarDay[]>(cacheKey);
-    if (cached) {
-      return cached;
+    try {
+      const cached = await cache.get<RecurringCalendarDay[]>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (error) {
+      log.warn('cache read failed for recurring calendar:', error);
     }
 
     const monthStart = toIsoDate(new Date(Date.UTC(year, month - 1, 1)));
@@ -534,10 +548,14 @@ export class RecurringOccurrenceService {
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    await cache.set(cacheKey, result, {
-      ttl: 900,
-      tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_CALENDAR],
-    });
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 900,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_CALENDAR],
+      });
+    } catch (error) {
+      log.warn('cache write failed for recurring calendar:', error);
+    }
 
     return result;
   }
@@ -546,9 +564,13 @@ export class RecurringOccurrenceService {
     const cache = getCacheManager();
     const cacheKey = CacheKeys.recurringStats(workspaceId);
 
-    const cached = await cache.get<RecurringStats>(cacheKey);
-    if (cached) {
-      return cached;
+    try {
+      const cached = await cache.get<RecurringStats>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (error) {
+      log.warn('cache read failed for recurring stats:', error);
     }
 
     const now = new Date();
@@ -577,27 +599,35 @@ export class RecurringOccurrenceService {
       ),
     });
 
+    const actionablePending = pendingThisMonth.filter(
+      (occurrence) => occurrence.template.status === 'active'
+    );
+
     const pendingByCurrency = new Map<string, number>();
-    for (const occurrence of pendingThisMonth) {
+    for (const occurrence of actionablePending) {
       const currency = occurrence.template.currency;
       const amount = Number.parseFloat(occurrence.template.amount || '0');
       pendingByCurrency.set(currency, (pendingByCurrency.get(currency) || 0) + amount);
     }
 
     const stats: RecurringStats = {
-      pendingCount: pendingThisMonth.length,
+      pendingCount: actionablePending.length,
       pendingByCurrency: Array.from(pendingByCurrency.entries()).map(([currency, amount]) => ({
         currency: currency as Currency,
         amount: amount.toString(),
       })),
-      overdueCount: pendingThisMonth.filter((occurrence) => occurrence.due_date <= today).length,
+      overdueCount: actionablePending.filter((occurrence) => occurrence.due_date < today).length,
       confirmedThisMonth: confirmedThisMonthRows.length,
     };
 
-    await cache.set(cacheKey, stats, {
-      ttl: 900,
-      tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_OCCURRENCES],
-    });
+    try {
+      await cache.set(cacheKey, stats, {
+        ttl: 900,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_OCCURRENCES],
+      });
+    } catch (error) {
+      log.warn('cache write failed for recurring stats:', error);
+    }
 
     return stats;
   }

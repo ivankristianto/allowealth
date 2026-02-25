@@ -301,35 +301,14 @@ export class DashboardService {
     perf?: PerfCollector
   ): Promise<RecurringOccurrenceOutput[]> {
     try {
-      const now = new Date();
-      const currentMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-      const nextMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-      const nextMonth = `${nextMonthDate.getUTCFullYear()}-${String(nextMonthDate.getUTCMonth() + 1).padStart(2, '0')}`;
+      const upcoming = await trackQuery('DashboardService.getUpcomingRecurringBills', perf, () =>
+        this.recurringOccurrenceService.findPending(workspaceId, {
+          status: 'pending',
+          due_within: '7d',
+        })
+      );
 
-      const [current, next] = await Promise.all([
-        trackQuery('DashboardService.getUpcomingRecurringBills.current', perf, () =>
-          this.recurringOccurrenceService.findPending(workspaceId, {
-            month: currentMonth,
-            status: 'pending',
-            due_within: '7d',
-          })
-        ),
-        trackQuery('DashboardService.getUpcomingRecurringBills.next', perf, () =>
-          this.recurringOccurrenceService.findPending(workspaceId, {
-            month: nextMonth,
-            status: 'pending',
-            due_within: '7d',
-          })
-        ),
-      ]);
-
-      const combined = [...current.occurrences, ...next.occurrences];
-      const deduped = new Map<string, RecurringOccurrenceOutput>();
-      for (const item of combined) {
-        deduped.set(item.id, item);
-      }
-
-      return Array.from(deduped.values()).sort((a, b) => a.due_date.localeCompare(b.due_date));
+      return upcoming.occurrences.sort((a, b) => a.due_date.localeCompare(b.due_date));
     } catch (error) {
       log.warn('failed to fetch upcoming recurring bills:', error);
       return [];

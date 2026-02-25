@@ -24,7 +24,7 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
@@ -35,7 +35,6 @@ import {
   decimalMultiply,
   decimalSum,
   decimalIsZero,
-  decimalCompare,
 } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
@@ -322,69 +321,69 @@ export class ReportService {
       throw new Error('Invalid month');
     }
 
-    const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
-    const monthEnd = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0, 23, 59, 59);
 
-    const confirmedOccurrences = await this.db.query.recurringOccurrences.findMany({
+    const expenseTransactions = await this.db.query.transactions.findMany({
       where: and(
-        eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-        eq(this.schema.recurringOccurrences.status, 'confirmed'),
-        gte(this.schema.recurringOccurrences.due_date, monthStart),
-        lte(this.schema.recurringOccurrences.due_date, monthEnd)
+        eq(this.schema.transactions.workspace_id, workspaceId),
+        eq(this.schema.transactions.type, 'expense'),
+        eq(this.schema.transactions.currency, currency),
+        gte(this.schema.transactions.transaction_date, monthStart),
+        lte(this.schema.transactions.transaction_date, monthEnd),
+        sql`${this.schema.transactions.deleted_at} IS NULL`
       ),
       with: {
-        template: {
-          with: {
-            category: true,
-          },
-        },
+        category: true,
       },
     });
 
+    const transactionIds = expenseTransactions.map((transaction) => transaction.id);
+
+    const recurringLinks =
+      transactionIds.length > 0
+        ? await this.db.query.recurringOccurrences.findMany({
+            where: and(
+              eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+              eq(this.schema.recurringOccurrences.status, 'confirmed'),
+              inArray(this.schema.recurringOccurrences.transaction_id, transactionIds)
+            ),
+          })
+        : [];
+
+    const recurringTransactionIds = new Set<string>();
+    for (const occurrence of recurringLinks) {
+      if (occurrence.transaction_id) {
+        recurringTransactionIds.add(occurrence.transaction_id);
+      }
+    }
+
     const recurringAmountParts: string[] = [];
+    const oneTimeAmountParts: string[] = [];
     const recurringByCategory = new Map<string, { category_name: string; amounts: string[] }>();
 
-    for (const occurrence of confirmedOccurrences) {
-      const template = occurrence.template;
-      if (template.type !== 'expense' || template.currency !== currency) {
+    for (const transaction of expenseTransactions) {
+      const amount = transaction.amount || '0';
+      const isRecurring = recurringTransactionIds.has(transaction.id);
+
+      if (!isRecurring) {
+        oneTimeAmountParts.push(amount);
         continue;
       }
 
-      const amount = occurrence.confirmed_amount || template.amount || '0';
       recurringAmountParts.push(amount);
 
-      const key = template.category_id;
-      const entry = recurringByCategory.get(key) || {
-        category_name: template.category?.name || 'Unknown',
+      const categoryKey = transaction.category_id || 'uncategorized';
+      const entry = recurringByCategory.get(categoryKey) || {
+        category_name: transaction.category?.name || 'Unknown',
         amounts: [],
       };
       entry.amounts.push(amount);
-      recurringByCategory.set(key, entry);
+      recurringByCategory.set(categoryKey, entry);
     }
 
     const recurringTotal = decimalSum(recurringAmountParts);
-
-    const totalExpenseRows = await (this.db as any)
-      .select({
-        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS NUMERIC))`,
-      })
-      .from(this.schema.transactions)
-      .where(
-        and(
-          eq(this.schema.transactions.workspace_id, workspaceId),
-          eq(this.schema.transactions.type, 'expense'),
-          eq(this.schema.transactions.currency, currency),
-          gte(this.schema.transactions.transaction_date, new Date(year, month - 1, 1)),
-          lte(this.schema.transactions.transaction_date, new Date(year, month, 0, 23, 59, 59)),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
-        )
-      );
-
-    const totalExpenses = totalExpenseRows[0]?.total || '0';
-    let oneTimeTotal = decimalSubtract(totalExpenses, recurringTotal);
-    if (decimalCompare(oneTimeTotal, '0') < 0) {
-      oneTimeTotal = '0';
-    }
+    const oneTimeTotal = decimalSum(oneTimeAmountParts);
 
     return {
       recurringTotal,

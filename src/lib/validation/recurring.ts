@@ -86,7 +86,6 @@ export const updateRecurringTemplateSchema = z
     installment_label: z.string().max(100).nullable().optional(),
     starting_occurrence_number: z.number().int().min(1).optional(),
     description: z.string().max(500).nullable().optional(),
-    status: recurringTemplateStatusEnum.optional(),
   })
   .strict();
 
@@ -144,7 +143,6 @@ export const updateRecurringTemplateAPISchema = z
     installment_label: z.string().max(100).nullable().optional(),
     starting_occurrence_number: z.coerce.number().int().min(1).optional(),
     description: z.string().max(500).nullable().optional(),
-    status: recurringTemplateStatusEnum.optional(),
   })
   .strict();
 

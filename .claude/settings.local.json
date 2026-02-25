@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(bd:*)",
@@ -12,7 +15,7 @@
       "Bash(bd comments:*)"
     ]
   },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  "remote": {
+    "defaultEnvironmentId": "env_01FHJM9bNLk3FW2W4X5qoMcu"
   }
 }

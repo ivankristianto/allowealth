@@ -157,13 +157,11 @@ function initRecurringTemplateForm(): void {
     setLoading(false);
 
     const templateId = form.querySelector('input[name="template_id"]') as HTMLInputElement | null;
-    const statusInput = form.querySelector('input[name="status"]') as HTMLInputElement | null;
     const startingInput = form.querySelector(
       'input[name="starting_occurrence_number"]'
     ) as HTMLInputElement | null;
 
     if (templateId) templateId.value = '';
-    if (statusInput) statusInput.value = 'active';
     if (startingInput) startingInput.value = '1';
     if (startMonthInput) startMonthInput.value = getCurrentMonthValue();
 
@@ -199,7 +197,6 @@ function initRecurringTemplateForm(): void {
     setFieldValue('day_of_month', String(template.day_of_month));
     setFieldValue('start_month', template.start_date.slice(0, 7));
     setFieldValue('description', template.description || '');
-    setFieldValue('status', template.status);
 
     setType(template.type);
 
@@ -288,8 +285,6 @@ function initRecurringTemplateForm(): void {
       start_date: `${startMonth}-01`,
       is_installment: false,
       starting_occurrence_number: 1,
-      status:
-        (form.querySelector('input[name="status"]') as HTMLInputElement | null)?.value || 'active',
     };
 
     if (description) {
@@ -331,11 +326,6 @@ function initRecurringTemplateForm(): void {
       }
     } else if (isEditMode) {
       payload.installment_label = null;
-    }
-
-    // Remove status for update when it's unchanged from default.
-    if (templateId && payload.status === 'active') {
-      delete payload.status;
     }
 
     return payload;

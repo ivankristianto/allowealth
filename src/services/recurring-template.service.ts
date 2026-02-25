@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -66,6 +66,7 @@ export class RecurringTemplateService {
       nextDueDate: string | null;
     }
   ): RecurringTemplateOutput {
+    const isTemplateActive = template.status === 'active';
     return {
       ...template,
       category: {
@@ -80,11 +81,65 @@ export class RecurringTemplateService {
         name: template.account.name,
         type: template.account.type,
       },
-      pendingCount: occurrenceStats.pendingCount,
+      pendingCount: isTemplateActive ? occurrenceStats.pendingCount : 0,
       confirmedCount: occurrenceStats.confirmedCount,
       skippedCount: occurrenceStats.skippedCount,
-      nextDueDate: occurrenceStats.nextDueDate,
+      nextDueDate: isTemplateActive ? occurrenceStats.nextDueDate : null,
     };
+  }
+
+  private async validateTemplateReferences(
+    workspaceId: string,
+    references: {
+      categoryId?: string;
+      accountId?: string;
+    }
+  ): Promise<void> {
+    const { categoryId, accountId } = references;
+
+    if (categoryId !== undefined) {
+      const category = await this.db.query.categories.findFirst({
+        where: and(
+          eq(this.schema.categories.id, categoryId),
+          eq(this.schema.categories.workspace_id, workspaceId),
+          eq(this.schema.categories.is_active, true)
+        ),
+      });
+
+      if (!category) {
+        throw new RecurringServiceError(
+          ServiceErrorCode.CATEGORY_NOT_FOUND,
+          'Category not found',
+          404
+        );
+      }
+    }
+
+    if (accountId !== undefined) {
+      const account = await this.db.query.accounts.findFirst({
+        where: and(
+          eq(this.schema.accounts.id, accountId),
+          eq(this.schema.accounts.workspace_id, workspaceId),
+          sql`${this.schema.accounts.deleted_at} IS NULL`
+        ),
+      });
+
+      if (!account) {
+        throw new RecurringServiceError(
+          ServiceErrorCode.ACCOUNT_NOT_FOUND,
+          'Account not found',
+          404
+        );
+      }
+
+      if (account.status === 'closed') {
+        throw new RecurringServiceError(
+          ServiceErrorCode.ACCOUNT_CLOSED,
+          'Cannot use a deactivated account',
+          400
+        );
+      }
+    }
   }
 
   private getOccurrenceStats(occurrences: any[]) {
@@ -106,6 +161,10 @@ export class RecurringTemplateService {
 
   async create(input: CreateRecurringTemplateInput): Promise<RecurringTemplateOutput> {
     const validated = createRecurringTemplateSchema.parse(input);
+    await this.validateTemplateReferences(validated.workspace_id, {
+      categoryId: validated.category_id,
+      accountId: validated.account_id,
+    });
 
     const templateId = nanoid();
 
@@ -243,10 +302,19 @@ export class RecurringTemplateService {
             })
           : [];
 
+      const occurrencesByTemplate = new Map<string, any[]>();
+      for (const occurrence of occurrences) {
+        const grouped = occurrencesByTemplate.get(occurrence.template_id) ?? [];
+        grouped.push(occurrence);
+        occurrencesByTemplate.set(occurrence.template_id, grouped);
+      }
+
       const statsMap = new Map<string, ReturnType<typeof this.getOccurrenceStats>>();
       for (const template of templates) {
-        const templateOccurrences = occurrences.filter((occ) => occ.template_id === template.id);
-        statsMap.set(template.id, this.getOccurrenceStats(templateOccurrences));
+        statsMap.set(
+          template.id,
+          this.getOccurrenceStats(occurrencesByTemplate.get(template.id) ?? [])
+        );
       }
 
       return {
@@ -301,7 +369,8 @@ export class RecurringTemplateService {
   async update(
     id: string,
     workspaceId: string,
-    data: UpdateRecurringTemplateInput
+    data: UpdateRecurringTemplateInput,
+    performedByUserId?: string
   ): Promise<RecurringTemplateOutput> {
     const validated = updateRecurringTemplateSchema.parse(data);
 
@@ -332,6 +401,13 @@ export class RecurringTemplateService {
       updated_at: new Date(),
     };
 
+    if (validated.category_id !== undefined || validated.account_id !== undefined) {
+      await this.validateTemplateReferences(workspaceId, {
+        categoryId: validated.category_id,
+        accountId: validated.account_id,
+      });
+    }
+
     for (const key of [
       'name',
       'type',
@@ -347,7 +423,6 @@ export class RecurringTemplateService {
       'installment_label',
       'starting_occurrence_number',
       'description',
-      'status',
     ] as const) {
       const value = validated[key];
       if (value !== undefined) {
@@ -388,7 +463,7 @@ export class RecurringTemplateService {
       starting_occurrence_number:
         updatePayload.starting_occurrence_number ?? existing.starting_occurrence_number,
       description: mergedDescription ?? undefined,
-      status: updatePayload.status ?? existing.status,
+      status: existing.status,
     });
 
     await this.db
@@ -415,7 +490,7 @@ export class RecurringTemplateService {
     if (Object.keys(updatePayload).length > 1) {
       void logAuditEvent({
         workspaceId,
-        userId: existing.created_by_user_id,
+        userId: performedByUserId ?? existing.created_by_user_id,
         action: 'recurring_template.update',
         entityType: 'recurring_template',
         entityId: id,
@@ -438,13 +513,25 @@ export class RecurringTemplateService {
     return result;
   }
 
-  async pause(id: string, workspaceId: string): Promise<RecurringTemplateOutput> {
+  async pause(
+    id: string,
+    workspaceId: string,
+    performedByUserId?: string
+  ): Promise<RecurringTemplateOutput> {
     const template = await this.findById(id, workspaceId);
     if (!template) {
       throw new RecurringServiceError(
         ServiceErrorCode.RECURRING_TEMPLATE_NOT_FOUND,
         'Recurring template not found',
         404
+      );
+    }
+
+    if (template.status !== 'active') {
+      throw new RecurringServiceError(
+        ServiceErrorCode.CONFLICT,
+        'Only active templates can be paused',
+        409
       );
     }
 
@@ -460,7 +547,7 @@ export class RecurringTemplateService {
 
     void logAuditEvent({
       workspaceId,
-      userId: template.created_by_user_id,
+      userId: performedByUserId ?? template.created_by_user_id,
       action: 'recurring_template.pause',
       entityType: 'recurring_template',
       entityId: id,
@@ -480,13 +567,25 @@ export class RecurringTemplateService {
     return result;
   }
 
-  async resume(id: string, workspaceId: string): Promise<RecurringTemplateOutput> {
+  async resume(
+    id: string,
+    workspaceId: string,
+    performedByUserId?: string
+  ): Promise<RecurringTemplateOutput> {
     const template = await this.findById(id, workspaceId);
     if (!template) {
       throw new RecurringServiceError(
         ServiceErrorCode.RECURRING_TEMPLATE_NOT_FOUND,
         'Recurring template not found',
         404
+      );
+    }
+
+    if (template.status !== 'paused') {
+      throw new RecurringServiceError(
+        ServiceErrorCode.CONFLICT,
+        'Only paused templates can be resumed',
+        409
       );
     }
 
@@ -513,7 +612,7 @@ export class RecurringTemplateService {
 
     void logAuditEvent({
       workspaceId,
-      userId: template.created_by_user_id,
+      userId: performedByUserId ?? template.created_by_user_id,
       action: 'recurring_template.resume',
       entityType: 'recurring_template',
       entityId: id,
@@ -533,7 +632,11 @@ export class RecurringTemplateService {
     return result;
   }
 
-  async cancel(id: string, workspaceId: string): Promise<RecurringTemplateOutput> {
+  async cancel(
+    id: string,
+    workspaceId: string,
+    performedByUserId?: string
+  ): Promise<RecurringTemplateOutput> {
     const template = await this.findById(id, workspaceId);
     if (!template) {
       throw new RecurringServiceError(
@@ -562,24 +665,20 @@ export class RecurringTemplateService {
       );
 
     const today = toIsoDate(new Date());
-    const futurePending = await this.db.query.recurringOccurrences.findMany({
-      where: and(
-        eq(this.schema.recurringOccurrences.template_id, id),
-        eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-        eq(this.schema.recurringOccurrences.status, 'pending')
-      ),
-    });
-
-    const toDelete = futurePending.filter((occ) => occ.due_date > today);
-    for (const occurrence of toDelete) {
-      await this.db
-        .delete(this.schema.recurringOccurrences)
-        .where(eq(this.schema.recurringOccurrences.id, occurrence.id));
-    }
+    await this.db
+      .delete(this.schema.recurringOccurrences)
+      .where(
+        and(
+          eq(this.schema.recurringOccurrences.template_id, id),
+          eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+          eq(this.schema.recurringOccurrences.status, 'pending'),
+          gt(this.schema.recurringOccurrences.due_date, today)
+        )
+      );
 
     void logAuditEvent({
       workspaceId,
-      userId: template.created_by_user_id,
+      userId: performedByUserId ?? template.created_by_user_id,
       action: 'recurring_template.cancel',
       entityType: 'recurring_template',
       entityId: id,
@@ -599,7 +698,11 @@ export class RecurringTemplateService {
     return result;
   }
 
-  async delete(id: string, workspaceId: string): Promise<{ success: true }> {
+  async delete(
+    id: string,
+    workspaceId: string,
+    performedByUserId?: string
+  ): Promise<{ success: true }> {
     const template = await this.findById(id, workspaceId);
     if (!template) {
       throw new RecurringServiceError(
@@ -620,7 +723,7 @@ export class RecurringTemplateService {
 
     void logAuditEvent({
       workspaceId,
-      userId: template.created_by_user_id,
+      userId: performedByUserId ?? template.created_by_user_id,
       action: 'recurring_template.delete',
       entityType: 'recurring_template',
       entityId: id,

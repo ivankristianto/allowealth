@@ -39,13 +39,45 @@ describe('RecurringOccurrenceService', () => {
     ]);
 
     const result = await recurringOccurrenceService.findPending('workspace-1', {
-      month: '2026-01',
+      month: '2026-02',
       status: 'pending',
     });
 
     expect(result.total).toBe(2);
     expect(result.occurrences[0]?.due_date).toBe('2026-01-01');
     expect(result.occurrences[1]?.due_date).toBe('2026-01-05');
+  });
+
+  it('findPending excludes pending occurrences from non-active templates', async () => {
+    const activeTemplate = {
+      ...createMockRecurringTemplate({ status: 'active' }),
+      category: createMockCategory(),
+      account: createMockAccount(),
+    };
+    const pausedTemplate = {
+      ...createMockRecurringTemplate({ id: 'rt-2', status: 'paused' }),
+      category: createMockCategory({ id: 'cat-2' }),
+      account: createMockAccount({ id: 'account-2' }),
+    };
+
+    (mockDb.query.recurringOccurrences.findMany as any).mockResolvedValueOnce([
+      {
+        ...createMockRecurringOccurrence({ id: 'ro-1', template_id: 'rt-1', status: 'pending' }),
+        template: activeTemplate,
+      },
+      {
+        ...createMockRecurringOccurrence({ id: 'ro-2', template_id: 'rt-2', status: 'pending' }),
+        template: pausedTemplate,
+      },
+    ]);
+
+    const result = await recurringOccurrenceService.findPending('workspace-1', {
+      month: '2026-01',
+      status: 'pending',
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.occurrences[0]?.template_id).toBe('rt-1');
   });
 
   it('confirm throws when occurrence is already confirmed', async () => {
@@ -120,5 +152,22 @@ describe('RecurringOccurrenceService', () => {
     expect(stats.pendingCount).toBe(2);
     expect(stats.pendingByCurrency).toHaveLength(2);
     expect(stats.confirmedThisMonth).toBe(1);
+  });
+
+  it('getStats does not count due-today pending as overdue', async () => {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const activeTemplate = createMockRecurringTemplate({ status: 'active' });
+
+    (mockDb.query.recurringOccurrences.findMany as any)
+      .mockResolvedValueOnce([
+        {
+          ...createMockRecurringOccurrence({ due_date: todayIso, status: 'pending' }),
+          template: activeTemplate,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const stats = await recurringOccurrenceService.getStats('workspace-2');
+    expect(stats.overdueCount).toBe(0);
   });
 });

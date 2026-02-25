@@ -94,9 +94,12 @@ export const PUT: APIRoute = async (context) => {
     if (payload.starting_occurrence_number !== undefined)
       updateData.starting_occurrence_number = Number(payload.starting_occurrence_number);
     if (payload.description !== undefined) updateData.description = payload.description;
-    if (payload.status !== undefined) updateData.status = payload.status;
-
-    const updated = await recurringTemplateService.update(id, auth.workspaceId, updateData as any);
+    const updated = await recurringTemplateService.update(
+      id,
+      auth.workspaceId,
+      updateData as any,
+      auth.userId
+    );
 
     return successResponse(updated);
   } catch (error) {
@@ -121,7 +124,7 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Recurring template ID is required', 400);
     }
 
-    await recurringTemplateService.delete(id, auth.workspaceId);
+    await recurringTemplateService.delete(id, auth.workspaceId, auth.userId);
 
     return new Response(null, { status: 204 });
   } catch (error) {

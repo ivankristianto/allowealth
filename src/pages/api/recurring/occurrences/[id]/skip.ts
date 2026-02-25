@@ -18,7 +18,7 @@ export const POST: APIRoute = async (context) => {
       reason = typeof payload?.skip_reason === 'string' ? payload.skip_reason : undefined;
     }
 
-    const result = await recurringOccurrenceService.skip(id, auth.workspaceId, reason);
+    const result = await recurringOccurrenceService.skip(id, auth.workspaceId, reason, auth.userId);
     return successResponse(result);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
