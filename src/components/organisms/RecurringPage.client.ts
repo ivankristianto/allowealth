@@ -21,7 +21,7 @@ interface RecurringOccurrenceLike {
 let controller: AbortController | null = null;
 let currentView: 'list' | 'calendar' = 'list';
 let currentMonth = '';
-let calendarLoaded = false;
+let loadedCalendarMonth: string | null = null;
 let lastFocusedElement: HTMLElement | null = null;
 
 let pendingSkipOccurrence: RecurringOccurrenceLike | null = null;
@@ -109,7 +109,7 @@ async function refreshCalendar(signal: AbortSignal): Promise<void> {
     signal
   );
   container.innerHTML = html;
-  calendarLoaded = true;
+  loadedCalendarMonth = currentMonth;
 }
 
 async function refreshListView(signal: AbortSignal): Promise<void> {
@@ -133,19 +133,27 @@ function setView(view: 'list' | 'calendar', signal: AbortSignal): void {
   const listPanel = document.getElementById('recurring-list-view');
   const calendarPanel = document.getElementById('recurring-calendar-view');
 
-  if (listPanel) listPanel.classList.toggle('hidden', view !== 'list');
-  if (calendarPanel) calendarPanel.classList.toggle('hidden', view !== 'calendar');
+  if (listPanel) {
+    const isHidden = view !== 'list';
+    listPanel.classList.toggle('hidden', isHidden);
+    listPanel.setAttribute('aria-hidden', String(isHidden));
+  }
+  if (calendarPanel) {
+    const isHidden = view !== 'calendar';
+    calendarPanel.classList.toggle('hidden', isHidden);
+    calendarPanel.setAttribute('aria-hidden', String(isHidden));
+  }
 
   document.querySelectorAll<HTMLElement>('[data-recurring-view]').forEach((button) => {
     const isActive = button.dataset.recurringView === view;
-    button.classList.toggle('btn-primary', isActive);
-    button.classList.toggle('btn-ghost', !isActive);
-    button.setAttribute('aria-pressed', String(isActive));
+    button.classList.toggle('tab-active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
+    button.tabIndex = isActive ? 0 : -1;
   });
 
   updateUrl();
 
-  if (view === 'calendar' && !calendarLoaded) {
+  if (view === 'calendar' && loadedCalendarMonth !== currentMonth) {
     void refreshCalendar(signal).catch((error) => {
       if (error instanceof Error && error.name === 'AbortError') return;
       addToast(error instanceof Error ? error.message : 'Failed to load calendar', 'error');
@@ -286,7 +294,7 @@ function initRecurringPage(): void {
 
   currentView = pageRoot.dataset.initialView === 'calendar' ? 'calendar' : 'list';
   currentMonth = pageRoot.dataset.initialMonth || new Date().toISOString().slice(0, 7);
-  calendarLoaded = false;
+  loadedCalendarMonth = null;
 
   const confirmModal = document.getElementById(
     'recurring-confirm-modal'
@@ -327,6 +335,7 @@ function initRecurringPage(): void {
       if (!nextMonth || nextMonth === currentMonth) return;
 
       currentMonth = nextMonth;
+      loadedCalendarMonth = null;
       updateUrl();
 
       void refreshPendingList(signal).catch((error) => {

@@ -84,8 +84,10 @@ export const PUT: APIRoute = async (context) => {
     if (payload.day_of_month !== undefined) updateData.day_of_month = Number(payload.day_of_month);
     if (payload.start_date !== undefined) updateData.start_date = payload.start_date;
     if (payload.end_date !== undefined) updateData.end_date = payload.end_date;
-    if (payload.total_occurrences !== undefined)
-      updateData.total_occurrences = Number(payload.total_occurrences);
+    if (payload.total_occurrences !== undefined) {
+      updateData.total_occurrences =
+        payload.total_occurrences === null ? null : Number(payload.total_occurrences);
+    }
     if (payload.is_installment !== undefined) updateData.is_installment = payload.is_installment;
     if (payload.installment_label !== undefined)
       updateData.installment_label = payload.installment_label;

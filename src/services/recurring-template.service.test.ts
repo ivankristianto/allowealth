@@ -137,4 +137,72 @@ describe('RecurringTemplateService', () => {
     expect(first.created).toBeGreaterThan(0);
     expect(second.created).toBe(0);
   });
+
+  it('rejects enabling installment when merged template has no total_occurrences', async () => {
+    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
+      createMockRecurringTemplate({
+        total_occurrences: null,
+        end_date: '2026-12-31',
+        is_installment: false,
+      })
+    );
+
+    await expect(
+      recurringTemplateService.update('rt-1', 'workspace-1', {
+        workspace_id: 'workspace-1',
+        is_installment: true,
+      })
+    ).rejects.toThrow('Installments require total occurrences');
+  });
+
+  it('rejects update when starting occurrence exceeds merged total occurrences', async () => {
+    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
+      createMockRecurringTemplate({
+        total_occurrences: 6,
+        end_date: null,
+      })
+    );
+
+    await expect(
+      recurringTemplateService.update('rt-1', 'workspace-1', {
+        workspace_id: 'workspace-1',
+        starting_occurrence_number: 7,
+      })
+    ).rejects.toThrow('Starting occurrence number must be less than or equal to total occurrences');
+  });
+
+  it('rejects clearing total_occurrences when no end_date remains', async () => {
+    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
+      createMockRecurringTemplate({
+        total_occurrences: 6,
+        end_date: null,
+        is_installment: false,
+      })
+    );
+
+    await expect(
+      recurringTemplateService.update('rt-1', 'workspace-1', {
+        workspace_id: 'workspace-1',
+        total_occurrences: null,
+      })
+    ).rejects.toThrow('At least one end condition is required');
+  });
+
+  it('rejects clearing total_occurrences when merged template is installment', async () => {
+    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
+      createMockRecurringTemplate({
+        total_occurrences: 6,
+        end_date: null,
+        is_installment: true,
+      })
+    );
+
+    await expect(
+      recurringTemplateService.update('rt-1', 'workspace-1', {
+        workspace_id: 'workspace-1',
+        total_occurrences: null,
+        end_date: '2026-12-31',
+      })
+    ).rejects.toThrow('Installments require total occurrences');
+  });
 });

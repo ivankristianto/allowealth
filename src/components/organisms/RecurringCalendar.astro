@@ -7,9 +7,10 @@ export interface Props {
   calendarData: RecurringCalendarDay[];
   year: number;
   month: number;
+  loading?: boolean;
 }
 
-const { calendarData = [], year, month } = Astro.props;
+const { calendarData = [], year, month, loading = false } = Astro.props;
 
 const monthDate = new Date(year, month - 1, 1);
 const monthLabel = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -59,7 +60,11 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
   </div>
 
   {
-    calendarData.length === 0 ? (
+    loading ? (
+      <div class="rounded-card border border-base-300 bg-base-100 p-10 text-center">
+        <h3 class="text-lg font-semibold">Loading calendar for {monthLabel}...</h3>
+      </div>
+    ) : calendarData.length === 0 ? (
       <div class="rounded-card border border-base-300 bg-base-100 p-10 text-center">
         <h3 class="text-lg font-semibold">No recurring transactions scheduled for {monthLabel}.</h3>
       </div>
@@ -89,13 +94,7 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
                       const payload = JSON.stringify(occurrence);
 
                       return (
-                        <button
-                          type="button"
-                          class="w-full text-left rounded-lg border border-base-300 bg-base-100 px-2 py-1.5 text-xs hover:border-accent/40"
-                          disabled={occurrence.status !== 'pending'}
-                          data-open-confirm-modal={occurrence.status === 'pending' ? '' : undefined}
-                          data-occurrence={occurrence.status === 'pending' ? payload : undefined}
-                        >
+                        <div class="w-full rounded-lg border border-base-300 bg-base-100 px-2 py-1.5 text-xs space-y-1">
                           <div class="flex items-center gap-1 min-w-0">
                             {icon === 'overdue' && (
                               <AlertCircle size={12} class="text-error shrink-0" />
@@ -114,7 +113,27 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
                           <div class="text-[11px] text-base-content/60">
                             {formatCurrency(occurrence.templateAmount, occurrence.currency)}
                           </div>
-                        </button>
+                          {occurrence.status === 'pending' && (
+                            <div class="flex items-center gap-1 pt-1">
+                              <button
+                                type="button"
+                                class="btn btn-xs btn-primary flex-1 min-h-7"
+                                data-open-confirm-modal
+                                data-occurrence={payload}
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                type="button"
+                                class="btn btn-xs btn-warning flex-1 min-h-7"
+                                data-open-skip-modal
+                                data-occurrence={payload}
+                              >
+                                Skip
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -134,13 +153,7 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
                   const payload = JSON.stringify(occurrence);
 
                   return (
-                    <button
-                      type="button"
-                      class="w-full rounded-lg border border-base-300 px-3 py-2 text-left"
-                      disabled={occurrence.status !== 'pending'}
-                      data-open-confirm-modal={occurrence.status === 'pending' ? '' : undefined}
-                      data-occurrence={occurrence.status === 'pending' ? payload : undefined}
-                    >
+                    <div class="w-full rounded-lg border border-base-300 px-3 py-2 text-left space-y-2">
                       <div class="flex items-center justify-between gap-2">
                         <div class="inline-flex items-center gap-1.5 min-w-0">
                           {icon === 'overdue' && (
@@ -159,7 +172,27 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
                           {formatCurrency(occurrence.templateAmount, occurrence.currency)}
                         </span>
                       </div>
-                    </button>
+                      {occurrence.status === 'pending' && (
+                        <div class="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-primary min-h-10"
+                            data-open-confirm-modal
+                            data-occurrence={payload}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-warning min-h-10"
+                            data-open-skip-modal
+                            data-occurrence={payload}
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

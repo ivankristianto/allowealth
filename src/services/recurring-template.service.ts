@@ -355,6 +355,42 @@ export class RecurringTemplateService {
       }
     }
 
+    const mergedEndDate =
+      updatePayload.end_date !== undefined ? updatePayload.end_date : existing.end_date;
+    const mergedTotalOccurrences =
+      updatePayload.total_occurrences !== undefined
+        ? updatePayload.total_occurrences
+        : existing.total_occurrences;
+    const mergedInstallmentLabel =
+      updatePayload.installment_label !== undefined
+        ? updatePayload.installment_label
+        : existing.installment_label;
+    const mergedDescription =
+      updatePayload.description !== undefined ? updatePayload.description : existing.description;
+
+    // Validate final state after merge so partial updates (including explicit null clears)
+    // cannot violate recurring template invariants.
+    createRecurringTemplateSchema.parse({
+      workspace_id: existing.workspace_id,
+      created_by_user_id: existing.created_by_user_id,
+      name: updatePayload.name ?? existing.name,
+      type: updatePayload.type ?? existing.type,
+      amount: updatePayload.amount ?? existing.amount,
+      currency: updatePayload.currency ?? existing.currency,
+      category_id: updatePayload.category_id ?? existing.category_id,
+      account_id: updatePayload.account_id ?? existing.account_id,
+      day_of_month: updatePayload.day_of_month ?? existing.day_of_month,
+      start_date: updatePayload.start_date ?? existing.start_date,
+      end_date: mergedEndDate ?? undefined,
+      total_occurrences: mergedTotalOccurrences ?? undefined,
+      is_installment: updatePayload.is_installment ?? existing.is_installment,
+      installment_label: mergedInstallmentLabel ?? undefined,
+      starting_occurrence_number:
+        updatePayload.starting_occurrence_number ?? existing.starting_occurrence_number,
+      description: mergedDescription ?? undefined,
+      status: updatePayload.status ?? existing.status,
+    });
+
     await this.db
       .update(this.schema.recurringTemplates)
       .set(updatePayload)
@@ -610,11 +646,16 @@ export class RecurringTemplateService {
     );
 
     let created = 0;
+    let completedTransitions = 0;
     for (const template of templates) {
-      created += await this._generateForTemplate(template as RecurringTemplate);
+      const result = await this._generateForTemplate(template as RecurringTemplate);
+      created += result.created;
+      if (result.completedTransition) {
+        completedTransitions += 1;
+      }
     }
 
-    if (created > 0) {
+    if (created > 0 || completedTransitions > 0) {
       await this.invalidateWorkspaceCache(workspaceId);
     }
 
@@ -623,7 +664,7 @@ export class RecurringTemplateService {
 
   private async _generateForTemplate(template: RecurringTemplate, dbHandle: IDatabase = this.db) {
     if (template.status !== 'active') {
-      return 0;
+      return { created: 0, completedTransition: false };
     }
 
     const latestOccurrence = await dbHandle.query.recurringOccurrences.findFirst({
@@ -680,13 +721,15 @@ export class RecurringTemplateService {
       await dbHandle.insert(this.schema.recurringOccurrences).values(rows).onConflictDoNothing();
     }
 
+    let completedTransition = false;
     if (exhausted) {
       await dbHandle
         .update(this.schema.recurringTemplates)
         .set({ status: 'completed', updated_at: new Date() })
         .where(eq(this.schema.recurringTemplates.id, template.id));
+      completedTransition = true;
     }
 
-    return rows.length;
+    return { created: rows.length, completedTransition };
   }
 }

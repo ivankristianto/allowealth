@@ -15,7 +15,6 @@ import {
   categoryService,
   accountService,
 } from '@/services';
-import type { RecurringCalendarDay } from '@/lib/types/recurring';
 
 const user = Astro.locals.user;
 if (!user?.id) {
@@ -62,10 +61,7 @@ const [templateResult, pendingResult, stats, categories, accounts] = await Promi
   accountService.findAll(user.workspaceId, undefined, perf),
 ]);
 
-let calendarData: RecurringCalendarDay[] = [];
-if (view === 'calendar') {
-  calendarData = await recurringOccurrenceService.getCalendarData(user.workspaceId, year, month);
-}
+const initialCalendarLoading = view === 'calendar';
 
 const currencies = Array.from(new Set(accounts.map((account) => account.currency))).filter(Boolean);
 ---
@@ -85,25 +81,36 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
         </p>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div
+        class="tabs tabs-boxed bg-base-200 p-1 rounded-2xl"
+        role="tablist"
+        aria-label="View mode"
+      >
         <button
-          class="btn btn-ghost btn-sm"
+          class:list={['tab rounded-xl px-4', view === 'list' ? 'tab-active' : '']}
           data-recurring-view="list"
-          aria-pressed={view === 'list'}
+          id="recurring-view-list-tab"
+          role="tab"
+          aria-selected={view === 'list'}
+          aria-controls="recurring-list-view"
+          tabindex={view === 'list' ? 0 : -1}
         >
           List
         </button>
         <button
-          class="btn btn-ghost btn-sm"
+          class:list={['tab rounded-xl px-4', view === 'calendar' ? 'tab-active' : '']}
           data-recurring-view="calendar"
-          aria-pressed={view === 'calendar'}
+          id="recurring-view-calendar-tab"
+          role="tab"
+          aria-selected={view === 'calendar'}
+          aria-controls="recurring-calendar-view"
+          tabindex={view === 'calendar' ? 0 : -1}
         >
           Calendar
         </button>
-        <button class="btn btn-primary btn-sm" data-open-recurring-template>
-          + New Template
-        </button>
       </div>
+
+      <button class="btn btn-primary btn-sm" data-open-recurring-template> + New Template </button>
     </div>
 
     <div class="flex items-center justify-start">
@@ -120,7 +127,13 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
       <RecurringStatsPartial stats={stats} />
     </div>
 
-    <div id="recurring-list-view" class:list={[view !== 'list' && 'hidden']}>
+    <div
+      id="recurring-list-view"
+      role="tabpanel"
+      aria-labelledby="recurring-view-list-tab"
+      aria-hidden={view !== 'list'}
+      class:list={[view !== 'list' && 'hidden']}
+    >
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div id="recurring-pending-list-container">
           <RecurringPendingList
@@ -135,9 +148,20 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
       </div>
     </div>
 
-    <div id="recurring-calendar-view" class:list={[view !== 'calendar' && 'hidden']}>
+    <div
+      id="recurring-calendar-view"
+      role="tabpanel"
+      aria-labelledby="recurring-view-calendar-tab"
+      aria-hidden={view !== 'calendar'}
+      class:list={[view !== 'calendar' && 'hidden']}
+    >
       <div id="recurring-calendar-container">
-        <RecurringCalendar calendarData={calendarData} year={year} month={month} />
+        <RecurringCalendar
+          calendarData={[]}
+          year={year}
+          month={month}
+          loading={initialCalendarLoading}
+        />
       </div>
     </div>
   </div>

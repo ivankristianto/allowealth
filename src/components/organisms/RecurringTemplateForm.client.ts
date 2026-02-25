@@ -242,6 +242,7 @@ function initRecurringTemplateForm(): void {
   const buildPayload = (): Record<string, unknown> | null => {
     const templateId = (form.querySelector('input[name="template_id"]') as HTMLInputElement | null)
       ?.value;
+    const isEditMode = Boolean(templateId);
 
     const name = (
       form.querySelector('input[name="name"]') as HTMLInputElement | null
@@ -291,14 +292,22 @@ function initRecurringTemplateForm(): void {
         (form.querySelector('input[name="status"]') as HTMLInputElement | null)?.value || 'active',
     };
 
-    if (description) payload.description = description;
+    if (description) {
+      payload.description = description;
+    } else if (isEditMode) {
+      payload.description = null;
+    }
 
     if (byCount && totalOccurrencesInput?.value) {
       payload.total_occurrences = Number(totalOccurrencesInput.value);
+    } else if (isEditMode) {
+      payload.total_occurrences = null;
     }
 
     if (byDate && endDateInput?.value) {
       payload.end_date = endDateInput.value;
+    } else if (isEditMode) {
+      payload.end_date = null;
     }
 
     const enableInstallment = Boolean(
@@ -314,9 +323,14 @@ function initRecurringTemplateForm(): void {
       const installmentLabelInput = form.querySelector(
         'input[name="installment_label"]'
       ) as HTMLInputElement | null;
-      if (installmentLabelInput?.value.trim()) {
-        payload.installment_label = installmentLabelInput.value.trim();
+      const trimmedInstallmentLabel = installmentLabelInput?.value.trim();
+      if (trimmedInstallmentLabel) {
+        payload.installment_label = trimmedInstallmentLabel;
+      } else if (isEditMode) {
+        payload.installment_label = null;
       }
+    } else if (isEditMode) {
+      payload.installment_label = null;
     }
 
     // Remove status for update when it's unchanged from default.

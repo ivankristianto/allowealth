@@ -91,6 +91,7 @@ test.describe.serial('Recurring Transactions', () => {
     await page.fill('#recurring-template-form input[name="start_month"]', currentMonthValue());
 
     await page.click('#recurring-template-form button[type="submit"]');
+    await expect(page.locator('#recurring-template-drawer.drawer-open')).toHaveCount(0);
 
     const pendingCard = page
       .locator('[data-testid="recurring-pending-card"]')

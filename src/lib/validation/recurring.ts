@@ -80,12 +80,12 @@ export const updateRecurringTemplateSchema = z
     account_id: z.string().min(1).optional(),
     day_of_month: z.number().int().min(1).max(31).optional(),
     start_date: dateStringValidation.optional(),
-    end_date: dateStringValidation.optional(),
-    total_occurrences: z.number().int().min(1).optional(),
+    end_date: dateStringValidation.nullable().optional(),
+    total_occurrences: z.number().int().min(1).nullable().optional(),
     is_installment: z.boolean().optional(),
-    installment_label: z.string().max(100).optional(),
+    installment_label: z.string().max(100).nullable().optional(),
     starting_occurrence_number: z.number().int().min(1).optional(),
-    description: z.string().max(500).optional(),
+    description: z.string().max(500).nullable().optional(),
     status: recurringTemplateStatusEnum.optional(),
   })
   .strict();
@@ -138,12 +138,12 @@ export const updateRecurringTemplateAPISchema = z
     account_id: z.string().min(1).optional(),
     day_of_month: z.coerce.number().int().min(1).max(31).optional(),
     start_date: dateStringValidation.optional(),
-    end_date: dateStringValidation.optional(),
-    total_occurrences: z.coerce.number().int().min(1).optional(),
+    end_date: dateStringValidation.nullable().optional(),
+    total_occurrences: z.union([z.coerce.number().int().min(1), z.null()]).optional(),
     is_installment: z.coerce.boolean().optional(),
-    installment_label: z.string().max(100).optional(),
+    installment_label: z.string().max(100).nullable().optional(),
     starting_occurrence_number: z.coerce.number().int().min(1).optional(),
-    description: z.string().max(500).optional(),
+    description: z.string().max(500).nullable().optional(),
     status: recurringTemplateStatusEnum.optional(),
   })
   .strict();

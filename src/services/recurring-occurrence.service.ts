@@ -147,11 +147,7 @@ export class RecurringOccurrenceService {
 
     const result = await trackQuery('RecurringOccurrenceService.findPending', perf, async () => {
       const monthRange = parseMonthRange(filters.month);
-      const conditions = [
-        eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-        gte(this.schema.recurringOccurrences.due_date, monthRange.start),
-        lte(this.schema.recurringOccurrences.due_date, monthRange.end),
-      ];
+      const conditions = [eq(this.schema.recurringOccurrences.workspace_id, workspaceId)];
 
       if (filters.status && filters.status !== 'all') {
         conditions.push(eq(this.schema.recurringOccurrences.status, filters.status));
@@ -161,9 +157,14 @@ export class RecurringOccurrenceService {
 
       const dueWithinDays = parseDueWithinDays(filters.due_within);
       if (dueWithinDays !== null) {
+        const today = new Date();
         const targetDate = new Date();
         targetDate.setUTCDate(targetDate.getUTCDate() + dueWithinDays);
+        conditions.push(gte(this.schema.recurringOccurrences.due_date, toIsoDate(today)));
         conditions.push(lte(this.schema.recurringOccurrences.due_date, toIsoDate(targetDate)));
+      } else {
+        conditions.push(gte(this.schema.recurringOccurrences.due_date, monthRange.start));
+        conditions.push(lte(this.schema.recurringOccurrences.due_date, monthRange.end));
       }
 
       const occurrences = await this.db.query.recurringOccurrences.findMany({
