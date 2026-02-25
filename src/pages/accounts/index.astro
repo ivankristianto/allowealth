@@ -461,8 +461,8 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
 
   {/* Bulk Add Accounts Modal */}
   <dialog id="bulk-add-accounts-modal" class="modal" data-testid="bulk-add-accounts-modal">
-    <div class="modal-box max-w-lg rounded-card border border-base-300 shadow-xl p-0">
-      <div class="p-6 flex flex-col gap-6">
+    <div class="modal-box max-w-2xl rounded-card border border-base-300 shadow-xl p-0">
+      <div class="p-6 flex flex-col gap-4">
         {/* Header */}
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
@@ -473,49 +473,57 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
               Bulk Add Accounts
             </h2>
             <p class="text-neutral text-sm mt-2 font-medium">
-              One account per line: <code class="text-xs">Name, Type, Currency, Balance</code>
+              Add accounts row by row. Balance defaults to 0.
             </p>
           </div>
         </div>
 
-        {/* Textarea */}
-        <div class="form-control">
-          <label class="label py-1" for="bulk-accounts-input">
-            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-              Account Lines
-            </span>
-          </label>
-          <textarea
-            id="bulk-accounts-input"
-            class="textarea textarea-bordered w-full h-40 text-sm bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 rounded-xl font-mono"
-            placeholder={'My Savings, bank_account, IDR, 5000000\nBCA Checking, bank_account, IDR\nGoPay, e_wallet, IDR, 250000\nCash USD, cash, USD, 100'}
-            data-testid="bulk-accounts-textarea"
-            data-valid-currencies={orderedWorkspaceCurrencies.join(',')}></textarea>
-          <span class="text-base-content/40 text-xs mt-1">
-            Type must be one of: {VALID_ACCOUNT_TYPES.join(', ')}. Balance is optional (defaults to
-            0).
-          </span>
+        {/* Table */}
+        <div class="overflow-x-auto max-h-[50vh] overflow-y-auto">
+          <table class="table table-sm w-full">
+            <thead>
+              <tr class="text-base-content/50 text-xs">
+                <th>Name</th>
+                <th>Type</th>
+                <th>Currency</th>
+                <th class="text-right">Balance</th>
+                <th class="w-10"></th>
+              </tr>
+            </thead>
+            <tbody
+              data-bulk-rows
+              data-valid-currencies={orderedWorkspaceCurrencies.join(',')}
+              data-account-types={JSON.stringify(
+                VALID_ACCOUNT_TYPES.map((t) => ({
+                  value: t,
+                  label: formatAccountType(t),
+                }))
+              )}
+            >
+              {/* Rows added dynamically by client script */}
+            </tbody>
+          </table>
         </div>
 
-        {/* Preview area */}
-        <div id="bulk-accounts-preview" class="hidden">
-          <p class="text-xs uppercase tracking-widest text-base-content/50 font-medium mb-2">
-            Preview (<span data-bulk-accounts-count>0</span> accounts)
-          </p>
-          <div class="overflow-x-auto">
-            <table class="table table-xs w-full">
-              <thead>
-                <tr class="text-base-content/50">
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Currency</th>
-                  <th class="text-right">Balance</th>
-                </tr>
-              </thead>
-              <tbody data-bulk-accounts-preview-body></tbody>
-            </table>
-          </div>
-        </div>
+        {/* Add Row button */}
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm rounded-lg gap-2 self-start"
+          data-bulk-add-row
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg
+          >
+          Add Row
+        </button>
 
         {/* Error */}
         <div
@@ -540,7 +548,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             data-bulk-accounts-submit
             data-testid="bulk-accounts-submit-btn"
           >
-            <span data-bulk-accounts-submit-text>Create Accounts</span>
+            <span data-bulk-accounts-submit-text>Create 1 Account</span>
           </button>
         </div>
       </div>

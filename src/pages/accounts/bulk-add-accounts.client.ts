@@ -1,19 +1,16 @@
 /**
- * Bulk Add Accounts Client Script
+ * Bulk Add Accounts Client Script (Tabular)
  *
- * Handles the bulk add accounts modal:
- * - Parses textarea input (Name, Type, Currency[, Balance] per line)
- * - Validates each line and shows preview table
- * - Submits to POST /api/accounts sequentially
- * - Shows success/error feedback
- *
- * Pattern: matches budget/categories/categories-client.ts bulk add logic
+ * Manages the tabular bulk-add modal:
+ * - Dynamic row add/remove
+ * - Per-field validation on submit
+ * - Sequential POST /api/accounts submission
  */
 
 import { csrfFetch } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
 
-const VALID_ACCOUNT_TYPES = [
+export const VALID_ACCOUNT_TYPES = [
   'cash',
   'bank_account',
   'e_wallet',
@@ -28,167 +25,246 @@ const VALID_ACCOUNT_TYPES = [
 
 export type AccountType = (typeof VALID_ACCOUNT_TYPES)[number];
 
-export interface ParsedAccount {
+export interface RowData {
   name: string;
-  type: AccountType;
+  type: string;
   currency: string;
   balance: string;
 }
 
-export interface ParsedLine {
-  account: ParsedAccount | null;
-  error: string | null;
-  lineNumber: number;
+export interface RowErrors {
+  name?: string;
+  type?: string;
+  currency?: string;
+  balance?: string;
 }
 
-export function parseLine(line: string, lineNumber: number, validCurrencies: string[]): ParsedLine {
-  const parts = line.split(',').map((p) => p.trim());
+export function validateRow(row: RowData, validCurrencies: string[]): RowErrors {
+  const errors: RowErrors = {};
 
-  if (parts.length < 3) {
-    return {
-      account: null,
-      error: `Line ${lineNumber}: Expected at least 3 fields (Name, Type, Currency)`,
-      lineNumber,
-    };
-  }
-
-  const [name, rawType, rawCurrency, rawBalance] = parts;
-
-  // Validate name
+  // Name: required, min 2 chars
+  const name = row.name.trim();
   if (!name || name.length < 2) {
-    return {
-      account: null,
-      error: `Line ${lineNumber}: Name must be at least 2 characters`,
-      lineNumber,
-    };
+    errors.name = 'Min 2 characters';
   }
 
-  // Validate type
-  const type = rawType?.toLowerCase() as AccountType;
-  if (!VALID_ACCOUNT_TYPES.includes(type)) {
-    return {
-      account: null,
-      error: `Line ${lineNumber}: Invalid type "${rawType}". Must be one of: ${VALID_ACCOUNT_TYPES.join(', ')}`,
-      lineNumber,
-    };
+  // Type: must be valid
+  if (!VALID_ACCOUNT_TYPES.includes(row.type as AccountType)) {
+    errors.type = 'Select a type';
   }
 
-  // Validate currency
-  const currency = rawCurrency?.toUpperCase();
-  if (!currency || !validCurrencies.includes(currency)) {
-    return {
-      account: null,
-      error: `Line ${lineNumber}: Invalid currency "${rawCurrency}". Must be one of: ${validCurrencies.join(', ')}`,
-      lineNumber,
-    };
+  // Currency: must be valid
+  if (!row.currency || !validCurrencies.includes(row.currency)) {
+    errors.currency = 'Select a currency';
   }
 
-  // Validate balance (optional)
-  let balance = '0';
-  if (rawBalance !== undefined && rawBalance !== '') {
-    const num = Number(rawBalance);
+  // Balance: optional, non-negative number
+  const balanceStr = row.balance.trim();
+  if (balanceStr !== '' && balanceStr !== '0') {
+    const num = Number(balanceStr);
     if (isNaN(num) || !isFinite(num) || num < 0) {
-      return {
-        account: null,
-        error: `Line ${lineNumber}: Invalid balance "${rawBalance}". Must be a non-negative number`,
-        lineNumber,
-      };
+      errors.balance = 'Must be ≥ 0';
+    } else if (!/^\d+(\.\d{1,2})?$/.test(balanceStr)) {
+      errors.balance = 'Max 2 decimals';
     }
-    // Format to max 2 decimal places, matching API regex: ^\d+(\.\d{1,2})?$
-    balance = num % 1 === 0 ? String(num) : num.toFixed(2);
   }
 
-  return {
-    account: { name, type, currency, balance },
-    error: null,
-    lineNumber,
-  };
-}
-
-export function parseTextarea(text: string, validCurrencies: string[]): ParsedLine[] {
-  return text
-    .split('\n')
-    .map((line, i) => ({ line: line.trim(), lineNumber: i + 1 }))
-    .filter(({ line }) => line.length > 0)
-    .map(({ line, lineNumber }) => parseLine(line, lineNumber, validCurrencies));
-}
-
-function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return errors;
 }
 
 export function initBulkAddAccounts() {
   const modal = document.getElementById('bulk-add-accounts-modal') as HTMLDialogElement;
-  const textarea = document.getElementById('bulk-accounts-input') as HTMLTextAreaElement;
-  const previewContainer = document.getElementById('bulk-accounts-preview');
-  const previewBody = document.querySelector('[data-bulk-accounts-preview-body]');
-  const countEl = document.querySelector('[data-bulk-accounts-count]');
-  const errorDiv = document.getElementById('bulk-accounts-error');
+  const tbody = document.querySelector('[data-bulk-rows]') as HTMLTableSectionElement;
+  const addRowBtn = document.querySelector('[data-bulk-add-row]') as HTMLButtonElement;
   const submitBtn = document.querySelector('[data-bulk-accounts-submit]') as HTMLButtonElement;
   const submitText = document.querySelector('[data-bulk-accounts-submit-text]');
   const cancelBtn = document.querySelector('[data-bulk-accounts-cancel]');
+  const errorDiv = document.getElementById('bulk-accounts-error');
 
-  if (!modal || !textarea) return;
-  // Track initialization per DOM element to survive Astro view transitions
+  if (!modal || !tbody) return;
   if (modal.dataset.initialized) return;
   modal.dataset.initialized = 'true';
 
-  // Read valid currencies from data attribute
-  const validCurrencies = (textarea.dataset.validCurrencies || '').split(',').filter(Boolean);
+  const validCurrencies = (tbody.dataset.validCurrencies || '').split(',').filter(Boolean);
+  // Account types JSON is embedded as data attribute on the tbody
+  const accountTypesJson = tbody.dataset.accountTypes || '[]';
+  const accountTypes: { value: string; label: string }[] = JSON.parse(accountTypesJson);
 
   let isSubmitting = false;
+  let rowCounter = 0;
 
-  // Update preview on input
-  textarea.addEventListener('input', () => {
-    const parsed = parseTextarea(textarea.value, validCurrencies);
-    const validAccounts = parsed.filter((p) => p.account !== null);
+  function createRow(): HTMLTableRowElement {
+    const id = ++rowCounter;
+    const tr = document.createElement('tr');
+    tr.dataset.rowId = String(id);
 
-    if (parsed.length > 0 && previewContainer && previewBody && countEl) {
-      previewContainer.classList.remove('hidden');
-      countEl.textContent = String(validAccounts.length);
+    // Name cell
+    const tdName = document.createElement('td');
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Account name';
+    nameInput.className = 'input input-sm input-bordered w-full min-w-[140px]';
+    nameInput.dataset.field = 'name';
+    tdName.appendChild(nameInput);
+    tr.appendChild(tdName);
 
-      // Build preview rows
-      previewBody.innerHTML = '';
-      for (const p of parsed) {
-        const tr = document.createElement('tr');
-        if (p.account) {
-          tr.innerHTML = `
-            <td class="font-medium">${escapeHtml(p.account.name)}</td>
-            <td><span class="badge badge-xs badge-ghost">${escapeHtml(p.account.type)}</span></td>
-            <td><span class="badge badge-xs badge-outline">${escapeHtml(p.account.currency)}</span></td>
-            <td class="text-right tabular-nums">${escapeHtml(p.account.balance)}</td>
-          `;
-        } else {
-          tr.innerHTML = `<td colspan="4" class="text-error text-xs">${escapeHtml(p.error || '')}</td>`;
-        }
-        previewBody.appendChild(tr);
-      }
-
-      // Update submit button text
-      if (submitText) {
-        submitText.textContent =
-          validAccounts.length > 0
-            ? `Create ${validAccounts.length} Account${validAccounts.length !== 1 ? 's' : ''}`
-            : 'Create Accounts';
-      }
-
-      // Disable submit if there are errors and no valid accounts
-      if (submitBtn && !isSubmitting) {
-        submitBtn.disabled = validAccounts.length === 0;
-      }
-    } else if (previewContainer) {
-      previewContainer.classList.add('hidden');
-      if (submitText) submitText.textContent = 'Create Accounts';
-      if (submitBtn && !isSubmitting) submitBtn.disabled = false;
+    // Type cell
+    const tdType = document.createElement('td');
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'select select-sm select-bordered w-full min-w-[130px]';
+    typeSelect.dataset.field = 'type';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'Select type';
+    defaultOpt.disabled = true;
+    defaultOpt.selected = true;
+    typeSelect.appendChild(defaultOpt);
+    for (const t of accountTypes) {
+      const opt = document.createElement('option');
+      opt.value = t.value;
+      opt.textContent = t.label;
+      typeSelect.appendChild(opt);
     }
+    tdType.appendChild(typeSelect);
+    tr.appendChild(tdType);
 
-    // Clear error display
+    // Currency cell
+    const tdCurrency = document.createElement('td');
+    const currencySelect = document.createElement('select');
+    currencySelect.className = 'select select-sm select-bordered w-full min-w-[80px]';
+    currencySelect.dataset.field = 'currency';
+    const defaultCurrOpt = document.createElement('option');
+    defaultCurrOpt.value = '';
+    defaultCurrOpt.textContent = '—';
+    defaultCurrOpt.disabled = true;
+    // Pre-select first currency if only one
+    if (validCurrencies.length === 1) {
+      defaultCurrOpt.selected = false;
+    } else {
+      defaultCurrOpt.selected = true;
+    }
+    currencySelect.appendChild(defaultCurrOpt);
+    for (const c of validCurrencies) {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      if (validCurrencies.length === 1) opt.selected = true;
+      currencySelect.appendChild(opt);
+    }
+    tdCurrency.appendChild(currencySelect);
+    tr.appendChild(tdCurrency);
+
+    // Balance cell
+    const tdBalance = document.createElement('td');
+    const balanceInput = document.createElement('input');
+    balanceInput.type = 'number';
+    balanceInput.step = '0.01';
+    balanceInput.min = '0';
+    balanceInput.placeholder = '0';
+    balanceInput.className =
+      'input input-sm input-bordered w-full min-w-[100px] text-right tabular-nums';
+    balanceInput.dataset.field = 'balance';
+    tdBalance.appendChild(balanceInput);
+    tr.appendChild(tdBalance);
+
+    // Remove button cell
+    const tdRemove = document.createElement('td');
+    tdRemove.className = 'text-center';
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-ghost btn-xs btn-square text-error';
+    removeBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
+    removeBtn.title = 'Remove row';
+    removeBtn.dataset.action = 'remove-row';
+    removeBtn.addEventListener('click', () => {
+      tr.remove();
+      updateState();
+    });
+    tdRemove.appendChild(removeBtn);
+    tr.appendChild(tdRemove);
+
+    // Clear errors on input
+    nameInput.addEventListener('input', () => clearFieldError(nameInput));
+    typeSelect.addEventListener('change', () => clearFieldError(typeSelect));
+    currencySelect.addEventListener('change', () => clearFieldError(currencySelect));
+    balanceInput.addEventListener('input', () => clearFieldError(balanceInput));
+
+    return tr;
+  }
+
+  function clearFieldError(el: HTMLElement) {
+    el.classList.remove('input-error', 'select-error');
+    // Remove tooltip if present
+    const parent = el.parentElement;
+    const tooltip = parent?.querySelector('.text-error');
+    if (tooltip) tooltip.remove();
+  }
+
+  function getRows(): HTMLTableRowElement[] {
+    return Array.from(tbody.querySelectorAll('tr[data-row-id]'));
+  }
+
+  function getRowData(tr: HTMLTableRowElement): RowData {
+    const name = (tr.querySelector('[data-field="name"]') as HTMLInputElement).value;
+    const type = (tr.querySelector('[data-field="type"]') as HTMLSelectElement).value;
+    const currency = (tr.querySelector('[data-field="currency"]') as HTMLSelectElement).value;
+    const balance = (tr.querySelector('[data-field="balance"]') as HTMLInputElement).value;
+    return { name, type, currency, balance };
+  }
+
+  function showFieldError(tr: HTMLTableRowElement, field: string, message: string) {
+    const el = tr.querySelector(`[data-field="${field}"]`) as HTMLElement;
+    if (!el) return;
+    const errorClass = el.tagName === 'SELECT' ? 'select-error' : 'input-error';
+    el.classList.add(errorClass);
+    // Add tooltip text below
+    const span = document.createElement('span');
+    span.className = 'text-error text-xs';
+    span.textContent = message;
+    el.parentElement?.appendChild(span);
+  }
+
+  function updateState() {
+    const rows = getRows();
+    // Disable remove if only 1 row
+    const removeBtns = tbody.querySelectorAll(
+      '[data-action="remove-row"]'
+    ) as NodeListOf<HTMLButtonElement>;
+    removeBtns.forEach((btn) => {
+      btn.disabled = rows.length <= 1;
+    });
+    // Update submit text
+    if (submitText) {
+      submitText.textContent =
+        rows.length > 0
+          ? `Create ${rows.length} Account${rows.length !== 1 ? 's' : ''}`
+          : 'Create Accounts';
+    }
+    if (submitBtn && !isSubmitting) {
+      submitBtn.disabled = rows.length === 0;
+    }
+  }
+
+  function resetModal() {
+    tbody.innerHTML = '';
+    rowCounter = 0;
+    tbody.appendChild(createRow());
+    updateState();
     if (errorDiv) {
       errorDiv.textContent = '';
       errorDiv.classList.add('hidden');
     }
+  }
+
+  // Add Row
+  addRowBtn?.addEventListener('click', () => {
+    tbody.appendChild(createRow());
+    updateState();
+    // Focus the name input of the new row
+    const rows = getRows();
+    const lastRow = rows[rows.length - 1];
+    (lastRow?.querySelector('[data-field="name"]') as HTMLInputElement)?.focus();
   });
 
   // Cancel
@@ -200,44 +276,71 @@ export function initBulkAddAccounts() {
   submitBtn?.addEventListener('click', async () => {
     if (isSubmitting) return;
 
-    const parsed = parseTextarea(textarea.value, validCurrencies);
-    const validAccounts = parsed.filter((p) => p.account !== null).map((p) => p.account!);
-    const parseErrors = parsed.filter((p) => p.error !== null);
-
-    if (validAccounts.length === 0) {
+    const rows = getRows();
+    if (rows.length === 0) {
       if (errorDiv) {
-        errorDiv.textContent =
-          parseErrors.length > 0
-            ? parseErrors.map((e) => e.error).join('\n')
-            : 'Please enter at least one valid account line.';
+        errorDiv.textContent = 'Please add at least one account row.';
         errorDiv.classList.remove('hidden');
       }
       return;
     }
 
-    // Clear errors
+    // Clear previous errors
+    for (const tr of rows) {
+      tr.querySelectorAll('.input-error, .select-error').forEach((el) => {
+        el.classList.remove('input-error', 'select-error');
+      });
+      tr.querySelectorAll('td > .text-error').forEach((el) => {
+        el.remove();
+      });
+    }
     if (errorDiv) {
       errorDiv.textContent = '';
       errorDiv.classList.add('hidden');
     }
 
+    // Validate all rows
+    let hasErrors = false;
+    const validatedRows: { tr: HTMLTableRowElement; data: RowData; errors: RowErrors }[] = [];
+
+    for (const tr of rows) {
+      const data = getRowData(tr);
+      const errors = validateRow(data, validCurrencies);
+      validatedRows.push({ tr, data, errors });
+      if (Object.keys(errors).length > 0) {
+        hasErrors = true;
+        for (const [field, message] of Object.entries(errors)) {
+          showFieldError(tr, field, message!);
+        }
+      }
+    }
+
+    if (hasErrors) return;
+
+    // Submit
     isSubmitting = true;
     submitBtn.disabled = true;
     if (submitText) submitText.textContent = 'Creating...';
 
     let successCount = 0;
-    const errors: string[] = [];
+    const apiErrors: string[] = [];
 
-    for (const account of validAccounts) {
+    for (const { data } of validatedRows) {
+      const name = data.name.trim();
+      const balance = data.balance.trim() || '0';
+      // Format balance to max 2 decimal places
+      const num = Number(balance);
+      const formattedBalance = num % 1 === 0 ? String(num) : num.toFixed(2);
+
       try {
         const response = await csrfFetch('/api/accounts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: account.name,
-            type: account.type,
-            currency: account.currency,
-            balance: account.balance,
+            name,
+            type: data.type,
+            currency: data.currency,
+            balance: formattedBalance,
           }),
         });
 
@@ -245,38 +348,45 @@ export function initBulkAddAccounts() {
         if (response.ok && (result.success || result.data)) {
           successCount++;
         } else {
-          const msg = result.error?.message || result.error || `Failed to create "${account.name}"`;
-          errors.push(`"${account.name}": ${msg}`);
+          const msg = result.error?.message || result.error || `Failed to create "${name}"`;
+          apiErrors.push(`"${name}": ${msg}`);
         }
       } catch {
-        errors.push(`"${account.name}": Network error`);
+        apiErrors.push(`"${name}": Network error`);
       }
     }
 
     isSubmitting = false;
     submitBtn.disabled = false;
-    if (submitText) submitText.textContent = 'Create Accounts';
+    updateState();
 
-    if (errors.length === 0 && successCount > 0) {
+    if (apiErrors.length === 0 && successCount > 0) {
       addToast(
         `${successCount} account${successCount !== 1 ? 's' : ''} created successfully!`,
         'success'
       );
       modal.close();
-      textarea.value = '';
-      if (previewContainer) previewContainer.classList.add('hidden');
+      resetModal();
       const currentUrl = new URL(window.location.href);
       const { navigate } = await import('astro:transitions/client');
       navigate(currentUrl.pathname + currentUrl.search);
-    } else if (errors.length > 0) {
+    } else if (apiErrors.length > 0) {
       if (successCount > 0) {
-        addToast(`${successCount} created, ${errors.length} failed`, 'warning');
+        addToast(`${successCount} created, ${apiErrors.length} failed`, 'warning');
       }
       if (errorDiv) {
-        errorDiv.textContent = errors.join('\n');
+        errorDiv.textContent = apiErrors.join('\n');
         errorDiv.style.whiteSpace = 'pre-line';
         errorDiv.classList.remove('hidden');
       }
     }
+  });
+
+  // Initialize with one empty row
+  resetModal();
+
+  // Reset when modal opens (in case it was previously used)
+  modal.addEventListener('close', () => {
+    if (!isSubmitting) resetModal();
   });
 }
