@@ -18,6 +18,14 @@ interface RecurringOccurrenceLike {
   account: { id: string; name: string };
 }
 
+function currentUtcDateIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isOccurrenceActionable(occurrence: RecurringOccurrenceLike): boolean {
+  return occurrence.due_date <= currentUtcDateIso();
+}
+
 let controller: AbortController | null = null;
 let currentView: 'list' | 'calendar' = 'list';
 let currentMonth = '';
@@ -189,6 +197,7 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   if (idInput) idInput.value = occurrence.id;
   if (amountInput) amountInput.value = occurrence.templateAmount;
   if (dateInput) dateInput.value = occurrence.due_date;
+  if (dateInput) dateInput.max = currentUtcDateIso();
   if (categorySelect) categorySelect.value = occurrence.category.id;
   if (accountSelect) accountSelect.value = occurrence.account.id;
 
@@ -254,7 +263,7 @@ function openCancelModal(templateId: string, templateName: string): void {
   pendingCancelTemplateId = templateId;
   const subtitle = modal.querySelector('[data-modal-subtitle]') as HTMLElement | null;
   if (subtitle) {
-    subtitle.textContent = `Cancel template \"${templateName}\"?`;
+    subtitle.textContent = `Cancel "${templateName}"?`;
   }
 
   clearConfirmError(modal.querySelector('[data-confirm-error]') as HTMLElement | null);
@@ -281,7 +290,7 @@ async function runTemplateAction(
   }
 
   await refreshAfterMutation(signal);
-  addToast(`Template ${action}d`, 'success');
+  addToast(`Recurring transaction ${action}d`, 'success');
 }
 
 function initRecurringPage(): void {
@@ -373,6 +382,10 @@ function initRecurringPage(): void {
 
         try {
           const occurrence = JSON.parse(raw) as RecurringOccurrenceLike;
+          if (!isOccurrenceActionable(occurrence)) {
+            addToast('You can only confirm occurrences on or after the due date', 'warning');
+            return;
+          }
           openConfirmModal(occurrence, confirmTrigger);
         } catch {
           addToast('Invalid occurrence data', 'error');
@@ -387,6 +400,10 @@ function initRecurringPage(): void {
 
         try {
           const occurrence = JSON.parse(raw) as RecurringOccurrenceLike;
+          if (!isOccurrenceActionable(occurrence)) {
+            addToast('You can only skip occurrences on or after the due date', 'warning');
+            return;
+          }
           openSkipModal(occurrence, skipTrigger);
         } catch {
           addToast('Invalid occurrence data', 'error');
@@ -408,7 +425,7 @@ function initRecurringPage(): void {
               new CustomEvent('edit-recurring-template-drawer', { detail: template })
             );
           } catch {
-            addToast('Invalid template data', 'error');
+            addToast('Invalid data', 'error');
           }
           return;
         }
@@ -419,7 +436,7 @@ function initRecurringPage(): void {
         if (action === 'pause' || action === 'resume') {
           void runTemplateAction(action, templateId, signal).catch((error) => {
             if (error instanceof Error && error.name === 'AbortError') return;
-            addToast(error instanceof Error ? error.message : 'Template action failed', 'error');
+            addToast(error instanceof Error ? error.message : 'Action failed', 'error');
           });
           return;
         }
@@ -628,14 +645,17 @@ function initRecurringPage(): void {
         closeConfirmationModal(cancelModal);
         pendingCancelTemplateId = null;
         await refreshAfterMutation(signal);
-        addToast('Template cancelled', 'success');
+        addToast('Recurring transaction cancelled', 'success');
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') return;
         showConfirmError(
           cancelModalError,
-          error instanceof Error ? error.message : 'Failed to cancel template'
+          error instanceof Error ? error.message : 'Failed to cancel recurring transaction'
         );
-        addToast(error instanceof Error ? error.message : 'Failed to cancel template', 'error');
+        addToast(
+          error instanceof Error ? error.message : 'Failed to cancel recurring transaction',
+          'error'
+        );
       } finally {
         setConfirmLoading(cancelModalConfirmButton, false);
       }

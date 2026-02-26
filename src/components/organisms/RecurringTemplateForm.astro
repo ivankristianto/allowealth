@@ -1,5 +1,6 @@
 ---
 import Drawer from '@/components/molecules/Drawer.astro';
+import { CircleMinus, CirclePlus, CalendarClock, ChevronDown } from '@lucide/astro';
 
 interface CategoryOption {
   id: string;
@@ -22,61 +23,96 @@ export interface Props {
 const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
 ---
 
-<Drawer id="recurring-template-drawer" title="Recurring Template" width="w-full sm:max-w-md">
-  <form id="recurring-template-form" class="space-y-4" novalidate>
+<Drawer id="recurring-template-drawer" title="New Recurring" width="w-full sm:max-w-md">
+  <form id="recurring-template-form" class="flex flex-col gap-4 pb-20 sm:pb-4" novalidate>
     <input type="hidden" name="template_id" />
 
-    <div role="alert" class="alert alert-error hidden" data-template-form-error></div>
+    <p class="text-sm font-medium text-neutral/60" data-drawer-subtitle>
+      Set up an automatic bill or income.
+    </p>
 
-    <label class="form-control">
-      <span class="label-text text-sm font-medium">Name</span>
+    <div role="alert" class="alert alert-error hidden rounded-xl text-sm" data-template-form-error>
+    </div>
+
+    <label class="form-control gap-1.5">
+      <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Name</span>
       <input
         name="name"
-        class="input input-bordered"
+        class="input input-bordered h-11 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
         required
         maxlength="200"
-        placeholder="e.g., Rent"
+        placeholder="e.g., Rent, Netflix, Salary"
       />
     </label>
 
-    <div class="grid grid-cols-2 gap-2">
+    <div
+      class="grid grid-cols-2 gap-1 rounded-lg bg-base-200 p-1"
+      role="radiogroup"
+      aria-label="Recurring type"
+      data-recurring-type-segmented
+    >
       <label
-        class="label cursor-pointer justify-start gap-2 border border-base-300 rounded-lg px-3 py-2"
+        class="btn btn-sm h-9 cursor-pointer rounded-md border-none bg-white text-primary shadow-sm transition-all hover:bg-white"
+        data-type-option="expense"
       >
-        <input type="radio" class="radio radio-sm" name="type" value="expense" checked />
-        <span class="label-text">Expense</span>
+        <input type="radio" class="sr-only" name="type" value="expense" checked />
+        <CircleMinus size={15} class="stroke-current text-error" aria-hidden="true" />
+        <span class="text-xs font-bold">Expense</span>
       </label>
+
       <label
-        class="label cursor-pointer justify-start gap-2 border border-base-300 rounded-lg px-3 py-2"
+        class="btn btn-sm h-9 cursor-pointer rounded-md border-none bg-transparent text-neutral font-medium transition-all hover:bg-base-300"
+        data-type-option="income"
       >
-        <input type="radio" class="radio radio-sm" name="type" value="income" />
-        <span class="label-text">Income</span>
+        <input type="radio" class="sr-only" name="type" value="income" />
+        <CirclePlus size={15} class="stroke-current text-success" aria-hidden="true" />
+        <span class="text-xs font-semibold">Income</span>
       </label>
     </div>
 
-    <div class="grid grid-cols-2 gap-2">
-      <label class="form-control">
-        <span class="label-text text-sm font-medium">Amount</span>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          name="amount"
-          class="input input-bordered"
-          required
-        />
-      </label>
-      <label class="form-control">
-        <span class="label-text text-sm font-medium">Currency</span>
-        <select name="currency" class="select select-bordered" required>
-          {currencies.map((currency) => <option value={currency}>{currency}</option>)}
-        </select>
-      </label>
+    <div class="rounded-lg border border-base-300 bg-base-100 p-3" data-recurring-amount-field>
+      <div class="grid grid-cols-[1fr_auto] items-end gap-3">
+        <label class="form-control gap-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Amount</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            name="amount"
+            class="input input-bordered h-16 rounded-lg border border-base-300 bg-base-100 text-center text-3xl font-bold tracking-tight placeholder:text-base-content/20"
+            required
+            placeholder="0"
+          />
+        </label>
+
+        <label class="form-control min-w-[7.5rem] gap-1.5">
+          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+            >Currency</span
+          >
+          <select
+            name="currency"
+            class="select select-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
+            required
+          >
+            {currencies.map((currency) => <option value={currency}>{currency}</option>)}
+          </select>
+        </label>
+      </div>
     </div>
 
-    <label class="form-control">
-      <span class="label-text text-sm font-medium">Category</span>
-      <select name="category_id" class="select select-bordered" required>
+    <div class="form-control" data-recurring-category-block>
+      <label
+        for="recurring-template-category"
+        class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral/50"
+      >
+        Category
+      </label>
+      <select
+        id="recurring-template-category"
+        name="category_id"
+        class="select select-bordered h-10 w-full rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+        required
+      >
         <option value="">Select category</option>
         {
           categories.map((category) => (
@@ -86,20 +122,36 @@ const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
           ))
         }
       </select>
-    </label>
+    </div>
 
-    <label class="form-control">
-      <span class="label-text text-sm font-medium">Account</span>
-      <select name="account_id" class="select select-bordered" required>
+    <div class="form-control" data-recurring-account-block>
+      <label
+        for="recurring-template-account"
+        class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral/50"
+      >
+        Account
+      </label>
+      <select
+        id="recurring-template-account"
+        name="account_id"
+        class="select select-bordered h-10 w-full rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+        required
+      >
         <option value="">Select account</option>
         {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
       </select>
-    </label>
+    </div>
 
-    <div class="grid grid-cols-2 gap-2">
-      <label class="form-control">
-        <span class="label-text text-sm font-medium">Day of month</span>
-        <select name="day_of_month" class="select select-bordered" required>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="form-control gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+          >Day of month</span
+        >
+        <select
+          name="day_of_month"
+          class="select select-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          required
+        >
           {
             Array.from({ length: 31 }).map((_, index) => (
               <option value={index + 1}>{index + 1}</option>
@@ -107,104 +159,197 @@ const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
           }
         </select>
       </label>
-      <label class="form-control">
-        <span class="label-text text-sm font-medium">Start month</span>
-        <input type="month" name="start_month" class="input input-bordered" required />
+
+      <label class="form-control gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+          >Start month</span
+        >
+        <div class="relative">
+          <input
+            type="month"
+            name="start_month"
+            class="input input-bordered h-10 w-full rounded-lg border border-base-300 bg-base-100 pr-10 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+            required
+          />
+          <CalendarClock
+            size={16}
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40"
+            aria-hidden="true"
+          />
+        </div>
       </label>
     </div>
 
-    <fieldset class="space-y-2 rounded-lg border border-base-300 p-3">
-      <legend class="px-1 text-xs font-semibold uppercase tracking-widest text-base-content/60"
-        >End condition</legend
-      >
-
-      <label class="label cursor-pointer justify-start gap-2 px-0">
-        <input
-          type="checkbox"
-          class="checkbox checkbox-sm"
-          name="use_count"
-          data-end-condition="count"
-        />
-        <span class="label-text">By count</span>
-      </label>
-
-      <div class="hidden" data-end-input="count">
-        <input
-          type="number"
-          min="1"
-          name="total_occurrences"
-          class="input input-bordered w-full"
-          placeholder="Total occurrences"
-        />
+    <section
+      class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3.5"
+      data-recurring-rules-card
+    >
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Schedule rules</p>
+        <p class="mt-1 text-xs text-base-content/60">
+          Set when this recurring ends and whether it should be tracked as an installment.
+        </p>
       </div>
 
-      <label class="label cursor-pointer justify-start gap-2 px-0">
-        <input
-          type="checkbox"
-          class="checkbox checkbox-sm"
-          name="use_date"
-          data-end-condition="date"
-        />
-        <span class="label-text">By date</span>
-      </label>
-
-      <div class="hidden" data-end-input="date">
-        <input type="date" name="end_date" class="input input-bordered w-full" />
-      </div>
-
-      <p class="text-xs text-base-content/60" data-end-validation-hint>
-        At least one end condition is required.
-      </p>
-    </fieldset>
-
-    <fieldset class="space-y-2 rounded-lg border border-base-300 p-3">
-      <legend class="px-1 text-xs font-semibold uppercase tracking-widest text-base-content/60"
-        >Installment</legend
+      <div
+        class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3"
+        data-recurring-end-group
       >
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">
+            End condition
+          </p>
+          <span class="badge badge-ghost badge-sm text-[10px] font-semibold uppercase"
+            >Required</span
+          >
+        </div>
 
-      <label class="label cursor-pointer justify-start gap-2 px-0">
-        <input
-          type="checkbox"
-          class="checkbox checkbox-sm"
-          name="is_installment"
-          data-installment-toggle
-          disabled
-        />
-        <span class="label-text">Treat as installment</span>
-      </label>
+        <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-sm checkbox-accent rounded-lg"
+            name="use_count"
+            data-end-condition="count"
+          />
+          <span class="label-text font-semibold">End by count</span>
+        </label>
 
-      <div class="hidden space-y-2" data-installment-fields>
-        <label class="form-control">
-          <span class="label-text text-sm font-medium">Starting occurrence number</span>
+        <div class="hidden pl-8" data-end-input="count">
           <input
             type="number"
             min="1"
-            name="starting_occurrence_number"
-            value="1"
-            class="input input-bordered"
+            name="total_occurrences"
+            class="input input-bordered h-11 w-full rounded-xl"
+            placeholder="Total occurrences"
           />
-        </label>
-        <label class="form-control">
-          <span class="label-text text-sm font-medium">Installment label</span>
+        </div>
+
+        <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
           <input
-            name="installment_label"
-            class="input input-bordered"
-            maxlength="100"
-            placeholder="Installment"
+            type="checkbox"
+            class="checkbox checkbox-sm checkbox-accent rounded-lg"
+            name="use_date"
+            data-end-condition="date"
           />
+          <span class="label-text font-semibold">End by date</span>
         </label>
+
+        <div class="hidden pl-8" data-end-input="date">
+          <input type="date" name="end_date" class="input input-bordered h-11 w-full rounded-xl" />
+        </div>
+
+        <p class="text-xs font-medium text-base-content/60" data-end-validation-hint>
+          Select at least one end condition.
+        </p>
       </div>
-    </fieldset>
 
-    <label class="form-control">
-      <span class="label-text text-sm font-medium">Description (optional)</span>
-      <textarea name="description" class="textarea textarea-bordered min-h-20" maxlength="500"
-      ></textarea>
-    </label>
+      <div
+        class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3"
+        data-recurring-installment-group
+      >
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Installment</p>
+          <span class="badge badge-ghost badge-sm text-[10px] font-semibold uppercase"
+            >Optional</span
+          >
+        </div>
 
-    <div class="grid grid-cols-2 gap-2 pt-2">
-      <button type="button" class="btn btn-ghost" data-template-form-cancel>Cancel</button>
-      <button type="submit" class="btn btn-primary" data-template-form-submit> Save </button>
+        <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-sm checkbox-accent rounded-lg"
+            name="is_installment"
+            data-installment-toggle
+            disabled
+          />
+          <span class="label-text font-semibold">Treat as installment</span>
+        </label>
+
+        <p class="pl-8 text-xs text-base-content/60">
+          Best for loans or device payments with a known total number of cycles.
+        </p>
+        <p class="pl-8 text-xs text-base-content/55" data-installment-disabled-hint>
+          Enable "End by count" and set occurrences to unlock installment mode.
+        </p>
+
+        <div class="hidden space-y-3 pl-8 pt-1" data-installment-fields>
+          <label class="form-control gap-1.5">
+            <span
+              class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/60"
+              >Starting occurrence number</span
+            >
+            <input
+              type="number"
+              min="1"
+              name="starting_occurrence_number"
+              value="1"
+              class="input input-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
+            />
+          </label>
+
+          <label class="form-control gap-1.5">
+            <span
+              class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/60"
+              >Installment label</span
+            >
+            <input
+              name="installment_label"
+              class="input input-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
+              maxlength="100"
+              placeholder="Installment"
+            />
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <details
+      class="group rounded-lg border border-base-300 bg-base-100 p-3.5"
+      data-recurring-description-details
+    >
+      <summary
+        class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-base-content/80"
+        data-recurring-description-summary
+      >
+        <span>Description (optional)</span>
+        <ChevronDown
+          size={16}
+          class="transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <p class="pt-1 text-xs text-base-content/55">
+        Add context for future edits, receipts, or reminders.
+      </p>
+      <div class="pt-2.5">
+        <textarea
+          name="description"
+          class="textarea textarea-bordered min-h-24 w-full rounded-lg border border-base-300 bg-base-100 text-sm"
+          maxlength="500"></textarea>
+      </div>
+    </details>
+
+    <div
+      class="-mx-1 mt-1 border-t border-base-200 bg-base-100 px-1 pb-1 pt-4 sm:sticky sm:bottom-0 sm:z-10"
+      data-recurring-actions
+    >
+      <div class="flex gap-3">
+        <button
+          type="button"
+          class="btn btn-ghost h-12 flex-1 rounded-lg text-sm font-bold sm:rounded-xl"
+          data-template-form-cancel
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-accent h-12 flex-[1.6] rounded-lg text-sm font-bold sm:rounded-xl"
+          data-template-form-submit
+          data-default-label="Save recurring"
+        >
+          Save recurring
+        </button>
+      </div>
     </div>
   </form>
 </Drawer>

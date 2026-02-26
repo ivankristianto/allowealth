@@ -506,42 +506,71 @@ Full test coverage for the recurring transactions feature: template CRUD, occurr
 
 ## Summary Checklist
 
-| #   | Area                | Key Assertion                                          | Pass |
-| --- | ------------------- | ------------------------------------------------------ | ---- |
-| 1   | Route Protection    | `/recurring` requires auth                             | [ ]  |
-| 2   | Navigation          | Sidebar shows "Recurring" with icon                    | [ ]  |
-| 3   | Empty State         | First-time shows CTA                                   | [ ]  |
-| 4   | Template Create     | Creates template + generates occurrences               | [ ]  |
-| 5   | Validation          | Rejects invalid input (no end condition, empty fields) | [ ]  |
-| 6   | Installments        | Shows counter "05/12", progress bar                    | [ ]  |
-| 7   | End Conditions      | Both count AND date can be set simultaneously          | [ ]  |
-| 8   | Template Edit       | Updates template, future occurrences reflect changes   | [ ]  |
-| 9   | Pause/Resume        | Reversible, occurrences toggle visibility              | [ ]  |
-| 10  | Cancel              | Future pending removed, confirmed preserved            | [ ]  |
-| 11  | Delete              | Hard delete, linked transactions preserved             | [ ]  |
-| 12  | Confirm Happy Path  | Creates transaction, updates all sections              | [ ]  |
-| 13  | Confirm Editable    | Amount, date, category, account changeable             | [ ]  |
-| 14  | Confirm Error       | No ghost transactions on failure or double-click       | [ ]  |
-| 15  | Skip                | Removes from pending, optional reason stored           | [ ]  |
-| 16  | Overdue             | Red styling, badge, still confirmable                  | [ ]  |
-| 17  | Template List       | Correct badges, opacity, progress bars                 | [ ]  |
-| 18  | View Toggle         | List ↔ Calendar with URL persistence                   | [ ]  |
-| 19  | Month Navigation    | Stats + content update per month                       | [ ]  |
-| 20  | Calendar Desktop    | 7-column grid, clickable occurrences                   | [ ]  |
-| 21  | Calendar Mobile     | Date-grouped list fallback                             | [ ]  |
-| 22  | Stats Row           | Updates on confirm/skip without reload                 | [ ]  |
-| 23  | Partial Refresh     | All 3 sections refresh after mutations                 | [ ]  |
-| 24  | Dashboard Widget    | Pending count + CTA link                               | [ ]  |
-| 25  | Transaction Badge   | "Recurring" badge on confirmed transactions            | [ ]  |
-| 26  | CashFlow Widget     | Upcoming bills in cash flow                            | [ ]  |
-| 27  | Budget Warning      | Warning when recurring > budget                        | [ ]  |
-| 28  | CLI Generate        | Idempotent occurrence generation                       | [ ]  |
-| 29  | Completion          | Template auto-completes when done                      | [ ]  |
-| 30  | Day-of-Month        | 31st clamped in short months                           | [ ]  |
-| 31  | Mobile Layout       | No overflow, touch targets ≥44px                       | [ ]  |
-| 32  | Keyboard A11y       | Focus management, tab order, escape                    | [ ]  |
-| 33  | URL Persistence     | Bookmarkable, back/forward works                       | [ ]  |
-| 34  | CSRF                | All POST/PUT/DELETE include token                      | [ ]  |
-| 35  | Workspace Isolation | Data scoped to active workspace                        | [ ]  |
+| #   | Area                | Key Assertion                                          | Pass    |
+| --- | ------------------- | ------------------------------------------------------ | ------- |
+| 1   | Route Protection    | `/recurring` requires auth                             | PASS    |
+| 2   | Navigation          | Sidebar shows "Recurring" with icon                    | PASS    |
+| 3   | Empty State         | First-time shows CTA                                   | SKIP    |
+| 4   | Template Create     | Creates template + generates occurrences               | PASS    |
+| 5   | Validation          | Rejects invalid input (no end condition, empty fields) | PARTIAL |
+| 6   | Installments        | Shows counter "05/12", progress bar                    | PASS    |
+| 7   | End Conditions      | Both count AND date can be set simultaneously          | PARTIAL |
+| 8   | Template Edit       | Updates template, future occurrences reflect changes   | PASS    |
+| 9   | Pause/Resume        | Reversible, occurrences toggle visibility              | PASS    |
+| 10  | Cancel              | Future pending removed, confirmed preserved            | PASS    |
+| 11  | Delete              | Hard delete, linked transactions preserved             | SKIP    |
+| 12  | Confirm Happy Path  | Creates transaction, updates all sections              | PASS    |
+| 13  | Confirm Editable    | Amount, date, category, account changeable             | PASS    |
+| 14  | Confirm Error       | No ghost transactions on failure or double-click       | PARTIAL |
+| 15  | Skip                | Removes from pending, optional reason stored           | PASS    |
+| 16  | Overdue             | Red styling, badge, still confirmable                  | PASS    |
+| 17  | Template List       | Correct badges, opacity, progress bars                 | PASS    |
+| 18  | View Toggle         | List ↔ Calendar with URL persistence                   | PASS    |
+| 19  | Month Navigation    | Stats + content update per month                       | PASS    |
+| 20  | Calendar Desktop    | 7-column grid, clickable occurrences                   | PASS    |
+| 21  | Calendar Mobile     | Date-grouped list fallback                             | PASS    |
+| 22  | Stats Row           | Updates on confirm/skip without reload                 | PASS    |
+| 23  | Partial Refresh     | All 3 sections refresh after mutations                 | PASS    |
+| 24  | Dashboard Widget    | Pending count + CTA link                               | PARTIAL |
+| 25  | Transaction Badge   | "Recurring" badge on confirmed transactions            | PASS    |
+| 26  | CashFlow Widget     | Upcoming bills in cash flow                            | PASS    |
+| 27  | Budget Warning      | Warning when recurring > budget                        | PASS    |
+| 28  | CLI Generate        | Idempotent occurrence generation                       | PASS    |
+| 29  | Completion          | Template auto-completes when done                      | PARTIAL |
+| 30  | Day-of-Month        | 31st clamped in short months                           | PARTIAL |
+| 31  | Mobile Layout       | No overflow, touch targets ≥44px                       | PASS    |
+| 32  | Keyboard A11y       | Focus management, tab order, escape                    | PASS    |
+| 33  | URL Persistence     | Bookmarkable, back/forward works                       | PARTIAL |
+| 34  | CSRF                | All POST/PUT/DELETE include token                      | PASS    |
+| 35  | Workspace Isolation | Data scoped to active workspace                        | SKIP    |
 
 **Critical paths:** Steps 1, 4, 10, 12, 14, 23, 34 are highest priority.
+
+---
+
+## Test Run Results — 2026-02-26
+
+**Executed by:** Claude Code browser automation (35 sections)
+**Environment:** `http://recurring-transactions.expenses.local:4320/` | Demo User | Feb 2026
+
+### Totals: 24 PASS · 1 FAIL · 7 PARTIAL · 3 SKIP
+
+### FAIL Details
+
+- **5.7** — Category dropdown does not filter by income/expense type when switching template type (Expense→Income still shows expense categories)
+
+### PARTIAL Details
+
+- **5** — Validation: Most pass; 5.7 FAIL (category type mismatch in dropdown)
+- **7** — End Conditions: UI shows both count+date as checkboxes (combinable by design), not explicitly tested simultaneously
+- **14** — Confirm Error: 14.1/14.2 PASS (validation inline banner); 14.3 PARTIAL (race condition test blocked by CSRF cookie security); 14.5 PARTIAL (offline simulation requires DevTools)
+- **24** — Dashboard Widget: Widget renders; all Feb bills already confirmed during testing so empty state shown, "Review pending bills" CTA not verifiable
+- **29** — Completion: Template with count=1 and past start month auto-completes on creation; occurrence not shown as pending since due date already passed (Feb 1)
+- **30** — Day-of-Month: No existing template with day=31 in seed data; edge case not verifiable without creating specific test data
+- **33** — URL Persistence: URL params persist and direct URL navigation works; **BUG** — period navigator chip always shows "March 2026" regardless of actual month (display inconsistency)
+
+### SKIP Details
+
+- **3** — Empty State: Seed data already present, bypasses first-time empty state
+- **11** — Delete: No delete option in template kebab menu UI (Edit/Pause/Resume/Cancel only)
+- **35** — Workspace Isolation: Demo account has single workspace ("Demo Family"); multi-workspace switching not available

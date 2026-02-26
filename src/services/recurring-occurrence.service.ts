@@ -72,6 +72,17 @@ export class RecurringOccurrenceService {
     this.transactionService = transactionService ?? new TransactionService(db);
   }
 
+  private ensureOccurrenceIsDue(dueDate: string): void {
+    const todayIso = toIsoDate(new Date());
+    if (dueDate > todayIso) {
+      throw new RecurringServiceError(
+        ServiceErrorCode.OCCURRENCE_NOT_DUE,
+        'You can only confirm or skip an occurrence on or after its due date',
+        409
+      );
+    }
+  }
+
   private mapOccurrenceOutput(occurrence: any): RecurringOccurrenceOutput {
     return {
       id: occurrence.id,
@@ -295,6 +306,8 @@ export class RecurringOccurrenceService {
         );
       }
 
+      this.ensureOccurrenceIsDue(occurrence.due_date);
+
       const template = occurrence.template as RecurringTemplate;
       const description =
         template.is_installment && template.total_occurrences
@@ -441,6 +454,8 @@ export class RecurringOccurrenceService {
         409
       );
     }
+
+    this.ensureOccurrenceIsDue(occurrence.due_date);
 
     await this.db
       .update(this.schema.recurringOccurrences)

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import { RecurringOccurrenceService } from './recurring-occurrence.service';
-import { RecurringServiceError } from './service-errors';
+import { RecurringServiceError, ServiceErrorCode } from './service-errors';
 import {
   createMockAccount,
   createMockCategory,
@@ -103,6 +103,31 @@ describe('RecurringOccurrenceService', () => {
     ).rejects.toBeInstanceOf(RecurringServiceError);
   });
 
+  it('confirm throws when occurrence due date is in the future', async () => {
+    const template = {
+      ...createMockRecurringTemplate(),
+      category: createMockCategory(),
+      account: createMockAccount(),
+    };
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    (mockDb.query.recurringOccurrences.findFirst as any).mockResolvedValueOnce({
+      ...createMockRecurringOccurrence({ due_date: tomorrow.toISOString().slice(0, 10) }),
+      template,
+    });
+
+    await expect(
+      recurringOccurrenceService.confirm('ro-1', 'workspace-1', {
+        amount: '5000000',
+        transaction_date: new Date(),
+        category_id: 'cat-1',
+        account_id: 'account-1',
+        userId: 'user-1',
+      })
+    ).rejects.toMatchObject({ code: ServiceErrorCode.OCCURRENCE_NOT_DUE });
+  });
+
   it('skip marks a pending occurrence as skipped', async () => {
     const template = {
       ...createMockRecurringTemplate(),
@@ -124,6 +149,25 @@ describe('RecurringOccurrenceService', () => {
 
     expect(result.status).toBe('skipped');
     expect(result.skip_reason).toBe('Not needed');
+  });
+
+  it('skip throws when occurrence due date is in the future', async () => {
+    const template = {
+      ...createMockRecurringTemplate(),
+      category: createMockCategory(),
+      account: createMockAccount(),
+    };
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    (mockDb.query.recurringOccurrences.findFirst as any).mockResolvedValueOnce({
+      ...createMockRecurringOccurrence({ due_date: tomorrow.toISOString().slice(0, 10) }),
+      template,
+    });
+
+    await expect(recurringOccurrenceService.skip('ro-1', 'workspace-1')).rejects.toMatchObject({
+      code: ServiceErrorCode.OCCURRENCE_NOT_DUE,
+    });
   });
 
   it('getStats returns grouped pending totals by currency', async () => {

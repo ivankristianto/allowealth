@@ -42,8 +42,16 @@ function initRecurringTemplateForm(): void {
   const errorBox = form.querySelector('[data-template-form-error]') as HTMLElement | null;
   const submitBtn = form.querySelector('[data-template-form-submit]') as HTMLButtonElement | null;
   const cancelBtn = form.querySelector('[data-template-form-cancel]') as HTMLButtonElement | null;
+  const drawerHeading = drawer.querySelector(
+    '#recurring-template-drawer-title'
+  ) as HTMLElement | null;
+  const drawerSubtitle = drawer.querySelector('[data-drawer-subtitle]') as HTMLElement | null;
+  const descriptionDetails = form.querySelector(
+    '[data-recurring-description-details]'
+  ) as HTMLDetailsElement | null;
 
   const typeInputs = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="type"]'));
+  const typeOptionLabels = Array.from(form.querySelectorAll<HTMLElement>('[data-type-option]'));
   const categorySelect = form.querySelector(
     'select[name="category_id"]'
   ) as HTMLSelectElement | null;
@@ -61,14 +69,48 @@ function initRecurringTemplateForm(): void {
     'input[name="is_installment"]'
   ) as HTMLInputElement | null;
   const installmentFields = form.querySelector('[data-installment-fields]') as HTMLElement | null;
+  const installmentDisabledHint = form.querySelector(
+    '[data-installment-disabled-hint]'
+  ) as HTMLElement | null;
   const startMonthInput = form.querySelector(
     'input[name="start_month"]'
   ) as HTMLInputElement | null;
 
+  const ACTIVE_TYPE_CLASSES = [
+    'bg-white',
+    'shadow-sm',
+    'text-primary',
+    'font-bold',
+    'hover:bg-white',
+  ];
+  const INACTIVE_TYPE_CLASSES = [
+    'bg-transparent',
+    'text-neutral',
+    'font-medium',
+    'hover:bg-base-300',
+  ];
+
+  const syncTypeOptionStyles = (): void => {
+    const selectedType = getSelectedType();
+    typeOptionLabels.forEach((label) => {
+      const value = label.dataset.typeOption === 'income' ? 'income' : 'expense';
+      const isActive = value === selectedType;
+      ACTIVE_TYPE_CLASSES.forEach((className) => {
+        label.classList.toggle(className, isActive);
+      });
+      INACTIVE_TYPE_CLASSES.forEach((className) => {
+        label.classList.toggle(className, !isActive);
+      });
+    });
+  };
+
+  const defaultSubmitLabel =
+    submitBtn?.dataset.defaultLabel || submitBtn?.textContent?.trim() || 'Save';
+
   const setLoading = (loading: boolean): void => {
     if (!submitBtn) return;
     submitBtn.disabled = loading;
-    submitBtn.textContent = loading ? 'Saving...' : 'Save';
+    submitBtn.textContent = loading ? 'Saving...' : defaultSubmitLabel;
   };
 
   const showError = (message: string): void => {
@@ -142,12 +184,16 @@ function initRecurringTemplateForm(): void {
     if (installmentFields) {
       installmentFields.classList.toggle('hidden', !installmentToggle.checked);
     }
+    if (installmentDisabledHint) {
+      installmentDisabledHint.classList.toggle('hidden', enableInstallment);
+    }
   };
 
   const setType = (type: 'expense' | 'income'): void => {
     typeInputs.forEach((input) => {
       input.checked = input.value === type;
     });
+    syncTypeOptionStyles();
     filterCategoryOptions();
   };
 
@@ -168,16 +214,23 @@ function initRecurringTemplateForm(): void {
     if (useCount) useCount.checked = true;
     if (useDate) useDate.checked = false;
     if (totalOccurrencesInput) totalOccurrencesInput.value = '12';
+    if (descriptionDetails) descriptionDetails.open = false;
 
     setType('expense');
     syncEndConditionUI();
     syncInstallmentState();
     form.dataset.mode = 'create';
+
+    if (drawerHeading) drawerHeading.textContent = 'New Recurring';
+    if (drawerSubtitle) drawerSubtitle.textContent = 'Set up an automatic bill or income.';
   };
 
   const populateEditState = (template: RecurringTemplateLike): void => {
     resetFormState();
     form.dataset.mode = 'edit';
+
+    if (drawerHeading) drawerHeading.textContent = 'Edit Recurring';
+    if (drawerSubtitle) drawerSubtitle.textContent = `Editing "${template.name}"`;
 
     const setFieldValue = (name: string, value: string): void => {
       const field = form.querySelector(`[name="${name}"]`) as
@@ -197,6 +250,11 @@ function initRecurringTemplateForm(): void {
     setFieldValue('day_of_month', String(template.day_of_month));
     setFieldValue('start_month', template.start_date.slice(0, 7));
     setFieldValue('description', template.description || '');
+    if (descriptionDetails) {
+      descriptionDetails.open = Boolean(
+        template.description && template.description.trim().length > 0
+      );
+    }
 
     setType(template.type);
 
@@ -230,9 +288,9 @@ function initRecurringTemplateForm(): void {
   const parseApiError = async (response: Response): Promise<string> => {
     try {
       const body = await response.json();
-      return body?.error?.message || body?.message || 'Failed to save recurring template';
+      return body?.error?.message || body?.message || 'Failed to save recurring transaction';
     } catch {
-      return 'Failed to save recurring template';
+      return 'Failed to save recurring transaction';
     }
   };
 
@@ -335,6 +393,7 @@ function initRecurringTemplateForm(): void {
     input.addEventListener(
       'change',
       () => {
+        syncTypeOptionStyles();
         filterCategoryOptions();
       },
       { signal }
@@ -418,12 +477,12 @@ function initRecurringTemplateForm(): void {
         closeDrawer();
         window.dispatchEvent(new CustomEvent('recurring:templates-updated'));
         addToast(
-          templateId ? 'Recurring template updated' : 'Recurring template created',
+          templateId ? 'Recurring transaction updated' : 'Recurring transaction created',
           'success'
         );
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Failed to save recurring template';
+          error instanceof Error ? error.message : 'Failed to save recurring transaction';
         showError(message);
         addToast(message, 'error');
       } finally {

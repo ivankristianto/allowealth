@@ -38,55 +38,70 @@ const installmentProgress =
 
 <tr
   class:list={[
-    'border-b border-base-300 last:border-b-0',
+    'border-b border-base-300 last:border-b-0 hover:bg-base-200/50 transition-colors duration-150',
     template.status === 'paused' && 'opacity-60',
   ]}
   data-testid="recurring-template-row"
 >
-  <td class="py-3 px-3">
-    <div class="flex items-center gap-2 min-w-0">
+  <td class="py-3.5 px-4">
+    <div class="flex items-center gap-2.5 min-w-0">
       {
         template.type === 'expense' ? (
-          <CircleMinus size={16} class="text-error shrink-0" aria-hidden="true" />
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 shrink-0">
+            <CircleMinus size={14} class="text-error" aria-hidden="true" />
+          </div>
         ) : (
-          <CirclePlus size={16} class="text-success shrink-0" aria-hidden="true" />
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-success/10 shrink-0">
+            <CirclePlus size={14} class="text-success" aria-hidden="true" />
+          </div>
         )
       }
-      <span class="font-semibold truncate" title={template.name}>{template.name}</span>
+      <div class="min-w-0">
+        <span class="font-semibold truncate block" title={template.name}>{template.name}</span>
+        {
+          template.is_installment && template.total_occurrences && (
+            <div class="mt-1.5 flex items-center gap-2">
+              <ProgressBar value={installmentProgress} size="sm" className="w-16" />
+              <span class="text-xs text-base-content/50 font-medium">
+                {template.confirmedCount}/{template.total_occurrences}
+              </span>
+            </div>
+          )
+        }
+      </div>
     </div>
-    {
-      template.is_installment && template.total_occurrences && (
-        <div class="mt-2 flex items-center gap-2">
-          <ProgressBar value={installmentProgress} size="sm" className="w-16" />
-          <span class="text-xs text-base-content/60">
-            {template.confirmedCount}/{template.total_occurrences}
-          </span>
-        </div>
-      )
-    }
   </td>
-  <td class="py-3 px-3 text-sm font-bold">{formatCurrency(template.amount, template.currency)}</td>
-  <td class="py-3 px-3 text-sm text-base-content/70">{daySuffix(template.day_of_month)}</td>
-  <td class="py-3 px-3 text-sm text-base-content/70">{template.nextDueDate ?? '—'}</td>
-  <td class="py-3 px-3">
-    <span class={`badge badge-sm ${statusClass}`}>{template.status}</span>
+  <td class="py-3.5 px-4 text-sm font-bold">{formatCurrency(template.amount, template.currency)}</td
+  >
+  <td class="py-3.5 px-4 text-sm text-base-content/60 font-medium"
+    >{daySuffix(template.day_of_month)}</td
+  >
+  <td class="py-3.5 px-4 text-sm text-base-content/60 font-medium">{template.nextDueDate ?? '—'}</td
+  >
+  <td class="py-3.5 px-4">
+    <span class={`badge badge-sm font-bold ${statusClass}`}>{template.status}</span>
   </td>
-  <td class="py-3 px-3 text-right">
+  <td class="py-3.5 px-4 text-right">
     <div class="dropdown dropdown-end">
       <button
         type="button"
         tabindex={0}
-        class="btn btn-ghost btn-sm btn-square"
+        class="btn btn-ghost btn-sm btn-square rounded-xl"
         aria-label="Template actions"
       >
         <EllipsisVertical size={16} aria-hidden="true" />
       </button>
       <ul
         tabindex={0}
-        class="dropdown-content z-40 menu p-2 shadow-lg bg-base-100 rounded-box w-44 border border-base-300"
+        class="dropdown-content z-40 menu p-2 shadow-lg bg-base-100 rounded-2xl w-44 border border-base-300"
       >
         <li>
-          <button type="button" data-template-action="edit" data-template={templatePayload}>
+          <button
+            type="button"
+            class="rounded-xl"
+            data-template-action="edit"
+            data-template={templatePayload}
+          >
             <Pencil size={15} aria-hidden="true" />
             Edit
           </button>
@@ -94,14 +109,24 @@ const installmentProgress =
         {
           template.status === 'active' ? (
             <li>
-              <button type="button" data-template-action="pause" data-template-id={template.id}>
+              <button
+                type="button"
+                class="rounded-xl"
+                data-template-action="pause"
+                data-template-id={template.id}
+              >
                 <Pause size={15} aria-hidden="true" />
                 Pause
               </button>
             </li>
           ) : template.status === 'paused' ? (
             <li>
-              <button type="button" data-template-action="resume" data-template-id={template.id}>
+              <button
+                type="button"
+                class="rounded-xl"
+                data-template-action="resume"
+                data-template-id={template.id}
+              >
                 <Play size={15} aria-hidden="true" />
                 Resume
               </button>
@@ -116,7 +141,7 @@ const installmentProgress =
                 data-template-action="cancel"
                 data-template-id={template.id}
                 data-template-name={template.name}
-                class="text-error"
+                class="text-error rounded-xl"
               >
                 <Ban size={15} aria-hidden="true" />
                 Cancel

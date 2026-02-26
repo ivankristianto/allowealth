@@ -1,6 +1,8 @@
 ---
 import { AlertCircle, Clock3, CheckCircle2, MinusCircle } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import EmptyState from '@/components/atoms/EmptyState.astro';
+import Spinner from '@/components/atoms/Spinner.astro';
 import type { RecurringCalendarDay } from '@/lib/types/recurring';
 
 export interface Props {
@@ -41,83 +43,140 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
   }
   return 'skipped';
 }
+
+const statusChipClasses: Record<string, string> = {
+  overdue: 'border-error/30 bg-error/5',
+  pending: 'border-warning/30 bg-warning/5',
+  confirmed: 'border-success/30 bg-success/5',
+  skipped: 'border-base-300 bg-base-200/50',
+};
 ---
 
 <div class="space-y-4" data-recurring-calendar>
-  <div class="flex flex-wrap items-center gap-4 text-xs text-base-content/70">
-    <span class="inline-flex items-center gap-1"
-      ><AlertCircle size={14} class="text-error" /> Overdue</span
+  <div class="flex flex-wrap items-center gap-3 text-xs">
+    <span class="text-base-content/40 font-bold uppercase tracking-wider">Legend:</span>
+    <span
+      class="inline-flex items-center gap-1.5 rounded-lg border border-error/30 bg-error/5 px-2.5 py-1 font-medium"
     >
-    <span class="inline-flex items-center gap-1"
-      ><Clock3 size={14} class="text-warning" /> Pending</span
+      <AlertCircle size={12} class="text-error" aria-hidden="true" /> Overdue
+    </span>
+    <span
+      class="inline-flex items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/5 px-2.5 py-1 font-medium"
     >
-    <span class="inline-flex items-center gap-1"
-      ><CheckCircle2 size={14} class="text-success" /> Confirmed</span
+      <Clock3 size={12} class="text-warning" aria-hidden="true" /> Pending
+    </span>
+    <span
+      class="inline-flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/5 px-2.5 py-1 font-medium"
     >
-    <span class="inline-flex items-center gap-1"
-      ><MinusCircle size={14} class="text-base-content/50" /> Skipped</span
+      <CheckCircle2 size={12} class="text-success" aria-hidden="true" /> Confirmed
+    </span>
+    <span
+      class="inline-flex items-center gap-1.5 rounded-lg border border-base-300 bg-base-200/50 px-2.5 py-1 font-medium text-base-content/50"
     >
+      <MinusCircle size={12} aria-hidden="true" /> Skipped
+    </span>
   </div>
 
   {
     loading ? (
-      <div class="rounded-card border border-base-300 bg-base-100 p-10 text-center">
-        <h3 class="text-lg font-semibold">Loading calendar for {monthLabel}...</h3>
+      <div class="rounded-2xl border border-base-300 bg-base-100 p-12 text-center shadow-sm">
+        <Spinner size="lg" />
+        <p class="mt-3 text-sm font-medium text-base-content/60">
+          Loading calendar for {monthLabel}...
+        </p>
       </div>
     ) : calendarData.length === 0 ? (
-      <div class="rounded-card border border-base-300 bg-base-100 p-10 text-center">
-        <h3 class="text-lg font-semibold">No recurring transactions scheduled for {monthLabel}.</h3>
+      <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+        <EmptyState
+          title={`No recurring transactions for ${monthLabel}`}
+          message="Create templates or check another month."
+          iconName="calendar"
+          variant="centered"
+        />
       </div>
     ) : (
       <>
+        {/* Desktop calendar grid */}
         <div class="hidden md:block @container">
-          <div class="grid grid-cols-7 gap-px rounded-card border border-base-300 overflow-hidden bg-base-300">
+          <div class="grid grid-cols-7 gap-px rounded-2xl border border-base-300 overflow-hidden bg-base-300 shadow-sm">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((weekday) => (
-              <div class="bg-base-200 px-3 py-2 text-xs font-bold uppercase tracking-widest text-base-content/50">
+              <div class="bg-base-200 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-base-content/40 text-center">
                 {weekday}
               </div>
             ))}
 
             {cells.map((cell) => {
               if (!cell.day || !cell.date) {
-                return <div class="min-h-28 bg-base-200/40" />;
+                return <div class="min-h-28 bg-base-100/60" />;
               }
 
               const occurrences = dayMap.get(cell.date) || [];
+              const isToday = cell.date === todayIso;
 
               return (
-                <div class="min-h-28 bg-base-100 p-2 space-y-2">
-                  <div class="text-xs font-semibold text-base-content/70">{cell.day}</div>
+                <div
+                  class:list={[
+                    'min-h-28 bg-base-100 p-2 space-y-1.5',
+                    isToday && 'ring-2 ring-accent/40 ring-inset bg-accent/3',
+                  ]}
+                >
+                  <div
+                    class:list={[
+                      'text-xs font-bold inline-flex items-center justify-center',
+                      isToday
+                        ? 'bg-accent text-accent-content rounded-lg w-6 h-6'
+                        : 'text-base-content/50',
+                    ]}
+                  >
+                    {cell.day}
+                  </div>
                   <div class="space-y-1">
                     {occurrences.map((occurrence) => {
                       const icon = statusIcon(occurrence.status, occurrence.due_date);
                       const payload = JSON.stringify(occurrence);
+                      const chipClass = statusChipClasses[icon] ?? '';
+                      const canAct =
+                        occurrence.status === 'pending' && !(occurrence.due_date > todayIso);
 
                       return (
-                        <div class="w-full rounded-lg border border-base-300 bg-base-100 px-2 py-1.5 text-xs space-y-1">
+                        <div
+                          class={`w-full rounded-lg border px-2 py-1.5 text-xs space-y-1 ${chipClass}`}
+                        >
                           <div class="flex items-center gap-1 min-w-0">
                             {icon === 'overdue' && (
-                              <AlertCircle size={12} class="text-error shrink-0" />
+                              <AlertCircle
+                                size={11}
+                                class="text-error shrink-0"
+                                aria-hidden="true"
+                              />
                             )}
                             {icon === 'pending' && (
-                              <Clock3 size={12} class="text-warning shrink-0" />
+                              <Clock3 size={11} class="text-warning shrink-0" aria-hidden="true" />
                             )}
                             {icon === 'confirmed' && (
-                              <CheckCircle2 size={12} class="text-success shrink-0" />
+                              <CheckCircle2
+                                size={11}
+                                class="text-success shrink-0"
+                                aria-hidden="true"
+                              />
                             )}
                             {icon === 'skipped' && (
-                              <MinusCircle size={12} class="text-base-content/50 shrink-0" />
+                              <MinusCircle
+                                size={11}
+                                class="text-base-content/50 shrink-0"
+                                aria-hidden="true"
+                              />
                             )}
-                            <span class="truncate">{occurrence.templateName}</span>
+                            <span class="truncate font-medium">{occurrence.templateName}</span>
                           </div>
-                          <div class="text-[11px] text-base-content/60">
+                          <div class="text-[11px] text-base-content/50 font-medium">
                             {formatCurrency(occurrence.templateAmount, occurrence.currency)}
                           </div>
-                          {occurrence.status === 'pending' && (
-                            <div class="flex items-center gap-1 pt-1">
+                          {canAct && (
+                            <div class="flex items-center gap-1 pt-0.5">
                               <button
                                 type="button"
-                                class="btn btn-xs btn-primary flex-1 min-h-7"
+                                class="btn btn-xs btn-accent flex-1 min-h-6 rounded-lg font-semibold"
                                 data-open-confirm-modal
                                 data-occurrence={payload}
                               >
@@ -125,7 +184,7 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
                               </button>
                               <button
                                 type="button"
-                                class="btn btn-xs btn-warning flex-1 min-h-7"
+                                class="btn btn-xs btn-outline btn-warning flex-1 min-h-6 rounded-lg font-semibold"
                                 data-open-skip-modal
                                 data-occurrence={payload}
                               >
@@ -143,61 +202,104 @@ function statusIcon(status: 'pending' | 'confirmed' | 'skipped', date: string) {
           </div>
         </div>
 
+        {/* Mobile list view */}
         <div class="md:hidden space-y-3">
-          {calendarData.map((day) => (
-            <article class="rounded-card border border-base-300 bg-base-100 p-4 space-y-2">
-              <h3 class="text-sm font-bold text-base-content/70">{day.date}</h3>
-              <div class="space-y-2">
-                {day.occurrences.map((occurrence) => {
-                  const icon = statusIcon(occurrence.status, occurrence.due_date);
-                  const payload = JSON.stringify(occurrence);
+          {calendarData.map((day) => {
+            const isToday = day.date === todayIso;
+            const dayDate = new Date(`${day.date}T00:00:00`);
+            const dayLabel = dayDate.toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            });
 
-                  return (
-                    <div class="w-full rounded-lg border border-base-300 px-3 py-2 text-left space-y-2">
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="inline-flex items-center gap-1.5 min-w-0">
-                          {icon === 'overdue' && (
-                            <AlertCircle size={14} class="text-error shrink-0" />
-                          )}
-                          {icon === 'pending' && <Clock3 size={14} class="text-warning shrink-0" />}
-                          {icon === 'confirmed' && (
-                            <CheckCircle2 size={14} class="text-success shrink-0" />
-                          )}
-                          {icon === 'skipped' && (
-                            <MinusCircle size={14} class="text-base-content/50 shrink-0" />
-                          )}
-                          <span class="truncate text-sm">{occurrence.templateName}</span>
+            return (
+              <article
+                class:list={[
+                  'rounded-2xl border bg-base-100 p-4 space-y-2.5 shadow-sm',
+                  isToday ? 'border-accent/40 ring-1 ring-accent/20' : 'border-base-300',
+                ]}
+              >
+                <div class="flex items-center gap-2">
+                  {isToday && <span class="w-2 h-2 rounded-full bg-accent shrink-0" />}
+                  <h3 class="text-sm font-bold text-base-content/70">
+                    {dayLabel}
+                    {isToday && <span class="ml-1.5 text-accent text-xs font-bold">Today</span>}
+                  </h3>
+                </div>
+                <div class="space-y-2">
+                  {day.occurrences.map((occurrence) => {
+                    const icon = statusIcon(occurrence.status, occurrence.due_date);
+                    const payload = JSON.stringify(occurrence);
+                    const chipClass = statusChipClasses[icon] ?? '';
+                    const canAct =
+                      occurrence.status === 'pending' && !(occurrence.due_date > todayIso);
+
+                    return (
+                      <div
+                        class={`w-full rounded-xl border px-3 py-2.5 text-left space-y-2 ${chipClass}`}
+                      >
+                        <div class="flex items-center justify-between gap-2">
+                          <div class="inline-flex items-center gap-1.5 min-w-0">
+                            {icon === 'overdue' && (
+                              <AlertCircle
+                                size={14}
+                                class="text-error shrink-0"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {icon === 'pending' && (
+                              <Clock3 size={14} class="text-warning shrink-0" aria-hidden="true" />
+                            )}
+                            {icon === 'confirmed' && (
+                              <CheckCircle2
+                                size={14}
+                                class="text-success shrink-0"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {icon === 'skipped' && (
+                              <MinusCircle
+                                size={14}
+                                class="text-base-content/50 shrink-0"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <span class="truncate text-sm font-medium">
+                              {occurrence.templateName}
+                            </span>
+                          </div>
+                          <span class="text-xs font-bold whitespace-nowrap">
+                            {formatCurrency(occurrence.templateAmount, occurrence.currency)}
+                          </span>
                         </div>
-                        <span class="text-xs font-semibold">
-                          {formatCurrency(occurrence.templateAmount, occurrence.currency)}
-                        </span>
+                        {canAct && (
+                          <div class="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-accent min-h-10 rounded-xl font-semibold"
+                              data-open-confirm-modal
+                              data-occurrence={payload}
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline btn-warning min-h-10 rounded-xl font-semibold"
+                              data-open-skip-modal
+                              data-occurrence={payload}
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      {occurrence.status === 'pending' && (
-                        <div class="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-primary min-h-10"
-                            data-open-confirm-modal
-                            data-occurrence={payload}
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-warning min-h-10"
-                            data-open-skip-modal
-                            data-occurrence={payload}
-                          >
-                            Skip
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </article>
-          ))}
+                    );
+                  })}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </>
     )

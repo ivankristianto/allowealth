@@ -1,8 +1,9 @@
 ---
-import { RefreshCw, CircleMinus, CirclePlus, Pause, Play, Ban, Pencil } from '@lucide/astro';
+import { CircleMinus, CirclePlus, Pause, Play, Ban, Pencil } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import RecurringTemplateRow from '@/components/molecules/RecurringTemplateRow.astro';
+import EmptyState from '@/components/atoms/EmptyState.astro';
 import type { RecurringTemplateOutput } from '@/lib/types/recurring';
 
 export interface Props {
@@ -21,34 +22,44 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
 
 <section class="space-y-4" data-testid="recurring-template-list">
   <div class="flex items-center justify-between">
-    <h2 class="text-sm font-bold uppercase tracking-widest text-base-content/50">
-      All Templates ({templates.length})
+    <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+      All Recurring
+      <span class="ml-1 badge badge-sm badge-ghost font-bold">{templates.length}</span>
     </h2>
   </div>
 
   {
     templates.length === 0 ? (
-      <div class="rounded-card border border-base-300 bg-base-100 p-8 text-center">
-        <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
-          <RefreshCw size={24} aria-hidden="true" />
-        </div>
-        <h3 class="text-lg font-semibold text-base-content">No recurring templates yet</h3>
-        <p class="mt-2 text-sm text-base-content/60">
-          Create a template to start generating recurring bill or income occurrences.
-        </p>
+      <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+        <EmptyState
+          title="No recurring transactions yet"
+          message="Set up recurring bills or income to automate your tracking."
+          iconName="receipt"
+          variant="centered"
+        />
       </div>
     ) : (
       <>
-        <div class="hidden md:block overflow-x-auto rounded-card border border-base-300 bg-base-100">
+        <div class="hidden md:block overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
           <table class="table table-zebra">
             <thead>
-              <tr>
-                <th>Name</th>
-                <th>Amount</th>
-                <th>Day</th>
-                <th>Next Due</th>
-                <th>Status</th>
-                <th class="text-right">Actions</th>
+              <tr class="border-b border-base-300">
+                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
+                  Name
+                </th>
+                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
+                  Amount
+                </th>
+                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">Day</th>
+                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
+                  Next Due
+                </th>
+                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
+                  Status
+                </th>
+                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40 text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -73,7 +84,7 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
             return (
               <article
                 class:list={[
-                  'rounded-card border border-base-300 bg-base-100 p-4 space-y-3',
+                  'rounded-2xl border border-base-300 bg-base-100 p-4 space-y-3 shadow-sm hover:shadow-md transition-shadow duration-200',
                   template.status === 'paused' && 'opacity-60',
                 ]}
                 data-testid="recurring-template-row"
@@ -82,41 +93,45 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
                       {template.type === 'expense' ? (
-                        <CircleMinus size={16} class="text-error" aria-hidden="true" />
+                        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 shrink-0">
+                          <CircleMinus size={14} class="text-error" aria-hidden="true" />
+                        </div>
                       ) : (
-                        <CirclePlus size={16} class="text-success" aria-hidden="true" />
+                        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-success/10 shrink-0">
+                          <CirclePlus size={14} class="text-success" aria-hidden="true" />
+                        </div>
                       )}
                       <h3 class="font-semibold truncate" title={template.name}>
                         {template.name}
                       </h3>
                     </div>
-                    <p class="text-sm text-base-content/60 mt-1">
+                    <p class="text-sm font-bold text-base-content mt-1 ml-9">
                       {formatCurrency(template.amount, template.currency)}
                     </p>
                   </div>
-                  <span class={`badge badge-sm ${statusClassMap[template.status]}`}>
+                  <span class={`badge badge-sm font-bold ${statusClassMap[template.status]}`}>
                     {template.status}
                   </span>
                 </div>
 
                 {template.is_installment && template.total_occurrences && (
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 ml-9">
                     <ProgressBar value={installmentProgress} size="sm" className="w-16" />
-                    <span class="text-xs text-base-content/60">
+                    <span class="text-xs text-base-content/60 font-medium">
                       {template.confirmedCount}/{template.total_occurrences}
                     </span>
                   </div>
                 )}
 
-                <div class="text-xs text-base-content/60">
+                <div class="text-xs text-base-content/50 ml-9 font-medium">
                   <span>Day {template.day_of_month}</span>
-                  <span class="mx-2">·</span>
-                  <span>Next due: {template.nextDueDate ?? '—'}</span>
+                  <span class="mx-2 text-base-content/30">&middot;</span>
+                  <span>Next: {template.nextDueDate ?? '—'}</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2 ml-9">
                   <button
-                    class="btn btn-outline btn-sm"
+                    class="btn btn-outline btn-sm rounded-xl font-semibold"
                     type="button"
                     data-template-action="edit"
                     data-template={payload}
@@ -127,7 +142,7 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
 
                   {template.status === 'active' ? (
                     <button
-                      class="btn btn-outline btn-sm"
+                      class="btn btn-outline btn-sm rounded-xl font-semibold"
                       type="button"
                       data-template-action="pause"
                       data-template-id={template.id}
@@ -137,7 +152,7 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
                     </button>
                   ) : template.status === 'paused' ? (
                     <button
-                      class="btn btn-outline btn-sm"
+                      class="btn btn-outline btn-sm rounded-xl font-semibold"
                       type="button"
                       data-template-action="resume"
                       data-template-id={template.id}
@@ -151,7 +166,7 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
 
                   {template.status !== 'cancelled' && template.status !== 'completed' && (
                     <button
-                      class="btn btn-outline btn-error btn-sm col-span-2"
+                      class="btn btn-outline btn-error btn-sm col-span-2 rounded-xl font-semibold"
                       type="button"
                       data-template-action="cancel"
                       data-template-id={template.id}

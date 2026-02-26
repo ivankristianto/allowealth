@@ -12,6 +12,12 @@ function currentMonthIso(): string {
   return currentMonthValue();
 }
 
+function nextMonthValue(): string {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+}
+
 test.describe.serial('Recurring Transactions', () => {
   test('navigate to /recurring and verify page loads', async ({ page }) => {
     await page.goto('/recurring');
@@ -112,6 +118,41 @@ test.describe.serial('Recurring Transactions', () => {
     );
   });
 
+  test('future occurrences cannot be confirmed or skipped from list view', async ({ page }) => {
+    const id = generateTestId();
+    const templateName = `E2E Future Lock ${id}`;
+    const nextMonth = nextMonthValue();
+
+    await page.goto('/recurring');
+
+    await page.click('[data-open-recurring-template]');
+    await expect(page.locator('#recurring-template-drawer.drawer-open')).toBeVisible();
+
+    await page.fill('#recurring-template-form input[name="name"]', templateName);
+    await page.fill('#recurring-template-form input[name="amount"]', '456789');
+    await page.selectOption('#recurring-template-form select[name="category_id"]', {
+      label: 'Entertainment',
+    });
+    await page.selectOption('#recurring-template-form select[name="account_id"]', {
+      label: 'Cash',
+    });
+    await page.selectOption('#recurring-template-form select[name="day_of_month"]', '1');
+    await page.fill('#recurring-template-form input[name="start_month"]', nextMonth);
+
+    await page.click('#recurring-template-form button[type="submit"]');
+    await expect(page.locator('#recurring-template-drawer.drawer-open')).toHaveCount(0);
+
+    await page.goto(`/recurring?view=list&month=${nextMonth}`);
+    const pendingCard = page
+      .locator('[data-testid="recurring-pending-card"]')
+      .filter({ hasText: templateName })
+      .first();
+
+    await expect(pendingCard).toBeVisible();
+    await expect(pendingCard.locator('[data-open-confirm-modal]')).toHaveCount(0);
+    await expect(pendingCard.locator('[data-open-skip-modal]')).toHaveCount(0);
+  });
+
   test('cancel template and remove its future pending occurrences', async ({ page }) => {
     const id = generateTestId();
     const templateName = `E2E Cancel ${id}`;
@@ -176,5 +217,27 @@ test.describe.serial('Recurring Transactions', () => {
       await expect.poll(() => page.url()).not.toBe(previousUrl);
       await expect(page.locator('[data-recurring-calendar]')).toBeVisible();
     }
+  });
+
+  test('changing recurring month after visiting budget does not redirect to /budget', async ({
+    page,
+  }) => {
+    await page.goto('/budget');
+    await expect(page.locator('[data-budget-page]')).toBeVisible();
+
+    await page.goto(`/recurring?view=list&month=${currentMonthIso()}`);
+    await expect(page.locator('#recurring-page')).toBeVisible();
+
+    const nextButton = page.locator('[data-period-nav="next"]');
+    const prevButton = page.locator('[data-period-nav="prev"]');
+
+    if (await nextButton.isEnabled()) {
+      await nextButton.click();
+    } else if (await prevButton.isEnabled()) {
+      await prevButton.click();
+    }
+
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/recurring');
+    await expect(page.locator('#recurring-page')).toBeVisible();
   });
 });

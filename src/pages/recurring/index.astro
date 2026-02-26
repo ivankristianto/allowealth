@@ -9,6 +9,7 @@ import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.
 import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
+import { Plus } from '@lucide/astro';
 import {
   recurringTemplateService,
   recurringOccurrenceService,
@@ -73,44 +74,53 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
     data-initial-view={view}
     data-initial-month={safeMonth}
   >
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1">
         <h1 class="text-2xl font-bold tracking-tight">Recurring Transactions</h1>
-        <p class="text-sm text-base-content/60">
-          Manage templates and confirm monthly occurrences.
-        </p>
+        <p class="text-sm text-base-content/60">Manage recurring bills and income.</p>
       </div>
 
-      <div
-        class="tabs tabs-boxed bg-base-200 p-1 rounded-2xl"
-        role="tablist"
-        aria-label="View mode"
-      >
-        <button
-          class:list={['tab rounded-xl px-4', view === 'list' ? 'tab-active' : '']}
-          data-recurring-view="list"
-          id="recurring-view-list-tab"
-          role="tab"
-          aria-selected={view === 'list'}
-          aria-controls="recurring-list-view"
-          tabindex={view === 'list' ? 0 : -1}
+      <div class="flex items-center gap-3">
+        <div
+          class="tabs tabs-boxed bg-base-200/60 p-1 rounded-2xl border border-base-300"
+          role="tablist"
+          aria-label="View mode"
         >
-          List
-        </button>
-        <button
-          class:list={['tab rounded-xl px-4', view === 'calendar' ? 'tab-active' : '']}
-          data-recurring-view="calendar"
-          id="recurring-view-calendar-tab"
-          role="tab"
-          aria-selected={view === 'calendar'}
-          aria-controls="recurring-calendar-view"
-          tabindex={view === 'calendar' ? 0 : -1}
-        >
-          Calendar
+          <button
+            class:list={[
+              'tab rounded-xl px-5 font-medium transition-all',
+              view === 'list' ? 'tab-active' : '',
+            ]}
+            data-recurring-view="list"
+            id="recurring-view-list-tab"
+            role="tab"
+            aria-selected={view === 'list'}
+            aria-controls="recurring-list-view"
+            tabindex={view === 'list' ? 0 : -1}
+          >
+            List
+          </button>
+          <button
+            class:list={[
+              'tab rounded-xl px-5 font-medium transition-all',
+              view === 'calendar' ? 'tab-active' : '',
+            ]}
+            data-recurring-view="calendar"
+            id="recurring-view-calendar-tab"
+            role="tab"
+            aria-selected={view === 'calendar'}
+            aria-controls="recurring-calendar-view"
+            tabindex={view === 'calendar' ? 0 : -1}
+          >
+            Calendar
+          </button>
+        </div>
+
+        <button class="btn btn-accent btn-sm rounded-2xl" data-open-recurring-template>
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
+          New Recurring
         </button>
       </div>
-
-      <button class="btn btn-primary btn-sm" data-open-recurring-template> + New Template </button>
     </div>
 
     <div class="flex items-center justify-start">
@@ -172,9 +182,9 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
 
   <ConfirmationModal
     id="recurring-cancel-modal"
-    title="Cancel recurring template"
+    title="Cancel recurring transaction"
     description="This removes only future pending occurrences."
-    confirmLabel="Cancel template"
+    confirmLabel="Cancel"
     confirmVariant="error"
     confirmLoadingLabel="Cancelling..."
   />
