@@ -29,7 +29,7 @@ test.describe.serial('Recurring Transactions', () => {
   test('create template and confirm generated pending occurrence', async ({ page }) => {
     const id = generateTestId();
     const templateName = `E2E Confirm ${id}`;
-    const dayOfMonth = Math.min(new Date().getDate(), 28);
+    const dayOfMonth = 1;
 
     await page.goto('/recurring');
 
@@ -75,7 +75,7 @@ test.describe.serial('Recurring Transactions', () => {
   test('skip pending occurrence and keep template history', async ({ page }) => {
     const id = generateTestId();
     const templateName = `E2E Skip ${id}`;
-    const dayOfMonth = Math.min(new Date().getDate(), 28);
+    const dayOfMonth = 1;
 
     await page.goto('/recurring');
 
@@ -210,7 +210,7 @@ test.describe.serial('Recurring Transactions', () => {
     await expect(page.locator('[data-recurring-calendar]')).toBeVisible();
 
     const previousUrl = page.url();
-    const nextButton = page.locator('[data-period-nav="next"]');
+    const nextButton = page.locator('header [data-period-nav="next"]:visible').first();
 
     if (await nextButton.isEnabled()) {
       await nextButton.click();
@@ -228,8 +228,8 @@ test.describe.serial('Recurring Transactions', () => {
     await page.goto(`/recurring?view=list&month=${currentMonthIso()}`);
     await expect(page.locator('#recurring-page')).toBeVisible();
 
-    const nextButton = page.locator('[data-period-nav="next"]');
-    const prevButton = page.locator('[data-period-nav="prev"]');
+    const nextButton = page.locator('header [data-period-nav="next"]:visible').first();
+    const prevButton = page.locator('header [data-period-nav="prev"]:visible').first();
 
     if (await nextButton.isEnabled()) {
       await nextButton.click();
@@ -239,5 +239,50 @@ test.describe.serial('Recurring Transactions', () => {
 
     await expect.poll(() => new URL(page.url()).pathname).toBe('/recurring');
     await expect(page.locator('#recurring-page')).toBeVisible();
+  });
+
+  test('convert transaction action opens recurring drawer with prefilled values', async ({
+    page,
+  }) => {
+    await page.goto('/transactions');
+    await expect(page.locator('#transaction-list')).toBeVisible();
+
+    const actionButtons = page.locator(
+      '#transaction-list [aria-label="Transaction actions"]:visible'
+    );
+    const actionButtonCount = await actionButtons.count();
+
+    let expectedName: string | null = null;
+    let foundConvertAction = false;
+    const maxAttempts = Math.min(actionButtonCount, 20);
+
+    for (let index = 0; index < maxAttempts; index += 1) {
+      await actionButtons.nth(index).click();
+
+      const convertLink = page.locator('[data-convert-recurring]:visible').first();
+      if ((await convertLink.count()) > 0) {
+        const href = await convertLink.getAttribute('href');
+        if (href) {
+          const prefill = new URL(href, 'http://localhost');
+          expectedName = prefill.searchParams.get('tx_name');
+        }
+
+        await convertLink.click();
+        foundConvertAction = true;
+        break;
+      }
+
+      await page.keyboard.press('Escape');
+    }
+
+    expect(foundConvertAction).toBe(true);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/recurring');
+    await expect(page.locator('#recurring-template-drawer.drawer-open')).toBeVisible();
+
+    if (expectedName) {
+      await expect(page.locator('#recurring-template-form input[name="name"]')).toHaveValue(
+        expectedName
+      );
+    }
   });
 });

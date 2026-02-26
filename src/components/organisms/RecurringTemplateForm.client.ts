@@ -20,6 +20,18 @@ interface RecurringTemplateLike {
   status: 'active' | 'paused' | 'completed' | 'cancelled';
 }
 
+interface RecurringTemplatePrefill {
+  name: string;
+  type: 'expense' | 'income';
+  amount: string;
+  currency: string;
+  category_id: string;
+  account_id: string;
+  day_of_month: number;
+  start_month: string;
+  description?: string;
+}
+
 let controller: AbortController | null = null;
 
 function getCurrentMonthValue(): string {
@@ -285,6 +297,38 @@ function initRecurringTemplateForm(): void {
     syncInstallmentState();
   };
 
+  const populateCreatePrefill = (prefill: RecurringTemplatePrefill): void => {
+    resetFormState();
+
+    const setFieldValue = (name: string, value: string): void => {
+      const field = form.querySelector(`[name="${name}"]`) as
+        | HTMLInputElement
+        | HTMLSelectElement
+        | HTMLTextAreaElement
+        | null;
+      if (field) field.value = value;
+    };
+
+    setType(prefill.type);
+    setFieldValue('name', prefill.name);
+    setFieldValue('amount', prefill.amount);
+    setFieldValue('currency', prefill.currency);
+    setFieldValue('category_id', prefill.category_id);
+    setFieldValue('account_id', prefill.account_id);
+    setFieldValue('day_of_month', String(prefill.day_of_month));
+    setFieldValue('start_month', prefill.start_month);
+    setFieldValue('description', prefill.description || '');
+
+    if (descriptionDetails) {
+      descriptionDetails.open = Boolean(
+        prefill.description && prefill.description.trim().length > 0
+      );
+    }
+
+    if (drawerHeading) drawerHeading.textContent = 'New Recurring';
+    if (drawerSubtitle) drawerSubtitle.textContent = 'Review and save this converted transaction.';
+  };
+
   const parseApiError = async (response: Response): Promise<string> => {
     try {
       const body = await response.json();
@@ -494,10 +538,15 @@ function initRecurringTemplateForm(): void {
 
   document.addEventListener(
     'open-recurring-template-drawer',
-    () => {
-      resetFormState();
+    ((event: Event) => {
+      const detail = (event as CustomEvent<{ prefill?: RecurringTemplatePrefill }>).detail;
+      if (detail?.prefill) {
+        populateCreatePrefill(detail.prefill);
+      } else {
+        resetFormState();
+      }
       openDrawer();
-    },
+    }) as EventListener,
     { signal }
   );
 

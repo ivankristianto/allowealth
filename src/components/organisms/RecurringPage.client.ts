@@ -18,6 +18,18 @@ interface RecurringOccurrenceLike {
   account: { id: string; name: string };
 }
 
+interface RecurringTemplatePrefill {
+  name: string;
+  type: 'expense' | 'income';
+  amount: string;
+  currency: string;
+  category_id: string;
+  account_id: string;
+  day_of_month: number;
+  start_month: string;
+  description?: string;
+}
+
 function currentUtcDateIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -103,7 +115,11 @@ async function refreshStats(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-stats-container');
   if (!container) return;
 
-  const html = await fetchHtml('/api/recurring/stats?_render=html', signal);
+  const month = currentMonth || new Date().toISOString().slice(0, 7);
+  const html = await fetchHtml(
+    `/api/recurring/stats?month=${encodeURIComponent(month)}&_render=html`,
+    signal
+  );
   container.innerHTML = html;
 }
 
@@ -154,9 +170,10 @@ function setView(view: 'list' | 'calendar', signal: AbortSignal): void {
 
   document.querySelectorAll<HTMLElement>('[data-recurring-view]').forEach((button) => {
     const isActive = button.dataset.recurringView === view;
+    button.classList.toggle('btn-active', isActive);
     button.classList.toggle('tab-active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
     button.setAttribute('aria-selected', String(isActive));
-    button.tabIndex = isActive ? 0 : -1;
   });
 
   updateUrl();
@@ -166,6 +183,70 @@ function setView(view: 'list' | 'calendar', signal: AbortSignal): void {
       if (error instanceof Error && error.name === 'AbortError') return;
       addToast(error instanceof Error ? error.message : 'Failed to load calendar', 'error');
     });
+  }
+}
+
+function parseTemplatePrefill(root: HTMLElement): RecurringTemplatePrefill | null {
+  const raw = root.dataset.convertPrefill;
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<RecurringTemplatePrefill>;
+    if (
+      !parsed ||
+      (parsed.type !== 'expense' && parsed.type !== 'income') ||
+      typeof parsed.name !== 'string' ||
+      typeof parsed.amount !== 'string' ||
+      typeof parsed.currency !== 'string' ||
+      typeof parsed.category_id !== 'string' ||
+      typeof parsed.account_id !== 'string' ||
+      typeof parsed.start_month !== 'string'
+    ) {
+      return null;
+    }
+
+    const day = Number(parsed.day_of_month);
+    if (!Number.isFinite(day) || day < 1 || day > 31) return null;
+
+    return {
+      name: parsed.name,
+      type: parsed.type,
+      amount: parsed.amount,
+      currency: parsed.currency,
+      category_id: parsed.category_id,
+      account_id: parsed.account_id,
+      day_of_month: day,
+      start_month: parsed.start_month,
+      description: typeof parsed.description === 'string' ? parsed.description : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearConversionQueryParams(): void {
+  const url = new URL(window.location.href);
+  let changed = false;
+  for (const key of [
+    'convert',
+    'tx_name',
+    'tx_type',
+    'tx_amount',
+    'tx_currency',
+    'tx_category_id',
+    'tx_account_id',
+    'tx_day',
+    'tx_start_month',
+    'tx_description',
+  ]) {
+    if (url.searchParams.has(key)) {
+      changed = true;
+      url.searchParams.delete(key);
+    }
+  }
+
+  if (changed) {
+    window.history.replaceState({}, '', url.toString());
   }
 }
 
@@ -314,6 +395,19 @@ function initRecurringPage(): void {
 
   setView(currentView, signal);
 
+  const templatePrefill = parseTemplatePrefill(pageRoot);
+  if (templatePrefill) {
+    window.requestAnimationFrame(() => {
+      document.dispatchEvent(
+        new CustomEvent('open-recurring-template-drawer', {
+          detail: { prefill: templatePrefill, source: 'transaction' },
+        })
+      );
+      addToast('Review the pre-filled recurring template and save when ready.', 'info');
+      clearConversionQueryParams();
+    });
+  }
+
   document.querySelectorAll<HTMLElement>('[data-recurring-view]').forEach((button) => {
     button.addEventListener(
       'click',
@@ -325,10 +419,16 @@ function initRecurringPage(): void {
     );
   });
 
-  const newTemplateBtn = document.querySelector('[data-open-recurring-template]');
-  newTemplateBtn?.addEventListener(
+  document.addEventListener(
     'click',
-    () => {
+    (event) => {
+      const target = event.target as HTMLElement;
+      const newTemplateTrigger = target.closest(
+        '[data-open-recurring-template]'
+      ) as HTMLElement | null;
+      if (!newTemplateTrigger) return;
+
+      event.preventDefault();
       document.dispatchEvent(new CustomEvent('open-recurring-template-drawer'));
     },
     { signal }

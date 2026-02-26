@@ -2,6 +2,8 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
+import RecurringActionsBar from '@/components/molecules/RecurringActionsBar.astro';
+import RecurringViewControls from '@/components/molecules/RecurringViewControls.astro';
 import RecurringPendingList from '@/components/organisms/RecurringPendingList.astro';
 import RecurringTemplateList from '@/components/organisms/RecurringTemplateList.astro';
 import RecurringCalendar from '@/components/organisms/RecurringCalendar.astro';
@@ -9,7 +11,7 @@ import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.
 import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
-import { Plus } from '@lucide/astro';
+import { buildRecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import {
   recurringTemplateService,
   recurringOccurrenceService,
@@ -49,110 +51,121 @@ const selectedMonthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-U
   year: 'numeric',
 });
 
+interface RecurringTemplatePrefill {
+  name: string;
+  type: 'expense' | 'income';
+  amount: string;
+  currency: string;
+  category_id: string;
+  account_id: string;
+  day_of_month: number;
+  start_month: string;
+  description?: string;
+}
+
+function parseRecurringTemplatePrefill(inputUrl: URL): RecurringTemplatePrefill | null {
+  if (inputUrl.searchParams.get('convert') !== '1') return null;
+
+  const type = inputUrl.searchParams.get('tx_type');
+  const name = inputUrl.searchParams.get('tx_name');
+  const amount = inputUrl.searchParams.get('tx_amount');
+  const currency = inputUrl.searchParams.get('tx_currency');
+  const categoryId = inputUrl.searchParams.get('tx_category_id');
+  const accountId = inputUrl.searchParams.get('tx_account_id');
+  const dayRaw = Number(inputUrl.searchParams.get('tx_day'));
+  const startMonth = inputUrl.searchParams.get('tx_start_month');
+  const description = inputUrl.searchParams.get('tx_description') || undefined;
+
+  if (
+    (type !== 'expense' && type !== 'income') ||
+    !name ||
+    !amount ||
+    !currency ||
+    !categoryId ||
+    !accountId ||
+    !startMonth ||
+    !/^\d{4}-\d{2}$/.test(startMonth) ||
+    !Number.isFinite(dayRaw) ||
+    dayRaw < 1 ||
+    dayRaw > 31
+  ) {
+    return null;
+  }
+
+  return {
+    name,
+    type,
+    amount,
+    currency,
+    category_id: categoryId,
+    account_id: accountId,
+    day_of_month: dayRaw,
+    start_month: startMonth,
+    description,
+  };
+}
+
 const perf = Astro.locals.perf;
 
-const [templateResult, pendingResult, stats, categories, accounts] = await Promise.all([
+const [templateResult, pendingResult, categories, accounts] = await Promise.all([
   recurringTemplateService.findAll(user.workspaceId, { status: 'all', page: 1, limit: 100 }, perf),
   recurringOccurrenceService.findPending(user.workspaceId, {
     month: safeMonth,
     status: 'pending',
   }),
-  recurringOccurrenceService.getStats(user.workspaceId),
   categoryService.findAll(user.workspaceId, { is_active: true }, perf),
   accountService.findAll(user.workspaceId, undefined, perf),
 ]);
 
 const initialCalendarLoading = view === 'calendar';
+const summary = buildRecurringMonthlySummary(pendingResult.occurrences);
+const convertPrefill = parseRecurringTemplatePrefill(url);
 
 const currencies = Array.from(new Set(accounts.map((account) => account.currency))).filter(Boolean);
 ---
 
 <ProtectedLayout title="Recurring" currentPath="/recurring" subtitle={selectedMonthLabel}>
+  <PeriodNavigator
+    slot="header"
+    options={periodOptions}
+    selected={selectedPeriod}
+    ariaLabel="Select month"
+    inputName="month"
+    className="mx-auto lg:mx-0"
+    newestFirst
+    compactMobile
+  />
+
   <div
     id="recurring-page"
-    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 pb-10"
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8 pb-10"
     data-initial-view={view}
     data-initial-month={safeMonth}
+    data-convert-prefill={convertPrefill ? JSON.stringify(convertPrefill) : undefined}
   >
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="space-y-1">
-        <h1 class="text-2xl font-bold tracking-tight">Recurring Transactions</h1>
-        <p class="text-sm text-base-content/60">Manage recurring bills and income.</p>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <div
-          class="tabs tabs-boxed bg-base-200/60 p-1 rounded-2xl border border-base-300"
-          role="tablist"
-          aria-label="View mode"
-        >
-          <button
-            class:list={[
-              'tab rounded-xl px-5 font-medium transition-all',
-              view === 'list' ? 'tab-active' : '',
-            ]}
-            data-recurring-view="list"
-            id="recurring-view-list-tab"
-            role="tab"
-            aria-selected={view === 'list'}
-            aria-controls="recurring-list-view"
-            tabindex={view === 'list' ? 0 : -1}
-          >
-            List
-          </button>
-          <button
-            class:list={[
-              'tab rounded-xl px-5 font-medium transition-all',
-              view === 'calendar' ? 'tab-active' : '',
-            ]}
-            data-recurring-view="calendar"
-            id="recurring-view-calendar-tab"
-            role="tab"
-            aria-selected={view === 'calendar'}
-            aria-controls="recurring-calendar-view"
-            tabindex={view === 'calendar' ? 0 : -1}
-          >
-            Calendar
-          </button>
-        </div>
-
-        <button class="btn btn-accent btn-sm rounded-2xl" data-open-recurring-template>
-          <Plus size={16} class="stroke-current" aria-hidden="true" />
-          New Recurring
-        </button>
-      </div>
-    </div>
-
-    <div class="flex items-center justify-start">
-      <PeriodNavigator
-        options={periodOptions}
-        selected={selectedPeriod}
-        inputName="month"
-        newestFirst={true}
-        compactMobile={true}
-      />
-    </div>
-
     <div id="recurring-stats-container">
-      <RecurringStatsPartial stats={stats} />
+      <RecurringStatsPartial summary={summary} />
     </div>
+
+    <RecurringActionsBar />
+
+    <RecurringViewControls view={view} />
 
     <div
       id="recurring-list-view"
-      role="tabpanel"
-      aria-labelledby="recurring-view-list-tab"
+      role="region"
       aria-hidden={view !== 'list'}
       class:list={[view !== 'list' && 'hidden']}
     >
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div id="recurring-pending-list-container">
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div id="recurring-pending-list-container" class="xl:col-span-4">
           <RecurringPendingList
             occurrences={pendingResult.occurrences}
             hasTemplates={templateResult.total > 0}
             monthLabel={selectedMonthLabel}
           />
         </div>
-        <div id="recurring-template-list-container">
+        <div id="recurring-template-list-container" class="xl:col-span-8">
           <RecurringTemplateList templates={templateResult.templates} />
         </div>
       </div>
@@ -160,8 +173,7 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
 
     <div
       id="recurring-calendar-view"
-      role="tabpanel"
-      aria-labelledby="recurring-view-calendar-tab"
+      role="region"
       aria-hidden={view !== 'calendar'}
       class:list={[view !== 'calendar' && 'hidden']}
     >

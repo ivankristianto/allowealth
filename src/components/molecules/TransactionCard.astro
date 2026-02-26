@@ -117,6 +117,40 @@ const transactionDataJson = transaction
 
 const transactionDetailsJson = transaction ? JSON.stringify(transaction) : '';
 
+const convertToRecurringHref = (() => {
+  if (
+    !transaction ||
+    isDeleted ||
+    isRecurring ||
+    transaction.type === 'transfer' ||
+    !transaction.category?.id ||
+    !transaction.account?.id
+  ) {
+    return '';
+  }
+
+  const params = new URLSearchParams();
+  params.set('convert', '1');
+  params.set('tx_name', primaryText || (transaction.type === 'income' ? 'Income' : 'Expense'));
+  params.set('tx_type', transaction.type);
+  params.set('tx_amount', transaction.amount);
+  params.set('tx_currency', transaction.currency);
+  params.set('tx_category_id', transaction.category.id);
+  params.set('tx_account_id', transaction.account.id);
+  params.set('tx_day', String(date.getDate()));
+  params.set(
+    'tx_start_month',
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  );
+
+  const description = transaction.description?.trim();
+  if (description) {
+    params.set('tx_description', description);
+  }
+
+  return `/recurring?${params.toString()}`;
+})();
+
 const cardClasses = [
   '@container group p-3 @xs:p-4 transition-all',
   'border-l-4 border-transparent',
@@ -243,6 +277,20 @@ const cardClasses = [
                             Edit
                           </button>
                         </li>
+                        {convertToRecurringHref && (
+                          <li role="none">
+                            <a
+                              href={convertToRecurringHref}
+                              role="menuitem"
+                              class="flex items-center gap-2"
+                              aria-label={`Convert transaction to recurring: ${primaryText}`}
+                              data-convert-recurring
+                            >
+                              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
+                              Convert to recurring
+                            </a>
+                          </li>
+                        )}
                         <li role="none">
                           <button
                             type="button"
@@ -438,6 +486,20 @@ const cardClasses = [
                         Edit
                       </button>
                     </li>
+                    {convertToRecurringHref && (
+                      <li role="none">
+                        <a
+                          href={convertToRecurringHref}
+                          role="menuitem"
+                          class="flex items-center gap-2"
+                          aria-label={`Convert transaction to recurring: ${primaryText}`}
+                          data-convert-recurring
+                        >
+                          <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
+                          Convert to recurring
+                        </a>
+                      </li>
+                    )}
                     <li role="none">
                       <button
                         type="button"

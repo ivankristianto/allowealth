@@ -30,6 +30,7 @@ export interface Props {
 const { className = '', ariaLabel = 'Page actions', edgeBleed = true } = Astro.props;
 
 const hasPrimary = Astro.slots.has('primary');
+const hasSecondary = Astro.slots.has('default');
 
 const containerClasses = [
   'bg-base-100',
@@ -61,19 +62,25 @@ const containerClasses = [
     {
       hasPrimary && (
         <div class="order-first md:order-last md:ml-auto shrink-0 flex items-center gap-2 md:gap-3">
-          <div
-            class="hidden md:block border-l border-base-300 h-6 self-center"
-            aria-hidden="true"
-          />
+          {hasSecondary && (
+            <div
+              class="hidden md:block border-l border-base-300 h-6 self-center"
+              aria-hidden="true"
+            />
+          )}
           <slot name="primary" />
         </div>
       )
     }
 
     {/* Secondary Actions */}
-    <div class="flex items-center gap-1 md:gap-2 shrink-0">
-      <slot />
-    </div>
+    {
+      hasSecondary && (
+        <div class="flex items-center gap-1 md:gap-2 shrink-0">
+          <slot />
+        </div>
+      )
+    }
   </div>
 
   {/* Scroll fade indicator — visible on mobile when content overflows right */}
