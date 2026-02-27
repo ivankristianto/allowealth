@@ -1,0 +1,14 @@
+---
+import RecurringCalendar from '@/components/organisms/RecurringCalendar.astro';
+import type { RecurringCalendarDay } from '@/lib/types/recurring';
+
+export interface Props {
+  calendarData: RecurringCalendarDay[];
+  year: number;
+  month: number;
+}
+
+const { calendarData = [], year, month } = Astro.props;
+---
+
+<RecurringCalendar calendarData={calendarData} year={year} month={month} />

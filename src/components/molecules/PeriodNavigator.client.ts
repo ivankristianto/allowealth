@@ -13,7 +13,7 @@ interface PeriodOption {
 }
 
 // Track initialized navigators to avoid duplicate handlers
-const initializedNavigators = new WeakSet<Element>();
+let initializedNavigators = new WeakSet<Element>();
 const navigatorControllers = new Set<AbortController>();
 
 function cleanupPeriodNavigatorListeners(): void {
@@ -21,6 +21,7 @@ function cleanupPeriodNavigatorListeners(): void {
     controller.abort();
   });
   navigatorControllers.clear();
+  initializedNavigators = new WeakSet<Element>();
 }
 
 export function initPeriodNavigator() {

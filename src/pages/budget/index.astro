@@ -470,6 +470,10 @@ const copyDisabledTooltip =
     [DRILLDOWN_HANDLER_KEY]?: (event: Event) => void;
   }
 
+  function isBudgetPage(): boolean {
+    return Boolean(document.querySelector('[data-budget-page]'));
+  }
+
   function showPendingInitializeToast() {
     let raw: string | null = null;
     try {
@@ -654,11 +658,16 @@ const copyDisabledTooltip =
     delete scopedWindow[PERIOD_NAV_HANDLER_KEY];
   }
 
+  function initBudgetFeaturesForCurrentPage() {
+    if (!isBudgetPage()) return;
+    initBudgetPage();
+    initBudgetExtras();
+    initBudgetPeriodNavigation();
+    initBudgetDrillDown();
+  }
+
   // Initialize the budget page orchestrator
-  initBudgetPage();
-  initBudgetExtras();
-  initBudgetPeriodNavigation();
-  initBudgetDrillDown();
+  initBudgetFeaturesForCurrentPage();
 
   // Register cleanup handler (must re-register after each page load since it's once)
   function registerCleanup() {
@@ -678,10 +687,13 @@ const copyDisabledTooltip =
   if (!(window as unknown as Record<string, boolean>)[PAGE_LOAD_KEY]) {
     (window as unknown as Record<string, boolean>)[PAGE_LOAD_KEY] = true;
     document.addEventListener('astro:page-load', () => {
-      initBudgetPage();
-      initBudgetExtras();
-      initBudgetPeriodNavigation();
-      initBudgetDrillDown();
+      if (!isBudgetPage()) {
+        cleanupBudgetPeriodNavigation();
+        cleanupBudgetDrillDown();
+        return;
+      }
+
+      initBudgetFeaturesForCurrentPage();
       registerCleanup();
     });
   }

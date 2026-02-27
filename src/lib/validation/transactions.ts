@@ -31,41 +31,50 @@ const transactionDateValidation = z.date().refine((date) => date <= new Date(), 
   message: 'Transaction date cannot be in the future',
 });
 
+const transactionDateWithoutFutureValidation = z.date();
+
+function buildCreateTransactionSchema(transactionDateSchema: z.ZodType<Date>) {
+  return z
+    .object({
+      workspace_id: z.string().min(1, 'Workspace ID is required'),
+      created_by_user_id: z.string().min(1, 'Created by user ID is required'),
+      type: transactionTypeEnum,
+      amount: amountValidation,
+      currency: currencyEnum,
+      category_id: z.string().min(1, 'Category ID is required').optional(), // Optional for transfers
+      account_id: z.string().min(1, 'Account ID is required'),
+      to_account_id: z.string().min(1, 'Destination account ID is required').optional(), // For transfers
+      transaction_date: transactionDateSchema.default(() => new Date()),
+      description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
+    })
+    .strict()
+    .refine(
+      (data) => {
+        // For transfers, to_account_id is required
+        if (data.type === 'transfer') {
+          return !!data.to_account_id;
+        }
+        return true;
+      },
+      { message: 'Destination account is required for transfers', path: ['to_account_id'] }
+    )
+    .refine(
+      (data) => {
+        // For expense/income, category_id is required
+        if (data.type !== 'transfer') {
+          return !!data.category_id;
+        }
+        return true;
+      },
+      { message: 'Category is required for expense/income transactions', path: ['category_id'] }
+    );
+}
+
 // Schema for creating a transaction (for service layer)
-export const createTransactionSchema = z
-  .object({
-    workspace_id: z.string().min(1, 'Workspace ID is required'),
-    created_by_user_id: z.string().min(1, 'Created by user ID is required'),
-    type: transactionTypeEnum,
-    amount: amountValidation,
-    currency: currencyEnum,
-    category_id: z.string().min(1, 'Category ID is required').optional(), // Optional for transfers
-    account_id: z.string().min(1, 'Account ID is required'),
-    to_account_id: z.string().min(1, 'Destination account ID is required').optional(), // For transfers
-    transaction_date: transactionDateValidation.default(() => new Date()),
-    description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
-  })
-  .strict()
-  .refine(
-    (data) => {
-      // For transfers, to_account_id is required
-      if (data.type === 'transfer') {
-        return !!data.to_account_id;
-      }
-      return true;
-    },
-    { message: 'Destination account is required for transfers', path: ['to_account_id'] }
-  )
-  .refine(
-    (data) => {
-      // For expense/income, category_id is required
-      if (data.type !== 'transfer') {
-        return !!data.category_id;
-      }
-      return true;
-    },
-    { message: 'Category is required for expense/income transactions', path: ['category_id'] }
-  );
+export const createTransactionSchema = buildCreateTransactionSchema(transactionDateValidation);
+export const createTransactionSchemaNoFutureDate = buildCreateTransactionSchema(
+  transactionDateWithoutFutureValidation
+);
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 

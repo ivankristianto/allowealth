@@ -1,0 +1,43 @@
+---
+import DashboardWidget from '@/components/organisms/DashboardWidget.astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { RecurringStats } from '@/lib/types/recurring';
+import { TriangleAlert } from '@lucide/astro';
+
+export interface Props {
+  stats: RecurringStats;
+  className?: string;
+}
+
+const { stats, className = '' } = Astro.props;
+
+const primaryPending = stats.pendingByCurrency[0];
+const pendingAmountLabel = primaryPending
+  ? formatCurrency(primaryPending.amount, primaryPending.currency)
+  : '0';
+---
+
+<DashboardWidget class={className} isEmpty={stats.pendingCount === 0}>
+  <p slot="empty" class="text-sm text-base-content/60">No pending recurring bills right now.</p>
+
+  <div class="space-y-3">
+    <p class="text-xs font-bold uppercase tracking-widest text-base-content/50">Recurring Bills</p>
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <p class="text-xl font-bold">{pendingAmountLabel}</p>
+        <p class="text-sm text-base-content/60">{stats.pendingCount} bills pending</p>
+      </div>
+      {
+        stats.overdueCount > 0 && (
+          <span class="badge badge-error gap-1">
+            <TriangleAlert size={12} aria-hidden="true" />
+            {stats.overdueCount} overdue
+          </span>
+        )
+      }
+    </div>
+    <a href="/recurring" class="text-sm font-semibold text-primary hover:underline">
+      Review pending bills →
+    </a>
+  </div>
+</DashboardWidget>

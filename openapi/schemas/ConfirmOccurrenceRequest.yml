@@ -1,0 +1,16 @@
+ConfirmOccurrenceRequest:
+  type: object
+  required: [amount, transaction_date, category_id, account_id]
+  properties:
+    amount:
+      type: string
+      pattern: '^\\d+(\\.\\d{1,2})?$'
+      description: Decimal amount as string
+    transaction_date:
+      type: string
+      format: date
+      description: Transaction date in YYYY-MM-DD format (future dates allowed)
+    category_id:
+      type: string
+    account_id:
+      type: string

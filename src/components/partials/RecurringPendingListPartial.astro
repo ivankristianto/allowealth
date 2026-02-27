@@ -1,0 +1,18 @@
+---
+import RecurringPendingList from '@/components/organisms/RecurringPendingList.astro';
+import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
+
+export interface Props {
+  occurrences: RecurringOccurrenceOutput[];
+  hasTemplates?: boolean;
+  monthLabel?: string;
+}
+
+const { occurrences = [], hasTemplates = false, monthLabel = '' } = Astro.props;
+---
+
+<RecurringPendingList
+  occurrences={occurrences}
+  hasTemplates={hasTemplates}
+  monthLabel={monthLabel}
+/>

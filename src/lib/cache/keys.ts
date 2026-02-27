@@ -37,6 +37,21 @@ export const CacheKeys = {
   transactions: (workspaceId: string, filtersHash: string): string =>
     `${PREFIX}:transactions:${workspaceId}:${filtersHash}`,
 
+  /** Recurring templates list: cache:recurring:{workspaceId}:{filtersHash} */
+  recurring: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:recurring:${workspaceId}:${filtersHash}`,
+
+  /** Recurring stats: cache:recurring-stats:{workspaceId} */
+  recurringStats: (workspaceId: string): string => `${PREFIX}:recurring-stats:${workspaceId}`,
+
+  /** Recurring occurrences list: cache:recurring-occurrences:{workspaceId}:{filtersHash} */
+  recurringOccurrences: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:recurring-occurrences:${workspaceId}:${filtersHash}`,
+
+  /** Recurring calendar: cache:recurring-calendar:{workspaceId}:{year}:{month} */
+  recurringCalendar: (workspaceId: string, year: number, month: number): string =>
+    `${PREFIX}:recurring-calendar:${workspaceId}:${year}:${month}`,
+
   /** User settings: cache:settings:{userId} */
   settings: (userId: string): string => `${PREFIX}:settings:${userId}`,
 

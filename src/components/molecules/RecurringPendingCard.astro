@@ -1,0 +1,107 @@
+---
+import { CircleAlert, CircleCheckBig, CircleMinus, Clock } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
+
+export interface Props {
+  occurrence: RecurringOccurrenceOutput;
+}
+
+const { occurrence } = Astro.props;
+
+const todayIso = new Date().toISOString().slice(0, 10);
+const isOverdue = occurrence.status === 'pending' && occurrence.due_date < todayIso;
+const canAct = occurrence.status === 'pending' && occurrence.due_date <= todayIso;
+const borderClass = isOverdue ? 'border-l-error' : 'border-l-warning';
+const dueDate = new Date(`${occurrence.due_date}T00:00:00`);
+const dueDateLabel = dueDate.toLocaleDateString('en-US', {
+  month: 'short',
+  day: 'numeric',
+});
+
+const occurrencePayload = JSON.stringify(occurrence);
+const amountLabel = formatCurrency(occurrence.templateAmount, occurrence.currency);
+
+const installmentLabel =
+  occurrence.isInstallment && occurrence.totalOccurrences
+    ? `${String(occurrence.occurrence_number).padStart(2, '0')}/${String(occurrence.totalOccurrences).padStart(2, '0')}`
+    : null;
+---
+
+<article
+  class:list={[
+    'rounded-2xl border border-base-300 bg-base-100 shadow-sm border-l-4 px-3 sm:px-4 py-3',
+    borderClass,
+  ]}
+  data-testid="recurring-pending-card"
+  data-occurrence-id={occurrence.id}
+>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div class="flex items-start gap-3 min-w-0 flex-1">
+      {
+        isOverdue ? (
+          <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-error/10 shrink-0">
+            <CircleAlert size={13} class="text-error" aria-hidden="true" />
+          </div>
+        ) : (
+          <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-warning/10 shrink-0">
+            <Clock size={13} class="text-warning" aria-hidden="true" />
+          </div>
+        )
+      }
+      <div class="min-w-0 flex-1 space-y-1">
+        <div class="flex items-center gap-2">
+          <h3
+            class="font-semibold text-sm text-base-content truncate"
+            title={occurrence.templateName}
+          >
+            {occurrence.templateName}
+          </h3>
+          {isOverdue && <span class="badge badge-error badge-xs font-bold shrink-0">Overdue</span>}
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-bold text-base-content">{amountLabel}</span>
+          {
+            installmentLabel && (
+              <span class="badge badge-outline badge-xs font-medium">{installmentLabel}</span>
+            )
+          }
+          {
+            canAct ? (
+              <span class="text-xs text-base-content/50">Due {dueDateLabel}</span>
+            ) : (
+              <span class="text-xs text-base-content/40">{dueDateLabel}</span>
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    {
+      canAct ? (
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end sm:shrink-0">
+          <button
+            type="button"
+            class="btn btn-accent h-11 min-h-11 sm:btn-sm sm:h-9 sm:min-h-9 rounded-lg sm:rounded-xl font-semibold"
+            data-open-confirm-modal
+            data-occurrence={occurrencePayload}
+          >
+            <CircleCheckBig size={14} aria-hidden="true" />
+            Confirm
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline btn-warning h-11 min-h-11 sm:btn-sm sm:h-9 sm:min-h-9 rounded-lg sm:rounded-xl font-semibold"
+            data-open-skip-modal
+            data-occurrence={occurrencePayload}
+          >
+            <CircleMinus size={14} aria-hidden="true" />
+            Skip
+          </button>
+        </div>
+      ) : (
+        <p class="text-xs text-base-content/50 sm:shrink-0">Available on {dueDateLabel}</p>
+      )
+    }
+  </div>
+</article>
