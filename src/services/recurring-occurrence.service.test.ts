@@ -92,15 +92,20 @@ describe('RecurringOccurrenceService', () => {
       template,
     });
 
-    await expect(
-      recurringOccurrenceService.confirm('ro-1', 'workspace-1', {
+    let thrownError: unknown;
+    try {
+      await recurringOccurrenceService.confirm('ro-1', 'workspace-1', {
         amount: '5000000',
         transaction_date: new Date('2026-01-01'),
         category_id: 'cat-1',
         account_id: 'account-1',
         userId: 'user-1',
-      })
-    ).rejects.toBeInstanceOf(RecurringServiceError);
+      });
+    } catch (error) {
+      thrownError = error;
+    }
+
+    expect(thrownError).toBeInstanceOf(RecurringServiceError);
   });
 
   it('confirm throws when occurrence due date is in the future', async () => {
@@ -117,15 +122,20 @@ describe('RecurringOccurrenceService', () => {
       template,
     });
 
-    await expect(
-      recurringOccurrenceService.confirm('ro-1', 'workspace-1', {
+    let thrownError: unknown;
+    try {
+      await recurringOccurrenceService.confirm('ro-1', 'workspace-1', {
         amount: '5000000',
         transaction_date: new Date(),
         category_id: 'cat-1',
         account_id: 'account-1',
         userId: 'user-1',
-      })
-    ).rejects.toMatchObject({ code: ServiceErrorCode.OCCURRENCE_NOT_DUE });
+      });
+    } catch (error) {
+      thrownError = error;
+    }
+
+    expect(thrownError).toMatchObject({ code: ServiceErrorCode.OCCURRENCE_NOT_DUE });
   });
 
   it('skip marks a pending occurrence as skipped', async () => {
@@ -165,7 +175,14 @@ describe('RecurringOccurrenceService', () => {
       template,
     });
 
-    await expect(recurringOccurrenceService.skip('ro-1', 'workspace-1')).rejects.toMatchObject({
+    let thrownError: unknown;
+    try {
+      await recurringOccurrenceService.skip('ro-1', 'workspace-1');
+    } catch (error) {
+      thrownError = error;
+    }
+
+    expect(thrownError).toMatchObject({
       code: ServiceErrorCode.OCCURRENCE_NOT_DUE,
     });
   });
