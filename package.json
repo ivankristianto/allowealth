@@ -5,6 +5,10 @@
   "private": true,
   "scripts": {
     "dev": "bun --bun astro dev",
+    "docs:dev": "bun run --cwd docs/site dev",
+    "docs:build": "bun run --cwd docs/site build",
+    "docs:preview": "bun run --cwd docs/site preview",
+    "docs:check": "bun run --cwd docs/site astro check",
     "build": "astro build",
     "build:analyze": "bun run build && echo '\n📊 Bundle analysis available at dist/stats.html'",
     "build:node": "DEPLOY_TARGET=node astro build",

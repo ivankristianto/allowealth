@@ -42,6 +42,7 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   badge?: string;
+  external?: boolean;
 }
 
 // Updated icons per premium design spec - each nav item has unique icon
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: ChartBar },
   { href: '/forecast', label: 'Forecast', icon: TrendingUp },
   { href: '/calculators', label: 'Calculators', icon: Calculator },
+  { href: 'https://docs.allowealth.io', label: 'Docs', icon: ClipboardList, external: true },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -169,6 +171,7 @@ const isActive = (href: string) => {
             <a
               href={item.href}
               data-nav-href={item.href}
+              rel={item.external ? 'noopener noreferrer' : undefined}
               title={item.label}
               aria-label={item.label}
               class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
@@ -176,7 +179,7 @@ const isActive = (href: string) => {
                   ? 'bg-accent/10 text-accent font-bold border-accent/20'
                   : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
               } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
-              aria-current={active ? 'page' : undefined}
+              aria-current={!item.external && active ? 'page' : undefined}
             >
               <item.icon
                 size={22}

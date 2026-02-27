@@ -1,6 +1,7 @@
 export default {
   ignoreFiles: [
     'dist/**',
+    '**/dist/**',
     '**/*.astro',
     'node_modules/**',
     'storybook-static/**',

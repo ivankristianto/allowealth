@@ -16,6 +16,46 @@ bun run dev              # http://localhost:4321
 bun run storybook        # http://localhost:6006
 ```
 
+## Docs Site (Starlight)
+
+| Command                | Description                            |
+| ---------------------- | -------------------------------------- |
+| `bun run docs:dev`     | Start Starlight docs site dev server   |
+| `bun run docs:build`   | Build static Starlight docs site       |
+| `bun run docs:preview` | Preview built docs site locally        |
+| `bun run docs:check`   | Run Astro type/content checks for docs |
+
+```bash
+bun run docs:dev           # Start docs site dev server
+bun run docs:build         # Build docs site
+bun run docs:check         # Validate docs site
+```
+
+### Docs Deployment
+
+| Command                                                 | Description                             |
+| ------------------------------------------------------- | --------------------------------------- |
+| `bun run docs:build`                                    | Build docs output before deployment     |
+| `bunx wrangler deploy --config docs/site/wrangler.toml` | Deploy docs worker/assets to Cloudflare |
+
+```bash
+bun run docs:build
+bunx wrangler deploy --config docs/site/wrangler.toml
+```
+
+### Docs Domain Go-Live Checklist (Manual)
+
+1. Confirm `docs.allowealth.io` is attached as a custom domain to `allowealth-docs` in Cloudflare.
+2. Confirm DNS record exists and is proxied in Cloudflare DNS.
+3. Confirm SSL/TLS status is active.
+4. Run smoke check:
+
+```bash
+curl -I https://docs.allowealth.io
+```
+
+Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
+
 ## Build & Deploy
 
 | Command                     | Description                                          |
