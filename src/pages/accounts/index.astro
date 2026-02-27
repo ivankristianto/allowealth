@@ -20,7 +20,7 @@ import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueMod
 import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Info, Search, ListPlus } from '@lucide/astro';
+import { CalendarDays, Info, Search, ListPlus, Plus } from '@lucide/astro';
 import {
   accountService,
   accountCategoryService,
@@ -461,8 +461,8 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
 
   {/* Bulk Add Accounts Modal */}
   <dialog id="bulk-add-accounts-modal" class="modal" data-testid="bulk-add-accounts-modal">
-    <div class="modal-box max-w-2xl rounded-card border border-base-300 shadow-xl p-0">
-      <div class="p-6 flex flex-col gap-4">
+    <div class="modal-box max-w-4xl rounded-card border border-base-300 shadow-xl p-0">
+      <div class="p-6 flex flex-col gap-5">
         {/* Header */}
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
@@ -479,49 +479,41 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
         </div>
 
         {/* Table */}
-        <div class="overflow-x-auto max-h-[50vh] overflow-y-auto">
-          <table class="table table-sm w-full">
-            <thead>
-              <tr class="text-base-content/50 text-xs">
-                <th>Name</th>
-                <th>Type</th>
-                <th>Currency</th>
-                <th class="text-right">Balance</th>
-                <th class="w-10"></th>
-              </tr>
-            </thead>
-            <tbody
-              data-bulk-rows
-              data-valid-currencies={orderedWorkspaceCurrencies.join(',')}
-              data-account-types={JSON.stringify(
-                VALID_ACCOUNT_TYPES.map((t) => ({
-                  value: t,
-                  label: formatAccountType(t),
-                }))
-              )}
-            >
-              {/* Rows added dynamically by client script */}
-            </tbody>
-          </table>
+        <div class="overflow-hidden rounded-2xl border border-base-300 bg-base-100">
+          <div class="overflow-x-auto max-h-[50vh] overflow-y-auto">
+            <table class="table table-sm table-fixed w-full">
+              <thead>
+                <tr class="text-xs uppercase tracking-widest text-base-content/50">
+                  <th class="w-[34%]">Name</th>
+                  <th class="w-[26%]">Type</th>
+                  <th class="w-[18%]">Currency</th>
+                  <th class="w-[18%] text-right">Balance</th>
+                  <th class="w-12"></th>
+                </tr>
+              </thead>
+              <tbody
+                data-bulk-rows
+                data-valid-currencies={orderedWorkspaceCurrencies.join(',')}
+                data-account-types={JSON.stringify(
+                  VALID_ACCOUNT_TYPES.map((t) => ({
+                    value: t,
+                    label: formatAccountType(t),
+                  }))
+                )}
+              >
+                {/* Rows added dynamically by client script */}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Add Row button */}
         <button
           type="button"
-          class="btn btn-ghost btn-sm rounded-lg gap-2 self-start"
+          class="btn btn-ghost btn-sm rounded-lg sm:rounded-xl min-h-[44px] gap-2 self-start"
           data-bulk-add-row
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg
-          >
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
           Add Row
         </button>
 
@@ -534,17 +526,17 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
         </div>
 
         {/* Actions */}
-        <div class="flex gap-4 pt-2">
+        <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            class="flex-1 btn btn-ghost h-14 rounded-2xl font-bold"
+            class="btn btn-ghost rounded-2xl w-full sm:w-auto sm:min-w-28 min-h-[44px] font-bold"
             data-bulk-accounts-cancel
           >
             Cancel
           </button>
           <button
             type="button"
-            class="flex-[2] btn btn-accent h-14 rounded-2xl font-bold"
+            class="btn btn-accent rounded-2xl w-full sm:w-auto sm:min-w-48 min-h-[44px] font-bold"
             data-bulk-accounts-submit
             data-testid="bulk-accounts-submit-btn"
           >

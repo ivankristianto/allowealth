@@ -92,6 +92,10 @@ export function initBulkAddAccounts() {
 
   let isSubmitting = false;
   let rowCounter = 0;
+  const inputBaseClass =
+    'input input-bordered w-full min-h-[44px] rounded-xl border-base-300 bg-base-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:ring-offset-2';
+  const selectBaseClass =
+    'select select-bordered w-full min-h-[44px] rounded-xl border-base-300 bg-base-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:ring-offset-2';
 
   function createRow(): HTMLTableRowElement {
     const id = ++rowCounter;
@@ -103,7 +107,7 @@ export function initBulkAddAccounts() {
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = 'Account name';
-    nameInput.className = 'input input-sm input-bordered w-full min-w-[140px]';
+    nameInput.className = inputBaseClass;
     nameInput.dataset.field = 'name';
     tdName.appendChild(nameInput);
     tr.appendChild(tdName);
@@ -111,7 +115,7 @@ export function initBulkAddAccounts() {
     // Type cell
     const tdType = document.createElement('td');
     const typeSelect = document.createElement('select');
-    typeSelect.className = 'select select-sm select-bordered w-full min-w-[130px]';
+    typeSelect.className = selectBaseClass;
     typeSelect.dataset.field = 'type';
     const defaultOpt = document.createElement('option');
     defaultOpt.value = '';
@@ -131,7 +135,7 @@ export function initBulkAddAccounts() {
     // Currency cell
     const tdCurrency = document.createElement('td');
     const currencySelect = document.createElement('select');
-    currencySelect.className = 'select select-sm select-bordered w-full min-w-[80px]';
+    currencySelect.className = selectBaseClass;
     currencySelect.dataset.field = 'currency';
     const defaultCurrOpt = document.createElement('option');
     defaultCurrOpt.value = '';
@@ -161,8 +165,7 @@ export function initBulkAddAccounts() {
     balanceInput.step = '0.01';
     balanceInput.min = '0';
     balanceInput.placeholder = '0';
-    balanceInput.className =
-      'input input-sm input-bordered w-full min-w-[100px] text-right tabular-nums';
+    balanceInput.className = `${inputBaseClass} text-right tabular-nums`;
     balanceInput.dataset.field = 'balance';
     tdBalance.appendChild(balanceInput);
     tr.appendChild(tdBalance);
@@ -172,7 +175,8 @@ export function initBulkAddAccounts() {
     tdRemove.className = 'text-center';
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-ghost btn-xs btn-square text-error';
+    removeBtn.className =
+      'btn btn-ghost btn-sm btn-square rounded-lg min-h-[44px] min-w-[44px] text-error';
     removeBtn.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
     removeBtn.title = 'Remove row';
