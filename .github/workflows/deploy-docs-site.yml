@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs/site/**'
+      - 'docs/sites/**'
       - '.github/workflows/deploy-docs-site.yml'
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
           bun-version: latest
 
       - name: Install docs dependencies
-        run: bun install --cwd docs/site
+        run: bun install --cwd docs/sites
 
       - name: Build docs site
         run: bun run docs:build
@@ -35,4 +35,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config docs/site/wrangler.toml
+          command: deploy --config docs/sites/wrangler.toml
