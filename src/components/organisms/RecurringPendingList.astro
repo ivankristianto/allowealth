@@ -1,0 +1,106 @@
+---
+import RecurringPendingCard from '@/components/molecules/RecurringPendingCard.astro';
+import EmptyState from '@/components/atoms/EmptyState.astro';
+import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
+
+export interface Props {
+  occurrences: RecurringOccurrenceOutput[];
+  hasTemplates?: boolean;
+  monthLabel?: string;
+}
+
+const { occurrences = [], hasTemplates = false, monthLabel = '' } = Astro.props;
+
+const bills = occurrences.filter((o) => o.templateType === 'expense');
+const income = occurrences.filter((o) => o.templateType === 'income');
+---
+
+<div class="space-y-6" data-testid="recurring-pending-section">
+  {/* Upcoming Income Section */}
+  <section class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+        Upcoming Income
+        <span class="ml-1 badge badge-sm badge-ghost font-bold">{income.length}</span>
+      </h2>
+    </div>
+
+    {
+      income.length > 0 ? (
+        <div class="space-y-3" id="recurring-pending-income">
+          {income.map((occurrence) => (
+            <RecurringPendingCard occurrence={occurrence} />
+          ))}
+        </div>
+      ) : hasTemplates ? (
+        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+          <EmptyState
+            title="No upcoming income"
+            message={
+              monthLabel
+                ? `No income expected for ${monthLabel}.`
+                : 'No income expected for this period.'
+            }
+            iconName="check"
+            variant="centered"
+          />
+        </div>
+      ) : (
+        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+          <EmptyState
+            title="No recurring income yet"
+            message="Set up recurring income to track expected payments."
+            iconName="wallet"
+            variant="centered"
+            actionAttributes={{ 'data-open-recurring-template': 'true' }}
+            actionLabel="+ New Recurring"
+          />
+        </div>
+      )
+    }
+  </section>
+
+  {/* Upcoming Bills Section */}
+  <section class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+        Upcoming Bills
+        <span class="ml-1 badge badge-sm badge-ghost font-bold">{bills.length}</span>
+      </h2>
+    </div>
+
+    {
+      bills.length > 0 ? (
+        <div class="space-y-3" id="recurring-pending-bills">
+          {bills.map((occurrence) => (
+            <RecurringPendingCard occurrence={occurrence} />
+          ))}
+        </div>
+      ) : hasTemplates ? (
+        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+          <EmptyState
+            title="No upcoming bills"
+            message={
+              monthLabel
+                ? `All bills for ${monthLabel} are settled.`
+                : 'All bills are settled for this period.'
+            }
+            iconName="check"
+            variant="centered"
+          />
+        </div>
+      ) : (
+        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+          <EmptyState
+            title="No recurring bills yet"
+            message="Set up recurring expenses to track your upcoming bills."
+            iconName="receipt"
+            actionLabel="+ New Recurring"
+            variant="centered"
+            actionAttributes={{ 'data-open-recurring-template': 'true' }}
+          />
+        </div>
+      )
+    }
+  </section>
+</div>

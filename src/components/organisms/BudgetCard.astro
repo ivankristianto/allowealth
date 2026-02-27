@@ -71,6 +71,8 @@ export interface Props {
   color?: string;
   spent: number;
   budget: number;
+  recurringTotal?: string | number;
+  isRecurringOverBudget?: boolean;
   percentageUsed: number;
   status?: 'ok' | 'warning' | 'exceeded';
   currency?: Currency;
@@ -89,6 +91,8 @@ const {
   color,
   spent,
   budget,
+  recurringTotal = 0,
+  isRecurringOverBudget = false,
   percentageUsed,
   currency = 'IDR',
   month,
@@ -102,6 +106,8 @@ const period = month && year ? `${year}-${String(month).padStart(2, '0')}` : und
 
 // Calculate remaining amount
 const remaining = Math.round((budget - spent) * 100) / 100 || 0;
+const recurringTotalAmount =
+  typeof recurringTotal === 'string' ? Number(recurringTotal) || 0 : recurringTotal;
 
 const budgetStatus = getBudgetStatus(percentageUsed);
 const progressStatus = budgetStatus.status;
@@ -259,6 +265,12 @@ const cardClasses = [
                   : `${Math.round(percentageUsed)}% Used`}
               </Badge>
             </span>
+            {isRecurringOverBudget && (
+              <span class="inline-flex mt-2 badge badge-sm badge-warning gap-1">
+                <Repeat size={12} aria-hidden="true" />
+                Recurring exceeds budget
+              </span>
+            )}
           </div>
         </div>
         <div class="flex items-center gap-1">
@@ -321,6 +333,11 @@ const cardClasses = [
             >
               {formatCurrency(spent, currency)}
             </p>
+            {isRecurringOverBudget && (
+              <p class="text-xs font-semibold text-warning mt-1">
+                Recurring: {formatCurrency(recurringTotalAmount, currency)}
+              </p>
+            )}
           </div>
         </div>
 

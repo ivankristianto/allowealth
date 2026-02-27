@@ -1,0 +1,12 @@
+---
+import RecurringTemplateList from '@/components/organisms/RecurringTemplateList.astro';
+import type { RecurringTemplateOutput } from '@/lib/types/recurring';
+
+export interface Props {
+  templates: RecurringTemplateOutput[];
+}
+
+const { templates = [] } = Astro.props;
+---
+
+<RecurringTemplateList templates={templates} />

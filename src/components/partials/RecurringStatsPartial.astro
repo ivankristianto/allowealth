@@ -1,0 +1,74 @@
+---
+import StatCard from '@/components/atoms/StatCard.astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { RecurringMonthlySummary } from '@/lib/utils/recurring-summary';
+
+export interface Props {
+  summary: RecurringMonthlySummary;
+}
+
+const { summary } = Astro.props;
+
+const upcomingIncomeLabel =
+  summary.incomeByCurrency.length > 0
+    ? summary.incomeByCurrency
+        .map((entry) => formatCurrency(entry.amount, entry.currency))
+        .join(' + ')
+    : '0';
+
+const upcomingExpenseLabel =
+  summary.expenseByCurrency.length > 0
+    ? summary.expenseByCurrency
+        .map((entry) => formatCurrency(entry.amount, entry.currency))
+        .join(' + ')
+    : '0';
+
+const netLabel =
+  summary.netByCurrency.length > 0
+    ? summary.netByCurrency.map((entry) => formatCurrency(entry.net, entry.currency)).join(' + ')
+    : '0';
+
+const incomeBreakdown =
+  summary.netByCurrency.length > 0
+    ? summary.netByCurrency.map((entry) => formatCurrency(entry.income, entry.currency)).join(' + ')
+    : '0';
+
+const expenseBreakdown =
+  summary.netByCurrency.length > 0
+    ? summary.netByCurrency
+        .map((entry) => formatCurrency(entry.expenses, entry.currency))
+        .join(' + ')
+    : '0';
+---
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="recurring-stats-row">
+  <StatCard
+    title="Upcoming Income"
+    value={upcomingIncomeLabel}
+    subtitle={`${summary.upcomingIncomeCount} upcoming items`}
+    subtitleIcon="trending-up"
+    iconVariant="success"
+  />
+  <StatCard
+    title="Upcoming Expense"
+    value={upcomingExpenseLabel}
+    subtitle={`${summary.upcomingExpenseCount} upcoming items`}
+    subtitleIcon="trending-up"
+    iconVariant="warning"
+  />
+  <StatCard
+    title="Cashflow Summary"
+    value={netLabel}
+    valueColor={summary.netByCurrency.some((entry) => Number.parseFloat(entry.net) < 0)
+      ? 'text-error'
+      : 'text-success'}
+    subtitle="Net Savings"
+    subtitleIcon="trending-up"
+    iconVariant="accent"
+  >
+    <div slot="details" class="space-y-1 text-xs font-medium text-base-content/60">
+      <p>Income: {incomeBreakdown}</p>
+      <p>Expenses: {expenseBreakdown}</p>
+    </div>
+  </StatCard>
+</div>

@@ -1,0 +1,260 @@
+---
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  recurringTotal: number;
+  oneTimeTotal: number;
+  currency?: Currency;
+  subtitle?: string;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  recurringTotal = 0,
+  oneTimeTotal = 0,
+  currency = 'IDR',
+  subtitle = 'THIS PERIOD',
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+const total = recurringTotal + oneTimeTotal;
+const recurringPct = total > 0 ? ((recurringTotal / total) * 100).toFixed(1) : '0.0';
+const oneTimePct = total > 0 ? ((oneTimeTotal / total) * 100).toFixed(1) : '0.0';
+
+const chartId = `recurring-vs-one-time-chart-${Math.random().toString(36).slice(2, 11)}`;
+
+const serializedData = JSON.stringify({
+  recurring: recurringTotal,
+  oneTime: oneTimeTotal,
+})
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Recurring versus one-time expenses"
+>
+  <div class="flex flex-col gap-6 md:gap-8">
+    <div class="flex items-center justify-between gap-3">
+      <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
+        Recurring vs One-Time
+      </h4>
+      <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
+    </div>
+
+    {
+      loading ? (
+        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-[260px]">
+          <div class="h-[200px] w-full sm:w-[200px] shrink-0">
+            <Skeleton variant="circular" width="200" height="200" />
+          </div>
+          <div class="flex-1 w-full space-y-3">
+            <div class="flex items-center justify-between">
+              <Skeleton variant="rectangular" width="90px" height="12px" />
+              <Skeleton variant="rectangular" width="100px" height="12px" />
+            </div>
+            <div class="flex items-center justify-between">
+              <Skeleton variant="rectangular" width="90px" height="12px" />
+              <Skeleton variant="rectangular" width="100px" height="12px" />
+            </div>
+          </div>
+        </div>
+      ) : error ? (
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : total === 0 ? (
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No expense data available for this period.</p>
+        </div>
+      ) : (
+        <div class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-[260px]">
+          <div
+            class="h-[200px] w-full max-w-[200px] mx-auto sm:mx-0 shrink-0 relative"
+            id={`${chartId}-container`}
+            data-chart-data={serializedData}
+          >
+            <canvas id={chartId} aria-label="Recurring and one-time expense share" role="img" />
+          </div>
+
+          <div class="flex-1 space-y-3 w-full">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-accent" aria-hidden="true" />
+                <span class="text-base-content/60 uppercase tracking-tight">Recurring</span>
+              </div>
+              <span class="text-base-content">
+                {recurringPct}% ({formatCurrency(recurringTotal, currency)})
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-xs font-bold">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-info" aria-hidden="true" />
+                <span class="text-base-content/60 uppercase tracking-tight">One-Time</span>
+              </div>
+              <span class="text-base-content">
+                {oneTimePct}% ({formatCurrency(oneTimeTotal, currency)})
+              </span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      !loading && !error && total > 0 && (
+        <table class="sr-only" aria-label="Recurring versus one-time breakdown">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Recurring</td>
+              <td>{recurringTotal}</td>
+              <td>{recurringPct}%</td>
+            </tr>
+            <tr>
+              <td>One-Time</td>
+              <td>{oneTimeTotal}</td>
+              <td>{oneTimePct}%</td>
+            </tr>
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+</Card>
+
+<script>
+  import { Chart } from '@/lib/chart-setup';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+
+  interface BreakdownData {
+    recurring: number;
+    oneTime: number;
+  }
+
+  const charts: Record<string, Chart<'doughnut', number[], string>> = {};
+
+  function updateThemeColors(): void {
+    const dark = isDarkTheme();
+
+    Object.values(charts).forEach((chart) => {
+      if (!chart.options.plugins?.tooltip) return;
+      chart.options.plugins.tooltip.backgroundColor = dark
+        ? 'rgba(248, 250, 252, 0.95)'
+        : 'rgba(15, 23, 42, 0.9)';
+      chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+      chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+      chart.update('none');
+    });
+  }
+
+  function initChart(chartId: string, data: BreakdownData): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    if (charts[chartId]) {
+      charts[chartId].destroy();
+      delete charts[chartId];
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dark = isDarkTheme();
+
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Recurring', 'One-Time'],
+        datasets: [
+          {
+            data: [data.recurring, data.oneTime],
+            backgroundColor: ['#15803d', '#0ea5e9'],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
+            cornerRadius: 10,
+            padding: 10,
+          },
+        },
+      },
+    });
+
+    charts[chartId] = chart;
+  }
+
+  function parseData(raw: unknown): BreakdownData | null {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const recurring = Number((raw as { recurring?: unknown }).recurring);
+    const oneTime = Number((raw as { oneTime?: unknown }).oneTime);
+
+    if (!Number.isFinite(recurring) || recurring < 0 || !Number.isFinite(oneTime) || oneTime < 0) {
+      return null;
+    }
+
+    return { recurring, oneTime };
+  }
+
+  const lifecycle = createChartLifecycle<BreakdownData>({
+    containerSelector: '[id^="recurring-vs-one-time-chart-"][id$="-container"]',
+    parseData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      initChart(chartId, data);
+    },
+    onThemeChange: updateThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((chartId) => {
+        const chart = charts[chartId];
+        if (chart) chart.destroy();
+        delete charts[chartId];
+      });
+    },
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
+  } else {
+    lifecycle.init();
+  }
+
+  document.addEventListener('astro:page-load', lifecycle.init);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('charts:reinit', lifecycle.init);
+</script>

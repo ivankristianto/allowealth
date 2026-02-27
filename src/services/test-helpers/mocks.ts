@@ -10,6 +10,7 @@ import type { IDatabase } from '@/db';
 import type { Category, Transaction } from '@/lib/types';
 import type { Account } from '@/lib/types/account';
 import type { Budget, BudgetWithCategory } from '@/lib/types/budget';
+import type { RecurringTemplate, RecurringOccurrence } from '@/lib/types/recurring';
 
 /**
  * Creates a mock database object for testing services
@@ -38,6 +39,14 @@ export function createMockDatabase(): IDatabase {
 
     query: {
       transactions: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
+      recurringTemplates: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
+      recurringOccurrences: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
@@ -261,6 +270,54 @@ export function createMockTransactionWithRelations(
   } as Transaction & { category?: Category; account?: Account };
 }
 
+export function createMockRecurringTemplate(
+  overrides: Partial<RecurringTemplate> = {}
+): RecurringTemplate {
+  return {
+    id: 'rt-1',
+    workspace_id: 'workspace-1',
+    created_by_user_id: 'user-1',
+    name: 'Rent',
+    type: 'expense',
+    amount: '5000000',
+    currency: 'IDR',
+    category_id: 'cat-1',
+    account_id: 'account-1',
+    day_of_month: 1,
+    start_date: '2026-01-01',
+    end_date: null,
+    total_occurrences: 12,
+    is_installment: false,
+    installment_label: null,
+    starting_occurrence_number: 1,
+    description: 'Monthly rent',
+    status: 'active',
+    created_at: new Date('2026-01-01'),
+    updated_at: new Date('2026-01-01'),
+    ...overrides,
+  };
+}
+
+export function createMockRecurringOccurrence(
+  overrides: Partial<RecurringOccurrence> = {}
+): RecurringOccurrence {
+  return {
+    id: 'ro-1',
+    template_id: 'rt-1',
+    workspace_id: 'workspace-1',
+    due_date: '2026-01-01',
+    occurrence_number: 1,
+    status: 'pending',
+    transaction_id: null,
+    confirmed_amount: null,
+    skip_reason: null,
+    confirmed_at: null,
+    created_at: new Date('2026-01-01'),
+    updated_at: new Date('2026-01-01'),
+    ...overrides,
+  };
+}
+
 /**
  * Reset all mocks on a mock database
  *
@@ -270,6 +327,10 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.insert as any).mockClear();
   (mockDb.query.transactions.findFirst as any).mockClear();
   (mockDb.query.transactions.findMany as any).mockClear();
+  (mockDb.query.recurringTemplates.findFirst as any).mockClear();
+  (mockDb.query.recurringTemplates.findMany as any).mockClear();
+  (mockDb.query.recurringOccurrences.findFirst as any).mockClear();
+  (mockDb.query.recurringOccurrences.findMany as any).mockClear();
   (mockDb.query.auditLogs.findFirst as any).mockClear();
   (mockDb.query.auditLogs.findMany as any).mockClear();
   (mockDb.query.categories.findFirst as any).mockClear();

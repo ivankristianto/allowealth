@@ -27,6 +27,8 @@ export interface BudgetData {
   icon?: string;
   spent_amount: string | number;
   budget_amount: string | number;
+  recurringTotal?: string | number;
+  isRecurringOverBudget?: boolean;
   percentage_used: number;
   status: 'ok' | 'warning' | 'exceeded';
 }
@@ -155,6 +157,8 @@ const gridClasses = [
                 }
                 percentageUsed={budget.percentage_used}
                 status={budget.status}
+                recurringTotal={budget.recurringTotal}
+                isRecurringOverBudget={budget.isRecurringOverBudget}
                 currency={currency}
                 month={month}
                 year={year}

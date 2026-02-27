@@ -1,5 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
-import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, inArray, or, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
   decimalSubtract,
@@ -45,6 +45,8 @@ export interface BudgetOverview {
   percentage: string;
   budget_amount: string;
   spent_amount: string;
+  recurringTotal: string;
+  isRecurringOverBudget: boolean;
   balance: string;
   status: 'ok' | 'warning' | 'exceeded';
   percentage_used: number;
@@ -183,6 +185,8 @@ export class BudgetService {
     // Get start and end of month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
+    const monthStartIso = `${year}-${String(month).padStart(2, '0')}-01`;
+    const monthEndIso = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
 
     // Get all budgets for this month/year with category info
     const monthBudgets = await this.db.query.budgets.findMany({
@@ -227,6 +231,28 @@ export class BudgetService {
       spentByCategory.set(tx.category_id, tx.total || '0');
     }
 
+    // Aggregate active recurring expense templates by category for the selected month.
+    const recurringTemplates = await this.db.query.recurringTemplates.findMany({
+      where: and(
+        eq(this.schema.recurringTemplates.workspace_id, workspaceId),
+        eq(this.schema.recurringTemplates.type, 'expense'),
+        eq(this.schema.recurringTemplates.currency, currency),
+        eq(this.schema.recurringTemplates.status, 'active'),
+        lte(this.schema.recurringTemplates.start_date, monthEndIso),
+        or(
+          isNull(this.schema.recurringTemplates.end_date),
+          gte(this.schema.recurringTemplates.end_date, monthStartIso)
+        )
+      ),
+    });
+
+    const recurringByCategory = new Map<string, string[]>();
+    for (const template of recurringTemplates) {
+      const list = recurringByCategory.get(template.category_id) || [];
+      list.push(template.amount || '0');
+      recurringByCategory.set(template.category_id, list);
+    }
+
     // Calculate total budget for percentage calculation
     const totalBudgetAmount = expenseBudgets.reduce(
       (sum, b) => sum + parseFloat(b.budget_amount || '0'),
@@ -237,6 +263,8 @@ export class BudgetService {
     const categoryOverviews: BudgetOverview[] = expenseBudgets.map((budget) => {
       const budgetAmount = budget.budget_amount;
       const spentAmount = spentByCategory.get(budget.category_id) || '0';
+      const recurringTotal = decimalSum(recurringByCategory.get(budget.category_id) || []);
+      const isRecurringOverBudget = decimalCompare(recurringTotal, budgetAmount) > 0;
       const balance = decimalSubtract(budgetAmount, spentAmount);
       const percentageUsed = !decimalIsZero(budgetAmount)
         ? parseFloat(decimalDivide(decimalMultiply(spentAmount, 100), budgetAmount))
@@ -265,6 +293,8 @@ export class BudgetService {
         percentage: calculatedPercentage.toFixed(2),
         budget_amount: budgetAmount,
         spent_amount: spentAmount,
+        recurringTotal,
+        isRecurringOverBudget,
         balance,
         status,
         percentage_used: Math.round(percentageUsed * 100) / 100,

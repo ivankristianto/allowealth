@@ -44,6 +44,7 @@ export interface DrizzleTransactionResult {
     name: string;
   } | null;
   has_history?: number | boolean;
+  is_recurring?: number | boolean;
 }
 
 /**
@@ -87,6 +88,7 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
         }
       : null,
     has_history: !!t.has_history,
+    is_recurring: !!t.is_recurring,
     created_by_user_name: t.createdBy?.name,
   };
 }

@@ -137,7 +137,7 @@ const sortedBudgets = [...budgets].sort((a, b) => b.percentage_used - a.percenta
                         </span>
                       </td>
                       <td class="px-6 md:px-8 py-5 md:py-6 text-center">
-                        <div class="inline-flex items-center gap-2">
+                        <div class="inline-flex flex-col items-center gap-2">
                           <div class="w-16 h-1.5 bg-base-200 rounded-full overflow-hidden">
                             <div
                               class={`h-full ${percentage > 100 ? 'bg-error' : percentage > 80 ? 'bg-warning' : 'bg-accent'} transition-all duration-300`}
@@ -154,6 +154,11 @@ const sortedBudgets = [...budgets].sort((a, b) => b.percentage_used - a.percenta
                           >
                             {Math.round(percentage)}%
                           </span>
+                          {budget.isRecurringOverBudget && (
+                            <span class="badge badge-warning badge-xs">
+                              Recurring exceeds budget
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td class="px-6 md:px-8 py-5 md:py-6 text-right">

@@ -1,0 +1,97 @@
+RecurringOccurrence:
+  type: object
+  required:
+    - id
+    - template_id
+    - workspace_id
+    - due_date
+    - occurrence_number
+    - status
+    - created_at
+    - updated_at
+    - templateName
+    - templateType
+    - templateAmount
+    - currency
+    - category
+    - account
+    - isInstallment
+  properties:
+    id:
+      type: string
+    template_id:
+      type: string
+    workspace_id:
+      type: string
+    due_date:
+      type: string
+      format: date
+    occurrence_number:
+      type: integer
+      minimum: 1
+    status:
+      type: string
+      enum: [pending, confirmed, skipped]
+    transaction_id:
+      type: string
+      nullable: true
+    confirmed_amount:
+      type: string
+      nullable: true
+    skip_reason:
+      type: string
+      nullable: true
+    confirmed_at:
+      type: string
+      format: date-time
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    templateName:
+      type: string
+    templateType:
+      type: string
+      enum: [expense, income]
+    templateAmount:
+      type: string
+      description: Decimal amount as string
+    currency:
+      type: string
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+    category:
+      type: object
+      required: [id, name, icon, color, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        type:
+          type: string
+          enum: [expense, income]
+    account:
+      type: object
+      required: [id, name, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+    isInstallment:
+      type: boolean
+    installmentLabel:
+      type: string
+      nullable: true
+    totalOccurrences:
+      type: integer
+      nullable: true
