@@ -10,8 +10,6 @@ audience:
   - user
 ---
 
-# End User Onboarding
-
 ## 1. Complete your profile
 
 Set your name, locale, and default currency preferences.

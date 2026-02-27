@@ -10,8 +10,6 @@ audience:
   - admin
 ---
 
-# Admin Deployment Guide
-
 ## Pre-deployment
 
 - Validate configuration and permissions.

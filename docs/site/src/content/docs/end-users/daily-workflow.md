@@ -10,8 +10,6 @@ audience:
   - user
 ---
 
-# End User Daily Workflow
-
 ## Daily
 
 - Review uncategorized transactions.

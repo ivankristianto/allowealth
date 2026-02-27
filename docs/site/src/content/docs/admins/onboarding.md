@@ -10,8 +10,6 @@ audience:
   - admin
 ---
 
-# Admin Onboarding
-
 ## 1. Configure workspace basics
 
 Set organization name, timezone, and reporting defaults.

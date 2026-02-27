@@ -16,7 +16,7 @@ export default defineConfig({
       favicon: '/favicon.svg',
       customCss: ['./src/styles/brand.css'],
       sidebar: [
-        { label: 'Getting Started', items: [{ slug: 'getting-started' }] },
+        { slug: 'getting-started' },
         {
           label: 'End Users',
           items: [{ slug: 'end-users/onboarding' }, { slug: 'end-users/daily-workflow' }],

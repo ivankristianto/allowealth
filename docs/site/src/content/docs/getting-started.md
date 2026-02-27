@@ -11,8 +11,6 @@ audience:
   - admin
 ---
 
-# Getting Started
-
 Allowealth helps teams track spending, budgets, and accounts in one place.
 
 ## Before you begin
