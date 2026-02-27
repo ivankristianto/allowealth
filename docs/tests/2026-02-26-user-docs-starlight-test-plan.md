@@ -129,15 +129,30 @@ Expected results:
 
 | #   | Area               | Key Assertion                                                           | Pass |
 | --- | ------------------ | ----------------------------------------------------------------------- | ---- |
-| 1   | Docs IA            | Role-split sidebar and all 6 routes load correctly                      | [ ]  |
-| 2   | Content Cap        | Exactly 6 Markdown docs pages exist                                     | [ ]  |
-| 3   | Cross-links        | Onboarding/workflow/admin links work bidirectionally where expected     | [ ]  |
-| 4   | Branding           | Brand CSS, logo/favicon, and responsive rendering are correct           | [ ]  |
-| 5   | App Nav            | Authenticated app shows Docs item and opens local docs URL in same tab  | [ ]  |
-| 6   | Local Reachability | Local build + preview docs path succeeds                                | [ ]  |
-| 7   | SEO                | `robots.txt` and `sitemap-index.xml` are available on local docs server | [ ]  |
+| 1   | Docs IA            | Role-split sidebar and all 6 routes load correctly                      | PASS |
+| 2   | Content Cap        | Exactly 6 Markdown docs pages exist                                     | PASS |
+| 3   | Cross-links        | Onboarding/workflow/admin links work bidirectionally where expected     | PASS |
+| 4   | Branding           | Brand CSS, logo/favicon, and responsive rendering are correct           | PASS |
+| 5   | App Nav            | Authenticated app shows Docs item and opens local docs URL in same tab  | FAIL |
+| 6   | Local Reachability | Local build + preview docs path succeeds                                | PASS |
+| 7   | SEO                | `robots.txt` and `sitemap-index.xml` are available on local docs server | FAIL |
 
 **Critical paths:** Sections 1, 5, and 6 are highest priority.
+
+## Execution Results (2026-02-27)
+
+**Summary:** 7 sections | 5 PASS | 2 FAIL | 0 PARTIAL | 0 SKIP
+
+- [PASS] 1 Docs IA: `http://localhost:4322/` loads with expected sidebar groups and all six docs routes returned `200`.
+- [PASS] 2 Content Cap: Exactly 6 Markdown docs files found with required frontmatter keys (`title`, `description`, `sidebar`, `audience`) on all files.
+- [PASS] 3 Cross-links: End-user and admin guide links navigated to expected target routes.
+- [PASS] 4 Branding: favicon resolved from `/favicon.svg`, accent CSS variables were green (`--sl-color-accent: #15803d`), and no horizontal overflow observed during mobile-width navigation.
+- [FAIL] 5 App Nav: After login on `http://127.0.0.1:4324/login`, sidebar `Docs` item exists but links to `https://docs.allowealth.io/` (not local docs URL) and opened a DNS error page (`DNS_PROBE_FINISHED_NXDOMAIN`) in this environment.
+- [PASS] 6 Local Reachability: `bun run docs:build` succeeded; `bun run docs:preview -- --host 127.0.0.1 --port 4330` served docs successfully; `curl -I http://localhost:4322/` returned `200`; docs are reachable without authentication.
+- [FAIL] 7 SEO: `http://localhost:4322/robots.txt` includes `Allow: /` and sitemap reference, but `http://localhost:4322/sitemap-index.xml` returned `404 Not Found`.
+
+Evidence screenshots were captured under:
+`docs/tests/artifacts/2026-02-27-user-docs-starlight/`
 
 ## Automated Test Coverage
 
