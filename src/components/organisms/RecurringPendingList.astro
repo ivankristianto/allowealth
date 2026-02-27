@@ -15,9 +15,9 @@ const bills = occurrences.filter((o) => o.templateType === 'expense');
 const income = occurrences.filter((o) => o.templateType === 'income');
 ---
 
-<div class="space-y-6" data-testid="recurring-pending-section">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="recurring-pending-section">
   {/* Upcoming Income Section */}
-  <section class="space-y-4">
+  <section class="space-y-3">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
         Upcoming Income
@@ -27,24 +27,17 @@ const income = occurrences.filter((o) => o.templateType === 'income');
 
     {
       income.length > 0 ? (
-        <div class="space-y-3" id="recurring-pending-income">
+        <div class="max-h-80 overflow-y-auto space-y-3 pr-1" id="recurring-pending-income">
           {income.map((occurrence) => (
             <RecurringPendingCard occurrence={occurrence} />
           ))}
         </div>
       ) : hasTemplates ? (
-        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <EmptyState
-            title="No upcoming income"
-            message={
-              monthLabel
-                ? `No income expected for ${monthLabel}.`
-                : 'No income expected for this period.'
-            }
-            iconName="check"
-            variant="centered"
-          />
-        </div>
+        <p class="text-sm text-base-content/40 py-4 text-center">
+          {monthLabel
+            ? `No income expected for ${monthLabel}.`
+            : 'No income expected for this period.'}
+        </p>
       ) : (
         <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
           <EmptyState
@@ -61,7 +54,7 @@ const income = occurrences.filter((o) => o.templateType === 'income');
   </section>
 
   {/* Upcoming Bills Section */}
-  <section class="space-y-4">
+  <section class="space-y-3">
     <div class="flex items-center justify-between">
       <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
         Upcoming Bills
@@ -71,24 +64,17 @@ const income = occurrences.filter((o) => o.templateType === 'income');
 
     {
       bills.length > 0 ? (
-        <div class="space-y-3" id="recurring-pending-bills">
+        <div class="max-h-80 overflow-y-auto space-y-3 pr-1" id="recurring-pending-bills">
           {bills.map((occurrence) => (
             <RecurringPendingCard occurrence={occurrence} />
           ))}
         </div>
       ) : hasTemplates ? (
-        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <EmptyState
-            title="No upcoming bills"
-            message={
-              monthLabel
-                ? `All bills for ${monthLabel} are settled.`
-                : 'All bills are settled for this period.'
-            }
-            iconName="check"
-            variant="centered"
-          />
-        </div>
+        <p class="text-sm text-base-content/40 py-4 text-center">
+          {monthLabel
+            ? `All bills for ${monthLabel} are settled.`
+            : 'All bills are settled for this period.'}
+        </p>
       ) : (
         <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
           <EmptyState

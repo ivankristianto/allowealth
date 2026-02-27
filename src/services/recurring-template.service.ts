@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, like, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -19,6 +19,8 @@ const log = createLogger('recurring-template');
 
 export interface RecurringTemplateFilters {
   status?: 'active' | 'paused' | 'completed' | 'cancelled' | 'all';
+  type?: 'expense' | 'income';
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -253,6 +255,8 @@ export class RecurringTemplateService {
 
     const normalizedFilters = {
       status: filters.status ?? 'all',
+      type: filters.type,
+      search: filters.search,
       page,
       limit,
     };
@@ -273,6 +277,12 @@ export class RecurringTemplateService {
       const conditions = [eq(this.schema.recurringTemplates.workspace_id, workspaceId)];
       if (filters.status && filters.status !== 'all') {
         conditions.push(eq(this.schema.recurringTemplates.status, filters.status));
+      }
+      if (filters.type) {
+        conditions.push(eq(this.schema.recurringTemplates.type, filters.type));
+      }
+      if (filters.search) {
+        conditions.push(like(this.schema.recurringTemplates.name, `%${filters.search}%`));
       }
 
       const templates = await this.db.query.recurringTemplates.findMany({

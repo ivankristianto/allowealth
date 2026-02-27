@@ -2,6 +2,12 @@ import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
 import {
+  attachAmountFormatter,
+  stripAmountFormatting,
+  formatAmountForDisplay,
+} from '@/lib/formatting/amount-input';
+import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
+import {
   clearConfirmError,
   closeConfirmationModal,
   setConfirmLoading,
@@ -46,6 +52,14 @@ let lastFocusedElement: HTMLElement | null = null;
 
 let pendingSkipOccurrence: RecurringOccurrenceLike | null = null;
 let pendingCancelTemplateId: string | null = null;
+let confirmAmountFormatter: ReturnType<typeof attachAmountFormatter> | null = null;
+let confirmCurrency: Currency = DEFAULT_CURRENCY;
+
+let templateType: string = 'all';
+let templateSearch: string = '';
+let templatePage: number = 1;
+const TEMPLATE_LIMIT = 20;
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const parseApiError = async (response: Response): Promise<string> => {
   try {
@@ -95,8 +109,20 @@ async function refreshTemplateList(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-template-list-container');
   if (!container) return;
 
-  const html = await fetchHtml('/api/recurring?status=all&_render=html', signal);
+  const params = new URLSearchParams({ status: 'all', _render: 'html' });
+  if (templateType !== 'all') params.set('type', templateType);
+  if (templateSearch) params.set('search', templateSearch);
+  params.set('page', String(templatePage));
+  params.set('limit', String(TEMPLATE_LIMIT));
+
+  const html = await fetchHtml(`/api/recurring?${params}`, signal);
   container.innerHTML = html;
+
+  const newTotal = container.querySelector('[data-total]')?.getAttribute('data-total');
+  const badge = document.getElementById('recurring-count-badge');
+  if (badge && newTotal != null) {
+    badge.textContent = newTotal;
+  }
 }
 
 async function refreshPendingList(signal: AbortSignal): Promise<void> {
@@ -255,6 +281,11 @@ function showDialog(dialog: HTMLDialogElement | null): void {
   if (!dialog.open) dialog.showModal();
 }
 
+function formatDueDateLabel(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00:00`);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLElement | null): void {
   const modal = document.getElementById('recurring-confirm-modal') as HTMLDialogElement | null;
   const form = document.getElementById('recurring-confirm-form') as HTMLFormElement | null;
@@ -274,16 +305,27 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   const originalAmount = form.querySelector('[data-original-amount]') as HTMLElement | null;
 
   if (title) title.textContent = `Confirm ${occurrence.templateName}`;
-  if (subtitle) subtitle.textContent = `Due on ${occurrence.due_date}`;
+  if (subtitle) subtitle.textContent = `Due on ${formatDueDateLabel(occurrence.due_date)}`;
   if (idInput) idInput.value = occurrence.id;
-  if (amountInput) amountInput.value = occurrence.templateAmount;
   if (dateInput) dateInput.value = occurrence.due_date;
   if (dateInput) dateInput.max = currentUtcDateIso();
   if (categorySelect) categorySelect.value = occurrence.category.id;
   if (accountSelect) accountSelect.value = occurrence.account.id;
 
+  // Set up amount formatter with currency-aware thousand separators
+  confirmCurrency = isValidCurrency(occurrence.currency) ? occurrence.currency : DEFAULT_CURRENCY;
+  if (amountInput) {
+    // Destroy previous formatter if any
+    confirmAmountFormatter?.cleanup();
+    confirmAmountFormatter = attachAmountFormatter(amountInput, confirmCurrency);
+    // Set value and format it for display
+    amountInput.value = formatAmountForDisplay(occurrence.templateAmount, confirmCurrency);
+    // Update the currency data attribute for AmountInput
+    amountInput.setAttribute('data-amount-currency', confirmCurrency);
+  }
+
   if (originalAmount) {
-    originalAmount.textContent = `Original: ${occurrence.templateAmount} ${occurrence.currency}`;
+    originalAmount.textContent = `Original: ${formatAmountForDisplay(occurrence.templateAmount, confirmCurrency)} ${occurrence.currency}`;
     originalAmount.classList.add('hidden');
   }
 
@@ -297,7 +339,9 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
     'input',
     () => {
       if (!originalAmount) return;
-      const changed = amountInput.value !== occurrence.templateAmount;
+      const currentRaw = stripAmountFormatting(amountInput.value, confirmCurrency);
+      const originalRaw = stripAmountFormatting(occurrence.templateAmount, confirmCurrency);
+      const changed = currentRaw !== originalRaw;
       originalAmount.classList.toggle('hidden', !changed);
     },
     { once: true }
@@ -559,7 +603,9 @@ function initRecurringPage(): void {
 
       const id = (form.querySelector('input[name="occurrence_id"]') as HTMLInputElement | null)
         ?.value;
-      const amount = (form.querySelector('input[name="amount"]') as HTMLInputElement | null)?.value;
+      const rawAmount = (form.querySelector('input[name="amount"]') as HTMLInputElement | null)
+        ?.value;
+      const amount = rawAmount ? stripAmountFormatting(rawAmount, confirmCurrency) : '';
       const transactionDate = (
         form.querySelector('input[name="transaction_date"]') as HTMLInputElement | null
       )?.value;
@@ -779,6 +825,69 @@ function initRecurringPage(): void {
       if (lastFocusedElement && document.contains(lastFocusedElement)) {
         lastFocusedElement.focus();
       }
+    },
+    { signal }
+  );
+
+  // Template filter type tabs
+  document.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target as HTMLElement;
+      const filterButton = target.closest('[data-filter-type]') as HTMLElement | null;
+      if (!filterButton) return;
+
+      const newType = filterButton.getAttribute('data-filter-type') || 'all';
+      if (newType === templateType) return;
+
+      templateType = newType;
+      templatePage = 1;
+      void refreshTemplateList(signal).catch((error) => {
+        if (error instanceof Error && error.name === 'AbortError') return;
+        addToast(error instanceof Error ? error.message : 'Failed to filter templates', 'error');
+      });
+    },
+    { signal }
+  );
+
+  // Template search input with debounce
+  document.addEventListener(
+    'input',
+    (event) => {
+      const target = event.target as HTMLElement;
+      if (!target.matches('[data-template-search]')) return;
+
+      const input = target as HTMLInputElement;
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+
+      searchDebounceTimer = setTimeout(() => {
+        templateSearch = input.value.trim();
+        templatePage = 1;
+        void refreshTemplateList(signal).catch((error) => {
+          if (error instanceof Error && error.name === 'AbortError') return;
+          addToast(error instanceof Error ? error.message : 'Failed to search templates', 'error');
+        });
+      }, 300);
+    },
+    { signal }
+  );
+
+  // Template pagination
+  document.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target as HTMLElement;
+      const pageButton = target.closest('[data-template-page]') as HTMLElement | null;
+      if (!pageButton) return;
+
+      const newPage = Number(pageButton.getAttribute('data-template-page'));
+      if (!Number.isFinite(newPage) || newPage < 1 || newPage === templatePage) return;
+
+      templatePage = newPage;
+      void refreshTemplateList(signal).catch((error) => {
+        if (error instanceof Error && error.name === 'AbortError') return;
+        addToast(error instanceof Error ? error.message : 'Failed to load page', 'error');
+      });
     },
     { signal }
   );

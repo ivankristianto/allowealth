@@ -4,9 +4,21 @@ import type { RecurringTemplateOutput } from '@/lib/types/recurring';
 
 export interface Props {
   templates: RecurringTemplateOutput[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  type?: string;
+  search?: string;
 }
 
-const { templates = [] } = Astro.props;
+const { templates = [], total = 0, page = 1, limit = 20, type = 'all', search = '' } = Astro.props;
 ---
 
-<RecurringTemplateList templates={templates} />
+<RecurringTemplateList
+  templates={templates}
+  total={total}
+  page={page}
+  limit={limit}
+  type={type}
+  search={search}
+/>

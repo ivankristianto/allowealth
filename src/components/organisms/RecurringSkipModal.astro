@@ -22,9 +22,11 @@ import { CircleMinus } from '@lucide/astro';
         maxlength="200"
         placeholder="Add a note for why this occurrence is skipped"
         data-skip-reason></textarea>
-      <span class="text-xs text-base-content/60" aria-live="polite" data-skip-counter>
-        0 / 200 characters
-      </span>
+      <div class="label">
+        <span class="label-text-alt" aria-live="polite" data-skip-counter>
+          0 / 200 characters
+        </span>
+      </div>
     </label>
   </div>
 </ConfirmationModal>

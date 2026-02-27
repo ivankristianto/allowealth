@@ -2,7 +2,7 @@
 import DashboardWidget from '@/components/organisms/DashboardWidget.astro';
 import { formatCurrency } from '@/lib/formatting';
 import type { RecurringStats } from '@/lib/types/recurring';
-import { AlertTriangle } from '@lucide/astro';
+import { TriangleAlert } from '@lucide/astro';
 
 export interface Props {
   stats: RecurringStats;
@@ -30,7 +30,7 @@ const pendingAmountLabel = primaryPending
       {
         stats.overdueCount > 0 && (
           <span class="badge badge-error gap-1">
-            <AlertTriangle size={12} aria-hidden="true" />
+            <TriangleAlert size={12} aria-hidden="true" />
             {stats.overdueCount} overdue
           </span>
         )
