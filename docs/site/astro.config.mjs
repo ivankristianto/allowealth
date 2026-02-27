@@ -10,7 +10,7 @@ export default defineConfig({
       title: 'Allowealth Docs',
       description: 'Public product documentation for Allowealth.',
       logo: {
-        src: './src/assets/logo.svg',
+        src: './public/favicon.svg',
         alt: 'Allowealth',
       },
       favicon: '/favicon.svg',
