@@ -35,6 +35,7 @@ const main = defineCommand({
   subCommands: {
     workspace: () => import('./commands/workspace').then((m) => m.default),
     db: () => import('./commands/db').then((m) => m.default),
+    recurring: () => import('./commands/recurring').then((m) => m.default),
     admin: () => import('./commands/admin').then((m) => m.default),
     deploy: () => import('./commands/deploy').then((m) => m.default),
     mcp: () => import('./commands/mcp').then((m) => m.default),

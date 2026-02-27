@@ -10,7 +10,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Settings, ArrowRightLeft, Archive, Users, User } from '@lucide/astro';
+import { Plus, Settings, ArrowRightLeft, Archive, Users, User, ListPlus } from '@lucide/astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
 
 export interface Props {
@@ -102,7 +102,26 @@ const accentGhostBtn =
         >
           <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
           <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs md:text-sm">Transfer</span>
+          <span class="hidden md:inline text-sm">Transfer</span>
+        </button>
+      </div>
+    )
+  }
+
+  {/* Bulk Add */}
+  {
+    !isHistoricalView && (
+      <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
+        <button
+          type="button"
+          class={ghostBtn}
+          aria-label="Bulk add accounts"
+          data-bulk-add-accounts-btn
+          data-testid="bulk-add-accounts-btn"
+        >
+          <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Bulk</span>
         </button>
       </div>
     )
@@ -184,6 +203,20 @@ const accentGhostBtn =
     });
   }
 
+  function initBulkAddButton() {
+    document.querySelectorAll<HTMLElement>('[data-bulk-add-accounts-btn]').forEach((button) => {
+      if (handlerMap.has(button)) return;
+
+      const handler = () => {
+        const modal = document.getElementById('bulk-add-accounts-modal') as HTMLDialogElement;
+        if (modal) modal.showModal();
+      };
+
+      handlerMap.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
+
   function initAddAccountButton() {
     document.querySelectorAll<HTMLElement>('[data-add-account-btn]').forEach((button) => {
       if (handlerMap.has(button)) return;
@@ -222,11 +255,13 @@ const accentGhostBtn =
 
   initAddAccountButton();
   initTransferButton();
+  initBulkAddButton();
   registerCleanup();
 
   document.addEventListener('astro:page-load', () => {
     initAddAccountButton();
     initTransferButton();
+    initBulkAddButton();
     registerCleanup();
   });
 </script>

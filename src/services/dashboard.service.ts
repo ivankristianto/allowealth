@@ -33,6 +33,8 @@ import {
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery, trackService } from '@/lib/perf';
+import { RecurringOccurrenceService } from './recurring-occurrence.service';
+import type { RecurringOccurrenceOutput, RecurringStats } from '@/lib/types/recurring';
 
 export interface CurrencyAmount {
   currency: Currency;
@@ -150,6 +152,8 @@ export interface DashboardData {
     createdByName?: string;
     hasHistory?: boolean;
   }>;
+  recurringStats: RecurringStats;
+  upcomingRecurringBills: RecurringOccurrenceOutput[];
 }
 
 /**
@@ -159,12 +163,15 @@ export class DashboardService {
   private get schema() {
     return getActiveSchema();
   }
+  private recurringOccurrenceService: RecurringOccurrenceService;
 
   /**
    * Create a new DashboardService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.recurringOccurrenceService = new RecurringOccurrenceService(db);
+  }
 
   /**
    * Get complete dashboard data for a workspace (optimized version)
@@ -212,25 +219,33 @@ export class DashboardService {
       // Group 2: Transaction aggregates (budget, spent, income, categories)
       // Group 3: Budget health (budgets + category spending)
       // Group 4: Recent transactions
-      const [accountsData, transactionAggregates, budgetHealthData, recentTransactions] =
-        await Promise.all([
-          // Combined accounts query
-          this.getAccountsOptimized(workspaceId, perf),
-          // Combined transaction aggregates (budget, spent, income, top categories)
-          this.getTransactionAggregatesOptimized(
-            workspaceId,
-            currentMonth,
-            currentYear,
-            startDate,
-            endDate,
-            currency,
-            perf
-          ),
-          // Budget health (requires budgets + spending per category)
-          this.getBudgetHealthOptimized(workspaceId, currentMonth, currentYear, currency, perf),
-          // Recent transactions
-          this.getRecentTransactionsOptimized(workspaceId, currency, 10, perf),
-        ]);
+      const [
+        accountsData,
+        transactionAggregates,
+        budgetHealthData,
+        recentTransactions,
+        recurringStats,
+        upcomingRecurringBills,
+      ] = await Promise.all([
+        // Combined accounts query
+        this.getAccountsOptimized(workspaceId, perf),
+        // Combined transaction aggregates (budget, spent, income, top categories)
+        this.getTransactionAggregatesOptimized(
+          workspaceId,
+          currentMonth,
+          currentYear,
+          startDate,
+          endDate,
+          currency,
+          perf
+        ),
+        // Budget health (requires budgets + spending per category)
+        this.getBudgetHealthOptimized(workspaceId, currentMonth, currentYear, currency, perf),
+        // Recent transactions
+        this.getRecentTransactionsOptimized(workspaceId, currency, 10, perf),
+        this.getRecurringStats(workspaceId, perf),
+        this.getUpcomingRecurringBills(workspaceId, perf),
+      ]);
 
       const result: DashboardData = {
         totalAccounts: accountsData.totalAccounts,
@@ -241,6 +256,8 @@ export class DashboardService {
         budgetHealth: budgetHealthData,
         accountReminders: accountsData.accountReminders,
         recentTransactions,
+        recurringStats,
+        upcomingRecurringBills,
       };
 
       // Cache the result
@@ -251,11 +268,51 @@ export class DashboardService {
           CacheTags.DASHBOARD,
           CacheTags.BUDGET,
           CacheTags.TRANSACTIONS,
+          CacheTags.RECURRING,
+          CacheTags.RECURRING_OCCURRENCES,
         ],
       });
 
       return result;
     });
+  }
+
+  private async getRecurringStats(
+    workspaceId: string,
+    perf?: PerfCollector
+  ): Promise<RecurringStats> {
+    try {
+      return await trackQuery('DashboardService.getRecurringStats', perf, () =>
+        this.recurringOccurrenceService.getStats(workspaceId)
+      );
+    } catch (error) {
+      log.warn('failed to fetch recurring stats:', error);
+      return {
+        pendingCount: 0,
+        pendingByCurrency: [],
+        overdueCount: 0,
+        confirmedThisMonth: 0,
+      };
+    }
+  }
+
+  private async getUpcomingRecurringBills(
+    workspaceId: string,
+    perf?: PerfCollector
+  ): Promise<RecurringOccurrenceOutput[]> {
+    try {
+      const upcoming = await trackQuery('DashboardService.getUpcomingRecurringBills', perf, () =>
+        this.recurringOccurrenceService.findPending(workspaceId, {
+          status: 'pending',
+          due_within: '7d',
+        })
+      );
+
+      return upcoming.occurrences.sort((a, b) => a.due_date.localeCompare(b.due_date));
+    } catch (error) {
+      log.warn('failed to fetch upcoming recurring bills:', error);
+      return [];
+    }
   }
 
   /**

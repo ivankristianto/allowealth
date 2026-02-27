@@ -12,6 +12,7 @@ import TransactionDateGroups from '@/components/molecules/TransactionDateGroups.
 import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCards.astro';
 import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
+import BulkActionBar from '@/components/organisms/BulkActionBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
@@ -397,7 +398,11 @@ perf?.recordMilestone('preRender.elapsed');
         <div id="transaction-list">
           {
             transactions.length > 0 ? (
-              <TransactionDateGroups groups={dateGroups} showActions={true} />
+              <TransactionDateGroups
+                groups={dateGroups}
+                showActions={true}
+                showBulkSelection={true}
+              />
             ) : (
               <div id="empty-state" class="py-24 text-center">
                 <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
@@ -489,6 +494,36 @@ perf?.recordMilestone('preRender.elapsed');
       data-confirm-details
     >
     </div>
+  </ConfirmationModal>
+
+  <BulkActionBar
+    categories={categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      type: category.type,
+    }))}
+    accounts={accountOptions.map((account) => ({
+      id: account.id,
+      name: account.name,
+    }))}
+  />
+
+  <ConfirmationModal
+    id="bulk-delete-dialog"
+    title="Delete Transactions"
+    confirmLabel="Delete All"
+    confirmVariant="error"
+    confirmLoadingLabel="Deleting..."
+    cancelLabel="Cancel"
+    iconVariant="error"
+  >
+    <p
+      slot="details"
+      id="bulk-delete-dialog-details"
+      class:list={['text-base-content/70 font-medium', tokenClasses.textSm]}
+      data-confirm-details
+    >
+    </p>
   </ConfirmationModal>
 </ProtectedLayout>
 

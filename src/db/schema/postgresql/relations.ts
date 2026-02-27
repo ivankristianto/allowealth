@@ -16,6 +16,8 @@ import { sessions } from './sessions';
 import { categories } from './categories';
 import { accountCategories } from './account-categories';
 import { transactions } from './transactions';
+import { recurringTemplates } from './recurring-templates';
+import { recurringOccurrences } from './recurring-occurrences';
 import { accounts } from './accounts';
 import { accountHistory } from './account-history';
 import { accountUpdateReminders } from './account-update-reminders';
@@ -36,6 +38,8 @@ export const workspacesRelations = relations(workspaces, ({ many }) => ({
   categories: many(categories),
   accountCategories: many(accountCategories),
   transactions: many(transactions),
+  recurringTemplates: many(recurringTemplates),
+  recurringOccurrences: many(recurringOccurrences),
   accounts: many(accounts),
   accountSnapshots: many(accountSnapshots),
   accountUpdateReminders: many(accountUpdateReminders),
@@ -75,6 +79,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdCategories: many(categories),
   createdAccountCategories: many(accountCategories),
   createdTransactions: many(transactions),
+  createdRecurringTemplates: many(recurringTemplates),
   createdAccounts: many(accounts),
   createdAccountSnapshots: many(accountSnapshots),
   createdAccountUpdateReminders: many(accountUpdateReminders),
@@ -114,6 +119,7 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
     references: [users.id],
   }),
   transactions: many(transactions),
+  recurringTemplates: many(recurringTemplates),
   budgets: many(budgets),
 }));
 
@@ -156,6 +162,43 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
+// Recurring templates relations
+export const recurringTemplatesRelations = relations(recurringTemplates, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [recurringTemplates.workspace_id],
+    references: [workspaces.id],
+  }),
+  createdBy: one(users, {
+    fields: [recurringTemplates.created_by_user_id],
+    references: [users.id],
+  }),
+  category: one(categories, {
+    fields: [recurringTemplates.category_id],
+    references: [categories.id],
+  }),
+  account: one(accounts, {
+    fields: [recurringTemplates.account_id],
+    references: [accounts.id],
+  }),
+  occurrences: many(recurringOccurrences),
+}));
+
+// Recurring occurrences relations
+export const recurringOccurrencesRelations = relations(recurringOccurrences, ({ one }) => ({
+  template: one(recurringTemplates, {
+    fields: [recurringOccurrences.template_id],
+    references: [recurringTemplates.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [recurringOccurrences.workspace_id],
+    references: [workspaces.id],
+  }),
+  transaction: one(transactions, {
+    fields: [recurringOccurrences.transaction_id],
+    references: [transactions.id],
+  }),
+}));
+
 // Accounts relations
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
   workspace: one(workspaces, {
@@ -175,6 +218,7 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
   snapshotItems: many(accountSnapshotItems),
   transactions: many(transactions, { relationName: 'transactionAccount' }),
   incomingTransfers: many(transactions, { relationName: 'transactionToAccount' }),
+  recurringTemplates: many(recurringTemplates),
 }));
 
 // Account history relations

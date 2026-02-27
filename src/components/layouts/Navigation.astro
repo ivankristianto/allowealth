@@ -12,6 +12,7 @@
 import {
   LayoutDashboard,
   Receipt,
+  RefreshCw,
   Donut,
   Wallet,
   ChartBar,
@@ -49,6 +50,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: Receipt },
+  { href: '/recurring', label: 'Recurring', icon: RefreshCw },
   { href: '/budget', label: 'Budget', icon: Donut },
   { href: '/accounts', label: 'Accounts', icon: Wallet },
   { href: '/reports', label: 'Reports', icon: ChartBar },
@@ -87,7 +89,7 @@ const isActive = (href: string) => {
 ---
 
 <aside
-  class="bg-base-100 w-64 min-w-64 h-full border-r border-base-300 flex flex-col transition-[width,min-width] duration-300 ease-out lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative pb-20 lg:pb-0"
+  class="bg-base-100 w-64 min-w-64 h-full border-r border-base-300 flex flex-col transition-[width,min-width] duration-300 ease-out lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative lg:pb-0"
   role="navigation"
   aria-label="Main navigation"
   transition:persist="main-nav"
@@ -159,7 +161,7 @@ const isActive = (href: string) => {
 
   <!-- Navigation -->
   <ul
-    class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto flex flex-col flex-nowrap group-data-[sidebar-collapsed=true]:px-2"
+    class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto flex flex-col flex-nowrap min-h-0 group-data-[sidebar-collapsed=true]:px-2"
   >
     {
       navItems.map((item) => {

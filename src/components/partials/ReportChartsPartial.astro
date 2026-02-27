@@ -12,6 +12,7 @@
 
 import ResourceAllocationChart from '@/components/organisms/ResourceAllocationChart.astro';
 import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
+import RecurringVsOneTimeChart from '@/components/organisms/RecurringVsOneTimeChart.astro';
 import type { Currency } from '@/lib/constants/currency';
 
 export interface ExpenseCategory {
@@ -31,6 +32,10 @@ export interface Props {
   currency: Currency;
   resourceAllocationSubtitle?: string;
   financialVelocitySubtitle?: string;
+  recurringBreakdown?: {
+    recurringTotal: number;
+    oneTimeTotal: number;
+  };
 }
 
 const {
@@ -39,6 +44,7 @@ const {
   currency,
   resourceAllocationSubtitle = 'EXPENSE MIX',
   financialVelocitySubtitle = 'TRAILING 3 MONTHS',
+  recurringBreakdown,
 } = Astro.props;
 ---
 
@@ -54,5 +60,17 @@ const {
       currency={currency}
       subtitle={financialVelocitySubtitle}
     />
+
+    {
+      recurringBreakdown && (
+        <RecurringVsOneTimeChart
+          recurringTotal={recurringBreakdown.recurringTotal}
+          oneTimeTotal={recurringBreakdown.oneTimeTotal}
+          currency={currency}
+          subtitle="RECURRING SPLIT"
+          className="@3xl:col-span-2"
+        />
+      )
+    }
   </div>
 </div>

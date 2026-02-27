@@ -15,6 +15,7 @@ const PROTECTED_PREFIXES = [
   '/dashboard',
   '/onboarding',
   '/transactions',
+  '/recurring',
   '/budget',
   '/accounts',
   '/reports',

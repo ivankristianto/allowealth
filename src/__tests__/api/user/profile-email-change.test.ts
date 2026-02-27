@@ -49,7 +49,7 @@ describe('/api/user/profile email change flow', () => {
       name: 'Test User',
       email: 'current@example.com',
     })) as any;
-    userMetaService.getUserSettings = mock(async () => ({ phone: '123', bio: 'Hello' })) as any;
+    userMetaService.getUserSettings = mock(async () => ({ phone: '123' })) as any;
     emailVerificationService.getPendingEmailChange = mock(async () => 'pending@example.com') as any;
 
     const response = await GET(createApiContext({ method: 'GET' }));
@@ -59,7 +59,6 @@ describe('/api/user/profile email change flow', () => {
     expect(payload.success).toBe(true);
     expect(payload.data.pendingEmail).toBe('pending@example.com');
     expect(payload.data.phone).toBe('123');
-    expect(payload.data.bio).toBe('Hello');
   });
 
   it('PUT returns pendingEmail/message when email change is requested', async () => {
@@ -75,7 +74,7 @@ describe('/api/user/profile email change flow', () => {
       email: 'current@example.com',
     })) as any;
     userMetaService.setUserMeta = mock(async () => {}) as any;
-    userMetaService.getUserSettings = mock(async () => ({ phone: '987', bio: 'Updated' })) as any;
+    userMetaService.getUserSettings = mock(async () => ({ phone: '987' })) as any;
     emailVerificationService.getPendingEmailChange = mock(async () => null) as any;
 
     const response = await PUT(
@@ -85,7 +84,6 @@ describe('/api/user/profile email change flow', () => {
           name: 'After Name',
           email: 'new@example.com',
           phone: '987',
-          bio: 'Updated',
         },
       })
     );
@@ -128,7 +126,6 @@ describe('/api/user/profile email change flow', () => {
           name: 'After Name',
           email: 'taken@example.com',
           phone: '999',
-          bio: 'Will not persist',
         },
       })
     );

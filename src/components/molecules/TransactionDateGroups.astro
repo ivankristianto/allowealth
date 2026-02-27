@@ -17,78 +17,111 @@ import type { DateGroup } from '@/lib/utils/transaction-grouping';
 export interface Props {
   groups: DateGroup[];
   showActions?: boolean;
+  showBulkSelection?: boolean;
   showCount?: boolean;
   variant?: 'default' | 'compact';
 }
 
-const { groups, showActions = false, showCount = true, variant = 'default' } = Astro.props;
+const {
+  groups,
+  showActions = false,
+  showBulkSelection = false,
+  showCount = true,
+  variant = 'default',
+} = Astro.props;
 
 const isCompact = variant === 'compact';
 ---
 
 {
-  groups.map((group, index) => (
-    <div
-      role="group"
-      aria-label={`Transactions from ${group.label}`}
-      class:list={[index > 0 && 'mt-3']}
-    >
-      {/* Date header */}
-      <div
-        class:list={[
-          'flex items-center justify-between bg-base-200 border-y border-base-300/50',
-          isCompact ? 'py-2 px-3' : 'py-4 px-4 md:px-6',
-        ]}
-      >
-        <div class="flex items-baseline gap-1.5">
-          {group.relativeLabel ? (
-            <>
-              <span
-                class:list={[
-                  'font-bold text-base-content tracking-wide',
-                  isCompact ? 'text-[11px]' : 'text-xs',
-                ]}
-              >
-                {group.relativeLabel}
-              </span>
-              <span
-                class:list={[
-                  'text-base-content/50 font-medium',
-                  isCompact ? 'text-[11px]' : 'text-xs',
-                ]}
-              >
-                {group.fullDate}
-              </span>
-            </>
-          ) : (
-            <span
-              class:list={[
-                'font-bold text-base-content tracking-wide',
-                isCompact ? 'text-[11px]' : 'text-xs',
-              ]}
-            >
-              {group.fullDate}
-            </span>
-          )}
+  (
+    <>
+      {showBulkSelection && (
+        <div
+          class="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-base-300/50 bg-base-100"
+          id="bulk-select-all-bar"
+        >
+          <label class="flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-sm checkbox-primary"
+              data-bulk-select-all
+              aria-label="Select all transactions on this page"
+            />
+          </label>
+          <span class="text-xs font-medium text-base-content/60" data-bulk-select-count>
+            Select all
+          </span>
         </div>
-        {showCount && group.transactions.length > 0 && (
-          <span
+      )}
+      {groups.map((group, index) => (
+        <div
+          role="group"
+          aria-label={`Transactions from ${group.label}`}
+          class:list={[index > 0 && 'mt-3']}
+        >
+          {/* Date header */}
+          <div
             class:list={[
-              'font-medium text-base-content/40 tabular-nums',
-              isCompact ? 'text-[10px]' : 'text-[11px]',
+              'flex items-center justify-between bg-base-200 border-y border-base-300/50',
+              isCompact ? 'py-2 px-3' : 'py-4 px-4 md:px-6',
             ]}
           >
-            {group.transactions.length}{' '}
-            {group.transactions.length === 1 ? 'transaction' : 'transactions'}
-          </span>
-        )}
-      </div>
-      {/* Transaction cards */}
-      <div class="divide-y divide-base-200">
-        {group.transactions.map((transaction) => (
-          <TransactionCard transaction={transaction} showActions={showActions} />
-        ))}
-      </div>
-    </div>
-  ))
+            <div class="flex items-baseline gap-1.5">
+              {group.relativeLabel ? (
+                <>
+                  <span
+                    class:list={[
+                      'font-bold text-base-content tracking-wide',
+                      isCompact ? 'text-[11px]' : 'text-xs',
+                    ]}
+                  >
+                    {group.relativeLabel}
+                  </span>
+                  <span
+                    class:list={[
+                      'text-base-content/50 font-medium',
+                      isCompact ? 'text-[11px]' : 'text-xs',
+                    ]}
+                  >
+                    {group.fullDate}
+                  </span>
+                </>
+              ) : (
+                <span
+                  class:list={[
+                    'font-bold text-base-content tracking-wide',
+                    isCompact ? 'text-[11px]' : 'text-xs',
+                  ]}
+                >
+                  {group.fullDate}
+                </span>
+              )}
+            </div>
+            {showCount && group.transactions.length > 0 && (
+              <span
+                class:list={[
+                  'font-medium text-base-content/40 tabular-nums',
+                  isCompact ? 'text-[10px]' : 'text-[11px]',
+                ]}
+              >
+                {group.transactions.length}{' '}
+                {group.transactions.length === 1 ? 'transaction' : 'transactions'}
+              </span>
+            )}
+          </div>
+          {/* Transaction cards */}
+          <div class="divide-y divide-base-200">
+            {group.transactions.map((transaction) => (
+              <TransactionCard
+                transaction={transaction}
+                showActions={showActions}
+                showBulkSelection={showBulkSelection}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
+  )
 }

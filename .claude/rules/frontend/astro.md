@@ -25,6 +25,16 @@ const html = `<div class="card">${data.name}</div>`;
 
 See `docs/architecture/002-interactive-pages.md` for full details.
 
+## View Transition Compatibility
+
+Astro view transitions swap the DOM but preserve module state. Init guards must be DOM-based, not module-based.
+
+- ✅ **Use DOM-based init tracking (`element.dataset.initialized`)** - survives view transitions because new DOM elements don't carry the attribute
+- ❌ **Use module-level `let initialized = false` flags** - module persists across soft navigations, flag stays `true`, new DOM elements never get listeners
+- ✅ **Use `await import('astro:transitions/client')` dynamically** in `.client.ts` files that export pure functions for unit testing — `bun:test` can't resolve `astro:transitions/client`
+- ❌ **Top-level `import { navigate } from 'astro:transitions/client'`** in testable `.client.ts` files — breaks unit tests outside Astro context
+- ✅ **Consolidate dynamic imports before try/catch** — import `csrfFetch` and `addToast` once at the top of an async handler, not repeated in each branch
+
 ## Client Scripts
 
 Use `.client.ts` files with `data-*` attributes to pass server values to client.

@@ -1,4 +1,4 @@
-# expenses
+# Allowealth
 
 Personal and Family Financial Application
 
@@ -15,6 +15,55 @@ bun run db:reset
 bun run dev
 ```
 
+## Local Development Setup
+
+### dnsmasq (Custom `.allowealth.local` Hostname)
+
+To use custom local hostnames like `main.allowealth.local`, install and configure dnsmasq. This lets each worktree run on its own named domain instead of a numbered port.
+
+**Why this is needed:** macOS routes all `.local` queries through mDNS/Bonjour, which doesn't know about your custom domains. dnsmasq + a resolver override redirects `*.allowealth.local` to `127.0.0.1` via the system DNS stack.
+
+**1. Install dnsmasq:**
+
+```bash
+brew install dnsmasq
+```
+
+**2. Configure the wildcard rule:**
+
+```bash
+echo "address=/allowealth.local/127.0.0.1" >> /opt/homebrew/etc/dnsmasq.conf
+```
+
+**3. Start dnsmasq and enable on login:**
+
+```bash
+sudo brew services start dnsmasq
+```
+
+**4. Create the macOS resolver override:**
+
+```bash
+sudo mkdir -p /etc/resolver
+echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/allowealth.local
+```
+
+**5. Verify:**
+
+```bash
+ping -c 1 main.allowealth.local
+# Expected: 64 bytes from 127.0.0.1
+```
+
+**6. Set `DEV_HOST` in `.env`:**
+
+```bash
+DEV_HOST=main.allowealth.local
+PORT=4350
+```
+
+---
+
 ## New Worktree Initial Setup
 
 For branch-based local development (useful when working on multiple branches simultaneously):
@@ -27,8 +76,8 @@ For branch-based local development (useful when working on multiple branches sim
 
 2. **Configure host and port:**
    Edit `.env` and set:
-   - `DEV_HOST` to `{branch}.expenses.local` (e.g., `feature-auth.expenses.local`)
-   - `PORT` to an unused port between `4322-4310` (default is `4321`)
+   - `DEV_HOST` to `{branch}.allowealth.local` (e.g., `feature-auth.allowealth.local`)
+   - `PORT` to an unused port (e.g., `4350`, `4351`, ...)
 
 3. **Run setup script:**
    ```bash
@@ -41,7 +90,7 @@ For branch-based local development (useful when working on multiple branches sim
 ./scripts/setup.sh --worktree
 ```
 
-This automatically configures `.env` with the branch name (e.g., `feature-auth.expenses.local`) and finds an available port between 4322-4310.
+This automatically configures `.env` with the branch name (e.g., `feature-auth.allowealth.local`) and finds an available port.
 
 This script will:
 
@@ -49,7 +98,7 @@ This script will:
 - Install dependencies
 - Reset and seed the database
 
-After setup completes, start the dev server with `bun run dev` and access the app at `http://{branch}.expenses.local:{port}`.
+After setup completes, start the dev server with `bun run dev` and access the app at `http://{branch}.allowealth.local:{port}`.
 
 ## Database Seeding
 
@@ -499,7 +548,7 @@ node dist/server/entry.mjs
 
 ```bash
 # Using PM2 or similar process manager
-pm2 start dist/server/entry.mjs --name expenses
+pm2 start dist/server/entry.mjs --name allowealth
 ```
 
 #### 2. Cloudflare Workers/Pages

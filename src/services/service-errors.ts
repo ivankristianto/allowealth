@@ -18,6 +18,14 @@ export enum ServiceErrorCode {
   CATEGORY_INACTIVE = 'CATEGORY_INACTIVE',
   ACCOUNT_INACTIVE = 'ACCOUNT_INACTIVE',
   DUPLICATE_TRANSACTION = 'DUPLICATE_TRANSACTION',
+  BULK_LIMIT_EXCEEDED = 'BULK_LIMIT_EXCEEDED',
+  RECURRING_TEMPLATE_NOT_FOUND = 'RECURRING_TEMPLATE_NOT_FOUND',
+  RECURRING_OCCURRENCE_NOT_FOUND = 'RECURRING_OCCURRENCE_NOT_FOUND',
+  OCCURRENCE_NOT_DUE = 'OCCURRENCE_NOT_DUE',
+  OCCURRENCE_ALREADY_CONFIRMED = 'OCCURRENCE_ALREADY_CONFIRMED',
+  OCCURRENCE_ALREADY_SKIPPED = 'OCCURRENCE_ALREADY_SKIPPED',
+  TEMPLATE_NOT_ACTIVE = 'TEMPLATE_NOT_ACTIVE',
+  TEMPLATE_ALREADY_CANCELLED = 'TEMPLATE_ALREADY_CANCELLED',
 
   // Category-specific errors
   CATEGORY_HAS_TRANSACTIONS = 'CATEGORY_HAS_TRANSACTIONS',
@@ -82,6 +90,13 @@ export class TransactionServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'TransactionServiceError';
+  }
+}
+
+export class RecurringServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'RecurringServiceError';
   }
 }
 

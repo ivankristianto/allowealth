@@ -132,16 +132,19 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
           </IconBadge>
           <div class="min-w-0">
             <StatLabel size="md" color="neutral">Expenses</StatLabel>
-            <h3
+            <div
               id={uniqueId}
-              class="text-2xl @sm:text-3xl font-bold mt-1.5 tracking-tight leading-none"
+              class="flex items-baseline gap-1.5 flex-wrap mt-1.5"
               data-testid="dashboard-total-expenses"
             >
-              {spentFormatted}
-              <span class="text-sm @sm:text-base text-base-content/60 font-medium tracking-normal">
-                / {budgetFormatted}
-              </span>
-            </h3>
+              <span class="text-2xl @sm:text-3xl font-bold tracking-tight leading-none"
+                >{spentFormatted}</span
+              >
+              <span
+                class="text-sm @sm:text-base text-base-content/60 font-medium tracking-normal whitespace-nowrap"
+                >/ {budgetFormatted}</span
+              >
+            </div>
           </div>
         </div>
       </div>

@@ -17,3 +17,11 @@ export type TransactionType = z.infer<typeof transactionTypeEnum>;
 // Category type enum (same as transaction type)
 export const categoryTypeEnum = z.enum(['expense', 'income']);
 export type CategoryType = z.infer<typeof categoryTypeEnum>;
+
+// Recurring template status enum
+export const recurringTemplateStatusEnum = z.enum(['active', 'paused', 'completed', 'cancelled']);
+export type RecurringTemplateStatus = z.infer<typeof recurringTemplateStatusEnum>;
+
+// Recurring occurrence status enum
+export const recurringOccurrenceStatusEnum = z.enum(['pending', 'confirmed', 'skipped']);
+export type RecurringOccurrenceStatus = z.infer<typeof recurringOccurrenceStatusEnum>;

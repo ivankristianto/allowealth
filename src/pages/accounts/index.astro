@@ -20,7 +20,7 @@ import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueMod
 import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Info, Search } from '@lucide/astro';
+import { CalendarDays, Info, Search, ListPlus, Plus } from '@lucide/astro';
 import {
   accountService,
   accountCategoryService,
@@ -458,12 +458,104 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
   <AccountDeleteConfirmModal id="account-delete-modal" />
   <AccountHistoryModal id="account-history-modal" />
   <AccountUpdateValueModal id="account-update-value-modal" />
+
+  {/* Bulk Add Accounts Modal */}
+  <dialog id="bulk-add-accounts-modal" class="modal" data-testid="bulk-add-accounts-modal">
+    <div class="modal-box max-w-4xl rounded-card border border-base-300 shadow-xl p-0">
+      <div class="p-6 flex flex-col gap-5">
+        {/* Header */}
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
+            <ListPlus size={24} class="stroke-current text-accent" aria-hidden="true" />
+          </div>
+          <div class="flex-1">
+            <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
+              Bulk Add Accounts
+            </h2>
+            <p class="text-neutral text-sm mt-2 font-medium">
+              Add accounts row by row. Balance defaults to 0.
+            </p>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div class="overflow-hidden rounded-2xl border border-base-300 bg-base-100">
+          <div class="overflow-x-auto max-h-[50vh] overflow-y-auto">
+            <table class="table table-sm table-fixed w-full">
+              <thead>
+                <tr class="text-xs uppercase tracking-widest text-base-content/50">
+                  <th class="w-[34%]">Name</th>
+                  <th class="w-[26%]">Type</th>
+                  <th class="w-[18%]">Currency</th>
+                  <th class="w-[18%] text-right">Balance</th>
+                  <th class="w-12"></th>
+                </tr>
+              </thead>
+              <tbody
+                data-bulk-rows
+                data-valid-currencies={orderedWorkspaceCurrencies.join(',')}
+                data-account-types={JSON.stringify(
+                  VALID_ACCOUNT_TYPES.map((t) => ({
+                    value: t,
+                    label: formatAccountType(t),
+                  }))
+                )}
+              >
+                {/* Rows added dynamically by client script */}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Add Row button */}
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm rounded-lg sm:rounded-xl min-h-[44px] gap-2 self-start"
+          data-bulk-add-row
+        >
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
+          Add Row
+        </button>
+
+        {/* Error */}
+        <div
+          id="bulk-accounts-error"
+          class="hidden alert alert-error text-sm rounded-xl"
+          role="alert"
+        >
+        </div>
+
+        {/* Actions */}
+        <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            class="btn btn-ghost rounded-2xl w-full sm:w-auto sm:min-w-28 min-h-[44px] font-bold"
+            data-bulk-accounts-cancel
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-accent rounded-2xl w-full sm:w-auto sm:min-w-48 min-h-[44px] font-bold"
+            data-bulk-accounts-submit
+            data-testid="bulk-accounts-submit-btn"
+          >
+            <span data-bulk-accounts-submit-text>Create 1 Account</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 </ProtectedLayout>
 
 <script>
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   import { initInlineHistory } from '@/components/molecules/AccountInlineHistory.client';
   import { initAccountSearch } from '@/components/organisms/AccountSearch.client';
+  import { initBulkAddAccounts } from './bulk-add-accounts.client';
 
   const firstAccountButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
 
@@ -546,6 +638,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
     initAccountSearch();
     initFirstAccountButton();
     initAccountPeriodSelector();
+    initBulkAddAccounts();
   }
 
   if (document.readyState === 'loading') {

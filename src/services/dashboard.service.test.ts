@@ -9,7 +9,7 @@
  * - processTopCategories() - Category grouping, percentage calc, "Other" bucket
  */
 
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { DashboardService } from './dashboard.service';
 
 describe('DashboardService', () => {
@@ -248,6 +248,39 @@ describe('DashboardService', () => {
       ]);
       expect(result[0].color).toBeDefined();
       expect(typeof result[0].color).toBe('string');
+    });
+  });
+
+  describe('getUpcomingRecurringBills', () => {
+    it('queries due_within once without redundant month-specific requests', async () => {
+      const findPending = mock(() =>
+        Promise.resolve({
+          occurrences: [
+            {
+              id: 'ro-2',
+              due_date: '2026-02-02',
+            },
+            {
+              id: 'ro-1',
+              due_date: '2026-02-01',
+            },
+          ],
+          total: 2,
+        })
+      );
+
+      (dashboardService as any).recurringOccurrenceService = {
+        findPending,
+      };
+
+      const result = await (dashboardService as any).getUpcomingRecurringBills('workspace-1');
+
+      expect(findPending).toHaveBeenCalledTimes(1);
+      expect(findPending).toHaveBeenCalledWith('workspace-1', {
+        status: 'pending',
+        due_within: '7d',
+      });
+      expect(result.map((item: any) => item.id)).toEqual(['ro-1', 'ro-2']);
     });
   });
 });

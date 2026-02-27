@@ -1,0 +1,118 @@
+RecurringTemplate:
+  type: object
+  required:
+    - id
+    - workspace_id
+    - created_by_user_id
+    - name
+    - type
+    - amount
+    - currency
+    - category_id
+    - account_id
+    - day_of_month
+    - start_date
+    - is_installment
+    - starting_occurrence_number
+    - status
+    - created_at
+    - updated_at
+    - category
+    - account
+    - pendingCount
+    - confirmedCount
+    - skippedCount
+  properties:
+    id:
+      type: string
+    workspace_id:
+      type: string
+    created_by_user_id:
+      type: string
+    name:
+      type: string
+    type:
+      type: string
+      enum: [expense, income]
+    amount:
+      type: string
+      description: Decimal amount as string
+    currency:
+      type: string
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+    category_id:
+      type: string
+    account_id:
+      type: string
+    day_of_month:
+      type: integer
+      minimum: 1
+      maximum: 31
+    start_date:
+      type: string
+      format: date
+    end_date:
+      type: string
+      format: date
+      nullable: true
+    total_occurrences:
+      type: integer
+      nullable: true
+    is_installment:
+      type: boolean
+    installment_label:
+      type: string
+      nullable: true
+    starting_occurrence_number:
+      type: integer
+      minimum: 1
+    description:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [active, paused, completed, cancelled]
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    nextDueDate:
+      type: string
+      format: date
+      nullable: true
+    pendingCount:
+      type: integer
+      minimum: 0
+    confirmedCount:
+      type: integer
+      minimum: 0
+    skippedCount:
+      type: integer
+      minimum: 0
+    category:
+      type: object
+      required: [id, name, type, icon, color]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [expense, income]
+        icon:
+          type: string
+        color:
+          type: string
+    account:
+      type: object
+      required: [id, name, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string

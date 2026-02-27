@@ -9,6 +9,7 @@ import { CategoryService } from './category.service';
 import { AccountService } from './account.service';
 import {
   createTransactionSchema,
+  createTransactionSchemaNoFutureDate,
   updateTransactionSchema,
   type CreateTransactionInput,
   type UpdateTransactionInput,
@@ -26,6 +27,12 @@ export interface CSVImportResult {
   imported: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
+}
+
+export interface BulkOperationResult {
+  updated: number;
+  failed: number;
+  errors: Array<{ id: string; error: string }>;
 }
 
 export interface CSVRow {
@@ -74,6 +81,9 @@ export interface TransactionFilters {
 }
 
 export class TransactionService {
+  /** Maximum IDs allowed per bulk operation */
+  private static readonly BULK_OPERATION_LIMIT = 100;
+
   private get schema() {
     return getActiveSchema();
   }
@@ -106,9 +116,12 @@ export class TransactionService {
   /**
    * Create a new transaction
    */
-  async create(input: CreateTransactionInput) {
+  async create(input: CreateTransactionInput, options: { skipDateValidation?: boolean } = {}) {
     // Validate input using Zod schema
-    const validated = createTransactionSchema.parse(input);
+    const createSchema = options.skipDateValidation
+      ? createTransactionSchemaNoFutureDate
+      : createTransactionSchema;
+    const validated = createSchema.parse(input);
 
     // For non-transfer transactions, verify category exists and belongs to workspace
     if (validated.type !== 'transfer' && validated.category_id) {
@@ -381,19 +394,28 @@ export class TransactionService {
       offset: filters.offset || 0,
     };
 
-    if (filters.include_history_flag) {
+    const extras: Record<string, any> = {
       // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
-      queryOptions.extras = {
-        has_history: sql<number>`EXISTS (
+      is_recurring: sql<number>`EXISTS (
+        SELECT 1 FROM recurring_occurrences
+        WHERE recurring_occurrences.transaction_id = transactions.id
+        AND recurring_occurrences.workspace_id = transactions.workspace_id
+        LIMIT 1
+      )`.as('is_recurring'),
+    };
+
+    if (filters.include_history_flag) {
+      extras.has_history = sql<number>`EXISTS (
           SELECT 1 FROM audit_logs
           WHERE audit_logs.entity_type = 'transaction'
           AND audit_logs.entity_id = transactions.id
           AND audit_logs.workspace_id = transactions.workspace_id
           AND audit_logs.action IN ('update', 'delete')
           LIMIT 1
-        )`.as('has_history'),
-      };
+        )`.as('has_history');
     }
+
+    queryOptions.extras = extras;
 
     const result = await this.db.query.transactions.findMany(queryOptions);
 
@@ -681,6 +703,145 @@ export class TransactionService {
     ]);
 
     return { success: true };
+  }
+
+  /**
+   * Bulk update category for multiple transactions.
+   * Validates category once, then loops through IDs and uses update() for audit consistency.
+   */
+  async bulkUpdateCategory(
+    ids: string[],
+    categoryId: string,
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
+        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
+        400
+      );
+    }
+
+    const category = await this.categoryService.findById(categoryId, workspaceId);
+    if (!category) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found',
+        404
+      );
+    }
+    if (!category.is_active) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.CATEGORY_INACTIVE,
+        'Category is inactive',
+        400
+      );
+    }
+
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+
+    for (const id of ids) {
+      try {
+        await this.update(id, workspaceId, { category_id: categoryId }, userId);
+        result.updated++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Bulk update account for multiple transactions.
+   * Validates account once, then loops through IDs and uses update() for audit consistency.
+   */
+  async bulkUpdateAccount(
+    ids: string[],
+    accountId: string,
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
+        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
+        400
+      );
+    }
+
+    const account = await this.accountService.findByIdIncludingClosed(accountId, workspaceId);
+    if (!account) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_NOT_FOUND,
+        'Account not found',
+        404
+      );
+    }
+    if (account.status === 'closed') {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_CLOSED,
+        'Cannot update transaction — account is deactivated',
+        400
+      );
+    }
+
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+
+    for (const id of ids) {
+      try {
+        await this.update(id, workspaceId, { account_id: accountId }, userId);
+        result.updated++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Bulk soft-delete multiple transactions.
+   * Loops through IDs and uses delete() for per-transaction audit consistency.
+   */
+  async bulkDelete(
+    ids: string[],
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
+        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
+        400
+      );
+    }
+
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+
+    for (const id of ids) {
+      try {
+        await this.delete(id, workspaceId, userId);
+        result.updated++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
   }
 
   /**

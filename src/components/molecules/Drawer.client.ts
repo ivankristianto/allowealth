@@ -42,11 +42,16 @@ function initDrawer(drawerElement: Element): void {
   };
 
   let isAnimating = false;
+  let pendingAction: 'open' | 'close' | null = null;
   let lastFocusedElement: HTMLElement | null = null;
   let previousBodyOverflow: string | null = null;
 
   const openDrawer = async (): Promise<void> => {
-    if (isAnimating || drawer.classList.contains('drawer-open')) return;
+    if (isAnimating) {
+      pendingAction = 'open';
+      return;
+    }
+    if (drawer.classList.contains('drawer-open')) return;
     isAnimating = true;
     lastFocusedElement =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -89,11 +94,21 @@ function initDrawer(drawerElement: Element): void {
       drawer.dispatchEvent(new CustomEvent('drawer-opened'));
     } finally {
       isAnimating = false;
+      if (pendingAction === 'close') {
+        pendingAction = null;
+        void closeDrawer();
+      } else {
+        pendingAction = null;
+      }
     }
   };
 
   const closeDrawer = async (): Promise<void> => {
-    if (isAnimating || !drawer.classList.contains('drawer-open')) return;
+    if (isAnimating) {
+      pendingAction = 'close';
+      return;
+    }
+    if (!drawer.classList.contains('drawer-open')) return;
     isAnimating = true;
 
     const backdrop = getBackdrop();
@@ -128,6 +143,13 @@ function initDrawer(drawerElement: Element): void {
       lastFocusedElement.focus();
     }
     lastFocusedElement = null;
+
+    if (pendingAction === 'open') {
+      pendingAction = null;
+      void openDrawer();
+    } else {
+      pendingAction = null;
+    }
   };
 
   drawer.addEventListener('drawer:open', openDrawer);

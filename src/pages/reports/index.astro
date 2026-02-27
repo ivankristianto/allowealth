@@ -32,7 +32,7 @@ import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTabl
 
 // Import report service and types
 import { reportService, accountService } from '@/services';
-import type { ReportData, MemberSummaryRow } from '@/services/report.service';
+import type { ReportData, MemberSummaryRow, RecurringBreakdown } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
@@ -123,10 +123,18 @@ if (urlPeriod) {
 // Fetch report data from backend service
 const currency: Currency = selectedCurrency;
 let reportData: ReportData;
+let recurringBreakdown: RecurringBreakdown | null = null;
 
 try {
   if (defaultRange === 'monthly') {
     reportData = await reportService.getMonthlyReport(user.workspaceId, defaultPeriod, currency);
+    const [year, month] = defaultPeriod.split('-').map(Number);
+    recurringBreakdown = await reportService.getRecurringBreakdown(
+      user.workspaceId,
+      year,
+      month,
+      currency
+    );
   } else {
     const year = parseInt(defaultPeriod, 10);
     reportData = await reportService.getYearlyReport(user.workspaceId, year, currency);
@@ -204,6 +212,12 @@ const reportDataForPartials = {
       expenses: safeParseDecimal(trend.expenses),
     })
   ),
+  recurringBreakdown: recurringBreakdown
+    ? {
+        recurringTotal: safeParseDecimal(recurringBreakdown.recurringTotal),
+        oneTimeTotal: safeParseDecimal(recurringBreakdown.oneTimeTotal),
+      }
+    : null,
   // Category intelligence - convert to numbers for table display
   categoryIntelligence: reportData.categoryIntelligence.map(
     (cat: {
@@ -267,6 +281,7 @@ const selectedPeriodLabel =
       <ReportChartsPartial
         expenseByCategory={reportDataForPartials.expenseByCategory}
         trendData={reportDataForPartials.trendData}
+        recurringBreakdown={reportDataForPartials.recurringBreakdown ?? undefined}
         currency={currency}
         resourceAllocationSubtitle={defaultRange === 'monthly'
           ? 'EXPENSE MIX'

@@ -127,13 +127,30 @@ spacing.section; // 32px - section gaps
 sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 ```
 
+## Button Rounding (HARD RULE)
+
+**ALL buttons MUST have explicit rounding.** DaisyUI `btn` default rounding is inconsistent with the design system. Every button must include a `rounded-*` class.
+
+| Context                             | Rounding                        |
+| ----------------------------------- | ------------------------------- |
+| Action bar / toolbar buttons        | `rounded-lg sm:rounded-xl`      |
+| Modal action buttons                | `rounded-2xl`                   |
+| Form buttons                        | `rounded-lg`                    |
+| Pagination buttons                  | `rounded-2xl`                   |
+| Ghost/square icon buttons           | `rounded-lg` (via `btn-square`) |
+| Dropdown item buttons (non-DaisyUI) | `rounded-xl`                    |
+
+- ✅ **Always add explicit `rounded-*` to every `btn`** — never rely on DaisyUI's default border-radius
+- ✅ **Use responsive rounding** (`rounded-lg sm:rounded-xl`) for buttons that appear in toolbars
+- ❌ **Use bare `btn btn-outline` or `btn btn-sm` without a `rounded-*` class** — produces inconsistent rounding
+
 ## DaisyUI Components
 
 ```html
 <!-- Buttons -->
-<button class="btn btn-accent">Primary CTA</button>
-<button class="btn btn-outline">Outline</button>
-<button class="btn btn-ghost btn-square" aria-label="Close">
+<button class="btn btn-accent rounded-lg sm:rounded-xl">Primary CTA</button>
+<button class="btn btn-outline rounded-lg sm:rounded-xl">Outline</button>
+<button class="btn btn-ghost btn-square rounded-lg" aria-label="Close">
   <X size="{24}" aria-hidden="true" />
 </button>
 

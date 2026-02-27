@@ -8,7 +8,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
-import { accountService, transactionService } from '@/services';
+import { accountService, transactionService, workspaceService } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import {
   ACCOUNT_CLASS_LABELS,
@@ -26,10 +26,12 @@ import {
   History,
   Info,
   CalendarClock,
+  UserRoundCog,
 } from '@lucide/astro';
 import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueModal.astro';
 
 const user = Astro.locals.user!;
+const isAdmin = user.role === 'admin';
 const { id } = Astro.params;
 
 if (!id) {
@@ -41,6 +43,9 @@ const account = await accountService.findById(id, user.workspaceId);
 if (!account) {
   return Astro.redirect('/accounts');
 }
+
+// Fetch workspace members for transfer ownership (admin only)
+const workspaceMembers = isAdmin ? await workspaceService.getMembers(user.workspaceId) : [];
 
 // Month navigation
 const url = new URL(Astro.url);
@@ -450,6 +455,89 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
         }
       </div>
     </div>
+
+    {/* Transfer Ownership - Admin only */}
+    {
+      isAdmin && workspaceMembers.length > 1 && (
+        <div
+          class="rounded-card border border-base-300 bg-base-100 p-6 shadow-sm"
+          data-transfer-ownership-section
+        >
+          <div class="flex items-center gap-3 mb-4">
+            <UserRoundCog
+              size={20}
+              class="stroke-current text-base-content/60"
+              aria-hidden="true"
+            />
+            <h3 class="text-sm font-bold uppercase tracking-wider text-base-content/60">
+              Transfer Ownership
+            </h3>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+            <div class="form-control w-full sm:flex-1">
+              <label class="label py-1" for="transfer-owner-select">
+                <span class="text-xs text-base-content/50">
+                  Current owner:{' '}
+                  <strong>
+                    {workspaceMembers.find((m) => m.id === account.created_by_user_id)?.name ||
+                      'Unknown'}
+                  </strong>
+                </span>
+              </label>
+              <select
+                id="transfer-owner-select"
+                class="select select-bordered w-full rounded-xl text-sm"
+                data-transfer-owner-select
+                data-account-id={account.id}
+                data-current-owner={account.created_by_user_id}
+              >
+                {workspaceMembers.map((member) => (
+                  <option value={member.id} selected={member.id === account.created_by_user_id}>
+                    {member.name}
+                    {member.id === account.created_by_user_id ? ' (current)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              class="btn btn-outline btn-sm h-12 rounded-xl px-6 font-bold"
+              data-transfer-owner-btn
+              disabled
+            >
+              Transfer
+            </button>
+          </div>
+
+          {/* Confirmation area (hidden by default) */}
+          <div
+            data-transfer-confirm
+            class="hidden mt-4 p-3 rounded-xl bg-warning/10 border border-warning/20"
+          >
+            <p class="text-sm text-warning font-medium mb-3">
+              Are you sure you want to transfer ownership of this account?
+            </p>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn btn-warning btn-sm rounded-xl font-bold"
+                data-transfer-confirm-btn
+              >
+                Yes, Transfer
+              </button>
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm rounded-xl"
+                data-transfer-cancel-btn
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
   </div>
 
   {/* Update Balance Modal */}
@@ -576,10 +664,78 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
     });
   }
 
+  function initTransferOwnership() {
+    const select = document.querySelector<HTMLSelectElement>('[data-transfer-owner-select]');
+    const transferBtn = document.querySelector<HTMLButtonElement>('[data-transfer-owner-btn]');
+    const confirmArea = document.querySelector<HTMLElement>('[data-transfer-confirm]');
+    const confirmBtn = document.querySelector<HTMLButtonElement>('[data-transfer-confirm-btn]');
+    const cancelBtn = document.querySelector<HTMLButtonElement>('[data-transfer-cancel-btn]');
+
+    if (!select || !transferBtn) return;
+    // Use DOM-based init tracking for view transition compatibility
+    if (select.dataset.initialized) return;
+    select.dataset.initialized = 'true';
+
+    const currentOwner = select.dataset.currentOwner || '';
+    const accountId = select.dataset.accountId || '';
+
+    // Enable/disable transfer button based on selection
+    select.addEventListener('change', () => {
+      transferBtn.disabled = select.value === currentOwner;
+      if (confirmArea) confirmArea.classList.add('hidden');
+    });
+
+    // Show confirmation
+    transferBtn.addEventListener('click', () => {
+      if (confirmArea) confirmArea.classList.remove('hidden');
+    });
+
+    // Cancel confirmation
+    cancelBtn?.addEventListener('click', () => {
+      if (confirmArea) confirmArea.classList.add('hidden');
+    });
+
+    // Confirm transfer
+    confirmBtn?.addEventListener('click', async () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Transferring...';
+
+      const { csrfFetch } = await import('@/lib/csrf-client');
+      const { addToast } = await import('@/lib/stores/toastStore');
+
+      try {
+        const response = await csrfFetch(`/api/accounts/${accountId}/transfer-owner`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ owner_user_id: select.value }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          addToast('Ownership transferred successfully!', 'success');
+          window.location.reload();
+        } else {
+          addToast(
+            result.error?.message || result.error || 'Failed to transfer ownership',
+            'error'
+          );
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Yes, Transfer';
+        }
+      } catch {
+        addToast('Network error. Please try again.', 'error');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Yes, Transfer';
+      }
+    });
+  }
+
   function initDetail() {
     initDetailPeriodSelector();
     initDetailUpdateValueButtons();
     initAccountTabs();
+    initTransferOwnership();
   }
 
   if (document.readyState === 'loading') {

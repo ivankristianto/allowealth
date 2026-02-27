@@ -37,3 +37,13 @@ export type {
   UpdateTransactionInput,
   TransactionFilter,
 } from '@/lib/validation';
+
+// Recurring
+export type {
+  RecurringTemplate,
+  RecurringTemplateOutput,
+  RecurringOccurrence,
+  RecurringOccurrenceOutput,
+  RecurringStats,
+  RecurringCalendarDay,
+} from './recurring';

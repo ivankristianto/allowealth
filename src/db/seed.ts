@@ -21,6 +21,8 @@ import {
   categories,
   accountCategories,
   transactions,
+  recurringTemplates,
+  recurringOccurrences,
   accounts,
   accountHistory,
   accountUpdateReminders,
@@ -35,6 +37,11 @@ import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
 import { deriveAccountClass } from '@/lib/types/account';
+import {
+  calculateDueDate,
+  shouldGenerateOccurrence,
+  generateInstallmentDescription,
+} from '@/lib/utils/recurring-dates';
 
 // ============================================================================
 // PRODUCTION GUARD
@@ -274,6 +281,80 @@ const EXPENSE_CATEGORIES = [
 
 // Income categories
 const INCOME_CATEGORIES = [{ name: 'Other Income', budget: 0 }];
+
+interface RecurringTemplateSeed {
+  name: string;
+  type: 'expense' | 'income';
+  amount: string;
+  dayOfMonth: number;
+  category: string;
+  account: string;
+  startDate: string;
+  endDate?: string;
+  totalOccurrences?: number;
+  isInstallment?: boolean;
+  installmentLabel?: string;
+  startingOccurrenceNumber?: number;
+  description?: string;
+  status?: 'active' | 'paused' | 'completed' | 'cancelled';
+}
+
+const RECURRING_TEMPLATE_DATA: RecurringTemplateSeed[] = [
+  {
+    name: 'Rent',
+    type: 'expense',
+    amount: '5000000',
+    dayOfMonth: 1,
+    category: 'House Expenses',
+    account: 'Transfer',
+    totalOccurrences: 24,
+    startDate: '2026-01-01',
+  },
+  {
+    name: 'Netflix',
+    type: 'expense',
+    amount: '199000',
+    dayOfMonth: 15,
+    category: 'Entertainment',
+    account: 'BCA Credit Card',
+    totalOccurrences: 12,
+    startDate: '2026-01-01',
+  },
+  {
+    name: 'iPhone 17 Pro',
+    type: 'expense',
+    amount: '1500000',
+    dayOfMonth: 20,
+    category: 'Installment Debt',
+    account: 'BCA Credit Card',
+    totalOccurrences: 12,
+    isInstallment: true,
+    installmentLabel: 'Installment',
+    startingOccurrenceNumber: 5,
+    startDate: '2025-10-01',
+  },
+  {
+    name: 'Gym Membership',
+    type: 'expense',
+    amount: '500000',
+    dayOfMonth: 5,
+    category: 'Misc. Cost',
+    account: 'Cash',
+    status: 'paused',
+    startDate: '2026-01-01',
+    totalOccurrences: 12,
+  },
+  {
+    name: 'Monthly Salary',
+    type: 'income',
+    amount: '15000000',
+    dayOfMonth: 25,
+    category: 'Dad Salary',
+    account: 'Transfer',
+    endDate: '2027-12-31',
+    startDate: '2026-01-01',
+  },
+];
 
 // Payment accounts (used for daily transactions - cash, bank accounts, credit cards, e-wallets)
 const PAYMENT_ACCOUNTS = [
@@ -654,6 +735,8 @@ async function clearAllTables() {
     await db.delete(accountSnapshots);
     await db.delete(accountUpdateReminders);
     await db.delete(accountHistory);
+    await db.delete(recurringOccurrences);
+    await db.delete(recurringTemplates);
     await db.delete(transactions);
     await db.delete(budgets);
     await db.delete(accounts);
@@ -1767,6 +1850,194 @@ async function seedMemberTransactions(
   return count;
 }
 
+/**
+ * Seed recurring templates and occurrences with mixed statuses.
+ */
+async function seedRecurringData(
+  workspaceId: string,
+  userId: string,
+  categoryMap: Map<string, string>,
+  accountMap: Map<string, string>
+): Promise<void> {
+  console.log('🔁 Seeding recurring templates and occurrences...');
+
+  const now = new Date();
+  const todayIso = now.toISOString().slice(0, 10);
+  const windowStartIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2, 1))
+    .toISOString()
+    .slice(0, 10);
+  const windowEndIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 0))
+    .toISOString()
+    .slice(0, 10);
+
+  let templateCount = 0;
+  let occurrenceCount = 0;
+  let confirmedCount = 0;
+  let skippedCount = 0;
+
+  for (const seedTemplate of RECURRING_TEMPLATE_DATA) {
+    const categoryId = categoryMap.get(seedTemplate.category);
+    const accountId = accountMap.get(seedTemplate.account);
+
+    if (!categoryId || !accountId) {
+      console.warn(
+        `Skipping recurring template "${seedTemplate.name}" due to missing category/account mapping.`
+      );
+      continue;
+    }
+
+    const templateId = nanoid();
+    const templateStatus = seedTemplate.status || 'active';
+    const startingOccurrence = seedTemplate.startingOccurrenceNumber || 1;
+
+    await db.insert(recurringTemplates).values({
+      id: templateId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
+      name: seedTemplate.name,
+      type: seedTemplate.type,
+      amount: seedTemplate.amount,
+      currency: 'IDR',
+      category_id: categoryId,
+      account_id: accountId,
+      day_of_month: seedTemplate.dayOfMonth,
+      start_date: seedTemplate.startDate,
+      end_date: seedTemplate.endDate || null,
+      total_occurrences: seedTemplate.totalOccurrences || null,
+      is_installment: seedTemplate.isInstallment || false,
+      installment_label: seedTemplate.installmentLabel || null,
+      starting_occurrence_number: startingOccurrence,
+      description: seedTemplate.description || null,
+      status: templateStatus,
+      created_at: now,
+      updated_at: now,
+    });
+
+    templateCount++;
+
+    const generatedOccurrences: Array<{ id: string; dueDate: string; occurrenceNumber: number }> =
+      [];
+
+    for (let offset = 0; offset < 72; offset++) {
+      const occurrenceNumber = startingOccurrence + offset;
+      const dueDate = calculateDueDate(seedTemplate.startDate, seedTemplate.dayOfMonth, offset);
+
+      if (dueDate < windowStartIso) {
+        continue;
+      }
+
+      if (dueDate > windowEndIso) {
+        break;
+      }
+
+      if (
+        !shouldGenerateOccurrence(
+          {
+            total_occurrences: seedTemplate.totalOccurrences || null,
+            end_date: seedTemplate.endDate || null,
+          },
+          occurrenceNumber,
+          dueDate
+        )
+      ) {
+        break;
+      }
+
+      const occurrenceId = nanoid();
+      const dueAt = new Date(`${dueDate}T${String(SEED_TIME_HOUR).padStart(2, '0')}:00:00.000Z`);
+
+      await db.insert(recurringOccurrences).values({
+        id: occurrenceId,
+        template_id: templateId,
+        workspace_id: workspaceId,
+        due_date: dueDate,
+        occurrence_number: occurrenceNumber,
+        status: 'pending',
+        transaction_id: null,
+        confirmed_amount: null,
+        skip_reason: null,
+        confirmed_at: null,
+        created_at: dueAt,
+        updated_at: dueAt,
+      });
+
+      generatedOccurrences.push({ id: occurrenceId, dueDate, occurrenceNumber });
+      occurrenceCount++;
+    }
+
+    if (templateStatus !== 'active') {
+      continue;
+    }
+
+    const pastOccurrences = generatedOccurrences
+      .filter((occurrence) => occurrence.dueDate < todayIso)
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+    const firstPast = pastOccurrences[0];
+    if (firstPast) {
+      const transactionId = nanoid();
+      const transactionDate = new Date(
+        `${firstPast.dueDate}T${String(SEED_TIME_HOUR).padStart(2, '0')}:00:00.000Z`
+      );
+      const description =
+        seedTemplate.isInstallment && seedTemplate.totalOccurrences
+          ? generateInstallmentDescription(
+              seedTemplate.name,
+              seedTemplate.installmentLabel || 'Installment',
+              firstPast.occurrenceNumber,
+              seedTemplate.totalOccurrences
+            )
+          : seedTemplate.description || seedTemplate.name;
+
+      await db.insert(transactions).values({
+        id: transactionId,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        category_id: categoryId,
+        account_id: accountId,
+        type: seedTemplate.type,
+        amount: seedTemplate.amount,
+        currency: 'IDR',
+        description,
+        transaction_date: transactionDate,
+        created_at: transactionDate,
+        updated_at: transactionDate,
+      });
+
+      await db
+        .update(recurringOccurrences)
+        .set({
+          status: 'confirmed',
+          transaction_id: transactionId,
+          confirmed_amount: seedTemplate.amount,
+          confirmed_at: transactionDate,
+          updated_at: transactionDate,
+        })
+        .where(eq(recurringOccurrences.id, firstPast.id));
+
+      confirmedCount++;
+    }
+
+    const secondPast = pastOccurrences[1];
+    if (secondPast) {
+      await db
+        .update(recurringOccurrences)
+        .set({
+          status: 'skipped',
+          skip_reason: 'Seeded example: skipped this month',
+          updated_at: now,
+        })
+        .where(eq(recurringOccurrences.id, secondPast.id));
+
+      skippedCount++;
+    }
+  }
+
+  console.log(
+    `✓ Created ${templateCount} recurring templates, ${occurrenceCount} occurrences (${confirmedCount} confirmed, ${skippedCount} skipped)`
+  );
+}
+
 // ============================================================================
 // BACKFILL FUNCTIONS
 // ============================================================================
@@ -2009,6 +2280,9 @@ async function seed() {
 
     // Seed audit trail for some transactions
     await seedTransactionAuditLogs(workspaceId, userId, memberUserId);
+
+    // Seed recurring templates + generated occurrences (with mixed statuses)
+    await seedRecurringData(workspaceId, userId, categoryMap, accountMap);
 
     // Seed account-related data
     await seedAccountHistory(accountMap);

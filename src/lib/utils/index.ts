@@ -63,6 +63,13 @@ export {
   type DrizzleTransactionResult,
 } from './transaction';
 
+// Recurring transaction utilities
+export {
+  calculateDueDate,
+  shouldGenerateOccurrence,
+  generateInstallmentDescription,
+} from './recurring-dates';
+
 // Decimal utilities
 export {
   decimalMultiply,

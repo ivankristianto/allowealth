@@ -24,7 +24,7 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
@@ -116,6 +116,16 @@ export interface MemberSummaryRow {
   totalExpenses: string;
   netSavings: string;
   transactionCount: number;
+}
+
+export interface RecurringBreakdown {
+  recurringTotal: string;
+  oneTimeTotal: string;
+  recurringByCategory: Array<{
+    category_id: string;
+    category_name: string;
+    amount: string;
+  }>;
 }
 
 /**
@@ -293,6 +303,99 @@ export class ReportService {
       // Return safe defaults on error
       return this.getEmptyReport();
     }
+  }
+
+  async getRecurringBreakdown(
+    workspaceId: string,
+    year: number,
+    month: number,
+    currency: Currency = 'IDR'
+  ): Promise<RecurringBreakdown> {
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new Error('Invalid year');
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new Error('Invalid month');
+    }
+
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0, 23, 59, 59);
+
+    const expenseTransactions = await this.db.query.transactions.findMany({
+      where: and(
+        eq(this.schema.transactions.workspace_id, workspaceId),
+        eq(this.schema.transactions.type, 'expense'),
+        eq(this.schema.transactions.currency, currency),
+        gte(this.schema.transactions.transaction_date, monthStart),
+        lte(this.schema.transactions.transaction_date, monthEnd),
+        sql`${this.schema.transactions.deleted_at} IS NULL`
+      ),
+      with: {
+        category: true,
+      },
+    });
+
+    const transactionIds = expenseTransactions.map((transaction) => transaction.id);
+
+    const recurringLinks =
+      transactionIds.length > 0
+        ? await this.db.query.recurringOccurrences.findMany({
+            where: and(
+              eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+              eq(this.schema.recurringOccurrences.status, 'confirmed'),
+              inArray(this.schema.recurringOccurrences.transaction_id, transactionIds)
+            ),
+          })
+        : [];
+
+    const recurringTransactionIds = new Set<string>();
+    for (const occurrence of recurringLinks) {
+      if (occurrence.transaction_id) {
+        recurringTransactionIds.add(occurrence.transaction_id);
+      }
+    }
+
+    const recurringAmountParts: string[] = [];
+    const oneTimeAmountParts: string[] = [];
+    const recurringByCategory = new Map<string, { category_name: string; amounts: string[] }>();
+
+    for (const transaction of expenseTransactions) {
+      const amount = transaction.amount || '0';
+      const isRecurring = recurringTransactionIds.has(transaction.id);
+
+      if (!isRecurring) {
+        oneTimeAmountParts.push(amount);
+        continue;
+      }
+
+      recurringAmountParts.push(amount);
+
+      const categoryKey = transaction.category_id || 'uncategorized';
+      const entry = recurringByCategory.get(categoryKey) || {
+        category_name: transaction.category?.name || 'Unknown',
+        amounts: [],
+      };
+      entry.amounts.push(amount);
+      recurringByCategory.set(categoryKey, entry);
+    }
+
+    const recurringTotal = decimalSum(recurringAmountParts);
+    const oneTimeTotal = decimalSum(oneTimeAmountParts);
+
+    return {
+      recurringTotal,
+      oneTimeTotal,
+      recurringByCategory: Array.from(recurringByCategory.entries()).map(
+        ([category_id, value]) => ({
+          category_id,
+          category_name: value.category_name,
+          amount: decimalSum(value.amounts),
+        })
+      ),
+    };
   }
 
   /**

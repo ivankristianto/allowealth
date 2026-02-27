@@ -284,7 +284,6 @@ export class UserMetaService {
         DEFAULT_USER_SETTINGS.showIndividualCurrencies
       ),
       phone: metaAll[USER_META_KEYS.PHONE] || DEFAULT_USER_SETTINGS.phone,
-      bio: metaAll[USER_META_KEYS.BIO] || DEFAULT_USER_SETTINGS.bio,
     };
 
     // Cache the result
