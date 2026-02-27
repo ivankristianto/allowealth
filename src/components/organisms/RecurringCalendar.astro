@@ -130,7 +130,7 @@ const statusChipClasses: Record<string, string> = {
                   >
                     {cell.day}
                   </div>
-                  <div class="space-y-1">
+                  <div class="space-y-1 max-h-44 overflow-y-auto">
                     {occurrences.map((occurrence) => {
                       const icon = statusIcon(occurrence.status, occurrence.due_date);
                       const payload = JSON.stringify(occurrence);

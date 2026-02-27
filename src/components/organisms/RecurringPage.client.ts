@@ -117,6 +117,12 @@ async function refreshTemplateList(signal: AbortSignal): Promise<void> {
 
   const html = await fetchHtml(`/api/recurring?${params}`, signal);
   container.innerHTML = html;
+
+  const newTotal = container.querySelector('[data-total]')?.getAttribute('data-total');
+  const badge = document.getElementById('recurring-count-badge');
+  if (badge && newTotal != null) {
+    badge.textContent = newTotal;
+  }
 }
 
 async function refreshPendingList(signal: AbortSignal): Promise<void> {

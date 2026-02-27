@@ -160,7 +160,9 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
     <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-6">
       <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
         All Recurring
-        <span class="ml-1 badge badge-sm badge-ghost font-bold">{templateResult.total}</span>
+        <span id="recurring-count-badge" class="ml-1 badge badge-sm badge-ghost font-bold"
+          >{templateResult.total}</span
+        >
       </h2>
       <div class="flex flex-wrap items-center gap-2 sm:gap-3">
         <div
@@ -274,6 +276,7 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
     id="recurring-cancel-modal"
     title="Cancel recurring transaction"
     description="This removes only future pending occurrences."
+    cancelLabel="Keep"
     confirmLabel="Cancel"
     confirmVariant="error"
     confirmLoadingLabel="Cancelling..."

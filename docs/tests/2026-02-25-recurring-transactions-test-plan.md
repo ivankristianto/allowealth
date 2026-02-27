@@ -538,8 +538,8 @@ Full test coverage for the recurring transactions feature: template CRUD, occurr
 | 28  | CLI Generate        | Idempotent occurrence generation                       | PASS    |
 | 29  | Completion          | Template auto-completes when done                      | PARTIAL |
 | 30  | Day-of-Month        | 31st clamped in short months                           | PARTIAL |
-| 31  | Mobile Layout       | No overflow, touch targets ≥44px                       | PASS    |
-| 32  | Keyboard A11y       | Focus management, tab order, escape                    | PASS    |
+| 31  | Mobile Layout       | No overflow, touch targets ≥44px                       | PARTIAL |
+| 32  | Keyboard A11y       | Focus management, tab order, escape                    | PARTIAL |
 | 33  | URL Persistence     | Bookmarkable, back/forward works                       | PARTIAL |
 | 34  | CSRF                | All POST/PUT/DELETE include token                      | PASS    |
 | 35  | Workspace Isolation | Data scoped to active workspace                        | SKIP    |
@@ -574,3 +574,54 @@ Full test coverage for the recurring transactions feature: template CRUD, occurr
 - **3** — Empty State: Seed data already present, bypasses first-time empty state
 - **11** — Delete: No delete option in template kebab menu UI (Edit/Pause/Resume/Cancel only)
 - **35** — Workspace Isolation: Demo account has single workspace ("Demo Family"); multi-workspace switching not available
+
+---
+
+## Test Run Results — 2026-02-27
+
+**Executed by:** Claude Code browser automation (continued from 2026-02-26)
+**Environment:** `http://recurring-transactions.expenses.local:4320/` | Demo User | Feb 2026
+
+### Totals: 12 PASS · 0 FAIL · 4 PARTIAL · 0 SKIP (sections re-tested this run)
+
+Sections retested: 1, 4, 5.7, 9, 12, 13, 14, 15, 18, 19, 20, 31, 32, 33, 34
+
+### PASS
+
+- **1** — Route protection confirmed via API
+- **4** — Template creation works (BUG: count header stale, see bugs below)
+- **5.7** — Category dropdown filtering now FIXED (was FAIL in 2026-02-26)
+- **9** — Pause/Resume: opacity-60 applied, state-aware kebab, badges correct
+- **12** — Confirm occurrence: modal, validation, card removal, stats update all work
+- **14** — Validation banners: invalid amount and empty amount both rejected inline
+- **15** — Skip: modal with optional reason field and character counter, occurrence removed
+- **18** — View toggle: URL updates to `?view=calendar` correctly
+- **19** — Month navigation: March 2026 loads with correct stats
+- **20** — Calendar desktop: 7-column grid renders (UX bug: cell height unbounded, see below)
+- **32** (partial) — Escape closes modal, focus returns to trigger button
+- **34** — CSRF: `X-CSRF-Token` header confirmed in all POST mutations
+
+### PARTIAL
+
+- **13** — Confirm editable: Amount/date/category/account editable; "Original" amount shown as plain text below input, not strikethrough design (spec gap)
+- **20** — Calendar cell overflow: All E2E templates have `day_of_month=1`, all pile into a single cell; no `+N more` truncation — cell grows unboundedly; real-world UX concern for dense months
+- **31** — Mobile layout: Template cards and drawer are correct; **CRITICAL BUG** — "Recurring" absent from mobile bottom tab bar (only Transactions/Accounts/FAB/Budgets/Reports); pending card Confirm/Skip buttons are 36px (need ≥44px); modal buttons are 56px (adequate)
+- **32** — Keyboard a11y: Tab order is logical (Amount→Date→Category→Account→Cancel→Confirm); **BUG** — focus trap broken: after tabbing through all modal elements, focus escapes to `document.body` while dialog remains open (DaisyUI `<form method="dialog">` backdrop pattern interferes with `showModal()` native focus cycle)
+- **33** — URL persistence: `?view=` and `?month=` params in URL work on reload; **BUG** — period navigator chip displays last arrow-clicked month, does not sync from URL `month` param on direct navigation
+
+### Bugs Identified This Run
+
+| #   | Severity     | Description                                                                                                                                                                    |
+| --- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| B1  | Medium       | **Count header stale after creation** — "ALL RECURRING N" doesn't refresh after template created via drawer; requires page nav to update                                       |
+| B2  | **Critical** | **Mobile bottom nav missing Recurring** — Bottom tab bar: Transactions\|Accounts\|FAB\|Budgets\|Reports; no Recurring entry; feature is undiscoverable on mobile               |
+| B3  | High         | **Confirm/Skip touch targets 36px** — Pending card action buttons are 36px height (WCAG 2.5.5 minimum 44px for mobile)                                                         |
+| B4  | Medium       | **Calendar cell unbounded height** — Multiple same-day occurrences stack without "+N more" truncation; cell grows to full content height                                       |
+| B5  | High         | **Focus trap broken in modals** — `showModal()` used but focus escapes to body after tabbing past last element; keyboard-only users can interact with blurred backdrop content |
+| B6  | Medium       | **Period chip doesn't sync on direct URL nav** — Chip shows last arrow-clicked month instead of URL `month` param on direct navigation                                         |
+| B7  | Low          | **Cancel modal ambiguous buttons** — Both dismiss and confirm buttons labeled "Cancel"; dismiss should say "Keep" or "No, keep it"                                             |
+| B8  | Low          | **Skip modal counter split** — Character count ("0 / 200") and unit label ("characters") appear at disconnected positions below textarea                                       |
+
+### Fixed From Previous Run
+
+- **5.7** — Category dropdown now correctly filters income/expense categories on type toggle (was FAIL 2026-02-26)
