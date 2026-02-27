@@ -59,6 +59,20 @@ Open **Reports** and confirm:
 - No large unknown categories remain
 - Spending trend is visible for your seeded period
 
+## Learn each menu
+
+After onboarding, use these focused guides:
+
+- [Dashboard Guide](/end-users/dashboard/)
+- [Transactions Guide](/end-users/transactions/)
+- [Budgets Guide](/end-users/budgets/)
+- [Accounts Guide](/end-users/accounts/)
+- [Reports Guide](/end-users/reports/)
+- [Forecast Guide](/end-users/forecast/)
+- [Calculators Guide](/end-users/calculators/)
+- [Settings Guide](/end-users/settings/)
+- [Profile and Security Guide](/end-users/profile-security/)
+
 ## Done checklist
 
 - [ ] Profile defaults set

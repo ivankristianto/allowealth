@@ -49,4 +49,13 @@ If your workspace has multiple contributors, run your weekly review before your 
 - Create clearer category naming standards.
 - Batch-edit recurring merchants weekly.
 
+## Related menu guides
+
+- [Navigation Overview](/end-users/navigation-overview/)
+- [Dashboard Guide](/end-users/dashboard/)
+- [Transactions Guide](/end-users/transactions/)
+- [Budgets Guide](/end-users/budgets/)
+- [Accounts Guide](/end-users/accounts/)
+- [Reports Guide](/end-users/reports/)
+
 Need initial setup steps? Go back to [End User Onboarding](/end-users/onboarding/).

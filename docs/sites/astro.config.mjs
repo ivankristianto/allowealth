@@ -20,7 +20,20 @@ export default defineConfig({
         { slug: 'core-concepts' },
         {
           label: 'Guides: End Users',
-          items: [{ slug: 'end-users/onboarding' }, { slug: 'end-users/daily-workflow' }],
+          items: [
+            { slug: 'end-users/onboarding' },
+            { slug: 'end-users/daily-workflow' },
+            { slug: 'end-users/navigation-overview' },
+            { slug: 'end-users/dashboard' },
+            { slug: 'end-users/transactions' },
+            { slug: 'end-users/budgets' },
+            { slug: 'end-users/accounts' },
+            { slug: 'end-users/reports' },
+            { slug: 'end-users/forecast' },
+            { slug: 'end-users/calculators' },
+            { slug: 'end-users/settings' },
+            { slug: 'end-users/profile-security' },
+          ],
         },
         {
           label: 'Guides: Admins',
