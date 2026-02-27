@@ -1,5 +1,5 @@
 ---
-import { AlertCircle, Clock3, CheckCircle2, MinusCircle } from '@lucide/astro';
+import { CircleAlert, CircleCheck, CircleMinus, Clock3 } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import EmptyState from '@/components/atoms/EmptyState.astro';
 import Spinner from '@/components/atoms/Spinner.astro';
@@ -58,7 +58,7 @@ const statusChipClasses: Record<string, string> = {
     <span
       class="inline-flex items-center gap-1.5 rounded-lg border border-error/30 bg-error/5 px-2.5 py-1 font-medium"
     >
-      <AlertCircle size={12} class="text-error" aria-hidden="true" /> Overdue
+      <CircleAlert size={12} class="text-error" aria-hidden="true" /> Overdue
     </span>
     <span
       class="inline-flex items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/5 px-2.5 py-1 font-medium"
@@ -68,12 +68,12 @@ const statusChipClasses: Record<string, string> = {
     <span
       class="inline-flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/5 px-2.5 py-1 font-medium"
     >
-      <CheckCircle2 size={12} class="text-success" aria-hidden="true" /> Confirmed
+      <CircleCheck size={12} class="text-success" aria-hidden="true" /> Confirmed
     </span>
     <span
       class="inline-flex items-center gap-1.5 rounded-lg border border-base-300 bg-base-200/50 px-2.5 py-1 font-medium text-base-content/50"
     >
-      <MinusCircle size={12} aria-hidden="true" /> Skipped
+      <CircleMinus size={12} aria-hidden="true" /> Skipped
     </span>
   </div>
 
@@ -144,7 +144,7 @@ const statusChipClasses: Record<string, string> = {
                         >
                           <div class="flex items-center gap-1 min-w-0">
                             {icon === 'overdue' && (
-                              <AlertCircle
+                              <CircleAlert
                                 size={11}
                                 class="text-error shrink-0"
                                 aria-hidden="true"
@@ -154,14 +154,14 @@ const statusChipClasses: Record<string, string> = {
                               <Clock3 size={11} class="text-warning shrink-0" aria-hidden="true" />
                             )}
                             {icon === 'confirmed' && (
-                              <CheckCircle2
+                              <CircleCheck
                                 size={11}
                                 class="text-success shrink-0"
                                 aria-hidden="true"
                               />
                             )}
                             {icon === 'skipped' && (
-                              <MinusCircle
+                              <CircleMinus
                                 size={11}
                                 class="text-base-content/50 shrink-0"
                                 aria-hidden="true"
@@ -242,7 +242,7 @@ const statusChipClasses: Record<string, string> = {
                         <div class="flex items-center justify-between gap-2">
                           <div class="inline-flex items-center gap-1.5 min-w-0">
                             {icon === 'overdue' && (
-                              <AlertCircle
+                              <CircleAlert
                                 size={14}
                                 class="text-error shrink-0"
                                 aria-hidden="true"
@@ -252,14 +252,14 @@ const statusChipClasses: Record<string, string> = {
                               <Clock3 size={14} class="text-warning shrink-0" aria-hidden="true" />
                             )}
                             {icon === 'confirmed' && (
-                              <CheckCircle2
+                              <CircleCheck
                                 size={14}
                                 class="text-success shrink-0"
                                 aria-hidden="true"
                               />
                             )}
                             {icon === 'skipped' && (
-                              <MinusCircle
+                              <CircleMinus
                                 size={14}
                                 class="text-base-content/50 shrink-0"
                                 aria-hidden="true"

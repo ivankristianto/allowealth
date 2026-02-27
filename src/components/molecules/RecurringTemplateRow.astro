@@ -73,11 +73,16 @@ const installmentProgress =
   </td>
   <td class="py-3.5 px-4 text-sm font-bold">{formatCurrency(template.amount, template.currency)}</td
   >
-  <td class="py-3.5 px-4 text-sm text-base-content/60 font-medium"
-    >{daySuffix(template.day_of_month)}</td
-  >
-  <td class="py-3.5 px-4 text-sm text-base-content/60 font-medium">{template.nextDueDate ?? '—'}</td
-  >
+  <td class="py-3.5 px-4">
+    <span class="text-sm text-base-content/60 font-medium block"
+      >Every {daySuffix(template.day_of_month)}</span
+    >
+    {
+      template.nextDueDate && (
+        <span class="text-xs text-base-content/40 block mt-0.5">Next: {template.nextDueDate}</span>
+      )
+    }
+  </td>
   <td class="py-3.5 px-4">
     <span class={`badge badge-sm font-bold ${statusClass}`}>{template.status}</span>
   </td>

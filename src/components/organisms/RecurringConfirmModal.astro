@@ -1,5 +1,8 @@
 ---
 import Modal from '@/components/molecules/Modal.astro';
+import AmountInput from '@/components/atoms/AmountInput.astro';
+import { CircleCheckBig } from '@lucide/astro';
+import { DEFAULT_CURRENCY, type Currency } from '@/lib/constants/currency';
 
 interface CategoryOption {
   id: string;
@@ -17,65 +20,120 @@ interface AccountOption {
 export interface Props {
   categories: CategoryOption[];
   accounts: AccountOption[];
+  defaultCurrency?: Currency;
 }
 
-const { categories = [], accounts = [] } = Astro.props;
+const { categories = [], accounts = [], defaultCurrency = DEFAULT_CURRENCY } = Astro.props;
 ---
 
-<Modal id="recurring-confirm-modal" size="sm" closable={false} backdropClose={false}>
-  <form id="recurring-confirm-form" class="space-y-4" novalidate>
+<Modal id="recurring-confirm-modal" size="sm" closable={false} backdropClose={true}>
+  <form id="recurring-confirm-form" class="flex flex-col gap-6" novalidate>
     <input type="hidden" name="occurrence_id" />
 
-    <div>
-      <h3 class="text-lg font-bold" data-modal-title>Confirm recurring occurrence</h3>
-      <p class="text-sm text-base-content/60" data-modal-subtitle></p>
+    {/* Header with icon — matches ConfirmationModal pattern */}
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
+        <CircleCheckBig size={24} class="stroke-current" aria-hidden="true" />
+      </div>
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+          Confirm occurrence
+        </h2>
+        <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle></p>
+      </div>
     </div>
 
-    <div role="alert" class="alert alert-error hidden" data-confirm-error></div>
+    {/* Error alert */}
+    <div
+      id="recurring-confirm-modal-error"
+      class="hidden alert alert-error text-sm rounded-2xl"
+      role="alert"
+      aria-live="polite"
+      data-confirm-error
+    >
+    </div>
 
-    <label class="form-control w-full">
-      <span class="label-text text-sm font-medium">Amount</span>
-      <input
-        type="number"
-        step="0.01"
-        min="0"
-        name="amount"
-        class="input input-bordered w-full"
-        required
-      />
-      <p class="text-xs text-base-content/60 hidden" data-original-amount></p>
-    </label>
+    {/* Form fields */}
+    <div class="space-y-4">
+      <label class="form-control gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
+          >Amount</span
+        >
+        <AmountInput
+          id="recurring-confirm-amount"
+          name="amount"
+          currency={defaultCurrency}
+          required
+          placeholder="0"
+          className="input-bordered h-11 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          data-testid="recurring-confirm-amount"
+        />
+        <p class="text-xs text-base-content/60 hidden" data-original-amount></p>
+      </label>
 
-    <label class="form-control w-full">
-      <span class="label-text text-sm font-medium">Date</span>
-      <input type="date" name="transaction_date" class="input input-bordered w-full" required />
-    </label>
+      <label class="form-control gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Payment Date
+        </span>
+        <input
+          type="date"
+          name="transaction_date"
+          class="input input-bordered w-full h-11 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          required
+        />
+      </label>
 
-    <label class="form-control w-full">
-      <span class="label-text text-sm font-medium">Category</span>
-      <select name="category_id" class="select select-bordered w-full" required>
-        <option value="">Select category</option>
-        {
-          categories.map((category) => (
-            <option value={category.id} data-type={category.type}>
-              {category.name}
-            </option>
-          ))
-        }
-      </select>
-    </label>
+      <label class="form-control gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Category
+        </span>
+        <select
+          name="category_id"
+          class="select select-bordered w-full h-11 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          required
+        >
+          <option value="">Select category</option>
+          {
+            categories.map((category) => (
+              <option value={category.id} data-type={category.type}>
+                {category.name}
+              </option>
+            ))
+          }
+        </select>
+      </label>
 
-    <label class="form-control w-full">
-      <span class="label-text text-sm font-medium">Account</span>
-      <select name="account_id" class="select select-bordered w-full" required>
-        <option value="">Select account</option>
-        {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
-      </select>
-    </label>
+      <label class="form-control gap-1.5">
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Account
+        </span>
+        <select
+          name="account_id"
+          class="select select-bordered w-full h-11 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+          required
+        >
+          <option value="">Select account</option>
+          {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
+        </select>
+      </label>
+    </div>
 
-    <div class="flex gap-3 pt-2">
-      <button type="button" class="btn btn-ghost flex-1" data-confirm-cancel> Cancel </button>
-      <button type="submit" class="btn btn-accent flex-1" data-confirm-submit> Confirm </button>
+    {/* Action buttons — matches ConfirmationModal pattern */}
+    <div class="flex gap-4 pt-2">
+      <button
+        type="button"
+        class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        data-confirm-cancel
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn btn-accent flex-1 h-14 rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        data-confirm-submit
+      >
+        Confirm
+      </button>
     </div>
   </form>
 </Modal>

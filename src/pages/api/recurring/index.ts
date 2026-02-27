@@ -13,12 +13,18 @@ import { createRenderHelper } from '@/lib/api/renderResponse';
 import RecurringTemplateListPartial from '@/components/partials/RecurringTemplateListPartial.astro';
 
 type StatusFilter = 'active' | 'paused' | 'completed' | 'cancelled' | 'all';
+type TypeFilter = 'expense' | 'income' | undefined;
 
 function parseStatusFilter(value: string | null): StatusFilter {
   if (value === 'active' || value === 'paused' || value === 'completed' || value === 'cancelled') {
     return value;
   }
   return 'all';
+}
+
+function parseTypeFilter(value: string | null): TypeFilter {
+  if (value === 'expense' || value === 'income') return value;
+  return undefined;
 }
 
 function parsePositiveInt(value: string | null, fallback: number): number {
@@ -35,13 +41,17 @@ export const GET: APIRoute = async (context) => {
     const perf = context.locals.perf;
 
     const status = parseStatusFilter(context.url.searchParams.get('status'));
+    const type = parseTypeFilter(context.url.searchParams.get('type'));
+    const search = context.url.searchParams.get('search')?.trim() || undefined;
     const page = parsePositiveInt(context.url.searchParams.get('page'), 1);
-    const limit = parsePositiveInt(context.url.searchParams.get('limit'), 100);
+    const limit = parsePositiveInt(context.url.searchParams.get('limit'), 20);
 
     const result = await recurringTemplateService.findAll(
       auth.workspaceId,
       {
         status,
+        type,
+        search,
         page,
         limit,
       },
@@ -53,6 +63,11 @@ export const GET: APIRoute = async (context) => {
       const html = await container.renderToString(RecurringTemplateListPartial, {
         props: {
           templates: result.templates,
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          type: type ?? 'all',
+          search: search ?? '',
         },
       });
       return render.html(html);

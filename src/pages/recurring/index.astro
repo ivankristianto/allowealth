@@ -2,8 +2,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
-import RecurringActionsBar from '@/components/molecules/RecurringActionsBar.astro';
-import RecurringViewControls from '@/components/molecules/RecurringViewControls.astro';
+import { CalendarDays, Info, List, Plus } from '@lucide/astro';
 import RecurringPendingList from '@/components/organisms/RecurringPendingList.astro';
 import RecurringTemplateList from '@/components/organisms/RecurringTemplateList.astro';
 import RecurringCalendar from '@/components/organisms/RecurringCalendar.astro';
@@ -11,6 +10,7 @@ import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.
 import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
+import { DEFAULT_CURRENCY } from '@/lib/constants/currency';
 import { buildRecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import {
   recurringTemplateService,
@@ -108,7 +108,7 @@ function parseRecurringTemplatePrefill(inputUrl: URL): RecurringTemplatePrefill 
 const perf = Astro.locals.perf;
 
 const [templateResult, pendingResult, categories, accounts] = await Promise.all([
-  recurringTemplateService.findAll(user.workspaceId, { status: 'all', page: 1, limit: 100 }, perf),
+  recurringTemplateService.findAll(user.workspaceId, { status: 'all', page: 1, limit: 20 }, perf),
   recurringOccurrenceService.findPending(user.workspaceId, {
     month: safeMonth,
     status: 'pending',
@@ -138,7 +138,7 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
 
   <div
     id="recurring-page"
-    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8 pb-10"
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-5 sm:space-y-7 pb-10"
     data-initial-view={view}
     data-initial-month={safeMonth}
     data-convert-prefill={convertPrefill ? JSON.stringify(convertPrefill) : undefined}
@@ -147,30 +147,104 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
       <RecurringStatsPartial summary={summary} />
     </div>
 
-    <RecurringActionsBar />
+    {/* Pending list — always visible */}
+    <div id="recurring-pending-list-container">
+      <RecurringPendingList
+        occurrences={pendingResult.occurrences}
+        hasTemplates={templateResult.total > 0}
+        monthLabel={selectedMonthLabel}
+      />
+    </div>
 
-    <RecurringViewControls view={view} />
+    {/* Section header: title + view toggle + new button */}
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-6">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+        All Recurring
+        <span class="ml-1 badge badge-sm badge-ghost font-bold">{templateResult.total}</span>
+      </h2>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div
+          class="flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1.5"
+          role="group"
+          aria-label="View toggle"
+        >
+          <span class="hidden sm:inline text-xs font-semibold text-base-content/60 px-2">View</span>
+          <button
+            type="button"
+            class:list={[
+              'btn btn-sm btn-ghost h-9 min-h-0 gap-1.5 px-3 rounded-lg sm:rounded-xl',
+              view === 'list' && 'btn-active',
+            ]}
+            data-recurring-view="list"
+            aria-label="List view"
+            aria-pressed={view === 'list'}
+          >
+            <List size={16} class="stroke-current" aria-hidden="true" />
+            <span class="text-xs">List</span>
+          </button>
+          <button
+            type="button"
+            class:list={[
+              'btn btn-sm btn-ghost h-9 min-h-0 gap-1.5 px-3 rounded-lg sm:rounded-xl',
+              view === 'calendar' && 'btn-active',
+            ]}
+            data-recurring-view="calendar"
+            aria-label="Calendar view"
+            aria-pressed={view === 'calendar'}
+          >
+            <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+            <span class="text-xs">Calendar</span>
+          </button>
+          <div class="dropdown dropdown-end">
+            <button
+              type="button"
+              tabindex={0}
+              class="btn btn-ghost btn-xs btn-square rounded-lg text-base-content/60"
+              aria-label="View mode information"
+            >
+              <Info size={14} class="stroke-current" aria-hidden="true" />
+            </button>
+            <div
+              tabindex={0}
+              class="dropdown-content z-40 w-60 rounded-xl border border-base-300 bg-base-100 p-3 shadow-lg text-xs text-base-content/70"
+            >
+              <p class="font-semibold text-base-content">View Modes</p>
+              <p class="mt-1">
+                List view is best for quick actions. Calendar view helps scan dates.
+              </p>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn btn-accent btn-sm gap-1.5 rounded-lg sm:rounded-xl font-semibold"
+          data-open-recurring-template
+          aria-label="Create new recurring transaction"
+        >
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
+          <span class="text-xs sm:text-sm">New Recurring</span>
+        </button>
+      </div>
+    </div>
 
+    {/* Template list — visible in list view */}
     <div
       id="recurring-list-view"
       role="region"
       aria-hidden={view !== 'list'}
       class:list={[view !== 'list' && 'hidden']}
     >
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        <div id="recurring-pending-list-container" class="xl:col-span-4">
-          <RecurringPendingList
-            occurrences={pendingResult.occurrences}
-            hasTemplates={templateResult.total > 0}
-            monthLabel={selectedMonthLabel}
-          />
-        </div>
-        <div id="recurring-template-list-container" class="xl:col-span-8">
-          <RecurringTemplateList templates={templateResult.templates} />
-        </div>
+      <div id="recurring-template-list-container">
+        <RecurringTemplateList
+          templates={templateResult.templates}
+          total={templateResult.total}
+          page={1}
+          limit={20}
+        />
       </div>
     </div>
 
+    {/* Calendar view — visible in calendar view */}
     <div
       id="recurring-calendar-view"
       role="region"
@@ -189,7 +263,11 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
   </div>
 
   <RecurringTemplateForm categories={categories} accounts={accounts} currencies={currencies} />
-  <RecurringConfirmModal categories={categories} accounts={accounts} />
+  <RecurringConfirmModal
+    categories={categories}
+    accounts={accounts}
+    defaultCurrency={currencies[0] ?? DEFAULT_CURRENCY}
+  />
   <RecurringSkipModal />
 
   <ConfirmationModal
