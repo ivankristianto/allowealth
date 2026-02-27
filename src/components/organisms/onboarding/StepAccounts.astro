@@ -1,0 +1,264 @@
+---
+/**
+ * StepAccounts — Onboarding Step 2
+ *
+ * Account creation for grounding budgets in reality.
+ * Shows existing accounts and allows adding new ones.
+ */
+
+import AmountInput from '@/components/atoms/AmountInput.astro';
+import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
+import type { Currency } from '@/lib/constants/currency';
+import { CURRENCY_META } from '@/lib/constants/currency';
+import { formatAmountForDisplay } from '@/lib/formatting/amount-input';
+
+export interface SimpleAccount {
+  id: string;
+  name: string;
+  type: AccountType;
+  balance: string;
+  currency: Currency;
+}
+
+export interface Props {
+  accounts: SimpleAccount[];
+  currencies: Currency[];
+}
+
+const { accounts, currencies } = Astro.props;
+const primaryCurrency = currencies[0];
+
+// Account types suitable for onboarding (most common ones)
+const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet', 'credit_card'];
+---
+
+<div class="space-y-6">
+  <p class="text-base-content/70">
+    Add the accounts you use daily. Start with 1 or 2 that matter most — you can always add more
+    later.
+  </p>
+
+  {/* Existing accounts list */}
+  {
+    accounts.length > 0 && (
+      <div class="space-y-2" id="onboarding-accounts-list">
+        {accounts.map((account) => (
+          <div class="flex items-center justify-between rounded-lg bg-base-200 px-4 py-3">
+            <div>
+              <div class="font-medium text-base-content">{account.name}</div>
+              <div class="text-xs text-base-content/50">{ACCOUNT_TYPE_LABELS[account.type]}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-base-content">
+                {CURRENCY_META[account.currency].symbol}{' '}
+                {formatAmountForDisplay(account.balance, account.currency)}
+              </div>
+              <div class="text-xs text-base-content/50">{account.currency}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {/* Add account form */}
+  <form id="onboarding-account-form" class="space-y-3 rounded-lg border border-base-300 p-4">
+    <h3 class="text-sm font-semibold text-base-content/70">Add an account</h3>
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* Account name */}
+      <div class="form-control">
+        <label class="label" for="account-name">
+          <span class="label-text">Account name</span>
+        </label>
+        <input
+          type="text"
+          id="account-name"
+          name="name"
+          class="input input-bordered w-full"
+          placeholder="e.g., Main Checking"
+          required
+        />
+      </div>
+
+      {/* Account type */}
+      <div class="form-control">
+        <label class="label" for="account-type">
+          <span class="label-text">Type</span>
+        </label>
+        <select id="account-type" name="type" class="select select-bordered w-full" required>
+          {
+            onboardingAccountTypes.map((type) => (
+              <option value={type}>{ACCOUNT_TYPE_LABELS[type]}</option>
+            ))
+          }
+        </select>
+      </div>
+    </div>
+
+    {/* Balance + Currency */}
+    <div class="form-control">
+      <label class="label" for="account-balance">
+        <span class="label-text">Current balance</span>
+      </label>
+      <div class="join w-full">
+        {
+          currencies.length > 1 ? (
+            <select
+              id="account-currency"
+              name="currency"
+              class="select select-bordered join-item w-24"
+            >
+              {currencies.map((c) => (
+                <option value={c} selected={c === primaryCurrency}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span class="btn btn-disabled join-item w-24">{primaryCurrency}</span>
+          )
+        }
+        <AmountInput
+          id="account-balance"
+          name="balance"
+          currency={primaryCurrency}
+          required={true}
+          placeholder="0"
+          className="join-item"
+        />
+      </div>
+      {currencies.length === 1 && <input type="hidden" name="currency" value={primaryCurrency} />}
+    </div>
+
+    <div id="account-error" class="text-error text-sm hidden" role="alert"></div>
+
+    <button type="submit" class="btn btn-outline btn-sm w-full"> + Add account </button>
+  </form>
+
+  <p class="text-xs text-base-content/50">
+    Each account starts with your current balance so your budget reflects reality from day one.
+  </p>
+
+  {/* Navigation */}
+  <div class="flex justify-between pt-4">
+    <a href="/onboarding?reset=currency" class="btn btn-ghost">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+      >
+      Back
+    </a>
+    <button
+      type="button"
+      id="onboarding-accounts-continue"
+      class:list={['btn btn-primary', accounts.length === 0 && 'btn-disabled']}
+      disabled={accounts.length === 0}
+    >
+      Continue
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg
+      >
+    </button>
+  </div>
+</div>
+
+<script>
+  import { csrfFetch } from '@/lib/csrf-client';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+
+  function initStepAccounts() {
+    const form = document.getElementById('onboarding-account-form') as HTMLFormElement | null;
+    const continueBtn = document.getElementById('onboarding-accounts-continue');
+    const errorDiv = document.getElementById('account-error');
+
+    if (!form) return;
+
+    const balanceInput = document.getElementById('account-balance') as HTMLInputElement | null;
+    const currencySelect = document.getElementById('account-currency') as HTMLSelectElement | null;
+
+    if (balanceInput) {
+      const initialCurrency = (currencySelect?.value ??
+        balanceInput.dataset.amountCurrency ??
+        'IDR') as import('@/lib/constants/currency').Currency;
+      const formatter = attachAmountFormatter(balanceInput, initialCurrency);
+
+      // Keep formatter in sync when user changes currency
+      currencySelect?.addEventListener('change', () => {
+        formatter.updateCurrency(
+          currencySelect.value as import('@/lib/constants/currency').Currency
+        );
+      });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+      }
+
+      const formData = new FormData(form);
+      const name = (formData.get('name') as string).trim();
+      const type = formData.get('type') as string;
+      const currency = formData.get('currency') as string;
+      const rawBalance = formData.get('balance') as string;
+      const balance = stripAmountFormatting(rawBalance);
+
+      if (!name) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Account name is required';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        const res = await csrfFetch('/api/accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, type, balance: balance || '0', currency }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error?.message || 'Failed to create account');
+        }
+
+        // Reload to show new account in list (stay on step 2)
+        window.location.href = '/onboarding?reset=accounts';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
+          errorDiv.classList.remove('hidden');
+        }
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+
+    // Continue button navigates to next step
+    continueBtn?.addEventListener('click', () => {
+      window.location.href = '/onboarding';
+    });
+  }
+
+  document.addEventListener('astro:page-load', initStepAccounts);
+</script>

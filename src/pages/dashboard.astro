@@ -27,7 +27,6 @@ import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecurringBillsWidget from '@/components/organisms/RecurringBillsWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
-import OnboardingChecklist from '@/components/organisms/OnboardingChecklist.astro';
 import MfaEnableBanner from '@/components/molecules/MfaEnableBanner.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
@@ -77,7 +76,12 @@ try {
     onboardingStatus.categories &&
     onboardingStatus.budgets &&
     onboardingStatus.accounts &&
-    onboardingStatus.transactions;
+    onboardingStatus.transactions &&
+    onboardingStatus.income;
+
+  if (!isOnboardingComplete) {
+    return Astro.redirect('/onboarding', 302);
+  }
 
   // Only fetch dashboard data if currency is set
   if (primaryCurrency) {
@@ -235,9 +239,6 @@ const spendingCategories =
         />
       )
     }
-
-    <!-- Onboarding Checklist (shown when setup is incomplete) -->
-    {onboardingStatus && !isOnboardingComplete && <OnboardingChecklist status={onboardingStatus} />}
 
     {/* MFA Encouragement Banner (shown when MFA not enabled and onboarding is complete) */}
     {isOnboardingComplete && !mfaEnabled && <MfaEnableBanner />}

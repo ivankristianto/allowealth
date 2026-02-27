@@ -1,0 +1,207 @@
+---
+/**
+ * StepAllocate — Onboarding Step 4
+ *
+ * Budget allocation with real-time progress bar.
+ * Pre-fills smart defaults based on income and category percentages.
+ */
+
+import AmountInput from '@/components/atoms/AmountInput.astro';
+import type { Currency } from '@/lib/constants/currency';
+import { CURRENCY_META } from '@/lib/constants/currency';
+import { DEFAULT_EXPENSE_CATEGORIES } from '@/lib/constants/default-categories';
+
+export interface CategoryForAllocation {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export interface Props {
+  categories: CategoryForAllocation[];
+  income: Record<string, string>;
+  currencies: Currency[];
+}
+
+const { categories, income, currencies } = Astro.props;
+const primaryCurrency = currencies[0];
+const totalIncome = parseFloat(income[primaryCurrency] || '0');
+
+// Build default amounts from category percentages
+const defaultAmounts = new Map<string, string>();
+for (const cat of categories) {
+  const defaultCat = DEFAULT_EXPENSE_CATEGORIES.find((d) => d.name === cat.name);
+  if (defaultCat && totalIncome > 0) {
+    const amount = Math.round((totalIncome * defaultCat.budgetPercent) / 100);
+    defaultAmounts.set(cat.id, amount.toString());
+  }
+}
+---
+
+<div class="space-y-6" data-onboarding-allocate data-allocation-total={totalIncome.toString()}>
+  <p class="text-base-content/70">
+    Every dollar gets a job. Divide your income among your spending categories. Adjust the defaults
+    to match your real spending patterns.
+  </p>
+
+  {/* Allocation progress bar */}
+  <div class="rounded-lg bg-base-200 p-4">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-base-content/60">
+        Allocated: <span data-allocation-allocated class="text-base-content">0</span>
+      </span>
+      <span class="text-sm font-medium text-base-content/60">
+        Remaining: <span data-allocation-remaining class="text-base-content">
+          {totalIncome.toLocaleString()}
+        </span>
+      </span>
+    </div>
+    <div class="w-full bg-base-300 rounded-full h-3">
+      <div
+        data-allocation-bar
+        class="bg-primary rounded-full h-3 transition-all duration-300"
+        style="width: 0%"
+      >
+      </div>
+    </div>
+    <div class="text-center mt-1 text-xs text-base-content/50">
+      Total income: {CURRENCY_META[primaryCurrency].symbol}{' '}
+      {totalIncome.toLocaleString()}
+    </div>
+  </div>
+
+  {/* Category budget inputs */}
+  <form id="onboarding-allocate-form" class="space-y-3">
+    {
+      categories.map((cat) => (
+        <div class="flex items-center gap-3 rounded-lg border border-base-300 px-4 py-3">
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-sm text-base-content truncate">{cat.name}</div>
+          </div>
+          <div class="w-36 shrink-0">
+            <AmountInput
+              id={`budget-${cat.id}`}
+              name={`budget_${cat.id}`}
+              currency={primaryCurrency}
+              value={defaultAmounts.get(cat.id) || ''}
+              placeholder="0"
+              className="input-sm"
+              data-testid={`budget-input-${cat.id}`}
+            />
+          </div>
+        </div>
+      ))
+    }
+
+    <input type="hidden" name="currency" value={primaryCurrency} />
+
+    <div id="allocate-error" class="text-error text-sm hidden" role="alert"></div>
+
+    {/* Navigation */}
+    <div class="flex justify-between pt-4">
+      <a href="/onboarding?reset=income" class="btn btn-ghost">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+        >
+        Back
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Continue
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg
+        >
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  import './StepAllocate.client';
+  import { csrfFetch } from '@/lib/csrf-client';
+  import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+
+  function initStepAllocateForm() {
+    const form = document.getElementById('onboarding-allocate-form') as HTMLFormElement | null;
+    const errorDiv = document.getElementById('allocate-error');
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+      }
+
+      const formData = new FormData(form);
+      const currency = formData.get('currency') as string;
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
+      const budgets: Array<{ categoryId: string; amount: string; currency: string }> = [];
+
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith('budget_')) {
+          const categoryId = key.replace('budget_', '');
+          const amount = stripAmountFormatting(value as string);
+          if (amount && parseFloat(amount) > 0) {
+            budgets.push({ categoryId, amount, currency });
+          }
+        }
+      }
+
+      if (budgets.length === 0) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Please allocate at least one category';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        const res = await csrfFetch('/api/onboarding/budgets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ budgets, month, year }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to save budgets');
+        }
+
+        window.location.href = '/onboarding';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+  }
+
+  document.addEventListener('astro:page-load', initStepAllocateForm);
+</script>

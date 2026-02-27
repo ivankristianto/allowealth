@@ -1,0 +1,36 @@
+---
+/**
+ * OnboardingProgress Component
+ *
+ * Progress indicator for the onboarding wizard.
+ * Shows current step number, title, and visual progress bar.
+ */
+
+export interface Props {
+  currentStep: number;
+  totalSteps: number;
+  stepTitle: string;
+}
+
+const { currentStep, totalSteps, stepTitle } = Astro.props;
+const progressPercent = (currentStep / totalSteps) * 100;
+---
+
+<div class="mb-8">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-sm font-medium text-base-content/60">
+      Step {currentStep} of {totalSteps}
+    </span>
+    <span class="text-sm font-medium text-base-content/60">
+      {Math.round(progressPercent)}%
+    </span>
+  </div>
+  <div class="w-full bg-base-200 rounded-full h-2">
+    <div
+      class="bg-primary rounded-full h-2 transition-all duration-500"
+      style={`width: ${progressPercent}%`}
+    >
+    </div>
+  </div>
+  <h1 class="text-2xl font-bold text-base-content mt-6">{stepTitle}</h1>
+</div>

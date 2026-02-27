@@ -249,4 +249,62 @@ export class CategoryService {
 
     return !!result;
   }
+
+  /**
+   * Seed default expense categories for onboarding.
+   * Idempotent — skips if any expense categories already exist.
+   * Returns the created category IDs mapped by name.
+   */
+  async seedDefaultExpenseCategories(
+    workspaceId: string,
+    userId: string
+  ): Promise<Map<string, string>> {
+    const { DEFAULT_EXPENSE_CATEGORIES } = await import('@/lib/constants/default-categories');
+
+    // Idempotency: skip if any expense categories exist
+    const existing = await this.db.query.categories.findFirst({
+      where: and(
+        eq(this.schema.categories.workspace_id, workspaceId),
+        eq(this.schema.categories.type, 'expense'),
+        eq(this.schema.categories.is_active, true)
+      ),
+      columns: { id: true },
+    });
+
+    if (existing) {
+      // Return existing categories mapped by name
+      const all = await this.findAll(workspaceId, { type: 'expense' });
+      const map = new Map<string, string>();
+      for (const cat of all) {
+        map.set(cat.name, cat.id);
+      }
+      return map;
+    }
+
+    const now = new Date();
+    const categoryMap = new Map<string, string>();
+
+    for (const cat of DEFAULT_EXPENSE_CATEGORIES) {
+      const id = nanoid();
+      await this.db.insert(this.schema.categories).values({
+        id,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        name: cat.name,
+        type: 'expense',
+        icon: cat.icon,
+        color: cat.color,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+      categoryMap.set(cat.name, id);
+    }
+
+    // Invalidate cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+
+    return categoryMap;
+  }
 }

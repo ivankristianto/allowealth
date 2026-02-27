@@ -585,26 +585,6 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
     });
   }
 
-  function openOnboardingAccountModal() {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('onboarding') !== 'add-account') return;
-
-    const modal = document.getElementById('account-form-modal') as HTMLDialogElement | null;
-    if (modal?.open) return;
-
-    const defaultCategoryId =
-      document
-        .querySelector<HTMLElement>('[data-add-first-account-btn],[data-add-account-btn]')
-        ?.getAttribute('data-default-category-id') || '';
-
-    // Delay to ensure modal listeners are attached before dispatching.
-    requestAnimationFrame(() => openAccountForm(defaultCategoryId));
-
-    url.searchParams.delete('onboarding');
-    const query = url.searchParams.toString();
-    window.history.replaceState({}, '', `${url.pathname}${query ? `?${query}` : ''}`);
-  }
-
   function cleanupFirstAccountButton() {
     document.querySelectorAll<HTMLElement>('[data-add-first-account-btn]').forEach((button) => {
       const handler = firstAccountButtonHandlers.get(button);
@@ -657,7 +637,6 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
     initInlineHistory();
     initAccountSearch();
     initFirstAccountButton();
-    openOnboardingAccountModal();
     initAccountPeriodSelector();
     initBulkAddAccounts();
   }

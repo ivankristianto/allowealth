@@ -15,6 +15,7 @@ export const WORKSPACE_META_KEYS = {
   SECONDARY_CURRENCY: 'secondary_currency',
   WEEK_START: 'week_start',
   COMPACT_NUMBERS: 'compact_numbers',
+  MONTHLY_INCOME: 'monthly_income',
 } as const;
 
 /**
@@ -30,6 +31,7 @@ export const WORKSPACE_META_DEFAULTS: Record<WorkspaceMetaKey, string> = {
   [WORKSPACE_META_KEYS.SECONDARY_CURRENCY]: '',
   [WORKSPACE_META_KEYS.WEEK_START]: 'monday',
   [WORKSPACE_META_KEYS.COMPACT_NUMBERS]: 'true',
+  [WORKSPACE_META_KEYS.MONTHLY_INCOME]: '',
 };
 
 /**
@@ -58,6 +60,7 @@ export interface WorkspaceSettings {
   secondaryCurrency: Currency | '';
   weekStart: WeekStart;
   compactNumbers: boolean;
+  monthlyIncome: string;
 }
 
 /**
@@ -68,4 +71,5 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   secondaryCurrency: '',
   weekStart: 'monday',
   compactNumbers: true,
+  monthlyIncome: '',
 };
