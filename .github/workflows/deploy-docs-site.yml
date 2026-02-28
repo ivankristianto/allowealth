@@ -1,0 +1,38 @@
+name: Deploy Docs Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/sites/**'
+      - '.github/workflows/deploy-docs-site.yml'
+
+jobs:
+  deploy-docs:
+    name: Deploy docs.allowealth.io
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install docs dependencies
+        run: bun install --cwd docs/sites
+
+      - name: Build docs site
+        run: bun run docs:build
+
+      - name: Deploy docs to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config docs/sites/wrangler.toml

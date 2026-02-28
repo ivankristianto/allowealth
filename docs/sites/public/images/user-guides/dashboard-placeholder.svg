@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Dashboard Screenshot Placeholder</title>
+  <desc id="desc">Replace this placeholder with an actual Dashboard screenshot.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1f5f9" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)" />
+  <rect x="140" y="140" width="1320" height="620" rx="28" fill="#ffffff" stroke="#94a3b8" stroke-width="4" />
+  <text x="800" y="380" text-anchor="middle" fill="#0f172a" font-family="ui-sans-serif, system-ui, -apple-system" font-size="56" font-weight="700">Dashboard</text>
+  <text x="800" y="450" text-anchor="middle" fill="#334155" font-family="ui-sans-serif, system-ui, -apple-system" font-size="34">Screenshot Placeholder</text>
+  <text x="800" y="520" text-anchor="middle" fill="#475569" font-family="ui-sans-serif, system-ui, -apple-system" font-size="28">Replace this image with your real product screenshot.</text>
+</svg>
