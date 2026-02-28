@@ -127,7 +127,9 @@ test.describe('Email Verification', () => {
       await page.fill('[data-testid="email-input"]', email);
       await page.fill('[data-testid="password-input"]', password);
       await page.click('[data-testid="login-btn"]');
-      await page.waitForURL('**/dashboard', { timeout: 15000 });
+      await expect
+        .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+        .toMatch(/^\/(dashboard|onboarding)$/);
     });
 
     test('login attempt with unverified user shows verification error', async ({

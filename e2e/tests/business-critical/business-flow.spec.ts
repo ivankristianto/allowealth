@@ -48,8 +48,19 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
     if (accounts.length === 0) {
       throw new Error('No accounts found. Check database seed.');
     }
-    accountId = accounts[0].id;
-    accountName = accounts[0].name;
+    const preferredAccount =
+      accounts.find(
+        (account) => account.currency === 'IDR' && account.account_class === 'liquid'
+      ) ||
+      accounts.find(
+        (account) =>
+          account.currency === 'IDR' &&
+          (account.account_class === 'liquid' || account.type === 'credit_card')
+      ) ||
+      accounts.find((account) => account.account_class === 'liquid') ||
+      accounts[0];
+    accountId = preferredAccount.id;
+    accountName = preferredAccount.name;
 
     // Generate unique description for this test run
     transactionDescription = `E2E Expense Test ${generateTestId()}`;

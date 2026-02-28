@@ -294,6 +294,16 @@ describe('month key utilities', () => {
       expect(result!.end.getDate()).toBe(31); // Last day of January
     });
 
+    test('sets end date to end of day for inclusive range filters', () => {
+      const result = parseMonthKey('02-2026');
+      expect(result).not.toBeNull();
+      expect(result!.end.getDate()).toBe(28);
+      expect(result!.end.getHours()).toBe(23);
+      expect(result!.end.getMinutes()).toBe(59);
+      expect(result!.end.getSeconds()).toBe(59);
+      expect(result!.end.getMilliseconds()).toBe(999);
+    });
+
     test('parses December correctly', () => {
       const result = parseMonthKey('12-2025');
       expect(result).not.toBeNull();

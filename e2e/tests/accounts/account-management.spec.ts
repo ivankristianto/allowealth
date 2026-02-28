@@ -380,7 +380,7 @@ test.describe('Account Management', () => {
 test.describe('Account Management - Fresh Workspace', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('empty state add button opens account modal for new workspace users', async ({
+  test('fresh workspace shows account setup entry via accounts page or onboarding', async ({
     page,
     request,
   }) => {
@@ -402,15 +402,26 @@ test.describe('Account Management - Fresh Workspace', () => {
     await page.fill('[data-testid="email-input"]', email);
     await page.fill('[data-testid="password-input"]', password);
     await page.click('[data-testid="login-btn"]');
-    await page.waitForURL('**/dashboard');
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+      .toMatch(/^\/(dashboard|onboarding)$/);
 
-    await page.goto('/accounts');
+    await page.goto('/accounts', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => new URL(page.url()).pathname).toMatch(/^\/(accounts|onboarding)$/);
 
-    const addFirstAccountButton = page.locator('button[data-add-first-account-btn]');
-    await expect(addFirstAccountButton).toBeVisible();
+    const currentPath = new URL(page.url()).pathname;
 
-    await addFirstAccountButton.click();
+    if (currentPath === '/accounts') {
+      const addFirstAccountButton = page.locator('button[data-add-first-account-btn]');
+      await expect(addFirstAccountButton).toBeVisible();
 
-    await expect(page.locator('dialog#account-form-modal[open]')).toBeVisible();
+      await addFirstAccountButton.click();
+      await expect(page.locator('dialog#account-form-modal[open]')).toBeVisible();
+      return;
+    }
+
+    // Onboarding path: user should be guided through setup flow.
+    await expect(page.getByRole('heading', { name: 'What currency do you use?' })).toBeVisible();
+    await expect(page.locator('#onboarding-currency-form button[type="submit"]')).toBeVisible();
   });
 });

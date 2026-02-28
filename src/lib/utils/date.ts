@@ -281,7 +281,8 @@ export function parseMonthKey(monthKey: string): { start: Date; end: Date } | nu
   if (month < 0 || month > 11 || isNaN(year)) return null;
 
   const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0); // Last day of month
+  // Use end-of-day so month filters include transactions from the final day.
+  const end = new Date(year, month + 1, 0, 23, 59, 59, 999); // Last day of month (inclusive)
 
   return { start, end };
 }

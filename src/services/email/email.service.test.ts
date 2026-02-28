@@ -50,6 +50,7 @@ describe('EmailService', () => {
       setTestEnv({
         EMAIL_MODE: 'real',
         EMAIL_PROVIDER: 'resend',
+        EMAIL_API_KEY: '',
         EMAIL_SENDER_ADDRESS: 'test@example.com',
       });
 
@@ -62,6 +63,7 @@ describe('EmailService', () => {
         EMAIL_MODE: 'real',
         EMAIL_PROVIDER: 'resend',
         EMAIL_API_KEY: 're_test_key',
+        EMAIL_SENDER_ADDRESS: '',
       });
 
       const service = new EmailService();

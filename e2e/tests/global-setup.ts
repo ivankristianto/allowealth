@@ -85,7 +85,9 @@ setup('authenticate', async ({ page }) => {
 
   // Wait for either successful navigation to dashboard OR error message
   try {
-    await page.waitForURL('**/dashboard', { timeout: 15000 });
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+      .toMatch(/^\/(dashboard|onboarding)$/);
   } catch {
     // Check if there's an error message (use specific selector to avoid matching toast announcer)
     const errorAlert = page

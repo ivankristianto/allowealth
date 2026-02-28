@@ -359,9 +359,7 @@ export async function getCategoriesViaAPI(
  * Get all accounts via API.
  * @param request - Playwright API request context
  */
-export async function getAccountsViaAPI(
-  request: APIRequestContext
-): Promise<Array<{ id: string; name: string; balance: number }>> {
+export async function getAccountsViaAPI(request: APIRequestContext): Promise<TestAccount[]> {
   const response = await request.get(`${E2E_BASE_URL}/api/accounts`);
 
   if (!response.ok()) {
@@ -370,7 +368,14 @@ export async function getAccountsViaAPI(
 
   // API returns { success: true, data: [...] }, extract the data
   const result = await response.json();
-  return result.data;
+  return (result.data as Array<Record<string, unknown>>).map((account) => ({
+    id: String(account.id),
+    name: String(account.name),
+    type: String(account.type || ''),
+    account_class: String(account.account_class || ''),
+    currency: String(account.currency || 'IDR'),
+    balance: Number(account.balance || 0),
+  }));
 }
 
 /**
@@ -410,6 +415,8 @@ export interface TestAccount {
   id: string;
   name: string;
   type: string;
+  account_class: string;
+  currency: string;
   balance: number;
 }
 
@@ -432,10 +439,25 @@ export async function getSeededTestData(request: APIRequestContext): Promise<{
     getAccountsViaAPI(request),
   ]);
 
+  // Transaction form visibility rules:
+  // - income form allows only liquid accounts
+  // - transactions page defaults to IDR currency filter
+  // Prefer IDR liquid accounts to keep add-* specs deterministic.
+  const idrLiquidAccounts = accounts.filter(
+    (account) => account.account_class === 'liquid' && account.currency === 'IDR'
+  );
+  const liquidAccounts = accounts.filter((account) => account.account_class === 'liquid');
+  const transactionSafeAccounts =
+    idrLiquidAccounts.length > 0
+      ? idrLiquidAccounts
+      : liquidAccounts.length > 0
+        ? liquidAccounts
+        : accounts;
+
   return {
     incomeCategories: incomeCategories as TestCategory[],
     expenseCategories: expenseCategories as TestCategory[],
-    accounts: accounts as TestAccount[],
+    accounts: transactionSafeAccounts,
   };
 }
 
@@ -493,8 +515,20 @@ export async function getFirstAccount(request: APIRequestContext): Promise<TestA
       type: 'cash',
       balance: 10000000,
     });
-    return { id: created.id, name: `E2E-Cash-${Date.now()}`, type: 'cash', balance: 10000000 };
+    return {
+      id: created.id,
+      name: `E2E-Cash-${Date.now()}`,
+      type: 'cash',
+      account_class: 'liquid',
+      currency: 'IDR',
+      balance: 10000000,
+    };
   }
 
-  return accounts[0] as TestAccount;
+  const preferredAccount =
+    accounts.find((account) => account.account_class === 'liquid' && account.currency === 'IDR') ||
+    accounts.find((account) => account.account_class === 'liquid') ||
+    accounts[0];
+
+  return preferredAccount;
 }
