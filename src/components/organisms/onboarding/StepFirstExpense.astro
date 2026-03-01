@@ -162,15 +162,36 @@ const defaultAccount = accounts[0];
 
 <script>
   import { csrfFetch } from '@/lib/csrf-client';
-  import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
   import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   function initStepExpense() {
     const form = document.getElementById('onboarding-expense-form') as HTMLFormElement | null;
     const errorDiv = document.getElementById('expense-error');
     const skipBtn = document.getElementById('onboarding-skip-expense') as HTMLButtonElement | null;
+    const amountInput = document.getElementById('expense-amount') as HTMLInputElement | null;
+    const accountSelect = document.getElementById('expense-account') as HTMLSelectElement | null;
 
     if (!form) return;
+
+    function toCurrency(value: string | undefined): Currency {
+      return value && isValidCurrency(value) ? value : 'IDR';
+    }
+
+    if (amountInput) {
+      const selectedOption = accountSelect?.selectedOptions[0];
+      const initialCurrencyRaw =
+        selectedOption?.dataset.currency ?? amountInput.dataset.amountCurrency;
+      const initialCurrency = toCurrency(initialCurrencyRaw);
+      const formatter = attachAmountFormatter(amountInput, initialCurrency);
+
+      // Keep amount formatting in sync with selected account currency.
+      accountSelect?.addEventListener('change', () => {
+        const selectedCurrencyRaw = accountSelect.selectedOptions[0]?.dataset.currency;
+        const selectedCurrency = toCurrency(selectedCurrencyRaw);
+        formatter.updateCurrency(selectedCurrency);
+      });
+    }
 
     function getErrorMessage(payload: unknown, fallback: string): string {
       if (!payload || typeof payload !== 'object') return fallback;
@@ -239,8 +260,7 @@ const defaultAccount = accounts[0];
       const transactionDate = formData.get('transactionDate') as string;
 
       // Get currency from the selected account option
-      const accountSelect = document.getElementById('expense-account') as HTMLSelectElement;
-      const selectedOption = accountSelect.selectedOptions[0];
+      const selectedOption = accountSelect?.selectedOptions[0];
       const rawCurrency = selectedOption?.dataset.currency || '';
       const currency: Currency = isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
       const amount = stripAmountFormatting(rawAmount, currency);
