@@ -52,6 +52,8 @@ export const GET: APIRoute = async (context) => {
     const budgetLimitParam = url.searchParams.get('budgetLimit');
     const budgetLimit = budgetLimitParam ? parseFloat(budgetLimitParam) : null;
     const currencyParam = url.searchParams.get('currency');
+    const limitParam = url.searchParams.get('limit');
+    const offsetParam = url.searchParams.get('offset');
 
     // Validate categoryId
     if (!categoryId || typeof categoryId !== 'string' || categoryId.trim() === '') {
@@ -106,6 +108,8 @@ export const GET: APIRoute = async (context) => {
       );
     }
     const currency = currencyParam as Currency;
+    const limit = limitParam ? Number.parseInt(limitParam, 10) : 100;
+    const offset = offsetParam ? Number.parseInt(offsetParam, 10) : 0;
 
     try {
       validatePeriod(period, range);
@@ -128,7 +132,11 @@ export const GET: APIRoute = async (context) => {
       categoryId,
       period,
       range,
-      currency
+      currency,
+      {
+        limit,
+        offset,
+      }
     );
 
     // 4. Transform transactions to TransactionOutput format
@@ -178,6 +186,10 @@ export const GET: APIRoute = async (context) => {
           period,
           currency,
           transactions,
+          total: categoryTransactionsData.totalCount,
+          limit: categoryTransactionsData.limit,
+          offset: categoryTransactionsData.offset,
+          hasMore: categoryTransactionsData.hasMore,
         },
       });
 
@@ -195,6 +207,11 @@ export const GET: APIRoute = async (context) => {
       period,
       currency,
       transactions,
+      total: categoryTransactionsData.totalCount,
+      totalAmount: categoryTransactionsData.total,
+      limit: categoryTransactionsData.limit,
+      offset: categoryTransactionsData.offset,
+      hasMore: categoryTransactionsData.hasMore,
     });
   } catch (error) {
     // Handle authentication errors

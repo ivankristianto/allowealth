@@ -12,7 +12,7 @@ import AccountHistoryPartial from '@/components/partials/AccountHistoryPartial.a
  * GET /api/accounts/:id/history
  * Get account balance history
  * Query params:
- *   - limit: number (optional, defaults to all, max 100)
+ *   - limit: number (optional, default 100, max 500)
  *   - _render: 'html' | 'json' (optional, defaults to 'json')
  */
 export const GET: APIRoute = async (context) => {
@@ -33,7 +33,7 @@ export const GET: APIRoute = async (context) => {
     // Parse optional limit param
     const limitParam = url.searchParams.get('limit');
     const parsedLimit = limitParam ? parseInt(limitParam, 10) : NaN;
-    const limit = !isNaN(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 100) : undefined;
+    const limit = !isNaN(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 100;
 
     const history = await accountService.getHistory(id, auth.workspaceId, perf, limit);
 

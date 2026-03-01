@@ -36,7 +36,11 @@ export const recurringOccurrences = pgTable(
     index('recurring_occurrences_template_id_idx').on(table.template_id),
     index('recurring_occurrences_workspace_id_status_idx').on(table.workspace_id, table.status),
     index('recurring_occurrences_workspace_id_due_date_idx').on(table.workspace_id, table.due_date),
-    index('recurring_occurrences_transaction_id_idx').on(table.transaction_id),
+    index('recurring_occurrences_ws_status_due_date_idx').on(
+      table.workspace_id,
+      table.status,
+      table.due_date
+    ),
     pgPolicy('recurring_occurrences_allow_all', {
       as: 'permissive',
       for: 'all',

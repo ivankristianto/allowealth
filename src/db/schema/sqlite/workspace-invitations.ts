@@ -17,5 +17,13 @@ export const workspaceInvitations = sqliteTable(
     accepted_at: integer('accepted_at', { mode: 'timestamp' }),
     created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   },
-  (table) => [index('workspace_invitations_workspace_id_idx').on(table.workspace_id)]
+  (table) => [
+    index('workspace_invitations_workspace_id_idx').on(table.workspace_id),
+    index('workspace_invitations_ws_accept_expire_created_idx').on(
+      table.workspace_id,
+      table.accepted_at,
+      table.expires_at,
+      table.created_at
+    ),
+  ]
 );

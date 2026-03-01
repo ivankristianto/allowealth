@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { recurringOccurrenceService, RecurringServiceError, ServiceError } from '@/services';
-import { buildRecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
@@ -16,19 +15,10 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const auth = getAuthenticatedUser(context);
-    const perf = context.locals.perf;
     const month = parseMonth(context.url.searchParams.get('month'));
 
     if (render.wantsHtml()) {
-      const pending = await recurringOccurrenceService.findPending(
-        auth.workspaceId,
-        {
-          month,
-          status: 'pending',
-        },
-        perf
-      );
-      const summary = buildRecurringMonthlySummary(pending.occurrences);
+      const summary = await recurringOccurrenceService.getMonthlySummary(auth.workspaceId, month);
 
       const container = await AstroContainer.create();
       const html = await container.renderToString(RecurringStatsPartial, {

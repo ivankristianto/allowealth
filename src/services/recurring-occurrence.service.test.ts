@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { RecurringOccurrenceService } from './recurring-occurrence.service';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
 import {
@@ -188,25 +188,42 @@ describe('RecurringOccurrenceService', () => {
   });
 
   it('getStats returns grouped pending totals by currency', async () => {
-    const idrTemplate = createMockRecurringTemplate({ amount: '5000000', currency: 'IDR' });
-    const usdTemplate = createMockRecurringTemplate({ id: 'rt-2', amount: '100', currency: 'USD' });
+    let callIndex = 0;
+    (mockDb.select as any).mockImplementation(() => {
+      callIndex += 1;
+      if (callIndex === 1) {
+        return {
+          from: mock(() => ({
+            innerJoin: mock(() => ({
+              where: mock(() => ({
+                groupBy: mock(() =>
+                  Promise.resolve([
+                    {
+                      currency: 'IDR',
+                      amount: '5000000',
+                      pending_count: 1,
+                      overdue_count: 1,
+                    },
+                    {
+                      currency: 'USD',
+                      amount: '100',
+                      pending_count: 1,
+                      overdue_count: 0,
+                    },
+                  ])
+                ),
+              })),
+            })),
+          })),
+        };
+      }
 
-    (mockDb.query.recurringOccurrences.findMany as any)
-      .mockResolvedValueOnce([
-        {
-          ...createMockRecurringOccurrence({ due_date: '2026-01-01', status: 'pending' }),
-          template: idrTemplate,
-        },
-        {
-          ...createMockRecurringOccurrence({
-            id: 'ro-2',
-            due_date: '2026-01-02',
-            status: 'pending',
-          }),
-          template: usdTemplate,
-        },
-      ])
-      .mockResolvedValueOnce([createMockRecurringOccurrence({ id: 'ro-3', status: 'confirmed' })]);
+      return {
+        from: mock(() => ({
+          where: mock(() => Promise.resolve([{ count: 1 }])),
+        })),
+      };
+    });
 
     const stats = await recurringOccurrenceService.getStats('workspace-1');
 

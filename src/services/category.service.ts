@@ -9,7 +9,7 @@ import {
 } from '@/lib/validation/categories';
 import { CategoryServiceError, ServiceErrorCode } from './service-errors';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
-import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { createCrudService } from './base/crud.factory';
 
@@ -67,16 +67,10 @@ export class CategoryService {
         .returning();
     });
 
-    // Invalidate category cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(validated.workspace_id),
-        CacheTags.CATEGORIES,
-      ]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags(
+      [CacheTags.workspace(validated.workspace_id), CacheTags.CATEGORIES],
+      'best-effort'
+    );
 
     return category;
   }
@@ -167,13 +161,7 @@ export class CategoryService {
         );
     });
 
-    // Invalidate category cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES], 'best-effort');
 
     return this.findById(id, workspaceId, perf);
   }
@@ -211,13 +199,7 @@ export class CategoryService {
         );
     });
 
-    // Invalidate category cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES], 'best-effort');
 
     return { success: true };
   }
@@ -301,9 +283,7 @@ export class CategoryService {
       categoryMap.set(cat.name, id);
     }
 
-    // Invalidate cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES], 'best-effort');
 
     return categoryMap;
   }

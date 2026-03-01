@@ -117,6 +117,12 @@ export function createMockDatabase(): IDatabase {
           return promise;
         }),
         orderBy: mock(() => Promise.resolve([])),
+        innerJoin: mock(() => ({
+          where: mock(() => ({
+            groupBy: mock(() => Promise.resolve([])),
+            orderBy: mock(() => Promise.resolve([])),
+          })),
+        })),
       })),
     })),
 
@@ -128,6 +134,33 @@ export function createMockDatabase(): IDatabase {
     transaction: mock(<T>(callback: (tx: any) => Promise<T>) => callback(db)),
   };
   return db as IDatabase;
+}
+
+export interface MockDatabaseWithQueryCounter extends IDatabase {
+  counter: (key: string) => number;
+}
+
+/**
+ * Creates a mock database that counts query method usage.
+ * Useful for asserting query-shape/performance regressions.
+ */
+export function createMockDatabaseWithQueryCounter(): MockDatabaseWithQueryCounter {
+  const db = createMockDatabase() as any;
+  const counters = new Map<string, number>();
+
+  const increment = (key: string): void => {
+    counters.set(key, (counters.get(key) ?? 0) + 1);
+  };
+
+  const originalSelect = db.select;
+  db.select = mock((...args: unknown[]) => {
+    increment('db.select');
+    return originalSelect(...args);
+  });
+
+  db.counter = (key: string) => counters.get(key) ?? 0;
+
+  return db as MockDatabaseWithQueryCounter;
 }
 
 /**

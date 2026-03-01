@@ -241,8 +241,8 @@ describe('review feedback regressions', () => {
     expect(countEnd).toBeGreaterThan(countStart);
 
     const countMethod = content.slice(countStart, countEnd);
-    expect(countMethod).toContain('filters.include_deleted ?? false');
-    expect(countMethod).toContain('if (!includeDeleted)');
+    expect(countMethod).toContain('this.buildFilterConditions(filters)');
+    expect(countMethod).not.toContain('include_deleted: true');
   });
 
   it('transaction history toggle should cache first HTML fetch and reuse it', () => {

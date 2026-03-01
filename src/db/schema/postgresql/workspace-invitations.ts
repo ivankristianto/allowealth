@@ -19,6 +19,12 @@ export const workspaceInvitations = pgTable(
   },
   (table) => [
     index('workspace_invitations_workspace_id_idx').on(table.workspace_id),
+    index('workspace_invitations_ws_accept_expire_created_idx').on(
+      table.workspace_id,
+      table.accepted_at,
+      table.expires_at,
+      table.created_at
+    ),
     pgPolicy('workspace_invitations_allow_all', {
       as: 'permissive',
       for: 'all',

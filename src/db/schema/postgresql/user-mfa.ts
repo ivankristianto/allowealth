@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { users } from './users';
 
@@ -21,8 +21,7 @@ export const userMfa = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [
-    index('user_mfa_user_id_idx').on(table.user_id),
+  () => [
     pgPolicy('user_mfa_allow_all', {
       as: 'permissive',
       for: 'all',

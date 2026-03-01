@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, gt, inArray, like, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, like, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
-import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import type { RecurringTemplate, RecurringTemplateOutput } from '@/lib/types/recurring';
@@ -48,15 +48,17 @@ export class RecurringTemplateService {
   }
 
   private async invalidateWorkspaceCache(workspaceId: string): Promise<void> {
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(workspaceId),
-      CacheTags.RECURRING,
-      CacheTags.RECURRING_OCCURRENCES,
-      CacheTags.RECURRING_CALENDAR,
-      CacheTags.TRANSACTIONS,
-      CacheTags.DASHBOARD,
-    ]);
+    await invalidateTags(
+      [
+        CacheTags.workspace(workspaceId),
+        CacheTags.RECURRING,
+        CacheTags.RECURRING_OCCURRENCES,
+        CacheTags.RECURRING_CALENDAR,
+        CacheTags.TRANSACTIONS,
+        CacheTags.DASHBOARD,
+      ],
+      'strict'
+    );
   }
 
   private mapTemplateOutput(
@@ -144,21 +146,56 @@ export class RecurringTemplateService {
     }
   }
 
-  private getOccurrenceStats(occurrences: any[]) {
-    const pendingOccurrences = occurrences.filter((occ) => occ.status === 'pending');
-    const pendingCount = pendingOccurrences.length;
-    const confirmedCount = occurrences.filter((occ) => occ.status === 'confirmed').length;
-    const skippedCount = occurrences.filter((occ) => occ.status === 'skipped').length;
-    const sortedPending = [...pendingOccurrences].sort((a, b) =>
-      a.due_date.localeCompare(b.due_date)
-    );
-
+  private getEmptyOccurrenceStats() {
     return {
-      pendingCount,
-      confirmedCount,
-      skippedCount,
-      nextDueDate: sortedPending[0]?.due_date ?? null,
+      pendingCount: 0,
+      confirmedCount: 0,
+      skippedCount: 0,
+      nextDueDate: null,
     };
+  }
+
+  private async getOccurrenceStatsByTemplateIds(workspaceId: string, templateIds: string[]) {
+    if (templateIds.length === 0) {
+      return new Map<string, ReturnType<typeof this.getEmptyOccurrenceStats>>();
+    }
+
+    const rows = await (this.db as any)
+      .select({
+        template_id: this.schema.recurringOccurrences.template_id,
+        pending_count: sql<number>`COALESCE(SUM(CASE WHEN ${this.schema.recurringOccurrences.status} = 'pending' THEN 1 ELSE 0 END), 0)`,
+        confirmed_count: sql<number>`COALESCE(SUM(CASE WHEN ${this.schema.recurringOccurrences.status} = 'confirmed' THEN 1 ELSE 0 END), 0)`,
+        skipped_count: sql<number>`COALESCE(SUM(CASE WHEN ${this.schema.recurringOccurrences.status} = 'skipped' THEN 1 ELSE 0 END), 0)`,
+        next_due_date: sql<
+          string | null
+        >`MIN(CASE WHEN ${this.schema.recurringOccurrences.status} = 'pending' THEN ${this.schema.recurringOccurrences.due_date} ELSE NULL END)`,
+      })
+      .from(this.schema.recurringOccurrences)
+      .where(
+        and(
+          eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+          inArray(this.schema.recurringOccurrences.template_id, templateIds)
+        )
+      )
+      .groupBy(this.schema.recurringOccurrences.template_id);
+
+    const map = new Map<string, ReturnType<typeof this.getEmptyOccurrenceStats>>();
+    for (const row of rows as Array<{
+      template_id: string;
+      pending_count: number;
+      confirmed_count: number;
+      skipped_count: number;
+      next_due_date: string | null;
+    }>) {
+      map.set(row.template_id, {
+        pendingCount: Number(row.pending_count || 0),
+        confirmedCount: Number(row.confirmed_count || 0),
+        skippedCount: Number(row.skipped_count || 0),
+        nextDueDate: row.next_due_date || null,
+      });
+    }
+
+    return map;
   }
 
   async create(input: CreateRecurringTemplateInput): Promise<RecurringTemplateOutput> {
@@ -302,34 +339,14 @@ export class RecurringTemplateService {
         .where(and(...conditions));
 
       const templateIds = templates.map((template) => template.id);
-      const occurrences =
-        templateIds.length > 0
-          ? await this.db.query.recurringOccurrences.findMany({
-              where: and(
-                eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-                inArray(this.schema.recurringOccurrences.template_id, templateIds)
-              ),
-            })
-          : [];
-
-      const occurrencesByTemplate = new Map<string, any[]>();
-      for (const occurrence of occurrences) {
-        const grouped = occurrencesByTemplate.get(occurrence.template_id) ?? [];
-        grouped.push(occurrence);
-        occurrencesByTemplate.set(occurrence.template_id, grouped);
-      }
-
-      const statsMap = new Map<string, ReturnType<typeof this.getOccurrenceStats>>();
-      for (const template of templates) {
-        statsMap.set(
-          template.id,
-          this.getOccurrenceStats(occurrencesByTemplate.get(template.id) ?? [])
-        );
-      }
+      const statsMap = await this.getOccurrenceStatsByTemplateIds(workspaceId, templateIds);
 
       return {
         templates: templates.map((template) =>
-          this.mapTemplateOutput(template, statsMap.get(template.id) ?? this.getOccurrenceStats([]))
+          this.mapTemplateOutput(
+            template,
+            statsMap.get(template.id) ?? this.getEmptyOccurrenceStats()
+          )
         ),
         total: countResult[0]?.count ?? 0,
         page,
@@ -365,15 +382,19 @@ export class RecurringTemplateService {
       return null;
     }
 
-    const occurrences = await this.db.query.recurringOccurrences.findMany({
-      where: and(
-        eq(this.schema.recurringOccurrences.template_id, id),
-        eq(this.schema.recurringOccurrences.workspace_id, workspaceId)
-      ),
-      orderBy: [asc(this.schema.recurringOccurrences.due_date)],
+    const statsMap = await this.getOccurrenceStatsByTemplateIds(workspaceId, [id]);
+    return this.mapTemplateOutput(template, statsMap.get(id) ?? this.getEmptyOccurrenceStats());
+  }
+
+  async hasTemplates(workspaceId: string): Promise<boolean> {
+    const template = await this.db.query.recurringTemplates.findFirst({
+      where: eq(this.schema.recurringTemplates.workspace_id, workspaceId),
+      columns: {
+        id: true,
+      },
     });
 
-    return this.mapTemplateOutput(template, this.getOccurrenceStats(occurrences));
+    return !!template;
   }
 
   async update(

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { RecurringTemplateService } from './recurring-template.service';
 import {
   createMockAccount,
@@ -55,9 +55,23 @@ describe('RecurringTemplateService', () => {
       });
 
     (mockDb.query.recurringOccurrences.findFirst as any).mockResolvedValueOnce(undefined);
-    (mockDb.query.recurringOccurrences.findMany as any).mockResolvedValueOnce([
-      createMockRecurringOccurrence(),
-    ]);
+    (mockDb.select as any).mockImplementation(() => ({
+      from: mock(() => ({
+        where: mock(() => ({
+          groupBy: mock(() =>
+            Promise.resolve([
+              {
+                template_id: template.id,
+                pending_count: 1,
+                confirmed_count: 0,
+                skipped_count: 0,
+                next_due_date: '2026-01-01',
+              },
+            ])
+          ),
+        })),
+      })),
+    }));
 
     const result = await recurringTemplateService.create({
       workspace_id: 'workspace-1',

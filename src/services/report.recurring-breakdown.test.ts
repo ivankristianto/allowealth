@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { ReportService } from './report.service';
 import { createMockDatabase, resetMockDatabase } from './test-helpers/mocks';
 
@@ -13,26 +13,43 @@ describe('ReportService recurring breakdown', () => {
   });
 
   it('uses transaction_date month attribution for recurring vs one-time totals', async () => {
-    (mockDb.query.transactions.findMany as any).mockResolvedValueOnce([
-      {
-        id: 'tx-recurring',
-        category_id: 'cat-rent',
-        amount: '100',
-        category: { id: 'cat-rent', name: 'Rent' },
-      },
-      {
-        id: 'tx-one-time',
-        category_id: 'cat-food',
-        amount: '50',
-        category: { id: 'cat-food', name: 'Food' },
-      },
-    ]);
-    (mockDb.query.recurringOccurrences.findMany as any).mockResolvedValueOnce([
-      {
-        id: 'ro-1',
-        transaction_id: 'tx-recurring',
-      },
-    ]);
+    let callIndex = 0;
+    (mockDb.select as any).mockImplementation(() => {
+      callIndex += 1;
+
+      if (callIndex === 1) {
+        return {
+          from: mock(() => ({
+            where: mock(() =>
+              Promise.resolve([
+                {
+                  recurring_total: '100',
+                  one_time_total: '50',
+                },
+              ])
+            ),
+          })),
+        };
+      }
+
+      return {
+        from: mock(() => ({
+          innerJoin: mock(() => ({
+            where: mock(() => ({
+              groupBy: mock(() =>
+                Promise.resolve([
+                  {
+                    category_id: 'cat-rent',
+                    category_name: 'Rent',
+                    amount: '100',
+                  },
+                ])
+              ),
+            })),
+          })),
+        })),
+      };
+    });
 
     const result = await reportService.getRecurringBreakdown('workspace-1', 2026, 2, 'IDR');
 
@@ -48,7 +65,35 @@ describe('ReportService recurring breakdown', () => {
   });
 
   it('returns zero totals when the month has no expense transactions', async () => {
-    (mockDb.query.transactions.findMany as any).mockResolvedValueOnce([]);
+    let callIndex = 0;
+    (mockDb.select as any).mockImplementation(() => {
+      callIndex += 1;
+
+      if (callIndex === 1) {
+        return {
+          from: mock(() => ({
+            where: mock(() =>
+              Promise.resolve([
+                {
+                  recurring_total: '0',
+                  one_time_total: '0',
+                },
+              ])
+            ),
+          })),
+        };
+      }
+
+      return {
+        from: mock(() => ({
+          innerJoin: mock(() => ({
+            where: mock(() => ({
+              groupBy: mock(() => Promise.resolve([])),
+            })),
+          })),
+        })),
+      };
+    });
 
     const result = await reportService.getRecurringBreakdown('workspace-1', 2026, 2, 'IDR');
 

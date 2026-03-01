@@ -29,6 +29,7 @@ export const accountUpdateReminders = pgTable(
     index('account_update_reminders_workspace_id_idx').on(table.workspace_id),
     index('account_update_reminders_created_by_user_id_idx').on(table.created_by_user_id),
     index('account_update_reminders_account_id_idx').on(table.account_id),
+    index('account_update_reminders_next_reminder_idx').on(table.next_reminder),
     pgPolicy('account_update_reminders_allow_all', {
       as: 'permissive',
       for: 'all',

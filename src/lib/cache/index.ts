@@ -34,6 +34,7 @@ export { CacheManager, getCacheManager, resetCacheManager } from './cache-manage
 export { cacheOrFetch } from './cache-or-fetch';
 export { CacheKeys, hashFilters, simpleHash } from './keys';
 export { CacheTags } from './tags';
+export { invalidateTags, type InvalidationPolicy } from './invalidate';
 
 // Type exports
 export type { CacheDriver, CacheSetOptions, CacheConfig } from './types';
