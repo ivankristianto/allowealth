@@ -108,162 +108,184 @@ const getUserInitials = () => {
   import { addToast } from '@lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
-  const profileDropdowns = document.querySelectorAll('[data-profile-dropdown]');
+  const initUserProfileDropdowns = () => {
+    const profileDropdowns = document.querySelectorAll('[data-profile-dropdown]');
 
-  profileDropdowns.forEach((container) => {
-    const button = container.querySelector('[data-profile-button]');
-    const menu = container.querySelector('[data-profile-menu]');
-    const chevron = container.querySelector('[data-profile-chevron]');
-    const logoutButton = container.querySelector('[data-logout-button]');
-
-    const chevronElement =
-      chevron instanceof HTMLElement || chevron instanceof SVGElement ? chevron : null;
-
-    if (
-      !(button instanceof HTMLButtonElement) ||
-      !(menu instanceof HTMLElement) ||
-      !chevronElement
-    ) {
-      return;
-    }
-
-    let isOpen = false;
-
-    const openMenu = () => {
-      isOpen = true;
-      button.setAttribute('aria-expanded', 'true');
-      // Show menu with animation
-      menu.style.opacity = '1';
-      menu.style.transform = 'translateY(0)';
-      menu.style.pointerEvents = 'auto';
-      chevronElement.style.transform = 'rotate(180deg)';
-    };
-
-    const closeMenu = () => {
-      isOpen = false;
-      button.setAttribute('aria-expanded', 'false');
-      // Hide menu with animation
-      menu.style.opacity = '0';
-      menu.style.transform = 'translateY(8px)';
-      menu.style.pointerEvents = 'none';
-      chevronElement.style.transform = 'rotate(0deg)';
-    };
-
-    const toggleMenu = () => {
-      if (isOpen) {
-        closeMenu();
-      } else {
-        openMenu();
+    profileDropdowns.forEach((container) => {
+      if (!(container instanceof HTMLElement)) {
+        return;
       }
-    };
 
-    // Store handler references for cleanup
-    const handleClick = (e: MouseEvent) => {
-      e.stopPropagation();
-      toggleMenu();
-    };
+      // Prevent duplicate listeners across Astro view transitions.
+      if (container.dataset.profileDropdownBound === 'true') {
+        return;
+      }
+      container.dataset.profileDropdownBound = 'true';
 
-    const handleButtonKeydown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggleMenu();
-      } else if (e.key === 'Escape') {
-        closeMenu();
-        button.focus();
-      } else if (e.key === 'Tab') {
-        // Close menu on Tab navigation (focus trap)
+      const button = container.querySelector('[data-profile-button]');
+      const menu = container.querySelector('[data-profile-menu]');
+      const chevron = container.querySelector('[data-profile-chevron]');
+      const logoutButton = container.querySelector('[data-logout-button]');
+
+      const chevronElement =
+        chevron instanceof HTMLElement || chevron instanceof SVGElement ? chevron : null;
+
+      if (
+        !(button instanceof HTMLButtonElement) ||
+        !(menu instanceof HTMLElement) ||
+        !chevronElement
+      ) {
+        return;
+      }
+
+      const controller = new AbortController();
+      const { signal } = controller;
+      let isOpen = false;
+
+      const openMenu = () => {
+        isOpen = true;
+        button.setAttribute('aria-expanded', 'true');
+        // Show menu with animation
+        menu.style.opacity = '1';
+        menu.style.transform = 'translateY(0)';
+        menu.style.pointerEvents = 'auto';
+        chevronElement.style.transform = 'rotate(180deg)';
+      };
+
+      const closeMenu = () => {
+        isOpen = false;
+        button.setAttribute('aria-expanded', 'false');
+        // Hide menu with animation
+        menu.style.opacity = '0';
+        menu.style.transform = 'translateY(8px)';
+        menu.style.pointerEvents = 'none';
+        chevronElement.style.transform = 'rotate(0deg)';
+      };
+
+      const toggleMenu = () => {
         if (isOpen) {
           closeMenu();
-        }
-      }
-    };
-
-    const handleDocumentClick = (e: MouseEvent) => {
-      if (!(e.target instanceof Node) || !container.contains(e.target)) {
-        closeMenu();
-      }
-    };
-
-    const handleLogoutClick = async () => {
-      try {
-        const response = await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: getCsrfHeaders(),
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          addToast('Signed out successfully', 'success');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 500);
         } else {
-          addToast('Failed to sign out. Please try again.', 'error');
+          openMenu();
         }
-      } catch (error) {
-        console.error('Logout error:', error);
-        addToast('An error occurred. Please try again.', 'error');
-      }
-    };
+      };
 
-    // Attach event listeners
-    button.addEventListener('click', handleClick);
-    button.addEventListener('keydown', handleButtonKeydown);
-    document.addEventListener('click', handleDocumentClick);
-    if (logoutButton instanceof HTMLButtonElement) {
-      logoutButton.addEventListener('click', handleLogoutClick);
-    }
+      const handleClick = (e: MouseEvent) => {
+        e.stopPropagation();
+        toggleMenu();
+      };
 
-    // Cleanup function
-    const cleanup = () => {
-      button.removeEventListener('click', handleClick);
-      button.removeEventListener('keydown', handleButtonKeydown);
-      document.removeEventListener('click', handleDocumentClick);
-      if (logoutButton instanceof HTMLButtonElement) {
-        logoutButton.removeEventListener('click', handleLogoutClick);
-      }
-    };
-
-    // Cleanup on Astro page navigation (View Transitions)
-    document.addEventListener('astro:page-load', cleanup, { once: true });
-
-    // Cleanup when element is removed from DOM (prevents memory leaks)
-    const removalObserver = new MutationObserver(() => {
-      if (!document.contains(container)) {
-        cleanup();
-        removalObserver.disconnect();
-      }
-    });
-
-    removalObserver.observe(document.body, { childList: true, subtree: true });
-
-    // Keyboard support for menu items
-    const menuItems = menu.querySelectorAll('[role="menuitem"]');
-    menuItems.forEach((item, index) => {
-      item.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (!(item instanceof HTMLElement)) return;
-        if (e.key === 'ArrowDown') {
+      const handleButtonKeydown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          const nextItem = menuItems[index + 1] || menuItems[0];
-          if (nextItem instanceof HTMLElement) {
-            nextItem.focus();
-          }
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          const prevItem = menuItems[index - 1] || menuItems[menuItems.length - 1];
-          if (prevItem instanceof HTMLElement) {
-            prevItem.focus();
-          }
+          toggleMenu();
         } else if (e.key === 'Escape') {
           closeMenu();
           button.focus();
         } else if (e.key === 'Tab') {
-          // Close menu on Tab (focus trap)
+          // Close menu on Tab navigation (focus trap)
+          if (isOpen) {
+            closeMenu();
+          }
+        }
+      };
+
+      const handleDocumentClick = (e: MouseEvent) => {
+        if (!(e.target instanceof Node) || !container.contains(e.target)) {
           closeMenu();
         }
+      };
+
+      const handleLogoutClick = async (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+          const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: getCsrfHeaders(),
+            credentials: 'include',
+          });
+
+          if (response.ok) {
+            closeMenu();
+            addToast('Signed out successfully', 'success');
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 500);
+          } else {
+            addToast('Failed to sign out. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+          addToast('An error occurred. Please try again.', 'error');
+        }
+      };
+
+      button.addEventListener('click', handleClick, { signal });
+      button.addEventListener('keydown', handleButtonKeydown, { signal });
+      document.addEventListener('click', handleDocumentClick, { signal });
+      if (logoutButton instanceof HTMLButtonElement) {
+        logoutButton.addEventListener('click', handleLogoutClick, { signal });
+      }
+      document.addEventListener('astro:before-swap', closeMenu, { signal });
+
+      // Keyboard support for menu items
+      const menuItems = menu.querySelectorAll('[role="menuitem"]');
+      menuItems.forEach((item, index) => {
+        if (!(item instanceof HTMLElement)) {
+          return;
+        }
+        item.addEventListener(
+          'keydown',
+          (e: KeyboardEvent) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              const nextItem = menuItems[index + 1] || menuItems[0];
+              if (nextItem instanceof HTMLElement) {
+                nextItem.focus();
+              }
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              const prevItem = menuItems[index - 1] || menuItems[menuItems.length - 1];
+              if (prevItem instanceof HTMLElement) {
+                prevItem.focus();
+              }
+            } else if (e.key === 'Escape') {
+              closeMenu();
+              button.focus();
+            } else if (e.key === 'Tab') {
+              // Close menu on Tab (focus trap)
+              closeMenu();
+            }
+          },
+          { signal }
+        );
       });
+
+      // Cleanup when element is removed from DOM (prevents memory leaks)
+      const removalObserver = new MutationObserver(() => {
+        if (!document.contains(container)) {
+          controller.abort();
+          removalObserver.disconnect();
+          delete container.dataset.profileDropdownBound;
+        }
+      });
+
+      removalObserver.observe(document.body, { childList: true, subtree: true });
+      signal.addEventListener(
+        'abort',
+        () => {
+          removalObserver.disconnect();
+          delete container.dataset.profileDropdownBound;
+        },
+        { once: true }
+      );
     });
-  });
+  };
+
+  initUserProfileDropdowns();
+  document.addEventListener('astro:page-load', initUserProfileDropdowns);
 </script>
 
 <style>
