@@ -107,6 +107,24 @@ describe('review feedback regressions', () => {
     expect(content).not.toContain('init();');
   });
 
+  it('budget categories client should guard against duplicate listener registration', () => {
+    const content = read('src/pages/budget/categories/categories-client.ts');
+    expect(content).toContain(
+      "const CATEGORIES_LIFECYCLE_KEY = '__allowealthCategoriesLifecycleRegistered';"
+    );
+    expect(content).toContain('let listenersAttached = false');
+    expect(content).toContain('if (listenersAttached) return;');
+    expect(content).toContain('let controller: AbortController | null = null');
+    expect(content).toContain('initBulkAddModal(signal);');
+    expect(content).toContain('if (!lifecycleWindow[CATEGORIES_LIFECYCLE_KEY])');
+    const guardIdx = content.indexOf('if (!lifecycleWindow[CATEGORIES_LIFECYCLE_KEY])');
+    const bootstrapIdx = content.indexOf("if (document.readyState === 'loading')");
+    expect(guardIdx).toBeGreaterThanOrEqual(0);
+    expect(bootstrapIdx).toBeGreaterThan(guardIdx);
+    expect(content).toContain("document.addEventListener('DOMContentLoaded', initCategories);");
+    expect(content).toContain("document.addEventListener('astro:before-swap', cleanupCategories);");
+  });
+
   it('patterns docs should pass Currency props as expressions', () => {
     const content = read('design-system/07-patterns.md');
     expect(content).toContain('<Currency amount={amount} currency={currency} />');

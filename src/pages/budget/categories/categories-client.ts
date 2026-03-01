@@ -3,57 +3,82 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
 import { navigate } from 'astro:transitions/client';
 
+let listenersAttached = false;
+let controller: AbortController | null = null;
+const CATEGORIES_LIFECYCLE_KEY = '__allowealthCategoriesLifecycleRegistered';
+
 // Initialize when DOM is ready
 function initCategories() {
+  if (listenersAttached) return;
+  listenersAttached = true;
+  controller = new AbortController();
+  const { signal } = controller;
+
   const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
   const categoryForm = document.querySelector('[data-category-form]') as HTMLFormElement;
 
   // Create category button handler
   document.querySelectorAll('[data-action="create-category"]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      const currentType = (btn as HTMLElement).dataset.type as 'expense' | 'income' | undefined;
-      openCategoryModal('create', undefined, currentType);
-    });
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        e.preventDefault();
+        const currentType = (btn as HTMLElement).dataset.type as 'expense' | 'income' | undefined;
+        openCategoryModal('create', undefined, currentType);
+      },
+      { signal }
+    );
   });
 
   // Bulk add categories handler
-  initBulkAddModal();
+  initBulkAddModal(signal);
 
   // Search form submit handler
-  document.getElementById('search-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const url = new URL(window.location.href);
-    url.searchParams.set('search', (formData.get('search') as string) || '');
-    url.searchParams.set('type', (formData.get('type') as string) || '');
-    navigate(url.toString());
-  });
+  document.getElementById('search-form')?.addEventListener(
+    'submit',
+    (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target as HTMLFormElement);
+      const url = new URL(window.location.href);
+      url.searchParams.set('search', (formData.get('search') as string) || '');
+      url.searchParams.set('type', (formData.get('type') as string) || '');
+      navigate(url.toString());
+    },
+    { signal }
+  );
 
   // Event delegation for edit buttons
   document.querySelectorAll('[data-action="edit"]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      const id = (e.currentTarget as HTMLElement).dataset.categoryId;
-      if (id) editCategory(id);
-    });
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        const id = (e.currentTarget as HTMLElement).dataset.categoryId;
+        if (id) editCategory(id);
+      },
+      { signal }
+    );
   });
 
   // Event delegation for delete buttons
   document.querySelectorAll('[data-action="delete"]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      const target = e.currentTarget as HTMLElement;
-      const id = target.dataset.categoryId;
-      const name = target.dataset.categoryName || '';
-      const icon = target.dataset.categoryIcon || '';
-      const color = target.dataset.categoryColor || 'bg-neutral';
+    btn.addEventListener(
+      'click',
+      (e: Event) => {
+        const target = e.currentTarget as HTMLElement;
+        const id = target.dataset.categoryId;
+        const name = target.dataset.categoryName || '';
+        const icon = target.dataset.categoryIcon || '';
+        const color = target.dataset.categoryColor || 'bg-neutral';
 
-      if (id) {
-        // Use the global function exposed by CategoryDeleteDialog
-        if (typeof (window as any).openDeleteCategoryDialog === 'function') {
-          (window as any).openDeleteCategoryDialog(id, name, icon, color);
+        if (id) {
+          // Use the global function exposed by CategoryDeleteDialog
+          if (typeof (window as any).openDeleteCategoryDialog === 'function') {
+            (window as any).openDeleteCategoryDialog(id, name, icon, color);
+          }
         }
-      }
-    });
+      },
+      { signal }
+    );
   });
 
   // Open category modal
@@ -173,7 +198,7 @@ function initCategories() {
   }
 
   // Bulk Add Modal logic
-  function initBulkAddModal() {
+  function initBulkAddModal(signal: AbortSignal) {
     const bulkModal = document.getElementById('bulk-add-modal') as HTMLDialogElement;
     const textarea = document.getElementById('bulk-categories-input') as HTMLTextAreaElement;
     const previewContainer = document.getElementById('bulk-preview');
@@ -191,126 +216,159 @@ function initCategories() {
 
     // Open bulk modal
     document.querySelectorAll('[data-action="bulk-add-categories"]').forEach((btn) => {
-      btn.addEventListener('click', (e: Event) => {
-        e.preventDefault();
-        bulkType = ((btn as HTMLElement).dataset.type as 'expense' | 'income') || 'expense';
-        if (typeLabel) typeLabel.textContent = bulkType;
-        textarea.value = '';
-        if (previewContainer) previewContainer.classList.add('hidden');
+      btn.addEventListener(
+        'click',
+        (e: Event) => {
+          e.preventDefault();
+          bulkType = ((btn as HTMLElement).dataset.type as 'expense' | 'income') || 'expense';
+          if (typeLabel) typeLabel.textContent = bulkType;
+          textarea.value = '';
+          if (previewContainer) previewContainer.classList.add('hidden');
+          if (errorDiv) {
+            errorDiv.textContent = '';
+            errorDiv.classList.add('hidden');
+          }
+          bulkModal.showModal();
+        },
+        { signal }
+      );
+    });
+
+    // Update preview on input
+    textarea.addEventListener(
+      'input',
+      () => {
+        const names = textarea.value
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length >= 3);
+
+        if (names.length > 0 && previewContainer && previewTags && countEl) {
+          previewContainer.classList.remove('hidden');
+          countEl.textContent = String(names.length);
+          previewTags.replaceChildren(
+            ...names.map((name) => {
+              const span = document.createElement('span');
+              span.className =
+                'px-3 py-1 bg-base-200 rounded-full text-xs font-medium text-base-content';
+              span.textContent = name;
+              return span;
+            })
+          );
+        } else if (previewContainer) {
+          previewContainer.classList.add('hidden');
+        }
+      },
+      { signal }
+    );
+
+    // Cancel
+    cancelBtn?.addEventListener(
+      'click',
+      () => {
+        bulkModal.close();
+      },
+      { signal }
+    );
+
+    // Submit
+    submitBtn?.addEventListener(
+      'click',
+      async () => {
+        const names = textarea.value
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length >= 3);
+
+        if (names.length === 0) {
+          if (errorDiv) {
+            errorDiv.textContent =
+              'Please enter at least one category name (min 3 characters per name).';
+            errorDiv.classList.remove('hidden');
+          }
+          return;
+        }
+
         if (errorDiv) {
           errorDiv.textContent = '';
           errorDiv.classList.add('hidden');
         }
-        bulkModal.showModal();
-      });
-    });
 
-    // Update preview on input
-    textarea.addEventListener('input', () => {
-      const names = textarea.value
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length >= 3);
+        submitBtn.disabled = true;
+        if (submitText) submitText.textContent = 'Creating...';
 
-      if (names.length > 0 && previewContainer && previewTags && countEl) {
-        previewContainer.classList.remove('hidden');
-        countEl.textContent = String(names.length);
-        previewTags.replaceChildren(
-          ...names.map((name) => {
-            const span = document.createElement('span');
-            span.className =
-              'px-3 py-1 bg-base-200 rounded-full text-xs font-medium text-base-content';
-            span.textContent = name;
-            return span;
-          })
-        );
-      } else if (previewContainer) {
-        previewContainer.classList.add('hidden');
-      }
-    });
+        const defaultIcon = bulkType === 'expense' ? 'tag' : 'banknote';
+        let successCount = 0;
+        const errors: string[] = [];
 
-    // Cancel
-    cancelBtn?.addEventListener('click', () => {
-      bulkModal.close();
-    });
+        for (const name of names) {
+          try {
+            const response = await fetch('/api/categories', {
+              method: 'POST',
+              headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({
+                name,
+                type: bulkType,
+                icon: defaultIcon,
+                color: 'bg-primary',
+                description: null,
+              }),
+            });
 
-    // Submit
-    submitBtn?.addEventListener('click', async () => {
-      const names = textarea.value
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length >= 3);
-
-      if (names.length === 0) {
-        if (errorDiv) {
-          errorDiv.textContent =
-            'Please enter at least one category name (min 3 characters per name).';
-          errorDiv.classList.remove('hidden');
-        }
-        return;
-      }
-
-      if (errorDiv) {
-        errorDiv.textContent = '';
-        errorDiv.classList.add('hidden');
-      }
-
-      submitBtn.disabled = true;
-      if (submitText) submitText.textContent = 'Creating...';
-
-      const defaultIcon = bulkType === 'expense' ? 'tag' : 'banknote';
-      let successCount = 0;
-      const errors: string[] = [];
-
-      for (const name of names) {
-        try {
-          const response = await fetch('/api/categories', {
-            method: 'POST',
-            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-              name,
-              type: bulkType,
-              icon: defaultIcon,
-              color: 'bg-primary',
-              description: null,
-            }),
-          });
-
-          const result = await response.json();
-          if (response.ok && result.success) {
-            successCount++;
-          } else {
-            const msg = result.error?.message || `Failed to create "${name}"`;
-            errors.push(msg);
+            const result = await response.json();
+            if (response.ok && result.success) {
+              successCount++;
+            } else {
+              const msg = result.error?.message || `Failed to create "${name}"`;
+              errors.push(msg);
+            }
+          } catch {
+            errors.push(`Network error creating "${name}"`);
           }
-        } catch {
-          errors.push(`Network error creating "${name}"`);
         }
-      }
 
-      submitBtn.disabled = false;
-      if (submitText) submitText.textContent = 'Create Categories';
+        submitBtn.disabled = false;
+        if (submitText) submitText.textContent = 'Create Categories';
 
-      if (errors.length === 0 && successCount > 0) {
-        // Full success — close and reload
-        addToast(`${successCount} categories created successfully!`, 'success');
-        bulkModal.close();
-        const urlParams = new URL(window.location.href);
-        navigate(urlParams.pathname + urlParams.search);
-      } else if (errors.length > 0) {
-        // Partial or full failure — keep modal open so user can retry
-        if (successCount > 0) {
-          addToast(`${successCount} created, ${errors.length} failed`, 'warning');
+        if (errors.length === 0 && successCount > 0) {
+          // Full success — close and reload
+          addToast(`${successCount} categories created successfully!`, 'success');
+          bulkModal.close();
+          const urlParams = new URL(window.location.href);
+          navigate(urlParams.pathname + urlParams.search);
+        } else if (errors.length > 0) {
+          // Partial or full failure — keep modal open so user can retry
+          if (successCount > 0) {
+            addToast(`${successCount} created, ${errors.length} failed`, 'warning');
+          }
+          if (errorDiv) {
+            errorDiv.textContent = errors.join('; ');
+            errorDiv.classList.remove('hidden');
+          }
         }
-        if (errorDiv) {
-          errorDiv.textContent = errors.join('; ');
-          errorDiv.classList.remove('hidden');
-        }
-      }
-    });
+      },
+      { signal }
+    );
   }
 }
 
-// Run initialization
-initCategories();
-document.addEventListener('astro:page-load', initCategories);
+function cleanupCategories(): void {
+  controller?.abort();
+  controller = null;
+  listenersAttached = false;
+}
+
+const lifecycleWindow = window as Window & {
+  [CATEGORIES_LIFECYCLE_KEY]?: boolean;
+};
+
+if (!lifecycleWindow[CATEGORIES_LIFECYCLE_KEY]) {
+  lifecycleWindow[CATEGORIES_LIFECYCLE_KEY] = true;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCategories);
+  } else {
+    initCategories();
+  }
+  document.addEventListener('astro:page-load', initCategories);
+  document.addEventListener('astro:before-swap', cleanupCategories);
+}
