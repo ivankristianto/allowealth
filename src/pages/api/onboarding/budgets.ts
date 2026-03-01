@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { budgetService } from '@/services';
+import { budgetService, BudgetServiceError, ServiceErrorCode } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -39,26 +39,58 @@ export const POST: APIRoute = async (context) => {
     }
 
     let created = 0;
+    let updated = 0;
 
     for (const budget of budgets) {
       if (parseFloat(budget.amount) > 0) {
-        await budgetService.createBudget({
-          workspace_id: auth.workspaceId,
-          created_by_user_id: auth.userId,
-          category_id: budget.categoryId,
-          month,
-          year,
-          budget_amount: budget.amount,
-          currency: budget.currency,
-        });
-        created++;
+        try {
+          await budgetService.createBudget({
+            workspace_id: auth.workspaceId,
+            created_by_user_id: auth.userId,
+            category_id: budget.categoryId,
+            month,
+            year,
+            budget_amount: budget.amount,
+            currency: budget.currency,
+          });
+          created++;
+        } catch (error) {
+          // Idempotent onboarding: if budget already exists, update it instead.
+          if (
+            error instanceof BudgetServiceError &&
+            error.code === ServiceErrorCode.BUDGET_ALREADY_EXISTS
+          ) {
+            const existingBudgets = await budgetService.findAllBudgets(
+              auth.workspaceId,
+              month,
+              year,
+              budget.currency
+            );
+            const existing = existingBudgets.find((item) => item.category_id === budget.categoryId);
+
+            if (!existing) {
+              throw error;
+            }
+
+            await budgetService.updateBudget(existing.id, auth.workspaceId, {
+              budget_amount: budget.amount,
+            });
+            updated++;
+            continue;
+          }
+
+          throw error;
+        }
       }
     }
 
-    return successResponse({ created }, 201);
+    return successResponse({ created, updated }, 201);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof BudgetServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error creating onboarding budgets', error);
     return errorResponse('Failed to create budgets', 500);

@@ -59,7 +59,7 @@ const confirmVariants: Record<NonNullable<Props['confirmVariant']>, string> = {
 };
 ---
 
-<Modal id={id} size="sm" closable={false} backdropClose={true}>
+<Modal id={id} size="sm" closable={false} backdropClose={true} ariaLabel={title}>
   <div slot="default" class="flex flex-col gap-6">
     <div class="flex items-center gap-4">
       <div

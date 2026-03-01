@@ -108,7 +108,10 @@ let expenseCategories: CategoryForAllocation[] = [];
 let monthlyIncome: Record<string, string> = {};
 if (currentStep === 4) {
   await categoryService.seedDefaultExpenseCategories(workspaceId, user.id);
-  const allCategories = await categoryService.findAll(workspaceId, { type: 'expense' });
+  const allCategories = await categoryService.findAll(workspaceId, {
+    type: 'expense',
+    is_active: true,
+  });
   expenseCategories = allCategories.map((c) => ({
     id: c.id,
     name: c.name,
@@ -122,7 +125,10 @@ if (currentStep === 4) {
 let step5Categories: CategoryOption[] = [];
 let step5Accounts: AccountOption[] = [];
 if (currentStep === 5) {
-  const allCategories = await categoryService.findAll(workspaceId, { type: 'expense' });
+  const allCategories = await categoryService.findAll(workspaceId, {
+    type: 'expense',
+    is_active: true,
+  });
   step5Categories = allCategories.map((c) => ({
     id: c.id,
     name: c.name,

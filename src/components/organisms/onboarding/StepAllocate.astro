@@ -8,6 +8,8 @@
 
 import { ArrowLeft, ArrowRight, Pencil, Plus, Trash2 } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
+import Modal from '@/components/molecules/Modal.astro';
+import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
 import type { Currency } from '@/lib/constants/currency';
 import { CURRENCY_META } from '@/lib/constants/currency';
 import { DEFAULT_EXPENSE_CATEGORIES } from '@/lib/constants/default-categories';
@@ -187,6 +189,85 @@ for (const cat of categories) {
       </button>
     </div>
   </form>
+
+  <Modal
+    id="onboarding-category-rename-modal"
+    size="sm"
+    closable={false}
+    backdropClose={true}
+    ariaLabel="Rename Category"
+  >
+    <div slot="default" class="space-y-5">
+      <div class="space-y-1">
+        <h2 class="text-xl font-bold tracking-tight text-primary leading-none">Rename Category</h2>
+        <p class="text-sm text-base-content/70">
+          Update the category name before finalizing your budget allocation.
+        </p>
+      </div>
+
+      <form id="onboarding-rename-category-form" class="space-y-3" novalidate>
+        <input type="hidden" name="categoryId" />
+        <div class="form-control gap-1.5">
+          <label class="label px-0 pb-0" for="onboarding-rename-category-name">
+            <span class="label-text text-xs font-medium text-base-content/70">Category name</span>
+          </label>
+          <input
+            id="onboarding-rename-category-name"
+            name="name"
+            type="text"
+            class="input input-bordered w-full rounded-lg border border-base-300"
+            minlength="3"
+            maxlength="100"
+            required
+          />
+        </div>
+
+        <div
+          id="onboarding-rename-category-error"
+          class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+          role="alert"
+        >
+        </div>
+
+        <div class="flex gap-3 pt-1">
+          <button
+            type="button"
+            id="onboarding-rename-category-cancel"
+            class="btn btn-ghost min-h-[44px] flex-1 rounded-lg sm:rounded-xl"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="onboarding-rename-category-submit"
+            class="btn btn-accent min-h-[44px] flex-1 rounded-lg sm:rounded-xl"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+
+  <div data-onboarding-delete-modal-container>
+    <ConfirmationModal
+      id="onboarding-category-delete-modal"
+      title="Delete Category"
+      description="This only removes it from your active onboarding categories."
+      confirmLabel="Delete"
+      confirmVariant="error"
+      confirmLoadingLabel="Deleting..."
+      iconVariant="error"
+    >
+      <div
+        slot="details"
+        class="rounded-xl border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content/80"
+      >
+        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/60">Category</p>
+        <p id="onboarding-delete-category-name" class="mt-1 font-semibold text-base-content"></p>
+      </div>
+    </ConfirmationModal>
+  </div>
 </div>
 
 <script>
@@ -194,6 +275,13 @@ for (const cat of categories) {
   import { csrfFetch } from '@/lib/csrf-client';
   import { stripAmountFormatting } from '@/lib/formatting/amount-input';
   import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+  import {
+    clearConfirmError,
+    closeConfirmationModal,
+    getConfirmationModalElements,
+    setConfirmLoading,
+    showConfirmError,
+  } from '@/components/molecules/ConfirmationModal.client';
 
   function initStepAllocateForm() {
     const form = document.getElementById('onboarding-allocate-form') as HTMLFormElement | null;
@@ -202,6 +290,40 @@ for (const cat of categories) {
     ) as HTMLFormElement | null;
     const errorDiv = document.getElementById('allocate-error');
     const categoryErrorDiv = document.getElementById('allocate-category-error');
+    const renameModal = document.getElementById(
+      'onboarding-category-rename-modal'
+    ) as HTMLDialogElement | null;
+    const renameForm = document.getElementById(
+      'onboarding-rename-category-form'
+    ) as HTMLFormElement | null;
+    const renameCategoryIdInput = renameForm?.querySelector<HTMLInputElement>(
+      'input[name="categoryId"]'
+    );
+    const renameNameInput = renameForm?.querySelector<HTMLInputElement>('input[name="name"]');
+    const renameSubmitButton = document.getElementById(
+      'onboarding-rename-category-submit'
+    ) as HTMLButtonElement | null;
+    const renameCancelButton = document.getElementById(
+      'onboarding-rename-category-cancel'
+    ) as HTMLButtonElement | null;
+    const renameErrorDiv = document.getElementById('onboarding-rename-category-error');
+    const deleteCategoryName = document.getElementById('onboarding-delete-category-name');
+    const deleteModalContainer = document.querySelector('[data-onboarding-delete-modal-container]');
+    const {
+      modal: deleteModal,
+      confirmButton: deleteConfirmButton,
+      cancelButton: deleteCancelButton,
+      errorElement: deleteErrorElement,
+    } = deleteModalContainer
+      ? getConfirmationModalElements(deleteModalContainer, 'onboarding-category-delete-modal')
+      : {
+          modal: null,
+          confirmButton: null,
+          cancelButton: null,
+          errorElement: null,
+        };
+
+    let pendingDeleteCategory: { id: string; name: string } | null = null;
 
     if (!form) return;
 
@@ -229,6 +351,22 @@ for (const cat of categories) {
       if (!categoryErrorDiv) return;
       categoryErrorDiv.classList.add('hidden');
       categoryErrorDiv.textContent = '';
+    }
+
+    function showRenameError(message: string) {
+      if (!renameErrorDiv) return;
+      renameErrorDiv.textContent = message;
+      renameErrorDiv.classList.remove('hidden');
+    }
+
+    function clearRenameError() {
+      if (!renameErrorDiv) return;
+      renameErrorDiv.classList.add('hidden');
+      renameErrorDiv.textContent = '';
+    }
+
+    function reloadAllocationStep() {
+      window.location.href = '/onboarding?reset=allocation';
     }
 
     addCategoryForm?.addEventListener('submit', async (e) => {
@@ -278,7 +416,101 @@ for (const cat of categories) {
       }
     });
 
-    form.addEventListener('click', async (e) => {
+    renameCancelButton?.addEventListener('click', () => {
+      clearRenameError();
+      if (renameModal) {
+        closeConfirmationModal(renameModal);
+      }
+    });
+
+    renameModal?.addEventListener('close', () => {
+      clearRenameError();
+      renameForm?.reset();
+      if (renameCategoryIdInput) renameCategoryIdInput.value = '';
+    });
+
+    renameForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearCategoryError();
+      clearRenameError();
+
+      const categoryId = renameCategoryIdInput?.value.trim() || '';
+      const nextName = renameNameInput?.value.trim() || '';
+
+      if (!categoryId) return;
+      if (nextName.length < 3) {
+        showRenameError('Category name must be at least 3 characters');
+        return;
+      }
+
+      if (renameSubmitButton) {
+        renameSubmitButton.disabled = true;
+        renameSubmitButton.classList.add('loading');
+      }
+
+      try {
+        const res = await csrfFetch(`/api/categories/${categoryId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nextName }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getErrorMessage(data, 'Failed to rename category'));
+        }
+
+        reloadAllocationStep();
+      } catch (err) {
+        showRenameError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        if (renameSubmitButton) {
+          renameSubmitButton.disabled = false;
+          renameSubmitButton.classList.remove('loading');
+        }
+      }
+    });
+
+    deleteCancelButton?.addEventListener('click', () => {
+      clearConfirmError(deleteErrorElement);
+      closeConfirmationModal(deleteModal);
+    });
+
+    deleteModal?.addEventListener('close', () => {
+      pendingDeleteCategory = null;
+      if (deleteCategoryName) deleteCategoryName.textContent = '';
+      clearConfirmError(deleteErrorElement);
+      setConfirmLoading(deleteConfirmButton, false);
+    });
+
+    deleteConfirmButton?.addEventListener('click', async () => {
+      if (!pendingDeleteCategory) return;
+      clearCategoryError();
+      clearConfirmError(deleteErrorElement);
+      setConfirmLoading(deleteConfirmButton, true);
+
+      try {
+        const res = await csrfFetch(`/api/categories/${pendingDeleteCategory.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getErrorMessage(data, 'Failed to delete category'));
+        }
+
+        reloadAllocationStep();
+      } catch (err) {
+        showConfirmError(
+          deleteErrorElement,
+          err instanceof Error ? err.message : 'Failed to delete category'
+        );
+      } finally {
+        setConfirmLoading(deleteConfirmButton, false);
+      }
+    });
+
+    form.addEventListener('click', (e) => {
       const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-category-action]');
       if (!button) return;
       e.preventDefault();
@@ -290,56 +522,24 @@ for (const cat of categories) {
 
       if (!categoryId || !action) return;
 
-      button.disabled = true;
-      button.classList.add('loading');
-
-      try {
-        if (action === 'rename') {
-          const nextName = window.prompt('Rename category', currentName)?.trim();
-          if (nextName === undefined || nextName === null || nextName.length === 0) {
-            return;
-          }
-          if (nextName.length < 3) {
-            showCategoryError('Category name must be at least 3 characters');
-            return;
-          }
-
-          const res = await csrfFetch(`/api/categories/${categoryId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: nextName }),
-          });
-
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(getErrorMessage(data, 'Failed to rename category'));
-          }
+      if (action === 'rename') {
+        if (renameCategoryIdInput) renameCategoryIdInput.value = categoryId;
+        if (renameNameInput) {
+          renameNameInput.value = currentName;
+          queueMicrotask(() => renameNameInput.focus());
         }
+        clearRenameError();
+        renameModal?.showModal();
+        return;
+      }
 
-        if (action === 'delete') {
-          const confirmed = window.confirm(
-            `Delete "${currentName}"? This only removes it from your active categories.`
-          );
-          if (!confirmed) {
-            return;
-          }
-
-          const res = await csrfFetch(`/api/categories/${categoryId}`, {
-            method: 'DELETE',
-          });
-
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(getErrorMessage(data, 'Failed to delete category'));
-          }
+      if (action === 'delete') {
+        pendingDeleteCategory = { id: categoryId, name: currentName };
+        if (deleteCategoryName) {
+          deleteCategoryName.textContent = currentName;
         }
-
-        window.location.href = '/onboarding?reset=allocation';
-      } catch (err) {
-        showCategoryError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        button.disabled = false;
-        button.classList.remove('loading');
+        clearConfirmError(deleteErrorElement);
+        deleteModal?.showModal();
       }
     });
 
@@ -390,8 +590,8 @@ for (const cat of categories) {
         });
 
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || 'Failed to save budgets');
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getErrorMessage(data, 'Failed to save budgets'));
         }
 
         window.location.href = '/onboarding';

@@ -231,7 +231,6 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
 
       const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
       btn.disabled = true;
-      btn.classList.add('loading');
 
       try {
         const res = await csrfFetch('/api/accounts', {
@@ -253,7 +252,6 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
           errorDiv.classList.remove('hidden');
         }
         btn.disabled = false;
-        btn.classList.remove('loading');
       }
     });
 

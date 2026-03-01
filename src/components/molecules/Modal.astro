@@ -22,6 +22,7 @@ import { X } from '@lucide/astro';
 interface Props {
   id: string;
   title?: string;
+  ariaLabel?: string;
   open?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   closable?: boolean;
@@ -32,6 +33,7 @@ interface Props {
 const {
   id,
   title = '',
+  ariaLabel,
   open = false,
   size = 'md',
   closable = true,
@@ -48,12 +50,14 @@ const sizeClasses: Record<string, string> = {
 
 // Generate unique ID for title element to link with aria-labelledby
 const titleId = title ? `${id}-title` : undefined;
+const resolvedAriaLabel = titleId ? undefined : ariaLabel;
 ---
 
 <!-- Modal -->
 <dialog
   id={id}
   aria-labelledby={titleId}
+  aria-label={resolvedAriaLabel}
   class:list={['modal', open && 'modal-open', className]}
   data-modal
   data-backdrop-close={backdropClose ? 'true' : 'false'}

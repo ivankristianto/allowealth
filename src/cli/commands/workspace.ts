@@ -29,7 +29,11 @@ export default defineCommand({
         target: targetArg,
         name: { type: 'string', alias: 'n', description: 'Workspace name', required: true },
         email: { type: 'string', alias: 'e', description: 'Admin invitation email' },
-        currency: { type: 'string', alias: 'c', description: 'Default currency', default: 'IDR' },
+        currency: {
+          type: 'string',
+          alias: 'c',
+          description: 'Optional initial currency (if omitted, onboarding starts at step 1)',
+        },
         'week-start': {
           type: 'string',
           alias: 'w',
@@ -76,9 +80,10 @@ export default defineCommand({
         console.log(`  Created workspace: ${workspace.name} (${workspace.id})`);
 
         const metaService = new WorkspaceMetaService(db);
-        const currency =
-          (args.currency as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY];
-        await metaService.set(workspace.id, WORKSPACE_META_KEYS.CURRENCY, currency);
+        const currency = (args.currency as string | undefined)?.trim();
+        if (currency) {
+          await metaService.set(workspace.id, WORKSPACE_META_KEYS.CURRENCY, currency);
+        }
 
         const weekStart =
           (args['week-start'] as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
@@ -89,7 +94,10 @@ export default defineCommand({
           WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS];
         await metaService.set(workspace.id, WORKSPACE_META_KEYS.COMPACT_NUMBERS, compactNumbers);
 
-        console.log(`  Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
+        const currencyLogValue = currency || 'unset (configured in onboarding step 1)';
+        console.log(
+          `  Set workspace settings (currency: ${currencyLogValue}, weekStart: ${weekStart})`
+        );
 
         const invitationService = new WorkspaceInvitationService(db);
         const invitation = await invitationService.create({
