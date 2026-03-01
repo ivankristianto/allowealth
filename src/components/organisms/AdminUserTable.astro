@@ -18,9 +18,9 @@ const { users } = Astro.props;
 ---
 
 <Card padding="sm">
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto rounded-2xl border border-base-300/80 bg-base-100">
     <table class="table table-sm">
-      <thead>
+      <thead class="bg-base-200/70 text-xs uppercase tracking-wide text-base-content/70">
         <tr>
           <th>Name</th>
           <th>Email</th>
@@ -34,19 +34,29 @@ const { users } = Astro.props;
         {
           users.length === 0 ? (
             <tr>
-              <td colspan="6" class="text-center py-8 text-base-content/60">
+              <td colspan="6" class="text-center py-10 text-base-content/60">
                 <Users
                   size={32}
                   class="stroke-current mx-auto mb-2 opacity-50"
                   aria-hidden="true"
                 />
-                No users found
+                No users matched your filters
               </td>
             </tr>
           ) : (
             users.map((user) => (
-              <tr class="hover cursor-pointer" data-href={`/admin/users/${user.id}`}>
-                <td class="font-semibold">{user.name}</td>
+              <tr
+                class="hover:bg-base-200/50 cursor-pointer border-b border-base-200/80 last:border-b-0 transition-colors touch-manipulation"
+                data-href={`/admin/users/${user.id}`}
+              >
+                <td class="font-semibold text-base-content">
+                  <a
+                    href={`/admin/users/${user.id}`}
+                    class="link link-hover link-primary text-base"
+                  >
+                    {user.name}
+                  </a>
+                </td>
                 <td class="text-base-content/70">{user.email}</td>
                 <td>
                   <span
@@ -65,7 +75,7 @@ const { users } = Astro.props;
                   {user.workspaceName ? (
                     <a
                       href={`/admin/workspaces/${user.workspaceId}`}
-                      class="link link-hover text-sm"
+                      class="link link-hover link-accent text-sm font-medium"
                       data-workspace-link
                     >
                       {user.workspaceName}
@@ -81,7 +91,9 @@ const { users } = Astro.props;
                     <span class="badge badge-sm badge-success">active</span>
                   )}
                 </td>
-                <td class="text-sm">{new Date(user.createdAt).toLocaleDateString()}</td>
+                <td class="text-sm text-base-content/70">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
               </tr>
             ))
           )
@@ -99,24 +111,16 @@ const { users } = Astro.props;
     for (const row of rows) {
       if (row.dataset.bound === 'true') continue;
       row.dataset.bound = 'true';
-      row.setAttribute('tabindex', '0');
-      row.setAttribute('role', 'link');
       const href = row.dataset.href;
-      if (href) {
-        row.setAttribute('aria-label', 'View user details');
-      }
 
       row.addEventListener('click', (e: MouseEvent) => {
         // Don't navigate if clicking a workspace link inside the row
-        if (e.target instanceof HTMLElement && e.target.closest('[data-workspace-link]')) return;
+        if (
+          e.target instanceof HTMLElement &&
+          (e.target.closest('[data-workspace-link]') || e.target.closest('a'))
+        )
+          return;
         if (href) navigate(href);
-      });
-
-      row.addEventListener('keydown', (e: KeyboardEvent) => {
-        if ((e.key === 'Enter' || e.key === ' ') && href) {
-          e.preventDefault();
-          navigate(href);
-        }
       });
     }
   }

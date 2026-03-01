@@ -8,13 +8,29 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 import StatCard from '@/components/atoms/StatCard.astro';
 import Card from '@/components/atoms/Card.astro';
 import { superAdminService } from '@/services';
-import { Building2, Users, Activity, ClipboardList } from '@lucide/astro';
+import { ArrowUpRight, Building2, Users, Activity, ClipboardList } from '@lucide/astro';
 
 const overview = await superAdminService.getPlatformOverview();
 ---
 
 <AdminLayout title="Admin Dashboard" currentPath="/admin" subtitle="Platform Overview">
   <div class="max-w-7xl mx-auto space-y-8" data-testid="admin-dashboard">
+    <section aria-label="Admin summary">
+      <Card padding="sm">
+        <div
+          class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent px-4 py-4"
+        >
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-accent">System Overview</p>
+            <h2 class="text-lg sm:text-xl font-semibold text-base-content">Control Plane</h2>
+          </div>
+          <p class="text-sm text-base-content/70">
+            Monitor workspaces, users, and security-sensitive actions from one view.
+          </p>
+        </div>
+      </Card>
+    </section>
+
     <!-- Stats Cards -->
     <section aria-label="Platform statistics">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -50,19 +66,47 @@ const overview = await superAdminService.getPlatformOverview();
     <!-- Quick Actions -->
     <section aria-label="Quick actions">
       <Card padding="md">
-        <h2 class="text-lg font-bold mb-3">Quick Actions</h2>
-        <div class="flex flex-wrap gap-3">
-          <a href="/admin/workspaces" class="btn btn-outline btn-sm">
-            <Building2 size={16} aria-hidden="true" /> View Workspaces
+        <h2 class="text-lg font-bold mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <a
+            href="/admin/workspaces"
+            class="btn btn-outline rounded-lg sm:rounded-xl justify-between min-h-11"
+          >
+            <span class="inline-flex items-center gap-2">
+              <Building2 size={16} aria-hidden="true" />
+              Workspaces
+            </span>
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
-          <a href="/admin/users" class="btn btn-outline btn-sm">
-            <Users size={16} aria-hidden="true" /> View Users
+          <a
+            href="/admin/users"
+            class="btn btn-outline rounded-lg sm:rounded-xl justify-between min-h-11"
+          >
+            <span class="inline-flex items-center gap-2">
+              <Users size={16} aria-hidden="true" />
+              Users
+            </span>
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
-          <a href="/admin/audit-logs" class="btn btn-outline btn-sm">
-            <ClipboardList size={16} aria-hidden="true" /> View Audit Logs
+          <a
+            href="/admin/audit-logs"
+            class="btn btn-outline rounded-lg sm:rounded-xl justify-between min-h-11"
+          >
+            <span class="inline-flex items-center gap-2">
+              <ClipboardList size={16} aria-hidden="true" />
+              Audit Logs
+            </span>
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
-          <a href="/admin/diagnostics" class="btn btn-outline btn-sm">
-            <Activity size={16} aria-hidden="true" /> View Diagnostics
+          <a
+            href="/admin/diagnostics"
+            class="btn btn-outline rounded-lg sm:rounded-xl justify-between min-h-11"
+          >
+            <span class="inline-flex items-center gap-2">
+              <Activity size={16} aria-hidden="true" />
+              Diagnostics
+            </span>
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
         </div>
       </Card>

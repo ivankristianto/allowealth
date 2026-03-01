@@ -9,23 +9,11 @@
  * @see https://github.com/oasis-finance/design-system
  */
 
-import {
-  LayoutDashboard,
-  Receipt,
-  RefreshCw,
-  Donut,
-  Wallet,
-  ChartBar,
-  TrendingUp,
-  Calculator,
-  Settings,
-  X,
-  ChevronLeft,
-  ClipboardList,
-} from '@lucide/astro';
+import { X, ChevronLeft } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
-import AdminNavigation from './AdminNavigation.astro';
+import UserNav from './UserNav.astro';
+import AdminNav from './AdminNav.astro';
 import { APP_VERSION } from '@/lib/version';
 
 interface Props {
@@ -35,47 +23,8 @@ interface Props {
 
 const { currentPath = '/', user = null } = Astro.props;
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  badge?: string;
-  external?: boolean;
-}
-
-// Updated icons per premium design spec - each nav item has unique icon
-// Note: Categories is accessible via /budget/categories (linked from Budget page)
-const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/transactions', label: 'Transactions', icon: Receipt },
-  { href: '/recurring', label: 'Recurring', icon: RefreshCw },
-  { href: '/budget', label: 'Budget', icon: Donut },
-  { href: '/accounts', label: 'Accounts', icon: Wallet },
-  { href: '/reports', label: 'Reports', icon: ChartBar },
-  { href: '/forecast', label: 'Forecast', icon: TrendingUp },
-  { href: '/calculators', label: 'Calculators', icon: Calculator },
-  { href: 'https://docs.allowealth.io', label: 'Docs', icon: ClipboardList, external: true },
-  { href: '/settings', label: 'Settings', icon: Settings },
-];
-
 // Check if user is super admin
 const isSuperAdmin = user?.role === 'super_admin';
-
-const isActive = (href: string) => {
-  // Settings alias: treat /profile and /security as settings area
-  if (href === '/settings') {
-    return (
-      currentPath === '/profile' ||
-      currentPath === '/security' ||
-      currentPath.startsWith('/settings')
-    );
-  }
-
-  // Exact match for index routes
-  if (currentPath === href) return true;
-  // For nested routes (e.g., /accounts/history), parent is active if path starts with href + '/'
-  return currentPath.startsWith(href + '/');
-};
 
 // Oasis Finance v1.0.0 Design System - Sidebar specifications:
 // - Width: 16rem (256px)
@@ -107,9 +56,15 @@ const isActive = (href: string) => {
       <img src="/favicon.svg" alt="" class="w-8 h-8" aria-hidden="true" />
       <span class="text-xl font-bold tracking-tight text-base-content">allowealth</span>
     </a>
-    <label for="drawer-toggle" class="btn btn-sm btn-circle btn-ghost" aria-label="Close menu">
+    <button
+      type="button"
+      class="btn btn-circle btn-ghost rounded-lg min-h-11 min-w-11"
+      data-drawer-close
+      aria-label="Close menu"
+      aria-controls="drawer-toggle"
+    >
       <X size={22} class="stroke-current" />
-    </label>
+    </button>
   </div>
 
   <!-- Floating Collapse Toggle -->
@@ -162,49 +117,7 @@ const isActive = (href: string) => {
   <ul
     class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto flex flex-col flex-nowrap min-h-0 group-data-[sidebar-collapsed=true]:px-2"
   >
-    {
-      navItems.map((item) => {
-        const active = isActive(item.href);
-        return (
-          <li class="shrink-0">
-            <a
-              href={item.href}
-              data-nav-href={item.href}
-              rel={item.external ? 'noopener noreferrer' : undefined}
-              title={item.label}
-              aria-label={item.label}
-              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
-                active
-                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
-                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
-              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
-              aria-current={!item.external && active ? 'page' : undefined}
-            >
-              <item.icon
-                size={22}
-                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
-                  active ? 'text-accent' : ''
-                }`}
-                aria-hidden="true"
-              />
-              <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
-              <span
-                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
-                data-nav-dot
-                aria-hidden="true"
-              />
-              {item.badge && (
-                <span class="badge badge-sm badge-accent group-data-[sidebar-collapsed=true]:hidden">
-                  {item.badge}
-                </span>
-              )}
-            </a>
-          </li>
-        );
-      })
-    }
-
-    {isSuperAdmin && <AdminNavigation currentPath={currentPath} />}
+    {isSuperAdmin ? <AdminNav currentPath={currentPath} /> : <UserNav currentPath={currentPath} />}
   </ul>
 
   <!-- Bottom section - User info -->
@@ -213,6 +126,23 @@ const isActive = (href: string) => {
 
 <script>
   const STORAGE_KEY = 'ff.sidebar.collapsed';
+
+  const initDrawerCloseControl = () => {
+    const drawerToggle = document.getElementById('drawer-toggle');
+    if (!(drawerToggle instanceof HTMLInputElement)) return;
+
+    const closeButtons = document.querySelectorAll('[data-drawer-close]');
+    closeButtons.forEach((button) => {
+      if (!(button instanceof HTMLElement)) return;
+      if (button.dataset.drawerBound === 'true') return;
+      button.dataset.drawerBound = 'true';
+
+      button.addEventListener('click', () => {
+        drawerToggle.checked = false;
+        drawerToggle.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    });
+  };
 
   const initSidebarCollapse = () => {
     const root = document.querySelector('[data-sidebar-root]');
@@ -261,10 +191,19 @@ const isActive = (href: string) => {
   };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSidebarCollapse, { once: true });
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        initSidebarCollapse();
+        initDrawerCloseControl();
+      },
+      { once: true }
+    );
   } else {
     initSidebarCollapse();
+    initDrawerCloseControl();
   }
 
   document.addEventListener('astro:page-load', initSidebarCollapse);
+  document.addEventListener('astro:page-load', initDrawerCloseControl);
 </script>

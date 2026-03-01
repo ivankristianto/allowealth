@@ -42,42 +42,44 @@ try {
     </nav>
 
     <!-- Header with actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h2 class="text-2xl font-bold">{workspace.name}</h2>
-        <div class="flex items-center gap-2 mt-1">
-          <span
-            class={`badge ${workspace.status === 'active' ? 'badge-success' : 'badge-warning'}`}
+    <Card padding="sm">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold">{workspace.name}</h2>
+          <div class="flex items-center gap-2 mt-1">
+            <span
+              class={`badge ${workspace.status === 'active' ? 'badge-success' : 'badge-warning'}`}
+            >
+              {workspace.status}
+            </span>
+            <span class="text-sm text-base-content/60">
+              Created {new Date(workspace.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          {
+            workspace.status === 'active' && (
+              <button
+                class="btn btn-warning rounded-lg sm:rounded-xl min-h-11"
+                data-archive-btn
+                data-workspace-id={workspace.id}
+              >
+                Archive
+              </button>
+            )
+          }
+          <button
+            class="btn btn-error rounded-lg sm:rounded-xl min-h-11"
+            data-delete-btn
+            data-workspace-id={workspace.id}
+            data-workspace-name={workspace.name}
           >
-            {workspace.status}
-          </span>
-          <span class="text-sm text-base-content/60">
-            Created {new Date(workspace.createdAt).toLocaleDateString()}
-          </span>
+            Delete
+          </button>
         </div>
       </div>
-      <div class="flex gap-2">
-        {
-          workspace.status === 'active' && (
-            <button
-              class="btn btn-warning btn-sm"
-              data-archive-btn
-              data-workspace-id={workspace.id}
-            >
-              Archive
-            </button>
-          )
-        }
-        <button
-          class="btn btn-error btn-sm"
-          data-delete-btn
-          data-workspace-id={workspace.id}
-          data-workspace-name={workspace.name}
-        >
-          Delete
-        </button>
-      </div>
-    </div>
+    </Card>
 
     <!-- Stats -->
     <AdminWorkspaceStats workspace={workspace} />
@@ -136,18 +138,24 @@ try {
         <p class="font-semibold mb-2">
           Type <span class="text-error" data-workspace-name-display>{workspace.name}</span> to confirm:
         </p>
+        <label for="confirm-workspace-name" class="text-sm font-medium text-base-content/80">
+          Type workspace name to confirm
+        </label>
         <input
+          id="confirm-workspace-name"
           type="text"
-          class="input input-bordered w-full"
+          class="input input-bordered rounded-xl w-full"
           data-confirm-name-input
           placeholder="Type workspace name..."
         />
       </div>
       <div class="modal-action">
         <form method="dialog">
-          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-ghost rounded-2xl">Cancel</button>
         </form>
-        <button class="btn btn-error" data-confirm-delete disabled> Delete Workspace </button>
+        <button class="btn btn-error rounded-2xl" data-confirm-delete disabled>
+          Delete Workspace
+        </button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

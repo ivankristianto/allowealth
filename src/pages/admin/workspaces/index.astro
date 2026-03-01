@@ -9,7 +9,7 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
 import AdminWorkspaceTable from '@/components/organisms/AdminWorkspaceTable.astro';
 import { superAdminService } from '@/services';
-import { Search } from '@lucide/astro';
+import { Search, SlidersHorizontal, X } from '@lucide/astro';
 
 // Parse query params for server-side filtering
 const url = Astro.url;
@@ -23,12 +23,12 @@ const sortBy =
     : 'created_at';
 const rawSortOrder = url.searchParams.get('sortOrder');
 const sortOrder = rawSortOrder === 'asc' || rawSortOrder === 'desc' ? rawSortOrder : 'desc';
-const rawPage = parseInt(url.searchParams.get('page') || '1', 10);
-const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+const rawPage = Number.parseInt(url.searchParams.get('page') || '1', 10);
+let page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
 const limit = 20;
-const offset = (page - 1) * limit;
+let offset = (page - 1) * limit;
 
-const result = await superAdminService.listAllWorkspaces({
+let result = await superAdminService.listAllWorkspaces({
   search: search || undefined,
   status,
   sortBy,
@@ -37,38 +37,107 @@ const result = await superAdminService.listAllWorkspaces({
   offset,
 });
 
-const totalPages = Math.ceil(result.total / limit);
+const totalPages = Math.max(1, Math.ceil(result.total / limit));
+if (page > totalPages) {
+  page = totalPages;
+  offset = (page - 1) * limit;
+  result = await superAdminService.listAllWorkspaces({
+    search: search || undefined,
+    status,
+    sortBy,
+    sortOrder,
+    limit,
+    offset,
+  });
+}
+
+const hasActiveFilters = Boolean(search || status);
+const isFirstPage = page <= 1;
+const isLastPage = page >= totalPages;
+const visibleStart = Math.max(1, page - 4);
+const visibleEnd = Math.min(totalPages, visibleStart + 8);
+const pageNumbers = Array.from(
+  { length: Math.max(0, visibleEnd - visibleStart + 1) },
+  (_, index) => visibleStart + index
+);
+
+function buildQueryString(pageNum: number): string {
+  const params = new URLSearchParams();
+  params.set('page', String(pageNum));
+  if (search) params.set('search', search);
+  if (status) params.set('status', status);
+  params.set('sortBy', sortBy);
+  params.set('sortOrder', sortOrder);
+  return `/admin/workspaces?${params.toString()}`;
+}
 ---
 
 <AdminLayout title="Workspaces" currentPath="/admin/workspaces" subtitle="All Workspaces">
   <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-workspaces">
+    <section aria-label="Workspaces summary">
+      <Card padding="sm">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-accent">Tenancy</p>
+            <h2 class="text-lg sm:text-xl font-semibold text-base-content">Workspace Directory</h2>
+          </div>
+          <span class="badge badge-outline">{result.total} total</span>
+        </div>
+      </Card>
+    </section>
+
     <!-- Search and filters -->
     <section aria-label="Search and filters">
       <Card compact padding="sm">
-        <form method="GET" class="flex flex-col sm:flex-row gap-3">
-          <label class="input input-bordered flex items-center gap-2 flex-1">
-            <Search size={16} class="stroke-current opacity-50" aria-hidden="true" />
-            <input
-              type="text"
-              name="search"
-              value={search}
-              placeholder="Search workspaces..."
-              class="grow"
-              aria-label="Search workspaces"
-            />
-          </label>
-          <select name="status" class="select select-bordered">
-            <option value="">All Status</option>
-            <option value="active" selected={status === 'active'}>Active</option>
-            <option value="inactive" selected={status === 'inactive'}>Inactive</option>
-          </select>
-          <button type="submit" class="btn btn-accent">Search</button>
+        <form method="GET" class="space-y-4">
+          <div
+            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60"
+          >
+            <SlidersHorizontal size={14} aria-hidden="true" />
+            Filters
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+            <label class="input input-bordered rounded-xl sm:col-span-4 flex items-center gap-2">
+              <Search size={16} class="stroke-current opacity-50" aria-hidden="true" />
+              <input
+                type="text"
+                name="search"
+                value={search}
+                placeholder="Search workspaces..."
+                class="grow"
+                aria-label="Search workspaces"
+              />
+            </label>
+            <select
+              name="status"
+              class="select select-bordered rounded-xl sm:col-span-1"
+              aria-label="Filter by workspace status"
+            >
+              <option value="">All Status</option>
+              <option value="active" selected={status === 'active'}>Active</option>
+              <option value="inactive" selected={status === 'inactive'}>Inactive</option>
+            </select>
+            <button type="submit" class="btn btn-accent rounded-lg sm:rounded-xl sm:col-span-1">
+              Search
+            </button>
+          </div>
+          {
+            hasActiveFilters && (
+              <a href="/admin/workspaces" class="btn btn-ghost rounded-lg min-h-11">
+                <X size={14} aria-hidden="true" />
+                Clear filters
+              </a>
+            )
+          }
         </form>
       </Card>
     </section>
 
     <!-- Results count -->
-    <p class="text-sm text-base-content/60">{result.total} workspace(s) found</p>
+    <p class="text-sm text-base-content/60">
+      Showing {(page - 1) * limit + (result.workspaces.length > 0 ? 1 : 0)}-
+      {(page - 1) * limit + result.workspaces.length} of {result.total} workspaces
+    </p>
 
     <!-- Table -->
     <section aria-label="Workspace list">
@@ -79,16 +148,47 @@ const totalPages = Math.ceil(result.total / limit);
     {
       totalPages > 1 && (
         <nav aria-label="Pagination">
-          <div class="join flex justify-center">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
+            {isFirstPage ? (
+              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+                Previous
+              </button>
+            ) : (
               <a
-                href={`/admin/workspaces?page=${p}${search ? `&search=${search}` : ''}${status ? `&status=${status}` : ''}&sortBy=${sortBy}&sortOrder=${sortOrder}`}
-                class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
-                aria-current={p === page ? 'page' : undefined}
+                href={buildQueryString(Math.max(1, page - 1))}
+                class="btn rounded-lg sm:rounded-xl min-h-11"
               >
-                {p}
+                Previous
               </a>
-            ))}
+            )}
+            <div class="hidden sm:flex items-center gap-2">
+              <div class="join">
+                {pageNumbers.map((p) => (
+                  <a
+                    href={buildQueryString(p)}
+                    class:list={['join-item btn rounded-lg min-h-11', { 'btn-active': p === page }]}
+                    aria-current={p === page ? 'page' : undefined}
+                  >
+                    {p}
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div class="sm:hidden text-sm text-base-content/70 px-2">
+              Page {page} of {totalPages}
+            </div>
+            {isLastPage ? (
+              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+                Next
+              </button>
+            ) : (
+              <a
+                href={buildQueryString(Math.min(totalPages, page + 1))}
+                class="btn rounded-lg sm:rounded-xl min-h-11"
+              >
+                Next
+              </a>
+            )}
           </div>
         </nav>
       )

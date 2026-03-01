@@ -1,0 +1,96 @@
+---
+import {
+  LayoutDashboard,
+  Receipt,
+  RefreshCw,
+  Donut,
+  Wallet,
+  ChartBar,
+  TrendingUp,
+  Calculator,
+  Settings,
+  ClipboardList,
+} from '@lucide/astro';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = '/' } = Astro.props;
+
+interface UserNavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  badge?: string;
+  external?: boolean;
+}
+
+const userNavItems: UserNavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/transactions', label: 'Transactions', icon: Receipt },
+  { href: '/recurring', label: 'Recurring', icon: RefreshCw },
+  { href: '/budget', label: 'Budget', icon: Donut },
+  { href: '/accounts', label: 'Accounts', icon: Wallet },
+  { href: '/reports', label: 'Reports', icon: ChartBar },
+  { href: '/forecast', label: 'Forecast', icon: TrendingUp },
+  { href: '/calculators', label: 'Calculators', icon: Calculator },
+  { href: 'https://docs.allowealth.io', label: 'Docs', icon: ClipboardList, external: true },
+  { href: '/settings', label: 'Settings', icon: Settings },
+];
+
+const isActive = (href: string) => {
+  if (href === '/settings') {
+    return (
+      currentPath === '/profile' ||
+      currentPath === '/security' ||
+      currentPath.startsWith('/settings')
+    );
+  }
+
+  if (currentPath === href) return true;
+  return currentPath.startsWith(href + '/');
+};
+---
+
+{
+  userNavItems.map((item) => {
+    const active = isActive(item.href);
+    return (
+      <li class="shrink-0">
+        <a
+          href={item.href}
+          data-nav-href={item.href}
+          rel={item.external ? 'noopener noreferrer' : undefined}
+          title={item.label}
+          aria-label={item.label}
+          class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+            active
+              ? 'bg-accent/10 text-accent font-bold border-accent/20'
+              : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+          aria-current={!item.external && active ? 'page' : undefined}
+        >
+          <item.icon
+            size={22}
+            class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+              active ? 'text-accent' : ''
+            }`}
+            aria-hidden="true"
+          />
+          <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
+          <span
+            class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
+            data-nav-dot
+            aria-hidden="true"
+          />
+          {item.badge && (
+            <span class="badge badge-sm badge-accent group-data-[sidebar-collapsed=true]:hidden">
+              {item.badge}
+            </span>
+          )}
+        </a>
+      </li>
+    );
+  })
+}

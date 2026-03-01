@@ -8,6 +8,7 @@
  */
 import Card from '@/components/atoms/Card.astro';
 import type { WorkspaceStats } from '@/services/super-admin.service';
+import { Building2 } from '@lucide/astro';
 
 interface Props {
   workspaces: WorkspaceStats[];
@@ -17,9 +18,9 @@ const { workspaces } = Astro.props;
 ---
 
 <Card padding="sm">
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto rounded-2xl border border-base-300/80 bg-base-100">
     <table class="table table-sm">
-      <thead>
+      <thead class="bg-base-200/70 text-xs uppercase tracking-wide text-base-content/70">
         <tr>
           <th>Name</th>
           <th>Status</th>
@@ -33,14 +34,29 @@ const { workspaces } = Astro.props;
         {
           workspaces.length === 0 ? (
             <tr>
-              <td colspan="6" class="text-center py-8 text-base-content/60">
-                No workspaces found
+              <td colspan="6" class="text-center py-10 text-base-content/60">
+                <Building2
+                  size={28}
+                  class="stroke-current mx-auto mb-2 opacity-50"
+                  aria-hidden="true"
+                />
+                No workspaces matched your filters
               </td>
             </tr>
           ) : (
             workspaces.map((ws) => (
-              <tr class="hover cursor-pointer" data-href={`/admin/workspaces/${ws.id}`}>
-                <td class="font-semibold">{ws.name}</td>
+              <tr
+                class="hover:bg-base-200/50 cursor-pointer border-b border-base-200/80 last:border-b-0 transition-colors touch-manipulation"
+                data-href={`/admin/workspaces/${ws.id}`}
+              >
+                <td class="font-semibold text-base-content">
+                  <a
+                    href={`/admin/workspaces/${ws.id}`}
+                    class="link link-hover link-primary text-base"
+                  >
+                    {ws.name}
+                  </a>
+                </td>
                 <td>
                   <span
                     class={`badge badge-sm ${ws.status === 'active' ? 'badge-success' : 'badge-warning'}`}
@@ -48,10 +64,10 @@ const { workspaces } = Astro.props;
                     {ws.status}
                   </span>
                 </td>
-                <td>{ws.memberCount}</td>
-                <td>{ws.transactionCount}</td>
-                <td>{ws.accountCount}</td>
-                <td>{new Date(ws.createdAt).toLocaleDateString()}</td>
+                <td class="font-medium">{ws.memberCount}</td>
+                <td class="font-medium">{ws.transactionCount}</td>
+                <td class="font-medium">{ws.accountCount}</td>
+                <td class="text-base-content/70">{new Date(ws.createdAt).toLocaleDateString()}</td>
               </tr>
             ))
           )
@@ -69,23 +85,11 @@ const { workspaces } = Astro.props;
     for (const row of rows) {
       if (row.dataset.bound === 'true') continue;
       row.dataset.bound = 'true';
-      // Keyboard accessibility: allow Enter/Space to navigate
-      row.setAttribute('tabindex', '0');
-      row.setAttribute('role', 'link');
       const href = row.dataset.href;
-      if (href) {
-        row.setAttribute('aria-label', `View workspace details`);
-      }
 
-      row.addEventListener('click', () => {
+      row.addEventListener('click', (e: MouseEvent) => {
+        if (e.target instanceof HTMLElement && e.target.closest('a')) return;
         if (href) navigate(href);
-      });
-
-      row.addEventListener('keydown', (e: KeyboardEvent) => {
-        if ((e.key === 'Enter' || e.key === ' ') && href) {
-          e.preventDefault();
-          navigate(href);
-        }
       });
     }
   }

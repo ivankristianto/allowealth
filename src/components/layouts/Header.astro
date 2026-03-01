@@ -46,6 +46,7 @@ const {
   secondaryCurrency,
 } = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
+const showNewTransactionButton = user != null && user.role !== 'super_admin';
 ---
 
 <header
@@ -59,13 +60,16 @@ const hasHeaderSlot = Astro.slots.has('header');
     <div class="flex items-center gap-3">
       {
         showMenuToggle && (
-          <label
-            for="drawer-toggle"
-            class="btn btn-square btn-ghost btn-sm lg:hidden"
-            aria-label="Toggle menu"
+          <button
+            type="button"
+            class="btn btn-square btn-ghost rounded-lg min-h-11 min-w-11 lg:hidden"
+            data-drawer-open
+            aria-label="Open menu"
+            aria-controls="drawer-toggle"
+            aria-expanded="false"
           >
             <Menu size={24} class="stroke-current" aria-hidden="true" />
-          </label>
+          </button>
         )
       }
       <div>
@@ -113,7 +117,7 @@ const hasHeaderSlot = Astro.slots.has('header');
       {/* <NotificationDropdown /> */}
 
       {
-        user && (
+        showNewTransactionButton && (
           <div class="hidden lg:block">
             <Button
               id="bulk-entry-button"

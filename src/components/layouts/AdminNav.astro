@@ -54,9 +54,6 @@ const adminNavItems: AdminNavItem[] = [
 ];
 ---
 
-<li class="menu-title mt-4 group-data-[sidebar-collapsed=true]:hidden">
-  <span>Admin</span>
-</li>
 {
   adminNavItems.map((item) => {
     const active = item.isActive(currentPath);

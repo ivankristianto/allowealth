@@ -51,62 +51,68 @@ const isSuperAdmin = user.role === 'super_admin';
     </nav>
 
     <!-- Header with actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div class="flex items-center gap-4">
-        {
-          user.avatarUrl ? (
-            <div class="avatar">
-              <div class="w-12 rounded-full">
-                <img src={user.avatarUrl} alt={`${user.name} avatar`} />
+    <Card padding="sm">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          {
+            user.avatarUrl ? (
+              <div class="avatar">
+                <div class="w-12 rounded-full">
+                  <img src={user.avatarUrl} alt={`${user.name} avatar`} />
+                </div>
               </div>
+            ) : (
+              <div class="avatar placeholder">
+                <div class="bg-base-300 text-base-content w-12 rounded-full">
+                  <span class="text-lg">{user.name.charAt(0).toUpperCase()}</span>
+                </div>
+              </div>
+            )
+          }
+          <div>
+            <h2 class="text-2xl font-bold">{user.name}</h2>
+            <div class="flex items-center gap-2 mt-1">
+              <span
+                class={`badge ${
+                  user.role === 'super_admin'
+                    ? 'badge-error'
+                    : user.role === 'admin'
+                      ? 'badge-accent'
+                      : 'badge-ghost'
+                }`}
+              >
+                {user.role}
+              </span>
+              {isDeactivated && <span class="badge badge-warning">deactivated</span>}
             </div>
-          ) : (
-            <div class="avatar placeholder">
-              <div class="bg-base-300 text-base-content w-12 rounded-full">
-                <span class="text-lg">{user.name.charAt(0).toUpperCase()}</span>
-              </div>
+          </div>
+        </div>
+        {
+          !isSuperAdmin && (
+            <div class="flex gap-2">
+              {isDeactivated ? (
+                <button
+                  class="btn btn-success rounded-lg sm:rounded-xl min-h-11"
+                  data-reactivate-btn
+                  data-user-id={user.id}
+                >
+                  Reactivate
+                </button>
+              ) : (
+                <button
+                  class="btn btn-warning rounded-lg sm:rounded-xl min-h-11"
+                  data-deactivate-btn
+                  data-user-id={user.id}
+                  data-user-name={user.name}
+                >
+                  Deactivate
+                </button>
+              )}
             </div>
           )
         }
-        <div>
-          <h2 class="text-2xl font-bold">{user.name}</h2>
-          <div class="flex items-center gap-2 mt-1">
-            <span
-              class={`badge ${
-                user.role === 'super_admin'
-                  ? 'badge-error'
-                  : user.role === 'admin'
-                    ? 'badge-accent'
-                    : 'badge-ghost'
-              }`}
-            >
-              {user.role}
-            </span>
-            {isDeactivated && <span class="badge badge-warning">deactivated</span>}
-          </div>
-        </div>
       </div>
-      {
-        !isSuperAdmin && (
-          <div class="flex gap-2">
-            {isDeactivated ? (
-              <button class="btn btn-success btn-sm" data-reactivate-btn data-user-id={user.id}>
-                Reactivate
-              </button>
-            ) : (
-              <button
-                class="btn btn-warning btn-sm"
-                data-deactivate-btn
-                data-user-id={user.id}
-                data-user-name={user.name}
-              >
-                Deactivate
-              </button>
-            )}
-          </div>
-        )
-      }
-    </div>
+    </Card>
 
     <!-- User Info -->
     <section aria-label="User information">
@@ -168,7 +174,7 @@ const isSuperAdmin = user.role === 'super_admin';
             <div class="flex items-center gap-4">
               <Shield size={16} class="text-base-content/40" aria-hidden="true" />
               <select
-                class="select select-bordered select-sm"
+                class="select select-bordered select-sm rounded-xl"
                 data-role-select
                 data-user-id={user.id}
                 aria-label="User role"
@@ -180,7 +186,11 @@ const isSuperAdmin = user.role === 'super_admin';
                   Member
                 </option>
               </select>
-              <button class="btn btn-accent btn-sm" data-save-role-btn disabled>
+              <button
+                class="btn btn-accent rounded-lg sm:rounded-xl min-h-11"
+                data-save-role-btn
+                disabled
+              >
                 Save Role
               </button>
             </div>
@@ -209,9 +219,9 @@ const isSuperAdmin = user.role === 'super_admin';
       </div>
       <div class="modal-action">
         <form method="dialog">
-          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-ghost rounded-2xl">Cancel</button>
         </form>
-        <button class="btn btn-warning" data-confirm-deactivate>Deactivate</button>
+        <button class="btn btn-warning rounded-2xl" data-confirm-deactivate>Deactivate</button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

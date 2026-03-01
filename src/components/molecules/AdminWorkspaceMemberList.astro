@@ -25,14 +25,17 @@ const { members } = Astro.props;
 
 <section aria-label="Workspace members">
   <Card padding="md">
-    <h3 class="text-lg font-bold mb-4">Members ({members.length})</h3>
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h3 class="text-lg font-bold">Members</h3>
+      <span class="badge badge-outline">{members.length}</span>
+    </div>
     {
       members.length === 0 ? (
-        <p class="text-base-content/60">No members</p>
+        <p class="text-base-content/60 py-2">No members in this workspace.</p>
       ) : (
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto rounded-2xl border border-base-300/80 bg-base-100">
           <table class="table table-sm">
-            <thead>
+            <thead class="bg-base-200/70 text-xs uppercase tracking-wide text-base-content/70">
               <tr>
                 <th>Name</th>
                 <th>Email</th>
@@ -42,8 +45,8 @@ const { members } = Astro.props;
             </thead>
             <tbody>
               {members.map((member) => (
-                <tr>
-                  <td class="font-semibold">{member.name}</td>
+                <tr class="border-b border-base-200/80 last:border-b-0">
+                  <td class="font-semibold text-base-content">{member.name}</td>
                   <td class="text-base-content/70">{member.email}</td>
                   <td>
                     {member.role === 'super_admin' ? (

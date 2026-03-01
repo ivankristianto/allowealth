@@ -2,111 +2,518 @@
 /**
  * Admin Audit Logs Page
  *
- * Displays paginated audit log entries across all workspaces.
+ * Displays searchable and filterable audit log entries across all workspaces.
  * Super admin only.
  */
 
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
-import { db, auditLogs, users } from '@/db';
-import { desc, eq, sql } from 'drizzle-orm';
-import { ClipboardList } from '@lucide/astro';
+import { db, auditLogs, users, workspaces } from '@/db';
+import { and, desc, eq, or, sql } from 'drizzle-orm';
+import { ClipboardList, Search, SlidersHorizontal, X } from '@lucide/astro';
+
+type AuditLogRow = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  workspaceId: string;
+  workspaceName: string | null;
+  createdAt: Date | number | string;
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+};
+
+type DisplayAuditLog = AuditLogRow & {
+  actionLabel: string;
+  entityLabel: string;
+  actorPrimary: string;
+  actorSecondary: string | null;
+  workspaceLabel: string;
+  summary: string;
+  changedFields: string[];
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  create: 'Created',
+  update: 'Updated',
+  delete: 'Deleted',
+  archive: 'Archived',
+  restore: 'Restored',
+  login: 'Signed In',
+  logout: 'Signed Out',
+  password_change: 'Password Changed',
+  member_invite: 'Member Invited',
+  member_remove: 'Member Removed',
+  admin_view: 'Viewed by Admin',
+  admin_archive: 'Archived by Admin',
+  admin_delete: 'Deleted by Admin',
+  admin_deactivate: 'User Deactivated',
+  admin_reactivate: 'User Reactivated',
+  admin_role_change: 'Role Changed',
+  mfa_setup_init: 'MFA Setup Started',
+  mfa_enable: 'MFA Enabled',
+  mfa_disable: 'MFA Disabled',
+  mfa_backup_regenerate: 'MFA Backup Codes Regenerated',
+  'recurring_template.create': 'Recurring Template Created',
+  'recurring_template.update': 'Recurring Template Updated',
+  'recurring_template.pause': 'Recurring Template Paused',
+  'recurring_template.resume': 'Recurring Template Resumed',
+  'recurring_template.cancel': 'Recurring Template Canceled',
+  'recurring_template.delete': 'Recurring Template Deleted',
+  'recurring_occurrence.confirm': 'Recurring Occurrence Confirmed',
+  'recurring_occurrence.skip': 'Recurring Occurrence Skipped',
+};
+
+const ENTITY_LABELS: Record<string, string> = {
+  transaction: 'Transaction',
+  category: 'Category',
+  account: 'Account',
+  budget: 'Budget',
+  recurring_template: 'Recurring Template',
+  recurring_occurrence: 'Recurring Occurrence',
+  user: 'User',
+  workspace: 'Workspace',
+  session: 'Session',
+  user_mfa: 'User MFA',
+};
+
+function clampPositiveInt(value: string | null, fallback: number): number {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+function toTitleCase(input: string): string {
+  return input
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function humanizeToken(token: string): string {
+  return toTitleCase(token.replace(/[_.]/g, ' ').replace(/\s+/g, ' ').trim());
+}
+
+function formatActionLabel(action: string): string {
+  return ACTION_LABELS[action] ?? humanizeToken(action);
+}
+
+function formatEntityLabel(entityType: string): string {
+  return ENTITY_LABELS[entityType] ?? humanizeToken(entityType);
+}
+
+function safeParseObject(value: string | null): Record<string, unknown> | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function stringifyValue(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function humanizeFieldKey(key: string): string {
+  const fieldAliases: Record<string, string> = {
+    category_id: 'Category',
+    account_id: 'Account',
+    transaction_date: 'Date',
+    deleted_at: 'Deleted At',
+    deleted_by_user_id: 'Deleted By',
+    updated_at: 'Updated At',
+    updated_by_user_id: 'Updated By',
+    email_verified_at: 'Email Verified',
+  };
+  if (fieldAliases[key]) return fieldAliases[key];
+  return humanizeToken(key);
+}
+
+function getChangedFields(
+  oldObject: Record<string, unknown> | null,
+  newObject: Record<string, unknown> | null
+): string[] {
+  const keySet = new Set<string>();
+  if (oldObject) {
+    Object.keys(oldObject).forEach((key) => keySet.add(key));
+  }
+  if (newObject) {
+    Object.keys(newObject).forEach((key) => keySet.add(key));
+  }
+
+  const changed: string[] = [];
+  for (const key of keySet) {
+    const oldValue = oldObject?.[key];
+    const newValue = newObject?.[key];
+    if (stringifyValue(oldValue) !== stringifyValue(newValue)) {
+      changed.push(humanizeFieldKey(key));
+    }
+  }
+
+  return changed;
+}
+
+function buildSummary(log: AuditLogRow, changedFieldCount: number): string {
+  const entity = formatEntityLabel(log.entityType).toLowerCase();
+  const simpleSummaries: Record<string, string> = {
+    create: `Created ${entity}`,
+    update: changedFieldCount
+      ? `Updated ${changedFieldCount} field${changedFieldCount > 1 ? 's' : ''}`
+      : `Updated ${entity}`,
+    delete: `Deleted ${entity}`,
+    archive: `Archived ${entity}`,
+    restore: `Restored ${entity}`,
+    admin_deactivate: 'User account deactivated',
+    admin_reactivate: 'User account reactivated',
+    admin_role_change: 'User role changed',
+  };
+
+  if (simpleSummaries[log.action]) return simpleSummaries[log.action];
+  return `${formatActionLabel(log.action)} (${formatEntityLabel(log.entityType)})`;
+}
+
+function formatDateTime(value: Date | number | string): string {
+  return new Date(value).toLocaleString();
+}
+
+function truncateId(value: string | null): string {
+  if (!value) return '-';
+  if (value.length <= 16) return value;
+  return `${value.slice(0, 8)}...${value.slice(-4)}`;
+}
+
+function actionBadgeClass(action: string): string {
+  if (action.includes('delete') || action === 'admin_deactivate') return 'badge-error';
+  if (action.includes('create') || action === 'login' || action === 'admin_reactivate')
+    return 'badge-success';
+  if (action.includes('archive') || action.includes('disable') || action.includes('pause'))
+    return 'badge-warning';
+  return 'badge-info';
+}
 
 // Parse query params
 const url = Astro.url;
-const rawPage = parseInt(url.searchParams.get('page') || '1', 10);
-const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
-const limit = 50;
-const offset = (page - 1) * limit;
+const search = (url.searchParams.get('search') || '').trim();
+const actionFilter = (url.searchParams.get('action') || '').trim();
+const entityTypeFilter = (url.searchParams.get('entityType') || '').trim();
+const workspaceIdFilter = (url.searchParams.get('workspaceId') || '').trim();
+const requestedPage = clampPositiveInt(url.searchParams.get('page'), 1);
+const limit = 25;
 
-// Query audit logs with user info
-const logs = await (db as any)
+const conditions: any[] = [];
+if (actionFilter) conditions.push(eq(auditLogs.action, actionFilter));
+if (entityTypeFilter) conditions.push(eq(auditLogs.entity_type, entityTypeFilter));
+if (workspaceIdFilter) conditions.push(eq(auditLogs.workspace_id, workspaceIdFilter));
+if (search) {
+  const pattern = `%${search.toLowerCase()}%`;
+  conditions.push(
+    or(
+      sql`lower(${auditLogs.action}) like ${pattern}`,
+      sql`lower(${auditLogs.entity_type}) like ${pattern}`,
+      sql`lower(coalesce(${auditLogs.entity_id}, '')) like ${pattern}`,
+      sql`lower(coalesce(${users.name}, '')) like ${pattern}`,
+      sql`lower(coalesce(${users.email}, '')) like ${pattern}`,
+      sql`lower(coalesce(${workspaces.name}, '')) like ${pattern}`
+    )
+  );
+}
+const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+let countQuery = (db as any)
+  .select({ count: sql<number>`count(*)` })
+  .from(auditLogs)
+  .leftJoin(users, eq(auditLogs.user_id, users.id))
+  .leftJoin(workspaces, eq(auditLogs.workspace_id, workspaces.id));
+if (whereClause) {
+  countQuery = countQuery.where(whereClause);
+}
+
+const [countResult, actions, entityTypes, workspaceOptions] = await Promise.all([
+  (async () => {
+    const [result] = await countQuery;
+    return result;
+  })(),
+  (db as any).selectDistinct({ value: auditLogs.action }).from(auditLogs).orderBy(auditLogs.action),
+  (db as any)
+    .selectDistinct({ value: auditLogs.entity_type })
+    .from(auditLogs)
+    .orderBy(auditLogs.entity_type),
+  (db as any)
+    .select({ id: workspaces.id, name: workspaces.name })
+    .from(workspaces)
+    .orderBy(workspaces.name),
+]);
+
+const total = countResult?.count ?? 0;
+const totalPages = Math.max(1, Math.ceil(total / limit));
+const page = Math.min(requestedPage, totalPages);
+const offset = (page - 1) * limit;
+const hasActiveFilters = Boolean(search || actionFilter || entityTypeFilter || workspaceIdFilter);
+const isFirstPage = page <= 1;
+const isLastPage = page >= totalPages;
+
+let logsQuery = (db as any)
   .select({
     id: auditLogs.id,
     action: auditLogs.action,
     entityType: auditLogs.entity_type,
     entityId: auditLogs.entity_id,
     workspaceId: auditLogs.workspace_id,
+    workspaceName: workspaces.name,
     createdAt: auditLogs.created_at,
     userId: auditLogs.user_id,
     userName: users.name,
     userEmail: users.email,
+    oldValue: auditLogs.old_value,
+    newValue: auditLogs.new_value,
   })
   .from(auditLogs)
   .leftJoin(users, eq(auditLogs.user_id, users.id))
+  .leftJoin(workspaces, eq(auditLogs.workspace_id, workspaces.id));
+
+if (whereClause) {
+  logsQuery = logsQuery.where(whereClause);
+}
+const logs = (await logsQuery
   .orderBy(desc(auditLogs.created_at))
   .limit(limit)
-  .offset(offset);
+  .offset(offset)) as AuditLogRow[];
 
-// Get total count
-const [countResult] = await (db as any).select({ count: sql<number>`count(*)` }).from(auditLogs);
-const total = countResult?.count ?? 0;
-const totalPages = Math.ceil(total / limit);
+const displayLogs: DisplayAuditLog[] = logs.map((log) => {
+  const oldObject = safeParseObject(log.oldValue);
+  const newObject = safeParseObject(log.newValue);
+  const allChangedFields = getChangedFields(oldObject, newObject);
+  const changedFields = allChangedFields.slice(0, 4);
+
+  return {
+    ...log,
+    actionLabel: formatActionLabel(log.action),
+    entityLabel: formatEntityLabel(log.entityType),
+    actorPrimary: log.userName || 'Unknown User',
+    actorSecondary: log.userEmail,
+    workspaceLabel: log.workspaceName || truncateId(log.workspaceId),
+    summary: buildSummary(log, allChangedFields.length),
+    changedFields,
+  };
+});
+
+function buildQueryString(pageNum: number): string {
+  const params = new URLSearchParams();
+  params.set('page', String(pageNum));
+  if (search) params.set('search', search);
+  if (actionFilter) params.set('action', actionFilter);
+  if (entityTypeFilter) params.set('entityType', entityTypeFilter);
+  if (workspaceIdFilter) params.set('workspaceId', workspaceIdFilter);
+  return `/admin/audit-logs?${params.toString()}`;
+}
+
+const visibleStart = Math.max(1, page - 4);
+const visibleEnd = Math.min(totalPages, visibleStart + 8);
+const pageNumbers = Array.from(
+  { length: Math.max(0, visibleEnd - visibleStart + 1) },
+  (_, index) => visibleStart + index
+);
 ---
 
-<AdminLayout title="Audit Logs" currentPath="/admin/audit-logs" subtitle="System Activity">
+<AdminLayout
+  title="Audit Logs"
+  currentPath="/admin/audit-logs"
+  subtitle="Security & Activity Trail"
+>
   <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-audit-logs">
-    <p class="text-sm text-base-content/60">{total} log entries</p>
+    <section aria-label="Audit summary">
+      <Card padding="sm">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-accent">Compliance</p>
+            <h2 class="text-lg sm:text-xl font-semibold text-base-content">
+              Platform Activity Feed
+            </h2>
+          </div>
+          <span class="badge badge-outline">{total} matching events</span>
+        </div>
+      </Card>
+    </section>
+
+    <section aria-label="Audit filters">
+      <Card compact padding="sm">
+        <form method="GET" class="space-y-4">
+          <div
+            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60"
+          >
+            <SlidersHorizontal size={14} aria-hidden="true" />
+            Filters
+          </div>
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+            <label class="input input-bordered rounded-xl xl:col-span-4 flex items-center gap-2">
+              <Search size={16} class="stroke-current opacity-50" aria-hidden="true" />
+              <input
+                type="text"
+                name="search"
+                value={search}
+                placeholder="Search action, actor, entity, or workspace..."
+                class="grow"
+                aria-label="Search audit logs"
+              />
+            </label>
+
+            <select
+              name="action"
+              class="select select-bordered rounded-xl xl:col-span-3"
+              aria-label="Filter by action"
+            >
+              <option value="">All Actions</option>
+              {
+                actions.map((item: { value: string }) => (
+                  <option value={item.value} selected={actionFilter === item.value}>
+                    {formatActionLabel(item.value)}
+                  </option>
+                ))
+              }
+            </select>
+
+            <select
+              name="entityType"
+              class="select select-bordered rounded-xl xl:col-span-2"
+              aria-label="Filter by entity type"
+            >
+              <option value="">All Entities</option>
+              {
+                entityTypes.map((item: { value: string }) => (
+                  <option value={item.value} selected={entityTypeFilter === item.value}>
+                    {formatEntityLabel(item.value)}
+                  </option>
+                ))
+              }
+            </select>
+
+            <select
+              name="workspaceId"
+              class="select select-bordered rounded-xl xl:col-span-2"
+              aria-label="Filter by workspace"
+            >
+              <option value="">All Workspaces</option>
+              {
+                workspaceOptions.map((workspace: { id: string; name: string }) => (
+                  <option value={workspace.id} selected={workspaceIdFilter === workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))
+              }
+            </select>
+
+            <button type="submit" class="btn btn-accent rounded-lg sm:rounded-xl xl:col-span-1">
+              Search
+            </button>
+          </div>
+
+          {
+            hasActiveFilters && (
+              <a href="/admin/audit-logs" class="btn btn-ghost rounded-lg min-h-11">
+                <X size={14} aria-hidden="true" />
+                Clear filters
+              </a>
+            )
+          }
+        </form>
+      </Card>
+    </section>
+
+    <p class="text-sm text-base-content/60">
+      Showing {total === 0 ? 0 : offset + 1}-{Math.min(offset + displayLogs.length, total)} of {
+        total
+      }
+      {' '}events
+    </p>
 
     <section aria-label="Audit log entries">
       <Card padding="sm">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto rounded-2xl border border-base-300/80 bg-base-100">
           <table class="table table-sm">
-            <thead>
+            <thead class="bg-base-200/70 text-xs uppercase tracking-wide text-base-content/70">
               <tr>
-                <th>Date</th>
-                <th>User</th>
-                <th>Action</th>
+                <th>When</th>
+                <th>Actor</th>
+                <th>Event</th>
                 <th>Entity</th>
                 <th>Workspace</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
               {
-                logs.length === 0 ? (
+                displayLogs.length === 0 ? (
                   <tr>
-                    <td colspan="5" class="text-center py-8 text-base-content/60">
+                    <td colspan="6" class="text-center py-10 text-base-content/60">
                       <ClipboardList
                         size={32}
                         class="stroke-current mx-auto mb-2 opacity-50"
                         aria-hidden="true"
                       />
-                      No audit logs found
+                      No audit events matched your filters.
                     </td>
                   </tr>
                 ) : (
-                  logs.map(
-                    (log: {
-                      id: string;
-                      action: string;
-                      entityType: string;
-                      entityId: string | null;
-                      workspaceId: string;
-                      createdAt: Date | number;
-                      userId: string;
-                      userName: string | null;
-                      userEmail: string | null;
-                    }) => (
-                      <tr>
-                        <td class="text-sm">{new Date(log.createdAt).toLocaleString()}</td>
-                        <td class="text-sm">{log.userName || log.userId}</td>
-                        <td>
-                          <span class="badge badge-ghost badge-sm">{log.action}</span>
-                        </td>
-                        <td class="text-sm">
-                          {log.entityType}
-                          {log.entityId && (
-                            <span class="text-base-content/50 ml-1">
-                              ({log.entityId.slice(0, 8)}...)
-                            </span>
-                          )}
-                        </td>
-                        <td class="text-sm font-mono text-base-content/50">
-                          {log.workspaceId ? `${log.workspaceId.slice(0, 8)}...` : '-'}
-                        </td>
-                      </tr>
-                    )
-                  )
+                  displayLogs.map((log) => (
+                    <tr class="border-b border-base-200/80 last:border-b-0 align-top">
+                      <td class="whitespace-nowrap text-sm text-base-content/80">
+                        {formatDateTime(log.createdAt)}
+                      </td>
+                      <td>
+                        <div class="font-medium text-base-content">{log.actorPrimary}</div>
+                        {log.actorSecondary && (
+                          <div class="text-xs text-base-content/60">{log.actorSecondary}</div>
+                        )}
+                      </td>
+                      <td>
+                        <span class={`badge badge-sm ${actionBadgeClass(log.action)}`}>
+                          {log.actionLabel}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="font-medium text-base-content">{log.entityLabel}</div>
+                        <div
+                          class="text-xs font-mono text-base-content/60"
+                          title={log.entityId ?? '-'}
+                        >
+                          {truncateId(log.entityId)}
+                        </div>
+                      </td>
+                      <td>
+                        <div class="text-sm text-base-content">{log.workspaceLabel}</div>
+                        <div class="text-xs font-mono text-base-content/60" title={log.workspaceId}>
+                          {truncateId(log.workspaceId)}
+                        </div>
+                      </td>
+                      <td>
+                        <div class="text-sm text-base-content/80">{log.summary}</div>
+                        {log.changedFields.length > 0 && (
+                          <div class="flex flex-wrap gap-1.5 mt-2">
+                            {log.changedFields.map((field) => (
+                              <span class="badge badge-outline badge-xs">{field}</span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
                 )
               }
             </tbody>
@@ -115,20 +522,55 @@ const totalPages = Math.ceil(total / limit);
       </Card>
     </section>
 
-    {/* Pagination */}
     {
       totalPages > 1 && (
         <nav aria-label="Pagination">
-          <div class="join flex justify-center">
-            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+          <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
+            {isFirstPage ? (
+              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+                Previous
+              </button>
+            ) : (
               <a
-                href={`/admin/audit-logs?page=${p}`}
-                class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
-                aria-current={p === page ? 'page' : undefined}
+                href={buildQueryString(Math.max(1, page - 1))}
+                class="btn rounded-lg sm:rounded-xl min-h-11"
               >
-                {p}
+                Previous
               </a>
-            ))}
+            )}
+
+            <div class="hidden sm:flex items-center gap-2">
+              <div class="join">
+                {pageNumbers.map((pageNum) => (
+                  <a
+                    href={buildQueryString(pageNum)}
+                    class:list={[
+                      'join-item btn rounded-lg min-h-11',
+                      { 'btn-active': pageNum === page },
+                    ]}
+                    aria-current={pageNum === page ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div class="sm:hidden text-sm text-base-content/70 px-2">
+              Page {page} of {totalPages}
+            </div>
+
+            {isLastPage ? (
+              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+                Next
+              </button>
+            ) : (
+              <a
+                href={buildQueryString(Math.min(totalPages, page + 1))}
+                class="btn rounded-lg sm:rounded-xl min-h-11"
+              >
+                Next
+              </a>
+            )}
           </div>
         </nav>
       )
