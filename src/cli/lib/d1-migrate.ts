@@ -40,13 +40,26 @@ export function findPendingMigrations(all: JournalEntry[], appliedTags: string[]
 }
 
 /**
+ * Build env for wrangler subprocess.
+ * Maps CLOUDFLARE_TOKEN (app's canonical name) to CLOUDFLARE_API_TOKEN (wrangler's expected name).
+ */
+function wranglerEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    ...(process.env.CLOUDFLARE_TOKEN && !process.env.CLOUDFLARE_API_TOKEN
+      ? { CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_TOKEN }
+      : {}),
+  };
+}
+
+/**
  * Execute a SQL command against D1 via wrangler.
  */
 function d1Execute(sql: string, local: boolean): string {
   const result = execFileSync(
     'wrangler',
     ['d1', 'execute', D1_DATABASE_NAME, local ? '--local' : '--remote', '--command', sql],
-    { encoding: 'utf-8' }
+    { encoding: 'utf-8', env: wranglerEnv() }
   );
   return result;
 }
@@ -58,7 +71,7 @@ function d1ExecuteJson(sql: string, local: boolean): Record<string, unknown>[] {
   const result = execFileSync(
     'wrangler',
     ['d1', 'execute', D1_DATABASE_NAME, local ? '--local' : '--remote', '--command', sql, '--json'],
-    { encoding: 'utf-8' }
+    { encoding: 'utf-8', env: wranglerEnv() }
   );
   const parsed = JSON.parse(result) as Array<{ results?: Record<string, unknown>[] }>;
   // wrangler d1 --json returns an array of result sets

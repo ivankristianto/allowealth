@@ -126,12 +126,12 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Target Values
 
-| Target     | Database               | Env loading                  | Auth                                     |
-| ---------- | ---------------------- | ---------------------------- | ---------------------------------------- |
-| `sqlite`   | Local SQLite (default) | None                         | N/A                                      |
-| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` (D1 Edit permissions) |
-| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite directly     |
-| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env               |
+| Target     | Database               | Env loading                  | Auth                                                                                                         |
+| ---------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                          |
+| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` in `.env.production` (mapped to `CLOUDFLARE_API_TOKEN` for wrangler; D1 Edit permissions) |
+| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite directly                                                                         |
+| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env                                                                                   |
 
 ### Quick Reference
 
