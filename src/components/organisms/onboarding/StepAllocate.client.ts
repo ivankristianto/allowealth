@@ -1,8 +1,20 @@
-import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+import {
+  attachAmountFormatter,
+  stripAmountFormatting,
+  type AmountFormatterHandle,
+} from '@/lib/formatting/amount-input';
+import type { Currency } from '@/lib/constants/currency';
 
 let controller: AbortController | null = null;
+let formatterHandles: AmountFormatterHandle[] = [];
+
+function cleanupFormatters() {
+  formatterHandles.forEach((handle) => handle.cleanup());
+  formatterHandles = [];
+}
 
 function initStepAllocate() {
+  cleanupFormatters();
   controller?.abort();
   controller = new AbortController();
   const { signal } = controller;
@@ -20,7 +32,8 @@ function initStepAllocate() {
   function updateAllocation() {
     let allocated = 0;
     inputs.forEach((input) => {
-      const raw = stripAmountFormatting(input.value);
+      const inputCurrency = (input.dataset.amountCurrency as Currency | undefined) ?? 'IDR';
+      const raw = stripAmountFormatting(input.value, inputCurrency);
       allocated += parseFloat(raw) || 0;
     });
 
@@ -36,6 +49,8 @@ function initStepAllocate() {
   }
 
   inputs.forEach((input) => {
+    const inputCurrency = (input.dataset.amountCurrency as Currency | undefined) ?? 'IDR';
+    formatterHandles.push(attachAmountFormatter(input, inputCurrency));
     input.addEventListener('input', updateAllocation, { signal });
   });
 
@@ -46,4 +61,5 @@ function initStepAllocate() {
 document.addEventListener('astro:page-load', initStepAllocate);
 document.addEventListener('astro:before-swap', () => {
   controller?.abort();
+  cleanupFormatters();
 });

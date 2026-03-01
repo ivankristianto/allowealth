@@ -140,10 +140,22 @@ const defaultAccount = accounts[0];
         <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back
       </a>
-      <button type="submit" class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl">
-        Complete setup
-        <CircleCheckBig size={16} class="stroke-current" aria-hidden="true" />
-      </button>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          id="onboarding-skip-expense"
+          class="btn btn-outline min-h-[44px] rounded-lg border-base-300 px-4 sm:rounded-xl"
+        >
+          Skip for now
+        </button>
+        <button
+          type="submit"
+          class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
+        >
+          Complete setup
+          <CircleCheckBig size={16} class="stroke-current" aria-hidden="true" />
+        </button>
+      </div>
     </div>
   </form>
 </div>
@@ -151,12 +163,66 @@ const defaultAccount = accounts[0];
 <script>
   import { csrfFetch } from '@/lib/csrf-client';
   import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   function initStepExpense() {
     const form = document.getElementById('onboarding-expense-form') as HTMLFormElement | null;
     const errorDiv = document.getElementById('expense-error');
+    const skipBtn = document.getElementById('onboarding-skip-expense') as HTMLButtonElement | null;
 
     if (!form) return;
+
+    function getErrorMessage(payload: unknown, fallback: string): string {
+      if (!payload || typeof payload !== 'object') return fallback;
+      const maybeError = (payload as { error?: unknown }).error;
+      if (typeof maybeError === 'string') return maybeError;
+      if (
+        maybeError &&
+        typeof maybeError === 'object' &&
+        typeof (maybeError as { message?: unknown }).message === 'string'
+      ) {
+        return (maybeError as { message: string }).message;
+      }
+      return fallback;
+    }
+
+    skipBtn?.addEventListener('click', async () => {
+      if (errorDiv) {
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+      }
+
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (skipBtn) {
+        skipBtn.disabled = true;
+        skipBtn.classList.add('loading');
+      }
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const res = await csrfFetch('/api/onboarding/skip-first-expense', {
+          method: 'POST',
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getErrorMessage(data, 'Failed to skip first expense'));
+        }
+
+        window.location.href = '/dashboard';
+      } catch (err) {
+        if (errorDiv) {
+          errorDiv.textContent = err instanceof Error ? err.message : 'An error occurred';
+          errorDiv.classList.remove('hidden');
+        }
+      } finally {
+        if (skipBtn) {
+          skipBtn.disabled = false;
+          skipBtn.classList.remove('loading');
+        }
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -167,7 +233,6 @@ const defaultAccount = accounts[0];
 
       const formData = new FormData(form);
       const rawAmount = formData.get('amount') as string;
-      const amount = stripAmountFormatting(rawAmount);
       const categoryId = formData.get('categoryId') as string;
       const accountId = formData.get('accountId') as string;
       const description = (formData.get('description') as string).trim();
@@ -176,7 +241,9 @@ const defaultAccount = accounts[0];
       // Get currency from the selected account option
       const accountSelect = document.getElementById('expense-account') as HTMLSelectElement;
       const selectedOption = accountSelect.selectedOptions[0];
-      const currency = selectedOption?.dataset.currency || '';
+      const rawCurrency = selectedOption?.dataset.currency || '';
+      const currency: Currency = isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
+      const amount = stripAmountFormatting(rawAmount, currency);
 
       if (!amount || parseFloat(amount) <= 0) {
         if (errorDiv) {
@@ -214,8 +281,8 @@ const defaultAccount = accounts[0];
         });
 
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || 'Failed to record expense');
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getErrorMessage(data, 'Failed to record expense'));
         }
 
         // Onboarding complete! Go to dashboard

@@ -112,6 +112,12 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
       }
       break;
 
+    case WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED:
+      if (value !== 'true' && value !== 'false') {
+        throw new Error('Onboarding expense skipped must be "true" or "false"');
+      }
+      break;
+
     default:
       // Unknown key - should never happen if isValidWorkspaceMetaKey is checked first
       break;
@@ -540,6 +546,25 @@ export class WorkspaceMetaService {
    */
   async setMonthlyIncome(workspaceId: string, income: Record<string, string>): Promise<void> {
     await this.set(workspaceId, WORKSPACE_META_KEYS.MONTHLY_INCOME, JSON.stringify(income));
+  }
+
+  /**
+   * Get whether first expense was explicitly skipped in onboarding.
+   */
+  async getOnboardingExpenseSkipped(workspaceId: string): Promise<boolean> {
+    const value = await this.get(workspaceId, WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED);
+    return metaValueToBoolean(value, false);
+  }
+
+  /**
+   * Set whether first expense was explicitly skipped in onboarding.
+   */
+  async setOnboardingExpenseSkipped(workspaceId: string, skipped: boolean): Promise<void> {
+    await this.set(
+      workspaceId,
+      WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED,
+      booleanToMetaValue(skipped)
+    );
   }
 
   /**

@@ -42,6 +42,7 @@ if (!user || !user.workspaceId) return Astro.redirect('/login', 302);
 
 const workspaceId = user.workspaceId;
 const status: OnboardingStatus = await workspaceService.getOnboardingStatus(workspaceId);
+const settings = await workspaceMetaService.getSettings(workspaceId);
 
 // If all steps complete, redirect to dashboard
 const isComplete =
@@ -77,16 +78,10 @@ const STEP_TITLES = [
   'Record your first expense',
 ];
 
-// Load workspace settings for steps that need currency info
-let currencies: Currency[] = [];
-let settings: Awaited<ReturnType<typeof workspaceMetaService.getSettings>> | null = null;
-
-if (currentStep >= 2) {
-  settings = await workspaceMetaService.getSettings(workspaceId);
-  currencies = [settings.currency];
-  if (settings.secondaryCurrency && isValidCurrency(settings.secondaryCurrency)) {
-    currencies.push(settings.secondaryCurrency);
-  }
+// Load workspace currencies from persisted settings for all steps.
+const currencies: Currency[] = [settings.currency];
+if (settings.secondaryCurrency && isValidCurrency(settings.secondaryCurrency)) {
+  currencies.push(settings.secondaryCurrency);
 }
 
 // Step 2 data: existing accounts
@@ -159,8 +154,8 @@ if (currentStep === 5) {
           {
             currentStep === 1 && (
               <StepCurrency
-                currentCurrency={settings?.currency}
-                currentSecondaryCurrency={settings?.secondaryCurrency}
+                currentCurrency={settings.currency}
+                currentSecondaryCurrency={settings.secondaryCurrency}
               />
             )
           }

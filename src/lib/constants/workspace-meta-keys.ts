@@ -16,6 +16,7 @@ export const WORKSPACE_META_KEYS = {
   WEEK_START: 'week_start',
   COMPACT_NUMBERS: 'compact_numbers',
   MONTHLY_INCOME: 'monthly_income',
+  ONBOARDING_EXPENSE_SKIPPED: 'onboarding_expense_skipped',
 } as const;
 
 /**
@@ -32,6 +33,7 @@ export const WORKSPACE_META_DEFAULTS: Record<WorkspaceMetaKey, string> = {
   [WORKSPACE_META_KEYS.WEEK_START]: 'monday',
   [WORKSPACE_META_KEYS.COMPACT_NUMBERS]: 'true',
   [WORKSPACE_META_KEYS.MONTHLY_INCOME]: '',
+  [WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED]: 'false',
 };
 
 /**

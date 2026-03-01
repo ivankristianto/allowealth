@@ -109,6 +109,23 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.income).toBe(false);
   });
 
+  it('should detect transactions as set when first expense was skipped', async () => {
+    // Currency check
+    (mockDb.query.workspaceMeta.findFirst as any)
+      .mockResolvedValueOnce(undefined) // currency
+      .mockResolvedValueOnce(undefined) // income
+      .mockResolvedValueOnce({ id: 'meta-skip' }); // onboarding_expense_skipped
+    (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.query.budgets.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(undefined);
+
+    const status = await workspaceService.getOnboardingStatus('workspace-1');
+
+    expect(status.transactions).toBe(true);
+    expect(status.income).toBe(false);
+  });
+
   it('should detect income as set when monthly_income meta has content', async () => {
     // Currency not set
     (mockDb.query.workspaceMeta.findFirst as any)

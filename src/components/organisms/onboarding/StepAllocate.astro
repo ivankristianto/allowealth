@@ -6,7 +6,7 @@
  * Pre-fills smart defaults based on income and category percentages.
  */
 
-import { ArrowLeft, ArrowRight } from '@lucide/astro';
+import { ArrowLeft, ArrowRight, Pencil, Plus, Trash2 } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import type { Currency } from '@/lib/constants/currency';
 import { CURRENCY_META } from '@/lib/constants/currency';
@@ -75,10 +75,48 @@ for (const cat of categories) {
     </p>
   </div>
 
+  <div class="space-y-3 rounded-xl border border-base-300 bg-base-200/40 p-4 sm:p-5">
+    <div class="space-y-1">
+      <p class="text-sm font-semibold text-base-content">Manage categories</p>
+      <p class="text-xs text-base-content/60">
+        Add, rename, or remove categories before saving your budget allocation.
+      </p>
+    </div>
+
+    <form
+      id="onboarding-add-category-form"
+      class="flex flex-col gap-2 sm:flex-row sm:items-end"
+      novalidate
+    >
+      <div class="form-control flex-1 gap-1.5">
+        <label class="label px-0 pb-0" for="new-category-name">
+          <span class="label-text text-xs font-medium text-base-content/70">New category name</span>
+        </label>
+        <input
+          id="new-category-name"
+          name="name"
+          type="text"
+          class="input input-bordered w-full rounded-lg border border-base-300"
+          placeholder="e.g., Education"
+          minlength="3"
+          maxlength="100"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        class="btn btn-outline min-h-[44px] gap-2 rounded-lg border-base-300 sm:rounded-xl"
+      >
+        <Plus size={16} class="stroke-current" aria-hidden="true" />
+        Add category
+      </button>
+    </form>
+  </div>
+
   <form id="onboarding-allocate-form" class="space-y-3" novalidate>
     {
       categories.map((cat) => (
-        <div class="grid grid-cols-1 gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-center">
+        <div class="grid grid-cols-1 gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-center">
           <div class="min-w-0">
             <p class="truncate text-sm font-semibold text-base-content">{cat.name}</p>
           </div>
@@ -91,11 +129,42 @@ for (const cat of categories) {
             className="w-full rounded-lg border border-base-300 input-bordered input-sm"
             data-testid={`budget-input-${cat.id}`}
           />
+          <div class="flex justify-end gap-1.5 sm:justify-start">
+            <button
+              type="button"
+              class="btn btn-ghost btn-square btn-sm rounded-lg"
+              data-category-action="rename"
+              data-category-id={cat.id}
+              data-category-name={cat.name}
+              aria-label={`Rename ${cat.name}`}
+              title={`Rename ${cat.name}`}
+            >
+              <Pencil size={14} class="stroke-current" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost btn-square btn-sm rounded-lg text-error hover:bg-error/10"
+              data-category-action="delete"
+              data-category-id={cat.id}
+              data-category-name={cat.name}
+              aria-label={`Delete ${cat.name}`}
+              title={`Delete ${cat.name}`}
+            >
+              <Trash2 size={14} class="stroke-current" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       ))
     }
 
     <input type="hidden" name="currency" value={primaryCurrency} />
+
+    <div
+      id="allocate-category-error"
+      class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+      role="alert"
+    >
+    </div>
 
     <div
       id="allocate-error"
@@ -124,12 +193,155 @@ for (const cat of categories) {
   import './StepAllocate.client';
   import { csrfFetch } from '@/lib/csrf-client';
   import { stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   function initStepAllocateForm() {
     const form = document.getElementById('onboarding-allocate-form') as HTMLFormElement | null;
+    const addCategoryForm = document.getElementById(
+      'onboarding-add-category-form'
+    ) as HTMLFormElement | null;
     const errorDiv = document.getElementById('allocate-error');
+    const categoryErrorDiv = document.getElementById('allocate-category-error');
 
     if (!form) return;
+
+    function getErrorMessage(payload: unknown, fallback: string): string {
+      if (!payload || typeof payload !== 'object') return fallback;
+      const maybeError = (payload as { error?: unknown }).error;
+      if (typeof maybeError === 'string') return maybeError;
+      if (
+        maybeError &&
+        typeof maybeError === 'object' &&
+        typeof (maybeError as { message?: unknown }).message === 'string'
+      ) {
+        return (maybeError as { message: string }).message;
+      }
+      return fallback;
+    }
+
+    function showCategoryError(message: string) {
+      if (!categoryErrorDiv) return;
+      categoryErrorDiv.textContent = message;
+      categoryErrorDiv.classList.remove('hidden');
+    }
+
+    function clearCategoryError() {
+      if (!categoryErrorDiv) return;
+      categoryErrorDiv.classList.add('hidden');
+      categoryErrorDiv.textContent = '';
+    }
+
+    addCategoryForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearCategoryError();
+      const formData = new FormData(addCategoryForm);
+      const name = String(formData.get('name') ?? '').trim();
+
+      if (name.length < 3) {
+        showCategoryError('Category name must be at least 3 characters');
+        return;
+      }
+
+      const btn = addCategoryForm.querySelector(
+        'button[type="submit"]'
+      ) as HTMLButtonElement | null;
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('loading');
+      }
+
+      try {
+        const res = await csrfFetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            type: 'expense',
+            icon: 'tag',
+            color: 'bg-primary',
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(getErrorMessage(data, 'Failed to add category'));
+        }
+
+        window.location.href = '/onboarding?reset=allocation';
+      } catch (err) {
+        showCategoryError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('loading');
+        }
+      }
+    });
+
+    form.addEventListener('click', async (e) => {
+      const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-category-action]');
+      if (!button) return;
+      e.preventDefault();
+      clearCategoryError();
+
+      const action = button.dataset.categoryAction;
+      const categoryId = button.dataset.categoryId;
+      const currentName = button.dataset.categoryName ?? 'category';
+
+      if (!categoryId || !action) return;
+
+      button.disabled = true;
+      button.classList.add('loading');
+
+      try {
+        if (action === 'rename') {
+          const nextName = window.prompt('Rename category', currentName)?.trim();
+          if (nextName === undefined || nextName === null || nextName.length === 0) {
+            return;
+          }
+          if (nextName.length < 3) {
+            showCategoryError('Category name must be at least 3 characters');
+            return;
+          }
+
+          const res = await csrfFetch(`/api/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: nextName }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(getErrorMessage(data, 'Failed to rename category'));
+          }
+        }
+
+        if (action === 'delete') {
+          const confirmed = window.confirm(
+            `Delete "${currentName}"? This only removes it from your active categories.`
+          );
+          if (!confirmed) {
+            return;
+          }
+
+          const res = await csrfFetch(`/api/categories/${categoryId}`, {
+            method: 'DELETE',
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(getErrorMessage(data, 'Failed to delete category'));
+          }
+        }
+
+        window.location.href = '/onboarding?reset=allocation';
+      } catch (err) {
+        showCategoryError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        button.disabled = false;
+        button.classList.remove('loading');
+      }
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -139,7 +351,9 @@ for (const cat of categories) {
       }
 
       const formData = new FormData(form);
-      const currency = formData.get('currency') as string;
+      const rawCurrency = formData.get('currency');
+      const currency: Currency =
+        typeof rawCurrency === 'string' && isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
       const now = new Date();
       const month = now.getMonth() + 1;
       const year = now.getFullYear();
@@ -149,7 +363,7 @@ for (const cat of categories) {
       for (const [key, value] of formData.entries()) {
         if (key.startsWith('budget_')) {
           const categoryId = key.replace('budget_', '');
-          const amount = stripAmountFormatting(value as string);
+          const amount = stripAmountFormatting(value as string, currency);
           if (amount && parseFloat(amount) > 0) {
             budgets.push({ categoryId, amount, currency });
           }
