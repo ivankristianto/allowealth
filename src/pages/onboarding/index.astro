@@ -141,45 +141,59 @@ if (currentStep === 5) {
 }
 ---
 
-<ProtectedLayout title="Set up your workspace" currentPath="/onboarding">
-  <div class="mx-auto max-w-xl px-4 py-8">
-    <OnboardingProgress
-      currentStep={currentStep}
-      totalSteps={5}
-      stepTitle={STEP_TITLES[currentStep]}
-    />
-
-    {
-      currentStep === 1 && (
-        <StepCurrency
-          currentCurrency={settings?.currency}
-          currentSecondaryCurrency={settings?.secondaryCurrency}
+<ProtectedLayout
+  title="Set up your workspace"
+  subtitle="Complete these five steps to start with a clean, realistic budget baseline."
+  currentPath="/onboarding"
+>
+  <main class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
+    <section class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <div class="space-y-8 p-5 sm:p-8">
+        <OnboardingProgress
+          currentStep={currentStep}
+          totalSteps={5}
+          stepTitle={STEP_TITLES[currentStep]}
         />
-      )
-    }
 
-    {currentStep === 2 && <StepAccounts accounts={accounts} currencies={currencies} />}
+        <div class="rounded-xl border border-base-300 bg-base-100 p-4 sm:p-6">
+          {
+            currentStep === 1 && (
+              <StepCurrency
+                currentCurrency={settings?.currency}
+                currentSecondaryCurrency={settings?.secondaryCurrency}
+              />
+            )
+          }
 
-    {currentStep === 3 && <StepIncome currencies={currencies} currentIncome={currentIncome} />}
+          {currentStep === 2 && <StepAccounts accounts={accounts} currencies={currencies} />}
 
-    {
-      currentStep === 4 && (
-        <StepAllocate
-          categories={expenseCategories}
-          income={monthlyIncome}
-          currencies={currencies}
-        />
-      )
-    }
+          {
+            currentStep === 3 && (
+              <StepIncome currencies={currencies} currentIncome={currentIncome} />
+            )
+          }
 
-    {
-      currentStep === 5 && (
-        <StepFirstExpense
-          categories={step5Categories}
-          accounts={step5Accounts}
-          currencies={currencies}
-        />
-      )
-    }
-  </div>
+          {
+            currentStep === 4 && (
+              <StepAllocate
+                categories={expenseCategories}
+                income={monthlyIncome}
+                currencies={currencies}
+              />
+            )
+          }
+
+          {
+            currentStep === 5 && (
+              <StepFirstExpense
+                categories={step5Categories}
+                accounts={step5Accounts}
+                currencies={currencies}
+              />
+            )
+          }
+        </div>
+      </div>
+    </section>
+  </main>
 </ProtectedLayout>

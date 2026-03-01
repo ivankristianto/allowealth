@@ -6,6 +6,7 @@
  * Pre-fills smart defaults based on income and category percentages.
  */
 
+import { ArrowLeft, ArrowRight } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import type { Currency } from '@/lib/constants/currency';
 import { CURRENCY_META } from '@/lib/constants/currency';
@@ -40,91 +41,80 @@ for (const cat of categories) {
 ---
 
 <div class="space-y-6" data-onboarding-allocate data-allocation-total={totalIncome.toString()}>
-  <p class="text-base-content/70">
-    Every dollar gets a job. Divide your income among your spending categories. Adjust the defaults
-    to match your real spending patterns.
+  <p class="max-w-2xl text-base leading-relaxed text-base-content/70">
+    Give every amount a job. Adjust the suggested category budgets until the allocation reflects how
+    you actually spend.
   </p>
 
-  {/* Allocation progress bar */}
-  <div class="rounded-lg bg-base-200 p-4">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-sm font-medium text-base-content/60">
-        Allocated: <span data-allocation-allocated class="text-base-content">0</span>
+  <div class="rounded-xl border border-base-300 bg-base-200/50 p-4 sm:p-5">
+    <div class="mb-2 flex items-center justify-between text-sm font-semibold text-base-content/65">
+      <span>
+        Allocated:
+        <span data-allocation-allocated class="text-base-content">0</span>
       </span>
-      <span class="text-sm font-medium text-base-content/60">
-        Remaining: <span data-allocation-remaining class="text-base-content">
-          {totalIncome.toLocaleString()}
-        </span>
+      <span>
+        Remaining:
+        <span data-allocation-remaining class="text-base-content"
+          >{totalIncome.toLocaleString()}</span
+        >
       </span>
     </div>
-    <div class="w-full bg-base-300 rounded-full h-3">
+
+    <div class="h-3 w-full overflow-hidden rounded-full bg-base-300">
       <div
         data-allocation-bar
-        class="bg-primary rounded-full h-3 transition-all duration-300"
+        class="h-3 rounded-full bg-accent transition-all duration-300"
         style="width: 0%"
       >
       </div>
     </div>
-    <div class="text-center mt-1 text-xs text-base-content/50">
-      Total income: {CURRENCY_META[primaryCurrency].symbol}{' '}
+
+    <p class="mt-2 text-xs text-base-content/55">
+      Total income: {CURRENCY_META[primaryCurrency].symbol}
       {totalIncome.toLocaleString()}
-    </div>
+    </p>
   </div>
 
-  {/* Category budget inputs */}
-  <form id="onboarding-allocate-form" class="space-y-3">
+  <form id="onboarding-allocate-form" class="space-y-3" novalidate>
     {
       categories.map((cat) => (
-        <div class="flex items-center gap-3 rounded-lg border border-base-300 px-4 py-3">
-          <div class="flex-1 min-w-0">
-            <div class="font-medium text-sm text-base-content truncate">{cat.name}</div>
+        <div class="grid grid-cols-1 gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-center">
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-base-content">{cat.name}</p>
           </div>
-          <div class="w-36 shrink-0">
-            <AmountInput
-              id={`budget-${cat.id}`}
-              name={`budget_${cat.id}`}
-              currency={primaryCurrency}
-              value={defaultAmounts.get(cat.id) || ''}
-              placeholder="0"
-              className="input-sm"
-              data-testid={`budget-input-${cat.id}`}
-            />
-          </div>
+          <AmountInput
+            id={`budget-${cat.id}`}
+            name={`budget_${cat.id}`}
+            currency={primaryCurrency}
+            value={defaultAmounts.get(cat.id) || ''}
+            placeholder="0"
+            className="w-full rounded-lg border border-base-300 input-bordered input-sm"
+            data-testid={`budget-input-${cat.id}`}
+          />
         </div>
       ))
     }
 
     <input type="hidden" name="currency" value={primaryCurrency} />
 
-    <div id="allocate-error" class="text-error text-sm hidden" role="alert"></div>
+    <div
+      id="allocate-error"
+      class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+      role="alert"
+    >
+    </div>
 
-    {/* Navigation */}
-    <div class="flex justify-between pt-4">
-      <a href="/onboarding?reset=income" class="btn btn-ghost">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
-        >
+    <div class="flex justify-between gap-3 pt-2">
+      <a
+        href="/onboarding?reset=income"
+        class="btn btn-ghost min-h-[44px] gap-2 rounded-lg sm:rounded-xl"
+      >
+        <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back
       </a>
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl">
         Continue
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg
-        >
+        <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
       </button>
     </div>
   </form>

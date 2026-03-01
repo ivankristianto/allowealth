@@ -6,6 +6,7 @@
  * Shows existing accounts and allows adding new ones.
  */
 
+import { ArrowLeft, ArrowRight, Plus } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 import type { Currency } from '@/lib/constants/currency';
@@ -33,27 +34,27 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
 ---
 
 <div class="space-y-6">
-  <p class="text-base-content/70">
-    Add the accounts you use daily. Start with 1 or 2 that matter most — you can always add more
-    later.
+  <p class="max-w-2xl text-base leading-relaxed text-base-content/70">
+    Add the accounts you use daily. Start with one or two important accounts first. You can add more
+    anytime.
   </p>
 
-  {/* Existing accounts list */}
   {
     accounts.length > 0 && (
-      <div class="space-y-2" id="onboarding-accounts-list">
+      <div id="onboarding-accounts-list" class="space-y-2.5">
+        <p class="text-sm font-semibold text-base-content/70">Accounts added</p>
         {accounts.map((account) => (
-          <div class="flex items-center justify-between rounded-lg bg-base-200 px-4 py-3">
+          <div class="flex items-center justify-between rounded-xl border border-base-300 bg-base-100 px-4 py-3">
             <div>
-              <div class="font-medium text-base-content">{account.name}</div>
-              <div class="text-xs text-base-content/50">{ACCOUNT_TYPE_LABELS[account.type]}</div>
+              <p class="font-semibold text-base-content">{account.name}</p>
+              <p class="text-xs text-base-content/55">{ACCOUNT_TYPE_LABELS[account.type]}</p>
             </div>
             <div class="text-right">
-              <div class="font-bold text-base-content">
+              <p class="font-bold text-base-content">
                 {CURRENCY_META[account.currency].symbol}{' '}
                 {formatAmountForDisplay(account.balance, account.currency)}
-              </div>
-              <div class="text-xs text-base-content/50">{account.currency}</div>
+              </p>
+              <p class="text-xs text-base-content/55">{account.currency}</p>
             </div>
           </div>
         ))}
@@ -61,32 +62,38 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
     )
   }
 
-  {/* Add account form */}
-  <form id="onboarding-account-form" class="space-y-3 rounded-lg border border-base-300 p-4">
-    <h3 class="text-sm font-semibold text-base-content/70">Add an account</h3>
+  <form
+    id="onboarding-account-form"
+    class="space-y-4 rounded-xl border border-base-300 bg-base-200/50 p-4 sm:p-5"
+    novalidate
+  >
+    <h3 class="text-sm font-semibold text-base-content/75">Add an account</h3>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {/* Account name */}
-      <div class="form-control">
-        <label class="label" for="account-name">
-          <span class="label-text">Account name</span>
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="account-name">
+          <span class="label-text font-medium text-base-content">Account name</span>
         </label>
         <input
           type="text"
           id="account-name"
           name="name"
-          class="input input-bordered w-full"
+          class="input input-bordered w-full rounded-lg border border-base-300"
           placeholder="e.g., Main Checking"
           required
         />
       </div>
 
-      {/* Account type */}
-      <div class="form-control">
-        <label class="label" for="account-type">
-          <span class="label-text">Type</span>
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="account-type">
+          <span class="label-text font-medium text-base-content">Type</span>
         </label>
-        <select id="account-type" name="type" class="select select-bordered w-full" required>
+        <select
+          id="account-type"
+          name="type"
+          class="select select-bordered w-full rounded-lg border border-base-300"
+          required
+        >
           {
             onboardingAccountTypes.map((type) => (
               <option value={type}>{ACCOUNT_TYPE_LABELS[type]}</option>
@@ -96,10 +103,9 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
       </div>
     </div>
 
-    {/* Balance + Currency */}
-    <div class="form-control">
-      <label class="label" for="account-balance">
-        <span class="label-text">Current balance</span>
+    <div class="form-control gap-1.5">
+      <label class="label px-0" for="account-balance">
+        <span class="label-text font-medium text-base-content">Current balance</span>
       </label>
       <div class="join w-full">
         {
@@ -107,7 +113,7 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
             <select
               id="account-currency"
               name="currency"
-              class="select select-bordered join-item w-24"
+              class="select select-bordered join-item w-24 rounded-l-lg rounded-r-none border border-base-300"
             >
               {currencies.map((c) => (
                 <option value={c} selected={c === primaryCurrency}>
@@ -116,7 +122,9 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
               ))}
             </select>
           ) : (
-            <span class="btn btn-disabled join-item w-24">{primaryCurrency}</span>
+            <span class="btn btn-disabled join-item w-24 rounded-l-lg rounded-r-none">
+              {primaryCurrency}
+            </span>
           )
         }
         <AmountInput
@@ -125,53 +133,48 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
           currency={primaryCurrency}
           required={true}
           placeholder="0"
-          className="join-item"
+          className="join-item rounded-l-none rounded-r-lg border border-base-300 input-bordered"
         />
       </div>
       {currencies.length === 1 && <input type="hidden" name="currency" value={primaryCurrency} />}
     </div>
 
-    <div id="account-error" class="text-error text-sm hidden" role="alert"></div>
+    <div
+      id="account-error"
+      class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+      role="alert"
+    >
+    </div>
 
-    <button type="submit" class="btn btn-outline btn-sm w-full"> + Add account </button>
+    <button
+      type="submit"
+      class="btn btn-outline min-h-[44px] w-full gap-2 rounded-lg border-base-300 sm:rounded-xl"
+    >
+      <Plus size={16} class="stroke-current" aria-hidden="true" />
+      Add account
+    </button>
   </form>
 
-  <p class="text-xs text-base-content/50">
+  <p class="text-sm leading-relaxed text-base-content/60">
     Each account starts with your current balance so your budget reflects reality from day one.
   </p>
 
-  {/* Navigation */}
-  <div class="flex justify-between pt-4">
-    <a href="/onboarding?reset=currency" class="btn btn-ghost">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-4 w-4"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
-      >
+  <div class="flex justify-between gap-3 pt-1">
+    <a
+      href="/onboarding?reset=currency"
+      class="btn btn-ghost min-h-[44px] gap-2 rounded-lg sm:rounded-xl"
+    >
+      <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
       Back
     </a>
     <button
       type="button"
       id="onboarding-accounts-continue"
-      class:list={['btn btn-primary', accounts.length === 0 && 'btn-disabled']}
+      class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
       disabled={accounts.length === 0}
     >
       Continue
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-4 w-4"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg
-      >
+      <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
     </button>
   </div>
 </div>

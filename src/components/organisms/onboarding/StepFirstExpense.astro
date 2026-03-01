@@ -6,6 +6,7 @@
  * Shows how budgeting works in action.
  */
 
+import { ArrowLeft, CircleCheckBig } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import type { Currency } from '@/lib/constants/currency';
 
@@ -35,117 +36,113 @@ const defaultAccount = accounts[0];
 ---
 
 <div class="space-y-6">
-  <p class="text-base-content/70">
-    Record your first expense to see budgeting in action. Pick something you spent today — even a
-    coffee counts.
+  <p class="max-w-2xl text-base leading-relaxed text-base-content/70">
+    Record one real expense to close the loop. Any amount works, even a coffee, as long as it
+    reflects what you spent today.
   </p>
 
-  <form id="onboarding-expense-form" class="space-y-4">
-    {/* Amount */}
-    <div class="form-control">
-      <label class="label" for="expense-amount">
-        <span class="label-text font-medium">Amount</span>
-      </label>
-      <AmountInput
-        id="expense-amount"
-        name="amount"
-        currency={defaultAccount?.currency || primaryCurrency}
-        required={true}
-        placeholder="0"
-      />
+  <form id="onboarding-expense-form" class="space-y-4" novalidate>
+    <div class="rounded-xl border border-base-300 bg-base-200/50 p-4 sm:p-5">
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="expense-amount">
+          <span class="label-text font-semibold text-base-content">Amount</span>
+        </label>
+        <AmountInput
+          id="expense-amount"
+          name="amount"
+          currency={defaultAccount?.currency || primaryCurrency}
+          required={true}
+          placeholder="0"
+          className="rounded-lg border border-base-300 input-bordered"
+        />
+      </div>
     </div>
 
-    {/* Category */}
-    <div class="form-control">
-      <label class="label" for="expense-category">
-        <span class="label-text font-medium">Category</span>
-      </label>
-      <select
-        id="expense-category"
-        name="categoryId"
-        class="select select-bordered w-full"
-        required
-      >
-        <option value="" disabled selected>Pick a category</option>
-        {categories.map((cat) => <option value={cat.id}>{cat.name}</option>)}
-      </select>
-    </div>
-
-    {/* Account */}
-    <div class="form-control">
-      <label class="label" for="expense-account">
-        <span class="label-text font-medium">Account</span>
-      </label>
-      <select id="expense-account" name="accountId" class="select select-bordered w-full" required>
-        {
-          accounts.map((acc) => (
-            <option value={acc.id} data-currency={acc.currency}>
-              {acc.name} ({acc.currency})
-            </option>
-          ))
-        }
-      </select>
-    </div>
-
-    {/* Description */}
-    <div class="form-control">
-      <label class="label" for="expense-description">
-        <span class="label-text font-medium">Description</span>
-        <span class="label-text-alt text-base-content/50">Optional</span>
-      </label>
-      <input
-        type="text"
-        id="expense-description"
-        name="description"
-        class="input input-bordered w-full"
-        placeholder="e.g., Morning coffee"
-      />
-    </div>
-
-    {/* Date */}
-    <div class="form-control">
-      <label class="label" for="expense-date">
-        <span class="label-text font-medium">Date</span>
-      </label>
-      <input
-        type="date"
-        id="expense-date"
-        name="transactionDate"
-        class="input input-bordered w-full"
-        value={today}
-        required
-      />
-    </div>
-
-    <div id="expense-error" class="text-error text-sm hidden" role="alert"></div>
-
-    {/* Navigation */}
-    <div class="flex justify-between pt-4">
-      <a href="/onboarding?reset=allocation" class="btn btn-ghost">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="expense-category">
+          <span class="label-text font-medium text-base-content">Category</span>
+        </label>
+        <select
+          id="expense-category"
+          name="categoryId"
+          class="select select-bordered w-full rounded-lg border border-base-300"
+          required
         >
+          <option value="" disabled selected>Pick a category</option>
+          {categories.map((cat) => <option value={cat.id}>{cat.name}</option>)}
+        </select>
+      </div>
+
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="expense-account">
+          <span class="label-text font-medium text-base-content">Account</span>
+        </label>
+        <select
+          id="expense-account"
+          name="accountId"
+          class="select select-bordered w-full rounded-lg border border-base-300"
+          required
+        >
+          {
+            accounts.map((acc) => (
+              <option value={acc.id} data-currency={acc.currency}>
+                {acc.name} ({acc.currency})
+              </option>
+            ))
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="expense-description">
+          <span class="label-text font-medium text-base-content">Description</span>
+          <span class="label-text-alt text-base-content/50">Optional</span>
+        </label>
+        <input
+          type="text"
+          id="expense-description"
+          name="description"
+          class="input input-bordered w-full rounded-lg border border-base-300"
+          placeholder="e.g., Morning coffee"
+        />
+      </div>
+
+      <div class="form-control gap-1.5">
+        <label class="label px-0" for="expense-date">
+          <span class="label-text font-medium text-base-content">Date</span>
+        </label>
+        <input
+          type="date"
+          id="expense-date"
+          name="transactionDate"
+          class="input input-bordered w-full rounded-lg border border-base-300"
+          value={today}
+          required
+        />
+      </div>
+    </div>
+
+    <div
+      id="expense-error"
+      class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
+      role="alert"
+    >
+    </div>
+
+    <div class="flex justify-between gap-3 pt-2">
+      <a
+        href="/onboarding?reset=allocation"
+        class="btn btn-ghost min-h-[44px] gap-2 rounded-lg sm:rounded-xl"
+      >
+        <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back
       </a>
-      <button type="submit" class="btn btn-primary">
-        Complete Setup
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg
-        >
+      <button type="submit" class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl">
+        Complete setup
+        <CircleCheckBig size={16} class="stroke-current" aria-hidden="true" />
       </button>
     </div>
   </form>
