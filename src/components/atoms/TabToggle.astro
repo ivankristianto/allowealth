@@ -79,6 +79,8 @@ const {
 
   const ACTIVE_CLASS = 'bg-base-100 shadow-md text-primary';
   const INACTIVE_CLASS = 'text-base-content/60 hover:text-base-content/80';
+  const ACTIVE_CLASSES = ACTIVE_CLASS.split(' ');
+  const INACTIVE_CLASSES = INACTIVE_CLASS.split(' ');
 
   // Event delegation on document — survives Astro View Transition DOM swaps
   // without needing astro:page-load re-initialization.
@@ -103,8 +105,8 @@ const {
         const isActive = btn.getAttribute('data-tab-value') === value;
         btn.setAttribute('data-active', String(isActive));
         // Swap active/inactive classes
-        ACTIVE_CLASS.split(' ').forEach((c) => btn.classList.toggle(c, isActive));
-        INACTIVE_CLASS.split(' ').forEach((c) => btn.classList.toggle(c, !isActive));
+        ACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, isActive));
+        INACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, !isActive));
       });
 
       // Update URL without navigation

@@ -94,10 +94,15 @@ export const securityHeaders: MiddlewareHandler = async (context, next) => {
   const response = await next();
   const contentType = response.headers.get('Content-Type') || '';
 
-  // Fast path: JSON/API responses — just set headers, skip body processing entirely
+  // Fast path: JSON/API responses — set headers without body processing
   if (contentType.includes('application/json') || contentType.includes('application/octet')) {
-    setSecurityHeaders(response.headers, nonce);
-    return response;
+    const headers = cloneHeaders(response);
+    setSecurityHeaders(headers, nonce);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   }
 
   // On Cloudflare Workers, use HTMLRewriter for streaming nonce injection
@@ -134,9 +139,14 @@ function applySecurityHeadersStreaming(response: Response, nonce: string): Respo
     return rewritten;
   }
 
-  // Non-HTML on Workers: set headers directly, no body cloning needed
-  setSecurityHeaders(response.headers, nonce);
-  return response;
+  // Non-HTML on Workers: clone headers to avoid immutable-header exceptions
+  const headers = cloneHeaders(response);
+  setSecurityHeaders(headers, nonce);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 /** Check if body starts with an HTML doctype or html tag (case-insensitive, ignoring leading whitespace) */

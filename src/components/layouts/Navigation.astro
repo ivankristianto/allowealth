@@ -168,8 +168,7 @@ const isSuperAdmin = user?.role === 'super_admin';
 </aside>
 
 <script>
-  import { addToast } from '@lib/stores/toastStore';
-  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { performLogout } from '@/lib/utils/client';
 
   const STORAGE_KEY = 'ff.sidebar.collapsed';
 
@@ -182,24 +181,7 @@ const isSuperAdmin = user?.role === 'super_admin';
 
       btn.addEventListener('click', async (e: MouseEvent) => {
         e.preventDefault();
-        try {
-          const response = await fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: getCsrfHeaders(),
-            credentials: 'include',
-          });
-          if (response.ok) {
-            addToast('Signed out successfully', 'success');
-            setTimeout(() => {
-              window.location.href = '/login';
-            }, 500);
-          } else {
-            addToast('Failed to sign out. Please try again.', 'error');
-          }
-        } catch (error) {
-          console.error('Logout error:', error);
-          addToast('An error occurred. Please try again.', 'error');
-        }
+        await performLogout();
       });
     });
   };

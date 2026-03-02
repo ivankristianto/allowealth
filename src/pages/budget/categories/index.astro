@@ -132,7 +132,7 @@ const accentGhostBtn =
       <div class="table-scroll-hint">
         <div class="overflow-x-auto">
           {
-            filteredCategories.length > 0 ? (
+            filteredCategories.some((c) => c.type === typeFilter) ? (
               <table
                 class="w-full text-left border-collapse"
                 role="table"

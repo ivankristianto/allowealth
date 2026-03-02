@@ -27,10 +27,15 @@ export interface Props {
 }
 
 const { categories, typeFilter } = Astro.props;
+// Show table only when at least one category is visible in the current tab.
+// categories may contain all types (search-only filtered), so check by type.
+const hasVisibleCategories = categories.some(
+  (c) => (c.isLiability ? 'liability' : 'account') === typeFilter
+);
 ---
 
 {
-  categories.length > 0 ? (
+  hasVisibleCategories ? (
     <tbody class="divide-y divide-base-200" data-category-table-body>
       {categories.map((category) => {
         const categoryType = category.isLiability ? 'liability' : 'account';
