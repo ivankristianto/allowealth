@@ -57,6 +57,12 @@ if (isProduction && !allowSeed) {
 }
 
 // ============================================================================
+// BENCHMARK MODE
+// ============================================================================
+
+const isBenchmarkMode = process.argv.includes('--benchmark');
+
+// ============================================================================
 // CONFIGURATION
 // ============================================================================
 
@@ -2245,6 +2251,589 @@ async function seedTransactionAuditLogs(
 }
 
 // ============================================================================
+// BENCHMARK SEED (--benchmark flag)
+// ============================================================================
+
+/**
+ * Benchmark data scale: ~10k extra transactions spread across 12 months,
+ * 20 additional recurring templates with ~200 occurrences.
+ *
+ * This adds volume on top of the normal seed to stress-test query performance.
+ * All benchmark data uses the same workspace, categories, and accounts as
+ * the normal seed, so the app works normally with the extra volume.
+ */
+const BENCHMARK_TRANSACTION_COUNT = 10_000;
+const BENCHMARK_RECURRING_TEMPLATES = 20;
+
+/**
+ * Compute trailing 12-month window ending at current month.
+ * All months guaranteed in the past — no null dates, no fallback.
+ */
+function getBenchmarkMonths(): Array<{ year: number; month: number }> {
+  const now = new Date();
+  const months: Array<{ year: number; month: number }> = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
+  }
+  return months;
+}
+
+/**
+ * Max usable day for a benchmark month — caps to today for the current month
+ * so we never generate future-dated transactions.
+ */
+function benchMaxDay(year: number, month: number): number {
+  const now = new Date();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (year === now.getFullYear() && month === now.getMonth() + 1) {
+    return Math.min(now.getDate(), daysInMonth);
+  }
+  return daysInMonth;
+}
+
+async function seedBenchmarkData(
+  workspaceId: string,
+  userId: string,
+  categoryMap: Map<string, string>,
+  accountMap: Map<string, string>
+): Promise<void> {
+  console.log('\n📊 Seeding benchmark data (~10k transactions)...');
+  const startTime = Date.now();
+
+  // Collect category IDs by type, preserving name→id for realistic descriptions
+  const expenseCategoryIds: string[] = [];
+  const incomeCategoryIds: string[] = [];
+  const categoryNameToId: Map<string, string> = new Map();
+  for (const cat of EXPENSE_CATEGORIES) {
+    const id = categoryMap.get(cat.name);
+    if (id) {
+      expenseCategoryIds.push(id);
+      categoryNameToId.set(cat.name, id);
+    }
+  }
+  for (const cat of INCOME_CATEGORIES) {
+    const id = categoryMap.get(cat.name);
+    if (id) {
+      incomeCategoryIds.push(id);
+      categoryNameToId.set(cat.name, id);
+    }
+  }
+  // Also map income category names from CATEGORY_STYLES (Dad Salary, Mom Salary, etc.)
+  for (const name of ['Dad Salary', 'Mom Salary', 'Side Business', 'Dividend']) {
+    const id = categoryMap.get(name);
+    if (id) {
+      incomeCategoryIds.push(id);
+      categoryNameToId.set(name, id);
+    }
+  }
+  // Deduplicate income category IDs
+  const uniqueIncomeCategoryIds = [...new Set(incomeCategoryIds)];
+
+  // Collect account IDs (payment accounts only)
+  const paymentAccountIds: string[] = [];
+  const accountNameToId: Map<string, string> = new Map();
+  for (const acct of PAYMENT_ACCOUNTS) {
+    const id = accountMap.get(acct.name);
+    if (id) {
+      paymentAccountIds.push(id);
+      accountNameToId.set(acct.name, id);
+    }
+  }
+  // Fallback: use all account IDs if payment accounts are empty
+  if (paymentAccountIds.length === 0) {
+    for (const [name, id] of accountMap.entries()) {
+      paymentAccountIds.push(id);
+      accountNameToId.set(name, id);
+    }
+  }
+
+  // Bank/credit card IDs for large amounts
+  const largeAmountAccountIds = ['Transfer', 'BCA Credit Card', 'Mandiri Credit Card']
+    .map((n) => accountNameToId.get(n))
+    .filter((id): id is string => !!id);
+  const smallAmountAccountIds = paymentAccountIds;
+
+  const now = new Date();
+  const benchMonths = getBenchmarkMonths();
+
+  // --- Benchmark income transactions (~2k) ---
+  console.log('   Inserting benchmark income transactions...');
+  const BATCH_SIZE = 500;
+  type TxnRow = {
+    id: string;
+    workspace_id: string;
+    created_by_user_id: string;
+    category_id: string;
+    account_id: string;
+    type: 'expense' | 'income';
+    amount: string;
+    currency: string;
+    description: string;
+    transaction_date: Date;
+    created_at: Date;
+    updated_at: Date;
+  };
+  let batch: TxnRow[] = [];
+  let totalTxns = 0;
+  const allTxnIds: string[] = [];
+
+  async function flushBatch() {
+    if (batch.length > 0) {
+      await db.insert(transactions).values(batch);
+      totalTxns += batch.length;
+      batch = [];
+    }
+  }
+
+  // Income: 2 salaries/month (25th) + sporadic side income, cycling through INCOME_TEMPLATES
+  for (let mi = 0; mi < benchMonths.length; mi++) {
+    const { year, month } = benchMonths[mi];
+    const pattern = INCOME_TEMPLATES[mi % INCOME_TEMPLATES.length];
+    const maxDay = benchMaxDay(year, month);
+
+    for (const tmpl of pattern) {
+      const day = Math.min(tmpl.day, maxDay);
+      const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
+      const catId = categoryNameToId.get(tmpl.description) ?? uniqueIncomeCategoryIds[0];
+      // Large income → bank transfer
+      const accountId =
+        tmpl.amount >= 5_000_000
+          ? (largeAmountAccountIds[0] ?? paymentAccountIds[0])
+          : paymentAccountIds[Math.floor(Math.random() * paymentAccountIds.length)];
+      const id = nanoid();
+      allTxnIds.push(id);
+
+      batch.push({
+        id,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        category_id: catId,
+        account_id: accountId,
+        type: 'income',
+        amount: amt(tmpl.amount * (0.9 + Math.random() * 0.2)), // ±10% variation
+        currency: 'IDR',
+        description: tmpl.description,
+        transaction_date: txDate,
+        created_at: txDate,
+        updated_at: txDate,
+      });
+      if (batch.length >= BATCH_SIZE) await flushBatch();
+    }
+
+    // Additional sporadic income to reach ~170/month
+    const extraIncome = 10 + Math.floor(Math.random() * 5);
+    for (let j = 0; j < extraIncome; j++) {
+      const day = 1 + Math.floor(Math.random() * maxDay);
+      const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
+      const catId =
+        uniqueIncomeCategoryIds[Math.floor(Math.random() * uniqueIncomeCategoryIds.length)];
+      const id = nanoid();
+      allTxnIds.push(id);
+
+      batch.push({
+        id,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        category_id: catId,
+        account_id: paymentAccountIds[Math.floor(Math.random() * paymentAccountIds.length)],
+        type: 'income',
+        amount: randomAmount(500_000, 5_000_000),
+        currency: 'IDR',
+        description: ['Freelance payment', 'Bonus', 'Cashback', 'Gift money', 'Refund'][
+          Math.floor(Math.random() * 5)
+        ],
+        transaction_date: txDate,
+        created_at: txDate,
+        updated_at: txDate,
+      });
+      if (batch.length >= BATCH_SIZE) await flushBatch();
+    }
+  }
+  await flushBatch();
+  const incomeCount = totalTxns;
+  console.log(`   ✓ ${incomeCount} income transactions`);
+
+  // --- Benchmark expense transactions (~7.5k) ---
+  console.log('   Inserting benchmark expense transactions...');
+
+  // Cycle through EXPENSE_TRANSACTIONS for realistic descriptions
+  const expenseTemplateCount = EXPENSE_TRANSACTIONS.length;
+  let expenseIdx = 0;
+
+  for (const { year, month } of benchMonths) {
+    const maxDay = benchMaxDay(year, month);
+
+    // Monthly fixed expenses from templates
+    for (const tmpl of EXPENSE_TRANSACTIONS) {
+      // Skip month-specific transactions if not in the right month
+      if (tmpl.months && !tmpl.months.includes(month)) continue;
+
+      const catId = categoryNameToId.get(tmpl.category) ?? expenseCategoryIds[0];
+      const amount = Array.isArray(tmpl.amount)
+        ? tmpl.amount[0] + Math.random() * (tmpl.amount[1] - tmpl.amount[0])
+        : tmpl.amount * (0.95 + Math.random() * 0.1);
+      // Large amounts → bank/credit card
+      const accountId =
+        amount >= 1_000_000 && largeAmountAccountIds.length > 0
+          ? largeAmountAccountIds[Math.floor(Math.random() * largeAmountAccountIds.length)]
+          : smallAmountAccountIds[Math.floor(Math.random() * smallAmountAccountIds.length)];
+      const day = 1 + Math.floor(Math.random() * maxDay);
+      const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
+      const id = nanoid();
+      allTxnIds.push(id);
+
+      batch.push({
+        id,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        category_id: catId,
+        account_id: accountId,
+        type: 'expense',
+        amount: amt(amount),
+        currency: 'IDR',
+        description: tmpl.description,
+        transaction_date: txDate,
+        created_at: txDate,
+        updated_at: txDate,
+      });
+      if (batch.length >= BATCH_SIZE) await flushBatch();
+    }
+
+    // Additional daily random expenses to reach ~625/month
+    const targetPerMonth = Math.floor((BENCHMARK_TRANSACTION_COUNT * 0.75) / 12);
+    const extraNeeded = Math.max(0, targetPerMonth - EXPENSE_TRANSACTIONS.length);
+    for (let j = 0; j < extraNeeded; j++) {
+      const tmpl = EXPENSE_TRANSACTIONS[expenseIdx % expenseTemplateCount];
+      expenseIdx++;
+      if (tmpl.months && !tmpl.months.includes(month)) continue;
+
+      const catId =
+        categoryNameToId.get(tmpl.category) ??
+        expenseCategoryIds[Math.floor(Math.random() * expenseCategoryIds.length)];
+      const amount = Array.isArray(tmpl.amount)
+        ? tmpl.amount[0] + Math.random() * (tmpl.amount[1] - tmpl.amount[0])
+        : tmpl.amount * (0.9 + Math.random() * 0.2);
+      const accountId =
+        amount >= 1_000_000 && largeAmountAccountIds.length > 0
+          ? largeAmountAccountIds[Math.floor(Math.random() * largeAmountAccountIds.length)]
+          : smallAmountAccountIds[Math.floor(Math.random() * smallAmountAccountIds.length)];
+      const day = 1 + Math.floor(Math.random() * maxDay);
+      const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
+      const id = nanoid();
+      allTxnIds.push(id);
+
+      batch.push({
+        id,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        category_id: catId,
+        account_id: accountId,
+        type: 'expense',
+        amount: amt(amount),
+        currency: 'IDR',
+        description: tmpl.description,
+        transaction_date: txDate,
+        created_at: txDate,
+        updated_at: txDate,
+      });
+      if (batch.length >= BATCH_SIZE) await flushBatch();
+    }
+  }
+  await flushBatch();
+  const expenseCount = totalTxns - incomeCount;
+  console.log(`   ✓ ${expenseCount} expense transactions`);
+
+  // --- Benchmark transfer transactions (~500) ---
+  console.log('   Inserting benchmark transfer transactions...');
+  for (const { year, month } of benchMonths) {
+    const maxDay = benchMaxDay(year, month);
+    for (const tmpl of TRANSFER_TEMPLATES) {
+      const fromAccountId = accountNameToId.get(tmpl.from);
+      const toAccountId = accountNameToId.get(tmpl.to);
+      if (!fromAccountId || !toAccountId) continue;
+
+      // 2-4 transfers per template per month
+      const numTransfers = 2 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < numTransfers; i++) {
+        const day = 1 + Math.floor(Math.random() * maxDay);
+        const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
+        const amount = tmpl.amount[0] + Math.random() * (tmpl.amount[1] - tmpl.amount[0]);
+        const id = nanoid();
+        allTxnIds.push(id);
+
+        batch.push({
+          id,
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          category_id: expenseCategoryIds[0], // transfers use a default category
+          account_id: fromAccountId,
+          type: 'expense',
+          amount: amt(amount),
+          currency: 'IDR',
+          description: tmpl.description,
+          transaction_date: txDate,
+          created_at: txDate,
+          updated_at: txDate,
+        });
+        if (batch.length >= BATCH_SIZE) await flushBatch();
+      }
+    }
+  }
+  await flushBatch();
+  console.log(`   ✓ ${totalTxns - incomeCount - expenseCount} transfer transactions`);
+  console.log(`   ✓ ${totalTxns} total benchmark transactions`);
+
+  // --- Benchmark recurring templates + occurrences ---
+  console.log(`   Inserting ${BENCHMARK_RECURRING_TEMPLATES} recurring templates...`);
+
+  let occurrenceCount = 0;
+  for (let t = 0; t < BENCHMARK_RECURRING_TEMPLATES; t++) {
+    const isIncome = t < 3;
+    const catId = isIncome
+      ? uniqueIncomeCategoryIds[Math.floor(Math.random() * uniqueIncomeCategoryIds.length)]
+      : expenseCategoryIds[Math.floor(Math.random() * expenseCategoryIds.length)];
+    const accountId = paymentAccountIds[Math.floor(Math.random() * paymentAccountIds.length)];
+    const startMonthIdx = t % 6; // start 0-5 months back from oldest bench month
+    const startBenchMonth = benchMonths[startMonthIdx];
+    const dayOfMonth = (t % 28) + 1;
+    const startDate = `${startBenchMonth.year}-${String(startBenchMonth.month).padStart(2, '0')}-01`;
+    const templateId = nanoid();
+
+    await db.insert(recurringTemplates).values({
+      id: templateId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
+      name: `Bench Recurring ${t + 1}`,
+      type: isIncome ? 'income' : 'expense',
+      amount: isIncome ? randomAmount(5_000_000, 20_000_000) : randomAmount(100_000, 5_000_000),
+      currency: 'IDR',
+      category_id: catId,
+      account_id: accountId,
+      day_of_month: dayOfMonth,
+      start_date: startDate,
+      total_occurrences: 12,
+      is_installment: t % 5 === 0,
+      status: 'active',
+      created_at: now,
+      updated_at: now,
+    });
+
+    // Generate occurrences across trailing months
+    const occBatch: Array<{
+      id: string;
+      template_id: string;
+      workspace_id: string;
+      due_date: string;
+      occurrence_number: number;
+      status: 'pending' | 'confirmed' | 'skipped';
+      confirmed_at: Date | null;
+      created_at: Date;
+      updated_at: Date;
+    }> = [];
+
+    for (let o = 0; o < Math.min(10, benchMonths.length - startMonthIdx); o++) {
+      const bm = benchMonths[startMonthIdx + o];
+      const dueDate = `${bm.year}-${String(bm.month).padStart(2, '0')}-${String(dayOfMonth).padStart(2, '0')}`;
+      const isPast = new Date(dueDate) < now;
+      const status = isPast
+        ? Math.random() < 0.6
+          ? 'confirmed'
+          : Math.random() < 0.5
+            ? 'skipped'
+            : 'pending'
+        : 'pending';
+
+      occBatch.push({
+        id: nanoid(),
+        template_id: templateId,
+        workspace_id: workspaceId,
+        due_date: dueDate,
+        occurrence_number: o + 1,
+        status,
+        confirmed_at: status === 'confirmed' ? new Date(dueDate) : null,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+
+    if (occBatch.length > 0) {
+      await db.insert(recurringOccurrences).values(occBatch);
+      occurrenceCount += occBatch.length;
+    }
+  }
+
+  // --- Benchmark budgets (extend to trailing 12 months) ---
+  console.log('   Extending budgets to 12 months...');
+  let budgetCount = 0;
+  for (const cat of EXPENSE_CATEGORIES) {
+    const categoryId = categoryMap.get(cat.name);
+    if (!categoryId) continue;
+    for (const { year, month } of benchMonths) {
+      await db
+        .insert(budgets)
+        .values({
+          id: nanoid(),
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          category_id: categoryId,
+          month,
+          year,
+          budget_amount: amt(cat.budget),
+          currency: 'IDR',
+          created_at: now,
+          updated_at: now,
+        })
+        .onConflictDoNothing();
+      budgetCount++;
+    }
+  }
+
+  // --- Workspace meta (for getOnboardingStatus) ---
+  console.log('   Seeding workspace meta...');
+  await db
+    .insert(workspaceMeta)
+    .values([
+      {
+        id: nanoid(),
+        workspace_id: workspaceId,
+        meta_key: WORKSPACE_META_KEYS.CURRENCY,
+        meta_value: 'IDR',
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: nanoid(),
+        workspace_id: workspaceId,
+        meta_key: WORKSPACE_META_KEYS.MONTHLY_INCOME,
+        meta_value: '30000000',
+        created_at: now,
+        updated_at: now,
+      },
+    ])
+    .onConflictDoNothing();
+
+  // --- Audit logs (~100 entries for getHistory, getTransactionIdsWithHistory) ---
+  console.log('   Seeding benchmark audit logs...');
+  const auditBatch: Array<{
+    id: string;
+    workspace_id: string;
+    user_id: string;
+    action: string;
+    entity_type: string;
+    entity_id: string;
+    old_value: string | null;
+    new_value: string | null;
+    created_at: Date;
+  }> = [];
+  const sampleTxnIds = allTxnIds.slice(0, 100);
+  for (const txnId of sampleTxnIds) {
+    auditBatch.push({
+      id: nanoid(),
+      workspace_id: workspaceId,
+      user_id: userId,
+      action: 'create',
+      entity_type: 'transaction',
+      entity_id: txnId,
+      old_value: null,
+      new_value: JSON.stringify({ amount: '100000', type: 'expense' }),
+      created_at: daysAgo(Math.floor(Math.random() * 90)),
+    });
+    // Half get an update too
+    if (Math.random() < 0.5) {
+      auditBatch.push({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        user_id: userId,
+        action: 'update',
+        entity_type: 'transaction',
+        entity_id: txnId,
+        old_value: JSON.stringify({ amount: '100000' }),
+        new_value: JSON.stringify({ amount: '150000' }),
+        created_at: daysAgo(Math.floor(Math.random() * 30)),
+      });
+    }
+  }
+  if (auditBatch.length > 0) {
+    await db.insert(auditLogs).values(auditBatch);
+  }
+  console.log(`   ✓ ${auditBatch.length} audit log entries`);
+
+  // --- Extend account history to all 12 trailing months ---
+  console.log('   Extending account history to 12 months...');
+  let ahCount = 0;
+  for (const [, accountId] of accountMap.entries()) {
+    for (const { year, month } of benchMonths) {
+      const recordedAt = new Date(year, month - 1, 15, SEED_TIME_HOUR, 0, 0, 0);
+      await db
+        .insert(accountHistory)
+        .values({
+          id: nanoid(),
+          account_id: accountId,
+          balance: randomAmount(1_000_000, 100_000_000),
+          recorded_at: recordedAt,
+        })
+        .onConflictDoNothing();
+      ahCount++;
+    }
+  }
+  console.log(`   ✓ ${ahCount} account history entries`);
+
+  // --- Second user with ~500 transactions (for getMemberSummary) ---
+  console.log('   Seeding second benchmark user...');
+  const benchMemberUserId = nanoid();
+  await db.insert(users).values({
+    id: benchMemberUserId,
+    workspace_id: workspaceId,
+    email: `bench-member-${nanoid(4)}@test.com`,
+    name: 'Benchmark Member',
+    password_hash: 'not-real-bench',
+    role: 'member',
+    created_at: now,
+    updated_at: now,
+  });
+
+  let memberTxnCount = 0;
+  for (const { year, month } of benchMonths) {
+    const maxDay = benchMaxDay(year, month);
+    const txnsPerMonth = 40 + Math.floor(Math.random() * 10);
+    for (let j = 0; j < txnsPerMonth; j++) {
+      const isIncome = Math.random() < 0.2;
+      const tmpl = EXPENSE_TRANSACTIONS[j % expenseTemplateCount];
+      const catId = isIncome
+        ? uniqueIncomeCategoryIds[Math.floor(Math.random() * uniqueIncomeCategoryIds.length)]
+        : (categoryNameToId.get(tmpl.category) ?? expenseCategoryIds[0]);
+      const day = 1 + Math.floor(Math.random() * maxDay);
+      const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
+
+      batch.push({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: benchMemberUserId,
+        category_id: catId,
+        account_id: paymentAccountIds[Math.floor(Math.random() * paymentAccountIds.length)],
+        type: isIncome ? 'income' : 'expense',
+        amount: isIncome ? randomAmount(2_000_000, 10_000_000) : randomAmount(10_000, 3_000_000),
+        currency: 'IDR',
+        description: isIncome ? 'Mom Salary' : tmpl.description,
+        transaction_date: txDate,
+        created_at: txDate,
+        updated_at: txDate,
+      });
+      memberTxnCount++;
+      if (batch.length >= BATCH_SIZE) await flushBatch();
+    }
+  }
+  await flushBatch();
+  console.log(`   ✓ ${memberTxnCount} second-user transactions`);
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(`   ✓ ${BENCHMARK_RECURRING_TEMPLATES} templates, ${occurrenceCount} occurrences`);
+  console.log(`   ✓ ${budgetCount} budget entries (with dedup)`);
+  console.log(`✅ Benchmark data seeded in ${elapsed}s`);
+}
+
+// ============================================================================
 // MAIN SEED FUNCTION
 // ============================================================================
 
@@ -2294,9 +2883,17 @@ async function seed() {
     // Backfill initial_balance for any accounts that don't have it
     await backfillInitialBalance();
 
+    // Benchmark mode: add ~10k transactions for performance testing
+    if (isBenchmarkMode) {
+      await seedBenchmarkData(workspaceId, userId, categoryMap, accountMap);
+    }
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
     console.log(`\n✅ Database seeded successfully in ${elapsed}s!`);
+    if (isBenchmarkMode) {
+      console.log('📊 Benchmark mode: ~10k extra transactions added for performance testing');
+    }
     console.log('\n📋 Demo Credentials:');
     console.log('\n   Admin User:');
     console.log(`   Email:    ${DEMO_ADMIN.email}`);

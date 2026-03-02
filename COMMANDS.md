@@ -166,6 +166,7 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | `bun run aw db push`                      | Push schema directly (dev only)        |
 | `bun run aw db studio`                    | Open Drizzle Studio                    |
 | `bun run aw db seed`                      | Seed with demo data                    |
+| `bun run aw db seed --benchmark`          | Seed + ~10k transactions for perf test |
 | `bun run aw db reset`                     | Delete + push + seed (sqlite only)     |
 | `bun run aw db empty`                     | Truncate all data (preserve schema)    |
 
