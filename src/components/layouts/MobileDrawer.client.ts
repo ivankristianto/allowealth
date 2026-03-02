@@ -70,15 +70,30 @@ function initMobileDrawer(): void {
     });
   }
 
-  // Handle drawer toggle via delegated click on the re-attributed labels.
+  // Handle drawer open/close via delegated clicks.
   document.addEventListener(
     'click',
     (e: Event) => {
       if (!isMobile()) return;
 
       const target = e.target as HTMLElement;
-      const label = target.closest('[data-drawer-toggle]');
-      if (!label) return;
+
+      // Close button always closes
+      if (target.closest('[data-drawer-close]')) {
+        close();
+        return;
+      }
+
+      // Clicking the overlay (dark backdrop) closes the drawer.
+      // Match by class to be robust against attribute loss during view transitions.
+      if (isOpen && target.closest('.drawer-overlay')) {
+        close();
+        return;
+      }
+
+      // Toggle/open buttons toggle the drawer
+      const opener = target.closest('[data-drawer-toggle], [data-drawer-open]');
+      if (!opener) return;
 
       isOpen ? close() : open();
     },

@@ -44,10 +44,8 @@ const allCategories = categories.map((category) => ({
   accountCount: accountCountByCategory.get(category.id) || 0,
 }));
 
-let filteredCategories = allCategories.filter(
-  (category) => category.isLiability === (typeFilter === 'liability')
-);
-
+// Apply search filter only — type filtering is done client-side for instant tab switching
+let filteredCategories = allCategories;
 if (searchQuery) {
   const query = searchQuery.toLowerCase();
   filteredCategories = filteredCategories.filter(
@@ -111,6 +109,7 @@ const accentGhostBtn =
         option2Value="liability"
         option2Label="Liabilities"
         name="type"
+        clientFilter
       />
 
       <form id="account-category-search-form" class="relative flex-1 w-full max-w-md">
@@ -181,7 +180,7 @@ const accentGhostBtn =
               </tr>
             </thead>
             <!-- Server-rendered table body partial - used for both SSR and dynamic HTML injection -->
-            <AccountCategoryTablePartial categories={allCategories} typeFilter={typeFilter} />
+            <AccountCategoryTablePartial categories={filteredCategories} typeFilter={typeFilter} />
           </table>
         </div>
       </div>

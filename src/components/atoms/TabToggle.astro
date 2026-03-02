@@ -24,6 +24,8 @@ export interface Props {
   option2Label: string;
   name?: string;
   className?: string;
+  /** When true, skip navigate() and dispatch 'tab-toggle-change' event for client-side filtering */
+  clientFilter?: boolean;
 }
 
 const {
@@ -34,6 +36,7 @@ const {
   option2Label,
   name = 'tab-toggle',
   className = '',
+  clientFilter = false,
 } = Astro.props;
 ---
 
@@ -41,6 +44,7 @@ const {
   class={`flex bg-base-200 p-1.5 rounded-2xl w-full md:w-auto ${className}`}
   data-tab-toggle
   data-name={name}
+  {...clientFilter ? { 'data-client-filter': '' } : {}}
 >
   <button
     type="button"
@@ -73,22 +77,49 @@ const {
 <script>
   import { navigate } from 'astro:transitions/client';
 
-  // Client-side tab toggle behavior
-  document.querySelectorAll('[data-tab-toggle]').forEach((container) => {
-    const buttons = container.querySelectorAll('button[data-tab-value]');
+  const ACTIVE_CLASS = 'bg-base-100 shadow-md text-primary';
+  const INACTIVE_CLASS = 'text-base-content/60 hover:text-base-content/80';
 
-    buttons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const value = button.getAttribute('data-tab-value');
-        const name = container.getAttribute('data-name');
+  // Event delegation on document — survives Astro View Transition DOM swaps
+  // without needing astro:page-load re-initialization.
+  document.addEventListener('click', (e: Event) => {
+    const target = e.target as Element | null;
+    if (!target) return;
 
-        if (!value || !name) return;
+    const button = target.closest('[data-tab-toggle] button[data-tab-value]');
+    if (!button) return;
 
-        // Update URL with new tab value
-        const url = new URL(window.location.href);
-        url.searchParams.set(name, value);
-        navigate(url.toString());
+    const container = button.closest('[data-tab-toggle]');
+    if (!container) return;
+
+    const value = button.getAttribute('data-tab-value');
+    const name = container.getAttribute('data-name');
+    if (!value || !name) return;
+
+    // Client-filter mode: update visual state + dispatch event, no server round-trip
+    if (container.hasAttribute('data-client-filter')) {
+      // Update active tab visual state
+      container.querySelectorAll('button[data-tab-value]').forEach((btn) => {
+        const isActive = btn.getAttribute('data-tab-value') === value;
+        btn.setAttribute('data-active', String(isActive));
+        // Swap active/inactive classes
+        ACTIVE_CLASS.split(' ').forEach((c) => btn.classList.toggle(c, isActive));
+        INACTIVE_CLASS.split(' ').forEach((c) => btn.classList.toggle(c, !isActive));
       });
-    });
+
+      // Update URL without navigation
+      const url = new URL(window.location.href);
+      url.searchParams.set(name, value);
+      window.history.replaceState({}, '', url.toString());
+
+      // Dispatch event for page-specific filtering
+      document.dispatchEvent(new CustomEvent('tab-toggle-change', { detail: { name, value } }));
+      return;
+    }
+
+    // Default: navigate (full page reload via view transitions)
+    const url = new URL(window.location.href);
+    url.searchParams.set(name, value);
+    navigate(url.toString());
   });
 </script>

@@ -26,10 +26,8 @@ const url = new URL(Astro.url);
 const typeFilter = (url.searchParams.get('type') as 'expense' | 'income') || 'expense';
 const searchQuery = url.searchParams.get('search') || '';
 
-// Filter by type
-let filteredCategories = allCategories.filter((c) => c.type === typeFilter);
-
-// Apply search filter
+// Apply search filter only — type filtering is done client-side for instant tab switching
+let filteredCategories = allCategories;
 if (searchQuery) {
   const query = searchQuery.toLowerCase();
   filteredCategories = filteredCategories.filter((c) => c.name.toLowerCase().includes(query));
@@ -106,6 +104,7 @@ const accentGhostBtn =
         option2Value="income"
         option2Label="Income"
         name="type"
+        clientFilter
       />
 
       <!-- Search Bar -->
@@ -139,9 +138,7 @@ const accentGhostBtn =
                 role="table"
                 data-testid="categories-table"
               >
-                <caption class="sr-only">
-                  Categories list with {filteredCategories.length} {typeFilter} categories
-                </caption>
+                <caption class="sr-only">Categories list</caption>
                 <thead>
                   <tr class="border-b border-base-200 bg-base-200/50">
                     <th
@@ -170,12 +167,13 @@ const accentGhostBtn =
                     </th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-base-200">
+                <tbody class="divide-y divide-base-200" data-category-tbody>
                   {filteredCategories.map((category) => (
                     <tr
-                      class="group hover:bg-base-200/50 transition-colors"
+                      class={`group hover:bg-base-200/50 transition-colors ${category.type !== typeFilter ? 'hidden' : ''}`}
                       data-testid="category-item"
                       data-category-id={category.id}
+                      data-category-type={category.type}
                     >
                       <td class="px-8 py-5">
                         <CategoryIcon

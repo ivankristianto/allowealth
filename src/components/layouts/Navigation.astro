@@ -9,7 +9,7 @@
  * @see https://github.com/oasis-finance/design-system
  */
 
-import { X, ChevronLeft } from '@lucide/astro';
+import { X, ChevronLeft, User as UserIcon, Shield, LogOut } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
 import UserNav from './UserNav.astro';
@@ -120,12 +120,89 @@ const isSuperAdmin = user?.role === 'super_admin';
     {isSuperAdmin ? <AdminNav currentPath={currentPath} /> : <UserNav currentPath={currentPath} />}
   </ul>
 
-  <!-- Bottom section - User info -->
-  <UserProfile user={user} />
+  <!-- Mobile-only user menu (inline links above bottom nav coverage) -->
+  <div class="lg:hidden border-t border-base-300 px-4 py-4 mt-auto shrink-0 space-y-1 pb-24">
+    <div class="flex items-center gap-3 px-4 py-2 mb-2">
+      <div class="avatar placeholder">
+        <div class="bg-accent/20 text-accent rounded-full w-8 flex items-center justify-center">
+          <span class="text-xs font-bold"
+            >{user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}</span
+          >
+        </div>
+      </div>
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-base-content truncate">{user?.name || 'User'}</p>
+        <p class="text-xs text-base-content/50 font-medium">Pro Account</p>
+      </div>
+    </div>
+    <a
+      href="/profile"
+      class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200 transition-colors text-base-content/70 hover:text-base-content"
+      data-drawer-close
+    >
+      <UserIcon size={18} class="stroke-current" aria-hidden="true" />
+      <span class="text-sm font-bold">Manage account</span>
+    </a>
+    <a
+      href="/security"
+      class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200 transition-colors text-base-content/70 hover:text-base-content"
+      data-drawer-close
+    >
+      <Shield size={18} class="stroke-current" aria-hidden="true" />
+      <span class="text-sm font-bold">Security</span>
+    </a>
+    <button
+      type="button"
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-error/10 transition-colors text-error/70 hover:text-error"
+      data-mobile-logout-button
+    >
+      <LogOut size={18} class="stroke-current" aria-hidden="true" />
+      <span class="text-sm font-bold">Sign out</span>
+    </button>
+  </div>
+
+  <!-- Bottom section - User info (desktop only, hidden on mobile where inline links are used) -->
+  <div class="hidden lg:block">
+    <UserProfile user={user} />
+  </div>
 </aside>
 
 <script>
+  import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
   const STORAGE_KEY = 'ff.sidebar.collapsed';
+
+  const initMobileLogout = () => {
+    const logoutButtons = document.querySelectorAll('[data-mobile-logout-button]');
+    logoutButtons.forEach((btn) => {
+      if (!(btn instanceof HTMLElement)) return;
+      if (btn.dataset.logoutBound === 'true') return;
+      btn.dataset.logoutBound = 'true';
+
+      btn.addEventListener('click', async (e: MouseEvent) => {
+        e.preventDefault();
+        try {
+          const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: getCsrfHeaders(),
+            credentials: 'include',
+          });
+          if (response.ok) {
+            addToast('Signed out successfully', 'success');
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 500);
+          } else {
+            addToast('Failed to sign out. Please try again.', 'error');
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+          addToast('An error occurred. Please try again.', 'error');
+        }
+      });
+    });
+  };
 
   const initDrawerCloseControl = () => {
     const drawerToggle = document.getElementById('drawer-toggle');
@@ -196,14 +273,17 @@ const isSuperAdmin = user?.role === 'super_admin';
       () => {
         initSidebarCollapse();
         initDrawerCloseControl();
+        initMobileLogout();
       },
       { once: true }
     );
   } else {
     initSidebarCollapse();
     initDrawerCloseControl();
+    initMobileLogout();
   }
 
   document.addEventListener('astro:page-load', initSidebarCollapse);
   document.addEventListener('astro:page-load', initDrawerCloseControl);
+  document.addEventListener('astro:page-load', initMobileLogout);
 </script>

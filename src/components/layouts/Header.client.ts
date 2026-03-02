@@ -56,10 +56,15 @@ function initHeaderListeners(): void {
     button.addEventListener(
       'click',
       () => {
-        const toggle = getDrawerToggle();
-        if (!toggle) return;
-        toggle.checked = true;
-        syncDrawerToggleState(true);
+        // On mobile (<1024px), MobileDrawer.client handles opening via data attributes.
+        // Setting checkbox.checked here conflicts with MobileDrawer's safety reset.
+        // The button is lg:hidden so this only fires on mobile anyway, but guard for clarity.
+        if (window.innerWidth >= 1024) {
+          const toggle = getDrawerToggle();
+          if (!toggle) return;
+          toggle.checked = true;
+          syncDrawerToggleState(true);
+        }
       },
       { signal }
     );

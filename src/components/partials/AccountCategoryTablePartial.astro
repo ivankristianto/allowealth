@@ -27,72 +27,75 @@ export interface Props {
 }
 
 const { categories, typeFilter } = Astro.props;
-
-// Filter categories by type
-const filteredCategories = categories.filter(
-  (category) => category.isLiability === (typeFilter === 'liability')
-);
 ---
 
 {
-  filteredCategories.length > 0 ? (
+  categories.length > 0 ? (
     <tbody class="divide-y divide-base-200" data-category-table-body>
-      {filteredCategories.map((category) => (
-        <tr class="group hover:bg-base-200/50 transition-colors" data-category-row={category.id}>
-          <td class="px-8 py-5">
-            <div class="flex items-center gap-3">
-              <span class="text-base font-bold text-base-content tracking-tight leading-none">
-                {category.name}
-              </span>
-              {category.isSystem && <span class="badge badge-ghost text-xs">System</span>}
-            </div>
-          </td>
-          <td class="px-8 py-5 hidden md:table-cell">
-            <span class="text-sm text-base-content/60 font-medium">
-              {category.description || '—'}
-            </span>
-          </td>
-          <td class="px-8 py-5">
-            <span class="text-sm font-semibold text-base-content">
-              {category.isLiability ? 'Liability' : 'Account'}
-            </span>
-          </td>
-          <td class="px-8 py-5">
-            <span class="text-sm font-semibold text-base-content">{category.accountCount}</span>
-          </td>
-          <td class="px-8 py-5 text-right">
-            {category.isSystem ? (
-              <span class="text-xs text-base-content/30 font-medium">System</span>
-            ) : (
-              <div class="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-                  data-action="edit-account-category"
-                  data-category-id={category.id}
-                  data-category-name={category.name}
-                  data-category-description={category.description || ''}
-                  data-category-type={category.isLiability ? 'liability' : 'account'}
-                  aria-label={`Edit ${category.name} category`}
-                >
-                  <Pencil size={18} class="stroke-current" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all"
-                  data-action="delete-account-category"
-                  data-category-id={category.id}
-                  data-category-name={category.name}
-                  data-category-meta={`${category.accountCount} account${category.accountCount !== 1 ? 's' : ''}`}
-                  aria-label={`Delete ${category.name} category`}
-                >
-                  <Trash2 size={18} class="stroke-current" aria-hidden="true" />
-                </button>
+      {categories.map((category) => {
+        const categoryType = category.isLiability ? 'liability' : 'account';
+        const isVisible = categoryType === typeFilter;
+        return (
+          <tr
+            class={`group hover:bg-base-200/50 transition-colors ${!isVisible ? 'hidden' : ''}`}
+            data-category-row={category.id}
+            data-category-type={categoryType}
+          >
+            <td class="px-8 py-5">
+              <div class="flex items-center gap-3">
+                <span class="text-base font-bold text-base-content tracking-tight leading-none">
+                  {category.name}
+                </span>
+                {category.isSystem && <span class="badge badge-ghost text-xs">System</span>}
               </div>
-            )}
-          </td>
-        </tr>
-      ))}
+            </td>
+            <td class="px-8 py-5 hidden md:table-cell">
+              <span class="text-sm text-base-content/60 font-medium">
+                {category.description || '—'}
+              </span>
+            </td>
+            <td class="px-8 py-5">
+              <span class="text-sm font-semibold text-base-content">
+                {category.isLiability ? 'Liability' : 'Account'}
+              </span>
+            </td>
+            <td class="px-8 py-5">
+              <span class="text-sm font-semibold text-base-content">{category.accountCount}</span>
+            </td>
+            <td class="px-8 py-5 text-right">
+              {category.isSystem ? (
+                <span class="text-xs text-base-content/30 font-medium">System</span>
+              ) : (
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                    data-action="edit-account-category"
+                    data-category-id={category.id}
+                    data-category-name={category.name}
+                    data-category-description={category.description || ''}
+                    data-category-type={category.isLiability ? 'liability' : 'account'}
+                    aria-label={`Edit ${category.name} category`}
+                  >
+                    <Pencil size={18} class="stroke-current" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all"
+                    data-action="delete-account-category"
+                    data-category-id={category.id}
+                    data-category-name={category.name}
+                    data-category-meta={`${category.accountCount} account${category.accountCount !== 1 ? 's' : ''}`}
+                    aria-label={`Delete ${category.name} category`}
+                  >
+                    <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+            </td>
+          </tr>
+        );
+      })}
     </tbody>
   ) : (
     <tbody data-category-table-body>
