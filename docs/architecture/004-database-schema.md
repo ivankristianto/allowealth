@@ -851,15 +851,15 @@ const totalsByCurrency = txns.reduce(
 ```
 drizzle/
 ├── sqlite/
-│   ├── 0000_*.sql   # Single consolidated initial migration
+│   ├── 0000_*.sql   # Current baseline migration (history reset)
 │   └── meta/        # Drizzle migration metadata
 └── postgresql/
-    ├── 0000_*.sql   # Single consolidated initial migration
+    ├── 0000_*.sql   # Current baseline migration (history reset)
     └── meta/        # Drizzle migration metadata
 ```
 
-> **Note**: Migrations were consolidated on 2026-02-16 into a single initial migration per dialect.
-> All 20 tables are defined in the initial migration.
+> **Note**: Migration history was reset on 2026-03-02 for MVP pre-release cleanup.
+> The current `0000_*.sql` files are the active baseline for all current tables.
 
 ### Migration Commands
 
@@ -875,7 +875,7 @@ bun run db:push
 
 # For PostgreSQL (production):
 DATABASE_URL=postgresql://... bun run db:generate
-DATABASE_URL=postgresql://... bun run db:push
+DATABASE_URL=postgresql://... bun run db:migrate
 ```
 
 ### Best Practices

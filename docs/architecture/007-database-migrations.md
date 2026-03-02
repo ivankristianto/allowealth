@@ -9,6 +9,29 @@ This project uses Drizzle ORM with dual-dialect support:
 
 Every schema change must be represented in both dialect schema folders and both migration folders.
 
+As of 2026-03-02, migration history was intentionally reset for MVP pre-release cleanup.
+The current baseline is `0000_*.sql` per dialect, with fresh `meta/_journal.json` and
+`meta/0000_snapshot.json`.
+
+## Reset Cutover (2026-03-02)
+
+This reset is destructive for environments that previously applied the old `0000`-`0006`
+migration chain. Do not run the new baseline over an existing database without reset.
+
+SQLite cutover:
+
+1. Backup DB file if needed.
+2. Remove existing DB files (`.db`, `-wal`, `-shm`) for the target environment.
+3. Apply the new baseline with `bun run db:migrate` (or recreate with `bun run db:reset` in local dev).
+4. Verify schema and seed state.
+
+PostgreSQL cutover:
+
+1. Backup database/schemas if needed.
+2. Drop and recreate target schema/database (or provision a fresh DB).
+3. Apply the new baseline with `DATABASE_URL=postgresql://... bun run db:migrate`.
+4. Verify table/index presence and application startup.
+
 ## Directory Structure
 
 ```text
@@ -41,8 +64,8 @@ bun run db:migrate
 PostgreSQL:
 
 ```bash
-bun --env-file=.env.production run db:generate
-bun --env-file=.env.production run db:migrate
+DATABASE_URL=postgresql://... bun run db:generate
+DATABASE_URL=postgresql://... bun run db:migrate
 ```
 
 ## Normal Workflow
@@ -86,15 +109,15 @@ bunx drizzle-kit generate \
 
 2. Restore missing snapshot index using baseline snapshot content.
 
-- Example for missing `0003_snapshot.json`:
-  - copy `.tmp/drizzle-<dialect>-base/meta/0000_snapshot.json` to `drizzle/<dialect>/meta/0003_snapshot.json`
-  - set `prevId` of `0003_snapshot.json` to the `id` value from `drizzle/<dialect>/meta/0002_snapshot.json`
+- For a missing `000N_snapshot.json`:
+  - copy `.tmp/drizzle-<dialect>-base/meta/0000_snapshot.json` to `drizzle/<dialect>/meta/000N_snapshot.json`
+  - set `prevId` of `000N_snapshot.json` to the `id` from the previous snapshot in `drizzle/<dialect>/meta/`
 
 3. Regenerate migrations normally.
 
 ```bash
 bun run db:generate
-bun --env-file=.env.production run db:generate
+DATABASE_URL=postgresql://... bun run db:generate
 ```
 
 4. Verify generated SQL contains only intended changes.

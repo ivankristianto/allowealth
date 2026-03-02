@@ -28,17 +28,14 @@ Plan: `docs/plans/2026-03-01-db-performance-hardening.md`
 
 ## Migration Generation
 
-Generated dual-dialect migrations in three waves:
+Generated dual-dialect migrations in three waves (historical for this run).
 
-- Wave A create-only:
-  - `drizzle/sqlite/0004_numerous_kylun.sql`
-  - `drizzle/postgresql/0004_quick_junta.sql`
-- Wave B redundant-index drops:
-  - `drizzle/sqlite/0005_chemical_maggott.sql`
-  - `drizzle/postgresql/0005_last_lockjaw.sql`
-- Support indexes:
-  - `drizzle/sqlite/0006_whole_lady_deathstrike.sql`
-  - `drizzle/postgresql/0006_stiff_bruce_banner.sql`
+- Wave A create-only
+- Wave B redundant-index drops
+- Wave C support indexes
+
+Note (2026-03-02): these wave files were later squashed during MVP migration
+history reset. Current active baseline is `0000_*.sql` per dialect.
 
 ## Migration Apply Checks
 

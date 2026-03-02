@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1771506401313,
-      "tag": "0000_tranquil_smasher",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1771507582507,
-      "tag": "0001_legal_lord_hawal",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1771579153981,
-      "tag": "0002_multi_currency_support",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772016900000,
-      "tag": "0003_recurring_transactions",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1772363155573,
-      "tag": "0004_quick_junta",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1772363212736,
-      "tag": "0005_last_lockjaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1772363258250,
-      "tag": "0006_stiff_bruce_banner",
+      "when": 1772417134593,
+      "tag": "0000_black_radioactive_man",
       "breakpoints": true
     }
   ]

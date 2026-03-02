@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9e3dbb76-2782-40d9-9f63-f436a3e5f832",
+  "id": "97331202-1eb5-487c-b388-41791ce00024",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account_categories": {
@@ -173,6 +173,11 @@
         "account_history_account_recorded_idx": {
           "name": "account_history_account_recorded_idx",
           "columns": ["account_id", "recorded_at"],
+          "isUnique": false
+        },
+        "account_history_recorded_at_idx": {
+          "name": "account_history_recorded_at_idx",
+          "columns": ["recorded_at"],
           "isUnique": false
         }
       },
@@ -447,6 +452,11 @@
         "account_update_reminders_account_id_idx": {
           "name": "account_update_reminders_account_id_idx",
           "columns": ["account_id"],
+          "isUnique": false
+        },
+        "account_update_reminders_next_reminder_idx": {
+          "name": "account_update_reminders_next_reminder_idx",
+          "columns": ["next_reminder"],
           "isUnique": false
         }
       },
@@ -785,6 +795,16 @@
           "name": "api_keys_key_prefix_idx",
           "columns": ["key_prefix"],
           "isUnique": false
+        },
+        "api_keys_prefix_deleted_idx": {
+          "name": "api_keys_prefix_deleted_idx",
+          "columns": ["key_prefix", "deleted_at"],
+          "isUnique": false
+        },
+        "api_keys_ws_user_deleted_idx": {
+          "name": "api_keys_ws_user_deleted_idx",
+          "columns": ["workspace_id", "user_id", "deleted_at"],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -893,6 +913,11 @@
         "audit_logs_created_at_idx": {
           "name": "audit_logs_created_at_idx",
           "columns": ["created_at"],
+          "isUnique": false
+        },
+        "audit_logs_workspace_created_idx": {
+          "name": "audit_logs_workspace_created_idx",
+          "columns": ["workspace_id", "created_at"],
           "isUnique": false
         },
         "audit_logs_ws_entity_action_idx": {
@@ -1260,59 +1285,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "exchange_rates": {
-      "name": "exchange_rates",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "from_currency": {
-          "name": "from_currency",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "to_currency": {
-          "name": "to_currency",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "rate": {
-          "name": "rate",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "effective_date": {
-          "name": "effective_date",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "workspaces": {
       "name": "workspaces",
       "columns": {
@@ -1508,6 +1480,11 @@
         "workspace_invitations_workspace_id_idx": {
           "name": "workspace_invitations_workspace_id_idx",
           "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "workspace_invitations_ws_accept_expire_created_idx": {
+          "name": "workspace_invitations_ws_accept_expire_created_idx",
+          "columns": ["workspace_id", "accepted_at", "expires_at", "created_at"],
           "isUnique": false
         }
       },
@@ -1809,11 +1786,6 @@
           "columns": ["token"],
           "isUnique": true
         },
-        "password_reset_tokens_token_idx": {
-          "name": "password_reset_tokens_token_idx",
-          "columns": ["token"],
-          "isUnique": false
-        },
         "password_reset_tokens_user_id_idx": {
           "name": "password_reset_tokens_user_id_idx",
           "columns": ["user_id"],
@@ -1994,6 +1966,21 @@
           "columns": ["workspace_id", "created_by_user_id", "transaction_date"],
           "isUnique": false
         },
+        "transactions_ws_date_idx": {
+          "name": "transactions_ws_date_idx",
+          "columns": ["workspace_id", "transaction_date"],
+          "isUnique": false
+        },
+        "transactions_ws_account_date_idx": {
+          "name": "transactions_ws_account_date_idx",
+          "columns": ["workspace_id", "account_id", "transaction_date"],
+          "isUnique": false
+        },
+        "transactions_ws_to_account_date_idx": {
+          "name": "transactions_ws_to_account_date_idx",
+          "columns": ["workspace_id", "to_account_id", "transaction_date"],
+          "isUnique": false
+        },
         "transactions_to_account_id_idx": {
           "name": "transactions_to_account_id_idx",
           "columns": ["to_account_id"],
@@ -2084,6 +2071,370 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "recurring_templates": {
+      "name": "recurring_templates",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "day_of_month": {
+          "name": "day_of_month",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "total_occurrences": {
+          "name": "total_occurrences",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_installment": {
+          "name": "is_installment",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "installment_label": {
+          "name": "installment_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "starting_occurrence_number": {
+          "name": "starting_occurrence_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        }
+      },
+      "indexes": {
+        "recurring_templates_workspace_id_idx": {
+          "name": "recurring_templates_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "recurring_templates_workspace_id_status_idx": {
+          "name": "recurring_templates_workspace_id_status_idx",
+          "columns": ["workspace_id", "status"],
+          "isUnique": false
+        },
+        "recurring_templates_category_id_idx": {
+          "name": "recurring_templates_category_id_idx",
+          "columns": ["category_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "recurring_templates_workspace_id_workspaces_id_fk": {
+          "name": "recurring_templates_workspace_id_workspaces_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "workspaces",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_templates_created_by_user_id_users_id_fk": {
+          "name": "recurring_templates_created_by_user_id_users_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_templates_category_id_budget_categories_id_fk": {
+          "name": "recurring_templates_category_id_budget_categories_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "budget_categories",
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_templates_account_id_accounts_id_fk": {
+          "name": "recurring_templates_account_id_accounts_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "accounts",
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "recurring_occurrences": {
+      "name": "recurring_occurrences",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurrence_number": {
+          "name": "occurrence_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "transaction_id": {
+          "name": "transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confirmed_amount": {
+          "name": "confirmed_amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "skip_reason": {
+          "name": "skip_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        }
+      },
+      "indexes": {
+        "recurring_occurrences_transaction_id_unique": {
+          "name": "recurring_occurrences_transaction_id_unique",
+          "columns": ["transaction_id"],
+          "isUnique": true
+        },
+        "recurring_occurrences_template_id_idx": {
+          "name": "recurring_occurrences_template_id_idx",
+          "columns": ["template_id"],
+          "isUnique": false
+        },
+        "recurring_occurrences_workspace_id_status_idx": {
+          "name": "recurring_occurrences_workspace_id_status_idx",
+          "columns": ["workspace_id", "status"],
+          "isUnique": false
+        },
+        "recurring_occurrences_workspace_id_due_date_idx": {
+          "name": "recurring_occurrences_workspace_id_due_date_idx",
+          "columns": ["workspace_id", "due_date"],
+          "isUnique": false
+        },
+        "recurring_occurrences_ws_status_due_date_idx": {
+          "name": "recurring_occurrences_ws_status_due_date_idx",
+          "columns": ["workspace_id", "status", "due_date"],
+          "isUnique": false
+        },
+        "recurring_occurrences_template_occurrence_unique": {
+          "name": "recurring_occurrences_template_occurrence_unique",
+          "columns": ["template_id", "occurrence_number"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "recurring_occurrences_template_id_recurring_templates_id_fk": {
+          "name": "recurring_occurrences_template_id_recurring_templates_id_fk",
+          "tableFrom": "recurring_occurrences",
+          "tableTo": "recurring_templates",
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_occurrences_workspace_id_workspaces_id_fk": {
+          "name": "recurring_occurrences_workspace_id_workspaces_id_fk",
+          "tableFrom": "recurring_occurrences",
+          "tableTo": "workspaces",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_occurrences_transaction_id_transactions_id_fk": {
+          "name": "recurring_occurrences_transaction_id_transactions_id_fk",
+          "tableFrom": "recurring_occurrences",
+          "tableTo": "transactions",
+          "columnsFrom": ["transaction_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "oauth_accounts": {
       "name": "oauth_accounts",
       "columns": {
@@ -2149,6 +2500,139 @@
           "tableFrom": "oauth_accounts",
           "tableTo": "users",
           "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "user_mfa": {
+      "name": "user_mfa",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mfa_enabled": {
+          "name": "mfa_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "totp_secret": {
+          "name": "totp_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        }
+      },
+      "indexes": {
+        "user_mfa_user_id_unique": {
+          "name": "user_mfa_user_id_unique",
+          "columns": ["user_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "user_mfa_user_id_users_id_fk": {
+          "name": "user_mfa_user_id_users_id_fk",
+          "tableFrom": "user_mfa",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "user_mfa_backup_codes": {
+      "name": "user_mfa_backup_codes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_mfa_id": {
+          "name": "user_mfa_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "code_hash": {
+          "name": "code_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        }
+      },
+      "indexes": {
+        "user_mfa_backup_codes_mfa_id_idx": {
+          "name": "user_mfa_backup_codes_mfa_id_idx",
+          "columns": ["user_mfa_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "user_mfa_backup_codes_user_mfa_id_user_mfa_id_fk": {
+          "name": "user_mfa_backup_codes_user_mfa_id_user_mfa_id_fk",
+          "tableFrom": "user_mfa_backup_codes",
+          "tableTo": "user_mfa",
+          "columnsFrom": ["user_mfa_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"

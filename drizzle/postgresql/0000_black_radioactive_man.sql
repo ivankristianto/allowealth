@@ -147,16 +147,6 @@ CREATE TABLE "email_verification_tokens" (
 );
 --> statement-breakpoint
 ALTER TABLE "email_verification_tokens" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
-CREATE TABLE "exchange_rates" (
-	"id" text PRIMARY KEY NOT NULL,
-	"from_currency" text NOT NULL,
-	"to_currency" text NOT NULL,
-	"rate" text NOT NULL,
-	"effective_date" timestamp NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-ALTER TABLE "exchange_rates" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "workspaces" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
@@ -255,6 +245,49 @@ CREATE TABLE "transactions" (
 );
 --> statement-breakpoint
 ALTER TABLE "transactions" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "recurring_templates" (
+	"id" text PRIMARY KEY NOT NULL,
+	"workspace_id" text NOT NULL,
+	"created_by_user_id" text NOT NULL,
+	"name" text NOT NULL,
+	"type" text NOT NULL,
+	"amount" text NOT NULL,
+	"currency" text NOT NULL,
+	"category_id" text NOT NULL,
+	"account_id" text NOT NULL,
+	"day_of_month" integer NOT NULL,
+	"start_date" text NOT NULL,
+	"end_date" text,
+	"total_occurrences" integer,
+	"is_installment" boolean DEFAULT false NOT NULL,
+	"installment_label" text,
+	"starting_occurrence_number" integer DEFAULT 1 NOT NULL,
+	"description" text,
+	"status" text DEFAULT 'active' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "recurring_templates_installment_requires_total_occurrences" CHECK (NOT "recurring_templates"."is_installment" OR "recurring_templates"."total_occurrences" IS NOT NULL)
+);
+--> statement-breakpoint
+ALTER TABLE "recurring_templates" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "recurring_occurrences" (
+	"id" text PRIMARY KEY NOT NULL,
+	"template_id" text NOT NULL,
+	"workspace_id" text NOT NULL,
+	"due_date" text NOT NULL,
+	"occurrence_number" integer NOT NULL,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"transaction_id" text,
+	"confirmed_amount" text,
+	"skip_reason" text,
+	"confirmed_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "recurring_occurrences_transaction_id_unique" UNIQUE("transaction_id"),
+	CONSTRAINT "recurring_occurrences_template_occurrence_unique" UNIQUE("template_id","occurrence_number")
+);
+--> statement-breakpoint
+ALTER TABLE "recurring_occurrences" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "oauth_accounts" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
@@ -266,6 +299,26 @@ CREATE TABLE "oauth_accounts" (
 );
 --> statement-breakpoint
 ALTER TABLE "oauth_accounts" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "user_mfa" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"mfa_enabled" boolean DEFAULT false NOT NULL,
+	"totp_secret" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "user_mfa_user_id_unique" UNIQUE("user_id")
+);
+--> statement-breakpoint
+ALTER TABLE "user_mfa" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "user_mfa_backup_codes" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_mfa_id" text NOT NULL,
+	"code_hash" text NOT NULL,
+	"used_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "user_mfa_backup_codes" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "account_categories" ADD CONSTRAINT "account_categories_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account_categories" ADD CONSTRAINT "account_categories_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account_history" ADD CONSTRAINT "account_history_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -303,7 +356,16 @@ ALTER TABLE "transactions" ADD CONSTRAINT "transactions_account_id_accounts_id_f
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_to_account_id_accounts_id_fk" FOREIGN KEY ("to_account_id") REFERENCES "public"."accounts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_updated_by_user_id_users_id_fk" FOREIGN KEY ("updated_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_deleted_by_user_id_users_id_fk" FOREIGN KEY ("deleted_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_templates" ADD CONSTRAINT "recurring_templates_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_templates" ADD CONSTRAINT "recurring_templates_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_templates" ADD CONSTRAINT "recurring_templates_category_id_budget_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."budget_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_templates" ADD CONSTRAINT "recurring_templates_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_occurrences" ADD CONSTRAINT "recurring_occurrences_template_id_recurring_templates_id_fk" FOREIGN KEY ("template_id") REFERENCES "public"."recurring_templates"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_occurrences" ADD CONSTRAINT "recurring_occurrences_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_occurrences" ADD CONSTRAINT "recurring_occurrences_transaction_id_transactions_id_fk" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "oauth_accounts" ADD CONSTRAINT "oauth_accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_mfa" ADD CONSTRAINT "user_mfa_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_mfa_backup_codes" ADD CONSTRAINT "user_mfa_backup_codes_user_mfa_id_user_mfa_id_fk" FOREIGN KEY ("user_mfa_id") REFERENCES "public"."user_mfa"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_categories_workspace_id_idx" ON "account_categories" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "account_categories_created_by_user_id_idx" ON "account_categories" USING btree ("created_by_user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "account_categories_workspace_name_unique" ON "account_categories" USING btree ("workspace_id","name");--> statement-breakpoint
@@ -317,6 +379,7 @@ CREATE INDEX "account_snapshots_created_by_user_id_idx" ON "account_snapshots" U
 CREATE INDEX "account_update_reminders_workspace_id_idx" ON "account_update_reminders" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "account_update_reminders_created_by_user_id_idx" ON "account_update_reminders" USING btree ("created_by_user_id");--> statement-breakpoint
 CREATE INDEX "account_update_reminders_account_id_idx" ON "account_update_reminders" USING btree ("account_id");--> statement-breakpoint
+CREATE INDEX "account_update_reminders_next_reminder_idx" ON "account_update_reminders" USING btree ("next_reminder");--> statement-breakpoint
 CREATE INDEX "accounts_workspace_id_idx" ON "accounts" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "accounts_created_by_user_id_idx" ON "accounts" USING btree ("created_by_user_id");--> statement-breakpoint
 CREATE INDEX "accounts_category_id_idx" ON "accounts" USING btree ("category_id");--> statement-breakpoint
@@ -325,9 +388,12 @@ CREATE INDEX "accounts_ws_status_deleted_idx" ON "accounts" USING btree ("worksp
 CREATE INDEX "api_keys_workspace_id_idx" ON "api_keys" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "api_keys_user_id_idx" ON "api_keys" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "api_keys_key_prefix_idx" ON "api_keys" USING btree ("key_prefix");--> statement-breakpoint
+CREATE INDEX "api_keys_prefix_deleted_idx" ON "api_keys" USING btree ("key_prefix","deleted_at");--> statement-breakpoint
+CREATE INDEX "api_keys_ws_user_deleted_idx" ON "api_keys" USING btree ("workspace_id","user_id","deleted_at");--> statement-breakpoint
 CREATE INDEX "audit_logs_workspace_id_idx" ON "audit_logs" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "audit_logs_user_id_idx" ON "audit_logs" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "audit_logs_created_at_idx" ON "audit_logs" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "audit_logs_workspace_created_idx" ON "audit_logs" USING btree ("workspace_id","created_at");--> statement-breakpoint
 CREATE INDEX "audit_logs_ws_entity_action_idx" ON "audit_logs" USING btree ("workspace_id","entity_type","entity_id","action");--> statement-breakpoint
 CREATE INDEX "budgets_created_by_user_id_idx" ON "budgets" USING btree ("created_by_user_id");--> statement-breakpoint
 CREATE INDEX "budgets_ws_month_year_currency_idx" ON "budgets" USING btree ("workspace_id","month","year","currency");--> statement-breakpoint
@@ -336,11 +402,11 @@ CREATE INDEX "budget_categories_created_by_user_id_idx" ON "budget_categories" U
 CREATE INDEX "email_verification_tokens_user_id_idx" ON "email_verification_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "email_verification_tokens_expires_at_idx" ON "email_verification_tokens" USING btree ("expires_at");--> statement-breakpoint
 CREATE INDEX "workspace_invitations_workspace_id_idx" ON "workspace_invitations" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "workspace_invitations_ws_accept_expire_created_idx" ON "workspace_invitations" USING btree ("workspace_id","accepted_at","expires_at","created_at");--> statement-breakpoint
 CREATE INDEX "users_workspace_id_idx" ON "users" USING btree ("workspace_id");--> statement-breakpoint
 CREATE INDEX "idx_user_meta_user_id" ON "user_meta" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "sessions_expires_at_idx" ON "sessions" USING btree ("expires_at");--> statement-breakpoint
 CREATE INDEX "sessions_user_id_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "password_reset_tokens_token_idx" ON "password_reset_tokens" USING btree ("token");--> statement-breakpoint
 CREATE INDEX "password_reset_tokens_user_id_idx" ON "password_reset_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "password_reset_tokens_expires_at_idx" ON "password_reset_tokens" USING btree ("expires_at");--> statement-breakpoint
 CREATE INDEX "transactions_workspace_id_idx" ON "transactions" USING btree ("workspace_id");--> statement-breakpoint
@@ -350,11 +416,22 @@ CREATE INDEX "transactions_category_id_idx" ON "transactions" USING btree ("cate
 CREATE INDEX "transactions_ws_type_currency_date_idx" ON "transactions" USING btree ("workspace_id","type","currency","transaction_date");--> statement-breakpoint
 CREATE INDEX "transactions_ws_cat_type_currency_date_idx" ON "transactions" USING btree ("workspace_id","category_id","type","currency","transaction_date");--> statement-breakpoint
 CREATE INDEX "transactions_ws_user_date_idx" ON "transactions" USING btree ("workspace_id","created_by_user_id","transaction_date");--> statement-breakpoint
+CREATE INDEX "transactions_ws_date_idx" ON "transactions" USING btree ("workspace_id","transaction_date");--> statement-breakpoint
+CREATE INDEX "transactions_ws_account_date_idx" ON "transactions" USING btree ("workspace_id","account_id","transaction_date");--> statement-breakpoint
+CREATE INDEX "transactions_ws_to_account_date_idx" ON "transactions" USING btree ("workspace_id","to_account_id","transaction_date");--> statement-breakpoint
 CREATE INDEX "transactions_created_by_user_id_idx" ON "transactions" USING btree ("created_by_user_id");--> statement-breakpoint
 CREATE INDEX "transactions_updated_by_user_id_idx" ON "transactions" USING btree ("updated_by_user_id");--> statement-breakpoint
 CREATE INDEX "transactions_deleted_by_user_id_idx" ON "transactions" USING btree ("deleted_by_user_id");--> statement-breakpoint
 CREATE INDEX "transactions_to_account_id_idx" ON "transactions" USING btree ("to_account_id");--> statement-breakpoint
+CREATE INDEX "recurring_templates_workspace_id_idx" ON "recurring_templates" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "recurring_templates_workspace_id_status_idx" ON "recurring_templates" USING btree ("workspace_id","status");--> statement-breakpoint
+CREATE INDEX "recurring_templates_category_id_idx" ON "recurring_templates" USING btree ("category_id");--> statement-breakpoint
+CREATE INDEX "recurring_occurrences_template_id_idx" ON "recurring_occurrences" USING btree ("template_id");--> statement-breakpoint
+CREATE INDEX "recurring_occurrences_workspace_id_status_idx" ON "recurring_occurrences" USING btree ("workspace_id","status");--> statement-breakpoint
+CREATE INDEX "recurring_occurrences_workspace_id_due_date_idx" ON "recurring_occurrences" USING btree ("workspace_id","due_date");--> statement-breakpoint
+CREATE INDEX "recurring_occurrences_ws_status_due_date_idx" ON "recurring_occurrences" USING btree ("workspace_id","status","due_date");--> statement-breakpoint
 CREATE INDEX "oauth_accounts_user_id_idx" ON "oauth_accounts" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "user_mfa_backup_codes_mfa_id_idx" ON "user_mfa_backup_codes" USING btree ("user_mfa_id");--> statement-breakpoint
 CREATE POLICY "account_categories_allow_all" ON "account_categories" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "account_history_allow_all" ON "account_history" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "account_snapshot_items_allow_all" ON "account_snapshot_items" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
@@ -366,7 +443,6 @@ CREATE POLICY "audit_logs_allow_all" ON "audit_logs" AS PERMISSIVE FOR ALL TO pu
 CREATE POLICY "budgets_allow_all" ON "budgets" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "budget_categories_allow_all" ON "budget_categories" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "email_verification_tokens_allow_all" ON "email_verification_tokens" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
-CREATE POLICY "exchange_rates_allow_all" ON "exchange_rates" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "workspaces_allow_all" ON "workspaces" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "workspace_meta_allow_all" ON "workspace_meta" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "workspace_invitations_allow_all" ON "workspace_invitations" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
@@ -375,4 +451,8 @@ CREATE POLICY "user_meta_allow_all" ON "user_meta" AS PERMISSIVE FOR ALL TO publ
 CREATE POLICY "sessions_allow_all" ON "sessions" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "password_reset_tokens_allow_all" ON "password_reset_tokens" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "transactions_allow_all" ON "transactions" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
-CREATE POLICY "oauth_accounts_allow_all" ON "oauth_accounts" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "recurring_templates_allow_all" ON "recurring_templates" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
+CREATE POLICY "recurring_occurrences_allow_all" ON "recurring_occurrences" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
+CREATE POLICY "oauth_accounts_allow_all" ON "oauth_accounts" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
+CREATE POLICY "user_mfa_allow_all" ON "user_mfa" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
+CREATE POLICY "user_mfa_backup_codes_allow_all" ON "user_mfa_backup_codes" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);

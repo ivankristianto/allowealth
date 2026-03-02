@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1771506375606,
-      "tag": "0000_remarkable_shadow_king",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1771507582195,
-      "tag": "0001_sudden_stephen_strange",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1771579148017,
-      "tag": "0002_multi_currency_support",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1772016900000,
-      "tag": "0003_recurring_transactions",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1772363155561,
-      "tag": "0004_numerous_kylun",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1772363212642,
-      "tag": "0005_chemical_maggott",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1772363258231,
-      "tag": "0006_whole_lady_deathstrike",
+      "when": 1772417127774,
+      "tag": "0000_perpetual_swarm",
       "breakpoints": true
     }
   ]

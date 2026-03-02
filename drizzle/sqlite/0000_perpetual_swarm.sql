@@ -27,6 +27,7 @@ CREATE TABLE `account_history` (
 --> statement-breakpoint
 CREATE INDEX `account_history_account_id_idx` ON `account_history` (`account_id`);--> statement-breakpoint
 CREATE INDEX `account_history_account_recorded_idx` ON `account_history` (`account_id`,`recorded_at`);--> statement-breakpoint
+CREATE INDEX `account_history_recorded_at_idx` ON `account_history` (`recorded_at`);--> statement-breakpoint
 CREATE TABLE `account_snapshot_items` (
 	`id` text PRIMARY KEY NOT NULL,
 	`snapshot_id` text NOT NULL,
@@ -72,6 +73,7 @@ CREATE TABLE `account_update_reminders` (
 CREATE INDEX `account_update_reminders_workspace_id_idx` ON `account_update_reminders` (`workspace_id`);--> statement-breakpoint
 CREATE INDEX `account_update_reminders_created_by_user_id_idx` ON `account_update_reminders` (`created_by_user_id`);--> statement-breakpoint
 CREATE INDEX `account_update_reminders_account_id_idx` ON `account_update_reminders` (`account_id`);--> statement-breakpoint
+CREATE INDEX `account_update_reminders_next_reminder_idx` ON `account_update_reminders` (`next_reminder`);--> statement-breakpoint
 CREATE TABLE `accounts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workspace_id` text NOT NULL,
@@ -121,6 +123,8 @@ CREATE TABLE `api_keys` (
 CREATE INDEX `api_keys_workspace_id_idx` ON `api_keys` (`workspace_id`);--> statement-breakpoint
 CREATE INDEX `api_keys_user_id_idx` ON `api_keys` (`user_id`);--> statement-breakpoint
 CREATE INDEX `api_keys_key_prefix_idx` ON `api_keys` (`key_prefix`);--> statement-breakpoint
+CREATE INDEX `api_keys_prefix_deleted_idx` ON `api_keys` (`key_prefix`,`deleted_at`);--> statement-breakpoint
+CREATE INDEX `api_keys_ws_user_deleted_idx` ON `api_keys` (`workspace_id`,`user_id`,`deleted_at`);--> statement-breakpoint
 CREATE TABLE `audit_logs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workspace_id` text NOT NULL,
@@ -138,6 +142,7 @@ CREATE TABLE `audit_logs` (
 CREATE INDEX `audit_logs_workspace_id_idx` ON `audit_logs` (`workspace_id`);--> statement-breakpoint
 CREATE INDEX `audit_logs_user_id_idx` ON `audit_logs` (`user_id`);--> statement-breakpoint
 CREATE INDEX `audit_logs_created_at_idx` ON `audit_logs` (`created_at`);--> statement-breakpoint
+CREATE INDEX `audit_logs_workspace_created_idx` ON `audit_logs` (`workspace_id`,`created_at`);--> statement-breakpoint
 CREATE INDEX `audit_logs_ws_entity_action_idx` ON `audit_logs` (`workspace_id`,`entity_type`,`entity_id`,`action`);--> statement-breakpoint
 CREATE TABLE `budgets` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -190,15 +195,6 @@ CREATE TABLE `email_verification_tokens` (
 CREATE UNIQUE INDEX `email_verification_tokens_token_unique` ON `email_verification_tokens` (`token`);--> statement-breakpoint
 CREATE INDEX `email_verification_tokens_user_id_idx` ON `email_verification_tokens` (`user_id`);--> statement-breakpoint
 CREATE INDEX `email_verification_tokens_expires_at_idx` ON `email_verification_tokens` (`expires_at`);--> statement-breakpoint
-CREATE TABLE `exchange_rates` (
-	`id` text PRIMARY KEY NOT NULL,
-	`from_currency` text NOT NULL,
-	`to_currency` text NOT NULL,
-	`rate` text NOT NULL,
-	`effective_date` integer NOT NULL,
-	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `workspaces` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -233,6 +229,7 @@ CREATE TABLE `workspace_invitations` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `workspace_invitations_token_unique` ON `workspace_invitations` (`token`);--> statement-breakpoint
 CREATE INDEX `workspace_invitations_workspace_id_idx` ON `workspace_invitations` (`workspace_id`);--> statement-breakpoint
+CREATE INDEX `workspace_invitations_ws_accept_expire_created_idx` ON `workspace_invitations` (`workspace_id`,`accepted_at`,`expires_at`,`created_at`);--> statement-breakpoint
 CREATE TABLE `users` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workspace_id` text,
@@ -281,7 +278,6 @@ CREATE TABLE `password_reset_tokens` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `password_reset_tokens_token_unique` ON `password_reset_tokens` (`token`);--> statement-breakpoint
-CREATE INDEX `password_reset_tokens_token_idx` ON `password_reset_tokens` (`token`);--> statement-breakpoint
 CREATE INDEX `password_reset_tokens_user_id_idx` ON `password_reset_tokens` (`user_id`);--> statement-breakpoint
 CREATE INDEX `password_reset_tokens_expires_at_idx` ON `password_reset_tokens` (`expires_at`);--> statement-breakpoint
 CREATE TABLE `transactions` (
@@ -317,10 +313,67 @@ CREATE INDEX `transactions_category_id_idx` ON `transactions` (`category_id`);--
 CREATE INDEX `transactions_ws_type_currency_date_idx` ON `transactions` (`workspace_id`,`type`,`currency`,`transaction_date`);--> statement-breakpoint
 CREATE INDEX `transactions_ws_cat_type_currency_date_idx` ON `transactions` (`workspace_id`,`category_id`,`type`,`currency`,`transaction_date`);--> statement-breakpoint
 CREATE INDEX `transactions_ws_user_date_idx` ON `transactions` (`workspace_id`,`created_by_user_id`,`transaction_date`);--> statement-breakpoint
+CREATE INDEX `transactions_ws_date_idx` ON `transactions` (`workspace_id`,`transaction_date`);--> statement-breakpoint
+CREATE INDEX `transactions_ws_account_date_idx` ON `transactions` (`workspace_id`,`account_id`,`transaction_date`);--> statement-breakpoint
+CREATE INDEX `transactions_ws_to_account_date_idx` ON `transactions` (`workspace_id`,`to_account_id`,`transaction_date`);--> statement-breakpoint
 CREATE INDEX `transactions_to_account_id_idx` ON `transactions` (`to_account_id`);--> statement-breakpoint
 CREATE INDEX `transactions_created_by_user_id_idx` ON `transactions` (`created_by_user_id`);--> statement-breakpoint
 CREATE INDEX `transactions_updated_by_user_id_idx` ON `transactions` (`updated_by_user_id`);--> statement-breakpoint
 CREATE INDEX `transactions_deleted_by_user_id_idx` ON `transactions` (`deleted_by_user_id`);--> statement-breakpoint
+CREATE TABLE `recurring_templates` (
+	`id` text PRIMARY KEY NOT NULL,
+	`workspace_id` text NOT NULL,
+	`created_by_user_id` text NOT NULL,
+	`name` text NOT NULL,
+	`type` text NOT NULL,
+	`amount` text NOT NULL,
+	`currency` text NOT NULL,
+	`category_id` text NOT NULL,
+	`account_id` text NOT NULL,
+	`day_of_month` integer NOT NULL,
+	`start_date` text NOT NULL,
+	`end_date` text,
+	`total_occurrences` integer,
+	`is_installment` integer DEFAULT false NOT NULL,
+	`installment_label` text,
+	`starting_occurrence_number` integer DEFAULT 1 NOT NULL,
+	`description` text,
+	`status` text DEFAULT 'active' NOT NULL,
+	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`created_by_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`category_id`) REFERENCES `budget_categories`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`account_id`) REFERENCES `accounts`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE INDEX `recurring_templates_workspace_id_idx` ON `recurring_templates` (`workspace_id`);--> statement-breakpoint
+CREATE INDEX `recurring_templates_workspace_id_status_idx` ON `recurring_templates` (`workspace_id`,`status`);--> statement-breakpoint
+CREATE INDEX `recurring_templates_category_id_idx` ON `recurring_templates` (`category_id`);--> statement-breakpoint
+CREATE TABLE `recurring_occurrences` (
+	`id` text PRIMARY KEY NOT NULL,
+	`template_id` text NOT NULL,
+	`workspace_id` text NOT NULL,
+	`due_date` text NOT NULL,
+	`occurrence_number` integer NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`transaction_id` text,
+	`confirmed_amount` text,
+	`skip_reason` text,
+	`confirmed_at` integer,
+	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`template_id`) REFERENCES `recurring_templates`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`transaction_id`) REFERENCES `transactions`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `recurring_occurrences_transaction_id_unique` ON `recurring_occurrences` (`transaction_id`);--> statement-breakpoint
+CREATE INDEX `recurring_occurrences_template_id_idx` ON `recurring_occurrences` (`template_id`);--> statement-breakpoint
+CREATE INDEX `recurring_occurrences_workspace_id_status_idx` ON `recurring_occurrences` (`workspace_id`,`status`);--> statement-breakpoint
+CREATE INDEX `recurring_occurrences_workspace_id_due_date_idx` ON `recurring_occurrences` (`workspace_id`,`due_date`);--> statement-breakpoint
+CREATE INDEX `recurring_occurrences_ws_status_due_date_idx` ON `recurring_occurrences` (`workspace_id`,`status`,`due_date`);--> statement-breakpoint
+CREATE UNIQUE INDEX `recurring_occurrences_template_occurrence_unique` ON `recurring_occurrences` (`template_id`,`occurrence_number`);--> statement-breakpoint
 CREATE TABLE `oauth_accounts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
@@ -332,4 +385,25 @@ CREATE TABLE `oauth_accounts` (
 );
 --> statement-breakpoint
 CREATE INDEX `oauth_accounts_user_id_idx` ON `oauth_accounts` (`user_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `oauth_accounts_provider_account_unique` ON `oauth_accounts` (`provider`,`provider_account_id`);
+CREATE UNIQUE INDEX `oauth_accounts_provider_account_unique` ON `oauth_accounts` (`provider`,`provider_account_id`);--> statement-breakpoint
+CREATE TABLE `user_mfa` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`mfa_enabled` integer DEFAULT false NOT NULL,
+	`totp_secret` text NOT NULL,
+	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `user_mfa_user_id_unique` ON `user_mfa` (`user_id`);--> statement-breakpoint
+CREATE TABLE `user_mfa_backup_codes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_mfa_id` text NOT NULL,
+	`code_hash` text NOT NULL,
+	`used_at` integer,
+	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`user_mfa_id`) REFERENCES `user_mfa`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `user_mfa_backup_codes_mfa_id_idx` ON `user_mfa_backup_codes` (`user_mfa_id`);

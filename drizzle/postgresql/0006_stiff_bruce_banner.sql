@@ -1,2 +1,0 @@
-CREATE INDEX "account_update_reminders_next_reminder_idx" ON "account_update_reminders" USING btree ("next_reminder");--> statement-breakpoint
-CREATE INDEX "audit_logs_workspace_created_idx" ON "audit_logs" USING btree ("workspace_id","created_at");

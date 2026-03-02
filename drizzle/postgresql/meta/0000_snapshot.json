@@ -1,5 +1,5 @@
 {
-  "id": "3c0d32cc-6b69-44f2-9898-a3e84914237b",
+  "id": "042324cf-b679-4f55-933c-e48269278b38",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -607,6 +607,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "account_update_reminders_next_reminder_idx": {
+          "name": "account_update_reminders_next_reminder_idx",
+          "columns": [
+            {
+              "expression": "next_reminder",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1031,6 +1046,54 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "api_keys_prefix_deleted_idx": {
+          "name": "api_keys_prefix_deleted_idx",
+          "columns": [
+            {
+              "expression": "key_prefix",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deleted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "api_keys_ws_user_deleted_idx": {
+          "name": "api_keys_ws_user_deleted_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deleted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1162,6 +1225,27 @@
         "audit_logs_created_at_idx": {
           "name": "audit_logs_created_at_idx",
           "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_logs_workspace_created_idx": {
+          "name": "audit_logs_workspace_created_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "created_at",
               "isExpression": false,
@@ -1666,65 +1750,6 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
-    "public.exchange_rates": {
-      "name": "exchange_rates",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "from_currency": {
-          "name": "from_currency",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "to_currency": {
-          "name": "to_currency",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rate": {
-          "name": "rate",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "effective_date": {
-          "name": "effective_date",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "exchange_rates_allow_all": {
-          "name": "exchange_rates_allow_all",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": ["public"],
-          "using": "true",
-          "withCheck": "true"
-        }
-      },
-      "checkConstraints": {},
-      "isRLSEnabled": true
-    },
     "public.workspaces": {
       "name": "workspaces",
       "schema": "",
@@ -1922,6 +1947,39 @@
           "columns": [
             {
               "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "workspace_invitations_ws_accept_expire_created_idx": {
+          "name": "workspace_invitations_ws_accept_expire_created_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "accepted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2297,21 +2355,6 @@
         }
       },
       "indexes": {
-        "password_reset_tokens_token_idx": {
-          "name": "password_reset_tokens_token_idx",
-          "columns": [
-            {
-              "expression": "token",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "password_reset_tokens_user_id_idx": {
           "name": "password_reset_tokens_user_id_idx",
           "columns": [
@@ -2638,6 +2681,81 @@
           "method": "btree",
           "with": {}
         },
+        "transactions_ws_date_idx": {
+          "name": "transactions_ws_date_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "transaction_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "transactions_ws_account_date_idx": {
+          "name": "transactions_ws_account_date_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "transaction_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "transactions_ws_to_account_date_idx": {
+          "name": "transactions_ws_to_account_date_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "to_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "transaction_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "transactions_created_by_user_id_idx": {
           "name": "transactions_created_by_user_id_idx",
           "columns": [
@@ -2779,6 +2897,468 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
+    "public.recurring_templates": {
+      "name": "recurring_templates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day_of_month": {
+          "name": "day_of_month",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_occurrences": {
+          "name": "total_occurrences",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_installment": {
+          "name": "is_installment",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "installment_label": {
+          "name": "installment_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "starting_occurrence_number": {
+          "name": "starting_occurrence_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recurring_templates_workspace_id_idx": {
+          "name": "recurring_templates_workspace_id_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_templates_workspace_id_status_idx": {
+          "name": "recurring_templates_workspace_id_status_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_templates_category_id_idx": {
+          "name": "recurring_templates_category_id_idx",
+          "columns": [
+            {
+              "expression": "category_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recurring_templates_workspace_id_workspaces_id_fk": {
+          "name": "recurring_templates_workspace_id_workspaces_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "workspaces",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_templates_created_by_user_id_users_id_fk": {
+          "name": "recurring_templates_created_by_user_id_users_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_templates_category_id_budget_categories_id_fk": {
+          "name": "recurring_templates_category_id_budget_categories_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "budget_categories",
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_templates_account_id_accounts_id_fk": {
+          "name": "recurring_templates_account_id_accounts_id_fk",
+          "tableFrom": "recurring_templates",
+          "tableTo": "accounts",
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "recurring_templates_allow_all": {
+          "name": "recurring_templates_allow_all",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {
+        "recurring_templates_installment_requires_total_occurrences": {
+          "name": "recurring_templates_installment_requires_total_occurrences",
+          "value": "NOT \"recurring_templates\".\"is_installment\" OR \"recurring_templates\".\"total_occurrences\" IS NOT NULL"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.recurring_occurrences": {
+      "name": "recurring_occurrences",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurrence_number": {
+          "name": "occurrence_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "transaction_id": {
+          "name": "transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmed_amount": {
+          "name": "confirmed_amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skip_reason": {
+          "name": "skip_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recurring_occurrences_template_id_idx": {
+          "name": "recurring_occurrences_template_id_idx",
+          "columns": [
+            {
+              "expression": "template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_occurrences_workspace_id_status_idx": {
+          "name": "recurring_occurrences_workspace_id_status_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_occurrences_workspace_id_due_date_idx": {
+          "name": "recurring_occurrences_workspace_id_due_date_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "due_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_occurrences_ws_status_due_date_idx": {
+          "name": "recurring_occurrences_ws_status_due_date_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "due_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recurring_occurrences_template_id_recurring_templates_id_fk": {
+          "name": "recurring_occurrences_template_id_recurring_templates_id_fk",
+          "tableFrom": "recurring_occurrences",
+          "tableTo": "recurring_templates",
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_occurrences_workspace_id_workspaces_id_fk": {
+          "name": "recurring_occurrences_workspace_id_workspaces_id_fk",
+          "tableFrom": "recurring_occurrences",
+          "tableTo": "workspaces",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_occurrences_transaction_id_transactions_id_fk": {
+          "name": "recurring_occurrences_transaction_id_transactions_id_fk",
+          "tableFrom": "recurring_occurrences",
+          "tableTo": "transactions",
+          "columnsFrom": ["transaction_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "recurring_occurrences_transaction_id_unique": {
+          "name": "recurring_occurrences_transaction_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["transaction_id"]
+        },
+        "recurring_occurrences_template_occurrence_unique": {
+          "name": "recurring_occurrences_template_occurrence_unique",
+          "nullsNotDistinct": false,
+          "columns": ["template_id", "occurrence_number"]
+        }
+      },
+      "policies": {
+        "recurring_occurrences_allow_all": {
+          "name": "recurring_occurrences_allow_all",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
     "public.oauth_accounts": {
       "name": "oauth_accounts",
       "schema": "",
@@ -2860,6 +3440,162 @@
       "policies": {
         "oauth_accounts_allow_all": {
           "name": "oauth_accounts_allow_all",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.user_mfa": {
+      "name": "user_mfa",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mfa_enabled": {
+          "name": "mfa_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "totp_secret": {
+          "name": "totp_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_mfa_user_id_users_id_fk": {
+          "name": "user_mfa_user_id_users_id_fk",
+          "tableFrom": "user_mfa",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_mfa_user_id_unique": {
+          "name": "user_mfa_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["user_id"]
+        }
+      },
+      "policies": {
+        "user_mfa_allow_all": {
+          "name": "user_mfa_allow_all",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.user_mfa_backup_codes": {
+      "name": "user_mfa_backup_codes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_mfa_id": {
+          "name": "user_mfa_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code_hash": {
+          "name": "code_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "user_mfa_backup_codes_mfa_id_idx": {
+          "name": "user_mfa_backup_codes_mfa_id_idx",
+          "columns": [
+            {
+              "expression": "user_mfa_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_mfa_backup_codes_user_mfa_id_user_mfa_id_fk": {
+          "name": "user_mfa_backup_codes_user_mfa_id_user_mfa_id_fk",
+          "tableFrom": "user_mfa_backup_codes",
+          "tableTo": "user_mfa",
+          "columnsFrom": ["user_mfa_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "user_mfa_backup_codes_allow_all": {
+          "name": "user_mfa_backup_codes_allow_all",
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": ["public"],
