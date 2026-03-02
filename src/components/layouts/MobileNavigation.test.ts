@@ -6,7 +6,7 @@
  * - Navigation item configuration
  *
  * Note: Accessibility attributes (role, aria-label, aria-current) are implemented
- * in the Astro component and validated via Storybook stories and manual testing.
+ * in the Astro component and validated via manual browser testing.
  * DOM-level tests would require a full rendering environment.
  */
 

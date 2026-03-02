@@ -5,7 +5,7 @@
  * Tests component configuration, date formatting logic, and styling decisions.
  *
  * Note: DOM-level tests (structure, accessibility attributes) are validated via
- * Storybook stories and manual testing as they require a full rendering environment.
+ * manual browser testing as they require a full rendering environment.
  */
 
 import { describe, expect, it } from 'bun:test';
@@ -169,7 +169,7 @@ describe('TransactionCard', () => {
   /**
    * Design Requirements Documentation
    *
-   * The following requirements are validated via Storybook stories and manual testing
+   * The following requirements are validated via manual browser testing
    * as they require a full rendering environment:
    *
    * - Minimum touch target: 44x44px (WCAG 2.5.5) via min-h-[44px] min-w-[44px]

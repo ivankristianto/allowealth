@@ -14,7 +14,7 @@
  *    - Includes client-side validation for all fields
  *    - Displays loading states and error/success messages
  *    - Implements a SIMULATED submission as a placeholder (lines 269-297)
- *    - The simulated submission ensures the component works standalone (Storybook, prototypes)
+ *    - The simulated submission ensures the component works standalone (prototypes, demos)
  *
  * 2. **Page Role (Enhancement)**:
  *    - Pages that use this component should enhance it with real API calls
@@ -30,7 +30,7 @@
  *
  * 4. **Why This Pattern?**:
  *    - Reusable: Component works in multiple contexts with different endpoints
- *    - Testable: Component can be tested independently (Storybook)
+ *    - Testable: Component can be tested independently
  *    - Flexible: Each page can customize API behavior without modifying the component
  *    - Progressive: Pages can start with simulated behavior, then add real API calls
  *
@@ -308,7 +308,7 @@ const {
 
       try {
         // PLACEHOLDER SIMULATION: This component provides a simulated submission
-        // so it works standalone in Storybook, prototypes, or pages that don't
+        // so it works standalone in prototypes, demos, or pages that don't
         // require real registration. Pages that need real API behavior should
         // enhance this component by overriding the submit handler (see below).
         //

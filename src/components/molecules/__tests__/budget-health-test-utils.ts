@@ -2,10 +2,10 @@
  * Budget Health Widget Test Utilities
  * ===================================
  *
- * Shared helper functions for BudgetHealthWidget tests and Storybook stories.
+ * Shared helper functions for BudgetHealthWidget tests and local component previews.
  * Re-exports formatCurrency and formatPercentage from canonical formatting utilities.
  *
- * Usage in Storybook:
+ * Usage in preview fixtures:
  * import { getStatusColor, getStatusBg, getStatusBadge, getProgressBarColor } from './__tests__/budget-health-test-utils';
  */
 

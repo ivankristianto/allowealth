@@ -325,4 +325,4 @@ bun run test:e2e --grep @critical
 - Critical paths: >80%
 - Services: >80%
 - API endpoints: >70%
-- UI components: Best effort (Storybook visual regression)
+- UI components: Best effort (browser/manual validation + unit coverage where practical)

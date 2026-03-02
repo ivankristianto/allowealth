@@ -4,7 +4,6 @@ export default {
     '**/dist/**',
     '**/*.astro',
     'node_modules/**',
-    'storybook-static/**',
     'e2e/playwright-report/**',
     'test-results/**',
   ],

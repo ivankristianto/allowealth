@@ -10,7 +10,6 @@ Personal and family financial application for expense tracking, budgeting, accou
 - **Components:** Astro components (server-side)
 - **State Management:** Nano Stores (client-side reactive state)
 - **Animations:** Motion/mini (client-side animations)
-- **Storybook:** 8.x with HTML framework
 - **Database:** Drizzle ORM + SQLite (dev) / PostgreSQL+Hyperdrive or Cloudflare D1 (prod)
 - **Auth:** Lucia Auth
 - **Cache:** CacheManager + Upstash Redis (prod) / Memory (dev)
@@ -69,8 +68,6 @@ bun run db:migrate           # Apply SQLite migrations
 bun run db:migrate:prod      # Apply PostgreSQL migrations
 bun run db:push              # Push schema (SQLite dev only)
 
-# Storybook
-bun run storybook            # Start Storybook
 ```
 
 See `COMMANDS.md` for complete list of available scripts and CLI tools.

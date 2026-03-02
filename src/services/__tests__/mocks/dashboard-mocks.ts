@@ -1,7 +1,7 @@
 /**
  * Dashboard Mock Data
  *
- * Mock data for dashboard UI components and Storybook stories.
+ * Mock data for dashboard UI component tests and local previews.
  * All data follows the project's type definitions.
  */
 

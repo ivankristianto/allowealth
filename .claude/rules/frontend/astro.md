@@ -164,29 +164,6 @@ import { addToast } from '@/lib/toast';
 - ✅ **Use toast system (`addToast`)** for user feedback instead of inline alerts
 - ❌ **Use `alert()`, `confirm()`** - use toast notifications or confirmation modals
 
-## Storybook Stories
-
-```typescript
-// ButtonPrimary.stories.ts
-import type { Meta, StoryObj } from '@storybook/html';
-
-const meta: Meta = {
-  title: 'Atoms/Button',
-  tags: ['autodocs'],
-};
-
-export default meta;
-type Story = StoryObj;
-
-export const Primary: Story = {
-  render: () => `<button class="btn btn-accent">Primary Button</button>`,
-};
-```
-
-**Rules:**
-
-- ✅ **All atomic components must have Storybook stories** (`.stories.ts`)
-
 ## API Endpoint Naming
 
 ```bash

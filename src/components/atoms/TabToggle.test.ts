@@ -7,7 +7,7 @@ import { describe, it, expect } from 'bun:test';
  *
  * TODO P2: These tests use hardcoded HTML strings instead of rendering the actual
  * TabToggle.astro component. Consider using Astro's testing utilities or
- * Storybook interaction tests to verify actual component output.
+ * browser-level interaction tests to verify actual component output.
  */
 
 describe('TabToggle Component', () => {

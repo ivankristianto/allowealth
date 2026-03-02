@@ -48,9 +48,6 @@ coverage
 openapi.yml
 openapi/
 
-# storybook static files
-storybook-static/
-
 # e2e test results and reports
 e2e/playwright-report/
 test-results/

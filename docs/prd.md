@@ -1154,7 +1154,7 @@ Errors: 1 (invalid category)
 - Framework: Astro 4.x
 - UI Framework: React 18+ (for interactive islands)
 - Styling: Tailwind CSS v4 + DaisyUI
-- Component Library: Custom (documented in Storybook)
+- Component Library: Custom (documented in design system docs)
 - Charts: Chart.js or Recharts
 - Forms: React Hook Form + Zod validation
 - State Management: Zustand or Nanostores
@@ -1172,7 +1172,7 @@ Errors: 1 (invalid category)
 
 **Development Tools:**
 
-- Component Development: Storybook 8.x
+- Component Development: Astro component previews + manual QA
 - Testing: Bun test + Vitest
 - Code Quality: ESLint + Prettier
 - Type Checking: TypeScript 5.x
@@ -1212,7 +1212,7 @@ Errors: 1 (invalid category)
 
 **Component Requirements:**
 
-- Every component in Storybook
+- Every component documented with usage examples
 - Props documented with TypeScript
 - Multiple states demonstrated
 - Accessibility notes included
@@ -1880,7 +1880,6 @@ export const sessions = pgTable(
 - **Astro:** https://astro.build
 - **Drizzle ORM:** https://orm.drizzle.team
 - **Lucia Auth:** https://lucia-auth.com
-- **Storybook:** https://storybook.js.org
 - **WCAG 2.1:** https://www.w3.org/WAI/WCAG21/quickref/
 
 ### C. Changelog

@@ -44,7 +44,6 @@ docs/prompt.md
 
 # Finder (MacOS) folder config
 .DS_Store
-debug-storybook.log
 
 # SQLite databases
 db/*.db
@@ -58,9 +57,6 @@ db/.*.db
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
-
-# storybook static files
-storybook-static/
 
 # POC
 specs/familyfinance

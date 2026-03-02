@@ -11,7 +11,6 @@ export default [
       '.astro',
       '.wrangler',
       'node_modules',
-      'storybook-static',
       'e2e/playwright-report',
       'test-results',
     ],

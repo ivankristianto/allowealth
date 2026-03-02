@@ -165,20 +165,6 @@ describe('review feedback regressions', () => {
     expect(buttonContent).toContain("'btn ");
   });
 
-  it('date picker story should use token classes for input styling', () => {
-    const content = read('src/components/atoms/DatePicker.stories.ts');
-
-    expect(content).toContain("from '@/lib/tokens'");
-    expect(content).toContain('tokenClasses');
-    expect(content).toContain('tokenClasses.inputSurfaceBase');
-    expect(content).toContain('tokenClasses.inputFocusAccent');
-    expect(content).toContain('tokenClasses.inputPaddingXl');
-    expect(content).toContain('tokenClasses.inputHeightXl');
-    expect(content).not.toContain(
-      'h-14 rounded-lg border border-base-300 bg-base-200 px-6 text-base font-bold'
-    );
-  });
-
   it('transaction filters category search should use MultiSelectDropdown with correct props', () => {
     const content = read('src/components/organisms/TransactionFiltersBar.astro');
 

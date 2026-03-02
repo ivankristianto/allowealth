@@ -47,5 +47,5 @@
     ]
   },
   "include": ["src/**/*", "mcp-server/src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.stories.ts"]
+  "exclude": ["node_modules", "dist"]
 }

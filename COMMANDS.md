@@ -9,11 +9,9 @@ All available `bun run` commands for the project.
 | `bun run dev`          | Start Astro dev server with hot reload                     |
 | `bun run preview`      | Preview build locally (uses `.env`)                        |
 | `bun run preview:prod` | Preview build with production env (uses `.env.production`) |
-| `bun run storybook`    | Start Storybook on port 6006                               |
 
 ```bash
 bun run dev              # http://localhost:4321
-bun run storybook        # http://localhost:6006
 ```
 
 ## Docs Site (Starlight)
@@ -66,7 +64,6 @@ Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 | `bun run build:vercel`      | Build for Vercel                                     |
 | `bun run build:netlify`     | Build for Netlify                                    |
 | `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html` |
-| `bun run build-storybook`   | Build static Storybook site                          |
 | `bun run bundle:report`     | Build and run bundle size analysis                   |
 | `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers               |
 | `bun run deploy:vercel`     | Build and deploy to Vercel                           |
