@@ -90,5 +90,64 @@ export default defineCommand({
         exec('bun', ['run', 'src/db/empty.ts']);
       },
     }),
+    drop: defineCommand({
+      meta: {
+        name: 'drop',
+        description: '⚠️  DANGEROUS: Delete all tables and reset database',
+      },
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, getTarget, isD1, isD1Local } = await import('../lib/target');
+        await resolveTarget(args);
+
+        const target = getTarget();
+
+        // Show warning and require confirmation
+        console.error('\n⚠️  DANGER ZONE ⚠️');
+        console.error('This command will DELETE ALL TABLES and reset the database.');
+        console.error(`Target: ${target}`);
+
+        if (target === 'd1' || target === 'd1-local') {
+          console.error('This will drop all tables on D1 (including production if --target d1).');
+        }
+
+        console.error('\nType "yes" to confirm:');
+
+        // Read confirmation from stdin
+        const readline = await import('readline');
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stderr,
+        });
+
+        const confirmation = await new Promise<string>((resolve) => {
+          rl.question('', (answer) => {
+            rl.close();
+            resolve(answer.trim());
+          });
+        });
+
+        if (confirmation !== 'yes') {
+          console.error('\nAborted.');
+          process.exit(1);
+        }
+
+        console.error('\nDropping all tables...\n');
+
+        if (isD1()) {
+          const { dropD1Tables } = await import('../lib/d1-migrate');
+          await dropD1Tables({ local: isD1Local() });
+        } else if (target === 'sqlite') {
+          exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
+          console.log('✅ SQLite database file deleted.');
+        } else if (target === 'postgres') {
+          exec('bun', ['run', 'src/db/drop-postgres.ts']);
+        }
+
+        console.log('\n✅ Database dropped. Run "aw db migrate" to recreate schema.\n');
+      },
+    }),
   },
 });

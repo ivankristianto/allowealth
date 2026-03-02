@@ -166,6 +166,33 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | `bun run aw db seed --benchmark`          | Seed + ~10k transactions for perf test |
 | `bun run aw db reset`                     | Delete + push + seed (sqlite only)     |
 | `bun run aw db empty`                     | Truncate all data (preserve schema)    |
+| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB      |
+
+#### Database Drop Command
+
+The `aw db drop` command completely resets the database by dropping all tables and clearing migrations.
+
+```bash
+# Drop local SQLite database
+bun run aw db drop
+
+# Drop remote D1 database (production)
+bun run aw db drop -t d1
+
+# Drop local D1 database
+bun run aw db drop -t d1-local
+
+# Drop PostgreSQL database
+bun run aw db drop -t postgres
+```
+
+**What it does:**
+
+- **D1**: Drops all user tables (excludes reserved system tables like `_cf_*` and `__drizzle_migrations`), then truncates migrations table
+- **SQLite**: Deletes the `.dev.db` file
+- **PostgreSQL**: Drops all tables with CASCADE
+
+**After running**, use `aw db migrate` to recreate the schema from the first migration.
 
 ### Admin & Security
 

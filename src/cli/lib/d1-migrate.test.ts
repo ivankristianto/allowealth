@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { parseJournal, findPendingMigrations } from './d1-migrate';
+import {
+  parseJournal,
+  findPendingMigrations,
+  filterDroppableTables,
+  orderTablesForDrop,
+} from './d1-migrate';
 
 describe('parseJournal', () => {
   test('parses journal entries', () => {
@@ -61,5 +66,45 @@ describe('findPendingMigrations', () => {
     const all = [{ idx: 0, tag: '0000_first' }];
     const applied = ['0000_first'];
     expect(findPendingMigrations(all, applied)).toEqual([]);
+  });
+});
+
+describe('filterDroppableTables', () => {
+  test('excludes D1 internal and migrations tables from drop list', () => {
+    const tables = ['__drizzle_migrations', '_cf_KV', 'users', 'transactions'];
+    expect(filterDroppableTables(tables)).toEqual(['users', 'transactions']);
+  });
+
+  test('keeps user tables that start with underscores but are not reserved', () => {
+    const tables = ['_custom_table', '_cf_KV', 'accounts'];
+    expect(filterDroppableTables(tables)).toEqual(['_custom_table', 'accounts']);
+  });
+});
+
+describe('orderTablesForDrop', () => {
+  test('drops children before parents based on FK dependencies', () => {
+    const tables = ['account_categories', 'accounts', 'transactions'];
+    const dependencies = {
+      account_categories: [],
+      accounts: ['account_categories'],
+      transactions: ['accounts'],
+    };
+
+    expect(orderTablesForDrop(tables, dependencies)).toEqual([
+      'transactions',
+      'accounts',
+      'account_categories',
+    ]);
+  });
+
+  test('keeps deterministic order for independent tables', () => {
+    const tables = ['z_table', 'a_table', 'm_table'];
+    const dependencies = {
+      z_table: [],
+      a_table: [],
+      m_table: [],
+    };
+
+    expect(orderTablesForDrop(tables, dependencies)).toEqual(['a_table', 'm_table', 'z_table']);
   });
 });
