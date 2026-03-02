@@ -30,9 +30,6 @@ import {
   parseMonthKey,
   formatMonthKey,
   getCurrentMonthKey,
-  createMonthKey,
-  safeParseAmount,
-  extractAvailableMonths,
   transformTransaction,
 } from '@/lib/utils';
 import { trackPhase, trackPhaseSync } from '@/lib/perf';
@@ -143,24 +140,37 @@ const accountOptions = accounts.map((account) => ({
   type: ACCOUNT_TYPE_GROUP_LABELS[account.type] || ACCOUNT_TYPE_LABELS[account.type],
 }));
 
-// For month selector, fetch all months available (optimized query)
-const allUserTransactions = await transactionService.findAll(
-  {
-    workspace_id: user.workspaceId,
-    created_by_user_id: userId || undefined,
-    currency: selectedCurrency,
-    limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
-  },
-  perf
-);
+// Use SQL aggregation instead of fetching 10K rows (CPU time: ~5ms vs ~30-80ms)
+// Three lightweight queries replace the single 10K-row fetch:
+const [availableMonthsFromDb, monthlySummary, memberRows] = await Promise.all([
+  // 1. Distinct months via GROUP BY (replaces extractAvailableMonths over 10K rows)
+  transactionService.getAvailableMonths(
+    user.workspaceId,
+    { created_by_user_id: userId || undefined, currency: selectedCurrency },
+    perf
+  ),
+  // 2. Monthly summary via SUM aggregation (replaces iterating 10K rows)
+  monthDateRange
+    ? transactionService.getMonthSummary(
+        {
+          workspace_id: user.workspaceId,
+          created_by_user_id: userId || undefined,
+          currency: selectedCurrency,
+          account_ids: accountIds.length > 0 ? accountIds : undefined,
+          start_date: monthDateRange.start,
+          end_date: monthDateRange.end,
+        },
+        perf
+      )
+    : Promise.resolve({ income: 0, expenses: 0, transactionCount: 0 }),
+  // 3. Distinct members via JOIN + DISTINCT (replaces iterating 10K rows)
+  transactionService.getTransactionMembers(user.workspaceId, { currency: selectedCurrency }, perf),
+]);
 
+// Build member options from SQL result
 const memberNameMap = new Map<string, string>();
-for (const tx of allUserTransactions as any[]) {
-  const memberId = tx.created_by_user_id;
-  if (!memberId || memberNameMap.has(memberId)) continue;
-
-  const memberName = tx.createdBy?.name?.trim() || 'Unknown';
-  memberNameMap.set(memberId, memberName);
+for (const member of memberRows) {
+  memberNameMap.set(member.id, member.name);
 }
 
 // Keep the currently selected filter visible even if it has no transactions in this data window.
@@ -174,10 +184,8 @@ const memberOptions = Array.from(memberNameMap, ([id, name]) => ({ id, name })).
 );
 const showMemberFilter = memberOptions.length > 1 || Boolean(userId);
 
-// Extract available months using utility function
-const availableMonthsWithLabels = trackPhaseSync('extractAvailableMonths', perf, () =>
-  extractAvailableMonths(allUserTransactions)
-);
+// Build available months from SQL result (already sorted desc)
+const availableMonthsWithLabels = [...availableMonthsFromDb];
 const availableMonths = availableMonthsWithLabels.map((m) => m.key);
 const compareMonthKeys = (monthA: string, monthB: string) => {
   const [aMonth, aYear] = monthA.split('-').map(Number);
@@ -207,32 +215,10 @@ if (!availableMonthsWithLabels.some((m) => m.key === effectiveMonth)) {
 availableMonthsWithLabels.sort((a, b) => compareMonthKeys(a.key, b.key));
 availableMonths.sort(compareMonthKeys);
 
-// Calculate summary from ALL transactions in the selected month (not filtered)
-// Summary only changes when month changes, not when filters change
-let monthlyIncome = 0;
-let monthlyExpenses = 0;
-let expenseCount = 0;
-
-// Calculate from all user transactions for the selected month
-trackPhaseSync('monthlySummary', perf, () => {
-  allUserTransactions.forEach((t: any) => {
-    const txDate = new Date(t.transaction_date);
-    const txMonthKey = createMonthKey(txDate);
-
-    if (txMonthKey === effectiveMonth) {
-      if (accountIds.length > 0 && !accountIds.includes(t.account_id)) {
-        return;
-      }
-      const amount = safeParseAmount(t.amount);
-      if (t.type === 'income') {
-        monthlyIncome += amount;
-      } else {
-        monthlyExpenses += Math.abs(amount);
-        expenseCount++;
-      }
-    }
-  });
-});
+// Monthly summary from SQL aggregation (no JS iteration needed)
+const monthlyIncome = monthlySummary.income;
+const monthlyExpenses = monthlySummary.expenses;
+const expenseCount = monthlySummary.transactionCount;
 
 // Build base URL for navigation
 const buildBaseUrl = () => {

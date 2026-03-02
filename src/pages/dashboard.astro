@@ -58,15 +58,18 @@ try {
     throw new Error('User not authenticated. Please log in again.');
   }
 
-  // Get onboarding status (parallel queries)
-  onboardingStatus = await workspaceService.getOnboardingStatus(user.workspaceId);
+  // Fetch onboarding status and currency in parallel (saves ~10-20ms CPU)
+  const [onboardingResult, primaryValue, secondaryValue] = await Promise.all([
+    workspaceService.getOnboardingStatus(user.workspaceId),
+    workspaceMetaService.getCurrency(user.workspaceId),
+    workspaceMetaService.getSecondaryCurrency(user.workspaceId),
+  ]);
+
+  onboardingStatus = onboardingResult;
 
   // Validate currency from workspace meta before computing completion
   if (onboardingStatus.currency) {
-    const primaryValue = await workspaceMetaService.getCurrency(user.workspaceId);
     primaryCurrency = isValidCurrency(primaryValue) ? primaryValue : null;
-
-    const secondaryValue = await workspaceMetaService.getSecondaryCurrency(user.workspaceId);
     secondaryCurrency = secondaryValue && isValidCurrency(secondaryValue) ? secondaryValue : null;
   }
 
@@ -96,21 +99,20 @@ try {
         ? activeCurrencyCookie
         : primaryCurrency;
 
-    dashboardData = await dashboardService.getDashboardData(
-      user.workspaceId,
-      currentMonth,
-      currentYear,
-      selectedDetailCurrency,
-      perf
-    );
-  }
+    // Fetch dashboard data and MFA status in parallel (MFA is non-critical)
+    const [dashResult, mfaResult] = await Promise.all([
+      dashboardService.getDashboardData(
+        user.workspaceId,
+        currentMonth,
+        currentYear,
+        selectedDetailCurrency,
+        perf
+      ),
+      mfaService.getStatus(user.id).catch(() => ({ enabled: false })),
+    ]);
 
-  // Check MFA status for encouragement banner
-  try {
-    const mfaStatus = await mfaService.getStatus(user.id);
-    mfaEnabled = mfaStatus.enabled;
-  } catch {
-    // Non-critical for dashboard rendering
+    dashboardData = dashResult;
+    mfaEnabled = mfaResult.enabled;
   }
 } catch (err) {
   console.error('Error loading dashboard data:', err);

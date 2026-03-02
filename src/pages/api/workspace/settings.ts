@@ -11,6 +11,7 @@ import { logError } from '@/lib/utils';
 import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/service-errors';
 import { z } from 'zod';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
+import { getCacheManager, CacheTags } from '@/lib/cache';
 
 const currencySchema = z.enum(AVAILABLE_CURRENCIES);
 
@@ -125,6 +126,14 @@ export const PUT: APIRoute = async (context) => {
     }
     if (monthlyIncome !== undefined) {
       await workspaceMetaService.setMonthlyIncome(auth.workspaceId, monthlyIncome);
+    }
+
+    // Invalidate layout cache since workspace settings changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId), CacheTags.LAYOUT]);
+    } catch (cacheError) {
+      logError(`Cache invalidation failed for workspace ${auth.workspaceId}`, cacheError);
     }
 
     // Get updated workspace and settings

@@ -11,13 +11,6 @@
  * - Fresh DOM queries at call-time (no stale closure refs)
  */
 
-import { fetchAccountCategories } from '@/lib/api/accountCategoryApiClient';
-import {
-  renderCategoryTableHtml,
-  showLoadingState,
-  hideLoadingState,
-  announceToScreenReader,
-} from '@/components/organisms/AccountCategoriesRenderer.client';
 import { navigate } from 'astro:transitions/client';
 
 // Store current filter state
@@ -34,31 +27,6 @@ function getTypeFilter(): 'account' | 'liability' {
   const url = new URL(window.location.href);
   const type = url.searchParams.get('type');
   return type === 'account' || type === 'liability' ? type : 'account';
-}
-
-/**
- * Fetch and render categories based on current filters
- */
-async function fetchAndRenderCategories(): Promise<void> {
-  showLoadingState();
-
-  try {
-    const response = (await fetchAccountCategories(
-      { type: currentTypeFilter },
-      { returnHtml: true }
-    )) as { html: string; partials: { table?: string } };
-
-    hideLoadingState();
-
-    if (response.partials.table) {
-      renderCategoryTableHtml(response.partials.table);
-    }
-  } catch (error) {
-    hideLoadingState();
-    const message = error instanceof Error ? error.message : 'Failed to load categories';
-    announceToScreenReader(message);
-    console.error('[AccountCategoriesPage] Error fetching categories:', error);
-  }
 }
 
 /**
@@ -183,27 +151,27 @@ function initAccountCategoriesPage(): void {
     { signal }
   );
 
-  // Tab toggle — AJAX fetch (type filter is supported by API)
-  document.querySelectorAll('[name="type"][data-tab-toggle]').forEach((toggle) => {
-    toggle.addEventListener(
-      'change',
-      async (event: Event) => {
-        const target = event.currentTarget as HTMLInputElement;
-        const newType = target.value as 'account' | 'liability';
+  // Client-side tab filtering — show/hide rows by type without server round-trip
+  document.addEventListener(
+    'tab-toggle-change',
+    ((e: CustomEvent<{ name: string; value: string }>) => {
+      if (e.detail.name !== 'type') return;
+      const activeType = e.detail.value as 'account' | 'liability';
+      currentTypeFilter = activeType;
 
-        if (newType !== currentTypeFilter) {
-          currentTypeFilter = newType;
+      // Show/hide rows (scoped to tr elements to avoid toggling edit buttons)
+      document.querySelectorAll<HTMLElement>('tr[data-category-type]').forEach((row) => {
+        row.classList.toggle('hidden', row.dataset.categoryType !== activeType);
+      });
 
-          const url = new URL(window.location.href);
-          url.searchParams.set('type', currentTypeFilter);
-          window.history.replaceState({}, '', url.toString());
-
-          await fetchAndRenderCategories();
-        }
-      },
-      { signal }
-    );
-  });
+      // Update the hidden type input in the search form
+      const hiddenTypeInput = document.querySelector<HTMLInputElement>(
+        '#account-category-search-form input[name="type"]'
+      );
+      if (hiddenTypeInput) hiddenTypeInput.value = activeType;
+    }) as EventListener,
+    { signal }
+  );
 
   // Create category button
   document.querySelectorAll('[data-action="create-account-category"]').forEach((btn) => {

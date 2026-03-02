@@ -25,6 +25,13 @@ const log = createLogger('database');
 export const database: MiddlewareHandler = async (_context, next) => {
   const config = getDatabaseConfig();
 
+  // D1: reset per-request but no connection lifecycle management
+  // Skip verbose logging for D1 — saves CPU on string interpolation
+  if (config.isD1) {
+    prepareForRequest();
+    return next();
+  }
+
   log.info(
     `dialect=${config.dialect}` +
       ` url=${config.isD1 ? '<D1>' : config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'}` +
@@ -32,12 +39,6 @@ export const database: MiddlewareHandler = async (_context, next) => {
       ` hyperdrive=${config.isHyperdrive}` +
       ` d1=${config.isD1}`
   );
-
-  // D1: reset per-request but no connection lifecycle management
-  if (config.isD1) {
-    prepareForRequest();
-    return next();
-  }
 
   // Diagnostic: count fetch() calls to identify subrequest sources
   let fetchCount = 0;

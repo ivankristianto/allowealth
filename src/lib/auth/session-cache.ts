@@ -9,8 +9,8 @@ import type { User, Session } from './lucia';
 import type { PerfCollector } from '@/lib/perf';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
-// Cache TTL in seconds (5 minutes)
-const SESSION_CACHE_TTL = 5 * 60;
+// Cache TTL in seconds (15 minutes — reduced cache miss frequency on Workers)
+const SESSION_CACHE_TTL = 15 * 60;
 
 interface CachedSessionData {
   session: Session;

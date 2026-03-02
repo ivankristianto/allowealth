@@ -17,6 +17,36 @@ function initCategories() {
   const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
   const categoryForm = document.querySelector('[data-category-form]') as HTMLFormElement;
 
+  // Client-side tab filtering — show/hide rows by type without server round-trip
+  document.addEventListener(
+    'tab-toggle-change',
+    ((e: CustomEvent<{ name: string; value: string }>) => {
+      if (e.detail.name !== 'type') return;
+      const activeType = e.detail.value;
+
+      // Show/hide rows (scoped to tr elements to avoid toggling other elements with same attr)
+      document.querySelectorAll<HTMLElement>('tr[data-category-type]').forEach((row) => {
+        row.classList.toggle('hidden', row.dataset.categoryType !== activeType);
+      });
+
+      // Update data-type on action buttons so create/bulk-add use the active tab
+      document
+        .querySelectorAll<HTMLElement>(
+          '[data-action="create-category"], [data-action="bulk-add-categories"]'
+        )
+        .forEach((btn) => {
+          btn.dataset.type = activeType;
+        });
+
+      // Update the hidden type input in the search form
+      const hiddenTypeInput = document.querySelector<HTMLInputElement>(
+        '#search-form input[name="type"]'
+      );
+      if (hiddenTypeInput) hiddenTypeInput.value = activeType;
+    }) as EventListener,
+    { signal }
+  );
+
   // Create category button handler
   document.querySelectorAll('[data-action="create-category"]').forEach((btn) => {
     btn.addEventListener(

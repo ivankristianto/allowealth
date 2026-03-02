@@ -109,14 +109,14 @@ if (cached) {
         transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
         workspaceMetaService.getWorkspaceCurrencies(user.workspaceId),
       ]);
-    // Cache the results (60 seconds TTL) - fail-silent
+    // Cache the results (5 minutes TTL — reduced cache miss frequency on Workers)
     try {
       if (cache && cacheKey) {
         await cache.set<LayoutData>(
           cacheKey,
           { categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies },
           {
-            ttl: 60,
+            ttl: 300,
             tags: [
               CacheTags.workspace(user.workspaceId),
               CacheTags.user(user.id),

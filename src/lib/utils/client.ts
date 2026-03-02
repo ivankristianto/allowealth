@@ -5,6 +5,39 @@
  * These should only be imported in client-side scripts.
  */
 
+import { addToast } from '@/lib/stores/toastStore';
+import { getCsrfHeaders } from '@/lib/csrf-client';
+
+/**
+ * POST /api/auth/logout and redirect to /login on success.
+ * Shared by UserProfile dropdown and mobile navigation logout buttons.
+ *
+ * @param onBeforeRedirect - Optional callback invoked after a successful
+ *   server response but before the redirect (e.g. close a dropdown menu).
+ */
+export async function performLogout(onBeforeRedirect?: () => void): Promise<void> {
+  try {
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: getCsrfHeaders(),
+      credentials: 'include',
+    });
+
+    if (response.ok) {
+      onBeforeRedirect?.();
+      addToast('Signed out successfully', 'success');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
+    } else {
+      addToast('Failed to sign out. Please try again.', 'error');
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    addToast('An error occurred. Please try again.', 'error');
+  }
+}
+
 /**
  * Debounce function execution
  *

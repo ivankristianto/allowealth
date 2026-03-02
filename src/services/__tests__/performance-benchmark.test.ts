@@ -209,10 +209,10 @@ let userService: UserService;
 beforeAll(() => {
   // 1. Create temp SQLite database
   rawDb = new Database(DB_PATH);
-  rawDb.exec('PRAGMA journal_mode = WAL;');
-  rawDb.exec('PRAGMA synchronous = NORMAL;');
-  rawDb.exec('PRAGMA cache_size = -64000;');
-  rawDb.exec('PRAGMA foreign_keys = ON;');
+  rawDb.prepare('PRAGMA journal_mode = WAL').run();
+  rawDb.prepare('PRAGMA synchronous = NORMAL').run();
+  rawDb.prepare('PRAGMA cache_size = -64000').run();
+  rawDb.prepare('PRAGMA foreign_keys = ON').run();
 
   db = drizzle(rawDb, { schema });
 
