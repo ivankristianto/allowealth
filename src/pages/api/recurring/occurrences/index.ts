@@ -51,16 +51,12 @@ export const GET: APIRoute = async (context) => {
 
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();
-      const templateCheck = await recurringTemplateService.findAll(auth.workspaceId, {
-        status: 'all',
-        page: 1,
-        limit: 1,
-      });
+      const hasTemplates = await recurringTemplateService.hasTemplates(auth.workspaceId);
 
       const html = await container.renderToString(RecurringPendingListPartial, {
         props: {
           occurrences: result.occurrences,
-          hasTemplates: templateCheck.total > 0,
+          hasTemplates,
           monthLabel: toMonthLabel(month),
         },
       });

@@ -1,6 +1,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { nanoid } from 'nanoid';
 import { eq, and, isNull } from 'drizzle-orm';
+import { getCacheManager, CacheKeys, CacheTags, simpleHash } from '@/lib/cache';
 
 const KEY_PREFIX = 'aw_';
 const KEY_LENGTH = 32;
@@ -11,6 +12,7 @@ const PBKDF2_CONFIG = {
   algorithm: 'SHA-256',
 } as const;
 const HASH_PREFIX = '$pbkdf2-sha256$';
+const DEFAULT_VALIDATE_CACHE_TTL_SECONDS = 300;
 
 interface GenerateInput {
   workspace_id: string;
@@ -200,6 +202,35 @@ export class ApiKeyService {
     return null;
   }
 
+  async validateCached(
+    key: string,
+    ttlSeconds = DEFAULT_VALIDATE_CACHE_TTL_SECONDS
+  ): Promise<ApiKeyContext | null> {
+    if (!key || !key.startsWith(KEY_PREFIX)) return null;
+
+    const keyHash = simpleHash(key);
+    const keyPrefix = key.slice(0, 8);
+    const cacheKey = CacheKeys.apiKey(keyHash);
+    const cache = getCacheManager();
+
+    const cached = await cache.get<ApiKeyContext>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.validate(key);
+    if (!result) {
+      return null;
+    }
+
+    await cache.set(cacheKey, result, {
+      ttl: ttlSeconds,
+      tags: [CacheTags.API_KEYS, `apikey:${keyPrefix}`],
+    });
+
+    return result;
+  }
+
   async revoke(id: string, workspaceId: string): Promise<boolean> {
     const existing = await this.db.query.apiKeys.findFirst({
       where: and(
@@ -214,6 +245,10 @@ export class ApiKeyService {
       .update(this.schema.apiKeys)
       .set({ deleted_at: new Date() })
       .where(eq(this.schema.apiKeys.id, id));
+
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.API_KEYS, `apikey:${existing.key_prefix}`]);
+
     return true;
   }
 

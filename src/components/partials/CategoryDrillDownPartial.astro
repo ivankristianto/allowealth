@@ -31,6 +31,10 @@ export interface Props {
   period: string;
   currency: Currency;
   transactions: TransactionOutput[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
 }
 
 const {
@@ -42,6 +46,10 @@ const {
   period,
   currency,
   transactions,
+  total,
+  limit,
+  offset,
+  hasMore,
 } = Astro.props;
 
 const dateGroups = groupTransactionsByDate(transactions);
@@ -81,7 +89,14 @@ if (!hasBudget) {
 const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok';
 ---
 
-<div data-category-drilldown-content class="flex flex-col gap-6">
+<div
+  data-category-drilldown-content
+  data-drilldown-offset={offset}
+  data-drilldown-limit={limit}
+  data-drilldown-has-more={hasMore ? 'true' : 'false'}
+  data-drilldown-total={total}
+  class="flex flex-col gap-6"
+>
   {/* Header with category info */}
   <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
     <div class="flex items-center gap-4">
@@ -176,6 +191,35 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
         <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
       )
     }
+
+    <div class="flex items-center justify-between px-6 pb-2">
+      <span class="text-xs font-bold uppercase tracking-widest text-base-content/50">
+        Showing {transactions.length === 0 ? 0 : offset + 1}-{
+          Math.min(offset + transactions.length, total)
+        }
+        of {total}
+      </span>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class={`btn btn-xs btn-ghost ${offset > 0 ? '' : 'btn-disabled'}`}
+          data-drilldown-page="prev"
+          disabled={offset <= 0}
+          aria-label="Previous drilldown page"
+        >
+          Prev
+        </button>
+        <button
+          type="button"
+          class={`btn btn-xs btn-ghost ${hasMore ? '' : 'btn-disabled'}`}
+          data-drilldown-page="next"
+          disabled={!hasMore}
+          aria-label="Next drilldown page"
+        >
+          Next
+        </button>
+      </div>
+    </div>
   </div>
 
   {/* Close action */}

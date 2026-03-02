@@ -2,233 +2,111 @@
 
 ## Overview
 
-This project uses **Drizzle ORM** with dual database support:
+This project uses Drizzle ORM with dual-dialect support:
 
-- **SQLite** for local development
-- **PostgreSQL/Supabase** for production
+- SQLite for local development (`drizzle/sqlite`)
+- PostgreSQL for staging/production (`drizzle/postgresql`)
 
-Both dialects have separate schema files and migration directories. Schema changes must be migrated for **both** dialects.
+Every schema change must be represented in both dialect schema folders and both migration folders.
 
 ## Directory Structure
 
-```
+```text
 src/db/schema/
-├── sqlite/          # SQLite schema definitions
-└── postgresql/      # PostgreSQL schema definitions
+├── sqlite/
+└── postgresql/
 
 drizzle/
-├── sqlite/          # SQLite migration files
-│   ├── 0000_*.sql   # Single consolidated initial migration
-│   ├── meta/
-│   │   ├── _journal.json
-│   │   └── 0000_snapshot.json
-└── postgresql/      # PostgreSQL migration files
-    ├── 0000_*.sql   # Single consolidated initial migration
-    ├── meta/
-    │   ├── _journal.json
-    │   └── 0000_snapshot.json
+├── sqlite/
+│   ├── 000N_*.sql
+│   └── meta/
+│       ├── _journal.json
+│       └── 000N_snapshot.json
+└── postgresql/
+    ├── 000N_*.sql
+    └── meta/
+        ├── _journal.json
+        └── 000N_snapshot.json
 ```
 
-> **Note**: Migrations were consolidated on 2026-02-16 into a single initial migration
-> per dialect covering all 21 tables. Since the app is in development, no backward
-> compatibility is needed.
+## Standard Commands
 
-## Configuration
-
-`drizzle.config.ts` auto-detects the dialect from `DATABASE_URL`:
-
-- URLs starting with `postgres://` or `postgresql://` → PostgreSQL dialect, `drizzle/postgresql/` output
-- Everything else → SQLite dialect, `drizzle/sqlite/` output
-
-## Commands
-
-| Command                    | Description                                       |
-| -------------------------- | ------------------------------------------------- |
-| `bun run db:generate`      | Generate SQLite migration from schema changes     |
-| `bun run db:generate:prod` | Generate PostgreSQL migration from schema changes |
-| `bun run db:migrate`       | Apply pending SQLite migrations                   |
-| `bun run db:migrate:prod`  | Apply pending PostgreSQL migrations               |
-| `bun run db:push`          | Push SQLite schema directly (no migration files)  |
-| `bun run db:reset`         | Reset SQLite: delete DB file, push schema, seed   |
-| `bun run db:empty`         | Truncate all SQLite data (preserve schema)        |
-| `bun run db:empty:prod`    | Truncate all PostgreSQL data (preserve schema)    |
-
-## Workflows
-
-### Daily Development (SQLite)
+SQLite:
 
 ```bash
-# After modifying src/db/schema/sqlite/*.ts:
-bun run db:generate        # Generate migration
-bun run db:migrate         # Apply migration
-
-# Or for quick iteration:
-bun run db:push            # Push schema directly (no migration tracking)
-
-# Full reset:
-bun run db:reset           # Delete DB + push + seed
+bun run db:generate
+bun run db:migrate
 ```
 
-### Schema Changes (Both Dialects)
-
-When modifying the database schema, you **must** update both dialects:
+PostgreSQL:
 
 ```bash
-# 1. Edit both schema files
-#    src/db/schema/sqlite/<table>.ts
-#    src/db/schema/postgresql/<table>.ts
-
-# 2. Generate migrations for both
-bun run db:generate          # SQLite migration
-bun run db:generate:prod     # PostgreSQL migration
-
-# 3. Apply locally
-bun run db:migrate           # Apply SQLite migration
-
-# 4. Commit both migration directories
-git add drizzle/sqlite/ drizzle/postgresql/
-
-# 5. Deploy: migrations are applied to production
-bun run db:migrate:prod      # Apply PostgreSQL migration
+bun --env-file=.env.production run db:generate
+bun --env-file=.env.production run db:migrate
 ```
 
-### Production Migration (PostgreSQL/Supabase)
+## Normal Workflow
+
+1. Edit both schema dialects in `src/db/schema/sqlite/*` and `src/db/schema/postgresql/*`.
+2. Generate SQLite migration.
+3. Generate PostgreSQL migration.
+4. Apply SQLite migration locally.
+5. Commit schema files plus both `drizzle/*` directories.
+
+## Stale Snapshot Remediation (Drizzle Meta Drift)
+
+Use this when `drizzle-kit generate` shows unrelated rename prompts (for example `asset_*` to `account_*`) or when a `drizzle/*/meta/000N_snapshot.json` file is missing while `_journal.json` references that index.
+
+Symptoms:
+
+- Interactive rename prompts for tables you did not touch.
+- Missing `000N_snapshot.json` in `drizzle/<dialect>/meta`.
+- Generated migration contains broad table rename/create/drop churn instead of intended deltas.
+
+Remediation workflow:
+
+1. Build a baseline snapshot from the last committed schema (not current uncommitted edits).
 
 ```bash
-# Apply pending migrations
-bun run db:migrate:prod
+mkdir -p .tmp/base-schema
 
-# Verify migration state
-bun --env-file=.env.production -e "
-const postgres = (await import('postgres')).default;
-const sql = postgres(process.env.DATABASE_URL, { ssl: 'require' });
-const rows = await sql\`SELECT * FROM drizzle.__drizzle_migrations ORDER BY id\`;
-console.table(rows);
-await sql.end();
-"
+git archive --format=tar HEAD src/db/schema/sqlite src/db/schema/postgresql \
+  | tar -xf - -C .tmp/base-schema
+
+bunx drizzle-kit generate \
+  --dialect sqlite \
+  --schema ./.tmp/base-schema/src/db/schema/sqlite \
+  --out ./.tmp/drizzle-sqlite-base
+
+bunx drizzle-kit generate \
+  --dialect postgresql \
+  --schema ./.tmp/base-schema/src/db/schema/postgresql \
+  --out ./.tmp/drizzle-pg-base
 ```
 
-### Initial PostgreSQL Setup (New Supabase Project)
+2. Restore missing snapshot index using baseline snapshot content.
 
-When connecting to a brand new (empty) Supabase database:
+- Example for missing `0003_snapshot.json`:
+  - copy `.tmp/drizzle-<dialect>-base/meta/0000_snapshot.json` to `drizzle/<dialect>/meta/0003_snapshot.json`
+  - set `prevId` of `0003_snapshot.json` to the `id` value from `drizzle/<dialect>/meta/0002_snapshot.json`
+
+3. Regenerate migrations normally.
 
 ```bash
-# 1. Set DATABASE_URL in .env.production
-# 2. Generate migration (if drizzle/postgresql/ doesn't exist)
-bun run db:generate:prod
-
-# 3. Apply migration
-bun run db:migrate:prod
+bun run db:generate
+bun --env-file=.env.production run db:generate
 ```
 
-### Baseline Migration (Existing Database Without Migration Tracking)
+4. Verify generated SQL contains only intended changes.
+5. Remove `.tmp/*` helpers before finishing.
 
-If the database was previously set up via `db:push` (no migration tracking), you need to create a baseline:
+Important:
 
-```bash
-# 1. Generate migration (captures current schema)
-bun run db:generate:prod
+- Do not rewrite or delete historical SQL migrations to fix meta drift.
+- Treat meta repair as a forward-only correction to unblock deterministic diffs.
 
-# 2. Mark it as already applied (since tables already exist)
-bun --env-file=.env.production -e "
-const crypto = await import('crypto');
-const fs = await import('fs');
-const postgres = (await import('postgres')).default;
-const sql = postgres(process.env.DATABASE_URL, { ssl: 'require' });
+## Production Notes
 
-// Read the migration file and compute its SHA256 hash
-const migrationFile = fs.readdirSync('drizzle/postgresql').find(f => f.endsWith('.sql'));
-const content = fs.readFileSync('drizzle/postgresql/' + migrationFile, 'utf8');
-const hash = crypto.createHash('sha256').update(content).digest('hex');
-
-// Read the journal for the timestamp
-const journal = JSON.parse(fs.readFileSync('drizzle/postgresql/meta/_journal.json', 'utf8'));
-const createdAt = journal.entries[0].when;
-
-// Create drizzle schema and migrations table
-await sql\`CREATE SCHEMA IF NOT EXISTS drizzle\`;
-await sql\`CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
-  id SERIAL PRIMARY KEY, hash TEXT NOT NULL, created_at BIGINT
-)\`;
-await sql\`INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES (\${hash}, \${createdAt})\`;
-
-console.log('Baseline migration recorded:', { hash, createdAt, file: migrationFile });
-await sql.end();
-"
-
-# 3. Verify: should say "migrations applied successfully" with nothing to apply
-bun run db:migrate:prod
-```
-
-### Production Database Reset
-
-**WARNING: This destroys all data. Use only for staging/development Supabase instances.**
-
-```bash
-# 1. Drop all tables and drizzle tracking
-bun --env-file=.env.production -e "
-const postgres = (await import('postgres')).default;
-const sql = postgres(process.env.DATABASE_URL, { ssl: 'require' });
-const tables = await sql\`SELECT tablename FROM pg_tables WHERE schemaname = 'public'\`;
-for (const t of tables) {
-  await sql.unsafe('DROP TABLE IF EXISTS public.\"' + t.tablename + '\" CASCADE');
-  console.log('Dropped:', t.tablename);
-}
-await sql\`DROP SCHEMA IF EXISTS drizzle CASCADE\`;
-console.log('Dropped drizzle schema');
-await sql.end();
-"
-
-# 2. Remove old migration files and regenerate
-rm -rf drizzle/postgresql
-bun run db:generate:prod
-
-# 3. Apply fresh migration
-bun run db:migrate:prod
-```
-
-## Known Issues
-
-### drizzle-kit `db:push` crashes on Supabase
-
-`db:push` with Supabase throws `TypeError: Cannot read properties of undefined (reading 'replace')`. This is a [known drizzle-kit bug](https://github.com/drizzle-team/drizzle-orm/issues/3766) where foreign key constraints are misclassified as check constraints during introspection.
-
-**Workaround:** Use `db:generate` + `db:migrate` instead of `db:push` for PostgreSQL.
-
-### `import.meta` warnings during drizzle-kit commands
-
-Drizzle-kit runs config in CJS mode, producing `"import.meta" is not available` warnings. These are harmless — the config falls back to `process.env.DATABASE_URL` which works correctly when using `bun --env-file=.env.production`.
-
-### Seed script timestamp incompatibility
-
-The seed script passes Unix integer timestamps, but PostgreSQL `timestamp` columns expect Date objects or strings. The seed script currently only works reliably with SQLite. For PostgreSQL, use the CLI tools to create workspaces and users:
-
-```bash
-bun run cli:create-workspace:prod
-```
-
-### Production Migration (Cloudflare D1)
-
-D1 uses the SQLite schema and migrations. Apply migrations via wrangler CLI:
-
-```bash
-# Apply single migration file
-wrangler d1 execute allowealth-db --remote --file=./drizzle/sqlite/0000_xxx.sql
-
-# Apply all SQLite migrations in order
-for file in drizzle/sqlite/*.sql; do
-  wrangler d1 execute allowealth-db --remote --file="$file"
-done
-
-# Local testing with D1
-wrangler d1 execute allowealth-db --local --file=./drizzle/sqlite/0000_xxx.sql
-```
-
-**D1 Migration Notes:**
-
-- D1 is SQLite-compatible, so existing SQLite migrations work without modification
-- Use `--local` flag for local development with D1
-- Use `--remote` flag for production D1 database
-- When using `wrangler d1 execute`, Wrangler may use its own `d1_migrations` table for tracking, or no automatic tracking at all
-- For Drizzle's `__drizzle_migrations` tracking table, use Drizzle's `migrate()` API or `drizzle-kit migrate` instead of raw `wrangler d1 execute`
-- The batch migration loop shown above does not have built-in idempotency safeguards - track applied migrations manually or use Drizzle's migrator
+- Local `drizzle-kit migrate` is for developer validation.
+- For PostgreSQL production index rollout, use lock-safe concurrent DDL. See:
+  - `docs/deployment/2026-03-01-db-index-rollout-runbook.md`

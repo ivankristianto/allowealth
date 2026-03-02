@@ -7,7 +7,7 @@ import { deriveAccountClass } from '@/lib/types/account';
 import { WorkspaceMetaService } from './workspace-meta.service';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
-import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 
 /** Inferred row type for an account record */
@@ -132,13 +132,7 @@ export class AccountService {
       );
     }
 
-    // Invalidate account cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(input.workspace_id), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(input.workspace_id), CacheTags.ACCOUNTS]);
 
     return account;
   }
@@ -276,13 +270,7 @@ export class AccountService {
         and(eq(this.schema.accounts.id, id), eq(this.schema.accounts.workspace_id, workspaceId))
       );
 
-    // Invalidate account cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -355,13 +343,7 @@ export class AccountService {
       );
     }
 
-    // Invalidate account cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
 
     return this.findById(id, workspaceId);
   }
@@ -494,13 +476,7 @@ export class AccountService {
       );
     }
 
-    // Invalidate account cache
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
 
     return {
       fromAccount: { ...fromAccount, balance: newFromBalance },
@@ -547,13 +523,7 @@ export class AccountService {
         and(eq(this.schema.accounts.id, id), eq(this.schema.accounts.workspace_id, workspaceId))
       );
 
-    // Invalidate account cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -588,13 +558,7 @@ export class AccountService {
         and(eq(this.schema.accounts.id, id), eq(this.schema.accounts.workspace_id, workspaceId))
       );
 
-    // Invalidate account cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
 
     return this.findById(id, workspaceId);
   }
@@ -980,13 +944,7 @@ export class AccountService {
         )
       );
 
-    // Invalidate account cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
   }
 
   /**

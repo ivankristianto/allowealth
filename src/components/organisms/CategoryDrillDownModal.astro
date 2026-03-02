@@ -65,9 +65,13 @@ const { id } = Astro.props;
 
       let currentData: CategoryDrillDownData | null = null;
       let activeFetchController: AbortController | null = null;
+      let currentLimit = 100;
+      let currentOffset = 0;
+      let currentHasMore = false;
 
       async function fetchDrilldownHTML(
         data: CategoryDrillDownData,
+        pagination: { limit: number; offset: number },
         signal?: AbortSignal
       ): Promise<string> {
         const range = data.period.includes('-') ? 'monthly' : 'yearly';
@@ -80,6 +84,8 @@ const { id } = Astro.props;
           period: data.period,
           range,
           currency: data.currency,
+          limit: String(pagination.limit),
+          offset: String(pagination.offset),
           _render: 'html',
         });
         if (data.budgetLimit !== null && data.budgetLimit !== undefined) {
@@ -92,6 +98,22 @@ const { id } = Astro.props;
           throw new Error(`Failed to fetch drilldown content: ${response.statusText}`);
         }
         return await response.text();
+      }
+
+      function syncPaginationStateFromContent() {
+        const root = contentContainer?.querySelector('[data-category-drilldown-content]');
+        if (!root) {
+          currentHasMore = false;
+          return;
+        }
+
+        const offsetAttr = root.getAttribute('data-drilldown-offset');
+        const limitAttr = root.getAttribute('data-drilldown-limit');
+        const hasMoreAttr = root.getAttribute('data-drilldown-has-more');
+
+        currentOffset = offsetAttr ? Number.parseInt(offsetAttr, 10) || 0 : currentOffset;
+        currentLimit = limitAttr ? Number.parseInt(limitAttr, 10) || currentLimit : currentLimit;
+        currentHasMore = hasMoreAttr === 'true';
       }
 
       /**
@@ -184,6 +206,9 @@ const { id } = Astro.props;
 
       const handleOpenDrillDown = (async (e: CustomEvent<CategoryDrillDownData>) => {
         currentData = e.detail;
+        currentLimit = 100;
+        currentOffset = 0;
+        currentHasMore = false;
 
         // Abort any in-flight fetch to prevent stale content from overwriting
         activeFetchController?.abort();
@@ -195,7 +220,11 @@ const { id } = Astro.props;
         if (!modal.open) modal.showModal();
 
         try {
-          const html = await fetchDrilldownHTML(currentData, controller.signal);
+          const html = await fetchDrilldownHTML(
+            currentData,
+            { limit: currentLimit, offset: currentOffset },
+            controller.signal
+          );
           // Guard: if aborted between fetch and render, skip DOM update
           if (controller.signal.aborted) return;
           if (contentContainer) {
@@ -203,6 +232,7 @@ const { id } = Astro.props;
           }
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');
+          syncPaginationStateFromContent();
           injectNavButtons();
         } catch (error) {
           // Silently ignore aborted requests — a newer navigation superseded this one
@@ -219,6 +249,52 @@ const { id } = Astro.props;
               </div>
             `;
           }
+          loadingContainer?.classList.add('hidden');
+          contentContainer?.classList.remove('hidden');
+        }
+      }) as EventListener;
+
+      const handlePageChange = (async (e: Event) => {
+        const target = e.target as Element | null;
+        const button = target?.closest('[data-drilldown-page]') as HTMLButtonElement | null;
+        if (!button || !currentData) return;
+        e.preventDefault();
+
+        const action = button.getAttribute('data-drilldown-page');
+        if (!action) return;
+
+        if (action === 'prev' && currentOffset <= 0) return;
+        if (action === 'next' && !currentHasMore) return;
+
+        const nextOffset =
+          action === 'next'
+            ? currentOffset + currentLimit
+            : Math.max(0, currentOffset - currentLimit);
+
+        activeFetchController?.abort();
+        const controller = new AbortController();
+        activeFetchController = controller;
+
+        loadingContainer?.classList.remove('hidden');
+        contentContainer?.classList.add('hidden');
+
+        try {
+          const html = await fetchDrilldownHTML(
+            currentData,
+            { limit: currentLimit, offset: nextOffset },
+            controller.signal
+          );
+          if (controller.signal.aborted) return;
+          if (contentContainer) {
+            contentContainer.innerHTML = html;
+          }
+          loadingContainer?.classList.add('hidden');
+          contentContainer?.classList.remove('hidden');
+          syncPaginationStateFromContent();
+          injectNavButtons();
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          console.error('Error paginating category drilldown:', error);
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');
         }
@@ -241,12 +317,14 @@ const { id } = Astro.props;
 
       document.addEventListener('open-category-drilldown', handleOpenDrillDown);
       document.addEventListener('keydown', handleKeyDown);
+      contentContainer?.addEventListener('click', handlePageChange);
 
       document.addEventListener(
         'astro:before-swap',
         () => {
           document.removeEventListener('open-category-drilldown', handleOpenDrillDown);
           document.removeEventListener('keydown', handleKeyDown);
+          contentContainer?.removeEventListener('click', handlePageChange);
         },
         { once: true }
       );

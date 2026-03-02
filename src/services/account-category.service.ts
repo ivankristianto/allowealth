@@ -9,7 +9,7 @@ import {
 } from '@/lib/validation/account-categories';
 import { AccountCategoryServiceError, ServiceErrorCode } from './service-errors';
 import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
-import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { createCrudService } from './base/crud.factory';
 
@@ -78,16 +78,10 @@ export class AccountCategoryService {
         })
         .returning();
 
-      // Invalidate account category cache - best-effort
-      try {
-        const cache = getCacheManager();
-        await cache.invalidateByTags([
-          CacheTags.workspace(validated.workspace_id),
-          CacheTags.ACCOUNT_CATEGORIES,
-        ]);
-      } catch {
-        // Cache invalidation failed, stale cache is acceptable
-      }
+      await invalidateTags(
+        [CacheTags.workspace(validated.workspace_id), CacheTags.ACCOUNT_CATEGORIES],
+        'best-effort'
+      );
 
       return category;
     } catch (error: any) {
@@ -203,16 +197,10 @@ export class AccountCategoryService {
         )
       );
 
-    // Invalidate account category cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(workspaceId),
-        CacheTags.ACCOUNT_CATEGORIES,
-      ]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags(
+      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
+      'best-effort'
+    );
 
     return this.findById(id, workspaceId);
   }
@@ -265,16 +253,10 @@ export class AccountCategoryService {
         )
       );
 
-    // Invalidate account category cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(workspaceId),
-        CacheTags.ACCOUNT_CATEGORIES,
-      ]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags(
+      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
+      'best-effort'
+    );
 
     return { success: true };
   }
@@ -346,15 +328,9 @@ export class AccountCategoryService {
       );
     }
 
-    // Invalidate account category cache after seeding - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(workspaceId),
-        CacheTags.ACCOUNT_CATEGORIES,
-      ]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
+    await invalidateTags(
+      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
+      'best-effort'
+    );
   }
 }

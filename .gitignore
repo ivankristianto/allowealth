@@ -84,3 +84,8 @@ CLAUDE.local.md
 
 # Local audit artifacts
 .audit/
+
+# CI report artifacts
+perf-results.json
+perf-report.md
+bundle-report.md

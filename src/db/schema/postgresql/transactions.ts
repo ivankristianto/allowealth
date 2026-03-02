@@ -55,6 +55,17 @@ export const transactions = pgTable(
       table.created_by_user_id,
       table.transaction_date
     ),
+    index('transactions_ws_date_idx').on(table.workspace_id, table.transaction_date),
+    index('transactions_ws_account_date_idx').on(
+      table.workspace_id,
+      table.account_id,
+      table.transaction_date
+    ),
+    index('transactions_ws_to_account_date_idx').on(
+      table.workspace_id,
+      table.to_account_id,
+      table.transaction_date
+    ),
     index('transactions_created_by_user_id_idx').on(table.created_by_user_id),
     index('transactions_updated_by_user_id_idx').on(table.updated_by_user_id),
     index('transactions_deleted_by_user_id_idx').on(table.deleted_by_user_id),

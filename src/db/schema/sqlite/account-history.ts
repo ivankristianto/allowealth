@@ -18,5 +18,6 @@ export const accountHistory = sqliteTable(
   (table) => [
     index('account_history_account_id_idx').on(table.account_id),
     index('account_history_account_recorded_idx').on(table.account_id, table.recorded_at),
+    index('account_history_recorded_at_idx').on(table.recorded_at),
   ]
 );

@@ -15,7 +15,7 @@ import {
   type UpdateTransactionInput,
 } from '@/lib/validation/transactions';
 import { TransactionServiceError, ServiceErrorCode } from './service-errors';
-import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
@@ -80,6 +80,17 @@ export interface TransactionFilters {
   offset?: number;
 }
 
+interface MonthSummaryFilters {
+  workspace_id: string;
+  created_by_user_id?: string;
+  currency?: Currency;
+  account_id?: string;
+  account_ids?: string[];
+  include_deleted?: boolean;
+  start_date: Date;
+  end_date: Date;
+}
+
 export class TransactionService {
   /** Maximum IDs allowed per bulk operation */
   private static readonly BULK_OPERATION_LIMIT = 100;
@@ -111,6 +122,30 @@ export class TransactionService {
     this.db = db;
     this.categoryService = new CategoryService(db);
     this.accountService = new AccountService(db);
+  }
+
+  private async invalidateWorkspaceCaches(workspaceId: string): Promise<void> {
+    await invalidateTags(
+      [
+        CacheTags.workspace(workspaceId),
+        CacheTags.TRANSACTIONS,
+        CacheTags.DASHBOARD,
+        CacheTags.BUDGET,
+      ],
+      'strict'
+    );
+  }
+
+  private async invalidateWorkspaceCachesBestEffort(workspaceId: string): Promise<void> {
+    await invalidateTags(
+      [
+        CacheTags.workspace(workspaceId),
+        CacheTags.TRANSACTIONS,
+        CacheTags.DASHBOARD,
+        CacheTags.BUDGET,
+      ],
+      'best-effort'
+    );
   }
 
   /**
@@ -241,14 +276,7 @@ export class TransactionService {
       },
     });
 
-    // Invalidate caches affected by transaction changes
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(validated.workspace_id),
-      CacheTags.TRANSACTIONS,
-      CacheTags.DASHBOARD,
-      CacheTags.BUDGET,
-    ]);
+    await this.invalidateWorkspaceCaches(validated.workspace_id);
 
     return this.findById(id, validated.workspace_id);
   }
@@ -321,7 +349,7 @@ export class TransactionService {
    * Fetch transactions from database (no caching)
    * Excludes soft-deleted transactions by default; pass include_deleted: true to include them
    */
-  private async fetchTransactionsFromDb(filters: TransactionFilters) {
+  private buildFilterConditions(filters: Omit<TransactionFilters, 'limit' | 'offset'>) {
     const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
     const includeDeleted = filters.include_deleted ?? false;
 
@@ -337,7 +365,6 @@ export class TransactionService {
       conditions.push(eq(this.schema.transactions.category_id, filters.category_id));
     }
 
-    // Handle multiple category IDs (OR filter)
     if (filters.category_ids && filters.category_ids.length > 0) {
       conditions.push(inArray(this.schema.transactions.category_id, filters.category_ids));
     }
@@ -367,10 +394,14 @@ export class TransactionService {
     }
 
     if (filters.search) {
-      const searchCondition = like(this.schema.transactions.description, `%${filters.search}%`);
-      // The or() function needs at least one condition, so we use it directly
-      conditions.push(searchCondition);
+      conditions.push(like(this.schema.transactions.description, `%${filters.search}%`));
     }
+
+    return conditions;
+  }
+
+  private async fetchTransactionsFromDb(filters: TransactionFilters) {
+    const conditions = this.buildFilterConditions(filters);
 
     // Drizzle relational query `extras` not typeable with dynamic composition
     const queryOptions: Record<string, any> = {
@@ -422,6 +453,29 @@ export class TransactionService {
     return result;
   }
 
+  async getMonthSummary(filters: MonthSummaryFilters) {
+    const conditions = this.buildFilterConditions({
+      ...filters,
+      include_deleted: false,
+    });
+
+    const tx = this.schema.transactions;
+    const [summary] = await (this.db as any)
+      .select({
+        income: sql<string>`COALESCE(SUM(CASE WHEN ${tx.type} = 'income' THEN CAST(${tx.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        expenses: sql<string>`COALESCE(SUM(CASE WHEN ${tx.type} = 'expense' THEN ABS(CAST(${tx.amount} AS NUMERIC)) ELSE 0 END), 0)`,
+        expense_count: sql<number>`COALESCE(SUM(CASE WHEN ${tx.type} = 'expense' THEN 1 ELSE 0 END), 0)`,
+      })
+      .from(tx)
+      .where(and(...conditions));
+
+    return {
+      income: Number(summary?.income ?? 0),
+      expenses: Number(summary?.expenses ?? 0),
+      transactionCount: Number(summary?.expense_count ?? 0),
+    };
+  }
+
   /**
    * Update transaction
    */
@@ -430,6 +484,16 @@ export class TransactionService {
     workspaceId: string,
     input: UpdateTransactionInput,
     userId?: string
+  ): ReturnType<typeof this.findById> {
+    return this.updateInternal(id, workspaceId, input, userId);
+  }
+
+  private async updateInternal(
+    id: string,
+    workspaceId: string,
+    input: UpdateTransactionInput,
+    userId?: string,
+    options: { skipInvalidate?: boolean } = {}
   ): ReturnType<typeof this.findById> {
     // Validate input using Zod schema
     const validated = updateTransactionSchema.parse(input);
@@ -624,14 +688,9 @@ export class TransactionService {
       });
     }
 
-    // Invalidate caches affected by transaction changes
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(workspaceId),
-      CacheTags.TRANSACTIONS,
-      CacheTags.DASHBOARD,
-      CacheTags.BUDGET,
-    ]);
+    if (!options.skipInvalidate) {
+      await this.invalidateWorkspaceCaches(workspaceId);
+    }
 
     return this.findById(id, workspaceId);
   }
@@ -640,6 +699,15 @@ export class TransactionService {
    * Soft delete transaction
    */
   async delete(id: string, workspaceId: string, userId?: string): Promise<{ success: true }> {
+    return this.deleteInternal(id, workspaceId, userId);
+  }
+
+  private async deleteInternal(
+    id: string,
+    workspaceId: string,
+    userId?: string,
+    options: { skipInvalidate?: boolean } = {}
+  ): Promise<{ success: true }> {
     // Check if transaction exists
     const transaction = await this.findById(id, workspaceId);
     if (!transaction) {
@@ -693,14 +761,9 @@ export class TransactionService {
       });
     }
 
-    // Invalidate caches affected by transaction changes
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(workspaceId),
-      CacheTags.TRANSACTIONS,
-      CacheTags.DASHBOARD,
-      CacheTags.BUDGET,
-    ]);
+    if (!options.skipInvalidate) {
+      await this.invalidateWorkspaceCaches(workspaceId);
+    }
 
     return { success: true };
   }
@@ -743,7 +806,9 @@ export class TransactionService {
 
     for (const id of ids) {
       try {
-        await this.update(id, workspaceId, { category_id: categoryId }, userId);
+        await this.updateInternal(id, workspaceId, { category_id: categoryId }, userId, {
+          skipInvalidate: true,
+        });
         result.updated++;
       } catch (error) {
         result.failed++;
@@ -752,6 +817,10 @@ export class TransactionService {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
+    }
+
+    if (result.updated > 0) {
+      await this.invalidateWorkspaceCaches(workspaceId);
     }
 
     return result;
@@ -795,7 +864,9 @@ export class TransactionService {
 
     for (const id of ids) {
       try {
-        await this.update(id, workspaceId, { account_id: accountId }, userId);
+        await this.updateInternal(id, workspaceId, { account_id: accountId }, userId, {
+          skipInvalidate: true,
+        });
         result.updated++;
       } catch (error) {
         result.failed++;
@@ -804,6 +875,10 @@ export class TransactionService {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
+    }
+
+    if (result.updated > 0) {
+      await this.invalidateWorkspaceCaches(workspaceId);
     }
 
     return result;
@@ -830,7 +905,9 @@ export class TransactionService {
 
     for (const id of ids) {
       try {
-        await this.delete(id, workspaceId, userId);
+        await this.deleteInternal(id, workspaceId, userId, {
+          skipInvalidate: true,
+        });
         result.updated++;
       } catch (error) {
         result.failed++;
@@ -841,6 +918,10 @@ export class TransactionService {
       }
     }
 
+    if (result.updated > 0) {
+      await this.invalidateWorkspaceCaches(workspaceId);
+    }
+
     return result;
   }
 
@@ -848,55 +929,7 @@ export class TransactionService {
    * Get transaction count
    */
   async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>, perf?: PerfCollector) {
-    const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
-    const includeDeleted = filters.include_deleted ?? false;
-
-    if (!includeDeleted) {
-      conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);
-    }
-
-    if (filters.type) {
-      conditions.push(eq(this.schema.transactions.type, filters.type));
-    }
-
-    if (filters.category_id) {
-      conditions.push(eq(this.schema.transactions.category_id, filters.category_id));
-    }
-
-    // Handle multiple category IDs (OR filter)
-    if (filters.category_ids && filters.category_ids.length > 0) {
-      conditions.push(inArray(this.schema.transactions.category_id, filters.category_ids));
-    }
-
-    if (filters.account_id) {
-      conditions.push(eq(this.schema.transactions.account_id, filters.account_id));
-    }
-
-    if (filters.account_ids && filters.account_ids.length > 0) {
-      conditions.push(inArray(this.schema.transactions.account_id, filters.account_ids));
-    }
-
-    if (filters.created_by_user_id) {
-      conditions.push(eq(this.schema.transactions.created_by_user_id, filters.created_by_user_id));
-    }
-
-    if (filters.currency) {
-      conditions.push(eq(this.schema.transactions.currency, filters.currency));
-    }
-
-    if (filters.start_date) {
-      conditions.push(gte(this.schema.transactions.transaction_date, filters.start_date));
-    }
-
-    if (filters.end_date) {
-      conditions.push(lte(this.schema.transactions.transaction_date, filters.end_date));
-    }
-
-    if (filters.search) {
-      const searchCondition = like(this.schema.transactions.description, `%${filters.search}%`);
-      // The or() function needs at least one condition, so we use it directly
-      conditions.push(searchCondition);
-    }
+    const conditions = this.buildFilterConditions(filters);
 
     return trackQuery('TransactionService.count', perf, async () => {
       const result = await (this.db as any)
@@ -1245,13 +1278,7 @@ export class TransactionService {
         },
       });
 
-      const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(workspaceId),
-        CacheTags.TRANSACTIONS,
-        CacheTags.DASHBOARD,
-        CacheTags.BUDGET,
-      ]);
+      await this.invalidateWorkspaceCachesBestEffort(workspaceId);
     }
 
     return result;
@@ -1381,45 +1408,25 @@ export class TransactionService {
     workspaceId: string,
     showAll = false
   ): Promise<TransactionHistoryResponse> {
-    const [results, categories, accounts] = await Promise.all([
-      this.db.query.auditLogs.findMany({
-        where: and(
-          eq(this.schema.auditLogs.entity_type, 'transaction'),
-          eq(this.schema.auditLogs.entity_id, transactionId),
-          eq(this.schema.auditLogs.workspace_id, workspaceId)
-        ),
-        with: {
-          user: {
-            columns: {
-              id: true,
-              name: true,
-            },
+    const results = await this.db.query.auditLogs.findMany({
+      where: and(
+        eq(this.schema.auditLogs.entity_type, 'transaction'),
+        eq(this.schema.auditLogs.entity_id, transactionId),
+        eq(this.schema.auditLogs.workspace_id, workspaceId)
+      ),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            name: true,
           },
         },
-        orderBy: [asc(this.schema.auditLogs.created_at)],
-      }),
-      this.db.query.categories.findMany({
-        where: eq(this.schema.categories.workspace_id, workspaceId),
-        columns: {
-          id: true,
-          name: true,
-        },
-      }),
-      this.db.query.accounts.findMany({
-        where: eq(this.schema.accounts.workspace_id, workspaceId),
-        columns: {
-          id: true,
-          name: true,
-        },
-      }),
-    ]);
+      },
+      orderBy: [asc(this.schema.auditLogs.created_at)],
+    });
 
-    const categoryNames = new Map<string, string>(
-      categories.map((category: { id: string; name: string }) => [category.id, category.name])
-    );
-    const accountNames = new Map<string, string>(
-      accounts.map((account: { id: string; name: string }) => [account.id, account.name])
-    );
+    const categoryNames = new Map<string, string>();
+    const accountNames = new Map<string, string>();
 
     interface AuditLogRow {
       id: string;
@@ -1429,6 +1436,65 @@ export class TransactionService {
       new_value: string | null;
       created_at: Date | number | string;
       user?: { id: string; name: string } | null;
+    }
+
+    const categoryIds = new Set<string>();
+    const accountIds = new Set<string>();
+
+    for (const row of results as AuditLogRow[]) {
+      const oldPayload = this.parseAuditValue(row.old_value);
+      const newPayload = this.parseAuditValue(row.new_value);
+
+      for (const payload of [oldPayload, newPayload]) {
+        if (!payload) continue;
+        const categoryId = payload.category_id;
+        const accountId = payload.account_id;
+        const toAccountId = payload.to_account_id;
+
+        if (typeof categoryId === 'string' && categoryId.length > 0) {
+          categoryIds.add(categoryId);
+        }
+        if (typeof accountId === 'string' && accountId.length > 0) {
+          accountIds.add(accountId);
+        }
+        if (typeof toAccountId === 'string' && toAccountId.length > 0) {
+          accountIds.add(toAccountId);
+        }
+      }
+    }
+
+    const [categories, accounts] = await Promise.all([
+      categoryIds.size === 0
+        ? Promise.resolve([])
+        : this.db.query.categories.findMany({
+            where: and(
+              eq(this.schema.categories.workspace_id, workspaceId),
+              inArray(this.schema.categories.id, Array.from(categoryIds))
+            ),
+            columns: {
+              id: true,
+              name: true,
+            },
+          }),
+      accountIds.size === 0
+        ? Promise.resolve([])
+        : this.db.query.accounts.findMany({
+            where: and(
+              eq(this.schema.accounts.workspace_id, workspaceId),
+              inArray(this.schema.accounts.id, Array.from(accountIds))
+            ),
+            columns: {
+              id: true,
+              name: true,
+            },
+          }),
+    ]);
+
+    for (const category of categories as Array<{ id: string; name: string }>) {
+      categoryNames.set(category.id, category.name);
+    }
+    for (const account of accounts as Array<{ id: string; name: string }>) {
+      accountNames.set(account.id, account.name);
     }
 
     // Separate into create, updates, and delete

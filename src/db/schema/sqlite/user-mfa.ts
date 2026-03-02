@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
 
@@ -21,5 +21,5 @@ export const userMfa = sqliteTable(
     created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
     updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   },
-  (table) => [index('user_mfa_user_id_idx').on(table.user_id)]
+  () => []
 );

@@ -25,5 +25,7 @@ export const apiKeys = sqliteTable(
     index('api_keys_workspace_id_idx').on(table.workspace_id),
     index('api_keys_user_id_idx').on(table.user_id),
     index('api_keys_key_prefix_idx').on(table.key_prefix),
+    index('api_keys_prefix_deleted_idx').on(table.key_prefix, table.deleted_at),
+    index('api_keys_ws_user_deleted_idx').on(table.workspace_id, table.user_id, table.deleted_at),
   ]
 );

@@ -25,6 +25,7 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
+import { getDatabaseConfig } from '@/db/config';
 import { createLogger } from '@/lib/logger';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
@@ -104,6 +105,10 @@ export interface CategoryTransactionsData {
   transactions: CategoryTransaction[];
   total: string; // Sum of transactions
   categoryName: string;
+  totalCount: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
 }
 
 /**
@@ -324,77 +329,71 @@ export class ReportService {
     const monthStart = new Date(year, month - 1, 1);
     const monthEnd = new Date(year, month, 0, 23, 59, 59);
 
-    const expenseTransactions = await this.db.query.transactions.findMany({
-      where: and(
-        eq(this.schema.transactions.workspace_id, workspaceId),
-        eq(this.schema.transactions.type, 'expense'),
-        eq(this.schema.transactions.currency, currency),
-        gte(this.schema.transactions.transaction_date, monthStart),
-        lte(this.schema.transactions.transaction_date, monthEnd),
-        sql`${this.schema.transactions.deleted_at} IS NULL`
-      ),
-      with: {
-        category: true,
-      },
-    });
+    const tx = this.schema.transactions;
+    const ro = this.schema.recurringOccurrences;
+    const categories = this.schema.categories;
 
-    const transactionIds = expenseTransactions.map((transaction) => transaction.id);
+    const [totals] = await (this.db as any)
+      .select({
+        recurring_total: sql<string>`COALESCE(SUM(CASE WHEN EXISTS (
+          SELECT 1 FROM ${ro}
+          WHERE ${ro.workspace_id} = ${tx.workspace_id}
+            AND ${ro.status} = 'confirmed'
+            AND ${ro.transaction_id} = ${tx.id}
+        ) THEN CAST(${tx.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        one_time_total: sql<string>`COALESCE(SUM(CASE WHEN EXISTS (
+          SELECT 1 FROM ${ro}
+          WHERE ${ro.workspace_id} = ${tx.workspace_id}
+            AND ${ro.status} = 'confirmed'
+            AND ${ro.transaction_id} = ${tx.id}
+        ) THEN 0 ELSE CAST(${tx.amount} AS NUMERIC) END), 0)`,
+      })
+      .from(tx)
+      .where(
+        and(
+          eq(tx.workspace_id, workspaceId),
+          eq(tx.type, 'expense'),
+          eq(tx.currency, currency),
+          gte(tx.transaction_date, monthStart),
+          lte(tx.transaction_date, monthEnd),
+          sql`${tx.deleted_at} IS NULL`
+        )
+      );
 
-    const recurringLinks =
-      transactionIds.length > 0
-        ? await this.db.query.recurringOccurrences.findMany({
-            where: and(
-              eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-              eq(this.schema.recurringOccurrences.status, 'confirmed'),
-              inArray(this.schema.recurringOccurrences.transaction_id, transactionIds)
-            ),
-          })
-        : [];
-
-    const recurringTransactionIds = new Set<string>();
-    for (const occurrence of recurringLinks) {
-      if (occurrence.transaction_id) {
-        recurringTransactionIds.add(occurrence.transaction_id);
-      }
-    }
-
-    const recurringAmountParts: string[] = [];
-    const oneTimeAmountParts: string[] = [];
-    const recurringByCategory = new Map<string, { category_name: string; amounts: string[] }>();
-
-    for (const transaction of expenseTransactions) {
-      const amount = transaction.amount || '0';
-      const isRecurring = recurringTransactionIds.has(transaction.id);
-
-      if (!isRecurring) {
-        oneTimeAmountParts.push(amount);
-        continue;
-      }
-
-      recurringAmountParts.push(amount);
-
-      const categoryKey = transaction.category_id || 'uncategorized';
-      const entry = recurringByCategory.get(categoryKey) || {
-        category_name: transaction.category?.name || 'Unknown',
-        amounts: [],
-      };
-      entry.amounts.push(amount);
-      recurringByCategory.set(categoryKey, entry);
-    }
-
-    const recurringTotal = decimalSum(recurringAmountParts);
-    const oneTimeTotal = decimalSum(oneTimeAmountParts);
+    const recurringByCategoryRows = await (this.db as any)
+      .select({
+        category_id: tx.category_id,
+        category_name: categories.name,
+        amount: sql<string>`COALESCE(SUM(CAST(${tx.amount} AS NUMERIC)), 0)`,
+      })
+      .from(tx)
+      .innerJoin(categories, eq(tx.category_id, categories.id))
+      .where(
+        and(
+          eq(tx.workspace_id, workspaceId),
+          eq(tx.type, 'expense'),
+          eq(tx.currency, currency),
+          gte(tx.transaction_date, monthStart),
+          lte(tx.transaction_date, monthEnd),
+          sql`${tx.deleted_at} IS NULL`,
+          sql`EXISTS (
+            SELECT 1 FROM ${ro}
+            WHERE ${ro.workspace_id} = ${tx.workspace_id}
+              AND ${ro.status} = 'confirmed'
+              AND ${ro.transaction_id} = ${tx.id}
+          )`
+        )
+      )
+      .groupBy(tx.category_id, categories.name);
 
     return {
-      recurringTotal,
-      oneTimeTotal,
-      recurringByCategory: Array.from(recurringByCategory.entries()).map(
-        ([category_id, value]) => ({
-          category_id,
-          category_name: value.category_name,
-          amount: decimalSum(value.amounts),
-        })
-      ),
+      recurringTotal: totals?.recurring_total?.toString() || '0',
+      oneTimeTotal: totals?.one_time_total?.toString() || '0',
+      recurringByCategory: recurringByCategoryRows.map((row: any) => ({
+        category_id: row.category_id,
+        category_name: row.category_name || 'Unknown',
+        amount: row.amount?.toString() || '0',
+      })),
     };
   }
 
@@ -416,7 +415,11 @@ export class ReportService {
     categoryId: string,
     period: string,
     range: 'monthly' | 'yearly',
-    currency: Currency
+    currency: Currency,
+    options: {
+      limit?: number;
+      offset?: number;
+    } = {}
   ): Promise<CategoryTransactionsData> {
     // Validate inputs
     this.validateWorkspaceId(workspaceId);
@@ -455,34 +458,43 @@ export class ReportService {
         endDate = new Date(year, 11, 31, 23, 59, 59);
       }
 
+      const requestedLimit = Number.isFinite(options.limit) ? Number(options.limit) : 100;
+      const requestedOffset = Number.isFinite(options.offset) ? Number(options.offset) : 0;
+      const limit = Math.min(500, Math.max(1, Math.floor(requestedLimit)));
+      const offset = Math.max(0, Math.floor(requestedOffset));
+      const whereClause = and(
+        eq(this.schema.transactions.workspace_id, workspaceId),
+        eq(this.schema.transactions.category_id, categoryId),
+        eq(this.schema.transactions.type, 'expense'),
+        eq(this.schema.transactions.currency, currency),
+        gte(this.schema.transactions.transaction_date, startDate),
+        lte(this.schema.transactions.transaction_date, endDate),
+        sql`${this.schema.transactions.deleted_at} IS NULL`
+      );
+
+      const countResult = await (this.db as any)
+        .select({ count: sql<number>`count(*)` })
+        .from(this.schema.transactions)
+        .where(whereClause);
+      const totalCount = Number(countResult[0]?.count ?? 0);
+
       // Get transactions for category in period
       const categoryTransactions = await this.db.query.transactions.findMany({
-        where: and(
-          eq(this.schema.transactions.workspace_id, workspaceId),
-          eq(this.schema.transactions.category_id, categoryId),
-          eq(this.schema.transactions.type, 'expense'),
-          eq(this.schema.transactions.currency, currency),
-          gte(this.schema.transactions.transaction_date, startDate),
-          lte(this.schema.transactions.transaction_date, endDate),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
-        ),
+        where: whereClause,
         with: {
           account: true,
           createdBy: { columns: { id: true, name: true } },
         },
-        // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
-        extras: {
-          has_history: sql<number>`EXISTS (
-            SELECT 1 FROM audit_logs
-            WHERE audit_logs.entity_type = 'transaction'
-            AND audit_logs.entity_id = transactions.id
-            AND audit_logs.workspace_id = transactions.workspace_id
-            AND audit_logs.action IN ('update', 'delete')
-            LIMIT 1
-          )`.as('has_history'),
-        },
+        limit,
+        offset,
         orderBy: [sql`${this.schema.transactions.transaction_date} DESC`],
       });
+
+      const txIds = categoryTransactions.map((transaction) => transaction.id);
+      const historyTxIds =
+        txIds.length === 0
+          ? new Set<string>()
+          : await this.getTransactionIdsWithHistory(workspaceId, txIds);
 
       // Calculate total
       const amounts = categoryTransactions.map((tx) => tx.amount);
@@ -497,13 +509,17 @@ export class ReportService {
         transactionDate: tx.transaction_date,
         accountName: tx.account?.name || 'Unknown',
         createdByName: tx.createdBy?.name,
-        hasHistory: !!tx.has_history,
+        hasHistory: historyTxIds.has(tx.id),
       }));
 
       return {
         transactions: transactionsData,
         total,
         categoryName: category.name,
+        totalCount,
+        limit,
+        offset,
+        hasMore: offset + transactionsData.length < totalCount,
       };
     } catch (error) {
       // Re-throw BudgetServiceError instances (category not found)
@@ -1029,6 +1045,78 @@ export class ReportService {
     return intelligence;
   }
 
+  private monthBucket(column: any) {
+    const { dialect } = getDatabaseConfig();
+    return dialect === 'postgresql'
+      ? sql<string>`to_char(${column}, 'YYYY-MM')`
+      : sql<string>`strftime('%Y-%m', ${column})`;
+  }
+
+  private toMonthKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  }
+
+  private async getTrendAggregateByMonth(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency,
+    userId?: string
+  ): Promise<Map<string, { income: string; expenses: string }>> {
+    const monthBucketExpr = this.monthBucket(this.schema.transactions.transaction_date);
+
+    const rows = await (this.db as any)
+      .select({
+        month_bucket: monthBucketExpr.as('month_bucket'),
+        income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        expenses: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
+        )
+      )
+      .groupBy(monthBucketExpr);
+
+    const map = new Map<string, { income: string; expenses: string }>();
+    for (const row of rows as Array<{ month_bucket: string; income: string; expenses: string }>) {
+      map.set(row.month_bucket, {
+        income: row.income?.toString() || '0',
+        expenses: row.expenses?.toString() || '0',
+      });
+    }
+
+    return map;
+  }
+
+  private async getTransactionIdsWithHistory(
+    workspaceId: string,
+    transactionIds: string[]
+  ): Promise<Set<string>> {
+    const results = await (this.db as any)
+      .select({ entity_id: this.schema.auditLogs.entity_id })
+      .from(this.schema.auditLogs)
+      .where(
+        and(
+          eq(this.schema.auditLogs.entity_type, 'transaction'),
+          eq(this.schema.auditLogs.workspace_id, workspaceId),
+          inArray(this.schema.auditLogs.entity_id, transactionIds),
+          inArray(this.schema.auditLogs.action, ['update', 'delete'])
+        )
+      )
+      .groupBy(this.schema.auditLogs.entity_id);
+
+    return new Set(results.map((row: { entity_id: string }) => row.entity_id));
+  }
+
   /**
    * Get trend data for trailing periods (monthly view shows 3 months)
    * @private
@@ -1041,26 +1129,26 @@ export class ReportService {
     trailingMonths: number,
     userId?: string
   ): Promise<TrendDataPoint[]> {
-    const trendData: TrendDataPoint[] = [];
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const startDate = new Date(year, month - trailingMonths, 1);
+    const aggregateMap = await this.getTrendAggregateByMonth(
+      workspaceId,
+      startDate,
+      endDate,
+      currency,
+      userId
+    );
 
-    // Get data for each trailing month
+    const trendData: TrendDataPoint[] = [];
     for (let i = trailingMonths - 1; i >= 0; i--) {
       const date = new Date(year, month - 1 - i, 1);
-      const trendYear = date.getFullYear();
-      const trendMonth = date.getMonth() + 1;
-
-      const startDate = new Date(trendYear, trendMonth - 1, 1);
-      const endDate = new Date(trendYear, trendMonth, 0, 23, 59, 59);
-
-      const [income, expenses] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
-      ]);
+      const monthKey = this.toMonthKey(date);
+      const row = aggregateMap.get(monthKey);
 
       trendData.push({
-        name: MONTH_NAMES_SHORT[trendMonth - 1],
-        income,
-        expenses,
+        name: MONTH_NAMES_SHORT[date.getMonth()],
+        income: row?.income || '0',
+        expenses: row?.expenses || '0',
       });
     }
 
@@ -1077,22 +1165,26 @@ export class ReportService {
     currency: Currency,
     userId?: string
   ): Promise<TrendDataPoint[]> {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+    const aggregateMap = await this.getTrendAggregateByMonth(
+      workspaceId,
+      startDate,
+      endDate,
+      currency,
+      userId
+    );
+
     const trendData: TrendDataPoint[] = [];
-
-    // Get data for each month of the year
     for (let month = 1; month <= 12; month++) {
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      const [income, expenses] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
-      ]);
+      const date = new Date(year, month - 1, 1);
+      const monthKey = this.toMonthKey(date);
+      const row = aggregateMap.get(monthKey);
 
       trendData.push({
         name: MONTH_NAMES_SHORT[month - 1],
-        income,
-        expenses,
+        income: row?.income || '0',
+        expenses: row?.expenses || '0',
       });
     }
 

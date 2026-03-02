@@ -1,14 +1,9 @@
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
 import { ApiKeyService } from '@/services/api-key.service';
-import type { ApiKeyContext } from '@/services/api-key.service';
-import { getCacheManager, CacheKeys, CacheTags, simpleHash } from '@/lib/cache';
 import { createServices } from '@mcp-server/context';
 import { registerTools, handleToolCall } from '@mcp-server/tools/index';
 import type { ToolContext } from '@mcp-server/tools/types';
-
-/** Cache validated API key auth context for 5 minutes to avoid PBKDF2 per-request */
-const API_KEY_CACHE_TTL = 300;
 
 /**
  * Extract bearer token from Authorization header.
@@ -18,38 +13,6 @@ function extractBearerToken(request: Request): string | null {
   const header = request.headers.get('Authorization');
   if (!header?.startsWith('Bearer ')) return null;
   return header.slice(7);
-}
-
-/**
- * Validate an API key with caching to avoid expensive PBKDF2 hashing on every request.
- * Uses a hash of the full key as the cache lookup key (not the prefix alone)
- * to prevent prefix-collision auth bypass. Tags still use the prefix for
- * invalidation on revocation.
- */
-async function validateApiKeyWithCache(apiKey: string): Promise<ApiKeyContext | null> {
-  if (!apiKey.startsWith('aw_')) return null;
-
-  const keyHash = simpleHash(apiKey);
-  const prefix = apiKey.slice(0, 8);
-  const cacheKey = CacheKeys.apiKey(keyHash);
-  const cache = getCacheManager();
-
-  // Check cache first
-  const cached = await cache.get<ApiKeyContext>(cacheKey);
-  if (cached) return cached;
-
-  // Cache miss: perform full PBKDF2 validation
-  const service = new ApiKeyService(db);
-  const result = await service.validate(apiKey);
-  if (!result) return null;
-
-  // Cache the validated auth context (tagged by prefix for revocation invalidation)
-  await cache.set(cacheKey, result, {
-    ttl: API_KEY_CACHE_TTL,
-    tags: [CacheTags.API_KEYS, `apikey:${prefix}`],
-  });
-
-  return result;
 }
 
 /** JSON-RPC 2.0 request shape */
@@ -153,7 +116,7 @@ export const POST: APIRoute = async (context) => {
     return errorResponse(401, 'Missing Authorization header. Use: Bearer aw_...');
   }
 
-  const auth = await validateApiKeyWithCache(apiKey);
+  const auth = await new ApiKeyService(db).validateCached(apiKey);
   if (!auth) {
     return errorResponse(401, 'Invalid API key');
   }

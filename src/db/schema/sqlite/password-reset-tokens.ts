@@ -21,7 +21,6 @@ export const passwordResetTokens = sqliteTable(
     created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   },
   (table) => [
-    index('password_reset_tokens_token_idx').on(table.token),
     index('password_reset_tokens_user_id_idx').on(table.user_id),
     index('password_reset_tokens_expires_at_idx').on(table.expires_at),
   ]

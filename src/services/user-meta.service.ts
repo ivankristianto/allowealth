@@ -35,7 +35,7 @@ import {
   DEFAULT_USER_SETTINGS,
 } from '@/lib/constants/user-meta-keys';
 import { UserMetaServiceError, ServiceErrorCode } from './service-errors';
-import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { getCacheManager, CacheKeys, CacheTags, invalidateTags } from '@/lib/cache';
 
 /**
  * User Meta Service
@@ -162,8 +162,7 @@ export class UserMetaService {
       });
 
     // Invalidate settings cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.user(userId), CacheTags.SETTINGS]);
+    await invalidateTags([CacheTags.user(userId), CacheTags.SETTINGS], 'strict');
   }
 
   /**
@@ -201,8 +200,7 @@ export class UserMetaService {
     await this.meta.delete(userId, key);
 
     // Invalidate settings cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.user(userId), CacheTags.SETTINGS]);
+    await invalidateTags([CacheTags.user(userId), CacheTags.SETTINGS], 'strict');
   }
 
   // ============================================================================

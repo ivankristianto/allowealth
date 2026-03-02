@@ -24,6 +24,7 @@ export const auditLogs = sqliteTable(
     index('audit_logs_workspace_id_idx').on(table.workspace_id),
     index('audit_logs_user_id_idx').on(table.user_id),
     index('audit_logs_created_at_idx').on(table.created_at),
+    index('audit_logs_workspace_created_idx').on(table.workspace_id, table.created_at),
     index('audit_logs_ws_entity_action_idx').on(
       table.workspace_id,
       table.entity_type,

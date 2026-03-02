@@ -20,7 +20,6 @@ export const passwordResetTokens = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    index('password_reset_tokens_token_idx').on(table.token),
     index('password_reset_tokens_user_id_idx').on(table.user_id),
     index('password_reset_tokens_expires_at_idx').on(table.expires_at),
     pgPolicy('password_reset_tokens_allow_all', {

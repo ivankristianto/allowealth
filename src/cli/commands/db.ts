@@ -45,11 +45,18 @@ export default defineCommand({
       meta: { name: 'seed', description: 'Seed database with demo data' },
       args: {
         target: targetArg,
+        benchmark: {
+          type: 'boolean',
+          description: 'Add ~10k benchmark transactions for performance testing',
+          default: false,
+        },
       },
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-        exec('bun', ['run', 'src/db/seed.ts']);
+        const seedArgs = ['run', 'src/db/seed.ts'];
+        if (args.benchmark) seedArgs.push('--benchmark');
+        exec('bun', seedArgs);
       },
     }),
     reset: defineCommand({

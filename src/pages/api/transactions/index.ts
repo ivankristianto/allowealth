@@ -11,14 +11,7 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
-import {
-  logError,
-  transformTransaction,
-  safeParseAmount,
-  formatMonthKey,
-  getCurrentMonthKey,
-} from '@/lib/utils';
-import { PAGINATION } from '@/lib/constants/pagination';
+import { logError, transformTransaction, formatMonthKey, getCurrentMonthKey } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 
 // Import partial components for HTML rendering
@@ -124,41 +117,19 @@ export const GET: APIRoute = async (context) => {
     // Transform to TransactionOutput format
     const transactions = rawTransactions.map(transformTransaction);
 
-    // Calculate month-based summary (only uses date range, not other filters)
-    // This summary stays constant regardless of type/category/search filters
+    // Calculate month-based summary (only uses date/account/currency/user filters)
     let monthSummary = null;
     if (filters.start_date && filters.end_date) {
-      const monthTransactions = await transactionService.findAll({
+      monthSummary = await transactionService.getMonthSummary({
         workspace_id: auth.workspaceId,
         created_by_user_id: filters.created_by_user_id,
         currency: filters.currency,
         account_id: filters.account_id,
         account_ids: filters.account_ids,
+        include_deleted: false,
         start_date: filters.start_date,
         end_date: filters.end_date,
-        include_deleted: false,
-        limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
       });
-
-      let income = 0;
-      let expenses = 0;
-      let expenseCount = 0;
-
-      monthTransactions.forEach((t: any) => {
-        const amount = safeParseAmount(t.amount);
-        if (t.type === 'income') {
-          income += amount;
-        } else {
-          expenses += Math.abs(amount);
-          expenseCount++;
-        }
-      });
-
-      monthSummary = {
-        income,
-        expenses,
-        transactionCount: expenseCount,
-      };
     }
 
     // Check if HTML rendering is requested

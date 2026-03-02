@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
-import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import type { Currency } from '@/lib/enums';
@@ -13,6 +13,7 @@ import type {
 } from '@/lib/types/recurring';
 import { confirmOccurrenceSchema, skipOccurrenceSchema } from '@/lib/validation/recurring';
 import { generateInstallmentDescription } from '@/lib/utils/recurring-dates';
+import type { RecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
 import { TransactionService } from './transaction.service';
 
@@ -120,15 +121,17 @@ export class RecurringOccurrenceService {
   }
 
   private async invalidateWorkspaceCache(workspaceId: string): Promise<void> {
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(workspaceId),
-      CacheTags.RECURRING,
-      CacheTags.RECURRING_OCCURRENCES,
-      CacheTags.RECURRING_CALENDAR,
-      CacheTags.TRANSACTIONS,
-      CacheTags.DASHBOARD,
-    ]);
+    await invalidateTags(
+      [
+        CacheTags.workspace(workspaceId),
+        CacheTags.RECURRING,
+        CacheTags.RECURRING_OCCURRENCES,
+        CacheTags.RECURRING_CALENDAR,
+        CacheTags.TRANSACTIONS,
+        CacheTags.DASHBOARD,
+      ],
+      'strict'
+    );
   }
 
   async findPending(
@@ -593,46 +596,66 @@ export class RecurringOccurrenceService {
     const monthStart = toIsoDate(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)));
     const monthEnd = toIsoDate(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)));
 
-    const pendingThisMonth = await this.db.query.recurringOccurrences.findMany({
-      where: and(
-        eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-        eq(this.schema.recurringOccurrences.status, 'pending'),
-        gte(this.schema.recurringOccurrences.due_date, monthStart),
-        lte(this.schema.recurringOccurrences.due_date, monthEnd)
-      ),
-      with: {
-        template: true,
-      },
-    });
+    const pendingRows = await (this.db as any)
+      .select({
+        currency: this.schema.recurringTemplates.currency,
+        amount: sql<string>`COALESCE(SUM(CAST(${this.schema.recurringTemplates.amount} AS NUMERIC)), 0)`,
+        pending_count: sql<number>`COUNT(*)`,
+        overdue_count: sql<number>`COALESCE(SUM(CASE WHEN ${this.schema.recurringOccurrences.due_date} < ${today} THEN 1 ELSE 0 END), 0)`,
+      })
+      .from(this.schema.recurringOccurrences)
+      .innerJoin(
+        this.schema.recurringTemplates,
+        and(
+          eq(this.schema.recurringTemplates.id, this.schema.recurringOccurrences.template_id),
+          eq(
+            this.schema.recurringTemplates.workspace_id,
+            this.schema.recurringOccurrences.workspace_id
+          )
+        )
+      )
+      .where(
+        and(
+          eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+          eq(this.schema.recurringOccurrences.status, 'pending'),
+          eq(this.schema.recurringTemplates.status, 'active'),
+          gte(this.schema.recurringOccurrences.due_date, monthStart),
+          lte(this.schema.recurringOccurrences.due_date, monthEnd)
+        )
+      )
+      .groupBy(this.schema.recurringTemplates.currency);
 
-    const confirmedThisMonthRows = await this.db.query.recurringOccurrences.findMany({
-      where: and(
-        eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-        eq(this.schema.recurringOccurrences.status, 'confirmed'),
-        gte(this.schema.recurringOccurrences.due_date, monthStart),
-        lte(this.schema.recurringOccurrences.due_date, monthEnd)
-      ),
-    });
+    const [confirmedRow] = await (this.db as any)
+      .select({
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.recurringOccurrences)
+      .where(
+        and(
+          eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+          eq(this.schema.recurringOccurrences.status, 'confirmed'),
+          gte(this.schema.recurringOccurrences.due_date, monthStart),
+          lte(this.schema.recurringOccurrences.due_date, monthEnd)
+        )
+      );
 
-    const actionablePending = pendingThisMonth.filter(
-      (occurrence) => occurrence.template.status === 'active'
+    const pendingCount = pendingRows.reduce(
+      (sum: number, row: any) => sum + Number(row.pending_count || 0),
+      0
+    );
+    const overdueCount = pendingRows.reduce(
+      (sum: number, row: any) => sum + Number(row.overdue_count || 0),
+      0
     );
 
-    const pendingByCurrency = new Map<string, number>();
-    for (const occurrence of actionablePending) {
-      const currency = occurrence.template.currency;
-      const amount = Number.parseFloat(occurrence.template.amount || '0');
-      pendingByCurrency.set(currency, (pendingByCurrency.get(currency) || 0) + amount);
-    }
-
     const stats: RecurringStats = {
-      pendingCount: actionablePending.length,
-      pendingByCurrency: Array.from(pendingByCurrency.entries()).map(([currency, amount]) => ({
-        currency: currency as Currency,
-        amount: amount.toString(),
+      pendingCount,
+      pendingByCurrency: pendingRows.map((row: any) => ({
+        currency: row.currency as Currency,
+        amount: row.amount?.toString() || '0',
       })),
-      overdueCount: actionablePending.filter((occurrence) => occurrence.due_date < today).length,
-      confirmedThisMonth: confirmedThisMonthRows.length,
+      overdueCount,
+      confirmedThisMonth: Number(confirmedRow?.count || 0),
     };
 
     try {
@@ -645,5 +668,95 @@ export class RecurringOccurrenceService {
     }
 
     return stats;
+  }
+
+  async getMonthlySummary(
+    workspaceId: string,
+    monthKey?: string
+  ): Promise<RecurringMonthlySummary> {
+    const monthRange = parseMonthRange(monthKey);
+
+    const rows = await (this.db as any)
+      .select({
+        type: this.schema.recurringTemplates.type,
+        currency: this.schema.recurringTemplates.currency,
+        amount: sql<string>`COALESCE(SUM(CAST(${this.schema.recurringTemplates.amount} AS NUMERIC)), 0)`,
+        item_count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.recurringOccurrences)
+      .innerJoin(
+        this.schema.recurringTemplates,
+        and(
+          eq(this.schema.recurringTemplates.id, this.schema.recurringOccurrences.template_id),
+          eq(
+            this.schema.recurringTemplates.workspace_id,
+            this.schema.recurringOccurrences.workspace_id
+          )
+        )
+      )
+      .where(
+        and(
+          eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+          eq(this.schema.recurringOccurrences.status, 'pending'),
+          eq(this.schema.recurringTemplates.status, 'active'),
+          gte(this.schema.recurringOccurrences.due_date, monthRange.start),
+          lte(this.schema.recurringOccurrences.due_date, monthRange.end)
+        )
+      )
+      .groupBy(this.schema.recurringTemplates.type, this.schema.recurringTemplates.currency);
+
+    const incomeByCurrency = new Map<string, number>();
+    const expenseByCurrency = new Map<string, number>();
+    let upcomingIncomeCount = 0;
+    let upcomingExpenseCount = 0;
+
+    for (const row of rows as Array<{
+      type: 'income' | 'expense';
+      currency: Currency;
+      amount: string;
+      item_count: number;
+    }>) {
+      const amount = Number.parseFloat(row.amount || '0');
+      const count = Number(row.item_count || 0);
+      if (row.type === 'income') {
+        incomeByCurrency.set(row.currency, amount);
+        upcomingIncomeCount += count;
+      } else {
+        expenseByCurrency.set(row.currency, amount);
+        upcomingExpenseCount += count;
+      }
+    }
+
+    const currencySet = new Set([...incomeByCurrency.keys(), ...expenseByCurrency.keys()]);
+    const netByCurrency = Array.from(currencySet)
+      .map((currency) => {
+        const income = incomeByCurrency.get(currency) ?? 0;
+        const expenses = expenseByCurrency.get(currency) ?? 0;
+        return {
+          currency: currency as Currency,
+          income: income.toString(),
+          expenses: expenses.toString(),
+          net: (income - expenses).toString(),
+        };
+      })
+      .sort((a, b) => a.currency.localeCompare(b.currency));
+
+    return {
+      upcomingIncomeCount,
+      upcomingExpenseCount,
+      incomeByCurrency: Array.from(incomeByCurrency.entries())
+        .map(([currency, amount]) => ({
+          currency: currency as Currency,
+          amount: amount.toString(),
+        }))
+        .sort((a, b) => a.currency.localeCompare(b.currency)),
+      expenseByCurrency: Array.from(expenseByCurrency.entries())
+        .map(([currency, amount]) => ({
+          currency: currency as Currency,
+          amount: amount.toString(),
+        }))
+        .sort((a, b) => a.currency.localeCompare(b.currency)),
+      netByCurrency,
+    };
   }
 }
