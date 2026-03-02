@@ -92,9 +92,52 @@ export const securityHeaders: MiddlewareHandler = async (context, next) => {
   context.locals.cspNonce = nonce;
 
   const response = await next();
+  const contentType = response.headers.get('Content-Type') || '';
+
+  // Fast path: JSON/API responses — just set headers, skip body processing entirely
+  if (contentType.includes('application/json') || contentType.includes('application/octet')) {
+    setSecurityHeaders(response.headers, nonce);
+    return response;
+  }
+
+  // On Cloudflare Workers, use HTMLRewriter for streaming nonce injection
+  // (avoids buffering entire HTML body + regex scan — saves ~5-15ms CPU)
+  const isWorkers =
+    typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
+
+  if (isWorkers) {
+    return applySecurityHeadersStreaming(response, nonce);
+  }
+
   const perf = context.locals.perf as PerfCollector | undefined;
   return applySecurityHeaders(response, nonce, perf);
 };
+
+/**
+ * Workers-optimized: use HTMLRewriter for streaming nonce injection.
+ * No body buffering, no regex — processes HTML as a stream.
+ */
+function applySecurityHeadersStreaming(response: Response, nonce: string): Response {
+  const contentType = response.headers.get('Content-Type') || '';
+  const mightBeHtml = contentType === '' || contentType.includes('text/html');
+
+  if (mightBeHtml && typeof (globalThis as any).HTMLRewriter !== 'undefined') {
+    const HtmlRewriter = (globalThis as any).HTMLRewriter;
+    const rewriter = new HtmlRewriter().on('script:not([nonce])', {
+      element(el: any) {
+        el.setAttribute('nonce', nonce);
+      },
+    });
+
+    const rewritten = rewriter.transform(response);
+    setSecurityHeaders(rewritten.headers, nonce);
+    return rewritten;
+  }
+
+  // Non-HTML on Workers: set headers directly, no body cloning needed
+  setSecurityHeaders(response.headers, nonce);
+  return response;
+}
 
 /** Check if body starts with an HTML doctype or html tag (case-insensitive, ignoring leading whitespace) */
 function looksLikeHtml(body: string): boolean {
@@ -114,6 +157,7 @@ function looksLikeHtml(body: string): boolean {
 /**
  * Apply security headers and optionally inject nonces into HTML responses.
  * Reads the body only when Content-Type suggests HTML.
+ * Used for non-Workers runtimes (Bun, Node).
  */
 async function applySecurityHeaders(
   response: Response,
