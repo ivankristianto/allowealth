@@ -110,17 +110,6 @@ export const pricingTiers: PricingTier[] = [
 
 export const footerLinks: FooterLinkSection[] = [
   {
-    title: 'Product',
-    links: [
-      { label: 'Dashboard', href: '#' },
-      { label: 'Transactions', href: '#' },
-      { label: 'Budget', href: '#' },
-      { label: 'Accounts', href: '#' },
-      { label: 'Reports', href: '#' },
-      { label: 'Forecast', href: '#' },
-    ],
-  },
-  {
     title: 'Open Source',
     links: [
       { label: 'GitHub', href: '#github' },
@@ -166,17 +155,11 @@ export const showcaseItems: ShowcaseItem[] = [
     title: 'Everything in',
     titleHighlight: 'one place.',
     highlightColor: 'text-primary',
-    description:
-      'Get a clear picture of your finances every day. See monthly spending, account totals, and budget health at a glance — no digging required.',
-    features: [
-      'Monthly spending overview',
-      'Account totals at a glance',
-      'Budget health at a glance',
-    ],
+    description: 'See monthly spending, account totals, and budget health in one view, every day.',
+    features: ['Monthly spending overview', 'Account totals', 'Budget health'],
     featureIconColor: 'text-primary',
-    imageUrl:
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Financial Dashboard',
+    imageUrl: '/screenshots/dashboard.jpg',
+    imageAlt: 'allowealth Dashboard',
     gradientClass: 'from-primary/20 to-transparent',
   },
   {
@@ -188,16 +171,15 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'in and out.',
     highlightColor: 'text-accent',
     description:
-      'Record income and expenses in seconds. Filter by month, category, or account. Import from CSV and keep your data accurate.',
+      'Record income and expenses. Filter by month, category, or account. Import from CSV.',
     features: [
       'Log income and expenses',
       'Filter by month, category, account',
       'Import CSV from your bank',
     ],
     featureIconColor: 'text-accent',
-    imageUrl:
-      'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Transaction Tracking',
+    imageUrl: '/screenshots/transactions.jpg',
+    imageAlt: 'allowealth Transactions',
     gradientClass: 'from-accent/20 to-transparent',
     reverse: true,
   },
@@ -210,12 +192,11 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'not just track it.',
     highlightColor: 'text-success',
     description:
-      "Set spending limits by category and stay informed when you're close to the edge. Plan each month deliberately and carry your plan forward.",
+      'Set limits by category and get alerts before you overspend. Plan each month and carry budgets forward.',
     features: ['Category limits with alerts', 'Monthly budget planning', 'Copy budgets forward'],
     featureIconColor: 'text-success',
-    imageUrl:
-      'https://images.unsplash.com/photo-1543286386-713bdd548da4?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Budget Planning',
+    imageUrl: '/screenshots/budget.jpg',
+    imageAlt: 'allowealth Budget Planning',
     gradientClass: 'from-success/20 to-transparent',
   },
   {
@@ -227,16 +208,15 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'one workspace.',
     highlightColor: 'text-warning',
     description:
-      'Connect bank accounts, savings, and investments in one place. Track balances across currencies and manage recurring transactions without manual work.',
+      'Bank accounts, savings, and investments — all together. Track balances across currencies and automate recurring transactions.',
     features: [
       'Multi-currency (IDR / USD / EUR)',
       'Bank, savings & investment accounts',
       'Recurring transactions',
     ],
     featureIconColor: 'text-warning',
-    imageUrl:
-      'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Account Management',
+    imageUrl: '/screenshots/accounts.jpg',
+    imageAlt: 'allowealth Account Management',
     gradientClass: 'from-warning/20 to-transparent',
     reverse: true,
   },
@@ -249,12 +229,11 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'full picture.',
     highlightColor: 'text-info',
     description:
-      'Understand where your money goes with clear spending trends, category breakdowns, and month-over-month analysis. Export and share when you need to.',
+      'Clear spending trends, category breakdowns, and month-over-month analysis. Export and share anytime.',
     features: ['Spending trends by category', 'Monthly and yearly analysis', 'Export and share'],
     featureIconColor: 'text-info',
-    imageUrl:
-      'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Financial Reports',
+    imageUrl: '/screenshots/reports.jpg',
+    imageAlt: 'allowealth Financial Reports',
     gradientClass: 'from-info/20 to-transparent',
   },
 ];
@@ -270,7 +249,7 @@ export const featureGridItems: FeatureGridItem[] = [
     iconColor: 'text-white',
     iconBg: 'bg-white/10',
     title: 'Fast',
-    description: 'Snappy on every device. Built with performance-first development.',
+    description: 'Snappy on every device. No wait screens, no bloat.',
     colSpan: 'md:col-span-8',
     variant: 'dark',
     size: 'large',
@@ -322,7 +301,7 @@ export const featureGridItems: FeatureGridItem[] = [
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
     title: 'Forecast',
-    description: 'Project savings, model scenarios, and plan your financial future.',
+    description: 'Project savings, explore what-ifs, and plan your financial future.',
     colSpan: 'md:col-span-8',
     variant: 'light',
   },
