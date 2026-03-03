@@ -1,0 +1,232 @@
+---
+/**
+ * Mobile Command Center Navigation
+ *
+ * Simplified bottom sheet navigation for mobile.
+ */
+
+import {
+  ArrowLeftRight,
+  Wallet,
+  Donut,
+  ChartBar,
+  Menu,
+  X,
+  User,
+  Shield,
+  LogOut,
+  Settings,
+  House,
+} from '@lucide/astro';
+import type { User as UserType } from '@/lib/auth/lucia';
+
+interface Props {
+  currentPath?: string;
+  user?: UserType | null;
+}
+
+const { currentPath = '/', user = null } = Astro.props;
+
+const isActive = (href: string) => {
+  if (currentPath === href) return true;
+  if (href === '/dashboard' && (currentPath === '/' || currentPath === '/dashboard')) return true;
+  return currentPath.startsWith(href + '/');
+};
+---
+
+<nav
+  class="mobile-command-center fixed inset-x-0 bottom-0 z-50 lg:hidden"
+  aria-label="Mobile navigation"
+>
+  {/* Collapsed Bar */}
+  <div
+    class="command-bar absolute bottom-4 inset-x-4 bg-base-100/95 backdrop-blur-xl rounded-2xl shadow-lg border border-base-300/50 p-2 flex items-center justify-between"
+  >
+    <button
+      type="button"
+      class="command-menu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200 text-base-content hover:bg-base-300 transition-colors"
+      aria-label="Open navigation"
+      data-menu-toggle
+    >
+      <Menu size={20} aria-hidden="true" />
+      <span class="font-semibold text-sm">Menu</span>
+    </button>
+
+    <div class="flex items-center gap-1">
+      <a
+        href="/transactions"
+        class={`p-2.5 rounded-xl transition-colors ${isActive('/transactions') ? 'bg-accent/10 text-accent' : 'text-base-content/60 hover:bg-base-200'}`}
+        aria-label="Transactions"
+      >
+        <ArrowLeftRight size={20} aria-hidden="true" />
+      </a>
+      <a
+        href="/accounts"
+        class={`p-2.5 rounded-xl transition-colors ${isActive('/accounts') ? 'bg-accent/10 text-accent' : 'text-base-content/60 hover:bg-base-200'}`}
+        aria-label="Accounts"
+      >
+        <Wallet size={20} aria-hidden="true" />
+      </a>
+
+      <button
+        type="button"
+        class="ml-1 w-12 h-12 rounded-xl bg-accent text-accent-content flex items-center justify-center shadow-lg shadow-accent/30 hover:shadow-accent/50 hover:scale-105 active:scale-95 transition-all"
+        data-open-transaction-drawer
+        aria-label="New transaction"
+      >
+        <img src="/favicon.svg" alt="" class="w-7 h-7" aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+
+  {/* Full Menu Sheet */}
+  <div
+    class="command-sheet fixed inset-x-0 bottom-0 bg-base-100 rounded-t-3xl shadow-2xl border-t border-base-300 transform translate-y-full transition-transform duration-300 z-50"
+    data-command-sheet
+    style="max-height: 80vh;"
+  >
+    {/* Header */}
+    <div class="flex items-center justify-between px-6 py-4 border-b border-base-200">
+      <span class="text-lg font-bold">Menu</span>
+      <button
+        type="button"
+        class="command-close-btn p-2 rounded-xl bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+        data-menu-close
+        aria-label="Close navigation"
+      >
+        <X size={20} aria-hidden="true" />
+      </button>
+    </div>
+
+    {/* Nav Links */}
+    <div class="p-6 grid grid-cols-3 gap-4">
+      <a
+        href="/dashboard"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/dashboard') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <House size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Dashboard</span>
+      </a>
+      <a
+        href="/transactions"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/transactions') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <ArrowLeftRight size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Transactions</span>
+      </a>
+      <a
+        href="/accounts"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/accounts') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <Wallet size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Accounts</span>
+      </a>
+      <a
+        href="/budget"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/budget') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <Donut size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Budget</span>
+      </a>
+      <a
+        href="/reports"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/reports') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <ChartBar size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Reports</span>
+      </a>
+    </div>
+
+    {/* User Section */}
+    <div class="px-6 pb-8 pt-2 border-t border-base-200">
+      <div class="flex items-center gap-4 mb-4">
+        <div
+          class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold"
+        >
+          {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-base-content truncate">{user?.name || 'User'}</p>
+          <p class="text-xs text-base-content/50 truncate">{user?.email || ''}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <a
+          href="/profile"
+          class="flex items-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/80 hover:bg-base-300 transition-colors text-sm font-medium"
+        >
+          <User size={18} aria-hidden="true" />
+          Profile
+        </a>
+        <a
+          href="/security"
+          class="flex items-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/80 hover:bg-base-300 transition-colors text-sm font-medium"
+        >
+          <Shield size={18} aria-hidden="true" />
+          Security
+        </a>
+        <a
+          href="/settings"
+          class="flex items-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/80 hover:bg-base-300 transition-colors text-sm font-medium"
+        >
+          <Settings size={18} aria-hidden="true" />
+          Settings
+        </a>
+        <button
+          type="button"
+          class="logout-btn flex items-center gap-2 px-4 py-3 rounded-xl bg-error/10 text-error/80 hover:bg-error/20 transition-colors text-sm font-medium"
+        >
+          <LogOut size={18} aria-hidden="true" />
+          Sign out
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<script>
+  import { performLogout } from '@/lib/utils/client';
+
+  function initMobileNav() {
+    const menuToggle = document.querySelector('[data-menu-toggle]');
+    const menuClose = document.querySelector('[data-menu-close]');
+    const sheet = document.querySelector('[data-command-sheet]');
+    const logoutBtn = document.querySelector('.logout-btn');
+
+    if (!(sheet instanceof HTMLElement)) return;
+
+    const openSheet = () => {
+      sheet.classList.remove('translate-y-full');
+      sheet.classList.add('translate-y-0');
+    };
+
+    const closeSheet = () => {
+      sheet.classList.add('translate-y-full');
+      sheet.classList.remove('translate-y-0');
+    };
+
+    menuToggle?.addEventListener('click', openSheet);
+    menuClose?.addEventListener('click', closeSheet);
+
+    // Close sheet when clicking a link inside it
+    sheet.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', closeSheet);
+    });
+
+    // Logout handler
+    logoutBtn?.addEventListener('click', async (e: MouseEvent) => {
+      e.preventDefault();
+      await performLogout();
+    });
+
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSheet();
+    });
+  }
+
+  // Run on load and after view transitions
+  initMobileNav();
+  document.addEventListener('astro:page-load', initMobileNav);
+</script>
