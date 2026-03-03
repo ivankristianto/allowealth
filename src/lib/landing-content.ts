@@ -110,30 +110,32 @@ export const pricingTiers: PricingTier[] = [
 
 export const footerLinks: FooterLinkSection[] = [
   {
-    title: 'Ecosystem',
+    title: 'Product',
     links: [
-      { label: 'Wealth View', href: '#' },
-      { label: 'AI Receipt Scan', href: '#' },
-      { label: 'Goal Forecast', href: '#' },
-      { label: 'Audit Logs', href: '#' },
+      { label: 'Dashboard', href: '#' },
+      { label: 'Transactions', href: '#' },
+      { label: 'Budget', href: '#' },
+      { label: 'Accounts', href: '#' },
+      { label: 'Reports', href: '#' },
+      { label: 'Forecast', href: '#' },
+    ],
+  },
+  {
+    title: 'Open Source',
+    links: [
+      { label: 'GitHub', href: '#github' },
+      { label: 'Self-Host Guide', href: '#' },
+      { label: 'Contributing', href: '#' },
+      { label: 'Changelog', href: '#' },
     ],
   },
   {
     title: 'Resources',
     links: [
-      { label: 'Finance API', href: '#' },
-      { label: 'Security Audit', href: '#' },
-      { label: 'Tax Integration', href: '#' },
+      { label: 'Documentation', href: '#' },
       { label: 'Help Center', href: '#' },
-    ],
-  },
-  {
-    title: 'Privacy',
-    links: [
-      { label: 'Data Protocol', href: '#' },
-      { label: 'Trust Center', href: '#' },
-      { label: 'Cookie Policy', href: '#' },
-      { label: 'GDPR Sync', href: '#' },
+      { label: 'Community', href: '#' },
+      { label: 'Contact', href: '/contact' },
     ],
   },
 ];
