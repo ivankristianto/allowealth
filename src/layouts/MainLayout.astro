@@ -86,8 +86,16 @@ const hasHeaderSlot = Astro.slots.has('header');
   <MobileNavigation currentPath={currentPath} />
 
   <style is:global>
-    .drawer:has(> #drawer-toggle:checked) ~ nav[aria-label='Mobile navigation'] {
-      visibility: hidden;
+    /* Hide mobile bottom nav when sidebar drawer is open */
+    body:has(#drawer-toggle:checked) nav[aria-label='Mobile navigation'] {
+      display: none;
+    }
+
+    /* Add bottom padding to sidebar on mobile for safe scrolling */
+    @media (max-width: 1023px) {
+      .drawer-side .menu {
+        padding-bottom: 2rem;
+      }
     }
   </style>
 

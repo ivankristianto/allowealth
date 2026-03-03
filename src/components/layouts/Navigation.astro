@@ -115,7 +115,7 @@ const isSuperAdmin = user?.role === 'super_admin';
 
   <!-- Navigation -->
   <ul
-    class="menu w-full flex-1 px-4 space-y-1 overflow-y-auto flex flex-col flex-nowrap min-h-0 group-data-[sidebar-collapsed=true]:px-2"
+    class="menu w-full flex-1 px-4 space-y-1 overflow-y-auto flex flex-col flex-nowrap min-h-0 pb-24 lg:pb-4 group-data-[sidebar-collapsed=true]:px-2"
   >
     {isSuperAdmin ? <AdminNav currentPath={currentPath} /> : <UserNav currentPath={currentPath} />}
 
