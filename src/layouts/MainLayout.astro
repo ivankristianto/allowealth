@@ -88,13 +88,18 @@ const hasHeaderSlot = Astro.slots.has('header');
   <style is:global>
     /* Hide mobile bottom nav when sidebar drawer is open */
     body:has(#drawer-toggle:checked) nav[aria-label='Mobile navigation'] {
-      display: none;
+      display: none !important;
+    }
+
+    /* Alternative class-based hiding (used by JS fallback) */
+    body.mobile-nav-hidden nav[aria-label='Mobile navigation'] {
+      display: none !important;
     }
 
     /* Add bottom padding to sidebar on mobile for safe scrolling */
     @media (max-width: 1023px) {
       .drawer-side .menu {
-        padding-bottom: 2rem;
+        padding-bottom: 6rem;
       }
     }
   </style>
@@ -104,6 +109,24 @@ const hasHeaderSlot = Astro.slots.has('header');
 
   <script>
     import '../components/layouts/MobileDrawer.client';
+
+    // Toggle mobile nav visibility when drawer opens/closes
+    const drawerToggle = document.getElementById('drawer-toggle');
+    const mobileNav = document.querySelector('nav[aria-label="Mobile navigation"]');
+
+    if (drawerToggle instanceof HTMLInputElement && mobileNav instanceof HTMLElement) {
+      const toggleMobileNav = () => {
+        if (drawerToggle.checked) {
+          mobileNav.classList.add('hidden');
+        } else {
+          mobileNav.classList.remove('hidden');
+        }
+      };
+
+      drawerToggle.addEventListener('change', toggleMobileNav);
+      // Initial state
+      toggleMobileNav();
+    }
   </script>
 
   <script>
