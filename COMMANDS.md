@@ -43,9 +43,9 @@ bunx wrangler deploy --config docs/sites/wrangler.toml
 
 ### Docs Domain Go-Live Checklist (Manual)
 
-1. Confirm `docs.allowealth.io` is attached as a custom domain to `allowealth-docs` in Cloudflare.
-2. Confirm DNS record exists and is proxied in Cloudflare DNS.
-3. Confirm SSL/TLS status is active.
+1. Attach `docs.allowealth.io` as a custom domain to `allowealth-docs` in Cloudflare.
+2. Verify the DNS record exists and is proxied in Cloudflare DNS.
+3. Verify the SSL/TLS status is active.
 4. Run smoke check:
 
 ```bash
@@ -123,12 +123,12 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Target Values
 
-| Target     | Database               | Env loading                  | Auth                                                                                                         |
-| ---------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                          |
-| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` in `.env.production` (mapped to `CLOUDFLARE_API_TOKEN` for wrangler; D1 Edit permissions) |
-| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite directly                                                                         |
-| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env                                                                                   |
+| Target     | Database               | Env loading                  | Auth                                                                                                               |
+| ---------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                                |
+| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` in `.env.production` (maps to `CLOUDFLARE_API_TOKEN` for wrangler; requires D1 Edit permission) |
+| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite                                                                                        |
+| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env                                                                                         |
 
 ### Quick Reference
 
@@ -141,10 +141,10 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Global CLI Options
 
-- `--target`, `-t`: select backend target (`sqlite`, `d1`, `d1-local`, `postgres`) on leaf subcommands.
-- `--json`: return machine-readable JSON output instead of formatted text.
-- `--yes`, `-y`: skip confirmation prompts for destructive CRUD/alias operations (`delete`/`rm`).
-  - Some destructive commands use command-specific confirmations instead (for example `workspace delete --force` or typed confirmation in `aw db drop`).
+- `--target`, `-t`: Select backend target (`sqlite`, `d1`, `d1-local`, `postgres`) on leaf subcommands.
+- `--json`: Return machine-readable JSON output instead of formatted text.
+- `--yes`, `-y`: Skip confirmation prompts for destructive CRUD and alias operations (`delete`, `rm`).
+  - Some destructive commands use command-specific confirmations instead. Examples: `workspace delete --force` or the typed confirmation in `aw db drop`.
 
 ### Workspace Management
 
@@ -154,46 +154,98 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | `bun run aw workspace create --target postgres --name "Name" --email admin@example.com` | Create workspace (PostgreSQL)        |
 | `bun run aw workspace create --target d1 --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)      |
 | `bun run aw workspace create --target d1-local --name "Name" --email admin@example.com` | Create workspace on D1 (local)       |
-| `bun run aw workspace list`                                                             | List all workspaces                  |
-| `bun run aw workspace delete --id <id>`                                                 | Delete workspace                     |
+| `bun run aw workspace list`                                                             | List all workspaces with user counts |
+| `bun run aw workspace delete --id <id>`                                                 | Delete workspace and all its data    |
 | `bun run aw workspace delete --id <id> --force`                                         | Delete workspace (skip confirmation) |
+| `bun run aw workspace invite --workspace-id <id> --email <email>`                       | Invite member to workspace           |
+| `bun run aw workspace members list --workspace-id <id>`                                 | List all workspace members           |
+| `bun run aw workspace members remove --workspace-id <id> --user-id <id>`                | Remove member from workspace         |
 
 ### Resource Commands
 
-```bash
-bun run aw transactions create|get|list|update|delete
-bun run aw accounts     create|get|list|update|delete
-bun run aw budgets      create|get|list|update|delete
-```
+| Command                                          | Description                                           |
+| ------------------------------------------------ | ----------------------------------------------------- |
+| `bun run aw transactions create`                 | Create transaction                                    |
+| `bun run aw transactions get --id <id>`          | Get transaction by ID                                 |
+| `bun run aw transactions list`                   | List transactions                                     |
+| `bun run aw transactions update --id <id>`       | Update transaction                                    |
+| `bun run aw transactions delete --id <id>`       | Delete transaction                                    |
+| `bun run aw accounts create`                     | Create account                                        |
+| `bun run aw accounts get --id <id>`              | Get account by ID                                     |
+| `bun run aw accounts list`                       | List accounts                                         |
+| `bun run aw accounts update --id <id>`           | Update account                                        |
+| `bun run aw accounts delete --id <id>`           | Deactivate account                                    |
+| `bun run aw budgets create`                      | Create budget                                         |
+| `bun run aw budgets get --id <id>`               | Get budget by ID                                      |
+| `bun run aw budgets list --month <m> --year <y>` | List budgets for month/year                           |
+| `bun run aw budgets update --id <id>`            | Update budget                                         |
+| `bun run aw budgets delete --id <id>`            | Delete budget                                         |
+| `bun run aw categories create`                   | Create budget category                                |
+| `bun run aw categories get --id <id>`            | Get budget category by ID                             |
+| `bun run aw categories list`                     | List budget categories                                |
+| `bun run aw categories update --id <id>`         | Update budget category                                |
+| `bun run aw categories delete --id <id>`         | Delete budget category                                |
+| `bun run aw account-categories create`           | Create account category                               |
+| `bun run aw account-categories get --id <id>`    | Get account category by ID                            |
+| `bun run aw account-categories list`             | List account categories                               |
+| `bun run aw account-categories update --id <id>` | Update account category                               |
+| `bun run aw account-categories delete --id <id>` | Delete account category                               |
+| `bun run aw recurring generate`                  | Generate pending occurrences for all active templates |
 
 ### Alias Commands
 
-```bash
-bun run aw tx  add|show|ls|edit|rm
-bun run aw acc add|show|ls|edit|rm
-bun run aw bdg set|show|ls|edit|rm
-```
+Aliases provide shorter commands that map to resource operations.
+
+**Transactions (`tx`):**
+
+| Alias                     | Maps to               | Description           |
+| ------------------------- | --------------------- | --------------------- |
+| `bun run aw tx add`       | `transactions create` | Create transaction    |
+| `bun run aw tx show --id` | `transactions get`    | Get transaction by ID |
+| `bun run aw tx ls`        | `transactions list`   | List transactions     |
+| `bun run aw tx edit --id` | `transactions update` | Update transaction    |
+| `bun run aw tx rm --id`   | `transactions delete` | Delete transaction    |
+
+**Accounts (`acc`):**
+
+| Alias                      | Maps to           | Description        |
+| -------------------------- | ----------------- | ------------------ |
+| `bun run aw acc add`       | `accounts create` | Create account     |
+| `bun run aw acc show --id` | `accounts get`    | Get account by ID  |
+| `bun run aw acc ls`        | `accounts list`   | List accounts      |
+| `bun run aw acc edit --id` | `accounts update` | Update account     |
+| `bun run aw acc rm --id`   | `accounts delete` | Deactivate account |
+
+**Budgets (`bdg`):**
+
+| Alias                      | Maps to          | Description      |
+| -------------------------- | ---------------- | ---------------- |
+| `bun run aw bdg set`       | `budgets create` | Create budget    |
+| `bun run aw bdg show --id` | `budgets get`    | Get budget by ID |
+| `bun run aw bdg ls`        | `budgets list`   | List budgets     |
+| `bun run aw bdg edit --id` | `budgets update` | Update budget    |
+| `bun run aw bdg rm --id`   | `budgets delete` | Delete budget    |
 
 ### Database
 
-| Command                                   | Description                            |
-| ----------------------------------------- | -------------------------------------- |
-| `bun run aw db migrate`                   | Apply pending migrations (SQLite)      |
-| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)  |
-| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1  |
-| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1   |
-| `bun run aw db generate`                  | Generate migration from schema changes |
-| `bun run aw db push`                      | Push schema directly (dev only)        |
-| `bun run aw db studio`                    | Open Drizzle Studio                    |
-| `bun run aw db seed`                      | Seed with demo data                    |
-| `bun run aw db seed --benchmark`          | Seed + ~10k transactions for perf test |
-| `bun run aw db reset`                     | Delete + push + seed (sqlite only)     |
-| `bun run aw db empty`                     | Truncate all data (preserve schema)    |
-| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB      |
+| Command                                   | Description                                  |
+| ----------------------------------------- | -------------------------------------------- |
+| `bun run aw db migrate`                   | Apply pending migrations (SQLite)            |
+| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)        |
+| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1        |
+| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1         |
+| `bun run aw db generate`                  | Generate migration from schema changes       |
+| `bun run aw db push`                      | Push schema directly (dev only)              |
+| `bun run aw db studio`                    | Open Drizzle Studio                          |
+| `bun run aw db seed`                      | Seed with demo data                          |
+| `bun run aw db seed --benchmark`          | Seed with ~10k transactions for perf testing |
+| `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed      |
+| `bun run aw db empty`                     | Truncate all data (preserve schema)          |
+| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB            |
 
 #### Database Drop Command
 
-The `aw db drop` command completely resets the database by dropping all tables and clearing migrations.
+The `aw db drop` command drops all tables and clears migrations.
 
 ```bash
 # Drop local SQLite database
@@ -211,20 +263,20 @@ bun run aw db drop -t postgres
 
 **What it does:**
 
-- **D1**: Drops all user tables (excludes reserved system tables like `_cf_*` and `__drizzle_migrations`), then truncates migrations table
+- **D1**: Drops all user tables (excludes reserved system tables like `_cf_*` and `__drizzle_migrations`), then truncates the migrations table
 - **SQLite**: Deletes the `.dev.db` file
 - **PostgreSQL**: Drops all tables with CASCADE
 
-**After running**, use `aw db migrate` to recreate the schema from the first migration.
+After running, use `aw db migrate` to recreate the schema from the first migration.
 
 ### Admin & Security
 
-| Command                                                                            | Description                   |
-| ---------------------------------------------------------------------------------- | ----------------------------- |
-| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin   |
-| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key              |
-| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate DB password            |
-| `bun run aw admin generate-email-key`                                              | Generate email encryption key |
+| Command                                                                            | Description                                                                                                            |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin                                                                                            |
+| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key                                                                                                       |
+| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate Supabase DB password; use `--ask` to prompt for password, `--hyperdrive` to update Cloudflare Hyperdrive config |
+| `bun run aw admin generate-email-key`                                              | Generate encryption key for email functionality                                                                        |
 
 ### Deploy
 

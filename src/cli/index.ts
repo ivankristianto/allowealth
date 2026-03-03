@@ -34,10 +34,12 @@ const main = defineCommand({
   },
   subCommands: {
     acc: () => import('./commands/acc').then((m) => m.default),
+    'account-categories': () => import('./commands/account-categories').then((m) => m.default),
     accounts: () => import('./commands/accounts').then((m) => m.default),
     admin: () => import('./commands/admin').then((m) => m.default),
     bdg: () => import('./commands/bdg').then((m) => m.default),
     budgets: () => import('./commands/budgets').then((m) => m.default),
+    categories: () => import('./commands/categories').then((m) => m.default),
     db: () => import('./commands/db').then((m) => m.default),
     deploy: () => import('./commands/deploy').then((m) => m.default),
     mcp: () => import('./commands/mcp').then((m) => m.default),
