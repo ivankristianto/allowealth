@@ -33,6 +33,7 @@ export function createTxCommand(handlers: TxHandlers = defaultHandlers) {
     meta: {
       name: 'tx',
       description: 'Transaction-oriented aliases',
+      hidden: true,
     },
     subCommands: {
       add: defineCommand({
@@ -40,25 +41,25 @@ export function createTxCommand(handlers: TxHandlers = defaultHandlers) {
         args: transactionsCreateArgs,
         run: ({ args }) => handlers.add(args as Record<string, unknown>),
       }),
-      show: defineCommand({
-        meta: { name: 'show', description: 'Alias for transactions get' },
-        args: transactionsGetArgs,
-        run: ({ args }) => handlers.show(args as Record<string, unknown>),
+      edit: defineCommand({
+        meta: { name: 'edit', description: 'Alias for transactions update' },
+        args: transactionsUpdateArgs,
+        run: ({ args }) => handlers.edit(args as Record<string, unknown>),
       }),
       ls: defineCommand({
         meta: { name: 'ls', description: 'Alias for transactions list' },
         args: transactionsListArgs,
         run: ({ args }) => handlers.ls(args as Record<string, unknown>),
       }),
-      edit: defineCommand({
-        meta: { name: 'edit', description: 'Alias for transactions update' },
-        args: transactionsUpdateArgs,
-        run: ({ args }) => handlers.edit(args as Record<string, unknown>),
-      }),
       rm: defineCommand({
         meta: { name: 'rm', description: 'Alias for transactions delete' },
         args: transactionsDeleteArgs,
         run: ({ args }) => handlers.rm(args as Record<string, unknown>),
+      }),
+      show: defineCommand({
+        meta: { name: 'show', description: 'Alias for transactions get' },
+        args: transactionsGetArgs,
+        run: ({ args }) => handlers.show(args as Record<string, unknown>),
       }),
     },
   });

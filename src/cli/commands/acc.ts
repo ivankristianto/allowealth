@@ -33,6 +33,7 @@ export function createAccCommand(handlers: AccHandlers = defaultHandlers) {
     meta: {
       name: 'acc',
       description: 'Account-oriented aliases',
+      hidden: true,
     },
     subCommands: {
       add: defineCommand({
@@ -40,25 +41,25 @@ export function createAccCommand(handlers: AccHandlers = defaultHandlers) {
         args: accountsCreateArgs,
         run: ({ args }) => handlers.add(args as Record<string, unknown>),
       }),
-      show: defineCommand({
-        meta: { name: 'show', description: 'Alias for accounts get' },
-        args: accountsGetArgs,
-        run: ({ args }) => handlers.show(args as Record<string, unknown>),
+      edit: defineCommand({
+        meta: { name: 'edit', description: 'Alias for accounts update' },
+        args: accountsUpdateArgs,
+        run: ({ args }) => handlers.edit(args as Record<string, unknown>),
       }),
       ls: defineCommand({
         meta: { name: 'ls', description: 'Alias for accounts list' },
         args: accountsListArgs,
         run: ({ args }) => handlers.ls(args as Record<string, unknown>),
       }),
-      edit: defineCommand({
-        meta: { name: 'edit', description: 'Alias for accounts update' },
-        args: accountsUpdateArgs,
-        run: ({ args }) => handlers.edit(args as Record<string, unknown>),
-      }),
       rm: defineCommand({
         meta: { name: 'rm', description: 'Alias for accounts delete' },
         args: accountsDeleteArgs,
         run: ({ args }) => handlers.rm(args as Record<string, unknown>),
+      }),
+      show: defineCommand({
+        meta: { name: 'show', description: 'Alias for accounts get' },
+        args: accountsGetArgs,
+        run: ({ args }) => handlers.show(args as Record<string, unknown>),
       }),
     },
   });

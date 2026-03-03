@@ -160,7 +160,10 @@ export async function runGet(args: Record<string, unknown>, deps: BudgetsDeps = 
     requiredString(args, 'id'),
     requiredString(args, 'workspace-id')
   );
-  output.write(result, (value) => `Budget ${(value as { id?: string }).id ?? 'not found'}`);
+  output.write(
+    result,
+    (value) => `Budget ${(value as { id?: string } | null | undefined)?.id ?? 'not found'}`
+  );
 }
 
 export async function runList(args: Record<string, unknown>, deps: BudgetsDeps = defaultDeps) {
@@ -175,8 +178,8 @@ export async function runList(args: Record<string, unknown>, deps: BudgetsDeps =
     optionalCurrency(args, 'currency')
   );
   output.write(result, (value) => {
-    const count = Array.isArray(value) ? value.length : 0;
-    return `Found ${count} budget(s)`;
+    const rows = Array.isArray(value) ? value : [];
+    return `Found ${rows.length} budget(s)\n${JSON.stringify(rows, null, 2)}`;
   });
 }
 
@@ -260,6 +263,11 @@ export default defineCommand({
       args: budgetsCreateArgs,
       run: ({ args }) => runCreate(args as Record<string, unknown>),
     }),
+    delete: defineCommand({
+      meta: { name: 'delete', description: 'Delete budget' },
+      args: budgetsDeleteArgs,
+      run: ({ args }) => runDelete(args as Record<string, unknown>),
+    }),
     get: defineCommand({
       meta: { name: 'get', description: 'Get budget by ID' },
       args: budgetsGetArgs,
@@ -274,11 +282,6 @@ export default defineCommand({
       meta: { name: 'update', description: 'Update budget' },
       args: budgetsUpdateArgs,
       run: ({ args }) => runUpdate(args as Record<string, unknown>),
-    }),
-    delete: defineCommand({
-      meta: { name: 'delete', description: 'Delete budget' },
-      args: budgetsDeleteArgs,
-      run: ({ args }) => runDelete(args as Record<string, unknown>),
     }),
   },
 });

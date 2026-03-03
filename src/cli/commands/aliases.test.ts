@@ -59,7 +59,7 @@ describe('task-oriented aliases', () => {
       },
     }) as unknown as CommandLike;
 
-    expect(Object.keys(command.subCommands)).toEqual(['add', 'show', 'ls', 'edit', 'rm']);
+    expect(Object.keys(command.subCommands)).toEqual(['add', 'edit', 'ls', 'rm', 'show']);
 
     await runAlias(command, 'add', {});
     await runAlias(command, 'show', {});
@@ -90,7 +90,7 @@ describe('task-oriented aliases', () => {
       },
     }) as unknown as CommandLike;
 
-    expect(Object.keys(command.subCommands)).toEqual(['add', 'show', 'ls', 'edit', 'rm']);
+    expect(Object.keys(command.subCommands)).toEqual(['add', 'edit', 'ls', 'rm', 'show']);
 
     await runAlias(command, 'add', {});
     await runAlias(command, 'show', {});
@@ -121,7 +121,7 @@ describe('task-oriented aliases', () => {
       },
     }) as unknown as CommandLike;
 
-    expect(Object.keys(command.subCommands)).toEqual(['set', 'show', 'ls', 'edit', 'rm']);
+    expect(Object.keys(command.subCommands)).toEqual(['edit', 'ls', 'rm', 'set', 'show']);
 
     await runAlias(command, 'set', {});
     await runAlias(command, 'show', {});
@@ -247,5 +247,15 @@ describe('task-oriented aliases', () => {
     expect(command.subCommands.ls.args).toBe(budgetsListArgs);
     expect(command.subCommands.edit.args).toBe(budgetsUpdateArgs);
     expect(command.subCommands.rm.args).toBe(budgetsDeleteArgs);
+  });
+
+  it('marks alias command groups as hidden in top-level help', () => {
+    const tx = createTxCommand() as unknown as { meta?: { hidden?: boolean } };
+    const acc = createAccCommand() as unknown as { meta?: { hidden?: boolean } };
+    const bdg = createBdgCommand() as unknown as { meta?: { hidden?: boolean } };
+
+    expect(tx.meta?.hidden).toBeTrue();
+    expect(acc.meta?.hidden).toBeTrue();
+    expect(bdg.meta?.hidden).toBeTrue();
   });
 });

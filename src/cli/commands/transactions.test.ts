@@ -161,12 +161,29 @@ describe('transactions command mapping', () => {
       created_by_user_id: 'user-1',
       currency: 'USD',
       start_date: new Date('2024-01-01T00:00:00.000Z'),
-      end_date: new Date('2024-01-31T00:00:00.000Z'),
+      end_date: new Date('2024-01-31T23:59:59.999Z'),
       search: 'salary',
       include_deleted: true,
       limit: 20,
       offset: 5,
     });
+  });
+
+  it('formats list output with count and serialized rows in human mode', async () => {
+    let rendered = '';
+    const deps = createDeps({
+      findAll: async () => [{ id: 'txn-1' }],
+      write: (value, message) => {
+        if (typeof message === 'function') {
+          rendered = message(value);
+        }
+      },
+    });
+
+    await runList({ 'workspace-id': 'ws-1' }, deps);
+
+    expect(rendered).toContain('Found 1 transaction(s)');
+    expect(rendered).toContain('"id": "txn-1"');
   });
 
   it('passes update args and user identity to TransactionService.update', async () => {

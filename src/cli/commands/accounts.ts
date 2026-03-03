@@ -96,12 +96,6 @@ function mapCreatePayload(args: Record<string, unknown>): CreateAccountInput {
   const categoryId = optionalString(args, 'category-id');
   if (categoryId !== undefined) payload.category_id = categoryId;
 
-  const creditLimit = optionalString(args, 'credit-limit');
-  if (creditLimit !== undefined) payload.credit_limit = creditLimit;
-
-  const isCashAccount = optionalBoolean(args, 'is-cash-account');
-  if (isCashAccount !== undefined) payload.is_cash_account = isCashAccount;
-
   return payload;
 }
 
@@ -122,12 +116,6 @@ function mapUpdatePayload(args: Record<string, unknown>): UpdateAccountInput {
 
   const currency = optionalString(args, 'currency');
   if (currency !== undefined) payload.currency = validatedCurrency(currency);
-
-  const creditLimit = optionalString(args, 'credit-limit');
-  if (creditLimit !== undefined) payload.credit_limit = creditLimit;
-
-  const isCashAccount = optionalBoolean(args, 'is-cash-account');
-  if (isCashAccount !== undefined) payload.is_cash_account = isCashAccount;
 
   return payload;
 }
@@ -150,7 +138,10 @@ export async function runGet(args: Record<string, unknown>, deps: AccountsDeps =
     requiredString(args, 'id'),
     requiredString(args, 'workspace-id')
   );
-  output.write(result, (value) => `Account ${(value as { id?: string }).id ?? 'not found'}`);
+  output.write(
+    result,
+    (value) => `Account ${(value as { id?: string } | null | undefined)?.id ?? 'not found'}`
+  );
 }
 
 export async function runList(args: Record<string, unknown>, deps: AccountsDeps = defaultDeps) {
@@ -171,8 +162,8 @@ export async function runList(args: Record<string, unknown>, deps: AccountsDeps 
 
   const result = await service.findAll(workspaceId, filters);
   output.write(result, (value) => {
-    const count = Array.isArray(value) ? value.length : 0;
-    return `Found ${count} account(s)`;
+    const rows = Array.isArray(value) ? value : [];
+    return `Found ${rows.length} account(s)\n${JSON.stringify(rows, null, 2)}`;
   });
 }
 
@@ -223,8 +214,6 @@ export const accountsCreateArgs = {
   balance: { type: 'string', required: true },
   currency: { type: 'string', required: true },
   'category-id': { type: 'string' },
-  'credit-limit': { type: 'string' },
-  'is-cash-account': { type: 'boolean' },
 } as const;
 export const accountsGetArgs = {
   ...commonArgs,
@@ -246,8 +235,6 @@ export const accountsUpdateArgs = {
   balance: { type: 'string' },
   currency: { type: 'string' },
   'category-id': { type: 'string' },
-  'credit-limit': { type: 'string' },
-  'is-cash-account': { type: 'boolean' },
 } as const;
 export const accountsDeleteArgs = {
   ...commonArgs,
@@ -266,6 +253,11 @@ export default defineCommand({
       args: accountsCreateArgs,
       run: ({ args }) => runCreate(args as Record<string, unknown>),
     }),
+    delete: defineCommand({
+      meta: { name: 'delete', description: 'Deactivate account' },
+      args: accountsDeleteArgs,
+      run: ({ args }) => runDelete(args as Record<string, unknown>),
+    }),
     get: defineCommand({
       meta: { name: 'get', description: 'Get account by ID' },
       args: accountsGetArgs,
@@ -280,11 +272,6 @@ export default defineCommand({
       meta: { name: 'update', description: 'Update account' },
       args: accountsUpdateArgs,
       run: ({ args }) => runUpdate(args as Record<string, unknown>),
-    }),
-    delete: defineCommand({
-      meta: { name: 'delete', description: 'Deactivate account' },
-      args: accountsDeleteArgs,
-      run: ({ args }) => runDelete(args as Record<string, unknown>),
     }),
   },
 });

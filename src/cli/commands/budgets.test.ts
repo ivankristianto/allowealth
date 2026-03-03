@@ -161,6 +161,23 @@ describe('budgets command mapping', () => {
     expect(listCall).toEqual(['ws-1', 4, 2026, 'EUR']);
   });
 
+  it('formats list output with count and serialized rows in human mode', async () => {
+    let rendered = '';
+    const deps = createDeps({
+      findAllBudgets: async () => [{ id: 'bud-1' }],
+      write: (value, message) => {
+        if (typeof message === 'function') {
+          rendered = message(value);
+        }
+      },
+    });
+
+    await runList({ 'workspace-id': 'ws-1', month: 4, year: 2026 }, deps);
+
+    expect(rendered).toContain('Found 1 budget(s)');
+    expect(rendered).toContain('"id": "bud-1"');
+  });
+
   it('parses CLI-like string month/year inputs for list', async () => {
     let listCall: unknown[] = [];
     const deps = createDeps({

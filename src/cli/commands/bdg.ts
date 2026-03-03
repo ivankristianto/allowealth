@@ -33,8 +33,24 @@ export function createBdgCommand(handlers: BdgHandlers = defaultHandlers) {
     meta: {
       name: 'bdg',
       description: 'Budget-oriented aliases',
+      hidden: true,
     },
     subCommands: {
+      edit: defineCommand({
+        meta: { name: 'edit', description: 'Alias for budgets update' },
+        args: budgetsUpdateArgs,
+        run: ({ args }) => handlers.edit(args as Record<string, unknown>),
+      }),
+      ls: defineCommand({
+        meta: { name: 'ls', description: 'Alias for budgets list' },
+        args: budgetsListArgs,
+        run: ({ args }) => handlers.ls(args as Record<string, unknown>),
+      }),
+      rm: defineCommand({
+        meta: { name: 'rm', description: 'Alias for budgets delete' },
+        args: budgetsDeleteArgs,
+        run: ({ args }) => handlers.rm(args as Record<string, unknown>),
+      }),
       set: defineCommand({
         meta: { name: 'set', description: 'Alias for budgets create' },
         args: budgetsCreateArgs,
@@ -44,21 +60,6 @@ export function createBdgCommand(handlers: BdgHandlers = defaultHandlers) {
         meta: { name: 'show', description: 'Alias for budgets get' },
         args: budgetsGetArgs,
         run: ({ args }) => handlers.show(args as Record<string, unknown>),
-      }),
-      ls: defineCommand({
-        meta: { name: 'ls', description: 'Alias for budgets list' },
-        args: budgetsListArgs,
-        run: ({ args }) => handlers.ls(args as Record<string, unknown>),
-      }),
-      edit: defineCommand({
-        meta: { name: 'edit', description: 'Alias for budgets update' },
-        args: budgetsUpdateArgs,
-        run: ({ args }) => handlers.edit(args as Record<string, unknown>),
-      }),
-      rm: defineCommand({
-        meta: { name: 'rm', description: 'Alias for budgets delete' },
-        args: budgetsDeleteArgs,
-        run: ({ args }) => handlers.rm(args as Record<string, unknown>),
       }),
     },
   });

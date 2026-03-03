@@ -45,12 +45,30 @@ const defaultDeps: TransactionsDeps = {
 
 const TRANSACTION_TYPES = ['expense', 'income', 'transfer'] as const;
 
-function dateFromArg(value: unknown, argName: string): Date | undefined {
+function requiredString(args: Record<string, unknown>, key: string): string {
+  const value = args[key];
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`Missing required argument: ${key}`);
+  }
+  return value;
+}
+
+function optionalString(args: Record<string, unknown>, key: string): string | undefined {
+  const value = args[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function dateFromArg(
+  value: unknown,
+  argName: string,
+  options?: { endOfDay?: boolean }
+): Date | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new Error(`Invalid ${argName}: expected YYYY-MM-DD`);
   }
-  const date = new Date(`${value}T00:00:00.000Z`);
+  const time = options?.endOfDay ? '23:59:59.999' : '00:00:00.000';
+  const date = new Date(`${value}T${time}Z`);
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
     throw new Error(`Invalid ${argName}: expected valid YYYY-MM-DD date`);
   }
@@ -103,19 +121,19 @@ function validatedCurrency(value: string): CreateTransactionInput['currency'] {
 
 function mapCreatePayload(args: Record<string, unknown>): CreateTransactionInput {
   const payload: CreateTransactionInput = {
-    workspace_id: args['workspace-id'] as string,
-    created_by_user_id: args['user-id'] as string,
-    type: validatedType(args.type as string),
-    amount: args.amount as string,
-    currency: validatedCurrency(args.currency as string),
-    account_id: args['account-id'] as string,
+    workspace_id: requiredString(args, 'workspace-id'),
+    created_by_user_id: requiredString(args, 'user-id'),
+    type: validatedType(requiredString(args, 'type')),
+    amount: requiredString(args, 'amount'),
+    currency: validatedCurrency(requiredString(args, 'currency')),
+    account_id: requiredString(args, 'account-id'),
     transaction_date: dateFromArg(args['transaction-date'], 'transaction-date') ?? new Date(),
   };
-  const categoryId = args['category-id'] as string | undefined;
+  const categoryId = optionalString(args, 'category-id');
   if (categoryId !== undefined) payload.category_id = categoryId;
-  const toAccountId = args['to-account-id'] as string | undefined;
+  const toAccountId = optionalString(args, 'to-account-id');
   if (toAccountId !== undefined) payload.to_account_id = toAccountId;
-  const description = args.description as string | undefined;
+  const description = optionalString(args, 'description');
   if (description !== undefined) payload.description = description;
   return payload;
 }
@@ -160,8 +178,14 @@ export async function runGet(args: Record<string, unknown>, deps: TransactionsDe
   const output = deps.createOutput(args);
   const service = await deps.createService();
 
-  const result = await service.findById(args.id as string, args['workspace-id'] as string);
-  output.write(result, (value) => `Transaction ${(value as { id?: string }).id ?? 'not found'}`);
+  const result = await service.findById(
+    requiredString(args, 'id'),
+    requiredString(args, 'workspace-id')
+  );
+  output.write(
+    result,
+    (value) => `Transaction ${(value as { id?: string } | null | undefined)?.id ?? 'not found'}`
+  );
 }
 
 export async function runList(args: Record<string, unknown>, deps: TransactionsDeps = defaultDeps) {
@@ -172,14 +196,14 @@ export async function runList(args: Record<string, unknown>, deps: TransactionsD
   const type = args.type as string | undefined;
   const currency = args.currency as string | undefined;
   const filters = withDefined<TransactionFilters>({
-    workspace_id: args['workspace-id'] as string,
+    workspace_id: requiredString(args, 'workspace-id'),
     type: type !== undefined ? validatedType(type) : undefined,
-    category_id: args['category-id'] as string | undefined,
-    account_id: args['account-id'] as string | undefined,
-    created_by_user_id: args['user-id'] as string | undefined,
+    category_id: optionalString(args, 'category-id'),
+    account_id: optionalString(args, 'account-id'),
+    created_by_user_id: optionalString(args, 'user-id'),
     currency: currency !== undefined ? validatedCurrency(currency) : undefined,
     start_date: dateFromArg(args['start-date'], 'start-date'),
-    end_date: dateFromArg(args['end-date'], 'end-date'),
+    end_date: dateFromArg(args['end-date'], 'end-date', { endOfDay: true }),
     search: args.search as string | undefined,
     include_deleted: args['include-deleted'] as boolean | undefined,
     limit: optionalIntegerArg(args, 'limit', { min: 1 }),
@@ -188,8 +212,8 @@ export async function runList(args: Record<string, unknown>, deps: TransactionsD
 
   const result = await service.findAll(filters);
   output.write(result, (value) => {
-    const count = Array.isArray(value) ? value.length : 0;
-    return `Found ${count} transaction(s)`;
+    const rows = Array.isArray(value) ? value : [];
+    return `Found ${rows.length} transaction(s)\n${JSON.stringify(rows, null, 2)}`;
   });
 }
 
@@ -207,10 +231,10 @@ export async function runUpdate(
   }
 
   const result = await service.update(
-    args.id as string,
-    args['workspace-id'] as string,
+    requiredString(args, 'id'),
+    requiredString(args, 'workspace-id'),
     updateData,
-    args['user-id'] as string
+    requiredString(args, 'user-id')
   );
 
   output.write(result, (value) => `Updated transaction ${(value as { id?: string }).id ?? ''}`);
@@ -226,14 +250,14 @@ export async function runDelete(
 
   await deps.requireDestructiveConfirmation({
     yes: args.yes,
-    prompt: `Type "DELETE" to confirm deleting transaction ${args.id as string}: `,
+    prompt: `Type "DELETE" to confirm deleting transaction ${requiredString(args, 'id')}: `,
     expected: 'DELETE',
   });
 
   const result = await service.delete(
-    args.id as string,
-    args['workspace-id'] as string,
-    args['user-id'] as string
+    requiredString(args, 'id'),
+    requiredString(args, 'workspace-id'),
+    requiredString(args, 'user-id')
   );
 
   output.write(result, 'Transaction deleted');
@@ -305,6 +329,11 @@ export default defineCommand({
       args: transactionsCreateArgs,
       run: ({ args }) => runCreate(args as Record<string, unknown>),
     }),
+    delete: defineCommand({
+      meta: { name: 'delete', description: 'Delete transaction' },
+      args: transactionsDeleteArgs,
+      run: ({ args }) => runDelete(args as Record<string, unknown>),
+    }),
     get: defineCommand({
       meta: { name: 'get', description: 'Get transaction by ID' },
       args: transactionsGetArgs,
@@ -319,11 +348,6 @@ export default defineCommand({
       meta: { name: 'update', description: 'Update transaction' },
       args: transactionsUpdateArgs,
       run: ({ args }) => runUpdate(args as Record<string, unknown>),
-    }),
-    delete: defineCommand({
-      meta: { name: 'delete', description: 'Delete transaction' },
-      args: transactionsDeleteArgs,
-      run: ({ args }) => runDelete(args as Record<string, unknown>),
     }),
   },
 });

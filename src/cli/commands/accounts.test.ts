@@ -97,8 +97,6 @@ describe('accounts command mapping', () => {
         balance: '125.00',
         currency: 'USD',
         'category-id': 'cat-1',
-        'credit-limit': '500.00',
-        'is-cash-account': true,
       },
       deps
     );
@@ -111,8 +109,6 @@ describe('accounts command mapping', () => {
       balance: '125.00',
       currency: 'USD',
       category_id: 'cat-1',
-      credit_limit: '500.00',
-      is_cash_account: true,
     });
   });
 
@@ -169,6 +165,23 @@ describe('accounts command mapping', () => {
     ]);
   });
 
+  it('formats list output with count and serialized rows in human mode', async () => {
+    let rendered = '';
+    const deps = createDeps({
+      findAll: async () => [{ id: 'acc-1' }],
+      write: (value, message) => {
+        if (typeof message === 'function') {
+          rendered = message(value);
+        }
+      },
+    });
+
+    await runList({ 'workspace-id': 'ws-1' }, deps);
+
+    expect(rendered).toContain('Found 1 account(s)');
+    expect(rendered).toContain('"id": "acc-1"');
+  });
+
   it('maps update args to AccountService.update payload', async () => {
     let updateCall: unknown[] = [];
     const deps = createDeps({
@@ -184,7 +197,6 @@ describe('accounts command mapping', () => {
         'workspace-id': 'ws-1',
         name: 'Updated account',
         balance: '99.00',
-        'credit-limit': '250.00',
       },
       deps
     );
@@ -195,7 +207,6 @@ describe('accounts command mapping', () => {
       {
         name: 'Updated account',
         balance: '99.00',
-        credit_limit: '250.00',
       },
     ]);
   });
