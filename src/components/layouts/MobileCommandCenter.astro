@@ -2,7 +2,7 @@
 /**
  * Mobile Command Center Navigation
  *
- * Simplified bottom sheet navigation for mobile.
+ * Accessible bottom sheet navigation for mobile with clear visual hierarchy.
  */
 
 import {
@@ -40,206 +40,255 @@ const isActive = (href: string) => {
 ---
 
 <nav
-  class="mobile-command-center fixed inset-x-0 bottom-0 z-50 lg:hidden"
+  class="mobile-command-center fixed inset-x-0 bottom-0 z-[var(--z-fixed)] lg:hidden"
   aria-label="Mobile navigation"
 >
   {/* Collapsed Bar */}
   <div
-    class="command-bar absolute bottom-4 inset-x-4 bg-base-100/95 backdrop-blur-xl rounded-2xl shadow-lg border border-base-300/50 p-2 flex items-center justify-between"
+    class="command-bar absolute bottom-4 inset-x-4 bg-linear-to-b from-base-100 to-base-200/90 backdrop-blur-xl rounded-2xl shadow-xl border border-base-300/60 p-2 flex items-center justify-between"
   >
+    {/* Menu Button - More visible background */}
     <button
       type="button"
-      class="command-menu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200 text-base-content hover:bg-base-300 transition-colors"
+      class="command-menu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 transition-colors border border-base-content/10"
       aria-label="Open navigation"
+      aria-controls="command-sheet"
+      aria-expanded="false"
       data-menu-toggle
     >
       <Menu size={20} aria-hidden="true" />
       <span class="font-semibold text-sm">Menu</span>
     </button>
 
-    <div class="flex items-center gap-1">
+    {/* Quick Actions - Increased spacing and touch targets */}
+    <div class="flex items-center gap-2">
       <a
         href="/transactions"
-        class={`p-2.5 rounded-xl transition-colors ${isActive('/transactions') ? 'bg-accent/10 text-accent' : 'text-base-content/60 hover:bg-base-200'}`}
+        class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
         aria-label="Transactions"
+        aria-current={isActive('/transactions') ? 'page' : undefined}
       >
         <ArrowLeftRight size={20} aria-hidden="true" />
       </a>
       <a
         href="/accounts"
-        class={`p-2.5 rounded-xl transition-colors ${isActive('/accounts') ? 'bg-accent/10 text-accent' : 'text-base-content/60 hover:bg-base-200'}`}
+        class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
         aria-label="Accounts"
+        aria-current={isActive('/accounts') ? 'page' : undefined}
       >
         <Wallet size={20} aria-hidden="true" />
       </a>
 
       <button
         type="button"
-        class="ml-1 w-12 h-12 rounded-xl bg-accent text-accent-content flex items-center justify-center shadow-lg shadow-accent/30 hover:shadow-accent/50 hover:scale-105 active:scale-95 transition-all"
+        class="ml-2 w-11 h-11 rounded-full bg-base-100 flex items-center justify-center shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 active:scale-95 transition-all border border-base-300"
         data-open-transaction-drawer
         aria-label="New transaction"
       >
-        <img src="/favicon.svg" alt="" class="w-7 h-7" aria-hidden="true" />
+        <img src="/favicon.svg" alt="" class="w-8 h-8 rounded-full" aria-hidden="true" />
       </button>
     </div>
   </div>
 
-  {/* Full Menu Sheet - Bleeds to edges */}
+  {/* Full Menu Sheet */}
   <div
-    class="command-sheet fixed left-0 right-0 bottom-0 bg-base-100 rounded-t-3xl shadow-2xl border-t border-base-300 transform translate-y-full transition-transform duration-300 z-50"
+    id="command-sheet"
+    class="command-sheet fixed left-0 right-0 bottom-0 bg-base-100 rounded-t-4xl shadow-xl transform translate-y-full transition-transform duration-300 ease-out z-[var(--z-modal)] overflow-y-auto overscroll-contain max-h-[85vh] pb-[env(safe-area-inset-bottom)]"
     data-command-sheet
-    style="max-height: 80vh;"
+    role="dialog"
+    aria-label="Navigation menu"
+    aria-modal="true"
+    aria-hidden="true"
+    inert
   >
     {/* Header */}
-    <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-base-200">
-      <span class="text-lg font-bold">Menu</span>
+
+    {/* Header - Distinctive accent background */}
+    <div
+      class="flex items-center justify-between px-5 sm:px-6 py-4 bg-linear-to-r from-accent/10 via-accent/5 to-transparent border-b border-accent/10"
+    >
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-accent/15 text-accent flex items-center justify-center">
+          <Menu size={20} stroke-width={2.5} aria-hidden="true" />
+        </div>
+        <div>
+          <span class="text-lg font-bold text-base-content block leading-tight">Navigation</span>
+          <span class="text-xs text-base-content/50">Quick access to all features</span>
+        </div>
+      </div>
       <button
         type="button"
-        class="command-close-btn p-2 rounded-xl bg-base-200 text-base-content/60 hover:text-base-content transition-colors"
+        class="command-close-btn p-3 rounded-xl bg-base-200 text-base-content/60 hover:text-base-content hover:bg-base-300 active:scale-95 transition-all"
         data-menu-close
-        aria-label="Close navigation"
+        aria-label="Close navigation menu"
       >
         <X size={20} aria-hidden="true" />
       </button>
     </div>
 
-    {/* Nav Links - Main 3x2 Grid */}
-    <div class="p-4 sm:p-6 grid grid-cols-3 gap-3 sm:gap-4">
+    {/* Main Navigation Grid - Improved active states */}
+    <div class="p-4 sm:p-5 grid grid-cols-3 gap-3">
       <a
         href="/dashboard"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/dashboard') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/dashboard') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/dashboard') ? 'page' : undefined}
       >
-        <House size={24} aria-hidden="true" />
+        <House size={22} stroke-width={isActive('/dashboard') ? 2.5 : 2} aria-hidden="true" />
         <span class="text-xs font-semibold">Dashboard</span>
       </a>
       <a
         href="/transactions"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/transactions') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/transactions') ? 'page' : undefined}
       >
-        <ArrowLeftRight size={24} aria-hidden="true" />
+        <ArrowLeftRight
+          size={22}
+          stroke-width={isActive('/transactions') ? 2.5 : 2}
+          aria-hidden="true"
+        />
         <span class="text-xs font-semibold">Transactions</span>
       </a>
       <a
         href="/accounts"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/accounts') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/accounts') ? 'page' : undefined}
       >
-        <Wallet size={24} aria-hidden="true" />
+        <Wallet size={22} stroke-width={isActive('/accounts') ? 2.5 : 2} aria-hidden="true" />
         <span class="text-xs font-semibold">Accounts</span>
       </a>
       <a
         href="/budget"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/budget') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/budget') ? 'page' : undefined}
       >
-        <Donut size={24} aria-hidden="true" />
+        <Donut size={22} stroke-width={isActive('/budget') ? 2.5 : 2} aria-hidden="true" />
         <span class="text-xs font-semibold">Budget</span>
       </a>
       <a
         href="/reports"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/reports') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/reports') ? 'page' : undefined}
       >
-        <ChartBar size={24} aria-hidden="true" />
+        <ChartBar size={22} stroke-width={isActive('/reports') ? 2.5 : 2} aria-hidden="true" />
         <span class="text-xs font-semibold">Reports</span>
       </a>
       <a
         href="/recurring"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/recurring') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/recurring') ? 'page' : undefined}
       >
-        <RefreshCw size={24} aria-hidden="true" />
+        <RefreshCw size={22} stroke-width={isActive('/recurring') ? 2.5 : 2} aria-hidden="true" />
         <span class="text-xs font-semibold">Recurring</span>
       </a>
     </div>
 
-    {/* More Menu Button - Expands to show additional items */}
-    <div class="px-4 sm:px-6 pb-4">
+    {/* More Menu Button */}
+    <div class="px-4 sm:px-5 pb-3">
       <button
         type="button"
-        class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all"
+        class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3.5 min-h-11 rounded-xl border-2 border-dashed border-base-300 text-base-content/60 hover:border-base-400 hover:text-base-content hover:bg-base-200/50 transition-all"
         data-more-menu-btn
         aria-expanded="false"
         aria-controls="more-menu-content"
       >
-        <span class="text-sm font-medium">More</span>
+        <span class="text-sm font-medium">More Options</span>
         <ChevronDown size={18} class="transition-transform duration-300" data-chevron-icon />
       </button>
     </div>
 
-    {/* Expanded More Menu - Hidden by default */}
+    {/* Expanded More Menu */}
     <div
       id="more-menu-content"
-      class="more-menu-content hidden px-4 sm:px-6 pb-6 grid grid-cols-3 gap-3 sm:gap-4"
+      class="more-menu-content hidden px-4 sm:px-5 pb-4 grid grid-cols-3 gap-3"
       data-more-menu-content
     >
       <a
         href="/forecast"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/forecast') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/forecast') ? 'page' : undefined}
       >
-        <TrendingUp size={24} aria-hidden="true" />
+        <TrendingUp size={22} stroke-width={isActive('/forecast') ? 2.5 : 2} aria-hidden="true" />
         <span class="text-xs font-semibold">Forecast</span>
       </a>
       <a
         href="/calculators"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/calculators') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+        aria-current={isActive('/calculators') ? 'page' : undefined}
       >
-        <Calculator size={24} aria-hidden="true" />
+        <Calculator
+          size={22}
+          stroke-width={isActive('/calculators') ? 2.5 : 2}
+          aria-hidden="true"
+        />
         <span class="text-xs font-semibold">Calculators</span>
       </a>
       <a
         href="https://docs.allowealth.io"
         target="_blank"
         rel="noopener noreferrer"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors bg-base-200 text-base-content/70 hover:bg-base-300`}
+        class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all active:scale-95"
         aria-label="Documentation (opens in new tab)"
       >
-        <ClipboardList size={24} aria-hidden="true" />
+        <ClipboardList size={22} aria-hidden="true" />
         <span class="text-xs font-semibold">Docs</span>
       </a>
     </div>
 
-    {/* User Section */}
-    <div class="px-4 sm:px-6 pb-8 pt-2 border-t border-base-200">
-      <div class="flex items-center gap-4 mb-4">
+    {/* User Section - Improved card style */}
+    <div
+      class="mx-4 sm:mx-5 mb-6 p-4 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50"
+    >
+      <div class="flex items-center gap-3 mb-4">
         <div
-          class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold"
+          class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10"
         >
           {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
         </div>
         <div class="flex-1 min-w-0">
-          <p class="font-bold text-base-content truncate">{user?.name || 'User'}</p>
+          <p class="font-semibold text-base-content truncate">{user?.name || 'User'}</p>
           <p class="text-xs text-base-content/50 truncate">{user?.email || ''}</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 gap-2">
         <a
           href="/profile"
-          class="flex items-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/80 hover:bg-base-300 transition-colors text-sm font-medium"
+          class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
         >
-          <User size={18} aria-hidden="true" />
+          <User size={16} aria-hidden="true" />
           Profile
         </a>
         <a
           href="/security"
-          class="flex items-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/80 hover:bg-base-300 transition-colors text-sm font-medium"
+          class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
         >
-          <Shield size={18} aria-hidden="true" />
+          <Shield size={16} aria-hidden="true" />
           Security
         </a>
         <a
           href="/settings"
-          class="flex items-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/80 hover:bg-base-300 transition-colors text-sm font-medium"
+          class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
         >
-          <Settings size={18} aria-hidden="true" />
+          <Settings size={16} aria-hidden="true" />
           Settings
         </a>
         <button
           type="button"
-          class="logout-btn flex items-center gap-2 px-4 py-3 rounded-xl bg-error/10 text-error/80 hover:bg-error/20 transition-colors text-sm font-medium"
+          class="logout-btn flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-error/10 text-error hover:bg-error/20 transition-all active:scale-95 text-sm font-medium"
         >
-          <LogOut size={18} aria-hidden="true" />
+          <LogOut size={16} aria-hidden="true" />
           Sign out
         </button>
       </div>
     </div>
+  </div>
+
+  {/* Backdrop Overlay */}
+  <div
+    class="command-backdrop fixed inset-0 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-[var(--z-modal-backdrop)]"
+    data-command-backdrop
+    aria-hidden="true"
+  >
   </div>
 </nav>
 
@@ -267,30 +316,96 @@ const isActive = (href: string) => {
     const menuToggle = commandCenter.querySelector('[data-menu-toggle]');
     const menuClose = commandCenter.querySelector('[data-menu-close]');
     const sheet = commandCenter.querySelector('[data-command-sheet]');
+    const backdrop = commandCenter.querySelector('[data-command-backdrop]');
     const logoutBtn = commandCenter.querySelector('.logout-btn');
     const moreMenuBtn = commandCenter.querySelector('[data-more-menu-btn]');
     const moreMenuContent = commandCenter.querySelector('[data-more-menu-content]');
     const chevronIcon = commandCenter.querySelector('[data-chevron-icon]');
 
     if (!(sheet instanceof HTMLElement)) return;
+    if (!(backdrop instanceof HTMLElement)) return;
     if (!(moreMenuBtn instanceof HTMLButtonElement)) return;
+    if (!(menuToggle instanceof HTMLElement)) return;
+
+    // Store last focused element to restore focus on close
+    let lastFocusedElement: HTMLElement | null = null;
+
+    // Cache for focusable elements to avoid recomputing on every Tab key
+    let cachedFocusableElements: HTMLElement[] | null = null;
+
+    // Get all visible focusable elements within the sheet (exclude hidden/disabled)
+    const getFocusableElements = () => {
+      // Return cached result if available
+      if (cachedFocusableElements !== null) {
+        // Filter out any elements that may have become hidden since cache
+        return cachedFocusableElements.filter((el) => el.closest('.hidden') === null);
+      }
+
+      const allFocusable = sheet.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), details, [tabindex]:not([tabindex="-1"])'
+      );
+      cachedFocusableElements = Array.from(allFocusable).filter((el) => {
+        // Check if element is actually visible (not in a hidden parent)
+        const isInHiddenParent = el.closest('.hidden') !== null;
+        return !isInHiddenParent && !el.hasAttribute('inert');
+      });
+      return cachedFocusableElements;
+    };
+
+    // Invalidate cache when more menu is toggled
+    const invalidateFocusCache = () => {
+      cachedFocusableElements = null;
+    };
 
     const openSheet = () => {
+      // Store current focus
+      lastFocusedElement = document.activeElement as HTMLElement;
+
       sheet.classList.remove('translate-y-full');
       sheet.classList.add('translate-y-0');
+      sheet.removeAttribute('inert');
+      sheet.removeAttribute('aria-hidden');
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100', 'pointer-events-auto');
+      document.body.style.overflow = 'hidden';
+
+      // Update aria-expanded on toggle
+      menuToggle.setAttribute('aria-expanded', 'true');
+
+      // Focus the close button after transition
+      setTimeout(() => {
+        const closeBtn = sheet.querySelector('[data-menu-close]') as HTMLElement | null;
+        closeBtn?.focus();
+      }, 100);
     };
 
     const closeSheet = () => {
       sheet.classList.add('translate-y-full');
       sheet.classList.remove('translate-y-0');
+      sheet.setAttribute('inert', '');
+      sheet.setAttribute('aria-hidden', 'true');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+      document.body.style.overflow = '';
+
+      // Update aria-expanded on toggle
+      menuToggle.setAttribute('aria-expanded', 'false');
+
       // Reset more menu when closing sheet
       moreMenuContent?.classList.add('hidden');
       chevronIcon?.classList.remove('rotate-180');
       moreMenuBtn.setAttribute('aria-expanded', 'false');
+
+      // Restore focus to the toggle button
+      setTimeout(() => {
+        lastFocusedElement?.focus();
+        lastFocusedElement = null;
+      }, 100);
     };
 
     menuToggle?.addEventListener('click', openSheet, { signal });
     menuClose?.addEventListener('click', closeSheet, { signal });
+    backdrop?.addEventListener('click', closeSheet, { signal });
 
     // Toggle more menu
     moreMenuBtn.addEventListener(
@@ -300,12 +415,44 @@ const isActive = (href: string) => {
         moreMenuContent?.classList.toggle('hidden');
         chevronIcon?.classList.toggle('rotate-180');
         moreMenuBtn.setAttribute('aria-expanded', String(!isExpanded));
+        // Invalidate focus cache since visibility changed
+        invalidateFocusCache();
       },
       { signal }
     );
 
-    // Close sheet when clicking a link inside it (but not for external docs link)
-    sheet.querySelectorAll('a[href^="/"]').forEach((link) => {
+    // Focus trap within the sheet
+    sheet.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key !== 'Tab') return;
+
+        const focusableElements = Array.from(getFocusableElements());
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        const currentElement = document.activeElement as HTMLElement;
+
+        if (e.shiftKey) {
+          // Shift+Tab: moving backwards
+          if (currentElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          // Tab: moving forwards
+          if (currentElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      },
+      { signal }
+    );
+
+    // Close sheet when clicking any link inside it (including external links)
+    sheet.querySelectorAll('a').forEach((link) => {
       link.addEventListener('click', closeSheet, { signal });
     });
 
@@ -347,6 +494,8 @@ const isActive = (href: string) => {
     document.addEventListener(
       'astro:before-swap',
       () => {
+        // Reset scroll lock and sheet state before view transition
+        document.body.style.overflow = '';
         controller.abort();
         navControllers.delete(commandCenter);
         observer.disconnect();
