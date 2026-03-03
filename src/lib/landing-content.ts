@@ -112,34 +112,33 @@ export const footerLinks: FooterLinkSection[] = [
   {
     title: 'Open Source',
     links: [
-      { label: 'GitHub', href: '#github' },
-      { label: 'Self-Host Guide', href: '#' },
-      { label: 'Contributing', href: '#' },
-      { label: 'Changelog', href: '#' },
+      { label: 'GitHub Repository', href: 'https://github.com/ivankristianto/allowealth' },
+      { label: 'Documentation', href: 'https://docs.allowealth.io' },
+      { label: 'Report an Issue', href: 'https://github.com/ivankristianto/allowealth/issues' },
     ],
   },
   {
-    title: 'Resources',
+    title: 'Product',
     links: [
-      { label: 'Documentation', href: '#' },
-      { label: 'Help Center', href: '#' },
-      { label: 'Community', href: '#' },
-      { label: 'Contact', href: '/contact' },
+      { label: 'Features', href: '/#features' },
+      { label: 'Self-Host Guide', href: 'https://docs.allowealth.io/self-host' },
+      { label: 'Roadmap', href: 'https://github.com/ivankristianto/allowealth/issues' },
     ],
   },
 ];
 
 export const socialLinks: SocialLink[] = [
-  { id: 'facebook', label: 'Facebook', href: '#', icon: 'Facebook' },
-  { id: 'instagram', label: 'Instagram', href: '#', icon: 'Instagram' },
-  { id: 'twitter', label: 'Twitter', href: '#', icon: 'Twitter' },
-  { id: 'linkedin', label: 'LinkedIn', href: '#', icon: 'Linkedin' },
+  {
+    id: 'github',
+    label: 'GitHub',
+    href: 'https://github.com/ivankristianto/allowealth',
+    icon: 'Github',
+  },
 ];
 
 export const legalLinks: FooterLink[] = [
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
-  { label: 'Contact', href: '/contact' },
 ];
 
 // ============================================================================
