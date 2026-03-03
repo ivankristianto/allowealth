@@ -43,9 +43,9 @@ const isActive = (href: string) => {
   class="mobile-command-center fixed inset-x-0 bottom-0 z-50 lg:hidden"
   aria-label="Mobile navigation"
 >
-  {/* Collapsed Bar */}
+  {/* Collapsed Bar - Full width */}
   <div
-    class="command-bar absolute bottom-4 inset-x-4 bg-base-100/95 backdrop-blur-xl rounded-2xl shadow-lg border border-base-300/50 p-2 flex items-center justify-between"
+    class="command-bar absolute bottom-0 left-0 right-0 bg-base-100/95 backdrop-blur-xl border-t border-base-300/50 p-2 px-4 flex items-center justify-between"
   >
     <button
       type="button"
@@ -91,7 +91,7 @@ const isActive = (href: string) => {
     style="max-height: 80vh;"
   >
     {/* Header */}
-    <div class="flex items-center justify-between px-6 py-4 border-b border-base-200">
+    <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-base-200">
       <span class="text-lg font-bold">Menu</span>
       <button
         type="button"
@@ -104,7 +104,7 @@ const isActive = (href: string) => {
     </div>
 
     {/* Nav Links - Main 3x2 Grid */}
-    <div class="p-6 grid grid-cols-3 gap-4">
+    <div class="p-4 sm:p-6 grid grid-cols-3 gap-3 sm:gap-4">
       <a
         href="/dashboard"
         class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/dashboard') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
@@ -150,7 +150,7 @@ const isActive = (href: string) => {
     </div>
 
     {/* More Menu Button - Expands to show additional items */}
-    <div class="px-6 pb-4">
+    <div class="px-4 sm:px-6 pb-4">
       <button
         type="button"
         class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all"
@@ -166,7 +166,7 @@ const isActive = (href: string) => {
     {/* Expanded More Menu - Hidden by default */}
     <div
       id="more-menu-content"
-      class="more-menu-content hidden px-6 pb-6 grid grid-cols-3 gap-4"
+      class="more-menu-content hidden px-4 sm:px-6 pb-6 grid grid-cols-3 gap-3 sm:gap-4"
       data-more-menu-content
     >
       <a
@@ -196,7 +196,7 @@ const isActive = (href: string) => {
     </div>
 
     {/* User Section */}
-    <div class="px-6 pb-8 pt-2 border-t border-base-200">
+    <div class="px-4 sm:px-6 pb-8 pt-2 border-t border-base-200">
       <div class="flex items-center gap-4 mb-4">
         <div
           class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold"
