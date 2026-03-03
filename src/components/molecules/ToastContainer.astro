@@ -49,17 +49,24 @@
   import { TOAST_ANIMATION_CONFIG, TOAST_INITIAL_STYLES } from '@/lib/animations';
   import { toasts, removeToast, type ToastMessage } from '@/lib/stores/toastStore';
 
-  const container = document.getElementById('toast-container');
-  if (!container) {
-    console.error('Toast container not found');
-  }
-
   // Track rendered toasts for efficient DOM updates
-  const renderedToasts = new Map<string, HTMLElement>();
+  let renderedToasts = new Map<string, HTMLElement>();
 
   // Track focused elements for restoration - only restore on MANUAL dismiss
   // Map toast ID to focused element so we can clean up on auto-dismiss
-  const focusRestoreMap = new Map<string, HTMLElement>();
+  let focusRestoreMap = new Map<string, HTMLElement>();
+
+  // Store unsubscribe function for cleanup
+  let unsubscribeFromToasts: (() => void) | null = null;
+
+  // Store document event listener abort controllers for cleanup
+  let afterSwapAbortController: AbortController | null = null;
+  let beforeSwapAbortController: AbortController | null = null;
+
+  // Check if user prefers reduced motion for accessibility
+  // Use MediaQueryList object to enable dynamic preference changes
+  let motionQuery: MediaQueryList | null = null;
+  let prefersReducedMotion = false;
 
   // Get DaisyUI alert class for toast type
   function getAlertClass(type: string): string {
@@ -74,6 +81,7 @@
 
   // Announce toast to screen readers via separate aria-live regions
   function announceToast(message: string, type: string): void {
+    const container = document.getElementById('toast-container');
     const announcerId = type === 'error' ? '#toast-announcer-assertive' : '#toast-announcer-polite';
     const announcer = container?.querySelector(announcerId) as HTMLElement;
     if (!announcer) return;
@@ -86,19 +94,15 @@
     }, 1000);
   }
 
-  // Check if user prefers reduced motion for accessibility
-  // Use MediaQueryList object to enable dynamic preference changes
-  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let prefersReducedMotion = motionQuery.matches;
-
   // Listen for runtime motion preference changes
-  const handleMotionPreferenceChange = () => {
-    prefersReducedMotion = motionQuery.matches;
-  };
-  motionQuery.addEventListener('change', handleMotionPreferenceChange);
+  function handleMotionPreferenceChange(): void {
+    prefersReducedMotion = motionQuery?.matches ?? false;
+  }
 
   // Create toast element with Motion enter animation (using shared config from @/lib/animations/toast.ts)
   function createToastElement(toast: ToastMessage): HTMLElement {
+    const container = document.getElementById('toast-container');
+
     // Capture currently focused element BEFORE toast appears
     // Only if it's not already focused on a toast element
     const currentFocus = document.activeElement as HTMLElement;
@@ -240,8 +244,70 @@
     }
   }
 
-  // Subscribe to toast store changes
-  toasts.subscribe((currentToasts) => {
-    reconcileDOM(currentToasts);
-  });
+  // Track if after-swap listener is registered (persist across cleanups)
+  let isAfterSwapListenerRegistered = false;
+
+  // Initialize toast system
+  function initToastSystem(): void {
+    // Clean up any existing subscription first (but keep after-swap listener)
+    cleanupToastSystem();
+
+    // Reset state maps
+    renderedToasts = new Map<string, HTMLElement>();
+    focusRestoreMap = new Map<string, HTMLElement>();
+
+    // Initialize motion preference
+    motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    prefersReducedMotion = motionQuery.matches;
+    motionQuery.addEventListener('change', handleMotionPreferenceChange);
+
+    // Subscribe to toast store changes
+    unsubscribeFromToasts = toasts.subscribe((currentToasts) => {
+      reconcileDOM(currentToasts);
+    });
+
+    // Register after-swap listener once (persist for session lifetime)
+    if (!isAfterSwapListenerRegistered) {
+      afterSwapAbortController = new AbortController();
+      document.addEventListener('astro:after-swap', initToastSystem, {
+        signal: afterSwapAbortController.signal,
+      });
+      isAfterSwapListenerRegistered = true;
+    }
+
+    // Register before-swap listener (cleaned up and re-registered each time)
+    beforeSwapAbortController = new AbortController();
+    document.addEventListener('astro:before-swap', cleanupToastSystem, {
+      signal: beforeSwapAbortController.signal,
+    });
+  }
+
+  // Cleanup toast system (for view transitions)
+  function cleanupToastSystem(): void {
+    if (unsubscribeFromToasts) {
+      unsubscribeFromToasts();
+      unsubscribeFromToasts = null;
+    }
+
+    if (motionQuery) {
+      motionQuery.removeEventListener('change', handleMotionPreferenceChange);
+      motionQuery = null;
+    }
+
+    // Abort only the before-swap listener (after-swap persists)
+    if (beforeSwapAbortController) {
+      beforeSwapAbortController.abort();
+      beforeSwapAbortController = null;
+    }
+
+    // Clear all rendered toasts from DOM
+    for (const element of renderedToasts.values()) {
+      element.remove();
+    }
+    renderedToasts.clear();
+    focusRestoreMap.clear();
+  }
+
+  // Initialize on first load
+  initToastSystem();
 </script>

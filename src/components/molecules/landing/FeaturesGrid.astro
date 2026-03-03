@@ -6,7 +6,7 @@
  * Uses a 12-column grid layout on desktop.
  */
 
-import { Globe, Users, Shield, Lightbulb } from '@lucide/astro';
+import { Globe, Users, Shield, Zap, Lock, TrendingUp } from '@lucide/astro';
 import { featureGridItems } from '@/lib/landing-content';
 
 // Map icon names to components
@@ -14,7 +14,9 @@ const iconMap: Record<string, typeof Globe> = {
   Globe,
   Users,
   Shield,
-  Lightbulb,
+  Zap,
+  Lock,
+  TrendingUp,
 };
 ---
 
@@ -30,10 +32,10 @@ const iconMap: Record<string, typeof Globe> = {
         id="features-title"
         class="text-3xl sm:text-4xl md:text-6xl font-bold text-base-content tracking-tighter mb-4"
       >
-        Precision Utilities.
+        Built right.
       </h2>
       <p class="text-neutral text-base sm:text-lg font-medium max-w-lg mx-auto">
-        Every tool you need to run your family like a high-growth startup.
+        Everything to track and understand your wealth.
       </p>
     </header>
 

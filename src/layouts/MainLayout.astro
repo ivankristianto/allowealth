@@ -16,7 +16,7 @@ import BaseLayout from './BaseLayout.astro';
 import Navigation from '../components/layouts/Navigation.astro';
 import Header from '../components/layouts/Header.astro';
 import Footer from '../components/layouts/Footer.astro';
-import MobileNavigation from '../components/layouts/MobileNavigation.astro';
+import MobileCommandCenter from '../components/layouts/MobileCommandCenter.astro';
 import ThemeToggle from '../components/atoms/ThemeToggle.astro';
 import type { User } from '@/lib/auth/lucia';
 import type { Currency } from '@/lib/constants/currency';
@@ -47,10 +47,13 @@ const hasHeaderSlot = Astro.slots.has('header');
     data-sidebar-root
     data-sidebar-collapsed="false"
   >
-    <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+    <!-- Mobile: Drawer toggle removed - using Command Center instead -->
+    <input id="drawer-toggle" type="checkbox" class="drawer-toggle hidden lg:block" />
 
     <!-- Page content -->
-    <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
+    <div
+      class="drawer-content flex flex-col min-h-screen lg:h-screen lg:overflow-y-auto pb-24 lg:pb-0"
+    >
       <!-- Header -->
       <Header
         title={title}
@@ -66,7 +69,7 @@ const hasHeaderSlot = Astro.slots.has('header');
       <!-- Main content -->
       <main
         id="main-content"
-        class={`flex-1 px-4 lg:px-6 ${hasHeaderSlot ? 'has-header-slot pt-40 md:pt-28' : 'pt-28'} pb-24 lg:pb-6 bg-base-200 theme-transition`}
+        class={`flex-1 px-4 lg:px-6 ${hasHeaderSlot ? 'has-header-slot pt-40 md:pt-28' : 'pt-28'} pb-28 lg:pb-6 bg-base-200 theme-transition`}
       >
         <slot />
       </main>
@@ -82,21 +85,11 @@ const hasHeaderSlot = Astro.slots.has('header');
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation (hidden when sidebar drawer is open) -->
-  <MobileNavigation currentPath={currentPath} />
+  <!-- Mobile Command Center Navigation (replaces drawer + bottom nav) -->
+  <MobileCommandCenter currentPath={currentPath} user={user} />
 
-  <style is:global>
-    .drawer:has(> #drawer-toggle:checked) ~ nav[aria-label='Mobile navigation'] {
-      visibility: hidden;
-    }
-  </style>
-
-  <!-- Floating Theme Toggle - bottom right corner, desktop only (mobile toggle in header) -->
-  <ThemeToggle className="hidden lg:block fixed bottom-6 right-6 z-50" />
-
-  <script>
-    import '../components/layouts/MobileDrawer.client';
-  </script>
+  <!-- Floating Theme Toggle - bottom right corner, desktop only -->
+  <ThemeToggle className="hidden lg:block fixed bottom-6 right-6 z-40" />
 
   <script>
     import '@/lib/stores/view-transition-cleanup';

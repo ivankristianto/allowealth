@@ -110,45 +110,35 @@ export const pricingTiers: PricingTier[] = [
 
 export const footerLinks: FooterLinkSection[] = [
   {
-    title: 'Ecosystem',
+    title: 'Open Source',
     links: [
-      { label: 'Wealth View', href: '#' },
-      { label: 'AI Receipt Scan', href: '#' },
-      { label: 'Goal Forecast', href: '#' },
-      { label: 'Audit Logs', href: '#' },
+      { label: 'GitHub Repository', href: 'https://github.com/ivankristianto/allowealth' },
+      { label: 'Documentation', href: 'https://docs.allowealth.io' },
+      { label: 'Report an Issue', href: 'https://github.com/ivankristianto/allowealth/issues' },
     ],
   },
   {
-    title: 'Resources',
+    title: 'Product',
     links: [
-      { label: 'Finance API', href: '#' },
-      { label: 'Security Audit', href: '#' },
-      { label: 'Tax Integration', href: '#' },
-      { label: 'Help Center', href: '#' },
-    ],
-  },
-  {
-    title: 'Privacy',
-    links: [
-      { label: 'Data Protocol', href: '#' },
-      { label: 'Trust Center', href: '#' },
-      { label: 'Cookie Policy', href: '#' },
-      { label: 'GDPR Sync', href: '#' },
+      { label: 'Features', href: '/#features' },
+      { label: 'Self-Host Guide', href: 'https://docs.allowealth.io/self-host' },
+      { label: 'Roadmap', href: 'https://github.com/ivankristianto/allowealth/issues' },
     ],
   },
 ];
 
 export const socialLinks: SocialLink[] = [
-  { id: 'facebook', label: 'Facebook', href: '#', icon: 'Facebook' },
-  { id: 'instagram', label: 'Instagram', href: '#', icon: 'Instagram' },
-  { id: 'twitter', label: 'Twitter', href: '#', icon: 'Twitter' },
-  { id: 'linkedin', label: 'LinkedIn', href: '#', icon: 'Linkedin' },
+  {
+    id: 'github',
+    label: 'GitHub',
+    href: 'https://github.com/ivankristianto/allowealth',
+    icon: 'Github',
+  },
 ];
 
 export const legalLinks: FooterLink[] = [
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
-  { label: 'Contact', href: '/contact' },
 ];
 
 // ============================================================================
@@ -161,64 +151,89 @@ export const showcaseItems: ShowcaseItem[] = [
     icon: 'LayoutDashboard',
     iconColor: 'text-primary',
     iconBg: 'bg-primary/10',
-    title: 'Global Wealth,',
-    titleHighlight: 'Unified View.',
+    title: 'Everything in',
+    titleHighlight: 'one place.',
     highlightColor: 'text-primary',
-    description:
-      "Connect your BCA, Mandiri, Chase, and stock portfolios in one encrypted space. Our dashboard provides a real-time health score of your family's liquidity and account distribution.",
-    features: [
-      'Multi-currency support (IDR/USD/EUR)',
-      'Real-time portfolio rebalancing',
-      'Liquidity reserve monitoring',
-    ],
+    description: 'See monthly spending, account totals, and budget health in one view, every day.',
+    features: ['Monthly spending overview', 'Account totals', 'Budget health'],
     featureIconColor: 'text-primary',
-    imageUrl:
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Financial Dashboard',
+    imageUrl: '/screenshots/dashboard.jpg',
+    imageAlt: 'allowealth Dashboard',
     gradientClass: 'from-primary/20 to-transparent',
   },
   {
-    id: 'ai-vision',
-    icon: 'Sparkles',
+    id: 'transactions',
+    icon: 'ArrowLeftRight',
     iconColor: 'text-accent',
     iconBg: 'bg-accent/10',
-    title: 'Receipt Vision.',
-    titleHighlight: 'Zero Data Entry.',
+    title: 'Track every dollar',
+    titleHighlight: 'in and out.',
     highlightColor: 'text-accent',
     description:
-      'Leverage Gemini 3 Pro to scan paper receipts instantly. Our AI identifies the merchant, extracts the amount, and categorizes the spend into your family budget before you leave the store.',
+      'Record income and expenses. Filter by month, category, or account. Import from CSV.',
     features: [
-      'Instant merchant identification',
-      'Automatic tax and VAT extraction',
-      'Categorization with 99% accuracy',
+      'Log income and expenses',
+      'Filter by month, category, account',
+      'Import CSV from your bank',
     ],
     featureIconColor: 'text-accent',
-    imageUrl:
-      'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'AI Receipt Scanning',
+    imageUrl: '/screenshots/transactions.jpg',
+    imageAlt: 'allowealth Transactions',
     gradientClass: 'from-accent/20 to-transparent',
     reverse: true,
   },
   {
-    id: 'forecasting',
-    icon: 'TrendingUp',
+    id: 'budget',
+    icon: 'PiggyBank',
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
-    title: 'Predictive',
-    titleHighlight: 'Futures.',
+    title: 'Plan your month,',
+    titleHighlight: 'not just track it.',
     highlightColor: 'text-success',
     description:
-      'Stop wondering "what if." Our predictive modeling tool allows you to simulate major life events—like a home purchase or retirement—against your current growth trajectory.',
-    features: [
-      '30-year wealth projections',
-      'Inflation-adjusted modeling',
-      'Goal-based savings simulation',
-    ],
+      'Set limits by category and get alerts before you overspend. Plan each month and carry budgets forward.',
+    features: ['Category limits with alerts', 'Monthly budget planning', 'Copy budgets forward'],
     featureIconColor: 'text-success',
-    imageUrl:
-      'https://images.unsplash.com/photo-1543286386-713bdd548da4?auto=format&fit=crop&w=1200&q=80',
-    imageAlt: 'Financial Forecasting',
+    imageUrl: '/screenshots/budget.jpg',
+    imageAlt: 'allowealth Budget Planning',
     gradientClass: 'from-success/20 to-transparent',
+  },
+  {
+    id: 'accounts',
+    icon: 'Landmark',
+    iconColor: 'text-warning',
+    iconBg: 'bg-warning/10',
+    title: 'All your accounts,',
+    titleHighlight: 'one workspace.',
+    highlightColor: 'text-warning',
+    description:
+      'Bank accounts, savings, and investments — all together. Track balances across currencies and automate recurring transactions.',
+    features: [
+      'Multi-currency (IDR / USD / EUR)',
+      'Bank, savings & investment accounts',
+      'Recurring transactions',
+    ],
+    featureIconColor: 'text-warning',
+    imageUrl: '/screenshots/accounts.jpg',
+    imageAlt: 'allowealth Account Management',
+    gradientClass: 'from-warning/20 to-transparent',
+    reverse: true,
+  },
+  {
+    id: 'reports',
+    icon: 'ChartColumn',
+    iconColor: 'text-info',
+    iconBg: 'bg-info/10',
+    title: 'See the',
+    titleHighlight: 'full picture.',
+    highlightColor: 'text-info',
+    description:
+      'Clear spending trends, category breakdowns, and month-over-month analysis. Export and share anytime.',
+    features: ['Spending trends by category', 'Monthly and yearly analysis', 'Export and share'],
+    featureIconColor: 'text-info',
+    imageUrl: '/screenshots/reports.jpg',
+    imageAlt: 'allowealth Financial Reports',
+    gradientClass: 'from-info/20 to-transparent',
   },
 ];
 
@@ -228,48 +243,65 @@ export const showcaseItems: ShowcaseItem[] = [
 
 export const featureGridItems: FeatureGridItem[] = [
   {
-    id: 'global-reach',
-    icon: 'Globe',
-    iconColor: 'text-success',
-    iconBg: 'bg-success/10',
-    title: 'Global Reach',
-    description:
-      'Unified tracking across multiple countries and currencies with real-time FX sync.',
-    colSpan: 'md:col-span-4',
-    variant: 'light',
-  },
-  {
-    id: 'collaboration',
-    icon: 'Users',
+    id: 'fast',
+    icon: 'Zap',
     iconColor: 'text-white',
     iconBg: 'bg-white/10',
-    title: 'Household Collaboration',
-    description:
-      'Assign specific budgets to family members, track shared expenses, and manage access with granular roles and permissions.',
+    title: 'Fast',
+    description: 'Snappy on every device. No wait screens, no bloat.',
     colSpan: 'md:col-span-8',
     variant: 'dark',
     size: 'large',
   },
   {
-    id: 'encryption',
+    id: 'secure',
     icon: 'Shield',
     iconColor: 'text-warning',
     iconBg: 'bg-warning/10',
-    title: 'Vault Encryption',
-    description:
-      'Your data is yours. AES-256 bank-grade encryption ensures only authorized family members can access sensitive ledger details.',
-    colSpan: 'md:col-span-7',
+    title: 'Secure',
+    description: 'Your data is encrypted. Self-host for full control.',
+    colSpan: 'md:col-span-4',
     variant: 'light',
   },
   {
-    id: 'intelligence',
-    icon: 'Lightbulb',
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary/5',
-    title: 'Deep Intelligence',
-    description:
-      'Monthly reports that analyze your velocity, highlighting areas where your family can optimize capital efficiency.',
+    id: 'multi-currency',
+    icon: 'Globe',
+    iconColor: 'text-success',
+    iconBg: 'bg-success/10',
+    title: 'Multi-Currency',
+    description: 'IDR, USD, EUR and more — all in one workspace.',
     colSpan: 'md:col-span-5',
+    variant: 'light',
+  },
+  {
+    id: 'for-everyone',
+    icon: 'Users',
+    iconColor: 'text-primary',
+    iconBg: 'bg-primary/10',
+    title: 'For Everyone',
+    description: 'Individuals, families, or your small community — one workspace adapts to all.',
+    colSpan: 'md:col-span-7',
+    variant: 'light',
+    size: 'large',
+  },
+  {
+    id: 'open-source',
+    icon: 'Lock',
+    iconColor: 'text-accent',
+    iconBg: 'bg-accent/10',
+    title: 'You Own Your Data',
+    description: 'Open source. Self-host it. No lock-in, ever.',
+    colSpan: 'md:col-span-4',
+    variant: 'light',
+  },
+  {
+    id: 'forecast',
+    icon: 'TrendingUp',
+    iconColor: 'text-success',
+    iconBg: 'bg-success/10',
+    title: 'Forecast',
+    description: 'Project savings, explore what-ifs, and plan your financial future.',
+    colSpan: 'md:col-span-8',
     variant: 'light',
   },
 ];
@@ -279,15 +311,16 @@ export const featureGridItems: FeatureGridItem[] = [
 // ============================================================================
 
 export const heroContent = {
-  badge: 'Powered by Gemini 3 Pro AI',
-  title: 'Master the',
-  titleHighlightPrefix: 'Family ',
-  titleHighlight: 'Ledger.',
+  badge: 'Open Source · Free Forever',
+  title: 'Track your',
+  titleHighlightPrefix: 'wealth. ',
+  titleHighlight: 'Your way.',
   description:
-    'Enterprise-grade wealth management, refined for the modern household. Track global accounts, forecast futures, and automate spend review with advanced AI.',
-  ctaGuest: 'Start Your Free Ledger',
+    'For individuals, families, and small communities. Track income, expenses, budgets, and accounts in one place. Self-host it or use our cloud.',
+  ctaGuest: 'Get Started Free',
   ctaLoggedIn: 'Go to Dashboard',
-  ctaSecondary: 'Interactive Demo',
+  ctaSecondary: 'View on GitHub',
+  ctaSecondaryHref: '#github',
 };
 
 // ============================================================================
@@ -296,7 +329,6 @@ export const heroContent = {
 
 export const brandContent = {
   name: 'allowealth',
-  tagline:
-    "We're on a mission to bring institutional-grade financial intelligence to the dining room table.",
-  copyright: `© ${new Date().getFullYear()} allowealth Global Dashboard. Proprietary AES-256 Vault technology protected.`,
+  tagline: 'Open source personal finance for individuals, families, and small communities.',
+  copyright: `© ${new Date().getFullYear()} allowealth. Free and open source.`,
 };
