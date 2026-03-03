@@ -242,7 +242,7 @@ export const showcaseItems: ShowcaseItem[] = [
   },
   {
     id: 'reports',
-    icon: 'BarChart3',
+    icon: 'ChartColumn',
     iconColor: 'text-info',
     iconBg: 'bg-info/10',
     title: 'See the',
