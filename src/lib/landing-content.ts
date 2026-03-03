@@ -279,15 +279,16 @@ export const featureGridItems: FeatureGridItem[] = [
 // ============================================================================
 
 export const heroContent = {
-  badge: 'Powered by Gemini 3 Pro AI',
-  title: 'Master the',
-  titleHighlightPrefix: 'Family ',
-  titleHighlight: 'Ledger.',
+  badge: 'Open Source · Free Forever',
+  title: 'Track your',
+  titleHighlightPrefix: 'wealth. ',
+  titleHighlight: 'Your way.',
   description:
-    'Enterprise-grade wealth management, refined for the modern household. Track global accounts, forecast futures, and automate spend review with advanced AI.',
-  ctaGuest: 'Start Your Free Ledger',
+    'For individuals, families, and small communities. Track income, expenses, budgets, and accounts in one place. Self-host it or use our cloud.',
+  ctaGuest: 'Get Started Free',
   ctaLoggedIn: 'Go to Dashboard',
-  ctaSecondary: 'Interactive Demo',
+  ctaSecondary: 'View on GitHub',
+  ctaSecondaryHref: '#github',
 };
 
 // ============================================================================
@@ -296,7 +297,6 @@ export const heroContent = {
 
 export const brandContent = {
   name: 'allowealth',
-  tagline:
-    "We're on a mission to bring institutional-grade financial intelligence to the dining room table.",
-  copyright: `© ${new Date().getFullYear()} allowealth Global Dashboard. Proprietary AES-256 Vault technology protected.`,
+  tagline: 'Open source personal finance for individuals, families, and small communities.',
+  copyright: `© ${new Date().getFullYear()} allowealth. Free and open source.`,
 };
