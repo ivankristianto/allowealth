@@ -139,6 +139,13 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | `bun run aw --target d1 db migrate` | Target before subcommand |
 | `bun run aw db migrate --target d1` | Target after subcommand  |
 
+### Global CLI Options
+
+- `--target`, `-t`: select backend target (`sqlite`, `d1`, `d1-local`, `postgres`) on leaf subcommands.
+- `--json`: return machine-readable JSON output instead of formatted text.
+- `--yes`, `-y`: skip confirmation prompts for destructive CRUD/alias operations (`delete`/`rm`).
+  - Some destructive commands use command-specific confirmations instead (for example `workspace delete --force` or typed confirmation in `aw db drop`).
+
 ### Workspace Management
 
 | Command                                                                                 | Description                          |
@@ -150,6 +157,22 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | `bun run aw workspace list`                                                             | List all workspaces                  |
 | `bun run aw workspace delete --id <id>`                                                 | Delete workspace                     |
 | `bun run aw workspace delete --id <id> --force`                                         | Delete workspace (skip confirmation) |
+
+### Resource Commands
+
+```bash
+bun run aw transactions create|get|list|update|delete
+bun run aw accounts     create|get|list|update|delete
+bun run aw budgets      create|get|list|update|delete
+```
+
+### Alias Commands
+
+```bash
+bun run aw tx  add|show|ls|edit|rm
+bun run aw acc add|show|ls|edit|rm
+bun run aw bdg set|show|ls|edit|rm
+```
 
 ### Database
 

@@ -66,6 +66,36 @@ bun run aw workspace list
 bun run aw db migrate --target d1
 ```
 
+## CLI resource commands
+
+```bash
+bun run aw transactions create|get|list|update|delete
+bun run aw accounts     create|get|list|update|delete
+bun run aw budgets      create|get|list|update|delete
+```
+
+## CLI alias commands
+
+```bash
+bun run aw tx  add|show|ls|edit|rm
+bun run aw acc add|show|ls|edit|rm
+bun run aw bdg set|show|ls|edit|rm
+```
+
+## CLI global options
+
+```bash
+# target selection on leaf commands
+bun run aw budgets list --workspace-id <id> --month 3 --year 2026 --target d1
+bun run aw budgets list --workspace-id <id> --month 3 --year 2026 -t d1-local
+
+# script-friendly output
+bun run aw transactions list --workspace-id <id> --json
+
+# destructive operations: pass --yes/-y to skip interactive confirmation
+bun run aw tx rm --workspace-id <id> --id <id> --user-id <id> --yes
+```
+
 :::caution[⚠️ Caution]
 Do not run destructive DB commands (`db:empty`, forced deletes) against production targets without explicit approval.
 :::

@@ -33,13 +33,19 @@ const main = defineCommand({
     }
   },
   subCommands: {
-    workspace: () => import('./commands/workspace').then((m) => m.default),
-    db: () => import('./commands/db').then((m) => m.default),
-    recurring: () => import('./commands/recurring').then((m) => m.default),
+    acc: () => import('./commands/acc').then((m) => m.default),
+    accounts: () => import('./commands/accounts').then((m) => m.default),
     admin: () => import('./commands/admin').then((m) => m.default),
+    bdg: () => import('./commands/bdg').then((m) => m.default),
+    budgets: () => import('./commands/budgets').then((m) => m.default),
+    db: () => import('./commands/db').then((m) => m.default),
     deploy: () => import('./commands/deploy').then((m) => m.default),
     mcp: () => import('./commands/mcp').then((m) => m.default),
+    recurring: () => import('./commands/recurring').then((m) => m.default),
     release: () => import('./commands/release').then((m) => m.default),
+    transactions: () => import('./commands/transactions').then((m) => m.default),
+    tx: () => import('./commands/tx').then((m) => m.default),
+    workspace: () => import('./commands/workspace').then((m) => m.default),
   },
 });
 
