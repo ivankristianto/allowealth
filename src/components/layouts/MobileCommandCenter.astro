@@ -84,9 +84,9 @@ const isActive = (href: string) => {
     </div>
   </div>
 
-  {/* Full Menu Sheet */}
+  {/* Full Menu Sheet - Bleeds to edges */}
   <div
-    class="command-sheet fixed inset-x-0 bottom-0 bg-base-100 rounded-t-3xl shadow-2xl border-t border-base-300 transform translate-y-full transition-transform duration-300 z-50"
+    class="command-sheet fixed left-0 right-0 bottom-0 bg-base-100 rounded-t-3xl shadow-2xl border-t border-base-300 transform translate-y-full transition-transform duration-300 z-50"
     data-command-sheet
     style="max-height: 80vh;"
   >
@@ -155,6 +155,8 @@ const isActive = (href: string) => {
         type="button"
         class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all"
         data-more-menu-btn
+        aria-expanded="false"
+        aria-controls="more-menu-content"
       >
         <span class="text-sm font-medium">More</span>
         <ChevronDown size={18} class="transition-transform duration-300" data-chevron-icon />
@@ -162,7 +164,11 @@ const isActive = (href: string) => {
     </div>
 
     {/* Expanded More Menu - Hidden by default */}
-    <div class="more-menu-content hidden px-6 pb-6 grid grid-cols-3 gap-4" data-more-menu-content>
+    <div
+      id="more-menu-content"
+      class="more-menu-content hidden px-6 pb-6 grid grid-cols-3 gap-4"
+      data-more-menu-content
+    >
       <a
         href="/forecast"
         class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/forecast') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
@@ -179,8 +185,10 @@ const isActive = (href: string) => {
       </a>
       <a
         href="https://docs.allowealth.io"
+        target="_blank"
         rel="noopener noreferrer"
         class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors bg-base-200 text-base-content/70 hover:bg-base-300`}
+        aria-label="Documentation (opens in new tab)"
       >
         <ClipboardList size={24} aria-hidden="true" />
         <span class="text-xs font-semibold">Docs</span>
@@ -238,16 +246,34 @@ const isActive = (href: string) => {
 <script>
   import { performLogout } from '@/lib/utils/client';
 
+  // Store abort controllers for cleanup
+  const navControllers = new Map<HTMLElement, AbortController>();
+
   function initMobileNav() {
-    const menuToggle = document.querySelector('[data-menu-toggle]');
-    const menuClose = document.querySelector('[data-menu-close]');
-    const sheet = document.querySelector('[data-command-sheet]');
-    const logoutBtn = document.querySelector('.logout-btn');
-    const moreMenuBtn = document.querySelector('[data-more-menu-btn]');
-    const moreMenuContent = document.querySelector('[data-more-menu-content]');
-    const chevronIcon = document.querySelector('[data-chevron-icon]');
+    const commandCenter = document.querySelector('.mobile-command-center');
+    if (!(commandCenter instanceof HTMLElement)) return;
+
+    // Cleanup existing listeners if re-initializing
+    const existingController = navControllers.get(commandCenter);
+    if (existingController) {
+      existingController.abort();
+    }
+
+    // Create new abort controller for this instance
+    const controller = new AbortController();
+    const { signal } = controller;
+    navControllers.set(commandCenter, controller);
+
+    const menuToggle = commandCenter.querySelector('[data-menu-toggle]');
+    const menuClose = commandCenter.querySelector('[data-menu-close]');
+    const sheet = commandCenter.querySelector('[data-command-sheet]');
+    const logoutBtn = commandCenter.querySelector('.logout-btn');
+    const moreMenuBtn = commandCenter.querySelector('[data-more-menu-btn]');
+    const moreMenuContent = commandCenter.querySelector('[data-more-menu-content]');
+    const chevronIcon = commandCenter.querySelector('[data-chevron-icon]');
 
     if (!(sheet instanceof HTMLElement)) return;
+    if (!(moreMenuBtn instanceof HTMLButtonElement)) return;
 
     const openSheet = () => {
       sheet.classList.remove('translate-y-full');
@@ -260,32 +286,73 @@ const isActive = (href: string) => {
       // Reset more menu when closing sheet
       moreMenuContent?.classList.add('hidden');
       chevronIcon?.classList.remove('rotate-180');
+      moreMenuBtn.setAttribute('aria-expanded', 'false');
     };
 
-    menuToggle?.addEventListener('click', openSheet);
-    menuClose?.addEventListener('click', closeSheet);
+    menuToggle?.addEventListener('click', openSheet, { signal });
+    menuClose?.addEventListener('click', closeSheet, { signal });
 
     // Toggle more menu
-    moreMenuBtn?.addEventListener('click', () => {
-      moreMenuContent?.classList.toggle('hidden');
-      chevronIcon?.classList.toggle('rotate-180');
-    });
+    moreMenuBtn.addEventListener(
+      'click',
+      () => {
+        const isExpanded = moreMenuBtn.getAttribute('aria-expanded') === 'true';
+        moreMenuContent?.classList.toggle('hidden');
+        chevronIcon?.classList.toggle('rotate-180');
+        moreMenuBtn.setAttribute('aria-expanded', String(!isExpanded));
+      },
+      { signal }
+    );
 
     // Close sheet when clicking a link inside it (but not for external docs link)
     sheet.querySelectorAll('a[href^="/"]').forEach((link) => {
-      link.addEventListener('click', closeSheet);
+      link.addEventListener('click', closeSheet, { signal });
     });
 
     // Logout handler
-    logoutBtn?.addEventListener('click', async (e: MouseEvent) => {
-      e.preventDefault();
-      await performLogout();
-    });
+    logoutBtn?.addEventListener(
+      'click',
+      async (e: MouseEvent) => {
+        e.preventDefault();
+        await performLogout();
+      },
+      { signal }
+    );
 
     // Close on escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeSheet();
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key === 'Escape') closeSheet();
+      },
+      { signal }
+    );
+
+    // Cleanup when element is removed from DOM
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.removedNodes.forEach((node) => {
+          if (node === commandCenter || (node instanceof Element && node.contains(commandCenter))) {
+            controller.abort();
+            navControllers.delete(commandCenter);
+            observer.disconnect();
+          }
+        });
+      });
     });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Also cleanup on view transition
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        controller.abort();
+        navControllers.delete(commandCenter);
+        observer.disconnect();
+      },
+      { signal }
+    );
   }
 
   // Run on load and after view transitions
