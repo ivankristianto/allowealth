@@ -22,6 +22,10 @@ import {
   Calculator,
   ClipboardList,
   ChevronDown,
+  ShieldCheck,
+  Building2,
+  Users,
+  Activity,
 } from '@lucide/astro';
 import type { User as UserType } from '@/lib/auth/lucia';
 
@@ -31,6 +35,9 @@ interface Props {
 }
 
 const { currentPath = '/', user = null } = Astro.props;
+
+// Check if user is super admin
+const isSuperAdmin = user?.role === 'super_admin';
 
 const isActive = (href: string) => {
   if (currentPath === href) return true;
@@ -62,31 +69,46 @@ const isActive = (href: string) => {
 
     {/* Quick Actions - Increased spacing and touch targets */}
     <div class="flex items-center gap-2">
-      <a
-        href="/transactions"
-        class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
-        aria-label="Transactions"
-        aria-current={isActive('/transactions') ? 'page' : undefined}
-      >
-        <ArrowLeftRight size={20} aria-hidden="true" />
-      </a>
-      <a
-        href="/accounts"
-        class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
-        aria-label="Accounts"
-        aria-current={isActive('/accounts') ? 'page' : undefined}
-      >
-        <Wallet size={20} aria-hidden="true" />
-      </a>
+      {
+        !isSuperAdmin ? (
+          <>
+            <a
+              href="/transactions"
+              class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
+              aria-label="Transactions"
+              aria-current={isActive('/transactions') ? 'page' : undefined}
+            >
+              <ArrowLeftRight size={20} aria-hidden="true" />
+            </a>
+            <a
+              href="/accounts"
+              class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
+              aria-label="Accounts"
+              aria-current={isActive('/accounts') ? 'page' : undefined}
+            >
+              <Wallet size={20} aria-hidden="true" />
+            </a>
 
-      <button
-        type="button"
-        class="ml-2 w-11 h-11 rounded-full bg-base-100 flex items-center justify-center shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 active:scale-95 transition-all border border-base-300"
-        data-open-transaction-drawer
-        aria-label="New transaction"
-      >
-        <img src="/favicon.svg" alt="" class="w-8 h-8 rounded-full" aria-hidden="true" />
-      </button>
+            <button
+              type="button"
+              class="ml-2 w-11 h-11 rounded-full bg-base-100 flex items-center justify-center shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 active:scale-95 transition-all border border-base-300"
+              data-open-transaction-drawer
+              aria-label="New transaction"
+            >
+              <img src="/favicon.svg" alt="" class="w-8 h-8 rounded-full" aria-hidden="true" />
+            </button>
+          </>
+        ) : (
+          <a
+            href="/admin"
+            class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
+            aria-label="Admin Dashboard"
+            aria-current={isActive('/admin') ? 'page' : undefined}
+          >
+            <ShieldCheck size={20} aria-hidden="true" />
+          </a>
+        )
+      }
     </div>
   </div>
 
@@ -128,111 +150,200 @@ const isActive = (href: string) => {
 
     {/* Main Navigation Grid - Improved active states */}
     <div class="p-4 sm:p-5 grid grid-cols-3 gap-3">
-      <a
-        href="/dashboard"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/dashboard') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/dashboard') ? 'page' : undefined}
-      >
-        <House size={22} stroke-width={isActive('/dashboard') ? 2.5 : 2} aria-hidden="true" />
-        <span class="text-xs font-semibold">Dashboard</span>
-      </a>
-      <a
-        href="/transactions"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/transactions') ? 'page' : undefined}
-      >
-        <ArrowLeftRight
-          size={22}
-          stroke-width={isActive('/transactions') ? 2.5 : 2}
-          aria-hidden="true"
-        />
-        <span class="text-xs font-semibold">Transactions</span>
-      </a>
-      <a
-        href="/accounts"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/accounts') ? 'page' : undefined}
-      >
-        <Wallet size={22} stroke-width={isActive('/accounts') ? 2.5 : 2} aria-hidden="true" />
-        <span class="text-xs font-semibold">Accounts</span>
-      </a>
-      <a
-        href="/budget"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/budget') ? 'page' : undefined}
-      >
-        <Donut size={22} stroke-width={isActive('/budget') ? 2.5 : 2} aria-hidden="true" />
-        <span class="text-xs font-semibold">Budget</span>
-      </a>
-      <a
-        href="/reports"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/reports') ? 'page' : undefined}
-      >
-        <ChartBar size={22} stroke-width={isActive('/reports') ? 2.5 : 2} aria-hidden="true" />
-        <span class="text-xs font-semibold">Reports</span>
-      </a>
-      <a
-        href="/recurring"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/recurring') ? 'page' : undefined}
-      >
-        <RefreshCw size={22} stroke-width={isActive('/recurring') ? 2.5 : 2} aria-hidden="true" />
-        <span class="text-xs font-semibold">Recurring</span>
-      </a>
+      {
+        !isSuperAdmin ? (
+          <>
+            <a
+              href="/dashboard"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/dashboard') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/dashboard') ? 'page' : undefined}
+            >
+              <House size={22} stroke-width={isActive('/dashboard') ? 2.5 : 2} aria-hidden="true" />
+              <span class="text-xs font-semibold">Dashboard</span>
+            </a>
+            <a
+              href="/transactions"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/transactions') ? 'page' : undefined}
+            >
+              <ArrowLeftRight
+                size={22}
+                stroke-width={isActive('/transactions') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Transactions</span>
+            </a>
+            <a
+              href="/accounts"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/accounts') ? 'page' : undefined}
+            >
+              <Wallet size={22} stroke-width={isActive('/accounts') ? 2.5 : 2} aria-hidden="true" />
+              <span class="text-xs font-semibold">Accounts</span>
+            </a>
+            <a
+              href="/budget"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/budget') ? 'page' : undefined}
+            >
+              <Donut size={22} stroke-width={isActive('/budget') ? 2.5 : 2} aria-hidden="true" />
+              <span class="text-xs font-semibold">Budget</span>
+            </a>
+            <a
+              href="/reports"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/reports') ? 'page' : undefined}
+            >
+              <ChartBar
+                size={22}
+                stroke-width={isActive('/reports') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Reports</span>
+            </a>
+            <a
+              href="/recurring"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/recurring') ? 'page' : undefined}
+            >
+              <RefreshCw
+                size={22}
+                stroke-width={isActive('/recurring') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Recurring</span>
+            </a>
+          </>
+        ) : (
+          <>
+            <a
+              href="/admin"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin') ? 'page' : undefined}
+            >
+              <ShieldCheck
+                size={22}
+                stroke-width={isActive('/admin') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Dashboard</span>
+            </a>
+            <a
+              href="/admin/workspaces"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/workspaces') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/workspaces') ? 'page' : undefined}
+            >
+              <Building2
+                size={22}
+                stroke-width={isActive('/admin/workspaces') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Workspaces</span>
+            </a>
+            <a
+              href="/admin/users"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/users') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/users') ? 'page' : undefined}
+            >
+              <Users
+                size={22}
+                stroke-width={isActive('/admin/users') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Users</span>
+            </a>
+            <a
+              href="/admin/audit-logs"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/audit-logs') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/audit-logs') ? 'page' : undefined}
+            >
+              <ClipboardList
+                size={22}
+                stroke-width={isActive('/admin/audit-logs') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Audit Logs</span>
+            </a>
+            <a
+              href="/admin/diagnostics"
+              class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/diagnostics') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/diagnostics') ? 'page' : undefined}
+            >
+              <Activity
+                size={22}
+                stroke-width={isActive('/admin/diagnostics') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold">Diagnostics</span>
+            </a>
+          </>
+        )
+      }
     </div>
 
-    {/* More Menu Button */}
-    <div class="px-4 sm:px-5 pb-3">
-      <button
-        type="button"
-        class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3.5 min-h-11 rounded-xl border-2 border-dashed border-base-300 text-base-content/60 hover:border-base-400 hover:text-base-content hover:bg-base-200/50 transition-all"
-        data-more-menu-btn
-        aria-expanded="false"
-        aria-controls="more-menu-content"
-      >
-        <span class="text-sm font-medium">More Options</span>
-        <ChevronDown size={18} class="transition-transform duration-300" data-chevron-icon />
-      </button>
-    </div>
+    {/* More Menu Button - Only for regular users */}
+    {
+      !isSuperAdmin && (
+        <div class="px-4 sm:px-5 pb-3">
+          <button
+            type="button"
+            class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3.5 min-h-11 rounded-xl border-2 border-dashed border-base-300 text-base-content/60 hover:border-base-400 hover:text-base-content hover:bg-base-200/50 transition-all"
+            data-more-menu-btn
+            aria-expanded="false"
+            aria-controls="more-menu-content"
+          >
+            <span class="text-sm font-medium">More Options</span>
+            <ChevronDown size={18} class="transition-transform duration-300" data-chevron-icon />
+          </button>
+        </div>
+      )
+    }
 
-    {/* Expanded More Menu */}
-    <div
-      id="more-menu-content"
-      class="more-menu-content hidden px-4 sm:px-5 pb-4 grid grid-cols-3 gap-3"
-      data-more-menu-content
-    >
-      <a
-        href="/forecast"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/forecast') ? 'page' : undefined}
-      >
-        <TrendingUp size={22} stroke-width={isActive('/forecast') ? 2.5 : 2} aria-hidden="true" />
-        <span class="text-xs font-semibold">Forecast</span>
-      </a>
-      <a
-        href="/calculators"
-        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-        aria-current={isActive('/calculators') ? 'page' : undefined}
-      >
-        <Calculator
-          size={22}
-          stroke-width={isActive('/calculators') ? 2.5 : 2}
-          aria-hidden="true"
-        />
-        <span class="text-xs font-semibold">Calculators</span>
-      </a>
-      <a
-        href="https://docs.allowealth.io"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all active:scale-95"
-        aria-label="Documentation (opens in new tab)"
-      >
-        <ClipboardList size={22} aria-hidden="true" />
-        <span class="text-xs font-semibold">Docs</span>
-      </a>
-    </div>
+    {/* Expanded More Menu - Only for regular users */}
+    {
+      !isSuperAdmin && (
+        <div
+          id="more-menu-content"
+          class="more-menu-content hidden px-4 sm:px-5 pb-4 grid grid-cols-3 gap-3"
+          data-more-menu-content
+        >
+          <a
+            href="/forecast"
+            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            aria-current={isActive('/forecast') ? 'page' : undefined}
+          >
+            <TrendingUp
+              size={22}
+              stroke-width={isActive('/forecast') ? 2.5 : 2}
+              aria-hidden="true"
+            />
+            <span class="text-xs font-semibold">Forecast</span>
+          </a>
+          <a
+            href="/calculators"
+            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            aria-current={isActive('/calculators') ? 'page' : undefined}
+          >
+            <Calculator
+              size={22}
+              stroke-width={isActive('/calculators') ? 2.5 : 2}
+              aria-hidden="true"
+            />
+            <span class="text-xs font-semibold">Calculators</span>
+          </a>
+          <a
+            href="https://docs.allowealth.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all active:scale-95"
+            aria-label="Documentation (opens in new tab)"
+          >
+            <ClipboardList size={22} aria-hidden="true" />
+            <span class="text-xs font-semibold">Docs</span>
+          </a>
+        </div>
+      )
+    }
 
     {/* User Section - Improved card style */}
     <div

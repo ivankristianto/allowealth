@@ -244,9 +244,12 @@
     }
   }
 
+  // Track if after-swap listener is registered (persist across cleanups)
+  let isAfterSwapListenerRegistered = false;
+
   // Initialize toast system
   function initToastSystem(): void {
-    // Clean up any existing subscription first
+    // Clean up any existing subscription first (but keep after-swap listener)
     cleanupToastSystem();
 
     // Reset state maps
@@ -263,13 +266,17 @@
       reconcileDOM(currentToasts);
     });
 
-    // Set up document event listeners with AbortController for cleanup
-    afterSwapAbortController = new AbortController();
-    beforeSwapAbortController = new AbortController();
+    // Register after-swap listener once (persist for session lifetime)
+    if (!isAfterSwapListenerRegistered) {
+      afterSwapAbortController = new AbortController();
+      document.addEventListener('astro:after-swap', initToastSystem, {
+        signal: afterSwapAbortController.signal,
+      });
+      isAfterSwapListenerRegistered = true;
+    }
 
-    document.addEventListener('astro:after-swap', initToastSystem, {
-      signal: afterSwapAbortController.signal,
-    });
+    // Register before-swap listener (cleaned up and re-registered each time)
+    beforeSwapAbortController = new AbortController();
     document.addEventListener('astro:before-swap', cleanupToastSystem, {
       signal: beforeSwapAbortController.signal,
     });
@@ -287,11 +294,7 @@
       motionQuery = null;
     }
 
-    // Abort document event listeners
-    if (afterSwapAbortController) {
-      afterSwapAbortController.abort();
-      afterSwapAbortController = null;
-    }
+    // Abort only the before-swap listener (after-swap persists)
     if (beforeSwapAbortController) {
       beforeSwapAbortController.abort();
       beforeSwapAbortController = null;
