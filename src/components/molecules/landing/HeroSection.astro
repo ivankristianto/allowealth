@@ -76,7 +76,12 @@ import Button from '@/components/atoms/Button.astro';
       </Button>
 
       <!-- Secondary CTA -->
-      <Button variant="secondary" href="#showcase" size="xl" className="w-full sm:w-auto">
+      <Button
+        variant="secondary"
+        href={heroContent.ctaSecondaryHref ?? '#showcase'}
+        size="xl"
+        className="w-full sm:w-auto"
+      >
         {heroContent.ctaSecondary}
       </Button>
     </div>
