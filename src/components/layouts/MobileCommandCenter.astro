@@ -17,6 +17,11 @@ import {
   LogOut,
   Settings,
   House,
+  RefreshCw,
+  TrendingUp,
+  Calculator,
+  ClipboardList,
+  ChevronDown,
 } from '@lucide/astro';
 import type { User as UserType } from '@/lib/auth/lucia';
 
@@ -98,7 +103,7 @@ const isActive = (href: string) => {
       </button>
     </div>
 
-    {/* Nav Links */}
+    {/* Nav Links - Main 3x2 Grid */}
     <div class="p-6 grid grid-cols-3 gap-4">
       <a
         href="/dashboard"
@@ -134,6 +139,51 @@ const isActive = (href: string) => {
       >
         <ChartBar size={24} aria-hidden="true" />
         <span class="text-xs font-semibold">Reports</span>
+      </a>
+      <a
+        href="/recurring"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/recurring') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <RefreshCw size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Recurring</span>
+      </a>
+    </div>
+
+    {/* More Menu Button - Expands to show additional items */}
+    <div class="px-6 pb-4">
+      <button
+        type="button"
+        class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content transition-all"
+        data-more-menu-btn
+      >
+        <span class="text-sm font-medium">More</span>
+        <ChevronDown size={18} class="transition-transform duration-300" data-chevron-icon />
+      </button>
+    </div>
+
+    {/* Expanded More Menu - Hidden by default */}
+    <div class="more-menu-content hidden px-6 pb-6 grid grid-cols-3 gap-4" data-more-menu-content>
+      <a
+        href="/forecast"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/forecast') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <TrendingUp size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Forecast</span>
+      </a>
+      <a
+        href="/calculators"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isActive('/calculators') ? 'bg-accent/10 text-accent' : 'bg-base-200 text-base-content/70 hover:bg-base-300'}`}
+      >
+        <Calculator size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Calculators</span>
+      </a>
+      <a
+        href="https://docs.allowealth.io"
+        rel="noopener noreferrer"
+        class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors bg-base-200 text-base-content/70 hover:bg-base-300`}
+      >
+        <ClipboardList size={24} aria-hidden="true" />
+        <span class="text-xs font-semibold">Docs</span>
       </a>
     </div>
 
@@ -193,6 +243,9 @@ const isActive = (href: string) => {
     const menuClose = document.querySelector('[data-menu-close]');
     const sheet = document.querySelector('[data-command-sheet]');
     const logoutBtn = document.querySelector('.logout-btn');
+    const moreMenuBtn = document.querySelector('[data-more-menu-btn]');
+    const moreMenuContent = document.querySelector('[data-more-menu-content]');
+    const chevronIcon = document.querySelector('[data-chevron-icon]');
 
     if (!(sheet instanceof HTMLElement)) return;
 
@@ -204,13 +257,22 @@ const isActive = (href: string) => {
     const closeSheet = () => {
       sheet.classList.add('translate-y-full');
       sheet.classList.remove('translate-y-0');
+      // Reset more menu when closing sheet
+      moreMenuContent?.classList.add('hidden');
+      chevronIcon?.classList.remove('rotate-180');
     };
 
     menuToggle?.addEventListener('click', openSheet);
     menuClose?.addEventListener('click', closeSheet);
 
-    // Close sheet when clicking a link inside it
-    sheet.querySelectorAll('a').forEach((link) => {
+    // Toggle more menu
+    moreMenuBtn?.addEventListener('click', () => {
+      moreMenuContent?.classList.toggle('hidden');
+      chevronIcon?.classList.toggle('rotate-180');
+    });
+
+    // Close sheet when clicking a link inside it (but not for external docs link)
+    sheet.querySelectorAll('a[href^="/"]').forEach((link) => {
       link.addEventListener('click', closeSheet);
     });
 
