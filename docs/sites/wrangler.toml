@@ -4,3 +4,13 @@
 name = "allowealth-docs"
 compatibility_date = "2025-03-04"
 pages_build_output_dir = "./dist"
+
+# R2 bucket for screenshots and images
+# Create: wrangler r2 bucket create allowealth-docs-screenshots
+[[r2_buckets]]
+binding = "SCREENSHOTS"
+bucket_name = "allowealth-docs-screenshots"
+
+# To deploy with R2:
+# 1. Create bucket: wrangler r2 bucket create allowealth-docs-screenshots
+# 2. Deploy: wrangler pages deploy
