@@ -1,6 +1,6 @@
 ---
 title: Admin Onboarding
-description: Configure workspace standards, member access, and operational guardrails.
+description: Set up workspaces, invite members, and configure security.
 draft: false
 head: []
 sidebar:
@@ -10,46 +10,69 @@ audience:
   - admin
 ---
 
-Admins set the baseline for everyone else.
+Complete these four steps before inviting members.
 
-## 1. Configure workspace standards
+## Step 1: Create a workspace
 
-Set these once before inviting members:
-
-- Workspace name
-- Default currency
-- Week start (`monday` or `sunday`)
-- Number formatting preference
-
-CLI example:
+Set the workspace defaults:
 
 ```bash
-bun run aw workspace create --name "My Workspace" --email admin@example.com --currency IDR --week-start monday
+bun run aw workspace create \
+  --name "My Workspace" \
+  --email admin@example.com \
+  --currency USD \
+  --week-start monday
 ```
 
-## 2. Set access model
+Available options:
 
-Define who needs admin permissions and who should remain member-only.
+- `--currency`: USD, EUR, GBP, IDR, JPY, etc.
+- `--week-start`: monday or sunday
 
-- Keep admin count small.
-- Promote by operational responsibility, not convenience.
+## Step 2: Invite members
 
-## 3. Enable security hygiene
+Invite users to the workspace:
 
-- Enforce strong password policy.
-- Encourage MFA setup for all admins.
-- Review audit logs during initial rollout.
+```bash
+bun run aw workspace invite \
+  --workspace-id <workspace-id> \
+  --email user@example.com
+```
 
-## 4. Prepare support operations
+List workspace members:
 
-Create internal runbooks for:
+```bash
+bun run aw workspace members list --workspace-id <workspace-id>
+```
 
-- Member invitation/revocation
-- Workspace settings changes
-- Incident escalation
+## Step 3: Configure security
+
+Enable MFA for your admin account:
+
+1. Go to **Profile → Security**
+2. Click **Enable MFA**
+3. Scan the QR code with your authenticator app
+4. Enter the verification code
+
+Generate API keys for programmatic access:
+
+```bash
+bun run aw admin create-api-key \
+  --workspace-id <workspace-id> \
+  --user-id <user-id> \
+  --name "Production API Key"
+```
+
+## Step 4: Document runbooks
+
+Create internal documentation for:
+
+- Member invitation and revocation
+- Workspace setting changes
+- Emergency contacts and escalation
 
 :::caution[⚠️ Caution]
-Workspace-level changes affect every user in that workspace. Communicate setting changes before applying them.
+Workspace changes affect all members. Announce changes before applying them.
 :::
 
-Continue with [Admin Deployment Guide](/admins/deployment-guide/).
+Continue to [Deployment Guide](./deployment-guide/).

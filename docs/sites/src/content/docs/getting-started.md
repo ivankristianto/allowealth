@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Quick Start for running Allowealth locally and completing your first workflow.
+description: Run Allowealth locally in 10 minutes.
 draft: false
 head: []
 sidebar:
@@ -12,15 +12,14 @@ audience:
   - developer
 ---
 
-You can get Allowealth running locally in under 10 minutes.
+Run Allowealth locally in four steps.
 
 ## Prerequisites
 
-- Bun 1.x installed
-- Access to this repository
-- A local shell (`zsh`, `bash`, or similar)
+- Bun 1.x
+- Git access to this repository
 
-## 1. Install and seed
+## Step 1: Install dependencies
 
 ```bash
 bun install
@@ -28,40 +27,34 @@ cp .env.example .env
 bun run db:reset
 ```
 
-:::tip[💡 Tip]
-`bun run db:reset` creates schema + demo data so you can explore the app immediately.
-:::
+This creates the database schema and seeds demo data.
 
-## 2. Start the app
+## Step 2: Start the dev server
 
 ```bash
 bun run dev
 ```
 
-Open the app at the local URL printed by Astro (usually `http://localhost:4321`).
+Open the URL shown in your terminal (usually `http://localhost:4321`).
 
-## 3. Sign in with demo credentials
+## Step 3: Sign in
 
-Use the seeded demo account:
+Use the demo account:
 
 - **Email:** `demo@example.com`
 - **Password:** `demo123`
 
-:::note[📝 Note]
-Some E2E flows use a different account (`demo@example.com` / `demo123456789`). Use whichever your local seed currently provides.
-:::
+## Step 4: Complete a workflow
 
-## 4. Complete a Hello World workflow
+1. Open **Dashboard**
+2. Create a transaction
+3. Open **Budget** and check the updated totals
+4. Open **Reports** and verify the transaction appears
 
-1. Open **Dashboard**.
-2. Create one new transaction.
-3. Visit **Budget** and confirm totals update.
-4. Visit **Reports** to verify the transaction appears.
-
-You now have a full local loop working.
+Your local environment is ready.
 
 ## Next steps
 
-- Learn the app model in [Core Concepts](/core-concepts/).
-- Follow [End User Onboarding](/end-users/onboarding/) for day-to-day usage.
-- Follow [Developer Local Setup](/developers/local-development/) for implementation workflows.
+- Read [Core Concepts](/core-concepts/) to understand workspaces and roles
+- Follow [End User Onboarding](/end-users/onboarding/) for daily workflows
+- See [Developer Setup](/developers/local-development/) for contribution guidelines

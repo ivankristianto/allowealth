@@ -1,21 +1,21 @@
 ---
-title: Admin Deployment Guide
-description: Pre-deploy, rollout, and post-release checks for Allowealth environments.
+title: Deployment Guide
+description: Deploy Allowealth with pre-flight checks, staged rollout, and post-release verification.
 draft: false
 head: []
 sidebar:
-  label: Admin Deployment Guide
+  label: Deployment Guide
   order: 2
 audience:
   - admin
   - developer
 ---
 
-Use this checklist for controlled, repeatable releases.
+Use this checklist for controlled deployments.
 
-## Pre-deployment checks
+## Pre-deployment
 
-Run from repository root:
+Run quality gates from the repository root:
 
 ```bash
 bun run lint
@@ -26,45 +26,53 @@ bun run test
 bun run build
 ```
 
-Then validate docs app:
+Validate documentation:
 
 ```bash
 bun run docs:check
 bun run docs:build
 ```
 
-## Database and configuration
+## Database preparation
 
-- Confirm target environment (`sqlite`, `d1`, `postgres`) is correct.
-- Apply migrations before traffic cutover.
-- Validate secrets and API keys are present.
+1. Confirm target environment: `sqlite`, `d1`, or `postgres`
+2. Apply migrations before deploying code:
+   ```bash
+   bun run aw db migrate --target <environment>
+   ```
+3. Verify secrets and API keys are set in the target environment
 
-## Rollout
+## Rollout sequence
 
-Preferred order:
+1. Deploy to staging
+2. Run smoke tests:
+   - Login and signup
+   - Dashboard loads
+   - Create a transaction
+   - View budget updates
+3. Deploy to production
+4. Verify health endpoints and key pages load
 
-1. Deploy to staging/non-production target.
-2. Execute smoke tests on login, dashboard, transactions, and budgets.
-3. Deploy production.
-4. Validate health endpoints and key pages.
+## Post-deployment verification
 
-## Post-release verification
+Monitor for 30-60 minutes:
 
-- Review logs and error rates for 30-60 minutes.
-- Confirm background jobs and integrations (email/MCP/API) remain healthy.
-- Capture release notes with owner and rollback context.
+- Check error rates in logs
+- Verify background jobs run
+- Test email and MCP integrations
+- Document the release with owner and rollback steps
 
-:::tip[💡 Tip]
-Use low-traffic windows for schema or auth changes. That gives you safer rollback options if behavior drifts.
-:::
+## Rollback triggers
 
-## Escalation criteria
+Rollback immediately if:
 
-Rollback or hotfix when any of these are true:
-
-- Login/sign-up failure rate spikes
+- Login/signup failure rate increases
 - Critical API endpoints return 5xx
 - Data integrity checks fail
-- Dashboard or transaction write paths regress
+- Dashboard or transaction write paths break
 
-Pair this with [Reference: Commands](/reference/commands/) during release execution.
+:::tip[💡 Tip]
+Deploy schema and auth changes during low-traffic windows for safer rollbacks.
+:::
+
+See [Commands Reference](/reference/commands/) for exact syntax.
