@@ -93,15 +93,16 @@ bun run lint:fix && bun run stylelint:fix && bun run format:fix && bun run typec
 
 ## Database (SQLite - Development)
 
-| Command               | Description                                            |
-| --------------------- | ------------------------------------------------------ |
-| `bun run db:generate` | Generate SQLite migration from schema changes          |
-| `bun run db:migrate`  | Apply pending SQLite migrations                        |
-| `bun run db:push`     | Push schema directly to SQLite (no migration tracking) |
-| `bun run db:studio`   | Open Drizzle Studio (visual DB browser)                |
-| `bun run db:seed`     | Seed database with demo data                           |
-| `bun run db:reset`    | Delete SQLite DB, push schema, and seed                |
-| `bun run db:empty`    | Truncate all data (preserve schema)                    |
+| Command                  | Description                                            |
+| ------------------------ | ------------------------------------------------------ |
+| `bun run db:generate`    | Generate SQLite migration from schema changes          |
+| `bun run db:migrate`     | Apply pending SQLite migrations                        |
+| `bun run db:push`        | Push schema directly to SQLite (no migration tracking) |
+| `bun run db:studio`      | Open Drizzle Studio (visual DB browser)                |
+| `bun run db:seed`        | Seed database with demo data                           |
+| `bun run db:seed:stress` | Seed 5 years of realistic family stress-test data      |
+| `bun run db:reset`       | Delete SQLite DB, push schema, and seed                |
+| `bun run db:empty`       | Truncate all data (preserve schema)                    |
 
 ```bash
 # Full dev reset
@@ -239,6 +240,7 @@ Aliases provide shorter commands that map to resource operations.
 | `bun run aw db studio`                    | Open Drizzle Studio                          |
 | `bun run aw db seed`                      | Seed with demo data                          |
 | `bun run aw db seed --benchmark`          | Seed with ~10k transactions for perf testing |
+| `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset  |
 | `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed      |
 | `bun run aw db empty`                     | Truncate all data (preserve schema)          |
 | `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB            |

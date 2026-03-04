@@ -50,12 +50,18 @@ export default defineCommand({
           description: 'Add ~10k benchmark transactions for performance testing',
           default: false,
         },
+        stress: {
+          type: 'boolean',
+          description: 'Seed 5 years of realistic 4-member family stress-test data',
+          default: false,
+        },
       },
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
         const seedArgs = ['run', 'src/db/seed.ts'];
         if (args.benchmark) seedArgs.push('--benchmark');
+        if (args.stress) seedArgs.push('--stress');
         exec('bun', seedArgs);
       },
     }),
