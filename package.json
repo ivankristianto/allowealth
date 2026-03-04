@@ -9,6 +9,7 @@
     "docs:build": "bun run --cwd docs/sites build",
     "docs:preview": "bun run --cwd docs/sites preview",
     "docs:check": "bun run --cwd docs/sites astro check",
+    "docs:deploy": "bun run docs:build && cd docs/sites && wrangler pages deploy",
     "build": "astro build",
     "build:analyze": "bun run build && echo '\n📊 Bundle analysis available at dist/stats.html'",
     "build:node": "DEPLOY_TARGET=node astro build",
