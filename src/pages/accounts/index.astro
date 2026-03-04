@@ -341,16 +341,6 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
       closedCount={closedCount}
     />
 
-    {/* Filter Bar */}
-    <ActionFilterBar
-      searchValue={searchParams.search || ''}
-      members={workspaceMembers.map((member) => ({ id: member.id, name: member.name }))}
-      userId={ownerUserId || ''}
-      currentUserId={user.id}
-      currentSearchParams={url.search}
-      baseUrl="/accounts"
-    />
-
     {
       accounts.length > 0 ? (
         <>
@@ -362,6 +352,16 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             loading={false}
             latestUpdate={latestUpdate}
             isHistoricalView={!isViewingCurrentMonth}
+          />
+
+          {/* Filter Bar */}
+          <ActionFilterBar
+            searchValue={searchParams.search || ''}
+            members={workspaceMembers.map((member) => ({ id: member.id, name: member.name }))}
+            userId={ownerUserId || ''}
+            currentUserId={user.id}
+            currentSearchParams={url.search}
+            baseUrl="/accounts"
           />
 
           {/* Account Groups */}
