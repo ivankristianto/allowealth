@@ -10,6 +10,7 @@ import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
 import { CalendarDays, Info, List, Plus } from '@lucide/astro';
+import { tokenClasses } from '@/lib/tokens';
 import { DEFAULT_CURRENCY } from '@/lib/constants/currency';
 import { buildRecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import {
@@ -167,7 +168,10 @@ const templatesHelpId = 'recurring-templates-help';
               <div
                 id={commandCenterHelpId}
                 role="tooltip"
-                class="dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-xs text-base-content/70 shadow-lg"
+                class:list={[
+                  'dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-base-content/70 shadow-lg',
+                  tokenClasses.textXs,
+                ]}
               >
                 Monthly overview of recurring income and expenses with quick actions and planning.
               </div>
@@ -215,7 +219,10 @@ const templatesHelpId = 'recurring-templates-help';
                 <div
                   id={actionInboxHelpId}
                   role="tooltip"
-                  class="dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-xs text-base-content/70 shadow-lg"
+                  class:list={[
+                    'dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-base-content/70 shadow-lg',
+                    tokenClasses.textXs,
+                  ]}
                 >
                   One combined queue for upcoming income and expenses, sorted by due date from
                   oldest to nearest.
@@ -309,7 +316,10 @@ const templatesHelpId = 'recurring-templates-help';
                 <div
                   id={templatesHelpId}
                   role="tooltip"
-                  class="dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-xs text-base-content/70 shadow-lg"
+                  class:list={[
+                    'dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-base-content/70 shadow-lg',
+                    tokenClasses.textXs,
+                  ]}
                 >
                   Manage every recurring rule in one place and quickly edit, pause, resume, or
                   cancel.
