@@ -3,6 +3,8 @@
  * Run: bun scripts/take-screenshots.ts
  */
 
+/* eslint-disable no-console */
+
 import { chromium } from 'playwright';
 import path from 'path';
 
