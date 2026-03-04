@@ -24,8 +24,8 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install docs dependencies
-        run: bun install --cwd docs/sites
+      - name: Install root & docs dependencies
+        run: bun install && bun install --cwd docs/sites
 
       - name: Build docs site
         run: bun run docs:build
