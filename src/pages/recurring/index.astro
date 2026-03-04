@@ -1,7 +1,6 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
-import RecurringSectionActionBar from '@/components/molecules/RecurringSectionActionBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
 import RecurringPendingList from '@/components/organisms/RecurringPendingList.astro';
 import RecurringTemplateList from '@/components/organisms/RecurringTemplateList.astro';
@@ -10,6 +9,7 @@ import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.
 import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
+import { CalendarDays, Info, List, Plus } from '@lucide/astro';
 import { DEFAULT_CURRENCY } from '@/lib/constants/currency';
 import { buildRecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import {
@@ -108,7 +108,7 @@ function parseRecurringTemplatePrefill(inputUrl: URL): RecurringTemplatePrefill 
 const perf = Astro.locals.perf;
 
 const [templateResult, pendingResult, categories, accounts] = await Promise.all([
-  recurringTemplateService.findAll(user.workspaceId, { status: 'all', page: 1, limit: 20 }, perf),
+  recurringTemplateService.findAll(user.workspaceId, { status: 'all', page: 1, limit: 10 }, perf),
   recurringOccurrenceService.findPending(user.workspaceId, {
     month: safeMonth,
     status: 'pending',
@@ -122,6 +122,13 @@ const summary = buildRecurringMonthlySummary(pendingResult.occurrences);
 const convertPrefill = parseRecurringTemplatePrefill(url);
 
 const currencies = Array.from(new Set(accounts.map((account) => account.currency))).filter(Boolean);
+const viewButtonClass =
+  'btn btn-sm btn-ghost h-10 min-h-[44px] gap-1.5 px-3 rounded-lg sm:rounded-xl text-sm font-semibold';
+const infoButtonClass =
+  'btn btn-ghost btn-sm btn-square h-11 min-h-[44px] w-11 min-w-[44px] rounded-lg text-base-content/50 hover:text-base-content';
+const commandCenterHelpId = 'recurring-command-center-help';
+const actionInboxHelpId = 'recurring-action-inbox-help';
+const templatesHelpId = 'recurring-templates-help';
 ---
 
 <ProtectedLayout title="Recurring" currentPath="/recurring" subtitle={selectedMonthLabel}>
@@ -138,61 +145,190 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
 
   <div
     id="recurring-page"
-    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-5 sm:space-y-7 pb-10"
+    class="mx-auto max-w-7xl space-y-5 px-1 pb-10 sm:px-2 sm:space-y-6 lg:px-6"
     data-initial-view={view}
     data-initial-month={safeMonth}
     data-convert-prefill={convertPrefill ? JSON.stringify(convertPrefill) : undefined}
   >
-    <div id="recurring-stats-container">
-      <RecurringStatsPartial summary={summary} />
-    </div>
-
-    {/* Pending list — always visible */}
-    <div id="recurring-pending-list-container">
-      <RecurringPendingList
-        occurrences={pendingResult.occurrences}
-        hasTemplates={templateResult.total > 0}
-        monthLabel={selectedMonthLabel}
-      />
-    </div>
-
-    {/* Section header: title + view toggle + new button */}
-    <div class="pt-2">
-      <RecurringSectionActionBar view={view} total={templateResult.total} />
-    </div>
-
-    {/* Template list — visible in list view */}
-    <div
-      id="recurring-list-view"
-      role="region"
-      aria-hidden={view !== 'list'}
-      class:list={[view !== 'list' && 'hidden']}
-    >
-      <div id="recurring-template-list-container">
-        <RecurringTemplateList
-          templates={templateResult.templates}
-          total={templateResult.total}
-          page={1}
-          limit={20}
-        />
+    <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-lg font-bold text-base-content sm:text-xl">Recurring Command Center</h1>
+            <div class="dropdown">
+              <button
+                type="button"
+                class={infoButtonClass}
+                aria-label="About recurring command center"
+                aria-describedby={commandCenterHelpId}
+              >
+                <Info size={14} class="stroke-current" aria-hidden="true" />
+              </button>
+              <div
+                id={commandCenterHelpId}
+                role="tooltip"
+                class="dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-xs text-base-content/70 shadow-lg"
+              >
+                Monthly overview of recurring income and expenses with quick actions and planning.
+              </div>
+            </div>
+          </div>
+          <p class="mt-1 text-sm text-base-content/60">
+            Confirm this month&apos;s due items and keep your templates organized.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn btn-accent rounded-lg sm:rounded-xl min-h-[44px] h-11 gap-2 px-4 font-semibold"
+          data-open-recurring-template
+          aria-label="Create new recurring transaction"
+        >
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
+          New Recurring
+        </button>
       </div>
-    </div>
 
-    {/* Calendar view — visible in calendar view */}
-    <div
-      id="recurring-calendar-view"
-      role="region"
-      aria-hidden={view !== 'calendar'}
-      class:list={[view !== 'calendar' && 'hidden']}
-    >
-      <div id="recurring-calendar-container">
-        <RecurringCalendar
-          calendarData={[]}
-          year={year}
-          month={month}
-          loading={initialCalendarLoading}
-        />
+      <div id="recurring-stats-container" class="mt-4">
+        <RecurringStatsPartial summary={summary} />
       </div>
+    </section>
+
+    <div class="space-y-5">
+      <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+        <div
+          class="flex flex-col gap-3 border-b border-base-200 pb-4 sm:flex-row sm:items-start sm:justify-between"
+        >
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-sm font-bold uppercase tracking-wide text-base-content/70">
+                Action Inbox
+              </h2>
+              <div class="dropdown">
+                <button
+                  type="button"
+                  class={infoButtonClass}
+                  aria-label="About action inbox"
+                  aria-describedby={actionInboxHelpId}
+                >
+                  <Info size={14} class="stroke-current" aria-hidden="true" />
+                </button>
+                <div
+                  id={actionInboxHelpId}
+                  role="tooltip"
+                  class="dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-xs text-base-content/70 shadow-lg"
+                >
+                  One combined queue for upcoming income and expenses, sorted by due date from
+                  oldest to nearest.
+                </div>
+              </div>
+            </div>
+            <p class="mt-1 text-sm text-base-content/60">
+              Queue for quick confirmation, Calendar for monthly planning.
+            </p>
+          </div>
+          <div
+            class="inline-flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1"
+            role="group"
+            aria-label="Action inbox mode"
+          >
+            <button
+              type="button"
+              class:list={[viewButtonClass, view === 'list' && 'btn-active']}
+              data-recurring-view="list"
+              aria-label="Queue mode"
+              aria-pressed={view === 'list'}
+            >
+              <List size={16} class="stroke-current" aria-hidden="true" />
+              Queue
+            </button>
+            <button
+              type="button"
+              class:list={[viewButtonClass, view === 'calendar' && 'btn-active']}
+              data-recurring-view="calendar"
+              aria-label="Calendar mode"
+              aria-pressed={view === 'calendar'}
+            >
+              <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+              Calendar
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div
+            id="recurring-list-view"
+            role="region"
+            aria-label="Recurring action queue"
+            aria-hidden={view !== 'list'}
+            class:list={[view !== 'list' && 'hidden']}
+          >
+            <div id="recurring-pending-list-container">
+              <RecurringPendingList
+                occurrences={pendingResult.occurrences}
+                hasTemplates={templateResult.total > 0}
+                monthLabel={selectedMonthLabel}
+              />
+            </div>
+          </div>
+
+          <div
+            id="recurring-calendar-view"
+            role="region"
+            aria-label="Recurring action calendar"
+            aria-hidden={view !== 'calendar'}
+            class:list={[view !== 'calendar' && 'hidden']}
+          >
+            <div id="recurring-calendar-container">
+              <RecurringCalendar
+                calendarData={[]}
+                year={year}
+                month={month}
+                loading={initialCalendarLoading}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+        <div class="flex items-center gap-3">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h2 class="text-sm font-bold uppercase tracking-wide text-base-content/70">
+                All Recurring Transactions
+              </h2>
+              <div class="dropdown dropdown-end">
+                <button
+                  type="button"
+                  class={infoButtonClass}
+                  aria-label="About all recurring transactions"
+                  aria-describedby={templatesHelpId}
+                >
+                  <Info size={14} class="stroke-current" aria-hidden="true" />
+                </button>
+                <div
+                  id={templatesHelpId}
+                  role="tooltip"
+                  class="dropdown-content z-40 w-64 rounded-xl border border-base-300 bg-base-100 p-3 text-xs text-base-content/70 shadow-lg"
+                >
+                  Manage every recurring rule in one place and quickly edit, pause, resume, or
+                  cancel.
+                </div>
+              </div>
+            </div>
+            <p class="mt-1 text-sm text-base-content/60">Manage recurrence rules and statuses.</p>
+          </div>
+        </div>
+
+        <div class="mt-4" id="recurring-template-list-container">
+          <RecurringTemplateList
+            templates={templateResult.templates}
+            total={templateResult.total}
+            page={1}
+            limit={10}
+          />
+        </div>
+      </section>
     </div>
   </div>
 

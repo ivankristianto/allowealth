@@ -11,7 +11,7 @@ export interface Props {
   search?: string;
 }
 
-const { templates = [], total = 0, page = 1, limit = 20, type = 'all', search = '' } = Astro.props;
+const { templates = [], total = 0, page = 1, limit = 10, type = 'all', search = '' } = Astro.props;
 ---
 
 <RecurringTemplateList

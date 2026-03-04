@@ -58,7 +58,7 @@ let confirmCurrency: Currency = DEFAULT_CURRENCY;
 let templateType: string = 'all';
 let templateSearch: string = '';
 let templatePage: number = 1;
-const TEMPLATE_LIMIT = 20;
+const TEMPLATE_LIMIT = 10;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const parseApiError = async (response: Response): Promise<string> => {
@@ -118,10 +118,11 @@ async function refreshTemplateList(signal: AbortSignal): Promise<void> {
   const html = await fetchHtml(`/api/recurring?${params}`, signal);
   container.innerHTML = html;
 
-  const newTotal = container.querySelector('[data-total]')?.getAttribute('data-total');
-  const badge = document.getElementById('recurring-count-badge');
-  if (badge && newTotal != null) {
-    badge.textContent = newTotal;
+  const currentPage = Number(
+    container.querySelector('[data-pagination]')?.getAttribute('data-current-page')
+  );
+  if (Number.isFinite(currentPage) && currentPage > 0) {
+    templatePage = currentPage;
   }
 }
 
@@ -877,11 +878,37 @@ function initRecurringPage(): void {
     'click',
     (event) => {
       const target = event.target as HTMLElement;
-      const pageButton = target.closest('[data-template-page]') as HTMLElement | null;
-      if (!pageButton) return;
+      const templateListContainer = document.getElementById('recurring-template-list-container');
+      if (!templateListContainer) return;
 
-      const newPage = Number(pageButton.getAttribute('data-template-page'));
-      if (!Number.isFinite(newPage) || newPage < 1 || newPage === templatePage) return;
+      const clickedInsideTemplateList = target.closest('#recurring-template-list-container');
+      if (!clickedInsideTemplateList) return;
+
+      const legacyPageButton = target.closest('[data-template-page]') as HTMLElement | null;
+      const paginationButton = target.closest(
+        '[data-pagination-prev], [data-pagination-next]'
+      ) as HTMLElement | null;
+
+      let newPage: number | null = null;
+
+      if (legacyPageButton) {
+        newPage = Number(legacyPageButton.getAttribute('data-template-page'));
+      } else if (paginationButton) {
+        const currentPage = Number(
+          templateListContainer
+            .querySelector('[data-pagination]')
+            ?.getAttribute('data-current-page')
+        );
+        if (!Number.isFinite(currentPage) || currentPage < 1) return;
+        newPage = paginationButton.hasAttribute('data-pagination-prev')
+          ? currentPage - 1
+          : currentPage + 1;
+      } else {
+        return;
+      }
+
+      if (newPage === null || !Number.isFinite(newPage) || newPage < 1 || newPage === templatePage)
+        return;
 
       templatePage = newPage;
       void refreshTemplateList(signal).catch((error) => {

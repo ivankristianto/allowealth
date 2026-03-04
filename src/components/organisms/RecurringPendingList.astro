@@ -1,6 +1,7 @@
 ---
-import RecurringPendingCard from '@/components/molecules/RecurringPendingCard.astro';
 import EmptyState from '@/components/atoms/EmptyState.astro';
+import { CircleAlert, CircleCheckBig, CircleMinus } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 
 export interface Props {
@@ -11,82 +12,216 @@ export interface Props {
 
 const { occurrences = [], hasTemplates = false, monthLabel = '' } = Astro.props;
 
-const bills = occurrences.filter((o) => o.templateType === 'expense');
-const income = occurrences.filter((o) => o.templateType === 'income');
+const incomeCount = occurrences.filter((occurrence) => occurrence.templateType === 'income').length;
+const expenseCount = occurrences.filter(
+  (occurrence) => occurrence.templateType === 'expense'
+).length;
+const todayIso = new Date().toISOString().slice(0, 10);
+
+function formatDueDateLabel(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+const queueRows = occurrences.map((occurrence) => {
+  const isExpense = occurrence.templateType === 'expense';
+  const isOverdue = occurrence.status === 'pending' && occurrence.due_date < todayIso;
+  const canAct = occurrence.status === 'pending' && occurrence.due_date <= todayIso;
+  const dueLabel = formatDueDateLabel(occurrence.due_date);
+  const installmentLabel =
+    occurrence.isInstallment && occurrence.totalOccurrences
+      ? `${String(occurrence.occurrence_number).padStart(2, '0')}/${String(occurrence.totalOccurrences).padStart(2, '0')}`
+      : null;
+
+  return {
+    occurrence,
+    isExpense,
+    isOverdue,
+    canAct,
+    dueLabel,
+    installmentLabel,
+    payload: JSON.stringify(occurrence),
+  };
+});
 ---
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="recurring-pending-section">
-  {/* Upcoming Income Section */}
-  <section class="space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
-        Upcoming Income
-        <span class="ml-1 badge badge-sm badge-ghost font-bold">{income.length}</span>
-      </h2>
-    </div>
+<section class="space-y-3" data-testid="recurring-pending-section">
+  <div class="flex flex-wrap items-center gap-2">
+    <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/40">Upcoming Queue</h3>
+    <span class="badge badge-sm badge-success badge-outline font-semibold"
+      >Income {incomeCount}</span
+    >
+    <span class="badge badge-sm badge-error badge-outline font-semibold"
+      >Expenses {expenseCount}</span
+    >
+  </div>
 
-    {
-      income.length > 0 ? (
-        <div class="max-h-80 overflow-y-auto space-y-3 pr-1" id="recurring-pending-income">
-          {income.map((occurrence) => (
-            <RecurringPendingCard occurrence={occurrence} />
-          ))}
-        </div>
-      ) : hasTemplates ? (
-        <p class="text-sm text-base-content/40 py-4 text-center">
-          {monthLabel
-            ? `No income expected for ${monthLabel}.`
-            : 'No income expected for this period.'}
-        </p>
-      ) : (
-        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <EmptyState
-            title="No recurring income yet"
-            message="Set up recurring income to track expected payments."
-            iconName="wallet"
-            variant="centered"
-            actionAttributes={{ 'data-open-recurring-template': 'true' }}
-            actionLabel="+ New Recurring"
-          />
-        </div>
-      )
-    }
-  </section>
+  {
+    queueRows.length > 0 ? (
+      <div
+        class="max-h-[34rem] overflow-x-auto overflow-y-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm"
+        id="recurring-pending-queue"
+      >
+        <table class="table table-zebra table-sm md:table-md">
+          <caption class="sr-only">
+            Upcoming recurring transaction queue with type, due date, amount, and available actions.
+          </caption>
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+              >
+                Type
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+              >
+                Transaction
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+              >
+                Due
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+              >
+                Amount
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+              >
+                Details
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {queueRows.map((row) => {
+              const { occurrence, isExpense, isOverdue, canAct, dueLabel, installmentLabel } = row;
 
-  {/* Upcoming Bills Section */}
-  <section class="space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
-        Upcoming Bills
-        <span class="ml-1 badge badge-sm badge-ghost font-bold">{bills.length}</span>
-      </h2>
-    </div>
-
-    {
-      bills.length > 0 ? (
-        <div class="max-h-80 overflow-y-auto space-y-3 pr-1" id="recurring-pending-bills">
-          {bills.map((occurrence) => (
-            <RecurringPendingCard occurrence={occurrence} />
-          ))}
-        </div>
-      ) : hasTemplates ? (
-        <p class="text-sm text-base-content/40 py-4 text-center">
-          {monthLabel
-            ? `All bills for ${monthLabel} are settled.`
-            : 'All bills are settled for this period.'}
-        </p>
-      ) : (
-        <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <EmptyState
-            title="No recurring bills yet"
-            message="Set up recurring expenses to track your upcoming bills."
-            iconName="receipt"
-            actionLabel="+ New Recurring"
-            variant="centered"
-            actionAttributes={{ 'data-open-recurring-template': 'true' }}
-          />
-        </div>
-      )
-    }
-  </section>
-</div>
+              return (
+                <tr data-testid="recurring-pending-card" data-occurrence-id={occurrence.id}>
+                  <td>
+                    <span
+                      class:list={[
+                        'badge badge-sm font-bold',
+                        isExpense ? 'badge-error' : 'badge-success',
+                      ]}
+                    >
+                      {isExpense ? 'Expense' : 'Income'}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="space-y-1">
+                      <p class="font-semibold text-base-content">{occurrence.templateName}</p>
+                      <p class="text-xs text-base-content/60">
+                        {occurrence.category.name} · {occurrence.account.name}
+                      </p>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="space-y-1">
+                      <p class="text-sm font-semibold tabular-nums">{dueLabel}</p>
+                      <p
+                        class:list={[
+                          'text-xs font-semibold',
+                          isOverdue
+                            ? 'text-error'
+                            : canAct
+                              ? 'text-warning'
+                              : 'text-base-content/60',
+                        ]}
+                      >
+                        {isOverdue ? 'Overdue' : canAct ? 'Ready to process' : 'Scheduled'}
+                      </p>
+                    </div>
+                  </td>
+                  <td>
+                    <p
+                      class:list={[
+                        'text-sm font-bold tabular-nums',
+                        isExpense ? 'text-error' : 'text-success',
+                      ]}
+                    >
+                      {formatCurrency(occurrence.templateAmount, occurrence.currency)}
+                    </p>
+                  </td>
+                  <td>
+                    <div class="space-y-1 text-xs text-base-content/70">
+                      <p>Occurrence #{occurrence.occurrence_number}</p>
+                      <p>
+                        {installmentLabel ? `Installment ${installmentLabel}` : 'Recurring monthly'}
+                      </p>
+                    </div>
+                  </td>
+                  <td>
+                    {canAct ? (
+                      <div class="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          class="btn btn-sm h-11 min-h-[44px] rounded-lg sm:rounded-xl btn-accent"
+                          data-open-confirm-modal
+                          data-occurrence={row.payload}
+                          aria-label={`Confirm ${occurrence.templateName}`}
+                        >
+                          <CircleCheckBig size={14} aria-hidden="true" />
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm h-11 min-h-[44px] rounded-lg sm:rounded-xl btn-outline btn-warning"
+                          data-open-skip-modal
+                          data-occurrence={row.payload}
+                          aria-label={`Skip ${occurrence.templateName}`}
+                        >
+                          <CircleMinus size={14} aria-hidden="true" />
+                          Skip
+                        </button>
+                      </div>
+                    ) : (
+                      <div class="inline-flex items-center gap-1.5 text-xs text-base-content/60">
+                        <CircleAlert size={14} aria-hidden="true" />
+                        Available on {dueLabel}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    ) : hasTemplates ? (
+      <p class="py-4 text-center text-sm text-base-content/40">
+        {monthLabel
+          ? `No pending recurring items for ${monthLabel}.`
+          : 'No pending recurring items for this period.'}
+      </p>
+    ) : (
+      <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+        <EmptyState
+          title="No recurring transactions yet"
+          message="Create recurring income or expenses to start your action queue."
+          iconName="receipt"
+          variant="centered"
+          actionAttributes={{ 'data-open-recurring-template': 'true' }}
+          actionLabel="+ New Recurring"
+        />
+      </div>
+    )
+  }
+</section>

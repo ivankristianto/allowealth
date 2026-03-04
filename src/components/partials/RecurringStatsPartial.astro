@@ -1,6 +1,5 @@
 ---
-import StatCard from '@/components/atoms/StatCard.astro';
-import { TrendingUp, TrendingDown, Wallet, Info } from '@lucide/astro';
+import { TrendingUp, TrendingDown, Wallet } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import type { RecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 
@@ -45,107 +44,56 @@ const isNetNegative = summary.netByCurrency.some((entry) => Number.parseFloat(en
 const netSavingsClass = isNetNegative ? 'text-error' : 'text-success';
 ---
 
-<div class="@container">
-  <!-- Mobile compact cards -->
-  <div class="flex flex-col gap-3 md:hidden" data-testid="recurring-stats-row">
-    <div
-      class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+<section
+  class="rounded-2xl border border-base-300 bg-base-100 p-3 sm:rounded-3xl sm:p-4"
+  aria-label="Recurring monthly summary"
+>
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-0" data-testid="recurring-stats-row">
+    <article
+      class="rounded-xl border border-base-200 bg-base-100 p-3 sm:rounded-none sm:border-0 sm:px-4 sm:py-3 sm:border-r sm:border-base-200"
       role="region"
-      aria-label="Upcoming Income"
+      aria-label="Upcoming income summary"
     >
-      <TrendingUp size={20} class="stroke-current text-success shrink-0" aria-hidden="true" />
-      <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
-        Income
-      </span>
-      <span class="text-sm font-bold text-success tabular-nums">
-        {upcomingIncomeLabel}
-      </span>
-    </div>
-
-    <div
-      class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
-      role="region"
-      aria-label="Upcoming Expense"
-    >
-      <TrendingDown size={20} class="stroke-current text-error shrink-0" aria-hidden="true" />
-      <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
-        Expenses
-      </span>
-      <span class="text-sm font-bold text-error tabular-nums">
-        {upcomingExpenseLabel}
-      </span>
-    </div>
-
-    <div
-      class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
-      role="region"
-      aria-label="Cashflow Summary"
-    >
-      <Wallet size={20} class={`stroke-current shrink-0 ${netSavingsClass}`} aria-hidden="true" />
-      <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
-        Cashflow
-      </span>
-      <span class={`text-sm font-bold tabular-nums ${netSavingsClass}`}>
-        {netLabel}
-      </span>
-    </div>
-  </div>
-
-  <!-- Desktop full cards -->
-  <div
-    class="hidden md:grid grid-cols-1 @2xl:grid-cols-3 gap-4 @sm:gap-6"
-    data-testid="recurring-stats-row"
-  >
-    <StatCard
-      title="Upcoming Income"
-      value={upcomingIncomeLabel}
-      valueColor="text-success"
-      subtitle={`${summary.upcomingIncomeCount} upcoming items`}
-      subtitleIcon="trending-up"
-      subtitleColor="text-success/60"
-      iconVariant="success"
-      className="transition-all hover:shadow-md"
-    >
-      <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-    </StatCard>
-    <StatCard
-      title="Upcoming Expense"
-      value={upcomingExpenseLabel}
-      valueColor="text-error"
-      subtitle={`${summary.upcomingExpenseCount} upcoming items`}
-      subtitleIcon="trending-up"
-      subtitleColor="text-error/60"
-      iconVariant="error"
-      className="transition-all hover:shadow-md"
-    >
-      <TrendingDown slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-    </StatCard>
-    <StatCard
-      title="Cashflow Summary"
-      value={netLabel}
-      valueColor={netSavingsClass}
-      subtitle="Net Savings"
-      subtitleIcon="trending-up"
-      subtitleColor="text-base-content/40"
-      iconVariant="accent"
-      className="transition-all hover:shadow-md"
-    >
-      <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
-      <div slot="details" class="flex items-center gap-1.5 text-xs text-base-content/40">
-        <div
-          class="tooltip tooltip-bottom"
-          data-tip="Upcoming income minus upcoming expenses for this month."
-        >
-          <Info
-            size={14}
-            class="stroke-current cursor-help"
-            aria-label="What is Cashflow Summary?"
-          />
-        </div>
-        <span class="font-medium">Income: {incomeBreakdown}</span>
-        <span class="text-base-content/20">|</span>
-        <span class="font-medium">Expenses: {expenseBreakdown}</span>
+      <div
+        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/50"
+      >
+        <TrendingUp size={14} class="stroke-current text-success" aria-hidden="true" />
+        Upcoming Income
       </div>
-    </StatCard>
+      <p class="mt-2 text-lg font-bold tabular-nums text-success">{upcomingIncomeLabel}</p>
+      <p class="mt-1 text-xs text-base-content/50">{summary.upcomingIncomeCount} items due</p>
+    </article>
+
+    <article
+      class="rounded-xl border border-base-200 bg-base-100 p-3 sm:rounded-none sm:border-0 sm:px-4 sm:py-3 sm:border-r sm:border-base-200"
+      role="region"
+      aria-label="Upcoming expense summary"
+    >
+      <div
+        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/50"
+      >
+        <TrendingDown size={14} class="stroke-current text-error" aria-hidden="true" />
+        Upcoming Expense
+      </div>
+      <p class="mt-2 text-lg font-bold tabular-nums text-error">{upcomingExpenseLabel}</p>
+      <p class="mt-1 text-xs text-base-content/50">{summary.upcomingExpenseCount} items due</p>
+    </article>
+
+    <article
+      class="rounded-xl border border-base-200 bg-base-100 p-3 sm:rounded-none sm:border-0 sm:px-4 sm:py-3"
+      role="region"
+      aria-label="Net cashflow summary"
+    >
+      <div
+        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/50"
+      >
+        <Wallet size={14} class={`stroke-current ${netSavingsClass}`} aria-hidden="true" />
+        Net Cashflow
+      </div>
+      <p class={`mt-2 text-lg font-bold tabular-nums ${netSavingsClass}`}>{netLabel}</p>
+      <p class="mt-1 text-xs text-base-content/50">
+        Income {incomeBreakdown} · Expense {expenseBreakdown}
+      </p>
+    </article>
   </div>
-</div>
+</section>

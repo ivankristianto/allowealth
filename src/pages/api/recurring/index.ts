@@ -44,7 +44,7 @@ export const GET: APIRoute = async (context) => {
     const type = parseTypeFilter(context.url.searchParams.get('type'));
     const search = context.url.searchParams.get('search')?.trim() || undefined;
     const page = parsePositiveInt(context.url.searchParams.get('page'), 1);
-    const limit = parsePositiveInt(context.url.searchParams.get('limit'), 20);
+    const limit = parsePositiveInt(context.url.searchParams.get('limit'), 10);
 
     const result = await recurringTemplateService.findAll(
       auth.workspaceId,

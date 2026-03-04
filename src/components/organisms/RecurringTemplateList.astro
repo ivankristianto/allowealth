@@ -1,10 +1,9 @@
 ---
-import { CircleMinus, CirclePlus, EllipsisVertical, Pause, Play, Ban, Pencil } from '@lucide/astro';
+import { EllipsisVertical, Pause, Play, Ban, Pencil } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
-import ProgressBar from '@/components/atoms/ProgressBar.astro';
-import RecurringTemplateRow from '@/components/molecules/RecurringTemplateRow.astro';
 import RecurringTemplateFilterBar from '@/components/molecules/RecurringTemplateFilterBar.astro';
 import EmptyState from '@/components/atoms/EmptyState.astro';
+import PaginationPartial from '@/components/partials/PaginationPartial.astro';
 import type { RecurringTemplateOutput } from '@/lib/types/recurring';
 
 export interface Props {
@@ -16,15 +15,9 @@ export interface Props {
   search?: string;
 }
 
-const { templates = [], total = 0, page = 1, limit = 20, type = 'all', search = '' } = Astro.props;
+const { templates = [], total = 0, page = 1, limit = 10, type = 'all', search = '' } = Astro.props;
 
 const totalPages = Math.max(1, Math.ceil(total / limit));
-const startItem = total === 0 ? 0 : (page - 1) * limit + 1;
-const endItem = Math.min(page * limit, total);
-const paginationButtonClass =
-  'btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0';
-const paginationCurrentClass =
-  'inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 text-sm font-medium text-base-content';
 
 const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
   active: 'badge-success',
@@ -43,7 +36,7 @@ function daySuffix(day: number): string {
 }
 ---
 
-<section class="space-y-3 sm:space-y-4" data-testid="recurring-template-list" data-total={total}>
+<section class="space-y-3 sm:space-y-4" data-testid="recurring-template-list">
   {/* Filter bar */}
   <RecurringTemplateFilterBar type={type} search={search} />
   {
@@ -62,232 +55,182 @@ function daySuffix(day: number): string {
       </div>
     ) : (
       <>
-        {/* Desktop table */}
-        <div class="hidden md:block overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <table class="table table-zebra">
+        <div class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+          <table class="table table-zebra table-sm md:table-md">
+            <caption class="sr-only">
+              Recurring template list with type, status, amount, schedule, and template actions.
+            </caption>
             <thead>
-              <tr class="border-b border-base-300">
-                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
-                  Name
+              <tr>
+                <th
+                  scope="col"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                >
+                  Type & Status
                 </th>
-                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
+                <th
+                  scope="col"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                >
+                  Transaction
+                </th>
+                <th
+                  scope="col"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                >
                   Amount
                 </th>
-                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
-                  Recurrence
+                <th
+                  scope="col"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                >
+                  Schedule
                 </th>
-                <th class="text-xs font-bold uppercase tracking-wider text-base-content/40">
-                  Status
+                <th
+                  scope="col"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                >
+                  Actions
                 </th>
-                <th class="w-12" />
               </tr>
             </thead>
             <tbody>
-              {templates.map((template) => (
-                <RecurringTemplateRow template={template} />
-              ))}
+              {templates.map((template) => {
+                const payload = JSON.stringify(template);
+                const isExpense = template.type === 'expense';
+
+                return (
+                  <tr
+                    class:list={[template.status === 'paused' && 'opacity-70']}
+                    data-testid="recurring-template-row"
+                  >
+                    <td>
+                      <div class="flex flex-wrap items-center gap-1.5">
+                        <span
+                          class:list={[
+                            'badge badge-sm font-bold',
+                            isExpense ? 'badge-error' : 'badge-success',
+                          ]}
+                        >
+                          {isExpense ? 'Expense' : 'Income'}
+                        </span>
+                        <span class={`badge badge-sm font-bold ${statusClassMap[template.status]}`}>
+                          {template.status}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="space-y-1">
+                        <p class="font-semibold text-base-content">{template.name}</p>
+                        <p class="text-xs text-base-content/60">
+                          Category {template.category.name} · Account {template.account.name}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        class:list={[
+                          'text-sm font-bold tabular-nums',
+                          isExpense ? 'text-error' : 'text-success',
+                        ]}
+                      >
+                        {formatCurrency(template.amount, template.currency)}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="space-y-1 text-xs text-base-content/70">
+                        <p>Every {daySuffix(template.day_of_month)}</p>
+                        <p>
+                          {template.nextDueDate
+                            ? `Next due ${template.nextDueDate}`
+                            : 'No upcoming due date'}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="dropdown dropdown-end">
+                        <button
+                          type="button"
+                          tabindex={0}
+                          class="btn btn-ghost btn-sm btn-square h-11 min-h-[44px] w-11 min-w-[44px] rounded-lg"
+                          aria-label={`Actions for ${template.name}`}
+                        >
+                          <EllipsisVertical size={14} aria-hidden="true" />
+                        </button>
+                        <ul
+                          tabindex={0}
+                          class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+                        >
+                          <li>
+                            <button
+                              type="button"
+                              class="rounded-xl"
+                              data-template-action="edit"
+                              data-template={payload}
+                            >
+                              <Pencil size={14} aria-hidden="true" />
+                              Edit
+                            </button>
+                          </li>
+                          {template.status === 'active' ? (
+                            <li>
+                              <button
+                                type="button"
+                                class="rounded-xl"
+                                data-template-action="pause"
+                                data-template-id={template.id}
+                              >
+                                <Pause size={14} aria-hidden="true" />
+                                Pause
+                              </button>
+                            </li>
+                          ) : template.status === 'paused' ? (
+                            <li>
+                              <button
+                                type="button"
+                                class="rounded-xl"
+                                data-template-action="resume"
+                                data-template-id={template.id}
+                              >
+                                <Play size={14} aria-hidden="true" />
+                                Resume
+                              </button>
+                            </li>
+                          ) : null}
+                          {template.status !== 'cancelled' && template.status !== 'completed' && (
+                            <li>
+                              <button
+                                type="button"
+                                class="rounded-xl text-error"
+                                data-template-action="cancel"
+                                data-template-id={template.id}
+                                data-template-name={template.name}
+                              >
+                                <Ban size={14} aria-hidden="true" />
+                                Cancel
+                              </button>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-base-300">
-              <span class="hidden sm:block text-sm text-base-content/60">
-                {startItem}-{endItem} of {total}
-              </span>
-              <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                <button
-                  class={paginationButtonClass}
-                  disabled={page <= 1}
-                  data-template-page={page - 1}
-                  aria-label="Previous page"
-                >
-                  Previous
-                </button>
-
-                <span class={paginationCurrentClass}>
-                  {page} / {totalPages}
-                </span>
-
-                <button
-                  class={paginationButtonClass}
-                  disabled={page >= totalPages}
-                  data-template-page={page + 1}
-                  aria-label="Next page"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Mobile cards */}
-        <div class="md:hidden space-y-3">
-          {templates.map((template) => {
-            const payload = JSON.stringify(template);
-            const installmentProgress =
-              template.is_installment && template.total_occurrences
-                ? Math.min(
-                    100,
-                    Math.round((template.confirmedCount / template.total_occurrences) * 100)
-                  )
-                : 0;
-
-            return (
-              <article
-                class:list={[
-                  'rounded-2xl border border-base-300 bg-base-100 p-4 space-y-3 shadow-sm hover:shadow-md transition-shadow duration-200',
-                  template.status === 'paused' && 'opacity-60',
-                ]}
-                data-testid="recurring-template-row"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                      {template.type === 'expense' ? (
-                        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 shrink-0">
-                          <CircleMinus size={14} class="text-error" aria-hidden="true" />
-                        </div>
-                      ) : (
-                        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-success/10 shrink-0">
-                          <CirclePlus size={14} class="text-success" aria-hidden="true" />
-                        </div>
-                      )}
-                      <h3 class="font-semibold truncate" title={template.name}>
-                        {template.name}
-                      </h3>
-                    </div>
-                    <p class="text-sm font-bold text-base-content mt-1 ml-9">
-                      {formatCurrency(template.amount, template.currency)}
-                    </p>
-                  </div>
-                  <div class="flex items-center gap-2 shrink-0">
-                    <span class={`badge badge-sm font-bold ${statusClassMap[template.status]}`}>
-                      {template.status}
-                    </span>
-                    <div class="dropdown dropdown-end">
-                      <button
-                        type="button"
-                        tabindex={0}
-                        class="btn btn-ghost btn-sm btn-square rounded-xl"
-                        aria-label="Template actions"
-                      >
-                        <EllipsisVertical size={16} aria-hidden="true" />
-                      </button>
-                      <ul
-                        tabindex={0}
-                        class="dropdown-content z-40 menu p-2 shadow-lg bg-base-100 rounded-2xl w-44 border border-base-300"
-                      >
-                        <li>
-                          <button
-                            type="button"
-                            class="rounded-xl"
-                            data-template-action="edit"
-                            data-template={payload}
-                          >
-                            <Pencil size={15} aria-hidden="true" />
-                            Edit
-                          </button>
-                        </li>
-                        {template.status === 'active' ? (
-                          <li>
-                            <button
-                              type="button"
-                              class="rounded-xl"
-                              data-template-action="pause"
-                              data-template-id={template.id}
-                            >
-                              <Pause size={15} aria-hidden="true" />
-                              Pause
-                            </button>
-                          </li>
-                        ) : template.status === 'paused' ? (
-                          <li>
-                            <button
-                              type="button"
-                              class="rounded-xl"
-                              data-template-action="resume"
-                              data-template-id={template.id}
-                            >
-                              <Play size={15} aria-hidden="true" />
-                              Resume
-                            </button>
-                          </li>
-                        ) : null}
-                        {template.status !== 'cancelled' && template.status !== 'completed' && (
-                          <li>
-                            <button
-                              type="button"
-                              data-template-action="cancel"
-                              data-template-id={template.id}
-                              data-template-name={template.name}
-                              class="text-error rounded-xl"
-                            >
-                              <Ban size={15} aria-hidden="true" />
-                              Cancel
-                            </button>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {template.is_installment && template.total_occurrences && (
-                  <div class="flex items-center gap-2 ml-9">
-                    <ProgressBar value={installmentProgress} size="sm" className="w-16" />
-                    <span class="text-xs text-base-content/60 font-medium">
-                      {template.confirmedCount}/{template.total_occurrences}
-                    </span>
-                  </div>
-                )}
-
-                <div class="text-xs text-base-content/50 ml-9 font-medium">
-                  <span>Every {daySuffix(template.day_of_month)}</span>
-                  {template.nextDueDate && (
-                    <>
-                      <span class="mx-2 text-base-content/30">&middot;</span>
-                      <span>Next: {template.nextDueDate}</span>
-                    </>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-
-          {/* Mobile pagination */}
-          {totalPages > 1 && (
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-2 sm:px-0 py-3">
-              <span class="text-sm text-base-content/60">
-                {startItem}-{endItem} of {total}
-              </span>
-              <div class="flex items-center gap-2 w-full justify-between">
-                <button
-                  class={paginationButtonClass}
-                  disabled={page <= 1}
-                  data-template-page={page - 1}
-                  aria-label="Previous page"
-                >
-                  Previous
-                </button>
-
-                <span class={paginationCurrentClass}>
-                  {page} / {totalPages}
-                </span>
-
-                <button
-                  class={paginationButtonClass}
-                  disabled={page >= totalPages}
-                  data-template-page={page + 1}
-                  aria-label="Next page"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        {totalPages > 1 && (
+          <PaginationPartial
+            total={total}
+            limit={limit}
+            offset={(page - 1) * limit}
+            page={page}
+            totalPages={totalPages}
+            hideSummary
+          />
+        )}
       </>
     )
   }

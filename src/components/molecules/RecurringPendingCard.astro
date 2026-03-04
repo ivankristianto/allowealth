@@ -1,5 +1,5 @@
 ---
-import { CircleAlert, CircleCheckBig, CircleMinus, Clock } from '@lucide/astro';
+import { CircleAlert, CircleCheckBig, CircleMinus, CirclePlus } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 
@@ -12,12 +12,19 @@ const { occurrence } = Astro.props;
 const todayIso = new Date().toISOString().slice(0, 10);
 const isOverdue = occurrence.status === 'pending' && occurrence.due_date < todayIso;
 const canAct = occurrence.status === 'pending' && occurrence.due_date <= todayIso;
-const borderClass = isOverdue ? 'border-l-error' : 'border-l-warning';
+const isExpense = occurrence.templateType === 'expense';
+const typeLabel = isExpense ? 'Expense' : 'Income';
+const borderClass = isExpense ? 'border-l-error' : 'border-l-success';
+const typeBadgeClass = isExpense ? 'badge-error' : 'badge-success';
+const typeIconWrapClass = isExpense ? 'bg-error/10' : 'bg-success/10';
+const amountClass = isExpense ? 'text-error' : 'text-success';
 const dueDate = new Date(`${occurrence.due_date}T00:00:00`);
 const dueDateLabel = dueDate.toLocaleDateString('en-US', {
   month: 'short',
   day: 'numeric',
 });
+const dueBadgeClass = isOverdue ? 'badge-error' : canAct ? 'badge-warning' : 'badge-ghost';
+const dueBadgeLabel = isOverdue ? `Overdue · ${dueDateLabel}` : `Due ${dueDateLabel}`;
 
 const occurrencePayload = JSON.stringify(occurrence);
 const amountLabel = formatCurrency(occurrence.templateAmount, occurrence.currency);
@@ -36,41 +43,38 @@ const installmentLabel =
   data-testid="recurring-pending-card"
   data-occurrence-id={occurrence.id}
 >
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-    <div class="flex items-start gap-3 min-w-0 flex-1">
-      {
-        isOverdue ? (
-          <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-error/10 shrink-0">
-            <CircleAlert size={13} class="text-error" aria-hidden="true" />
-          </div>
-        ) : (
-          <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-warning/10 shrink-0">
-            <Clock size={13} class="text-warning" aria-hidden="true" />
-          </div>
-        )
-      }
-      <div class="min-w-0 flex-1 space-y-1">
-        <div class="flex items-center gap-2">
+  <div class="space-y-3">
+    <div class="flex min-w-0 items-start gap-3">
+      <div
+        class={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${typeIconWrapClass}`}
+      >
+        {
+          isExpense ? (
+            <CircleMinus size={14} class="text-error" aria-hidden="true" />
+          ) : (
+            <CirclePlus size={14} class="text-success" aria-hidden="true" />
+          )
+        }
+      </div>
+
+      <div class="min-w-0 flex-1 space-y-1.5">
+        <div class="flex flex-wrap items-center gap-2">
           <h3
-            class="font-semibold text-sm text-base-content truncate"
+            class="truncate text-sm font-semibold text-base-content"
             title={occurrence.templateName}
           >
             {occurrence.templateName}
           </h3>
-          {isOverdue && <span class="badge badge-error badge-xs font-bold shrink-0">Overdue</span>}
+          <span class={`badge badge-sm font-bold ${typeBadgeClass}`}>{typeLabel}</span>
+          {isOverdue && <CircleAlert size={14} class="text-error shrink-0" aria-hidden="true" />}
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm font-bold text-base-content">{amountLabel}</span>
+
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class={`text-sm font-bold ${amountClass}`}>{amountLabel}</span>
+          <span class={`badge badge-sm font-semibold ${dueBadgeClass}`}>{dueBadgeLabel}</span>
           {
             installmentLabel && (
-              <span class="badge badge-outline badge-xs font-medium">{installmentLabel}</span>
-            )
-          }
-          {
-            canAct ? (
-              <span class="text-xs text-base-content/50">Due {dueDateLabel}</span>
-            ) : (
-              <span class="text-xs text-base-content/40">{dueDateLabel}</span>
+              <span class="badge badge-outline badge-sm font-medium">{installmentLabel}</span>
             )
           }
         </div>
@@ -79,10 +83,10 @@ const installmentLabel =
 
     {
       canAct ? (
-        <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end sm:shrink-0">
+        <div class="grid grid-cols-1 gap-2 sm:ml-auto sm:max-w-sm sm:grid-cols-2">
           <button
             type="button"
-            class="btn btn-accent h-11 min-h-11 sm:btn-sm sm:h-9 sm:min-h-9 rounded-lg sm:rounded-xl font-semibold"
+            class="btn btn-accent h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
             data-open-confirm-modal
             data-occurrence={occurrencePayload}
           >
@@ -91,7 +95,7 @@ const installmentLabel =
           </button>
           <button
             type="button"
-            class="btn btn-outline btn-warning h-11 min-h-11 sm:btn-sm sm:h-9 sm:min-h-9 rounded-lg sm:rounded-xl font-semibold"
+            class="btn btn-outline btn-warning h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
             data-open-skip-modal
             data-occurrence={occurrencePayload}
           >
@@ -100,7 +104,7 @@ const installmentLabel =
           </button>
         </div>
       ) : (
-        <p class="text-xs text-base-content/50 sm:shrink-0">Available on {dueDateLabel}</p>
+        <p class="text-xs text-base-content/50">Available on {dueDateLabel}</p>
       )
     }
   </div>
