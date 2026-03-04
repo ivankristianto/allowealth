@@ -1,0 +1,71 @@
+---
+/**
+ * GreetingHeader Component
+ *
+ * Displays a warm, personalized greeting based on time of day
+ * with the user's name and current date.
+ */
+
+import { Sun, Sunset, Sparkles } from '@lucide/astro';
+
+export interface Props {
+  /** User name to display in greeting */
+  userName?: string;
+  /** Current date */
+  currentDate?: Date;
+}
+
+const { userName, currentDate } = Astro.props;
+
+// Get greeting based on time of day (client-side determined)
+const getGreeting = (): string => {
+  const hour = (currentDate ?? new Date()).getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+const greeting = getGreeting();
+const displayName = userName?.split(' ')[0] ?? 'there';
+
+// Format full date: Monday, March 4, 2026
+const formatFullDate = (date: Date | undefined): string => {
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const dateDisplay = formatFullDate(currentDate);
+
+// Icon mapping for each greeting
+const greetingIcons: Record<string, typeof Sun> = {
+  'Good morning': Sun,
+  'Good afternoon': Sun,
+  'Good evening': Sunset,
+};
+
+const Icon = greetingIcons[greeting] ?? Sun;
+---
+
+<div class="space-y-1">
+  <div class="flex items-center gap-2">
+    <p class="text-2xl lg:text-3xl font-bold tracking-tight text-primary leading-none">
+      {greeting}, {displayName}!
+    </p>
+    <span class="text-accent">
+      <Sparkles size={20} class="stroke-current animate-pulse" aria-hidden="true" />
+    </span>
+  </div>
+  {
+    dateDisplay && (
+      <p class="text-base font-medium text-base-content/70 leading-tight flex items-center gap-1.5">
+        <Icon size={16} class="stroke-current" aria-hidden="true" />
+        {dateDisplay}
+      </p>
+    )
+  }
+</div>

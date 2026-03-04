@@ -55,9 +55,17 @@ interface Props {
   title?: string;
   currentPath?: string;
   subtitle?: string;
+  userName?: string;
+  currentDate?: Date;
 }
 
-const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
+const {
+  title = 'Finance Manager',
+  currentPath = '/',
+  subtitle,
+  userName,
+  currentDate,
+} = Astro.props;
 
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
@@ -159,6 +167,8 @@ if (
   currentPath={currentPath}
   user={user}
   subtitle={subtitle}
+  userName={userName}
+  currentDate={currentDate}
   primaryCurrency={workspaceCurrencies.primary}
   secondaryCurrency={workspaceCurrencies.secondary}
 >

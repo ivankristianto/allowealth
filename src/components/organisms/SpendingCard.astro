@@ -29,7 +29,7 @@ const {
   budget: rawBudget,
   income: rawIncome = 0,
   currency = 'IDR',
-  remainingLabel = 'Budget Remaining',
+  remainingLabel = 'Remaining',
   loading = false,
   error,
   className = '',
@@ -131,7 +131,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
             <Scale size={24} class="stroke-current" aria-hidden="true" />
           </IconBadge>
           <div class="min-w-0">
-            <StatLabel size="md" color="neutral">Expenses</StatLabel>
+            <StatLabel size="md" color="neutral">This Month</StatLabel>
             <div
               id={uniqueId}
               class="flex items-baseline gap-1.5 flex-wrap mt-1.5"
@@ -152,7 +152,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
       <div class="space-y-2">
         <ProgressBar value={percentage} status={progressBarStatus} size="md" />
         <div class="flex justify-between items-center text-sm">
-          <span class="text-base-content/60">Monthly Allocation</span>
+          <span class="text-base-content/60">Budget Used</span>
           <span class="font-semibold text-base-content">{percentageRounded}%</span>
         </div>
       </div>
@@ -166,13 +166,13 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
     <div class="border-t border-base-300 pt-4 mt-4">
       <div class="grid grid-cols-1 @xs:grid-cols-2 gap-4">
         <div>
-          <StatLabel size="sm" color="neutral">INCOME</StatLabel>
+          <StatLabel size="sm" color="neutral">Income</StatLabel>
           <p class="text-lg font-bold text-success mt-1" data-testid="dashboard-total-income">
             {incomeFormatted}
           </p>
         </div>
         <div class="min-w-0">
-          <StatLabel size="sm" color="neutral">NET SAVINGS</StatLabel>
+          <StatLabel size="sm" color="neutral">Net Savings</StatLabel>
           <p
             class:list={[
               'text-lg font-bold mt-1 truncate',
@@ -184,8 +184,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
             {netSavingsFormatted}
           </p>
           <p class="text-xs font-medium text-base-content/60 mt-0.5">
-            {netSavings >= 0 ? '+' : ''}
-            {Math.round(savingsPercentage)}% of income
+            {Math.abs(Math.round(savingsPercentage))}% of income
           </p>
         </div>
       </div>

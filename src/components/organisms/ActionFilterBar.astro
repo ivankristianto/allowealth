@@ -51,7 +51,7 @@ const currentOwnerName = isPersonalView
     <button
       type="button"
       tabindex={0}
-      class="flex items-center gap-2 px-4 py-3 text-sm font-semibold border border-base-300 bg-base-100 text-base-content rounded-xl shadow-sm hover:border-base-content/30 transition-colors min-w-[160px] justify-between"
+      class="flex min-w-40 items-center justify-between gap-2 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content shadow-sm transition-colors hover:border-base-content/30"
       aria-label="Filter by account owner"
       aria-haspopup="menu"
     >
@@ -132,7 +132,7 @@ const currentOwnerName = isPersonalView
       searchValue && (
         <button
           type="button"
-          class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle min-h-[28px] min-w-[28px] rounded-lg"
+          class="btn btn-circle btn-ghost btn-xs absolute right-3 top-1/2 h-11 min-h-11 w-11 min-w-11 -translate-y-1/2 rounded-lg"
           aria-label="Clear search"
           data-clear-search
         >

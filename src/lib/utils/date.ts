@@ -256,6 +256,17 @@ export function getCurrentDateISO(): string {
   return new Date().toISOString().split('T')[0] ?? '';
 }
 
+/**
+ * Get current local date in ISO format (YYYY-MM-DD) without UTC conversion.
+ * Use this when comparing calendar-day values from date-only fields.
+ */
+export function getCurrentLocalDateISO(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ============================================
 // Month Key Utilities
 // Format: "MM-YYYY" (e.g., "01-2026")

@@ -1,6 +1,7 @@
 ---
 import { CircleAlert, CircleCheckBig, CircleMinus, CirclePlus } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 
 export interface Props {
@@ -9,7 +10,7 @@ export interface Props {
 
 const { occurrence } = Astro.props;
 
-const todayIso = new Date().toISOString().slice(0, 10);
+const todayIso = getCurrentDateISO();
 const isOverdue = occurrence.status === 'pending' && occurrence.due_date < todayIso;
 const canAct = occurrence.status === 'pending' && occurrence.due_date <= todayIso;
 const isExpense = occurrence.templateType === 'expense';
@@ -104,7 +105,7 @@ const installmentLabel =
           </button>
         </div>
       ) : (
-        <p class="text-xs text-base-content/50">Available on {dueDateLabel}</p>
+        <p class="text-xs text-base-content/70">Available on {dueDateLabel}</p>
       )
     }
   </div>

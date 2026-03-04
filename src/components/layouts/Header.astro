@@ -17,6 +17,7 @@ import { Menu, Plus } from '@lucide/astro';
 import ThemeToggle from '../atoms/ThemeToggle.astro';
 import Button from '../atoms/Button.astro';
 import CurrencySwitcher from '../atoms/CurrencySwitcher.astro';
+import GreetingHeader from '../molecules/GreetingHeader.astro';
 import type { User } from '@/lib/auth/lucia';
 import type { Currency } from '@/lib/constants/currency';
 
@@ -35,6 +36,10 @@ interface Props {
   primaryCurrency?: Currency;
   /** Workspace secondary currency */
   secondaryCurrency?: Currency | null;
+  /** User name for warm greeting */
+  userName?: string;
+  /** Current date for greeting */
+  currentDate?: Date;
 }
 
 const {
@@ -44,6 +49,8 @@ const {
   user,
   primaryCurrency,
   secondaryCurrency,
+  userName,
+  currentDate,
 } = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 const showNewTransactionButton = user != null && user.role !== 'super_admin';
@@ -73,17 +80,26 @@ const showNewTransactionButton = user != null && user.role !== 'super_admin';
         )
       }
       <div>
-        <h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-primary leading-none">
-          {title}
-        </h1>
         {
-          subtitle && (
-            <p
-              class="text-sm font-medium text-neutral mt-0.5 sm:mt-1.5 leading-none"
-              data-header-subtitle
-            >
-              {subtitle}
-            </p>
+          userName ? (
+            <>
+              <h1 class="sr-only">{title}</h1>
+              <GreetingHeader userName={userName} currentDate={currentDate} />
+            </>
+          ) : (
+            <>
+              <h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-primary leading-none">
+                {title}
+              </h1>
+              {subtitle && (
+                <p
+                  class="text-base font-medium text-base-content/70 mt-1 sm:mt-2 leading-tight"
+                  data-header-subtitle
+                >
+                  {subtitle}
+                </p>
+              )}
+            </>
           )
         }
       </div>

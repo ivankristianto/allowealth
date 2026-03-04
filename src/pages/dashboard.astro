@@ -23,13 +23,11 @@ import type { OnboardingStatus } from '@/services/workspace.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import AccountsWidget from '@/components/organisms/AccountsWidget.astro';
-import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecurringBillsWidget from '@/components/organisms/RecurringBillsWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import MfaEnableBanner from '@/components/molecules/MfaEnableBanner.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
@@ -157,15 +155,6 @@ const recentTransactions: TransactionOutput[] =
     created_by_user_name: tx.createdByName,
   })) || [];
 
-const formatCashFlowDate = (date: Date | string): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-};
-
 // Safe parseFloat helper to prevent NaN propagation
 const safeParseFloat = (value: string | undefined | null): number => {
   const parsed = parseFloat(value ?? '0');
@@ -180,38 +169,6 @@ const debtTotalsByCurrency = (dashboardData?.totalDebt.byCurrency ?? []).map((ro
   currency: row.currency,
   amount: safeParseFloat(row.amount),
 }));
-// Filter out transfer transactions for cash flow widget (only supports income/expense)
-const transactionCashFlowItems: CashFlowEntry[] =
-  dashboardData?.recentTransactions
-    .filter((tx) => tx.type === 'income' || tx.type === 'expense')
-    .slice(0, 2)
-    .map((tx) => ({
-      name: tx.description?.trim() || tx.category.name,
-      date: formatCashFlowDate(tx.transactionDate),
-      amount: safeParseFloat(tx.amount),
-      type: tx.type as 'income' | 'expense',
-      icon: (tx.type === 'income' ? 'trending-up' : 'calendar') as CashFlowIconName,
-      currency: tx.currency,
-    })) || [];
-
-const recurringCashFlowItems: CashFlowEntry[] =
-  dashboardData?.upcomingRecurringBills.map((occurrence) => ({
-    name: occurrence.templateName,
-    date: formatCashFlowDate(occurrence.due_date),
-    amount: safeParseFloat(occurrence.templateAmount),
-    type: occurrence.templateType as 'income' | 'expense',
-    icon: 'calendar' as const,
-    currency: occurrence.currency,
-  })) || [];
-
-const cashFlowItems: CashFlowEntry[] = [...transactionCashFlowItems, ...recurringCashFlowItems]
-  .sort((a, b) => {
-    const left = new Date(a.date).getTime();
-    const right = new Date(b.date).getTime();
-    if (Number.isNaN(left) || Number.isNaN(right)) return 0;
-    return left - right;
-  })
-  .slice(0, 6);
 
 // Get spending categories from dashboard data (top 4 + Other)
 const spendingCategories =
@@ -226,7 +183,8 @@ const spendingCategories =
 <ProtectedLayout
   title="Dashboard"
   currentPath={currentPath}
-  subtitle={`Welcome back! ${currentMonthName} ${currentYear}`}
+  userName={user?.name}
+  currentDate={now}
 >
   <div
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
@@ -268,8 +226,8 @@ const spendingCategories =
           </div>
 
           {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 @min-[52rem]:grid-cols-3 gap-6 @sm:gap-8">
-            <div class="@min-[52rem]:col-span-2">
+          <div class="grid grid-cols-1 @3xl:grid-cols-3 gap-6 @sm:gap-8">
+            <div class="@3xl:col-span-2">
               <RecentTransactionsList
                 transactions={recentTransactions}
                 loading={!dashboardData}
@@ -285,13 +243,7 @@ const spendingCategories =
                 secondaryCurrency={secondaryCurrency}
                 loading={!dashboardData}
               />
-              {dashboardData && (
-                <RecurringBillsWidget
-                  stats={dashboardData.recurringStats}
-                  className="border border-base-300"
-                />
-              )}
-              <CashFlowWidget items={cashFlowItems} loading={!dashboardData} />
+              {dashboardData && <RecurringBillsWidget className="border border-base-300" />}
             </div>
           </div>
         </>

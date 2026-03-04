@@ -75,16 +75,14 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
   <div class="@container flex flex-col gap-6">
     {/* Header */}
     <div>
-      <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">
-        Most spending categories
-      </h4>
+      <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">Top Spending</h4>
     </div>
 
     {/* Loading State */}
     {
       loading ? (
         <div class="flex flex-col @md:flex-row items-center gap-8 py-6">
-          <div class="h-[180px] w-full @md:w-[180px] shrink-0">
+          <div class="h-44 w-full shrink-0 @md:w-44">
             <Skeleton variant="circular" width="180" height="180" />
           </div>
           <div class="flex-1 w-full space-y-3">
@@ -109,7 +107,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
       ) : data.length === 0 ? (
         /* Empty State */
         <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No spending data available yet.</p>
+          <p class="text-base-content/60 font-medium">No spending data yet.</p>
         </div>
       ) : (
         /* Chart and Legend */
@@ -120,10 +118,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
           data-overall-percentage={overallPercentageRounded.toString()}
         >
           {/* Chart Container - Fixed size for proper center text alignment */}
-          <div
-            class="h-[180px] w-[180px] relative shrink-0 mx-auto @md:mx-0"
-            id={`${chartId}-container`}
-          >
+          <div class="relative mx-auto h-44 w-44 shrink-0 @md:mx-0" id={`${chartId}-container`}>
             <canvas
               id={chartId}
               aria-label={`Spending breakdown chart showing ${data.length} categories`}
@@ -166,7 +161,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
                     aria-hidden="true"
                   />
                   <span
-                    class="text-sm @xs:text-base font-semibold text-base-content tracking-tight truncate max-w-[140px] @xs:max-w-[200px]"
+                    class="max-w-36 truncate text-sm font-semibold tracking-tight text-base-content @xs:max-w-48 @xs:text-base"
                     title={item.category}
                   >
                     {item.category}

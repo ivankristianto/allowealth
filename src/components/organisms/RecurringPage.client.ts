@@ -7,6 +7,7 @@ import {
   formatAmountForDisplay,
 } from '@/lib/formatting/amount-input';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import {
   clearConfirmError,
   closeConfirmationModal,
@@ -36,12 +37,12 @@ interface RecurringTemplatePrefill {
   description?: string;
 }
 
-function currentUtcDateIso(): string {
-  return new Date().toISOString().slice(0, 10);
+function currentDateIso(): string {
+  return getCurrentDateISO();
 }
 
 function isOccurrenceActionable(occurrence: RecurringOccurrenceLike): boolean {
-  return occurrence.due_date <= currentUtcDateIso();
+  return occurrence.due_date <= currentDateIso();
 }
 
 let controller: AbortController | null = null;
@@ -53,6 +54,8 @@ let lastFocusedElement: HTMLElement | null = null;
 let pendingSkipOccurrence: RecurringOccurrenceLike | null = null;
 let pendingCancelTemplateId: string | null = null;
 let confirmAmountFormatter: ReturnType<typeof attachAmountFormatter> | null = null;
+let confirmAmountInput: HTMLInputElement | null = null;
+let confirmAmountInputHandler: ((event: Event) => void) | null = null;
 let confirmCurrency: Currency = DEFAULT_CURRENCY;
 
 let templateType: string = 'all';
@@ -130,7 +133,7 @@ async function refreshPendingList(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-pending-list-container');
   if (!container) return;
 
-  const month = currentMonth || new Date().toISOString().slice(0, 7);
+  const month = currentMonth || currentDateIso().slice(0, 7);
   const html = await fetchHtml(
     `/api/recurring/occurrences?month=${encodeURIComponent(month)}&status=pending&_render=html`,
     signal
@@ -142,7 +145,7 @@ async function refreshStats(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-stats-container');
   if (!container) return;
 
-  const month = currentMonth || new Date().toISOString().slice(0, 7);
+  const month = currentMonth || currentDateIso().slice(0, 7);
   const html = await fetchHtml(
     `/api/recurring/stats?month=${encodeURIComponent(month)}&_render=html`,
     signal
@@ -309,7 +312,7 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   if (subtitle) subtitle.textContent = `Due on ${formatDueDateLabel(occurrence.due_date)}`;
   if (idInput) idInput.value = occurrence.id;
   if (dateInput) dateInput.value = occurrence.due_date;
-  if (dateInput) dateInput.max = currentUtcDateIso();
+  if (dateInput) dateInput.max = currentDateIso();
   if (categorySelect) categorySelect.value = occurrence.category.id;
   if (accountSelect) accountSelect.value = occurrence.account.id;
 
@@ -336,17 +339,21 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   showDialog(modal);
   amountInput?.focus();
 
-  amountInput?.addEventListener(
-    'input',
-    () => {
+  if (confirmAmountInput && confirmAmountInputHandler) {
+    confirmAmountInput.removeEventListener('input', confirmAmountInputHandler);
+  }
+
+  if (amountInput) {
+    confirmAmountInput = amountInput;
+    confirmAmountInputHandler = () => {
       if (!originalAmount) return;
       const currentRaw = stripAmountFormatting(amountInput.value, confirmCurrency);
       const originalRaw = stripAmountFormatting(occurrence.templateAmount, confirmCurrency);
       const changed = currentRaw !== originalRaw;
       originalAmount.classList.toggle('hidden', !changed);
-    },
-    { once: true }
-  );
+    };
+    amountInput.addEventListener('input', confirmAmountInputHandler);
+  }
 }
 
 function openSkipModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLElement | null): void {

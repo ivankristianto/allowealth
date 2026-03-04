@@ -55,13 +55,13 @@ const netSavingsClass = isNetNegative ? 'text-error' : 'text-success';
       aria-label="Upcoming income summary"
     >
       <div
-        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/50"
+        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/70"
       >
         <TrendingUp size={14} class="stroke-current text-success" aria-hidden="true" />
         Upcoming Income
       </div>
       <p class="mt-2 text-lg font-bold tabular-nums text-success">{upcomingIncomeLabel}</p>
-      <p class="mt-1 text-xs text-base-content/50">{summary.upcomingIncomeCount} items due</p>
+      <p class="mt-1 text-xs text-base-content/70">{summary.upcomingIncomeCount} items due</p>
     </article>
 
     <article
@@ -70,13 +70,13 @@ const netSavingsClass = isNetNegative ? 'text-error' : 'text-success';
       aria-label="Upcoming expense summary"
     >
       <div
-        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/50"
+        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/70"
       >
         <TrendingDown size={14} class="stroke-current text-error" aria-hidden="true" />
         Upcoming Expense
       </div>
       <p class="mt-2 text-lg font-bold tabular-nums text-error">{upcomingExpenseLabel}</p>
-      <p class="mt-1 text-xs text-base-content/50">{summary.upcomingExpenseCount} items due</p>
+      <p class="mt-1 text-xs text-base-content/70">{summary.upcomingExpenseCount} items due</p>
     </article>
 
     <article
@@ -85,13 +85,13 @@ const netSavingsClass = isNetNegative ? 'text-error' : 'text-success';
       aria-label="Net cashflow summary"
     >
       <div
-        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/50"
+        class="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-base-content/70"
       >
         <Wallet size={14} class={`stroke-current ${netSavingsClass}`} aria-hidden="true" />
         Net Cashflow
       </div>
       <p class={`mt-2 text-lg font-bold tabular-nums ${netSavingsClass}`}>{netLabel}</p>
-      <p class="mt-1 text-xs text-base-content/50">
+      <p class="mt-1 text-xs text-base-content/70">
         Income {incomeBreakdown} · Expense {expenseBreakdown}
       </p>
     </article>

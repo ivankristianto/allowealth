@@ -23,17 +23,17 @@ const { items = [], loading = false, className = '' } = Astro.props;
   loading={loading}
   isEmpty={items.length === 0}
   ariaLabel={loading
-    ? 'Loading cash flow analysis'
+    ? 'Loading upcoming activity'
     : items.length === 0
-      ? 'Cash flow analysis'
+      ? 'Upcoming activity'
       : undefined}
   ariaLabelledBy={!loading && items.length > 0 ? 'cash-flow-title' : undefined}
   class={className}
 >
   <!-- Loading skeleton — title repeated so it's visible during load -->
   <div slot="loading" class="space-y-6">
-    <StatLabel size="md" color="neutral">Cash flow analysis</StatLabel>
-    <div class="space-y-5" role="status" aria-live="polite" aria-label="Loading cash flow analysis">
+    <StatLabel size="md" color="neutral">Upcoming Activity</StatLabel>
+    <div class="space-y-5" role="status" aria-live="polite" aria-label="Loading upcoming activity">
       {
         [1, 2].map(() => (
           <div class="flex items-center justify-between gap-4 p-6 rounded-card border border-base-200 bg-base-200/40">
@@ -53,13 +53,13 @@ const { items = [], loading = false, className = '' } = Astro.props;
 
   <!-- Empty state -->
   <p slot="empty" class="text-sm text-base-content/60">
-    No cash flow entries yet. Add income or expenses to see upcoming activity.
+    No upcoming activity. Add income or expenses to see what's next.
   </p>
 
   <!-- Normal content -->
   <div class="space-y-6">
     <div id="cash-flow-title">
-      <StatLabel size="md" color="neutral">Cash flow analysis</StatLabel>
+      <StatLabel size="md" color="neutral">Upcoming Activity</StatLabel>
     </div>
     <ul class="space-y-5" role="list">
       {items.map((item) => <CashFlowItem {...item} />)}

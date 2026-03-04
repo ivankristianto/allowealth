@@ -76,8 +76,133 @@ function daySuffix(day: number): string {
       </div>
     ) : (
       <>
-        <div class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <table class="table table-zebra table-sm md:table-md">
+        <div class="space-y-2.5 md:hidden">
+          {templates.map((template) => {
+            const payload = JSON.stringify(template);
+            const isExpense = template.type === 'expense';
+
+            return (
+              <article
+                class:list={[
+                  'rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm',
+                  template.status === 'paused' && 'opacity-70',
+                ]}
+                data-testid="recurring-template-row"
+              >
+                <div class="flex items-start gap-2.5">
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span
+                        class:list={[
+                          'badge badge-sm font-bold',
+                          isExpense ? 'badge-error' : 'badge-success',
+                        ]}
+                      >
+                        {isExpense ? 'Expense' : 'Income'}
+                      </span>
+                      <span class={`badge badge-sm font-bold ${statusClassMap[template.status]}`}>
+                        {template.status}
+                      </span>
+                    </div>
+
+                    <div class="space-y-1">
+                      <p class="truncate text-sm font-semibold text-base-content">
+                        {template.name}
+                      </p>
+                      <p class="text-xs text-base-content/70">
+                        Category {template.category.name} · Account {template.account.name}
+                      </p>
+                    </div>
+
+                    <p
+                      class:list={[
+                        'text-sm font-bold tabular-nums',
+                        isExpense ? 'text-error' : 'text-success',
+                      ]}
+                    >
+                      {formatCurrency(template.amount, template.currency)}
+                    </p>
+                    <p class="text-xs text-base-content/70">
+                      Every {daySuffix(template.day_of_month)} ·{' '}
+                      {template.nextDueDate
+                        ? `Next due ${template.nextDueDate}`
+                        : 'No upcoming due date'}
+                    </p>
+                  </div>
+
+                  <div class="dropdown dropdown-end">
+                    <button
+                      type="button"
+                      tabindex={0}
+                      class="btn btn-ghost btn-sm btn-square h-11 min-h-11 w-11 min-w-11 rounded-lg"
+                      aria-label={`Actions for ${template.name}`}
+                    >
+                      <EllipsisVertical size={14} aria-hidden="true" />
+                    </button>
+                    <ul
+                      tabindex={0}
+                      class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+                    >
+                      <li>
+                        <button
+                          type="button"
+                          class="rounded-xl"
+                          data-template-action="edit"
+                          data-template={payload}
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                          Edit
+                        </button>
+                      </li>
+                      {template.status === 'active' ? (
+                        <li>
+                          <button
+                            type="button"
+                            class="rounded-xl"
+                            data-template-action="pause"
+                            data-template-id={template.id}
+                          >
+                            <Pause size={14} aria-hidden="true" />
+                            Pause
+                          </button>
+                        </li>
+                      ) : template.status === 'paused' ? (
+                        <li>
+                          <button
+                            type="button"
+                            class="rounded-xl"
+                            data-template-action="resume"
+                            data-template-id={template.id}
+                          >
+                            <Play size={14} aria-hidden="true" />
+                            Resume
+                          </button>
+                        </li>
+                      ) : null}
+                      {template.status !== 'cancelled' && template.status !== 'completed' && (
+                        <li>
+                          <button
+                            type="button"
+                            class="rounded-xl text-error"
+                            data-template-action="cancel"
+                            data-template-id={template.id}
+                            data-template-name={template.name}
+                          >
+                            <Ban size={14} aria-hidden="true" />
+                            Cancel
+                          </button>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <div class="hidden overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm md:block">
+          <table class="table table-md table-zebra">
             <caption class="sr-only">
               Recurring template list with type, status, amount, schedule, and template actions.
             </caption>
@@ -85,31 +210,31 @@ function daySuffix(day: number): string {
               <tr>
                 <th
                   scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
                 >
                   Type & Status
                 </th>
                 <th
                   scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
                 >
                   Transaction
                 </th>
                 <th
                   scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
                 >
                   Amount
                 </th>
                 <th
                   scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
                 >
                   Schedule
                 </th>
                 <th
                   scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/50"
+                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
                 >
                   Actions
                 </th>
@@ -173,7 +298,7 @@ function daySuffix(day: number): string {
                         <button
                           type="button"
                           tabindex={0}
-                          class="btn btn-ghost btn-sm btn-square h-11 min-h-[44px] w-11 min-w-[44px] rounded-lg"
+                          class="btn btn-ghost btn-sm btn-square h-11 min-h-11 w-11 min-w-11 rounded-lg"
                           aria-label={`Actions for ${template.name}`}
                         >
                           <EllipsisVertical size={14} aria-hidden="true" />
