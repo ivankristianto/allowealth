@@ -242,6 +242,8 @@ Aliases provide shorter commands that map to resource operations.
 | `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed      |
 | `bun run aw db empty`                     | Truncate all data (preserve schema)          |
 | `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB            |
+| `bun run aw db backup`                    | Create backup file for the selected target   |
+| `bun run aw db restore`                   | Safely restore from local/cloud backup       |
 
 #### Database Drop Command
 
@@ -268,6 +270,19 @@ bun run aw db drop -t postgres
 - **PostgreSQL**: Drops all tables with CASCADE
 
 After running, use `aw db migrate` to recreate the schema from the first migration.
+
+#### Database Backup & Restore
+
+```bash
+# Create backup (target-aware)
+bun run aw db backup --target postgres
+
+# Validate latest cloud backup without restoring
+bun run aw db restore --target postgres --source cloud --dry-run
+
+# Restore from a specific file (skips prompt and pre-restore backup)
+bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04T16-30-00.db --force --no-backup
+```
 
 ### Admin & Security
 

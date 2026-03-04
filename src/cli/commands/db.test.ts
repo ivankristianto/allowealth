@@ -1,0 +1,42 @@
+import { describe, expect, it } from 'bun:test';
+import dbCommand from './db';
+
+describe('db command', () => {
+  it('exposes backup and restore subcommands', () => {
+    const command = dbCommand as unknown as {
+      subCommands: Record<string, unknown>;
+    };
+
+    expect(command.subCommands.backup).toBeDefined();
+    expect(command.subCommands.restore).toBeDefined();
+  });
+
+  it('backup command supports target selection', () => {
+    const command = dbCommand as unknown as {
+      subCommands: {
+        backup: {
+          args: Record<string, { alias?: string }>;
+        };
+      };
+    };
+
+    expect(command.subCommands.backup.args.target).toBeDefined();
+    expect(command.subCommands.backup.args.target.alias).toBe('t');
+  });
+
+  it('restore command includes safety and source flags', () => {
+    const command = dbCommand as unknown as {
+      subCommands: {
+        restore: {
+          args: Record<string, unknown>;
+        };
+      };
+    };
+
+    expect(command.subCommands.restore.args.target).toBeDefined();
+    expect(command.subCommands.restore.args.source).toBeDefined();
+    expect(command.subCommands.restore.args['dry-run']).toBeDefined();
+    expect(command.subCommands.restore.args['no-backup']).toBeDefined();
+    expect(command.subCommands.restore.args.force).toBeDefined();
+  });
+});
