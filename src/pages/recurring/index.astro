@@ -155,12 +155,12 @@ const templatesHelpId = 'recurring-templates-help';
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div class="flex items-center gap-1.5">
-            <h1 class="text-lg font-bold text-base-content sm:text-xl">Recurring Command Center</h1>
+            <h1 class="text-lg font-bold text-base-content sm:text-xl">Recurring Payments</h1>
             <div class="dropdown">
               <button
                 type="button"
                 class={infoButtonClass}
-                aria-label="About recurring command center"
+                aria-label="About recurring payments"
                 aria-describedby={commandCenterHelpId}
               >
                 <Info size={14} class="stroke-current" aria-hidden="true" />
@@ -173,12 +173,12 @@ const templatesHelpId = 'recurring-templates-help';
                   tokenClasses.textXs,
                 ]}
               >
-                Monthly overview of recurring income and expenses with quick actions and planning.
+                Monthly summary of recurring income and expenses with quick actions.
               </div>
             </div>
           </div>
           <p class="mt-1 text-sm text-base-content/60">
-            Confirm this month&apos;s due items and keep your templates organized.
+            Review and manage your monthly recurring transactions.
           </p>
         </div>
         <button
@@ -205,13 +205,13 @@ const templatesHelpId = 'recurring-templates-help';
           <div>
             <div class="flex items-center gap-1.5">
               <h2 class="text-sm font-bold uppercase tracking-wide text-base-content/70">
-                Action Inbox
+                Due This Month
               </h2>
               <div class="dropdown">
                 <button
                   type="button"
                   class={infoButtonClass}
-                  aria-label="About action inbox"
+                  aria-label="About upcoming items"
                   aria-describedby={actionInboxHelpId}
                 >
                   <Info size={14} class="stroke-current" aria-hidden="true" />
@@ -224,14 +224,11 @@ const templatesHelpId = 'recurring-templates-help';
                     tokenClasses.textXs,
                   ]}
                 >
-                  One combined queue for upcoming income and expenses, sorted by due date from
-                  oldest to nearest.
+                  Upcoming income and expenses, sorted by due date.
                 </div>
               </div>
             </div>
-            <p class="mt-1 text-sm text-base-content/60">
-              Queue for quick confirmation, Calendar for monthly planning.
-            </p>
+            <p class="mt-1 text-sm text-base-content/60">Confirm due items or view on calendar.</p>
           </div>
           <div
             class="inline-flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1"
@@ -302,13 +299,13 @@ const templatesHelpId = 'recurring-templates-help';
           <div>
             <div class="flex items-center gap-1.5">
               <h2 class="text-sm font-bold uppercase tracking-wide text-base-content/70">
-                All Recurring Transactions
+                Your Recurring Transactions
               </h2>
               <div class="dropdown dropdown-end">
                 <button
                   type="button"
                   class={infoButtonClass}
-                  aria-label="About all recurring transactions"
+                  aria-label="About your recurring transactions"
                   aria-describedby={templatesHelpId}
                 >
                   <Info size={14} class="stroke-current" aria-hidden="true" />
@@ -321,12 +318,13 @@ const templatesHelpId = 'recurring-templates-help';
                     tokenClasses.textXs,
                   ]}
                 >
-                  Manage every recurring rule in one place and quickly edit, pause, resume, or
-                  cancel.
+                  Edit, pause, resume, or cancel any recurring transaction.
                 </div>
               </div>
             </div>
-            <p class="mt-1 text-sm text-base-content/60">Manage recurrence rules and statuses.</p>
+            <p class="mt-1 text-sm text-base-content/60">
+              View and manage all your recurring payments.
+            </p>
           </div>
         </div>
 

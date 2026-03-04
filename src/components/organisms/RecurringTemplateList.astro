@@ -37,8 +37,29 @@ function daySuffix(day: number): string {
 ---
 
 <section class="space-y-3 sm:space-y-4" data-testid="recurring-template-list">
+  {/* Info alert */}
+  <div class="alert alert-soft alert-info rounded-xl">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      class="h-5 w-5 shrink-0 stroke-current"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <span>
+      You can create a recurring transaction from scratch or convert any existing transaction to
+      recurring. Use the "Make Recurring" option in any transaction's menu.
+    </span>
+  </div>
+
   {/* Filter bar */}
   <RecurringTemplateFilterBar type={type} search={search} />
+
   {
     templates.length === 0 ? (
       <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">

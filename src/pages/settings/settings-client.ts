@@ -1,6 +1,22 @@
 // Settings page tab handling
 
-document.addEventListener('DOMContentLoaded', () => {
+const CONTROLLER_KEY = '__settingsPageController';
+
+// Window interface augmentation for type safety
+declare global {
+  interface Window {
+    [CONTROLLER_KEY]?: AbortController;
+  }
+}
+
+function initSettingsTabs() {
+  // Cleanup previous listeners
+  window[CONTROLLER_KEY]?.abort();
+
+  const controller = new AbortController();
+  window[CONTROLLER_KEY] = controller;
+  const { signal } = controller;
+
   const container = document.querySelector('[data-settings-page]') as HTMLElement | null;
   if (!container) return;
 
@@ -43,16 +59,34 @@ document.addEventListener('DOMContentLoaded', () => {
   setActiveTab(resolveTabFromHash());
 
   tabs.forEach((tab) => {
-    tab.addEventListener('click', (event) => {
-      event.preventDefault();
-      const tabId = tab.dataset.tab;
-      if (!tabId) return;
-      setActiveTab(tabId);
-      window.history.replaceState(null, '', `#${tabId}`);
-    });
+    tab.addEventListener(
+      'click',
+      (event) => {
+        event.preventDefault();
+        const tabId = tab.dataset.tab;
+        if (!tabId) return;
+        setActiveTab(tabId);
+        window.history.replaceState(null, '', `#${tabId}`);
+      },
+      { signal }
+    );
   });
 
-  window.addEventListener('hashchange', () => {
-    setActiveTab(resolveTabFromHash());
-  });
-});
+  window.addEventListener(
+    'hashchange',
+    () => {
+      setActiveTab(resolveTabFromHash());
+    },
+    { signal }
+  );
+}
+
+// Initialize on initial page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSettingsTabs, { once: true });
+} else {
+  initSettingsTabs();
+}
+
+// Re-initialize after ViewTransitions navigation
+document.addEventListener('astro:page-load', initSettingsTabs);

@@ -35,6 +35,171 @@ Astro view transitions swap the DOM but preserve module state. Init guards must 
 - ❌ **Top-level `import { navigate } from 'astro:transitions/client'`** in testable `.client.ts` files — breaks unit tests outside Astro context
 - ✅ **Consolidate dynamic imports before try/catch** — import `csrfFetch` and `addToast` once at the top of an async handler, not repeated in each branch
 
+## Client Script Initialization (CRITICAL)
+
+Scripts MUST work on initial load AND after ViewTransitions navigation. The golden rule: **Always listen to `astro:page-load`, never rely solely on `DOMContentLoaded`.**
+
+### Required Pattern for All Client Scripts
+
+```typescript
+// ✅ CORRECT: Standard pattern for all client scripts
+const CONTROLLER_KEY = '__myComponentController';
+
+// Window interface augmentation for type safety
+declare global {
+  interface Window {
+    [CONTROLLER_KEY]?: AbortController;
+  }
+}
+
+function initMyComponent() {
+  // Cleanup previous listeners - abort on init replaces need for astro:before-swap
+  window[CONTROLLER_KEY]?.abort();
+
+  const controller = new AbortController();
+  window[CONTROLLER_KEY] = controller;
+  const { signal } = controller;
+
+  // Query DOM elements
+  const container = document.querySelector('[data-my-component]');
+  if (!container) return;
+
+  // Attach listeners with signal for auto-cleanup
+  container.addEventListener('click', handleClick, { signal });
+}
+
+// Initialize on initial page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMyComponent, { once: true });
+} else {
+  initMyComponent();
+}
+
+// CRITICAL: Re-initialize after ViewTransitions navigation
+document.addEventListener('astro:page-load', initMyComponent);
+```
+
+### Anti-Patterns That Cause Regressions
+
+```typescript
+// ❌ WRONG: Only DOMContentLoaded - breaks on ViewTransitions
+document.addEventListener('DOMContentLoaded', () => {
+  // This never runs after client-side navigation
+});
+
+// ❌ WRONG: Module-level init flag - breaks after ViewTransitions
+let initialized = false;
+function init() {
+  if (initialized) return; // Stays true after navigation, new DOM never gets listeners
+  initialized = true;
+}
+document.addEventListener('astro:page-load', init);
+
+// ❌ WRONG: Element data attributes with transition:persist
+// When element has transition:persist, data-bound attribute survives navigation
+// and prevents re-attaching listeners to the persisted element
+toggle.dataset.bound = 'true'; // Persists with transition:persist!
+if (toggle.dataset.bound === 'true') return; // Skips after navigation
+
+// ❌ WRONG: No cleanup - event listeners accumulate
+document.addEventListener('click', handler); // Never removed, fires multiple times
+```
+
+### Common Issues and Solutions
+
+| Issue                              | Cause                                       | Solution                                                     |
+| ---------------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| Tabs stop working after navigation | Only `DOMContentLoaded`                     | Add `astro:page-load` listener                               |
+| Toggles unresponsive               | `data-*-bound` + `transition:persist`       | Use `AbortController` + window key instead of DOM attributes |
+| Duplicate event handlers           | No cleanup mechanism                        | Abort previous controller on init, use `{ signal }` option   |
+| Stale DOM references               | Closures capture elements that get replaced | Use event delegation or re-query DOM on each interaction     |
+
+### Decision Tree: When to Use Each Pattern
+
+```
+Does your component need to handle dynamic elements?
+├── YES (elements added/removed dynamically)
+│   └── Use event delegation with AbortController signal
+│
+└── NO (static elements, just needs re-init on navigation)
+    └── Use AbortController + window[CONTROLLER_KEY]
+```
+
+### For Persisted Elements (`transition:persist`)
+
+When an element has `transition:persist`, use **event delegation** or **re-query DOM on each interaction** to avoid stale references:
+
+```typescript
+// ✅ CORRECT: Event delegation for persisted elements
+function initComponent(signal: AbortSignal) {
+  document.addEventListener(
+    'click',
+    (e) => {
+      // Re-query DOM fresh on each interaction
+      const button = (e.target as HTMLElement).closest('[data-action]');
+      if (!button) return;
+
+      const drawer = document.getElementById('drawer');
+      // drawer is queried fresh, never stale
+    },
+    { signal }
+  );
+}
+```
+
+### Complete Working Example
+
+```typescript
+// src/components/organisms/RecurringPage.client.ts
+import { animate } from 'motion/mini';
+
+const CONTROLLER_KEY = '__recurringPageController';
+
+// Window interface augmentation for type safety
+declare global {
+  interface Window {
+    [CONTROLLER_KEY]?: AbortController;
+  }
+}
+
+function initRecurringPage() {
+  // Cleanup previous - abort on init pattern
+  window[CONTROLLER_KEY]?.abort();
+
+  const controller = new AbortController();
+  window[CONTROLLER_KEY] = controller;
+  const { signal } = controller;
+
+  // Query elements
+  const page = document.querySelector('[data-recurring-page]');
+  if (!page) return;
+
+  const viewButtons = page.querySelectorAll('[data-recurring-view]');
+
+  // Attach listeners with auto-cleanup
+  viewButtons.forEach((btn) => {
+    btn.addEventListener(
+      'click',
+      async () => {
+        const view = btn.getAttribute('data-recurring-view');
+        await switchView(view);
+      },
+      { signal }
+    );
+  });
+}
+
+// Run on initial load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initRecurringPage, { once: true });
+} else {
+  initRecurringPage();
+}
+
+// Re-run after ViewTransitions
+document.addEventListener('astro:page-load', initRecurringPage);
+```
+
 ## Client Scripts
 
 Use `.client.ts` files with `data-*` attributes to pass server values to client.
