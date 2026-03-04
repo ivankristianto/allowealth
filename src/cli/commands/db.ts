@@ -17,6 +17,7 @@ import { targetArg } from '../lib/target';
 
 const D1_DATABASE_NAME = 'allowealth-db';
 const DEFAULT_BACKUP_DIR = 'backups';
+const SCHEMA_DETECTION_BUFFER_SIZE = 256 * 1024;
 
 type BackupFormat = 'sql' | 'gzip-sql' | 'pg-custom' | 'sqlite-db';
 
@@ -24,7 +25,9 @@ function timestampForFile(date = new Date()): string {
   return date.toISOString().replace(/[:]/g, '-').replace(/\..+$/, '');
 }
 
-function listBackups(dir: string): Array<{ path: string; name: string; mtime: number; size: number }> {
+function listBackups(
+  dir: string
+): Array<{ path: string; name: string; mtime: number; size: number }> {
   if (!existsSync(dir)) {
     return [];
   }
@@ -42,7 +45,10 @@ function listBackups(dir: string): Array<{ path: string; name: string; mtime: nu
           }
         : null;
     })
-    .filter((value): value is { path: string; name: string; mtime: number; size: number } => value !== null)
+    .filter(
+      (value): value is { path: string; name: string; mtime: number; size: number } =>
+        value !== null
+    )
     .sort((a, b) => b.mtime - a.mtime);
 }
 
@@ -94,6 +100,25 @@ function validateBackupFile(filePath: string, format: BackupFormat): void {
       throw new Error('SQL backup file is empty.');
     }
   }
+}
+
+function detectSchemaVersion(filePath: string, format: BackupFormat): string | null {
+  if (format !== 'sql') {
+    return null;
+  }
+
+  const sampleBuffer = Buffer.alloc(SCHEMA_DETECTION_BUFFER_SIZE);
+  const fd = openSync(filePath, 'r');
+  const bytesRead = readSync(fd, sampleBuffer, 0, sampleBuffer.length, 0);
+  closeSync(fd);
+  const sample = sampleBuffer.subarray(0, bytesRead).toString('utf8');
+
+  const matches = Array.from(
+    sample.matchAll(
+      /INSERT INTO ["`]?__drizzle_migrations["`]?(?:\s*\([^)]*\))?\s*VALUES\s*\([^)]*'([^']+)'/gi
+    )
+  );
+  return matches.at(-1)?.[1] ?? null;
 }
 
 function printBackupList(backups: Array<{ name: string; size: number; mtime: number }>): void {
@@ -340,7 +365,12 @@ export default defineCommand({
         await resolveTarget(args);
         const target = getTarget();
 
-        const defaultExt = target === 'postgres' && args.format === 'custom' ? 'dump' : target === 'sqlite' ? 'db' : 'sql';
+        const defaultExt =
+          target === 'postgres' && args.format === 'custom'
+            ? 'dump'
+            : target === 'sqlite'
+              ? 'db'
+              : 'sql';
         const outputPath =
           (args.output as string | undefined) ??
           resolve(DEFAULT_BACKUP_DIR, `${target}-${timestampForFile()}.${defaultExt}`);
@@ -393,17 +423,19 @@ export default defineCommand({
         await resolveTarget(args);
         const target = getTarget();
 
-        const source = (args.source as string) === 'cloud' ? 'cloud' : 'local';
+        const source = (args.source as string).toLowerCase();
+        if (source !== 'local' && source !== 'cloud') {
+          throw new Error(`Invalid --source "${source}". Allowed values: local, cloud`);
+        }
         const sourceDir = resolve(
           source === 'cloud' ? (args['cloud-dir'] as string) : (args['backups-dir'] as string)
         );
         const backups = listBackups(sourceDir);
         printBackupList(backups);
 
-        const selectedFile =
-          (args.file as string | undefined)
-            ? resolve(args.file as string)
-            : backups[0]?.path;
+        const selectedFile = (args.file as string | undefined)
+          ? resolve(args.file as string)
+          : backups[0]?.path;
 
         if (!selectedFile || !existsSync(selectedFile)) {
           throw new Error(`Backup file not found. Provide --file or place backups in ${sourceDir}`);
@@ -412,14 +444,15 @@ export default defineCommand({
         const backupStats = statSync(selectedFile);
         const format = detectBackupFormat(selectedFile);
         validateBackupFile(selectedFile, format);
+        const schemaVersion = detectSchemaVersion(selectedFile, format);
 
         console.log('\nRestore preview:');
         console.log(`- source: ${source}`);
         console.log(`- file: ${selectedFile}`);
         console.log(`- size: ${(backupStats.size / 1024).toFixed(1)} KiB`);
-        console.log(`- timestamp: ${backupStats.mtime.toISOString()}`);
+        console.log(`- timestamp: ${new Date(backupStats.mtime).toISOString()}`);
         console.log(`- format: ${format}`);
-        console.log(`- schema version: unknown`);
+        console.log(`- schema version: ${schemaVersion ?? 'unknown'}`);
 
         if (args['dry-run']) {
           console.log('\n✅ Dry-run completed. Backup validated successfully.');
