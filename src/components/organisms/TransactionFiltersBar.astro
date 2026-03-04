@@ -193,7 +193,26 @@ const mainSearchInputClass = [
           label="All Accounts"
           inputName="account_ids"
           selectedIds={accountIds}
-          items={accounts.map((a) => ({ id: a.id, name: a.name, group: a.type }))}
+          items={accounts
+            .map((a) => ({ id: a.id, name: a.name, group: a.type }))
+            .sort((a, b) => {
+              const liquidTypes = [
+                'cash',
+                'bank_account',
+                'e_wallet',
+                'credit_card',
+                'Cash',
+                'Bank Accounts',
+                'E-Wallets',
+                'Credit Cards',
+              ];
+              const aIsLiquid = liquidTypes.includes(a.group);
+              const bIsLiquid = liquidTypes.includes(b.group);
+
+              if (aIsLiquid && !bIsLiquid) return -1;
+              if (!aIsLiquid && bIsLiquid) return 1;
+              return a.name.localeCompare(b.name);
+            })}
           searchable={true}
           searchPlaceholder="Search accounts..."
           filterEventType="account_ids"

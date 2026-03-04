@@ -1,24 +1,38 @@
 ---
-import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
+import Modal from '@/components/molecules/Modal.astro';
 import { CircleMinus } from '@lucide/astro';
 ---
 
-<ConfirmationModal
+<Modal
   id="recurring-skip-modal"
-  title="Skip this occurrence?"
-  description="You can optionally provide a reason."
-  icon={CircleMinus}
-  iconVariant="warning"
-  confirmLabel="Skip"
-  confirmVariant="warning"
-  confirmLoadingLabel="Skipping..."
+  size="sm"
+  closable={false}
+  backdropClose={true}
+  ariaLabel="Skip this occurrence"
 >
-  <div slot="details" class="space-y-3">
+  <div slot="default" class="flex flex-col gap-6">
+    <div class="flex items-center gap-4">
+      <div
+        class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning"
+      >
+        <CircleMinus size={24} class="stroke-current" aria-hidden="true" />
+      </div>
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+          Skip this occurrence?
+        </h2>
+        <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+          You can optionally provide a reason.
+        </p>
+      </div>
+    </div>
+
     <p class="text-sm text-base-content/70" data-skip-template-name></p>
+
     <label class="form-control">
       <span class="label-text text-sm font-medium">Reason (optional)</span>
       <textarea
-        class="textarea textarea-bordered min-h-24"
+        class="textarea textarea-bordered min-h-24 rounded-xl"
         maxlength="200"
         placeholder="Add a note for why this occurrence is skipped"
         data-skip-reason></textarea>
@@ -28,5 +42,33 @@ import { CircleMinus } from '@lucide/astro';
         </span>
       </div>
     </label>
+
+    <div
+      id="recurring-skip-modal-error"
+      class="hidden alert alert-error text-sm rounded-2xl"
+      role="alert"
+      aria-live="polite"
+      data-confirm-error
+    >
+    </div>
+
+    <div class="flex gap-4 pt-2">
+      <button
+        type="button"
+        class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        data-confirm-cancel
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-warning flex-1 h-14 rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        data-confirm-action
+        data-loading-text="Skipping..."
+        data-testid="skip-confirm-btn"
+      >
+        Skip
+      </button>
+    </div>
   </div>
-</ConfirmationModal>
+</Modal>

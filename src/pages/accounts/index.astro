@@ -10,6 +10,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountPortfolioSummary from '@components/organisms/AccountPortfolioSummary.astro';
 import AccountActions from '@components/organisms/AccountActions.astro';
+import ActionFilterBar from '@components/organisms/ActionFilterBar.astro';
 import AccountGroupCard from '@components/organisms/AccountGroupCard.astro';
 import AccountItemRow from '@components/molecules/AccountItemRow.astro';
 import AccountFormModal from '@components/organisms/AccountFormModal.astro';
@@ -20,7 +21,7 @@ import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueMod
 import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Info, Search, ListPlus, Plus } from '@lucide/astro';
+import { CalendarDays, Info, ListPlus, Plus } from '@lucide/astro';
 import {
   accountService,
   accountCategoryService,
@@ -60,8 +61,16 @@ const VALID_ACCOUNT_TYPES = [
 // Get query parameters for filtering
 const url = new URL(Astro.url);
 const searchParams = Object.fromEntries(url.searchParams.entries());
-const isPersonalView = url.searchParams.get('view') === 'mine';
-const ownerUserId = isPersonalView ? user.id : undefined;
+const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
+const ownerUserIdParam = url.searchParams.get('user_id');
+const isLegacyPersonalView = url.searchParams.get('view') === 'mine';
+const ownerUserIdRaw = ownerUserIdParam || (isLegacyPersonalView ? user.id : undefined);
+const ownerUserId = ownerUserIdRaw
+  ? workspaceMembers.some((member) => member.id === ownerUserIdRaw)
+    ? ownerUserIdRaw
+    : undefined
+  : undefined;
+const isPersonalView = ownerUserId === user.id;
 
 // Build filters for service with validation
 const filters: {
@@ -107,14 +116,19 @@ currentMonthUrl.searchParams.delete('year');
 currentMonthUrl.searchParams.delete('month');
 const currentMonthHref = `${currentMonthUrl.pathname}${currentMonthUrl.search}`;
 
-// Build view-toggle URLs while preserving active filters and period.
+// Build "view all accounts" URL while preserving active filters and period.
 const allAccountsUrl = new URL(url);
+allAccountsUrl.searchParams.delete('user_id');
 allAccountsUrl.searchParams.delete('view');
 const allAccountsHref = `${allAccountsUrl.pathname}${allAccountsUrl.search}`;
-
-const myAccountsUrl = new URL(url);
-myAccountsUrl.searchParams.set('view', 'mine');
-const myAccountsHref = `${myAccountsUrl.pathname}${myAccountsUrl.search}`;
+const hasActiveAccountFilters = Boolean(
+  searchParams.search ||
+  searchParams.type ||
+  searchParams.categoryId ||
+  searchParams.currency ||
+  ownerUserIdParam ||
+  isLegacyPersonalView
+);
 
 // Generate monthly period options (latest -> oldest, capped by shared selector window)
 const monthlyPeriodOptions: PeriodOption[] = Array.from(
@@ -147,7 +161,6 @@ const closedCount = await accountService.countClosed(user.workspaceId, ownerUser
 // Fetch accounts and categories from database
 const categories = await accountCategoryService.findAll(user.workspaceId);
 const isAdmin = user.role === 'admin';
-const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
 const memberNamesById = new Map(workspaceMembers.map((m) => [m.id, m.name]));
 const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
 const workspaceCurrencies = [
@@ -326,9 +339,16 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
       isHistoricalView={!isViewingCurrentMonth}
       defaultCategoryId={defaultCategoryId}
       closedCount={closedCount}
-      isPersonalView={isPersonalView}
-      allAccountsHref={allAccountsHref}
-      myAccountsHref={myAccountsHref}
+    />
+
+    {/* Filter Bar */}
+    <ActionFilterBar
+      searchValue={searchParams.search || ''}
+      members={workspaceMembers.map((member) => ({ id: member.id, name: member.name }))}
+      userId={ownerUserId || ''}
+      currentUserId={user.id}
+      currentSearchParams={url.search}
+      baseUrl="/accounts"
     />
 
     {
@@ -343,22 +363,6 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             latestUpdate={latestUpdate}
             isHistoricalView={!isViewingCurrentMonth}
           />
-
-          {/* Search Filter */}
-          <div class="relative">
-            <Search
-              size={18}
-              class="absolute left-3 top-1/2 -translate-y-1/2 stroke-current text-base-content/40 pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              data-account-search
-              placeholder="Search accounts by name…"
-              class="input input-bordered w-full pl-10 rounded-xl bg-base-100 text-sm"
-              aria-label="Search accounts by name"
-            />
-          </div>
 
           {/* Account Groups */}
           <div class="space-y-6">
@@ -414,20 +418,36 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
         <div class="card bg-base-100 shadow border border-base-300 rounded-card">
           <div class="card-body">
             <EmptyState
-              title="No accounts tracked yet"
-              message="Add your first account to start tracking your net worth across different types and currencies."
+              title={
+                hasActiveAccountFilters
+                  ? 'No accounts match current filters'
+                  : 'No accounts tracked yet'
+              }
+              message={
+                hasActiveAccountFilters
+                  ? 'Try changing owner or filter criteria to view matching accounts.'
+                  : 'Add your first account to start tracking your net worth across different types and currencies.'
+              }
             />
-            <div class="flex justify-center mt-4">
-              <button
-                type="button"
-                class="btn btn-accent gap-2 rounded-2xl"
-                data-add-account-btn
-                data-add-first-account-btn
-                data-default-category-id={defaultCategoryId}
-              >
-                Add Your First Account
-              </button>
-            </div>
+            {hasActiveAccountFilters ? (
+              <div class="flex justify-center mt-4">
+                <a href={allAccountsHref} class="btn btn-outline gap-2 rounded-2xl">
+                  View all accounts
+                </a>
+              </div>
+            ) : (
+              <div class="flex justify-center mt-4">
+                <button
+                  type="button"
+                  class="btn btn-accent gap-2 rounded-2xl"
+                  data-add-account-btn
+                  data-add-first-account-btn
+                  data-default-category-id={defaultCategoryId}
+                >
+                  Add Your First Account
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )
