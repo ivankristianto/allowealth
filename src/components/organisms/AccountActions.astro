@@ -47,7 +47,7 @@ const accentGhostBtn =
       href={allAccountsHref}
       class:list={[
         ghostBtn,
-        !isPersonalView && 'bg-base-content/10 !text-base-content font-semibold',
+        !isPersonalView && 'bg-base-content/10 text-base-content! font-semibold',
       ]}
       aria-current={!isPersonalView ? 'page' : undefined}
       aria-label="View all accounts"
@@ -63,7 +63,7 @@ const accentGhostBtn =
       href={myAccountsHref}
       class:list={[
         ghostBtn,
-        isPersonalView && 'bg-base-content/10 !text-base-content font-semibold',
+        isPersonalView && 'bg-base-content/10 text-base-content! font-semibold',
       ]}
       aria-current={isPersonalView ? 'page' : undefined}
       aria-label="View my accounts"
