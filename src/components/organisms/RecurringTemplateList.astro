@@ -1,17 +1,9 @@
 ---
-import {
-  CircleMinus,
-  CirclePlus,
-  EllipsisVertical,
-  Pause,
-  Play,
-  Ban,
-  Pencil,
-  Search,
-} from '@lucide/astro';
+import { CircleMinus, CirclePlus, EllipsisVertical, Pause, Play, Ban, Pencil } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import RecurringTemplateRow from '@/components/molecules/RecurringTemplateRow.astro';
+import RecurringTemplateFilterBar from '@/components/molecules/RecurringTemplateFilterBar.astro';
 import EmptyState from '@/components/atoms/EmptyState.astro';
 import type { RecurringTemplateOutput } from '@/lib/types/recurring';
 
@@ -53,48 +45,7 @@ function daySuffix(day: number): string {
 
 <section class="space-y-3 sm:space-y-4" data-testid="recurring-template-list" data-total={total}>
   {/* Filter bar */}
-  <div class="flex flex-wrap items-center gap-2">
-    <div class="flex items-center gap-1">
-      <button
-        data-filter-type="all"
-        class:list={[
-          'btn btn-sm btn-ghost rounded-xl font-semibold',
-          type === 'all' && 'btn-active',
-        ]}
-      >
-        All
-      </button>
-      <button
-        data-filter-type="expense"
-        class:list={[
-          'btn btn-sm btn-ghost rounded-xl font-semibold',
-          type === 'expense' && 'btn-active',
-        ]}
-      >
-        Expenses
-      </button>
-      <button
-        data-filter-type="income"
-        class:list={[
-          'btn btn-sm btn-ghost rounded-xl font-semibold',
-          type === 'income' && 'btn-active',
-        ]}
-      >
-        Income
-      </button>
-    </div>
-    <div class="flex-1"></div>
-    <label class="input input-sm input-bordered flex items-center gap-2 w-48 rounded-xl">
-      <Search size={14} class="text-base-content/40" aria-hidden="true" />
-      <input
-        type="search"
-        placeholder="Search..."
-        class="grow bg-transparent border-none outline-none text-sm"
-        data-template-search
-        value={search}
-      />
-    </label>
-  </div>
+  <RecurringTemplateFilterBar type={type} search={search} />
   {
     templates.length === 0 ? (
       <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">

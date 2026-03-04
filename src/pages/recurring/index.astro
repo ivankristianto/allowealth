@@ -1,8 +1,8 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
+import RecurringSectionActionBar from '@/components/molecules/RecurringSectionActionBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
-import { CalendarDays, Info, List, Plus } from '@lucide/astro';
 import RecurringPendingList from '@/components/organisms/RecurringPendingList.astro';
 import RecurringTemplateList from '@/components/organisms/RecurringTemplateList.astro';
 import RecurringCalendar from '@/components/organisms/RecurringCalendar.astro';
@@ -157,76 +157,8 @@ const currencies = Array.from(new Set(accounts.map((account) => account.currency
     </div>
 
     {/* Section header: title + view toggle + new button */}
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-6">
-      <h2 class="text-xs font-bold uppercase tracking-widest text-base-content/40">
-        All Recurring
-        <span id="recurring-count-badge" class="ml-1 badge badge-sm badge-ghost font-bold"
-          >{templateResult.total}</span
-        >
-      </h2>
-      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-        <div
-          class="flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1.5"
-          role="group"
-          aria-label="View toggle"
-        >
-          <span class="hidden sm:inline text-xs font-semibold text-base-content/60 px-2">View</span>
-          <button
-            type="button"
-            class:list={[
-              'btn btn-sm btn-ghost h-9 min-h-0 gap-1.5 px-3 rounded-lg sm:rounded-xl',
-              view === 'list' && 'btn-active',
-            ]}
-            data-recurring-view="list"
-            aria-label="List view"
-            aria-pressed={view === 'list'}
-          >
-            <List size={16} class="stroke-current" aria-hidden="true" />
-            <span class="text-xs">List</span>
-          </button>
-          <button
-            type="button"
-            class:list={[
-              'btn btn-sm btn-ghost h-9 min-h-0 gap-1.5 px-3 rounded-lg sm:rounded-xl',
-              view === 'calendar' && 'btn-active',
-            ]}
-            data-recurring-view="calendar"
-            aria-label="Calendar view"
-            aria-pressed={view === 'calendar'}
-          >
-            <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
-            <span class="text-xs">Calendar</span>
-          </button>
-          <div class="dropdown dropdown-end">
-            <button
-              type="button"
-              tabindex={0}
-              class="btn btn-ghost btn-xs btn-square rounded-lg text-base-content/60"
-              aria-label="View mode information"
-            >
-              <Info size={14} class="stroke-current" aria-hidden="true" />
-            </button>
-            <div
-              tabindex={0}
-              class="dropdown-content z-40 w-60 rounded-xl border border-base-300 bg-base-100 p-3 shadow-lg text-xs text-base-content/70"
-            >
-              <p class="font-semibold text-base-content">View Modes</p>
-              <p class="mt-1">
-                List view is best for quick actions. Calendar view helps scan dates.
-              </p>
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="btn btn-accent btn-sm gap-1.5 rounded-lg sm:rounded-xl font-semibold"
-          data-open-recurring-template
-          aria-label="Create new recurring transaction"
-        >
-          <Plus size={16} class="stroke-current" aria-hidden="true" />
-          <span class="text-xs sm:text-sm">New Recurring</span>
-        </button>
-      </div>
+    <div class="pt-2">
+      <RecurringSectionActionBar view={view} total={templateResult.total} />
     </div>
 
     {/* Template list — visible in list view */}
