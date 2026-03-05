@@ -1,3 +1,4 @@
+import { SEEDER_CONFIG } from './config';
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
 /**
@@ -22,7 +23,7 @@ import { nanoid } from 'nanoid';
 import { getTrailingMonths, maxDayForMonth, SEED_TIME_HOUR } from './lib/dates';
 import { amt, randomAmount } from './lib/amounts';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from './data/categories';
-import { PAYMENT_ACCOUNTS } from './data/accounts';
+import { getPaymentAccounts } from './data/accounts';
 import { INCOME_TEMPLATES } from './data/transactions';
 
 export interface BulkSeedOptions {
@@ -74,7 +75,7 @@ export async function seedBulkTransactions(
   // Collect account IDs
   const paymentAccountIds: string[] = [];
   const accountNameToId: Map<string, string> = new Map();
-  for (const acct of PAYMENT_ACCOUNTS) {
+  for (const acct of getPaymentAccounts()) {
     const id = accountMap.get(acct.name);
     if (id) {
       paymentAccountIds.push(id);
@@ -154,8 +155,8 @@ export async function seedBulkTransactions(
         category_id: catId,
         account_id: accountId,
         type: 'income',
-        amount: amt(tmpl.amount * (0.9 + Math.random() * 0.2)),
-        currency: 'IDR',
+        amount: amt(tmpl.amount * (0.9 + Math.random() * 0.2), SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: tmpl.description,
         transaction_date: txDate,
         created_at: txDate,
@@ -181,8 +182,8 @@ export async function seedBulkTransactions(
         category_id: catId,
         account_id: paymentAccountIds[Math.floor(Math.random() * paymentAccountIds.length)],
         type: 'income',
-        amount: randomAmount(500_000, 5_000_000),
-        currency: 'IDR',
+        amount: randomAmount(500_000, 5_000_000, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: ['Freelance payment', 'Bonus', 'Cashback', 'Gift money', 'Refund'][
           Math.floor(Math.random() * 5)
         ],
@@ -239,8 +240,8 @@ export async function seedBulkTransactions(
         category_id: catId,
         account_id: accountId,
         type: 'expense',
-        amount: randomAmount(25_000, 1_500_000),
-        currency: 'IDR',
+        amount: randomAmount(25_000, 1_500_000, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description,
         transaction_date: txDate,
         created_at: txDate,
@@ -285,8 +286,8 @@ export async function seedBulkTransactions(
         account_id: fromId,
         to_account_id: toId,
         type: 'transfer',
-        amount: randomAmount(100_000, 2_000_000),
-        currency: 'IDR',
+        amount: randomAmount(100_000, 2_000_000, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: 'Transfer',
         transaction_date: txDate,
         created_at: txDate,
@@ -393,7 +394,7 @@ export async function seedBulkTransactions(
       name: `${recurringNames[t % recurringNames.length]} ${t + 1}`,
       type: 'expense',
       amount,
-      currency: 'IDR',
+      currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
       category_id: categoryId,
       account_id: accountId,
       day_of_month: dayOfMonth,
@@ -510,8 +511,8 @@ export async function seedBulkTransactions(
       category_id: catId,
       account_id: accountId,
       type: 'expense',
-      amount: randomAmount(50_000, 500_000),
-      currency: 'IDR',
+      amount: randomAmount(50_000, 500_000, SEEDER_CONFIG.PRIMARY_CURRENCY),
+      currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
       description: `Second user expense ${i + 1}`,
       transaction_date: txDate,
       created_at: txDate,

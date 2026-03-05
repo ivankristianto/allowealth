@@ -1,3 +1,4 @@
+import { SEEDER_CONFIG } from '../config';
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
 /**
@@ -8,10 +9,10 @@ import { db } from '@/db';
 import { budgets } from '@/db/schema';
 import { nanoid } from 'nanoid';
 import { getSeedMonths } from '../lib/dates';
-import { amt } from '../lib/amounts';
+import { approxAmt } from '../lib/amounts';
 import { EXPENSE_CATEGORIES } from '../data/categories';
 
-export type Currency = 'IDR' | 'USD';
+export type Currency = 'IDR' | 'USD' | (string & {});
 
 /**
  * Seed budgets for expense categories
@@ -54,8 +55,8 @@ export async function seedBudgets(
         category_id: categoryId,
         month,
         year,
-        budget_amount: amt(cat.budget),
-        currency: 'IDR',
+        budget_amount: approxAmt(cat.budget, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         is_closed: false,
         notes: null,
         created_at: now,

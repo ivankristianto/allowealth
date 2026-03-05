@@ -1,3 +1,4 @@
+import { SEEDER_CONFIG } from '../config';
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
 /**
@@ -17,7 +18,7 @@ import { nanoid } from 'nanoid';
 import { daysAgo, getTrailingMonths, SEED_TIME_HOUR } from '../lib/dates';
 import { amt } from '../lib/amounts';
 import { SNAPSHOT_GROWTH_RATE } from '../config';
-import { PAYMENT_ACCOUNTS, LOAN_ACCOUNTS, ACCOUNT_TYPES } from '../data/accounts';
+import { getPaymentAccounts, getLoanAccounts, getAccountTypes } from '../data/accounts';
 
 // Accounts created by the member user (personal e-wallets, some stocks, a credit card)
 const MEMBER_OWNED_ACCOUNTS = new Set([
@@ -31,7 +32,7 @@ const MEMBER_OWNED_ACCOUNTS = new Set([
 ]);
 
 // Combined list of all accounts for lookup
-const ALL_ACCOUNTS = [...PAYMENT_ACCOUNTS, ...LOAN_ACCOUNTS, ...ACCOUNT_TYPES];
+const getAllAccounts = () => [...getPaymentAccounts(), ...getLoanAccounts(), ...getAccountTypes()];
 
 /**
  * Seed accounts (both payment accounts and investment accounts)
@@ -51,7 +52,7 @@ export async function seedAccounts(
   const ownerFor = (name: string) => (MEMBER_OWNED_ACCOUNTS.has(name) ? memberUserId : userId);
 
   // First, seed payment accounts (cash, bank accounts, credit cards, e-wallets)
-  for (const account of PAYMENT_ACCOUNTS) {
+  for (const account of getPaymentAccounts()) {
     const id = nanoid();
     const categoryId = accountCategoryMap.get(account.type) || null;
     await db.insert(accounts).values({
@@ -62,11 +63,18 @@ export async function seedAccounts(
       type: account.type,
       account_class: deriveAccountClass(account.type),
       category_id: categoryId,
-      balance: amt(account.balance),
-      initial_balance: amt(account.balance),
+      balance: amt(account.balance, account.currency, (account as any).baseScale || 'primary'),
+      initial_balance: amt(
+        account.balance,
+        account.currency,
+        (account as any).baseScale || 'primary'
+      ),
       currency: account.currency,
       is_cash_account: account.is_cash_account,
-      credit_limit: 'credit_limit' in account ? amt(account.credit_limit) : null,
+      credit_limit:
+        'credit_limit' in account
+          ? amt(account.credit_limit, account.currency, (account as any).baseScale || 'primary')
+          : null,
       last_updated: now,
       created_at: createdAt,
       updated_at: now,
@@ -75,7 +83,7 @@ export async function seedAccounts(
   }
 
   // Then, seed investment accounts
-  for (const account of ACCOUNT_TYPES) {
+  for (const account of getAccountTypes()) {
     const id = nanoid();
     const categoryId = accountCategoryMap.get(account.type) || null;
     await db.insert(accounts).values({
@@ -86,8 +94,12 @@ export async function seedAccounts(
       type: account.type,
       account_class: deriveAccountClass(account.type),
       category_id: categoryId,
-      balance: amt(account.balance),
-      initial_balance: amt(account.balance),
+      balance: amt(account.balance, account.currency, (account as any).baseScale || 'primary'),
+      initial_balance: amt(
+        account.balance,
+        account.currency,
+        (account as any).baseScale || 'primary'
+      ),
       currency: account.currency,
       is_cash_account: false, // Investment accounts are not cash accounts
       last_updated: now,
@@ -98,7 +110,7 @@ export async function seedAccounts(
   }
 
   // Seed loan accounts (debt class)
-  for (const loan of LOAN_ACCOUNTS) {
+  for (const loan of getLoanAccounts()) {
     const id = nanoid();
     const categoryId = accountCategoryMap.get(loan.type) || null;
     await db.insert(accounts).values({
@@ -109,8 +121,8 @@ export async function seedAccounts(
       type: loan.type,
       account_class: deriveAccountClass(loan.type),
       category_id: categoryId,
-      balance: amt(loan.balance),
-      initial_balance: amt(loan.balance),
+      balance: amt(loan.balance, loan.currency, (loan as any).baseScale || 'primary'),
+      initial_balance: amt(loan.balance, loan.currency, (loan as any).baseScale || 'primary'),
       currency: loan.currency,
       is_cash_account: false,
       last_updated: now,
@@ -134,7 +146,7 @@ export async function seedAccounts(
     category_id: closedCategoryId,
     balance: '0',
     initial_balance: '0',
-    currency: 'IDR',
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
     is_cash_account: false,
     status: 'closed',
     closed_at: closedAt,
@@ -161,7 +173,7 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
   const now = new Date();
 
   for (const [accountName, accountId] of accountMap.entries()) {
-    const accountConfig = ALL_ACCOUNTS.find((a) => a.name === accountName);
+    const accountConfig = getAllAccounts().find((a) => a.name === accountName);
     if (!accountConfig) continue;
 
     const baseBalance = parseFloat(accountConfig.balance.toString());
@@ -189,7 +201,7 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
           if (recordedAt > now) continue;
 
           const variation = (Math.random() - 0.5) * monthBaseBalance * 0.04; // ±2% variation
-          const balance = amt(monthBaseBalance + variation);
+          const balance = amt(monthBaseBalance + variation, accountConfig.currency);
 
           await db.insert(accountHistory).values({
             id: nanoid(),
@@ -215,7 +227,7 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
         if (recordedAt > now) continue;
 
         const variation = (Math.random() - 0.5) * monthBaseBalance * 0.06; // ±3% variation for older
-        const balance = amt(monthBaseBalance + variation);
+        const balance = amt(monthBaseBalance + variation, accountConfig.currency);
 
         await db.insert(accountHistory).values({
           id: nanoid(),
@@ -350,7 +362,7 @@ export async function seedAccountSnapshots(
     for (const accountId of assetAccountIds) {
       // Find account balance
       const accountName = [...accountMap.entries()].find(([, id]) => id === accountId)?.[0];
-      const accountConfig = ALL_ACCOUNTS.find((a) => a.name === accountName);
+      const accountConfig = getAllAccounts().find((a) => a.name === accountName);
       if (!accountConfig) continue;
 
       const currentBalance = parseFloat(accountConfig.balance.toString());
@@ -361,7 +373,7 @@ export async function seedAccountSnapshots(
         id: nanoid(),
         snapshot_id: snapshotId,
         account_id: accountId,
-        balance: amt(snapshotBalance),
+        balance: amt(snapshotBalance, accountConfig.currency),
         currency: accountConfig.currency,
       });
       snapshotCount++;

@@ -63,7 +63,7 @@ import { seedStressData } from './domains/stress';
 import { seedBulkTransactions, type BulkSeedOptions } from './bulk';
 
 // Config
-import { DEMO_ADMIN, DEMO_MEMBER, DEMO_SUPER_ADMIN } from './config';
+import { DEMO_ADMIN, DEMO_MEMBER, DEMO_SUPER_ADMIN, setSeederConfig } from './config';
 import { getTrailingMonths } from './lib/dates';
 
 // ============================================================================
@@ -87,6 +87,8 @@ interface SeedOptions {
   months: number;
   transactions: number;
   recurringTemplates: number;
+  primaryCurrency: string;
+  secondaryCurrency: string;
 }
 
 function parseArgs(): SeedOptions & {
@@ -102,6 +104,8 @@ function parseArgs(): SeedOptions & {
       months: 3,
       transactions: 0,
       recurringTemplates: 0,
+      primaryCurrency: 'IDR',
+      secondaryCurrency: 'USD',
       showHelp: true,
       isLegacyBenchmark: false,
       isLegacyStress: false,
@@ -132,6 +136,29 @@ function parseArgs(): SeedOptions & {
     }
   }
 
+  // Parse currencies
+  let primaryCurrency = 'IDR';
+  const primaryCurrencyArg = args.find((arg) => arg.startsWith('--primary-currency='));
+  if (primaryCurrencyArg) {
+    const val = primaryCurrencyArg.split('=')[1].toUpperCase();
+    if (!/^[A-Z]{3}$/.test(val)) {
+      console.error(`❌ Invalid primary currency: ${val}. Must be a 3-letter code (e.g. IDR).`);
+      process.exit(1);
+    }
+    primaryCurrency = val;
+  }
+
+  let secondaryCurrency = 'USD';
+  const secondaryCurrencyArg = args.find((arg) => arg.startsWith('--secondary-currency='));
+  if (secondaryCurrencyArg) {
+    const val = secondaryCurrencyArg.split('=')[1].toUpperCase();
+    if (!/^[A-Z]{3}$/.test(val)) {
+      console.error(`❌ Invalid secondary currency: ${val}. Must be a 3-letter code (e.g. USD).`);
+      process.exit(1);
+    }
+    secondaryCurrency = val;
+  }
+
   // Legacy flag mappings
   if (isLegacyBenchmark) {
     months = 12;
@@ -147,6 +174,8 @@ function parseArgs(): SeedOptions & {
     months,
     transactions,
     recurringTemplates: isLegacyBenchmark ? 20 : 0,
+    primaryCurrency,
+    secondaryCurrency,
     showHelp: false,
     isLegacyBenchmark,
     isLegacyStress,
@@ -157,21 +186,24 @@ function showHelp() {
   console.log(`
 Database Seeder
 
-Usage: bun run seed [options]
+Usage: bun run db:seed [options]
 
 Options:
-  --months=N          Number of months to seed transactions for (default: 3)
-  --transactions=N    Number of extra transactions to seed (default: 0)
-  --benchmark         Legacy: equivalent to --months=12 --transactions=10000
-  --stress            Legacy: equivalent to --months=60 (5 years of family data)
-  --help, -h          Show this help message
+  --months=N               Number of months to seed transactions for (default: 3)
+  --transactions=N         Number of extra transactions to seed (default: 0)
+  --primary-currency=CUR   Primary currency to use (default: IDR)
+  --secondary-currency=CUR Secondary currency to use (default: USD)
+  --benchmark              Legacy: equivalent to --months=12 --transactions=10000
+  --stress                 Legacy: equivalent to --months=60 (5 years of family data)
+  --help, -h               Show this help message
 
 Examples:
-  bun run seed                           # Default: 3 months base data
-  bun run seed --months=6                # 6 months of base data
-  bun run seed --months=12 --transactions=5000   # 12 months + 5000 extra transactions
-  bun run seed --benchmark               # Legacy CI mode: 12 months + ~10k transactions
-  bun run seed --stress                  # 5 years of family history
+  bun run db:seed                                   # Default: 3 months base data
+  bun run db:seed --primary-currency=EUR --secondary-currency=GBP
+  bun run db:seed --months=6                        # 6 months of base data
+  bun run db:seed --months=12 --transactions=5000   # 12 months + 5000 extra transactions
+  bun run db:seed --benchmark                       # Legacy CI mode: 12 months + ~10k transactions
+  bun run db:seed --stress                          # 5 years of family history
 `);
   process.exit(0);
 }
@@ -250,9 +282,17 @@ async function seed() {
     showHelp();
   }
 
+  setSeederConfig({
+    PRIMARY_CURRENCY: options.primaryCurrency,
+    SECONDARY_CURRENCY: options.secondaryCurrency,
+  });
+
   console.log('🌱 Starting database seed...\n');
   console.log(
     `   Configuration: ${options.months} months, ${options.transactions} extra transactions`
+  );
+  console.log(
+    `   Currencies: ${options.primaryCurrency} (Primary), ${options.secondaryCurrency} (Secondary)`
   );
   if (options.isLegacyBenchmark) {
     console.log('   (Legacy --benchmark mode enabled)');
