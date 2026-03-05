@@ -16,6 +16,7 @@ export interface Props {
 }
 
 const { actions = [], triggerLabel = 'More' } = Astro.props;
+const menuId = `overflow-menu-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
 <div class="dropdown dropdown-end" data-action-overflow>
@@ -25,11 +26,14 @@ const { actions = [], triggerLabel = 'More' } = Astro.props;
     class="btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
     aria-label={triggerLabel}
     aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls={menuId}
   >
     <Ellipsis size={16} class="stroke-current" aria-hidden="true" />
     <span class="text-xs md:text-sm">{triggerLabel}</span>
   </button>
   <ul
+    id={menuId}
     tabindex={0}
     class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-52 border border-base-300"
     role="menu"
@@ -58,3 +62,23 @@ const { actions = [], triggerLabel = 'More' } = Astro.props;
     }
   </ul>
 </div>
+
+<script>
+  function initOverflowMenus() {
+    document.querySelectorAll<HTMLElement>('[data-action-overflow]').forEach((dropdown) => {
+      const trigger = dropdown.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]');
+      if (!trigger || trigger.dataset.ariaInit) return;
+      trigger.dataset.ariaInit = 'true';
+
+      dropdown.addEventListener('focusin', () => trigger.setAttribute('aria-expanded', 'true'));
+      dropdown.addEventListener('focusout', (e) => {
+        if (!dropdown.contains((e as FocusEvent).relatedTarget as Node)) {
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
+  initOverflowMenus();
+  document.addEventListener('astro:page-load', initOverflowMenus);
+</script>
