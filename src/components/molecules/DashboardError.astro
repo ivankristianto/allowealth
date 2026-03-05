@@ -42,7 +42,7 @@ const {
       </div>
 
       <!-- Error Message -->
-      <h3 class="text-xl font-bold text-error mb-2">Something went wrong</h3>
+      <h3 class="text-xl font-bold text-error mb-2">Could not load your data</h3>
       <p class="text-base-content/60 mb-4 max-w-md">{message}</p>
 
       {
@@ -67,7 +67,7 @@ const {
             <button
               type="button"
               data-action="reload-page"
-              class="btn btn-accent flex items-center gap-2"
+              class="btn btn-accent rounded-lg sm:rounded-xl flex items-center gap-2"
             >
               <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
               Try Again
@@ -87,7 +87,7 @@ const {
 
       <!-- Suggestion -->
       <p class="text-sm text-base-content/60 mt-4">
-        If this problem persists, please check your internet connection or contact support.
+        Check your connection and try again. Contact support if the problem continues.
       </p>
     </div>
   </div>

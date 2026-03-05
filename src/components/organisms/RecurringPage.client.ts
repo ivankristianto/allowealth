@@ -7,6 +7,7 @@ import {
   formatAmountForDisplay,
 } from '@/lib/formatting/amount-input';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import {
   clearConfirmError,
   closeConfirmationModal,
@@ -36,12 +37,12 @@ interface RecurringTemplatePrefill {
   description?: string;
 }
 
-function currentUtcDateIso(): string {
-  return new Date().toISOString().slice(0, 10);
+function currentDateIso(): string {
+  return getCurrentDateISO();
 }
 
 function isOccurrenceActionable(occurrence: RecurringOccurrenceLike): boolean {
-  return occurrence.due_date <= currentUtcDateIso();
+  return occurrence.due_date <= currentDateIso();
 }
 
 let controller: AbortController | null = null;
@@ -53,12 +54,14 @@ let lastFocusedElement: HTMLElement | null = null;
 let pendingSkipOccurrence: RecurringOccurrenceLike | null = null;
 let pendingCancelTemplateId: string | null = null;
 let confirmAmountFormatter: ReturnType<typeof attachAmountFormatter> | null = null;
+let confirmAmountInput: HTMLInputElement | null = null;
+let confirmAmountInputHandler: ((event: Event) => void) | null = null;
 let confirmCurrency: Currency = DEFAULT_CURRENCY;
 
 let templateType: string = 'all';
 let templateSearch: string = '';
 let templatePage: number = 1;
-const TEMPLATE_LIMIT = 20;
+const TEMPLATE_LIMIT = 10;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const parseApiError = async (response: Response): Promise<string> => {
@@ -118,10 +121,11 @@ async function refreshTemplateList(signal: AbortSignal): Promise<void> {
   const html = await fetchHtml(`/api/recurring?${params}`, signal);
   container.innerHTML = html;
 
-  const newTotal = container.querySelector('[data-total]')?.getAttribute('data-total');
-  const badge = document.getElementById('recurring-count-badge');
-  if (badge && newTotal != null) {
-    badge.textContent = newTotal;
+  const currentPage = Number(
+    container.querySelector('[data-pagination]')?.getAttribute('data-current-page')
+  );
+  if (Number.isFinite(currentPage) && currentPage > 0) {
+    templatePage = currentPage;
   }
 }
 
@@ -129,7 +133,7 @@ async function refreshPendingList(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-pending-list-container');
   if (!container) return;
 
-  const month = currentMonth || new Date().toISOString().slice(0, 7);
+  const month = currentMonth || currentDateIso().slice(0, 7);
   const html = await fetchHtml(
     `/api/recurring/occurrences?month=${encodeURIComponent(month)}&status=pending&_render=html`,
     signal
@@ -141,7 +145,7 @@ async function refreshStats(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-stats-container');
   if (!container) return;
 
-  const month = currentMonth || new Date().toISOString().slice(0, 7);
+  const month = currentMonth || currentDateIso().slice(0, 7);
   const html = await fetchHtml(
     `/api/recurring/stats?month=${encodeURIComponent(month)}&_render=html`,
     signal
@@ -308,7 +312,7 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   if (subtitle) subtitle.textContent = `Due on ${formatDueDateLabel(occurrence.due_date)}`;
   if (idInput) idInput.value = occurrence.id;
   if (dateInput) dateInput.value = occurrence.due_date;
-  if (dateInput) dateInput.max = currentUtcDateIso();
+  if (dateInput) dateInput.max = currentDateIso();
   if (categorySelect) categorySelect.value = occurrence.category.id;
   if (accountSelect) accountSelect.value = occurrence.account.id;
 
@@ -335,17 +339,21 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   showDialog(modal);
   amountInput?.focus();
 
-  amountInput?.addEventListener(
-    'input',
-    () => {
+  if (confirmAmountInput && confirmAmountInputHandler) {
+    confirmAmountInput.removeEventListener('input', confirmAmountInputHandler);
+  }
+
+  if (amountInput) {
+    confirmAmountInput = amountInput;
+    confirmAmountInputHandler = () => {
       if (!originalAmount) return;
       const currentRaw = stripAmountFormatting(amountInput.value, confirmCurrency);
       const originalRaw = stripAmountFormatting(occurrence.templateAmount, confirmCurrency);
       const changed = currentRaw !== originalRaw;
       originalAmount.classList.toggle('hidden', !changed);
-    },
-    { once: true }
-  );
+    };
+    amountInput.addEventListener('input', confirmAmountInputHandler);
+  }
 }
 
 function openSkipModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLElement | null): void {
@@ -877,11 +885,37 @@ function initRecurringPage(): void {
     'click',
     (event) => {
       const target = event.target as HTMLElement;
-      const pageButton = target.closest('[data-template-page]') as HTMLElement | null;
-      if (!pageButton) return;
+      const templateListContainer = document.getElementById('recurring-template-list-container');
+      if (!templateListContainer) return;
 
-      const newPage = Number(pageButton.getAttribute('data-template-page'));
-      if (!Number.isFinite(newPage) || newPage < 1 || newPage === templatePage) return;
+      const clickedInsideTemplateList = target.closest('#recurring-template-list-container');
+      if (!clickedInsideTemplateList) return;
+
+      const legacyPageButton = target.closest('[data-template-page]') as HTMLElement | null;
+      const paginationButton = target.closest(
+        '[data-pagination-prev], [data-pagination-next]'
+      ) as HTMLElement | null;
+
+      let newPage: number | null = null;
+
+      if (legacyPageButton) {
+        newPage = Number(legacyPageButton.getAttribute('data-template-page'));
+      } else if (paginationButton) {
+        const currentPage = Number(
+          templateListContainer
+            .querySelector('[data-pagination]')
+            ?.getAttribute('data-current-page')
+        );
+        if (!Number.isFinite(currentPage) || currentPage < 1) return;
+        newPage = paginationButton.hasAttribute('data-pagination-prev')
+          ? currentPage - 1
+          : currentPage + 1;
+      } else {
+        return;
+      }
+
+      if (newPage === null || !Number.isFinite(newPage) || newPage < 1 || newPage === templatePage)
+        return;
 
       templatePage = newPage;
       void refreshTemplateList(signal).catch((error) => {

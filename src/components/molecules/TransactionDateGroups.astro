@@ -20,6 +20,7 @@ export interface Props {
   showBulkSelection?: boolean;
   showCount?: boolean;
   variant?: 'default' | 'compact';
+  inCard?: boolean;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   showBulkSelection = false,
   showCount = true,
   variant = 'default',
+  inCard = false,
 } = Astro.props;
 
 const isCompact = variant === 'compact';
@@ -38,7 +40,10 @@ const isCompact = variant === 'compact';
     <>
       {showBulkSelection && (
         <div
-          class="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-base-300/50 bg-base-100"
+          class:list={[
+            'flex items-center gap-3 px-4 md:px-6 py-3 border-b border-base-300/50 bg-base-100',
+            inCard && 'rounded-t-[var(--radius-card)]',
+          ]}
           id="bulk-select-all-bar"
         >
           <label class="flex items-center cursor-pointer shrink-0">
@@ -63,7 +68,9 @@ const isCompact = variant === 'compact';
           {/* Date header */}
           <div
             class:list={[
-              'flex items-center justify-between bg-base-200 border-y border-base-300/50',
+              'flex items-center justify-between bg-base-200 border-base-300/50 border-b',
+              index === 0 && !showBulkSelection && 'border-t',
+              inCard && index === 0 && !showBulkSelection && 'rounded-t-[var(--radius-card)]',
               isCompact ? 'py-2 px-3' : 'py-4 px-4 md:px-6',
             ]}
           >

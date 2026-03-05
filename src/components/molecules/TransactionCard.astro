@@ -230,7 +230,7 @@ const cardClasses = [
               />
 
               {transaction && (
-                <div class="dropdown dropdown-end shrink-0 -mr-1.5">
+                <div class="dropdown dropdown-end shrink-0 -mr-1.5" data-transaction-actions>
                   <button
                     type="button"
                     tabindex={0}
@@ -242,7 +242,7 @@ const cardClasses = [
                   </button>
                   <ul
                     tabindex={0}
-                    class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+                    class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
                     role="menu"
                   >
                     <li role="none" class:list={[!hasHistory && 'disabled opacity-40']}>
@@ -439,7 +439,7 @@ const cardClasses = [
         {/* Actions - kebab menu (mirrors mobile dropdown pattern) */}
         <div class="flex-shrink-0 w-10 flex justify-end">
           {transaction && (
-            <div class="dropdown dropdown-end">
+            <div class="dropdown dropdown-end" data-transaction-actions>
               <button
                 type="button"
                 tabindex={0}
@@ -451,7 +451,7 @@ const cardClasses = [
               </button>
               <ul
                 tabindex={0}
-                class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-48 border border-base-300"
+                class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-xl w-48 border border-base-300"
                 role="menu"
               >
                 <li role="none" class:list={[!hasHistory && 'disabled opacity-40']}>

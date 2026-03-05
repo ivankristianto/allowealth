@@ -1,0 +1,177 @@
+---
+import { Search, Users, ChevronDown, X } from '@lucide/astro';
+
+export interface Props {
+  searchValue?: string;
+  members?: Array<{ id: string; name: string }>;
+  userId?: string;
+  currentUserId?: string;
+  currentSearchParams?: string;
+  baseUrl?: string;
+  className?: string;
+}
+
+const {
+  searchValue = '',
+  members = [],
+  userId = '',
+  currentUserId = '',
+  currentSearchParams = '',
+  baseUrl = '/accounts',
+  className = '',
+} = Astro.props;
+
+const buildFilterUrl = (updates: Record<string, string>) => {
+  const params = new URLSearchParams(currentSearchParams);
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+  });
+
+  params.delete('view');
+
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
+const isPersonalView = userId === currentUserId && userId !== '';
+const currentOwnerName = isPersonalView
+  ? 'My Accounts'
+  : userId
+    ? members.find((m) => m.id === userId)?.name || 'All Accounts'
+    : 'All Accounts';
+---
+
+<div class:list={['flex flex-col sm:flex-row gap-3 w-full', className]}>
+  <div class="dropdown dropdown-start sm:dropdown-end">
+    <button
+      type="button"
+      tabindex={0}
+      class="flex min-w-40 items-center justify-between gap-2 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content shadow-sm transition-colors hover:border-base-content/30"
+      aria-label="Filter by account owner"
+      aria-haspopup="menu"
+    >
+      <span class="flex items-center gap-2">
+        <Users size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+        <span class="truncate">{currentOwnerName}</span>
+      </span>
+      <ChevronDown
+        size={14}
+        class="stroke-current text-base-content/40 shrink-0"
+        aria-hidden="true"
+      />
+    </button>
+    <ul
+      tabindex={0}
+      class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-56 border border-base-300 mt-2"
+      role="menu"
+      aria-label="Account owner options"
+    >
+      <li role="none">
+        <a
+          role="menuitem"
+          aria-current={!userId ? 'page' : undefined}
+          href={buildFilterUrl({ user_id: '' })}
+          class:list={['rounded-lg', !userId && 'active']}
+        >
+          All Accounts
+        </a>
+      </li>
+      {
+        currentUserId && (
+          <li role="none">
+            <a
+              role="menuitem"
+              aria-current={isPersonalView ? 'page' : undefined}
+              href={buildFilterUrl({ user_id: currentUserId })}
+              class:list={['rounded-lg', isPersonalView && 'active']}
+            >
+              My Accounts
+            </a>
+          </li>
+        )
+      }
+      {
+        members
+          .filter((member) => member.id !== currentUserId)
+          .map((member) => (
+            <li role="none">
+              <a
+                role="menuitem"
+                aria-current={userId === member.id ? 'page' : undefined}
+                href={buildFilterUrl({ user_id: member.id })}
+                class:list={['rounded-lg', userId === member.id && 'active']}
+              >
+                {member.name}
+              </a>
+            </li>
+          ))
+      }
+    </ul>
+  </div>
+
+  <div class="relative flex-1">
+    <Search
+      size={18}
+      class="absolute left-3 top-1/2 -translate-y-1/2 stroke-current text-base-content/40 pointer-events-none"
+      aria-hidden="true"
+    />
+    <input
+      type="search"
+      data-account-search
+      placeholder="Search accounts by name..."
+      value={searchValue}
+      class="input input-bordered w-full pl-10 pr-10 rounded-xl bg-base-100 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
+      aria-label="Search accounts by name"
+    />
+    {
+      searchValue && (
+        <button
+          type="button"
+          class="btn btn-circle btn-ghost btn-xs absolute right-3 top-1/2 h-11 min-h-11 w-11 min-w-11 -translate-y-1/2 rounded-lg"
+          aria-label="Clear search"
+          data-clear-search
+        >
+          <X size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+        </button>
+      )
+    }
+  </div>
+</div>
+
+<script>
+  let clearSearchController: AbortController | null = null;
+
+  function initClearSearch() {
+    clearSearchController?.abort();
+    clearSearchController = new AbortController();
+    const { signal } = clearSearchController;
+
+    const clearBtn = document.querySelector<HTMLButtonElement>('[data-clear-search]');
+    const searchInput = document.querySelector<HTMLInputElement>('[data-account-search]');
+
+    if (clearBtn && searchInput) {
+      clearBtn.addEventListener(
+        'click',
+        () => {
+          searchInput.value = '';
+          searchInput.focus();
+          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        },
+        { signal }
+      );
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initClearSearch, { once: true });
+  } else {
+    initClearSearch();
+  }
+
+  document.addEventListener('astro:page-load', initClearSearch);
+</script>

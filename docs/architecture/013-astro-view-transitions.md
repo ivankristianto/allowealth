@@ -35,20 +35,9 @@ Persisted sidebar requires a client-side `astro:after-swap` listener to update a
 
 ### 2. Script Re-initialization
 
-**Pattern:** All `.client.ts` files use `astro:page-load` for initialization with `AbortController` cleanup to prevent listener accumulation:
+**Pattern:** All `.client.ts` files use `astro:page-load` for initialization with `AbortController` cleanup to prevent listener accumulation.
 
-```typescript
-let controller: AbortController | null = null;
-
-function init() {
-  controller?.abort();
-  controller = new AbortController();
-  const { signal } = controller;
-  element.addEventListener('click', handler, { signal });
-}
-
-document.addEventListener('astro:page-load', init);
-```
+**See `.claude/rules/frontend/astro.md` → "Client Script Initialization" for the complete standard pattern, anti-patterns, and decision tree.**
 
 ### 3. Nano Store Lifecycle
 

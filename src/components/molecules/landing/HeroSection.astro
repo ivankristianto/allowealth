@@ -6,7 +6,7 @@
  * Auth state is detected client-side via auth_hint cookie (see PublicAuthCta.client.ts).
  */
 
-import { Sparkles, ArrowRight } from '@lucide/astro';
+import { Sparkles, ArrowRight, Github } from '@lucide/astro';
 import { heroContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
 ---
@@ -82,6 +82,7 @@ import Button from '@/components/atoms/Button.astro';
         size="xl"
         className="w-full sm:w-auto"
       >
+        <Github size={20} class="stroke-current" aria-hidden="true" />
         {heroContent.ctaSecondary}
       </Button>
     </div>

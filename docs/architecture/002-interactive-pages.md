@@ -2,6 +2,8 @@
 
 This document describes the standard pattern for making pages interactive in this codebase. We use a **server-rendered HTML fragments** approach (similar to HTMX) instead of client-side DOM construction.
 
+> **Important:** For client script initialization patterns (how to write `.client.ts` files that work with Astro ViewTransitions), see `.claude/rules/frontend/astro.md` → "Client Script Initialization". This architecture doc covers the server-to-client data flow; the rules file covers the client-side initialization patterns.
+
 ## Core Principle
 
 > **Single Source of Truth**: All HTML rendering happens in Astro components. The client only injects pre-rendered HTML.
@@ -235,6 +237,12 @@ src/
         └── transactions/
             └── index.ts             # Supports both JSON and HTML responses
 ```
+
+### Client Script Initialization
+
+All `.client.ts` files MUST handle both initial page load AND Astro ViewTransitions navigation.
+
+**See `.claude/rules/frontend/astro.md` → "Client Script Initialization" for the complete standard pattern, anti-patterns, and decision tree.**
 
 ## Partial Comment Markers
 

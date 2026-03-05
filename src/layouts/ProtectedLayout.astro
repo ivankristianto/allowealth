@@ -55,9 +55,17 @@ interface Props {
   title?: string;
   currentPath?: string;
   subtitle?: string;
+  userName?: string;
+  currentDate?: Date;
 }
 
-const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
+const {
+  title = 'Finance Manager',
+  currentPath = '/',
+  subtitle,
+  userName,
+  currentDate,
+} = Astro.props;
 
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
@@ -140,6 +148,23 @@ if (cached) {
 
 // Make userSettings available to child pages via Astro.locals (frozen to prevent mutation)
 Astro.locals.userSettings = Object.freeze({ ...userSettings });
+Astro.locals.layoutCategories = Object.freeze(
+  categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    type: category.type,
+    currency: category.currency,
+  }))
+);
+Astro.locals.layoutAccounts = Object.freeze(
+  accounts.map((account) => ({
+    id: account.id,
+    name: account.name,
+    type: account.type,
+    currency: account.currency,
+    account_class: account.account_class,
+  }))
+);
 
 // Determine active currency from cookie (for transaction drawer default account selection)
 let activeCurrency: Currency = workspaceCurrencies.primary;
@@ -159,6 +184,8 @@ if (
   currentPath={currentPath}
   user={user}
   subtitle={subtitle}
+  userName={userName}
+  currentDate={currentDate}
   primaryCurrency={workspaceCurrencies.primary}
   secondaryCurrency={workspaceCurrencies.secondary}
 >

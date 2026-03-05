@@ -1,43 +1,350 @@
 ---
+import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
+import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import DashboardWidget from '@/components/organisms/DashboardWidget.astro';
-import { formatCurrency } from '@/lib/formatting';
-import type { RecurringStats } from '@/lib/types/recurring';
-import { TriangleAlert } from '@lucide/astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import CurrencyDisplay from '@/components/atoms/Currency.astro';
+import { getCurrentDateISO } from '@/lib/utils/date';
+import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
+import { accountService, categoryService, recurringOccurrenceService } from '@/services';
+import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
+import {
+  CalendarClock,
+  CircleAlert,
+  CircleCheckBig,
+  CircleMinus,
+  CreditCard,
+  EllipsisVertical,
+} from '@lucide/astro';
 
 export interface Props {
-  stats: RecurringStats;
   className?: string;
 }
 
-const { stats, className = '' } = Astro.props;
+interface QueueRow {
+  occurrence: RecurringOccurrenceOutput;
+  canAct: boolean;
+  dueLabel: string;
+  dueStateLabel: string;
+  dueStateClass: string;
+  payload: string;
+}
 
-const primaryPending = stats.pendingByCurrency[0];
-const pendingAmountLabel = primaryPending
-  ? formatCurrency(primaryPending.amount, primaryPending.currency)
-  : '0';
+interface LayoutCategory {
+  id: string;
+  name: string;
+  type: string;
+  currency?: string;
+}
+
+interface LayoutAccount {
+  id: string;
+  name: string;
+  type: string;
+  currency?: string;
+  account_class?: string;
+}
+
+const { className = '' } = Astro.props;
+const user = Astro.locals.user;
+const perf = Astro.locals.perf;
+const todayIso = getCurrentDateISO();
+const layoutCategories: LayoutCategory[] = [...(Astro.locals.layoutCategories ?? [])];
+const layoutAccounts: LayoutAccount[] = [...(Astro.locals.layoutAccounts ?? [])];
+
+let fetchError: string | null = null;
+let pendingOccurrences: RecurringOccurrenceOutput[] = [];
+let categoryOptions: Array<{ id: string; name: string; type: string }> = [];
+let accountOptions: Array<{ id: string; name: string; type: string; currency?: string }> = [];
+let defaultCurrency: Currency = DEFAULT_CURRENCY;
+
+function formatDueDateLabel(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function getDueState(isoDate: string): { label: string; className: string } {
+  if (isoDate < todayIso) {
+    return { label: 'Overdue', className: 'text-error' };
+  }
+
+  if (isoDate === todayIso) {
+    return { label: 'Due today', className: 'text-warning' };
+  }
+
+  return { label: 'Upcoming', className: 'text-base-content/70' };
+}
+
+function toMonthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+if (!user?.workspaceId) {
+  fetchError = 'Unable to load recurring queue.';
+} else {
+  try {
+    const now = new Date();
+    const monthKeys = [-1, 0, 1].map((offset) =>
+      toMonthKey(new Date(now.getFullYear(), now.getMonth() + offset, 1))
+    );
+
+    const pendingResults = await Promise.all(
+      monthKeys.map((month) =>
+        recurringOccurrenceService.findPending(user.workspaceId, { status: 'pending', month }, perf)
+      )
+    );
+    const [fetchedCategories, fetchedAccounts] = await Promise.all([
+      layoutCategories.length === 0
+        ? categoryService.findAll(user.workspaceId, { is_active: true }, perf)
+        : Promise.resolve([]),
+      layoutAccounts.length === 0
+        ? accountService.findAll(user.workspaceId, undefined, perf)
+        : Promise.resolve([]),
+    ]);
+    const categorySource: LayoutCategory[] =
+      layoutCategories.length > 0
+        ? layoutCategories
+        : fetchedCategories.map(
+            (category): LayoutCategory => ({
+              id: category.id,
+              name: category.name,
+              type: category.type,
+              currency: category.currency,
+            })
+          );
+    const accountSource: LayoutAccount[] =
+      layoutAccounts.length > 0
+        ? layoutAccounts
+        : fetchedAccounts.map(
+            (account): LayoutAccount => ({
+              id: account.id,
+              name: account.name,
+              type: account.type,
+              currency: account.currency,
+              account_class: account.account_class,
+            })
+          );
+
+    const pendingById = new Map(
+      pendingResults
+        .flatMap((result) => result.occurrences)
+        .filter((occurrence) => occurrence.status === 'pending')
+        .map((occurrence) => [occurrence.id, occurrence])
+    );
+    pendingOccurrences = Array.from(pendingById.values());
+    categoryOptions = categorySource.map((category) => ({
+      id: category.id,
+      name: category.name,
+      type: category.type,
+    }));
+    accountOptions = accountSource.map((account) => ({
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      currency: account.currency,
+    }));
+
+    const primaryAccountCurrency = accountSource[0]?.currency;
+    if (primaryAccountCurrency && isValidCurrency(primaryAccountCurrency)) {
+      defaultCurrency = primaryAccountCurrency;
+    }
+  } catch (error) {
+    console.error('Failed to load recurring widget data:', error);
+    fetchError = 'Unable to load recurring queue.';
+  }
+}
+
+const sortedPending = [...pendingOccurrences].sort((a, b) => a.due_date.localeCompare(b.due_date));
+const queueRows: QueueRow[] = sortedPending.slice(0, 5).map((occurrence) => {
+  const dueState = getDueState(occurrence.due_date);
+
+  return {
+    occurrence,
+    canAct: occurrence.due_date <= todayIso,
+    dueLabel: formatDueDateLabel(occurrence.due_date),
+    dueStateLabel: dueState.label,
+    dueStateClass: dueState.className,
+    payload: JSON.stringify(occurrence),
+  };
+});
+
+const widgetClass = [className, '!p-0', 'overflow-hidden'].filter(Boolean).join(' ');
 ---
 
-<DashboardWidget class={className} isEmpty={stats.pendingCount === 0}>
-  <p slot="empty" class="text-sm text-base-content/60">No pending recurring bills right now.</p>
-
-  <div class="space-y-3">
-    <p class="text-xs font-bold uppercase tracking-widest text-base-content/50">Recurring Bills</p>
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        <p class="text-xl font-bold">{pendingAmountLabel}</p>
-        <p class="text-sm text-base-content/60">{stats.pendingCount} bills pending</p>
-      </div>
-      {
-        stats.overdueCount > 0 && (
-          <span class="badge badge-error gap-1">
-            <TriangleAlert size={12} aria-hidden="true" />
-            {stats.overdueCount} overdue
-          </span>
-        )
-      }
-    </div>
-    <a href="/recurring" class="text-sm font-semibold text-primary hover:underline">
-      Review pending bills →
+<DashboardWidget
+  class={widgetClass}
+  isEmpty={queueRows.length === 0}
+  error={fetchError ?? undefined}
+  ariaLabel="Upcoming recurring bills"
+>
+  <div slot="empty" class="space-y-3 px-4 py-5">
+    <p class="text-sm text-base-content/60">No pending recurring bills.</p>
+    <a href="/recurring" class="btn btn-outline rounded-lg sm:rounded-xl btn-sm h-11 w-full">
+      Open recurring queue
     </a>
   </div>
+
+  <section class="space-y-0" data-dashboard-recurring-widget>
+    <header class="px-4 pt-4 pb-2.5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <IconBadge variant="accent" size="sm">
+            <CalendarClock size={20} class="stroke-current" aria-hidden="true" />
+          </IconBadge>
+          <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/70">
+            Upcoming Bills
+          </h3>
+        </div>
+        <a
+          href="/recurring"
+          class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
+          aria-label="View all recurring bills"
+        >
+          View all
+        </a>
+      </div>
+    </header>
+
+    <ul
+      class="divide-y divide-base-300"
+      id="dashboard-recurring-queue"
+      role="list"
+      aria-label="Upcoming recurring bills"
+    >
+      {
+        queueRows.map((row) => {
+          const isExpense = row.occurrence.templateType === 'expense';
+          const amountValue = Number.parseFloat(row.occurrence.templateAmount);
+          const resolvedAmount = Number.isFinite(amountValue) ? amountValue : 0;
+
+          return (
+            <li>
+              <article
+                class:list={[
+                  'border-l-4 border-l-transparent bg-base-100 px-4 py-2.5 transition-colors hover:bg-base-200/30 active:bg-base-200/30',
+                  isExpense
+                    ? 'hover:border-l-error/35 active:border-l-error/35'
+                    : 'hover:border-l-success/35 active:border-l-success/35',
+                ]}
+                data-occurrence-id={row.occurrence.id}
+              >
+                <div class="flex items-start gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start gap-2.5">
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-bold tracking-tight leading-tight text-base-content">
+                          {row.occurrence.templateName}
+                        </p>
+                      </div>
+
+                      <CurrencyDisplay
+                        amount={resolvedAmount}
+                        currency={row.occurrence.currency}
+                        showSign={false}
+                        variant={isExpense ? 'negative' : 'positive'}
+                        size="sm"
+                        className="font-bold tracking-tight shrink-0"
+                      />
+
+                      <div class="shrink-0 flex h-11 w-11 items-start justify-end">
+                        {row.canAct ? (
+                          <div class="dropdown dropdown-end">
+                            <button
+                              type="button"
+                              tabindex={0}
+                              class="btn btn-ghost btn-xs btn-square rounded-lg h-11 w-11"
+                              aria-label={`Actions for ${row.occurrence.templateName}`}
+                              aria-haspopup="menu"
+                            >
+                              <EllipsisVertical size={14} aria-hidden="true" />
+                            </button>
+                            <ul
+                              tabindex={0}
+                              class="dropdown-content z-40 menu w-36 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+                              role="menu"
+                            >
+                              <li role="none">
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  class="rounded-xl"
+                                  data-open-confirm-modal
+                                  data-occurrence={row.payload}
+                                >
+                                  <CircleCheckBig size={14} aria-hidden="true" />
+                                  Confirm
+                                </button>
+                              </li>
+                              <li role="none">
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  class="rounded-xl"
+                                  data-open-skip-modal
+                                  data-occurrence={row.payload}
+                                >
+                                  <CircleMinus size={14} aria-hidden="true" />
+                                  Skip
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        ) : (
+                          <div
+                            class="tooltip tooltip-left"
+                            data-tip="Scheduled item. You can confirm or skip it on its due date."
+                          >
+                            <span
+                              class="inline-flex h-11 w-11 items-center justify-center text-base-content/45"
+                              role="img"
+                              aria-label="Scheduled item. Available for actions on its due date."
+                            >
+                              <CircleAlert size={14} aria-hidden="true" />
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/60">
+                      <span class="whitespace-nowrap font-medium text-base-content/85">
+                        {row.dueLabel}
+                      </span>
+                      <span aria-hidden="true">&middot;</span>
+                      <span class:list={['whitespace-nowrap font-semibold', row.dueStateClass]}>
+                        {row.dueStateLabel}
+                      </span>
+                      <span aria-hidden="true">&middot;</span>
+                      <span class="font-semibold text-base-content/80">
+                        {row.occurrence.category.name}
+                      </span>
+                      <span class="inline-flex min-w-0 items-center gap-1">
+                        <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
+                        <span class="whitespace-normal break-words text-base-content/80">
+                          {row.occurrence.account.name}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </section>
+
+  <RecurringConfirmModal
+    categories={categoryOptions}
+    accounts={accountOptions}
+    defaultCurrency={defaultCurrency}
+  />
+  <RecurringSkipModal />
 </DashboardWidget>
+
+<script>
+  import '@/components/organisms/RecurringBillsWidget.client';
+</script>

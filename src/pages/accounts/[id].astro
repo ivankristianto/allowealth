@@ -154,7 +154,11 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
     />
   </div>
 
-  <div class="mx-auto max-w-4xl space-y-6 sm:space-y-8 sm:px-2 lg:px-6">
+  <div
+    id="account-detail-page"
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8 pb-10"
+    data-testid="account-detail-page"
+  >
     {/* Back Link */}
     <a
       href="/accounts"
@@ -292,7 +296,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
           aria-selected="true"
           aria-controls="panel-transactions"
           id="tab-transactions"
-          class="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-colors border-b-2 border-accent text-accent"
+          class="flex flex-1 items-center justify-center gap-2 border-b-2 border-accent px-4 py-3 text-sm font-semibold text-accent transition-colors"
           data-tab-btn="transactions"
         >
           <ArrowUpRight size={16} class="stroke-current" aria-hidden="true" />
@@ -304,7 +308,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
           aria-selected="false"
           aria-controls="panel-balance-history"
           id="tab-balance-history"
-          class="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-colors border-b-2 border-transparent text-base-content/50 hover:text-base-content/70"
+          class="flex flex-1 items-center justify-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-base-content/50 transition-colors hover:text-base-content/70"
           data-tab-btn="balance-history"
         >
           <History size={16} class="stroke-current" aria-hidden="true" />
@@ -438,7 +442,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
                           {entry.notes ? (
                             <span class="text-xs text-base-content/60">{entry.notes}</span>
                           ) : (
-                            <span class="text-xs text-base-content/20">&mdash;</span>
+                            <span class="text-xs text-base-content/40">&mdash;</span>
                           )}
                         </td>
                       </tr>

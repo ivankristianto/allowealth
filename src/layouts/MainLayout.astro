@@ -28,6 +28,8 @@ interface Props {
   subtitle?: string;
   primaryCurrency?: Currency;
   secondaryCurrency?: Currency | null;
+  userName?: string;
+  currentDate?: Date;
 }
 
 const {
@@ -37,6 +39,8 @@ const {
   subtitle,
   primaryCurrency,
   secondaryCurrency,
+  userName,
+  currentDate,
 } = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 ---
@@ -62,6 +66,8 @@ const hasHeaderSlot = Astro.slots.has('header');
         currentPath={currentPath}
         primaryCurrency={primaryCurrency}
         secondaryCurrency={secondaryCurrency}
+        userName={userName}
+        currentDate={currentDate}
       >
         {hasHeaderSlot && <slot name="header" slot="header" />}
       </Header>
