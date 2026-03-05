@@ -58,7 +58,7 @@ test.describe.serial('Recurring Transactions', () => {
     );
 
     const pendingCard = page
-      .locator('[data-testid="recurring-pending-card"]')
+      .locator('[data-testid="recurring-pending-card"]:visible')
       .filter({ hasText: templateName })
       .first();
     await expect(pendingCard).toBeVisible();
@@ -100,7 +100,7 @@ test.describe.serial('Recurring Transactions', () => {
     await expect(page.locator('#recurring-template-drawer.drawer-open')).toHaveCount(0);
 
     const pendingCard = page
-      .locator('[data-testid="recurring-pending-card"]')
+      .locator('[data-testid="recurring-pending-card"]:visible')
       .filter({ hasText: templateName })
       .first();
     await expect(pendingCard).toBeVisible();
@@ -144,7 +144,7 @@ test.describe.serial('Recurring Transactions', () => {
 
     await page.goto(`/recurring?view=list&month=${nextMonth}`);
     const pendingCard = page
-      .locator('[data-testid="recurring-pending-card"]')
+      .locator('[data-testid="recurring-pending-card"]:visible')
       .filter({ hasText: templateName })
       .first();
 
@@ -176,7 +176,7 @@ test.describe.serial('Recurring Transactions', () => {
     await page.click('#recurring-template-form button[type="submit"]');
 
     const pendingCard = page
-      .locator('[data-testid="recurring-pending-card"]')
+      .locator('[data-testid="recurring-pending-card"]:visible')
       .filter({ hasText: templateName })
       .first();
     await expect(pendingCard).toBeVisible();
@@ -193,8 +193,8 @@ test.describe.serial('Recurring Transactions', () => {
         .filter({ hasText: templateName })
         .first();
       await expect(templateRow).toBeVisible();
-      await templateRow.locator('[aria-label="Template actions"]').click();
-      await templateRow.locator('[data-template-action="cancel"]').first().click();
+      await templateRow.getByRole('button', { name: /actions/i }).click();
+      await templateRow.locator('[data-template-action="cancel"]:visible').first().click();
     }
 
     await expect(page.locator('#recurring-cancel-modal[open]')).toBeVisible();
