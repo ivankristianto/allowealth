@@ -130,7 +130,6 @@ function analyze(): string {
 
 try {
   const report = analyze();
-  // eslint-disable-next-line no-console
   console.log(report);
   process.exit(0);
 } catch (error) {

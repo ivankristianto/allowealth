@@ -15,8 +15,6 @@
  * Usage: bun test src/db/index.integration.test.ts
  */
 
-/* eslint-disable no-console -- Console output is intentional for test progress feedback */
-
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
 import { db, getDb, resetDb } from '@/db';
 import { workspaces, users, categories, accounts, transactions } from '@/db/schema';

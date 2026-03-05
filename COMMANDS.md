@@ -76,15 +76,15 @@ bun run deploy:cloudflare    # Build + deploy to Workers
 
 ## Quality Gates
 
-| Command                 | Description                                    |
-| ----------------------- | ---------------------------------------------- |
-| `bun run lint`          | Check ESLint errors                            |
-| `bun run lint:fix`      | Auto-fix ESLint errors                         |
-| `bun run format`        | Check Prettier formatting                      |
-| `bun run format:fix`    | Auto-fix Prettier formatting                   |
-| `bun run stylelint`     | Check CSS with Stylelint                       |
-| `bun run stylelint:fix` | Auto-fix CSS issues                            |
-| `bun run typecheck`     | Run TypeScript type checking via `astro check` |
+| Command                 | Description                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| `bun run lint`          | Check ESLint with minimal output (warnings + errors)               |
+| `bun run lint:fix`      | Auto-fix ESLint with minimal output (warnings + errors)            |
+| `bun run format`        | Check Prettier by listing only unformatted file paths              |
+| `bun run format:fix`    | Auto-fix Prettier with error-only logs                             |
+| `bun run stylelint`     | Check CSS with Stylelint (quiet + compact formatter)               |
+| `bun run stylelint:fix` | Auto-fix CSS issues (quiet + compact formatter)                    |
+| `bun run typecheck`     | Run `astro check` and show hints/warnings/errors (fails on errors) |
 
 ```bash
 # Run all quality gates (required before committing)
@@ -297,14 +297,14 @@ After running, use `aw db migrate` to recreate the schema from the first migrati
 
 ### Unit Tests
 
-| Command                 | Description                    |
-| ----------------------- | ------------------------------ |
-| `bun run test`          | Run all unit tests             |
-| `bun run test:watch`    | Run tests in watch mode        |
-| `bun run test:coverage` | Run tests with coverage report |
+| Command                 | Description                                       |
+| ----------------------- | ------------------------------------------------- |
+| `bun run test`          | Run unit tests with dots reporter (failures only) |
+| `bun run test:watch`    | Run tests in watch mode                           |
+| `bun run test:coverage` | Run tests with coverage report                    |
 
 ```bash
-bun run test                 # All tests
+bun run test                 # Dots output, failures only
 bun run test:watch           # Watch mode
 ```
 
