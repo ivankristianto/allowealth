@@ -56,8 +56,11 @@ function detectBackupFormat(filePath: string): BackupFormat {
   const ext = extname(filePath).toLowerCase();
   const header = Buffer.alloc(8);
   const fd = openSync(filePath, 'r');
-  readSync(fd, header, 0, header.length, 0);
-  closeSync(fd);
+  try {
+    readSync(fd, header, 0, header.length, 0);
+  } finally {
+    closeSync(fd);
+  }
 
   if (header[0] === 0x50 && header[1] === 0x47 && header[2] === 0x44 && header[3] === 0x4d) {
     return 'pg-custom';
@@ -93,8 +96,12 @@ function validateBackupFile(filePath: string, format: BackupFormat): void {
   if (format === 'sql') {
     const sampleBuffer = Buffer.alloc(4096);
     const fd = openSync(filePath, 'r');
-    const bytesRead = readSync(fd, sampleBuffer, 0, sampleBuffer.length, 0);
-    closeSync(fd);
+    let bytesRead: number;
+    try {
+      bytesRead = readSync(fd, sampleBuffer, 0, sampleBuffer.length, 0);
+    } finally {
+      closeSync(fd);
+    }
     const sample = sampleBuffer.subarray(0, bytesRead).toString('utf8');
     if (!sample.trim()) {
       throw new Error('SQL backup file is empty.');
@@ -109,8 +116,12 @@ function detectSchemaVersion(filePath: string, format: BackupFormat): string | n
 
   const sampleBuffer = Buffer.alloc(SCHEMA_DETECTION_BUFFER_SIZE);
   const fd = openSync(filePath, 'r');
-  const bytesRead = readSync(fd, sampleBuffer, 0, sampleBuffer.length, 0);
-  closeSync(fd);
+  let bytesRead: number;
+  try {
+    bytesRead = readSync(fd, sampleBuffer, 0, sampleBuffer.length, 0);
+  } finally {
+    closeSync(fd);
+  }
   const sample = sampleBuffer.subarray(0, bytesRead).toString('utf8');
 
   const matches = Array.from(
@@ -163,14 +174,14 @@ function getDatabaseUrl(): string {
   return url;
 }
 
-function backupToPath(target: string, outputPath: string): void {
+function backupToPath(target: string, outputPath: string, _format?: string): void {
   mkdirSync(dirname(outputPath), { recursive: true });
 
   if (target === 'postgres') {
     const isCustom = outputPath.endsWith('.dump');
     const args = isCustom
       ? ['--format=custom', '--file', outputPath, getDatabaseUrl()]
-      : ['--file', outputPath, getDatabaseUrl()];
+      : ['--clean', '--if-exists', '--file', outputPath, getDatabaseUrl()];
     exec('pg_dump', args);
     return;
   }
@@ -361,12 +372,17 @@ export default defineCommand({
         },
       },
       async run({ args }) {
+        const formatArg = (args.format as string).toLowerCase();
+        if (formatArg !== 'sql' && formatArg !== 'custom') {
+          throw new Error(`Invalid --format "${formatArg}". Allowed values: sql, custom`);
+        }
+
         const { resolveTarget, getTarget } = await import('../lib/target');
         await resolveTarget(args);
         const target = getTarget();
 
         const defaultExt =
-          target === 'postgres' && args.format === 'custom'
+          target === 'postgres' && formatArg === 'custom'
             ? 'dump'
             : target === 'sqlite'
               ? 'db'
@@ -375,7 +391,7 @@ export default defineCommand({
           (args.output as string | undefined) ??
           resolve(DEFAULT_BACKUP_DIR, `${target}-${timestampForFile()}.${defaultExt}`);
 
-        backupToPath(target, outputPath);
+        backupToPath(target, outputPath, formatArg);
         console.log(`✅ Backup created: ${outputPath}`);
       },
     }),
@@ -430,20 +446,44 @@ export default defineCommand({
         const sourceDir = resolve(
           source === 'cloud' ? (args['cloud-dir'] as string) : (args['backups-dir'] as string)
         );
-        const backups = listBackups(sourceDir);
-        printBackupList(backups);
+        const allBackups = listBackups(sourceDir);
+
+        // Filter backups by target compatibility (filename starts with target name)
+        const compatibleBackups = allBackups.filter((b) =>
+          b.name.toLowerCase().startsWith(`${target}-`)
+        );
+        printBackupList(compatibleBackups);
 
         const selectedFile = (args.file as string | undefined)
           ? resolve(args.file as string)
-          : backups[0]?.path;
+          : compatibleBackups[0]?.path;
 
         if (!selectedFile || !existsSync(selectedFile)) {
-          throw new Error(`Backup file not found. Provide --file or place backups in ${sourceDir}`);
+          throw new Error(
+            `No compatible backup found for target "${target}". ` +
+              `Provide --file or place ${target}-* backups in ${sourceDir}`
+          );
         }
 
         const backupStats = statSync(selectedFile);
         const format = detectBackupFormat(selectedFile);
         validateBackupFile(selectedFile, format);
+
+        // Validate target/format compatibility
+        const validFormatsForTarget: Record<string, BackupFormat[]> = {
+          postgres: ['sql', 'gzip-sql', 'pg-custom'],
+          sqlite: ['sql', 'sqlite-db'],
+          d1: ['sql'],
+          'd1-local': ['sql'],
+        };
+        const validFormats = validFormatsForTarget[target];
+        if (validFormats && !validFormats.includes(format)) {
+          throw new Error(
+            `Format "${format}" is not valid for target "${target}". ` +
+              `Valid formats: ${validFormats.join(', ')}`
+          );
+        }
+
         const schemaVersion = detectSchemaVersion(selectedFile, format);
 
         console.log('\nRestore preview:');
@@ -483,15 +523,19 @@ export default defineCommand({
             ]);
           } else if (format === 'gzip-sql') {
             const sql = execFileSync('gzip', ['-cd', selectedFile], { encoding: 'utf8' });
-            execFileSync('psql', [getDatabaseUrl()], { input: sql, stdio: 'inherit' });
+            execFileSync('psql', [getDatabaseUrl()], { input: sql });
           } else {
             exec('psql', [getDatabaseUrl(), '-f', selectedFile]);
           }
         } else if (target === 'sqlite') {
           if (format === 'sqlite-db') {
             copyFileSync(selectedFile, resolve('db/.dev.db'));
+          } else if (format === 'sql') {
+            execFileSync('sqlite3', [resolve('db/.dev.db'), '.read', selectedFile], {
+              stdio: 'inherit',
+            });
           } else {
-            exec('sqlite3', [resolve('db/.dev.db'), `.read ${selectedFile}`]);
+            throw new Error(`Format "${format}" is not supported for SQLite restore.`);
           }
         } else if (target === 'd1' || target === 'd1-local') {
           exec('wrangler', [
