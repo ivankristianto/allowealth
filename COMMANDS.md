@@ -242,6 +242,8 @@ Aliases provide shorter commands that map to resource operations.
 | `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed      |
 | `bun run aw db empty`                     | Truncate all data (preserve schema)          |
 | `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB            |
+| `bun run aw db backup`                    | Create backup file for the selected target   |
+| `bun run aw db restore`                   | Safely restore from local/cloud backup       |
 
 #### Database Drop Command
 
@@ -268,6 +270,40 @@ bun run aw db drop -t postgres
 - **PostgreSQL**: Drops all tables with CASCADE
 
 After running, use `aw db migrate` to recreate the schema from the first migration.
+
+#### Database Backup & Restore
+
+```bash
+# SQLite backup
+bun run aw db backup --target sqlite
+
+# PostgreSQL backup (custom format)
+bun run aw db backup --target postgres --format custom
+
+# D1 remote backup
+bun run aw db backup --target d1
+
+# D1 local backup
+bun run aw db backup --target d1-local
+
+# Validate latest cloud backup without restoring
+bun run aw db restore --target postgres --source cloud --dry-run
+
+# Restore SQLite from file
+bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04T16-30-00.db --force --no-backup
+
+# Restore D1 from backup (non-interactive)
+bun run aw db restore --target d1 --file backups/d1-2026-03-04T16-30-00.sql --force
+```
+
+**Backup format by target:**
+
+| Target     | Default Format | Valid Formats                   |
+| ---------- | -------------- | ------------------------------- |
+| `sqlite`   | `.db`          | `.db`, `.sql`                   |
+| `postgres` | `.sql`         | `.sql`, `.dump` (custom format) |
+| `d1`       | `.sql`         | `.sql`                          |
+| `d1-local` | `.sql`         | `.sql`                          |
 
 ### Admin & Security
 
