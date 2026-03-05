@@ -1,4 +1,3 @@
-/* eslint-disable no-console -- Tests stub console methods to capture logger output */
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
 
 describe('resolveLogLevel', () => {

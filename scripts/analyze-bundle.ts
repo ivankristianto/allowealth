@@ -355,7 +355,6 @@ function analyzeBundle(): string {
 // Run the analyzer
 try {
   const report = analyzeBundle();
-  // eslint-disable-next-line no-console
   console.log(report);
   process.exit(0);
 } catch (error) {
