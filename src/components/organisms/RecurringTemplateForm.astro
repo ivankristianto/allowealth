@@ -1,6 +1,9 @@
 ---
 import Drawer from '@/components/molecules/Drawer.astro';
+import AmountInput from '@/components/atoms/AmountInput.astro';
 import { CircleMinus, CirclePlus, CalendarClock, ChevronDown } from '@lucide/astro';
+import type { Currency } from '@/lib/constants/currency';
+import { isValidCurrency } from '@/lib/constants/currency';
 
 interface CategoryOption {
   id: string;
@@ -21,6 +24,7 @@ export interface Props {
 }
 
 const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
+const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0] : 'IDR';
 ---
 
 <Drawer id="recurring-template-drawer" title="New Recurring" width="w-full sm:max-w-md">
@@ -74,12 +78,11 @@ const { categories = [], accounts = [], currencies = ['IDR'] } = Astro.props;
       <div class="grid grid-cols-[1fr_auto] items-end gap-3">
         <label class="form-control gap-1.5">
           <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Amount</span>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
+          <AmountInput
+            id="recurring-template-amount"
             name="amount"
-            class="input input-bordered h-16 rounded-lg border border-base-300 bg-base-100 text-center text-3xl font-bold tracking-tight placeholder:text-base-content/20"
+            currency={defaultCurrency}
+            className="input-bordered h-16 rounded-lg border border-base-300 bg-base-100 text-center text-3xl font-bold tracking-tight placeholder:text-base-content/20"
             required
             placeholder="0"
           />

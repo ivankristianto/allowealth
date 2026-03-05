@@ -1,5 +1,11 @@
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
+import {
+  attachAmountFormatter,
+  stripAmountFormatting,
+  formatAmountForDisplay,
+} from '@/lib/formatting/amount-input';
+import { DEFAULT_CURRENCY, isValidCurrency } from '@/lib/constants/currency';
 
 interface RecurringTemplateLike {
   id: string;
@@ -33,6 +39,7 @@ interface RecurringTemplatePrefill {
 }
 
 let controller: AbortController | null = null;
+let amountFormatter: ReturnType<typeof attachAmountFormatter> | null = null;
 
 function getCurrentMonthValue(): string {
   const now = new Date();
@@ -67,6 +74,8 @@ function initRecurringTemplateForm(): void {
   const categorySelect = form.querySelector(
     'select[name="category_id"]'
   ) as HTMLSelectElement | null;
+  const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
+  const currencySelect = form.querySelector('select[name="currency"]') as HTMLSelectElement | null;
 
   const useCount = form.querySelector('input[name="use_count"]') as HTMLInputElement | null;
   const useDate = form.querySelector('input[name="use_date"]') as HTMLInputElement | null;
@@ -228,6 +237,14 @@ function initRecurringTemplateForm(): void {
     if (totalOccurrencesInput) totalOccurrencesInput.value = '12';
     if (descriptionDetails) descriptionDetails.open = false;
 
+    if (amountInput && currencySelect) {
+      const currency = isValidCurrency(currencySelect.value)
+        ? currencySelect.value
+        : DEFAULT_CURRENCY;
+      amountFormatter?.cleanup();
+      amountFormatter = attachAmountFormatter(amountInput, currency);
+    }
+
     setType('expense');
     syncEndConditionUI();
     syncInstallmentState();
@@ -255,8 +272,17 @@ function initRecurringTemplateForm(): void {
 
     setFieldValue('template_id', template.id);
     setFieldValue('name', template.name);
-    setFieldValue('amount', template.amount);
+
+    const currencyValue = isValidCurrency(template.currency) ? template.currency : DEFAULT_CURRENCY;
+    setFieldValue('amount', formatAmountForDisplay(template.amount, currencyValue));
     setFieldValue('currency', template.currency);
+
+    if (amountInput) {
+      amountFormatter?.cleanup();
+      amountFormatter = attachAmountFormatter(amountInput, currencyValue);
+      amountInput.setAttribute('data-amount-currency', currencyValue);
+    }
+
     setFieldValue('category_id', template.category?.id || '');
     setFieldValue('account_id', template.account?.id || '');
     setFieldValue('day_of_month', String(template.day_of_month));
@@ -311,8 +337,17 @@ function initRecurringTemplateForm(): void {
 
     setType(prefill.type);
     setFieldValue('name', prefill.name);
-    setFieldValue('amount', prefill.amount);
+
+    const currencyValue = isValidCurrency(prefill.currency) ? prefill.currency : DEFAULT_CURRENCY;
+    setFieldValue('amount', formatAmountForDisplay(prefill.amount, currencyValue));
     setFieldValue('currency', prefill.currency);
+
+    if (amountInput) {
+      amountFormatter?.cleanup();
+      amountFormatter = attachAmountFormatter(amountInput, currencyValue);
+      amountInput.setAttribute('data-amount-currency', currencyValue);
+    }
+
     setFieldValue('category_id', prefill.category_id);
     setFieldValue('account_id', prefill.account_id);
     setFieldValue('day_of_month', String(prefill.day_of_month));
@@ -346,11 +381,15 @@ function initRecurringTemplateForm(): void {
     const name = (
       form.querySelector('input[name="name"]') as HTMLInputElement | null
     )?.value.trim();
-    const amount = (
+    const rawAmount = (
       form.querySelector('input[name="amount"]') as HTMLInputElement | null
     )?.value.trim();
     const currency = (form.querySelector('select[name="currency"]') as HTMLSelectElement | null)
       ?.value;
+    const amount =
+      rawAmount && currency && isValidCurrency(currency)
+        ? stripAmountFormatting(rawAmount, currency)
+        : '';
     const categoryId = (
       form.querySelector('select[name="category_id"]') as HTMLSelectElement | null
     )?.value;
@@ -443,6 +482,25 @@ function initRecurringTemplateForm(): void {
       { signal }
     );
   });
+
+  currencySelect?.addEventListener(
+    'change',
+    () => {
+      if (amountInput && currencySelect) {
+        const currency = isValidCurrency(currencySelect.value)
+          ? currencySelect.value
+          : DEFAULT_CURRENCY;
+        amountFormatter?.cleanup();
+        amountFormatter = attachAmountFormatter(amountInput, currency);
+        amountInput.setAttribute('data-amount-currency', currency);
+        amountInput.value = formatAmountForDisplay(
+          stripAmountFormatting(amountInput.value, currency),
+          currency
+        );
+      }
+    },
+    { signal }
+  );
 
   useCount?.addEventListener(
     'change',
@@ -575,4 +633,6 @@ document.addEventListener('astro:page-load', initRecurringTemplateForm);
 document.addEventListener('astro:before-swap', () => {
   controller?.abort();
   controller = null;
+  amountFormatter?.cleanup();
+  amountFormatter = null;
 });
