@@ -161,17 +161,48 @@ bun run aw db restore --target sqlite --no-backup
 
 ### Seed with Demo Data
 
+Seed with default 3 months of transaction data:
+
 ```bash
 bun run aw db seed --target sqlite
 ```
 
+### Custom Data Volume
+
+Control the amount of seed data with `--months` and `--transactions`:
+
+```bash
+# Seed 6 months of transaction history
+bun run aw db seed --target sqlite --months=6
+
+# Seed 12 months + 5,000 extra transactions
+bun run aw db seed --target sqlite --months=12 --transactions=5000
+```
+
 ### Add Benchmark Data
 
-Add ~10,000 transactions for performance testing:
+Add ~10,000 transactions for performance testing (equivalent to `--months=12 --benchmark`):
 
 ```bash
 bun run aw db seed --target sqlite --benchmark
 ```
+
+### Add Stress Test Data
+
+Add 5 years of realistic family activity with multiple family members:
+
+```bash
+bun run aw db seed --target sqlite --stress
+```
+
+### Seed Options Summary
+
+| Flag               | Description                             | Default |
+| ------------------ | --------------------------------------- | ------- |
+| `--months=N`       | Number of months to seed                | 3       |
+| `--transactions=N` | Extra transactions to add               | 0       |
+| `--benchmark`      | Legacy: 12 months + ~10k transactions   | -       |
+| `--stress`         | Legacy: 60 months (5 years) family data | -       |
 
 ## Dangerous Operations
 

@@ -99,7 +99,7 @@ bun run lint:fix && bun run stylelint:fix && bun run format:fix && bun run typec
 | `bun run db:migrate`     | Apply pending SQLite migrations                        |
 | `bun run db:push`        | Push schema directly to SQLite (no migration tracking) |
 | `bun run db:studio`      | Open Drizzle Studio (visual DB browser)                |
-| `bun run db:seed`        | Seed database with demo data                           |
+| `bun run db:seed`        | Seed database with demo data (3 months default)        |
 | `bun run db:seed:stress` | Seed 5 years of realistic family stress-test data      |
 | `bun run db:reset`       | Delete SQLite DB, push schema, and seed                |
 | `bun run db:empty`       | Truncate all data (preserve schema)                    |
@@ -114,6 +114,11 @@ bun run db:migrate           # Apply migration
 
 # Quick iteration (no migration tracking)
 bun run db:push
+
+# Seed with custom options
+bun run db:seed              # Default: 3 months of data
+bun run db:seed --months=6   # Seed 6 months of transactions
+bun run db:seed --months=12 --transactions=5000  # 12 months + 5k extra
 ```
 
 See `docs/architecture/007-database-migrations.md` for full migration workflow.
@@ -229,23 +234,25 @@ Aliases provide shorter commands that map to resource operations.
 
 ### Database
 
-| Command                                   | Description                                  |
-| ----------------------------------------- | -------------------------------------------- |
-| `bun run aw db migrate`                   | Apply pending migrations (SQLite)            |
-| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)        |
-| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1        |
-| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1         |
-| `bun run aw db generate`                  | Generate migration from schema changes       |
-| `bun run aw db push`                      | Push schema directly (dev only)              |
-| `bun run aw db studio`                    | Open Drizzle Studio                          |
-| `bun run aw db seed`                      | Seed with demo data                          |
-| `bun run aw db seed --benchmark`          | Seed with ~10k transactions for perf testing |
-| `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset  |
-| `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed      |
-| `bun run aw db empty`                     | Truncate all data (preserve schema)          |
-| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB            |
-| `bun run aw db backup`                    | Create backup file for the selected target   |
-| `bun run aw db restore`                   | Safely restore from local/cloud backup       |
+| Command                                   | Description                                 |
+| ----------------------------------------- | ------------------------------------------- |
+| `bun run aw db migrate`                   | Apply pending migrations (SQLite)           |
+| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)       |
+| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1       |
+| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1        |
+| `bun run aw db generate`                  | Generate migration from schema changes      |
+| `bun run aw db push`                      | Push schema directly (dev only)             |
+| `bun run aw db studio`                    | Open Drizzle Studio                         |
+| `bun run aw db seed`                      | Seed with demo data (3 months default)      |
+| `bun run aw db seed --months=6`           | Seed with 6 months of transaction data      |
+| `bun run aw db seed --transactions=5000`  | Add 5,000 extra transactions                |
+| `bun run aw db seed --benchmark`          | Seed with ~10k transactions (12 months)     |
+| `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset |
+| `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed     |
+| `bun run aw db empty`                     | Truncate all data (preserve schema)         |
+| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB           |
+| `bun run aw db backup`                    | Create backup file for the selected target  |
+| `bun run aw db restore`                   | Safely restore from local/cloud backup      |
 
 #### Database Drop Command
 
