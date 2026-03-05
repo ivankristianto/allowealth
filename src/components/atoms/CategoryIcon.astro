@@ -13,7 +13,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import * as LucideIcons from '@lucide/astro';
+import { resolveCategoryIconComponent } from '@/lib/utils/categoryIconRegistry';
 
 export interface Props {
   icon: string;
@@ -24,14 +24,7 @@ export interface Props {
 
 const { icon, color = 'bg-base-300', size = 'md', className = '' } = Astro.props;
 
-// Convert kebab-case icon names to PascalCase for Lucide component lookup
-const iconName = icon
-  .split('-')
-  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-  .join('');
-
-// Get the Lucide icon component dynamically
-const IconComponent = (LucideIcons as Record<string, any>)[iconName];
+const IconComponent = resolveCategoryIconComponent(icon);
 
 // Size classes for container
 const containerSizeClasses: Record<string, string> = {
@@ -101,11 +94,5 @@ const containerClasses = [
 ---
 
 <div class={containerClasses}>
-  {
-    IconComponent ? (
-      <IconComponent size={iconSize} class="stroke-current" aria-hidden="true" />
-    ) : (
-      <LucideIcons.Tag size={iconSize} class="stroke-current" aria-hidden="true" />
-    )
-  }
+  <IconComponent size={iconSize} class="stroke-current" aria-hidden="true" />
 </div>

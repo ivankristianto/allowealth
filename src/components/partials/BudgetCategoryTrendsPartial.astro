@@ -10,10 +10,10 @@
  * Each cell = spent + budget amounts with colored status dot
  */
 
-import * as LucideIcons from '@lucide/astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
+import { resolveCategoryIconComponent } from '@/lib/utils/categoryIconRegistry';
 import EmptyState from '../atoms/EmptyState.astro';
 import type { CategoryTrendData, CategoryTrendRow, CategoryMonthData } from '@/services';
 
@@ -39,19 +39,10 @@ const getStatusDotClass = (status: 'ok' | 'warning' | 'exceeded'): string => {
 const buildBudgetUrl = (year: number, month: number): string =>
   `/budget?year=${year}&month=${month}`;
 
-// Pre-resolve icon components for each category
-const resolveIconComponent = (iconName: string) => {
-  const pascalName = iconName
-    .split('-')
-    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join('');
-  return (LucideIcons as Record<string, any>)[pascalName] || LucideIcons.Tag;
-};
-
 const categoryIconComponents = new Map<string, any>();
 for (const cat of categories) {
   const iconName = cat.category_icon || getIconForCategory(cat.category_name);
-  categoryIconComponents.set(cat.category_id, resolveIconComponent(iconName));
+  categoryIconComponents.set(cat.category_id, resolveCategoryIconComponent(iconName));
 }
 ---
 

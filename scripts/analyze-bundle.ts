@@ -2,36 +2,21 @@
 
 /**
  * Bundle Size Analyzer
- * Parses the rollup-plugin-visualizer JSON output and generates a markdown report
+ *
+ * IMPORTANT:
+ * This reports ACTUAL emitted client JS gzip sizes from dist/client/_astro/*.js.
+ * We intentionally avoid summing stats.json nodeParts.gzipLength because that is
+ * module-level and can overcount compared to shipped chunk files.
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-
-interface TreeNode {
-  name: string;
-  uid?: string;
-  children?: TreeNode[];
-}
-
-interface NodePart {
-  renderedLength: number;
-  gzipLength: number;
-  brotliLength?: number;
-  metaUid?: string;
-}
-
-interface BundleStats {
-  version: number;
-  tree: TreeNode;
-  nodeParts: Record<string, NodePart>;
-  nodeMetas: Record<string, unknown>;
-}
+import { gzipSync } from 'zlib';
 
 interface ChunkInfo {
   name: string;
+  rawSize: number;
   gzipSize: number;
-  renderedSize: number;
 }
 
 const BUDGET_LIMITS = {
@@ -56,194 +41,58 @@ function getPercentage(actual: number, limit: number): string {
   return `${percentage}%`;
 }
 
-function sumTreeSizes(
-  node: TreeNode,
-  nodeParts: Record<string, NodePart>
-): { gzip: number; rendered: number } {
-  let gzip = 0;
-  let rendered = 0;
+function loadClientChunks(astroDir: string): ChunkInfo[] {
+  const jsFiles = readdirSync(astroDir).filter((name) => name.endsWith('.js'));
 
-  // If this node has a uid, get its size from nodeParts
-  if (node.uid && nodeParts[node.uid]) {
-    const part = nodeParts[node.uid];
-    gzip = part.gzipLength || 0;
-    rendered = part.renderedLength || 0;
-  }
+  return jsFiles.map((name) => {
+    const filePath = join(astroDir, name);
+    const content = readFileSync(filePath);
 
-  // Recurse into children
-  if (node.children) {
-    for (const child of node.children) {
-      const childSizes = sumTreeSizes(child, nodeParts);
-      gzip += childSizes.gzip;
-      rendered += childSizes.rendered;
-    }
-  }
-
-  return { gzip, rendered };
+    return {
+      name,
+      rawSize: content.length,
+      gzipSize: gzipSync(content).length,
+    };
+  });
 }
 
-function extractChunks(
-  node: TreeNode,
-  nodeParts: Record<string, NodePart>,
-  pattern?: RegExp
-): ChunkInfo[] {
-  const chunks: ChunkInfo[] = [];
-
-  // Check if this node is a chunk (has children and optionally matches pattern)
-  if (node.children && (!pattern || pattern.test(node.name))) {
-    const sizes = sumTreeSizes(node, nodeParts);
-    chunks.push({
-      name: node.name,
-      gzipSize: sizes.gzip,
-      renderedSize: sizes.rendered,
-    });
-  }
-
-  // Recurse into children if we're at root level
-  if (node.children && node.name === 'root') {
-    for (const child of node.children) {
-      chunks.push(...extractChunks(child, nodeParts, pattern));
-    }
-  }
-
-  return chunks;
+function sumByPattern(chunks: ChunkInfo[], pattern: RegExp): number {
+  return chunks
+    .filter((chunk) => pattern.test(chunk.name))
+    .reduce((sum, chunk) => sum + chunk.gzipSize, 0);
 }
 
-/**
- * Find library sizes inside node_modules directories matching a pattern.
- * Only matches package directories that are direct children of node_modules,
- * then sums ALL descendants of matching packages.
- */
-function findLibrarySize(
-  node: TreeNode,
-  nodeParts: Record<string, NodePart>,
-  pattern: RegExp
-): number {
-  let totalGzip = 0;
+function hasPotentialDecimalLeak(astroDir: string, chunks: ChunkInfo[]): boolean {
+  const decimalPattern = /(?:from\s*['"]decimal\.js['"]|[/"']decimal\.js(?:[/"']|$))/i;
 
-  if (node.name === 'node_modules' && node.children) {
-    // Inside node_modules — check direct children (package names) against pattern
-    for (const pkg of node.children) {
-      if (pkg.name && pattern.test(pkg.name)) {
-        totalGzip += sumTreeSizes(pkg, nodeParts).gzip;
-      }
-    }
-  } else if (node.children) {
-    // Keep searching for node_modules directories deeper in the tree
-    for (const child of node.children) {
-      totalGzip += findLibrarySize(child, nodeParts, pattern);
-    }
-  }
-
-  return totalGzip;
-}
-
-interface LibraryBreakdown {
-  name: string;
-  size: number;
-}
-
-/**
- * Analyze a chunk to find what libraries it contains
- */
-function analyzeChunkContents(
-  node: TreeNode,
-  nodeParts: Record<string, NodePart>
-): LibraryBreakdown[] {
-  const libraries = new Map<string, number>();
-
-  function sumNodeSize(n: TreeNode): number {
-    let total = 0;
-    if (n.uid && nodeParts[n.uid]) {
-      total += nodeParts[n.uid].gzipLength || 0;
-    }
-    if (n.children) {
-      n.children.forEach((child) => {
-        total += sumNodeSize(child);
-      });
-    }
-    return total;
-  }
-
-  function traverse(n: TreeNode, inNodeModules: boolean = false) {
-    // If we're directly under node_modules, this is a library root
-    if (inNodeModules && n.name) {
-      // Handle scoped packages (@org/package) and regular packages
-      const isScope = n.name.startsWith('@');
-      if (isScope) {
-        // For scoped packages, we need to look at children
-        if (n.children) {
-          n.children.forEach((child) => {
-            const libName = `${n.name}/${child.name}`;
-            const size = sumNodeSize(child);
-            if (size > 0) {
-              libraries.set(libName, (libraries.get(libName) || 0) + size);
-            }
-          });
-        }
-      } else {
-        // Regular package
-        const size = sumNodeSize(n);
-        if (size > 0) {
-          libraries.set(n.name, (libraries.get(n.name) || 0) + size);
-        }
-      }
-      return; // Don't traverse deeper, we've handled this library
-    }
-
-    // Check if this is the node_modules folder
-    if (n.name === 'node_modules' && n.children) {
-      n.children.forEach((child) => traverse(child, true));
-      return;
-    }
-
-    // Continue traversing
-    if (n.children) {
-      n.children.forEach((child) => traverse(child, inNodeModules));
-    }
-  }
-
-  traverse(node);
-
-  return Array.from(libraries.entries())
-    .map(([name, size]) => ({ name, size }))
-    .sort((a, b) => b.size - a.size);
-}
-
-function findChunksByPattern(
-  tree: TreeNode,
-  nodeParts: Record<string, NodePart>,
-  pattern: RegExp
-): ChunkInfo[] {
-  return extractChunks(tree, nodeParts, pattern);
+  return chunks.some((chunk) => {
+    const filePath = join(astroDir, chunk.name);
+    const content = readFileSync(filePath, 'utf-8');
+    return decimalPattern.test(content);
+  });
 }
 
 function analyzeBundle(): string {
-  const statsPath = join(process.cwd(), 'dist', 'stats.json');
+  const distDir = join(process.cwd(), 'dist');
+  const clientDir = join(distDir, 'client');
+  const astroDir = join(clientDir, '_astro');
 
-  if (!existsSync(statsPath)) {
-    throw new Error('Bundle stats not found. Run `bun run build` first.');
+  if (!existsSync(astroDir)) {
+    throw new Error('Client build not found. Run `bun run build` first.');
   }
 
-  const stats: BundleStats = JSON.parse(readFileSync(statsPath, 'utf-8'));
+  const clientChunks = loadClientChunks(astroDir);
+  const sortedChunks = [...clientChunks].sort((a, b) => b.gzipSize - a.gzipSize);
 
-  // Extract all chunks
-  const allChunks = extractChunks(stats.tree, stats.nodeParts);
-
-  // Filter client chunks (those in _astro directory)
-  const clientChunks = allChunks.filter((chunk) => chunk.name.includes('_astro/'));
-
-  // Calculate total client JS size
   const totalGzipSize = clientChunks.reduce((sum, chunk) => sum + chunk.gzipSize, 0);
-  const totalRenderedSize = clientChunks.reduce((sum, chunk) => sum + chunk.renderedSize, 0);
 
-  // Find specific library sizes by searching all nodes at any depth
-  const chartjsSize = findLibrarySize(stats.tree, stats.nodeParts, /chart/i);
-  const motionSize = findLibrarySize(stats.tree, stats.nodeParts, /motion/i);
-  const decimalSize = findLibrarySize(stats.tree, stats.nodeParts, /decimal/i);
+  // Match manual chunk names from astro.config.ts
+  const chartjsSize = sumByPattern(clientChunks, /^chartjs\..*\.js$/);
+  const motionSize = sumByPattern(clientChunks, /^motion\..*\.js$/);
+  const hasDecimalLeak = hasPotentialDecimalLeak(astroDir, clientChunks);
 
-  // Generate markdown report
   let report = '## 📊 Bundle Size Report\n\n';
+  report += '> Measured from emitted files in `dist/client/_astro/*.js` (actual gzip bytes)\n\n';
 
   report += '### Summary\n\n';
   report += '| Category | Size (gzipped) | Budget | Usage | Status |\n';
@@ -252,62 +101,26 @@ function analyzeBundle(): string {
   report += `| Chart.js | ${formatBytes(chartjsSize)} | ${formatBytes(BUDGET_LIMITS.chartjs)} | ${getPercentage(chartjsSize, BUDGET_LIMITS.chartjs)} | ${getStatus(chartjsSize, BUDGET_LIMITS.chartjs)} |\n`;
   report += `| Motion | ${formatBytes(motionSize)} | ${formatBytes(BUDGET_LIMITS.motion)} | ${getPercentage(motionSize, BUDGET_LIMITS.motion)} | ${getStatus(motionSize, BUDGET_LIMITS.motion)} |\n`;
 
-  // Check for Decimal.js in client bundle (should be 0)
-  if (decimalSize > 0) {
-    report += `| ⚠️ Decimal.js | ${formatBytes(decimalSize)} | 0 kB | N/A | 🔴 **SHOULD NOT BE IN CLIENT** |\n`;
+  if (hasDecimalLeak) {
+    report += '| ⚠️ Decimal.js | detected | 0 kB | N/A | 🔴 **SHOULD NOT BE IN CLIENT** |\n';
   }
 
   report += '\n### Top 10 Client Chunks\n\n';
-  report += '| Chunk | Size (gzipped) | Size (rendered) |\n';
-  report += '|-------|----------------|----------------|\n';
+  report += '| Chunk | Size (gzipped) | Size (raw) |\n';
+  report += '|-------|----------------|------------|\n';
 
-  // List top 10 largest client chunks
-  const sortedChunks = clientChunks.sort((a, b) => b.gzipSize - a.gzipSize).slice(0, 10);
-
-  for (const chunk of sortedChunks) {
-    // Clean up chunk name to show just the file
-    const fileName = chunk.name.split('/').pop() || chunk.name;
-    report += `| \`${fileName}\` | ${formatBytes(chunk.gzipSize)} | ${formatBytes(chunk.renderedSize)} |\n`;
+  for (const chunk of sortedChunks.slice(0, 10)) {
+    report += `| \`${chunk.name}\` | ${formatBytes(chunk.gzipSize)} | ${formatBytes(chunk.rawSize)} |\n`;
   }
 
-  // Add breakdown for large chunks (> 50 kB)
-  const largeChunks = stats.tree.children?.filter((child) => {
-    if (!child.name.includes('_astro/')) return false;
-    const sizes = sumTreeSizes(child, stats.nodeParts);
-    return sizes.gzip > 50 * 1024; // 50 kB threshold
-  });
-
-  if (largeChunks && largeChunks.length > 0) {
+  const largeChunks = sortedChunks.filter((chunk) => chunk.gzipSize > 50 * 1024);
+  if (largeChunks.length > 0) {
     report += '\n### 📦 Large Chunk Breakdown (>50 kB)\n\n';
     for (const chunk of largeChunks) {
-      const fileName = chunk.name.split('/').pop() || chunk.name;
-      const sizes = sumTreeSizes(chunk, stats.nodeParts);
-      const libraries = analyzeChunkContents(chunk, stats.nodeParts);
-
-      report += `**${fileName}** (${formatBytes(sizes.gzip)} gzipped)\n\n`;
-
-      if (libraries.length > 0) {
-        report += '| Library | Size (gzipped) | % of Chunk |\n';
-        report += '|---------|----------------|------------|\n';
-
-        const topLibs = libraries.slice(0, 5);
-        for (const lib of topLibs) {
-          const percentage = Math.round((lib.size / sizes.gzip) * 100);
-          report += `| \`${lib.name}\` | ${formatBytes(lib.size)} | ${percentage}% |\n`;
-        }
-
-        if (libraries.length > 5) {
-          const otherSize = libraries.slice(5).reduce((sum, l) => sum + l.size, 0);
-          const otherPercentage = Math.round((otherSize / sizes.gzip) * 100);
-          report += `| _Other libraries_ | ${formatBytes(otherSize)} | ${otherPercentage}% |\n`;
-        }
-
-        report += '\n';
-      }
+      report += `- \`${chunk.name}\`: ${formatBytes(chunk.gzipSize)} gzipped (${formatBytes(chunk.rawSize)} raw)\n`;
     }
   }
 
-  // Add warnings section
   const warnings: string[] = [];
 
   if (totalGzipSize > BUDGET_LIMITS.total) {
@@ -328,10 +141,8 @@ function analyzeBundle(): string {
     );
   }
 
-  if (decimalSize > 0) {
-    warnings.push(
-      `🔴 **CRITICAL: Decimal.js found in client bundle (${formatBytes(decimalSize)})**`
-    );
+  if (hasDecimalLeak) {
+    warnings.push('🔴 **CRITICAL: Decimal.js marker found in client bundle**');
     warnings.push('  - Decimal.js should only be used on the server');
     warnings.push('  - Use `import type` for Decimal.js types in client code');
   }
@@ -352,7 +163,6 @@ function analyzeBundle(): string {
   return report;
 }
 
-// Run the analyzer
 try {
   const report = analyzeBundle();
   console.log(report);

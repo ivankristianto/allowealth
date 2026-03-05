@@ -124,7 +124,7 @@ export const socialLinks: SocialLink[] = [
     id: 'github',
     label: 'GitHub',
     href: 'https://github.com/ivankristianto/allowealth',
-    icon: 'Github',
+    icon: 'GitHub',
   },
 ];
 
