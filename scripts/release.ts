@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-/* eslint-disable no-console */
 /**
  * Release Script
  *
