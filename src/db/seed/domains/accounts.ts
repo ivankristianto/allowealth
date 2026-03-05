@@ -14,7 +14,7 @@ import {
 } from '@/db/schema';
 import { deriveAccountClass } from '@/lib/types/account';
 import { nanoid } from 'nanoid';
-import { daysAgo, SEED_TIME_HOUR } from '../lib/dates';
+import { daysAgo, getTrailingMonths, SEED_TIME_HOUR } from '../lib/dates';
 import { amt } from '../lib/amounts';
 import { SNAPSHOT_GROWTH_RATE } from '../config';
 import { PAYMENT_ACCOUNTS, LOAN_ACCOUNTS, ACCOUNT_TYPES } from '../data/accounts';
@@ -296,11 +296,7 @@ export async function seedAccountSnapshots(
   console.log('📸 Seeding account snapshots...');
 
   const now = new Date();
-  const months = monthsToSeed ?? [
-    { year: now.getFullYear(), month: now.getMonth() + 1 },
-    { year: now.getFullYear(), month: now.getMonth() },
-    { year: now.getFullYear(), month: now.getMonth() - 1 || 12 },
-  ];
+  const months = monthsToSeed ?? getTrailingMonths(3);
 
   const assetAccountIds = [
     'Cash',

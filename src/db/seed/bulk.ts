@@ -125,13 +125,18 @@ export async function seedBulkTransactions(
     }
   }
 
+  const canQueueMoreTransactions = () => totalTxns + batch.length < options.transactionCount;
+  const remainingTransactionSlots = () =>
+    Math.max(0, options.transactionCount - (totalTxns + batch.length));
+
   // Income: cycling through INCOME_TEMPLATES
-  for (let mi = 0; mi < benchMonths.length; mi++) {
+  for (let mi = 0; mi < benchMonths.length && canQueueMoreTransactions(); mi++) {
     const { year, month } = benchMonths[mi];
     const pattern = INCOME_TEMPLATES[mi % INCOME_TEMPLATES.length];
     const maxDay = maxDayForMonth(year, month);
 
     for (const tmpl of pattern) {
+      if (!canQueueMoreTransactions()) break;
       const day = Math.min(tmpl.day, maxDay);
       const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
       const catId = categoryNameToId.get(tmpl.description) ?? uniqueIncomeCategoryIds[0];
@@ -161,7 +166,7 @@ export async function seedBulkTransactions(
 
     // Additional sporadic income
     const extraIncome = 10 + Math.floor(Math.random() * 5);
-    for (let j = 0; j < extraIncome; j++) {
+    for (let j = 0; j < extraIncome && canQueueMoreTransactions(); j++) {
       const day = 1 + Math.floor(Math.random() * maxDay);
       const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
       const catId =
@@ -195,16 +200,17 @@ export async function seedBulkTransactions(
   const targetExpenseCount = Math.floor(options.transactionCount * 0.75);
   const targetPerMonth = Math.floor(targetExpenseCount / options.monthsCount);
 
-  for (let mi = 0; mi < benchMonths.length; mi++) {
+  for (let mi = 0; mi < benchMonths.length && canQueueMoreTransactions(); mi++) {
     const { year, month } = benchMonths[mi];
     const maxDay = maxDayForMonth(year, month);
     const monthCount = Math.min(
       targetPerMonth,
-      Math.floor(options.transactionCount * 0.75 - totalTxns)
+      Math.floor(options.transactionCount * 0.75 - (totalTxns + batch.length)),
+      remainingTransactionSlots()
     );
     if (monthCount <= 0) break;
 
-    for (let i = 0; i < monthCount; i++) {
+    for (let i = 0; i < monthCount && canQueueMoreTransactions(); i++) {
       const day = 1 + Math.floor(Math.random() * maxDay);
       const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
       const catId = expenseCategoryIds[Math.floor(Math.random() * expenseCategoryIds.length)];
@@ -254,12 +260,13 @@ export async function seedBulkTransactions(
     { from: 'Cash', to: 'Transfer' },
   ];
 
-  for (let mi = 0; mi < benchMonths.length; mi++) {
+  for (let mi = 0; mi < benchMonths.length && canQueueMoreTransactions(); mi++) {
     const { year, month } = benchMonths[mi];
     const maxDay = maxDayForMonth(year, month);
-    const numTransfers = 3 + Math.floor(Math.random() * 5);
+    const numTransfers = Math.min(3 + Math.floor(Math.random() * 5), remainingTransactionSlots());
+    if (numTransfers <= 0) break;
 
-    for (let i = 0; i < numTransfers; i++) {
+    for (let i = 0; i < numTransfers && canQueueMoreTransactions(); i++) {
       const pair = transferPairs[Math.floor(Math.random() * transferPairs.length)];
       const fromId = accountMap.get(pair.from);
       const toId = accountMap.get(pair.to);
@@ -479,8 +486,11 @@ export async function seedBulkTransactions(
     },
   ]);
 
-  // Add transactions for second user
-  for (let i = 0; i < 100; i++) {
+  const remainingTransactions = remainingTransactionSlots();
+  const secondUserTransactionCount = Math.min(100, remainingTransactions);
+
+  // Add transactions for second user without exceeding requested transactionCount
+  for (let i = 0; i < secondUserTransactionCount; i++) {
     const catId = expenseCategoryIds[i % expenseCategoryIds.length];
     const accountId = paymentAccountIds[i % paymentAccountIds.length];
     const txDate = new Date(
