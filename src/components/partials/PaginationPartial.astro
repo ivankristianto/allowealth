@@ -14,9 +14,10 @@ export interface Props {
   offset: number;
   page: number;
   totalPages: number;
+  hideSummary?: boolean;
 }
 
-const { total, limit, page, totalPages } = Astro.props;
+const { total, limit, page, totalPages, hideSummary = false } = Astro.props;
 
 const start = (page - 1) * limit + 1;
 const end = Math.min(page * limit, total);
@@ -32,12 +33,16 @@ const paginationCurrentClass = `inline-flex items-center justify-center min-h-[4
   data-page-size={limit}
   data-current-page={page}
 >
-  <div
-    class:list={['hidden sm:block text-base-content/60', tokenClasses.textSm]}
-    data-pagination-info
-  >
-    Showing {start} to {end} of {total} transactions
-  </div>
+  {
+    !hideSummary && (
+      <div
+        class:list={['hidden sm:block text-base-content/60', tokenClasses.textSm]}
+        data-pagination-info
+      >
+        Showing {start} to {end} of {total} transactions
+      </div>
+    )
+  }
   <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
     <button
       class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"

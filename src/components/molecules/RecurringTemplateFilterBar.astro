@@ -1,0 +1,65 @@
+---
+import SearchInput from '@/components/atoms/SearchInput.astro';
+
+export interface Props {
+  type?: string;
+  search?: string;
+}
+
+const { type = 'all', search = '' } = Astro.props;
+
+const filterButtonClass =
+  'btn btn-sm btn-ghost h-10 min-h-11 rounded-lg sm:rounded-xl px-4 text-sm font-semibold';
+
+const searchInputClass = [
+  'input input-bordered h-11 w-full rounded-xl border border-base-300 bg-base-100 pl-11 pr-4 text-sm font-medium',
+  'focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
+].join(' ');
+---
+
+<div
+  class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+  role="search"
+  aria-label="Filter recurring templates"
+>
+  <div
+    class="inline-flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1"
+    role="group"
+    aria-label="Filter by recurring template type"
+  >
+    <button
+      data-filter-type="all"
+      class:list={[filterButtonClass, type === 'all' && 'btn-active']}
+      type="button"
+      aria-pressed={type === 'all'}
+    >
+      All
+    </button>
+    <button
+      data-filter-type="expense"
+      class:list={[filterButtonClass, type === 'expense' && 'btn-active']}
+      type="button"
+      aria-pressed={type === 'expense'}
+    >
+      Expenses
+    </button>
+    <button
+      data-filter-type="income"
+      class:list={[filterButtonClass, type === 'income' && 'btn-active']}
+      type="button"
+      aria-pressed={type === 'income'}
+    >
+      Income
+    </button>
+  </div>
+
+  <SearchInput
+    id="recurring-template-search"
+    label="Search recurring templates"
+    placeholder="Search templates..."
+    value={search}
+    inputClass={searchInputClass}
+    class="w-full sm:w-60 lg:w-72"
+    data-template-search
+  />
+</div>

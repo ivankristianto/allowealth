@@ -733,3 +733,16 @@ This plan addresses 4 UI issues:
 4. **TransactionCard Z-Index** - Increases dropdown z-index from 50 to 100 to prevent cutoff in overflow containers
 
 All changes follow existing patterns in the codebase and maintain WCAG 2.1 AA accessibility compliance.
+
+---
+
+## Implementation Update (Completed)
+
+Implemented on branch `ui-polish-accounts-transactions` with all planned tasks completed.
+
+- ✅ **Task 1:** `RecurringSkipModal` rebuilt using `Modal` with design-system header/icon/actions and skip-specific fields.
+- ✅ **Task 2:** Transaction account filter ordering now prioritizes liquid account groups before alphabetical ordering.
+- ✅ **Task 3:** New `ActionFilterBar` added and wired into accounts page; old `All/Mine` toggles removed from `AccountActions`.
+- ✅ **Task 4:** Transaction action dropdowns updated with higher z-index and parent transaction list card set to `overflow-visible` to prevent clipping.
+- ✅ **Review triage:** Findings from `requesting-code-review` and Codex review were triaged and valid issues were fixed (owner-filter empty-state recovery, filter semantics, transaction filter sort behavior).
+- ✅ **Verification:** Ran lint, stylelint, targeted formatting for changed files, typecheck, build, and full test suite successfully.

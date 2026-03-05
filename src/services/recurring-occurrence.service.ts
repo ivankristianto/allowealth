@@ -12,6 +12,7 @@ import type {
   RecurringTemplate,
 } from '@/lib/types/recurring';
 import { confirmOccurrenceSchema, skipOccurrenceSchema } from '@/lib/validation/recurring';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { generateInstallmentDescription } from '@/lib/utils/recurring-dates';
 import type { RecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
@@ -74,7 +75,7 @@ export class RecurringOccurrenceService {
   }
 
   private ensureOccurrenceIsDue(dueDate: string): void {
-    const todayIso = toIsoDate(new Date());
+    const todayIso = getCurrentDateISO();
     if (dueDate > todayIso) {
       throw new RecurringServiceError(
         ServiceErrorCode.OCCURRENCE_NOT_DUE,

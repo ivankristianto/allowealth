@@ -110,14 +110,6 @@ export const pricingTiers: PricingTier[] = [
 
 export const footerLinks: FooterLinkSection[] = [
   {
-    title: 'Open Source',
-    links: [
-      { label: 'GitHub Repository', href: 'https://github.com/ivankristianto/allowealth' },
-      { label: 'Documentation', href: 'https://docs.allowealth.io' },
-      { label: 'Report an Issue', href: 'https://github.com/ivankristianto/allowealth/issues' },
-    ],
-  },
-  {
     title: 'Product',
     links: [
       { label: 'Features', href: '/#features' },
@@ -320,7 +312,7 @@ export const heroContent = {
   ctaGuest: 'Get Started Free',
   ctaLoggedIn: 'Go to Dashboard',
   ctaSecondary: 'View on GitHub',
-  ctaSecondaryHref: '#github',
+  ctaSecondaryHref: 'https://github.com/ivankristianto/allowealth',
 };
 
 // ============================================================================
