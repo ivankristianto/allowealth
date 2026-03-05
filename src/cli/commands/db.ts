@@ -253,17 +253,42 @@ export default defineCommand({
       meta: { name: 'seed', description: 'Seed database with demo data' },
       args: {
         target: targetArg,
+        months: {
+          type: 'string',
+          description: 'Number of months to seed transactions for (default: 3)',
+          default: '3',
+        },
+        transactions: {
+          type: 'string',
+          description: 'Number of extra transactions to add (default: 0)',
+          default: '0',
+        },
         benchmark: {
           type: 'boolean',
-          description: 'Add ~10k benchmark transactions for performance testing',
+          description: 'Legacy: Add ~10k benchmark transactions (equivalent to --months=12)',
+          default: false,
+        },
+        stress: {
+          type: 'boolean',
+          description:
+            'Legacy: Seed 5 years of family stress-test data (equivalent to --months=60)',
           default: false,
         },
       },
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-        const seedArgs = ['run', 'src/db/seed.ts'];
-        if (args.benchmark) seedArgs.push('--benchmark');
+        const seedArgs = ['run', 'src/db/seed/index.ts'];
+        if (args.benchmark) {
+          seedArgs.push('--benchmark');
+        } else if (args.stress) {
+          seedArgs.push('--stress');
+        } else {
+          seedArgs.push(`--months=${args.months}`);
+          if (args.transactions !== '0') {
+            seedArgs.push(`--transactions=${args.transactions}`);
+          }
+        }
         exec('bun', seedArgs);
       },
     }),
@@ -284,7 +309,7 @@ export default defineCommand({
         exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
         exec('mkdir', ['-p', 'db']);
         exec('drizzle-kit', ['push', '--force']);
-        exec('bun', ['run', 'src/db/seed.ts']);
+        exec('bun', ['run', 'src/db/seed/index.ts']);
       },
     }),
     empty: defineCommand({
