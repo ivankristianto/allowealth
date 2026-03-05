@@ -12,6 +12,19 @@ declare global {
       user?: User | null;
       session?: Session | null;
       userSettings?: UserSettings;
+      layoutCategories?: ReadonlyArray<{
+        id: string;
+        name: string;
+        type: string;
+        currency?: string;
+      }>;
+      layoutAccounts?: ReadonlyArray<{
+        id: string;
+        name: string;
+        type: string;
+        currency?: string;
+        account_class?: string;
+      }>;
       cspNonce?: string;
       csrfToken?: string;
       perf?: PerfCollector;

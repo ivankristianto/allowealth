@@ -17,7 +17,7 @@ export interface Props {
 
 const { userName, currentDate } = Astro.props;
 
-// Get greeting based on time of day (client-side determined)
+// Get greeting based on time of day (computed during Astro render)
 const getGreeting = (): string => {
   const hour = (currentDate ?? new Date()).getHours();
   if (hour < 12) return 'Good morning';

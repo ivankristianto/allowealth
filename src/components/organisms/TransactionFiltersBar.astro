@@ -196,18 +196,18 @@ const mainSearchInputClass = [
           items={accounts
             .map((a) => ({ id: a.id, name: a.name, group: a.type }))
             .sort((a, b) => {
-              const liquidTypes = [
+              const normalizeGroup = (value: string) => value.toLowerCase().replace(/[\s-]+/g, '_');
+              const liquidGroups = new Set([
                 'cash',
                 'bank_account',
+                'bank_accounts',
                 'e_wallet',
+                'e_wallets',
                 'credit_card',
-                'Cash',
-                'Bank Accounts',
-                'E-Wallets',
-                'Credit Cards',
-              ];
-              const aIsLiquid = liquidTypes.includes(a.group);
-              const bIsLiquid = liquidTypes.includes(b.group);
+                'credit_cards',
+              ]);
+              const aIsLiquid = liquidGroups.has(normalizeGroup(a.group));
+              const bIsLiquid = liquidGroups.has(normalizeGroup(b.group));
 
               if (aIsLiquid && !bIsLiquid) return -1;
               if (!aIsLiquid && bIsLiquid) return 1;

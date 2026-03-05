@@ -30,10 +30,27 @@ interface QueueRow {
   payload: string;
 }
 
+interface LayoutCategory {
+  id: string;
+  name: string;
+  type: string;
+  currency?: string;
+}
+
+interface LayoutAccount {
+  id: string;
+  name: string;
+  type: string;
+  currency?: string;
+  account_class?: string;
+}
+
 const { className = '' } = Astro.props;
 const user = Astro.locals.user;
 const perf = Astro.locals.perf;
 const todayIso = getCurrentDateISO();
+const layoutCategories: LayoutCategory[] = [...(Astro.locals.layoutCategories ?? [])];
+const layoutAccounts: LayoutAccount[] = [...(Astro.locals.layoutAccounts ?? [])];
 
 let fetchError: string | null = null;
 let pendingOccurrences: RecurringOccurrenceOutput[] = [];
@@ -73,19 +90,42 @@ if (!user?.workspaceId) {
       toMonthKey(new Date(now.getFullYear(), now.getMonth() + offset, 1))
     );
 
-    const [pendingResults, categories, accounts] = await Promise.all([
-      Promise.all(
-        monthKeys.map((month) =>
-          recurringOccurrenceService.findPending(
-            user.workspaceId,
-            { status: 'pending', month },
-            perf
-          )
-        )
-      ),
-      categoryService.findAll(user.workspaceId, { is_active: true }, perf),
-      accountService.findAll(user.workspaceId, undefined, perf),
+    const pendingResults = await Promise.all(
+      monthKeys.map((month) =>
+        recurringOccurrenceService.findPending(user.workspaceId, { status: 'pending', month }, perf)
+      )
+    );
+    const [fetchedCategories, fetchedAccounts] = await Promise.all([
+      layoutCategories.length === 0
+        ? categoryService.findAll(user.workspaceId, { is_active: true }, perf)
+        : Promise.resolve([]),
+      layoutAccounts.length === 0
+        ? accountService.findAll(user.workspaceId, undefined, perf)
+        : Promise.resolve([]),
     ]);
+    const categorySource: LayoutCategory[] =
+      layoutCategories.length > 0
+        ? layoutCategories
+        : fetchedCategories.map(
+            (category): LayoutCategory => ({
+              id: category.id,
+              name: category.name,
+              type: category.type,
+              currency: category.currency,
+            })
+          );
+    const accountSource: LayoutAccount[] =
+      layoutAccounts.length > 0
+        ? layoutAccounts
+        : fetchedAccounts.map(
+            (account): LayoutAccount => ({
+              id: account.id,
+              name: account.name,
+              type: account.type,
+              currency: account.currency,
+              account_class: account.account_class,
+            })
+          );
 
     const pendingById = new Map(
       pendingResults
@@ -94,19 +134,19 @@ if (!user?.workspaceId) {
         .map((occurrence) => [occurrence.id, occurrence])
     );
     pendingOccurrences = Array.from(pendingById.values());
-    categoryOptions = categories.map((category) => ({
+    categoryOptions = categorySource.map((category) => ({
       id: category.id,
       name: category.name,
       type: category.type,
     }));
-    accountOptions = accounts.map((account) => ({
+    accountOptions = accountSource.map((account) => ({
       id: account.id,
       name: account.name,
       type: account.type,
       currency: account.currency,
     }));
 
-    const primaryAccountCurrency = accounts[0]?.currency;
+    const primaryAccountCurrency = accountSource[0]?.currency;
     if (primaryAccountCurrency && isValidCurrency(primaryAccountCurrency)) {
       defaultCurrency = primaryAccountCurrency;
     }
