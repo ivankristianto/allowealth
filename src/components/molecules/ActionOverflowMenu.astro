@@ -6,6 +6,7 @@ export interface OverflowAction {
   label: string;
   href?: string;
   disabled?: boolean;
+  title?: string;
   dataTestId?: string;
 }
 
@@ -45,6 +46,7 @@ const { actions = [], triggerLabel = 'More' } = Astro.props;
               type="button"
               role="menuitem"
               disabled={action.disabled}
+              title={action.title}
               data-action-id={action.id}
               data-testid={action.dataTestId}
             >

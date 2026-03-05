@@ -5,6 +5,11 @@ export interface HierarchyAction {
   label: string;
 }
 
+/**
+ * Design contract: maximum visible secondary actions per viewport.
+ * Astro consumers hardcode slot content at build time using these caps as guidance.
+ * The partition function below is used by tests to verify the contract.
+ */
 const CAP_BY_VIEWPORT: Record<ActionViewport, number> = {
   mobile: 2,
   desktop: 3,

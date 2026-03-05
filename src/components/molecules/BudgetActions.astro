@@ -57,6 +57,7 @@ if (showCopyAction) {
     id: 'copy-budget',
     label: 'Copy Budget',
     disabled: disableCopyAction,
+    title: disableCopyAction && copyActionTooltip ? copyActionTooltip : undefined,
     dataTestId: 'copy-budget-btn',
   });
 }
