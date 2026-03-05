@@ -1,0 +1,58 @@
+---
+import { Ellipsis } from '@lucide/astro';
+
+export interface OverflowAction {
+  id: string;
+  label: string;
+  href?: string;
+  disabled?: boolean;
+  dataTestId?: string;
+}
+
+export interface Props {
+  actions: OverflowAction[];
+  triggerLabel?: string;
+}
+
+const { actions = [], triggerLabel = 'More' } = Astro.props;
+---
+
+<div class="dropdown dropdown-end" data-action-overflow>
+  <button
+    type="button"
+    tabindex={0}
+    class="btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
+    aria-label={triggerLabel}
+    aria-haspopup="menu"
+  >
+    <Ellipsis size={16} class="stroke-current" aria-hidden="true" />
+    <span class="text-xs md:text-sm">{triggerLabel}</span>
+  </button>
+  <ul
+    tabindex={0}
+    class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-52 border border-base-300"
+    role="menu"
+  >
+    {
+      actions.map((action) => (
+        <li role="none">
+          {action.href ? (
+            <a href={action.href} role="menuitem" data-testid={action.dataTestId}>
+              {action.label}
+            </a>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={action.disabled}
+              data-action-id={action.id}
+              data-testid={action.dataTestId}
+            >
+              {action.label}
+            </button>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</div>
