@@ -55,6 +55,16 @@ export default [
     },
   },
   {
+    files: [
+      'scripts/**/*.{js,ts,mjs,cjs}',
+      '**/__tests__/**/*.{js,ts,tsx,mjs,cjs}',
+      '**/*.{test,spec}.{js,ts,tsx,mjs,cjs}',
+    ],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['**/*.astro'],
     languageOptions: {
       parserOptions: {

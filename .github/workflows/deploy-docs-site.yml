@@ -24,8 +24,8 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install docs dependencies
-        run: bun install --cwd docs/sites
+      - name: Install root & docs dependencies
+        run: bun install && bun install --cwd docs/sites
 
       - name: Build docs site
         run: bun run docs:build
@@ -35,4 +35,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config docs/sites/wrangler.toml
+          workingDirectory: docs/sites
+          command: pages deploy

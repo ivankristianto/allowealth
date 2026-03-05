@@ -1,6 +1,6 @@
 ---
 title: Commands Reference
-description: Frequently used commands for app development, docs, database, testing, and deployment.
+description: Common commands for development, testing, and deployment.
 draft: false
 head: []
 sidebar:
@@ -11,22 +11,22 @@ audience:
   - admin
 ---
 
-This page is the quick command map. For the full command catalog, see `COMMANDS.md` in the repository root.
+Quick reference for common tasks.
 
-## App and docs
+## Development
 
 ```bash
-bun run dev
-bun run build
-bun run preview
+bun run dev          # Start dev server
+bun run build        # Build for production
+bun run preview      # Preview production build
 
-bun run docs:dev
-bun run docs:check
-bun run docs:build
-bun run docs:preview
+bun run docs:dev     # Start docs dev server
+bun run docs:build   # Build docs
 ```
 
 ## Quality gates
+
+Run before every commit:
 
 ```bash
 bun run lint:fix
@@ -38,64 +38,58 @@ bun run typecheck
 ## Database
 
 ```bash
-bun run db:generate
-bun run db:migrate
-bun run db:push
-bun run db:seed
-bun run db:reset
-bun run db:empty
+bun run db:generate  # Generate migration
+bun run db:migrate   # Apply migrations
+bun run db:push      # Push schema (dev only)
+bun run db:seed      # Seed demo data
+bun run db:reset     # Reset and seed
 ```
 
-## Tests
+## Testing
 
 ```bash
-bun run test
-bun run test:watch
-bun run test:coverage
-
-bun run test:e2e
-bun run test:e2e:ui
-bun run test:e2e:headed
+bun run test              # Unit tests
+bun run test:watch        # Watch mode
+bun run test:e2e          # E2E tests
+bun run test:e2e:ui       # E2E with UI
 ```
 
-## CLI entrypoint
+## CLI
 
 ```bash
 bun run aw --help
+
+# Workspace
+bun run aw workspace create --name "Name" --email admin@example.com
 bun run aw workspace list
-bun run aw db migrate --target d1
-```
+bun run aw workspace invite --workspace-id <id> --email <email>
 
-## CLI resource commands
-
-```bash
+# Resources
 bun run aw transactions create|get|list|update|delete
-bun run aw accounts     create|get|list|update|delete
-bun run aw budgets      create|get|list|update|delete
-```
+bun run aw accounts create|get|list|update|delete
+bun run aw budgets create|get|list|update|delete
 
-## CLI alias commands
-
-```bash
-bun run aw tx  add|show|ls|edit|rm
+# Aliases
+bun run aw tx add|show|ls|edit|rm
 bun run aw acc add|show|ls|edit|rm
 bun run aw bdg set|show|ls|edit|rm
 ```
 
-## CLI global options
+## CLI options
 
 ```bash
-# target selection on leaf commands
-bun run aw budgets list --workspace-id <id> --month 3 --year 2026 --target d1
-bun run aw budgets list --workspace-id <id> --month 3 --year 2026 -t d1-local
+# Target environment
+bun run aw db migrate --target sqlite|d1|postgres
 
-# script-friendly output
+# JSON output
 bun run aw transactions list --workspace-id <id> --json
 
-# destructive operations: pass --yes/-y to skip interactive confirmation
-bun run aw tx rm --workspace-id <id> --id <id> --user-id <id> --yes
+# Skip confirmation
+bun run aw tx rm --workspace-id <id> --id <id> --yes
 ```
 
 :::caution[⚠️ Caution]
-Do not run destructive DB commands (`db:empty`, forced deletes) against production targets without explicit approval.
+Do not run destructive commands (`db:empty`, forced deletes) against production without approval.
 :::
+
+See `COMMANDS.md` in the repository root for the full catalog.

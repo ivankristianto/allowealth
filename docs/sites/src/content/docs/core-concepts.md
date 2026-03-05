@@ -1,6 +1,6 @@
 ---
 title: Core Concepts
-description: The mental model for how Allowealth organizes users, data, and workflows.
+description: How Allowealth organizes users, data, and features.
 draft: false
 head: []
 sidebar:
@@ -12,49 +12,54 @@ audience:
   - developer
 ---
 
-Before you dive into guides, this page gives you the model behind the product.
+Understand these concepts before scaling your workspace.
 
-## Workspaces are the top-level boundary
+## Workspaces
 
-A **workspace** is an isolated financial environment.
-
-- Every transaction, budget, account, and member belongs to one workspace.
-- Users are assigned a role inside that workspace.
-- Workspace defaults (currency, week start, formatting) drive reporting behavior.
+A workspace is an isolated financial environment. All transactions, budgets, accounts, and members belong to one workspace. Workspace settings (currency, week start, formatting) control reporting behavior.
 
 :::caution[⚠️ Caution]
-Deleting a workspace removes associated data permanently. Treat workspace deletion as a destructive operation.
+Deleting a workspace deletes all associated data permanently.
 :::
 
 ## Roles
 
-- **Member**: Tracks daily finances and uses standard product features.
-- **Admin**: Manages workspace settings, invitations, and operations.
-- **Super Admin**: Platform-level controls across workspaces (internal/ops use).
+| Role        | Permissions                               |
+| ----------- | ----------------------------------------- |
+| Member      | Track finances, use standard features     |
+| Admin       | Manage workspace settings, invite members |
+| Super Admin | Platform-level controls across workspaces |
 
 ## Feature domains
 
-Allowealth revolves around a few core domains:
+**Transactions**
+Income and expense records with import, export, and bulk operations.
 
-- **Transactions**: income/expense records, import/export, bulk operations
-- **Budgets**: category planning, history, variance tracking
-- **Accounts**: balances, transfers, history, account categories
-- **Reports and Forecast**: trend analysis and projection views
-- **Security and Access**: authentication, MFA, API keys
+**Budgets**
+Category planning with history and variance tracking.
 
-## System layers (for developers)
+**Accounts**
+Balance tracking with transfers, history, and account categories.
 
-Code follows a consistent path:
+**Reports and Forecast**
+Trend analysis and future wealth projections.
 
-1. **UI** in [`src/pages`](/reference/architecture/)
-2. **Service logic** in `src/services`
-3. **API endpoints** in `src/pages/api`
-4. **CLI commands** in `src/cli`
+**Security**
+Authentication, MFA, and API key management.
 
-This keeps behavior reusable across browser, API, and automation paths.
+## Code organization (developers)
 
-## Documentation flow
+Code flows through consistent layers:
 
-- Need task walkthroughs? Go to **Guides**.
-- Need exact command syntax? Go to [Reference](/reference/commands/).
-- Need endpoint coverage? Go to [API Overview](/reference/api-overview/).
+1. **UI** in `src/pages/`
+2. **Services** in `src/services/`
+3. **API** in `src/pages/api/`
+4. **CLI** in `src/cli/`
+
+This structure keeps behavior consistent across browser, API, and automation paths.
+
+## Where to go next
+
+- **Guides**: Step-by-step walkthroughs
+- [Commands](/reference/commands/): Exact syntax
+- [API Overview](/reference/api-overview/): Endpoint documentation
