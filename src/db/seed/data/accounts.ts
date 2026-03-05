@@ -90,6 +90,7 @@ export const getAccountTypes = () => [
     type: 'bank_account' as const,
     balance: 3000,
     currency: SEEDER_CONFIG.SECONDARY_CURRENCY,
+    baseScale: 'secondary' as const,
   },
 
   // Mutual funds (IDR)
@@ -120,24 +121,28 @@ export const getAccountTypes = () => [
     type: 'stock' as const,
     balance: 15000,
     currency: SEEDER_CONFIG.SECONDARY_CURRENCY,
+    baseScale: 'secondary' as const,
   },
   {
     name: 'Stock - MSFT',
     type: 'stock' as const,
     balance: 12000,
     currency: SEEDER_CONFIG.SECONDARY_CURRENCY,
+    baseScale: 'secondary' as const,
   },
   {
     name: 'Stock - GOOGL',
     type: 'stock' as const,
     balance: 8000,
     currency: SEEDER_CONFIG.SECONDARY_CURRENCY,
+    baseScale: 'secondary' as const,
   },
   {
     name: 'Stock - AMZN',
     type: 'stock' as const,
     balance: 10000,
     currency: SEEDER_CONFIG.SECONDARY_CURRENCY,
+    baseScale: 'secondary' as const,
   },
 
   // Indonesian government bonds

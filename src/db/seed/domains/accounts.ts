@@ -201,7 +201,11 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
           if (recordedAt > now) continue;
 
           const variation = (Math.random() - 0.5) * monthBaseBalance * 0.04; // ±2% variation
-          const balance = amt(monthBaseBalance + variation, accountConfig.currency);
+          const balance = amt(
+            monthBaseBalance + variation,
+            accountConfig.currency,
+            (accountConfig as any).baseScale || 'primary'
+          );
 
           await db.insert(accountHistory).values({
             id: nanoid(),
@@ -227,7 +231,11 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
         if (recordedAt > now) continue;
 
         const variation = (Math.random() - 0.5) * monthBaseBalance * 0.06; // ±3% variation for older
-        const balance = amt(monthBaseBalance + variation, accountConfig.currency);
+        const balance = amt(
+          monthBaseBalance + variation,
+          accountConfig.currency,
+          (accountConfig as any).baseScale || 'primary'
+        );
 
         await db.insert(accountHistory).values({
           id: nanoid(),
@@ -373,7 +381,11 @@ export async function seedAccountSnapshots(
         id: nanoid(),
         snapshot_id: snapshotId,
         account_id: accountId,
-        balance: amt(snapshotBalance, accountConfig.currency),
+        balance: amt(
+          snapshotBalance,
+          accountConfig.currency,
+          (accountConfig as any).baseScale || 'primary'
+        ),
         currency: accountConfig.currency,
       });
       snapshotCount++;
