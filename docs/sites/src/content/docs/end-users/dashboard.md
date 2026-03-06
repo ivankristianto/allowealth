@@ -12,9 +12,13 @@ audience:
 
 Dashboard displays your complete financial picture on one screen. Check this page daily to monitor financial health.
 
+![Dashboard Overview](https://images.allowealth.io/dashboard.png)
+
 ## What Dashboard Shows
 
 ### Spending Summary Card
+
+![Spending Summary Card](https://images.allowealth.io/dashboard-spending-summary.png)
 
 The top card displays current month performance:
 
@@ -26,6 +30,8 @@ The top card displays current month performance:
 A progress bar shows spending versus budget. Green indicates healthy spending. Yellow approaches limits. Red indicates exceeded budgets.
 
 ### Spending Analysis Chart
+
+![Spending Analysis Chart](https://images.allowealth.io/dashboard-spending-chart.png)
 
 A donut chart breaks down spending by category. The top four categories display individually. Remaining categories group as "Other."
 
@@ -45,6 +51,8 @@ Click any transaction to edit details. Click **View All** to see the complete tr
 
 ### Account Summary
 
+![Account Summary](https://images.allowealth.io/dashboard-account-summary.png)
+
 Total balances across all accounts display by currency. The card shows:
 
 - **Assets** - Sum of liquid and non-liquid accounts
@@ -62,6 +70,8 @@ Recent income and expense activity appears chronologically. This section highlig
 - Largest transactions this period
 
 ### Recurring Bills Summary
+
+![Recurring Bills Summary](https://images.allowealth.io/dashboard-recurring-bills.png)
 
 Upcoming recurring transactions display with their due dates. This helps you anticipate upcoming expenses.
 
