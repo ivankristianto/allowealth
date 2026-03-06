@@ -10,8 +10,10 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Settings, ArrowRightLeft, Archive, ListPlus } from '@lucide/astro';
+import { Plus, Settings, ArrowRightLeft, ListPlus } from '@lucide/astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
+import ActionOverflowMenu from '@components/molecules/ActionOverflowMenu.astro';
+import type { OverflowAction } from '@components/molecules/ActionOverflowMenu.astro';
 
 export interface Props {
   isHistoricalView?: boolean;
@@ -32,82 +34,76 @@ const ghostBtn =
 
 const accentGhostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
+
+// Build overflow actions list
+const overflowActions: OverflowAction[] = [];
+if (closedCount > 0) {
+  overflowActions.push({
+    id: 'view-closed',
+    label: `Closed (${closedCount})`,
+    href: '/accounts/closed',
+    dataTestId: 'view-closed-accounts-btn',
+  });
+}
 ---
 
 <ActionBar className={className} ariaLabel="Account actions" edgeBleed>
-  {/* Categories */}
-  <div class="tooltip tooltip-bottom" data-tip="Manage account categories">
-    <a
-      href="/accounts/categories"
-      class={ghostBtn}
-      aria-label="Manage account categories"
-      data-testid="manage-account-categories-btn"
-    >
-      <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="text-xs md:text-sm">Categories</span>
-    </a>
+  <div slot="secondary-visible" class="flex items-center gap-1 md:gap-2">
+    {/* Categories */}
+    <div class="tooltip tooltip-bottom" data-tip="Manage account categories">
+      <a
+        href="/accounts/categories"
+        class={ghostBtn}
+        aria-label="Manage account categories"
+        data-testid="manage-account-categories-btn"
+      >
+        <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Categories</span>
+      </a>
+    </div>
+
+    {/* Transfer */}
+    {
+      !isHistoricalView && (
+        <div class="tooltip tooltip-bottom" data-tip="Transfer between accounts">
+          <button
+            type="button"
+            class={ghostBtn}
+            aria-label="Transfer between accounts"
+            data-transfer-btn
+            data-testid="account-transfer-btn"
+          >
+            <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="hidden md:inline text-sm">Transfer</span>
+          </button>
+        </div>
+      )
+    }
+
+    {/* Bulk Add */}
+    {
+      !isHistoricalView && (
+        <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
+          <button
+            type="button"
+            class={ghostBtn}
+            aria-label="Bulk add accounts"
+            data-bulk-add-accounts-btn
+            data-testid="bulk-add-accounts-btn"
+          >
+            <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="text-xs md:text-sm">Bulk</span>
+          </button>
+        </div>
+      )
+    }
   </div>
 
-  {/* Transfer */}
-  {
-    !isHistoricalView && (
-      <div class="tooltip tooltip-bottom" data-tip="Transfer between accounts">
-        <button
-          type="button"
-          class={ghostBtn}
-          aria-label="Transfer between accounts"
-          data-transfer-btn
-          data-testid="account-transfer-btn"
-        >
-          <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="hidden md:inline text-sm">Transfer</span>
-        </button>
-      </div>
-    )
-  }
-
-  {/* Bulk Add */}
-  {
-    !isHistoricalView && (
-      <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
-        <button
-          type="button"
-          class={ghostBtn}
-          aria-label="Bulk add accounts"
-          data-bulk-add-accounts-btn
-          data-testid="bulk-add-accounts-btn"
-        >
-          <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs md:text-sm">Bulk</span>
-        </button>
-      </div>
-    )
-  }
-
-  {/* View Closed Accounts */}
-  {
-    closedCount > 0 && (
-      <div
-        class="tooltip tooltip-bottom"
-        data-tip={`View ${closedCount} closed account${closedCount !== 1 ? 's' : ''}`}
-      >
-        <a
-          href="/accounts/closed"
-          class={ghostBtn}
-          aria-label={`View ${closedCount} closed account${closedCount !== 1 ? 's' : ''}`}
-          data-testid="view-closed-accounts-btn"
-        >
-          <Archive size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Archive size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs md:text-sm">Closed</span>
-          <span class="badge badge-xs badge-ghost">{closedCount}</span>
-        </a>
-      </div>
-    )
-  }
+  {/* Overflow: Closed accounts */}
+  {overflowActions.length > 0 && <ActionOverflowMenu slot="overflow" actions={overflowActions} />}
 
   {/* Primary Action - Add Account */}
   {

@@ -14,6 +14,8 @@
  *
  * Slots:
  * - default: Secondary action buttons (left-aligned, btn-ghost style)
+ * - secondary-visible: Explicit secondary zone (preferred over default)
+ * - overflow: Overflow menu zone (rendered after secondary)
  * - primary: Primary action button (right-aligned with ml-auto, btn-accent style)
  *
  * @param {string} className - Additional CSS classes
@@ -30,7 +32,9 @@ export interface Props {
 const { className = '', ariaLabel = 'Page actions', edgeBleed = true } = Astro.props;
 
 const hasPrimary = Astro.slots.has('primary');
-const hasSecondary = Astro.slots.has('default');
+const hasSecondaryVisible = Astro.slots.has('secondary-visible') || Astro.slots.has('default');
+const hasOverflow = Astro.slots.has('overflow');
+const hasSecondary = hasSecondaryVisible;
 
 const containerClasses = [
   'bg-base-100',
@@ -75,9 +79,18 @@ const containerClasses = [
 
     {/* Secondary Actions */}
     {
-      hasSecondary && (
+      hasSecondaryVisible && (
         <div class="flex items-center gap-1 md:gap-2 shrink-0">
-          <slot />
+          {Astro.slots.has('secondary-visible') ? <slot name="secondary-visible" /> : <slot />}
+        </div>
+      )
+    }
+
+    {/* Overflow Menu */}
+    {
+      hasOverflow && (
+        <div class="shrink-0">
+          <slot name="overflow" />
         </div>
       )
     }

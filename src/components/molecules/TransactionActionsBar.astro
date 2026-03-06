@@ -2,12 +2,14 @@
 /**
  * Transaction Actions Bar Component
  *
- * Action bar with Add Expense, Add Income, Scan Receipt, Import CSV,
- * and Export CSV buttons. Uses ActionBar for consistent layout.
+ * Action bar with Import CSV, Export CSV visible secondary actions.
+ * Scan Receipt moved to overflow menu. Add Expense/Income removed
+ * (handled by FAB / transaction drawer triggers elsewhere).
  */
 
-import { Sparkles, Upload, Download, CircleMinus, CirclePlus } from '@lucide/astro';
+import { Upload, Download } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
+import ActionOverflowMenu from './ActionOverflowMenu.astro';
 
 export interface Props {
   className?: string;
@@ -17,69 +19,39 @@ const { className = '' } = Astro.props;
 
 const ghostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
-
-const accentGhostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
 <ActionBar className={className} ariaLabel="Transaction actions" edgeBleed>
-  {/* Import CSV */}
-  <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
-    <button
-      type="button"
-      class={ghostBtn}
-      data-import-csv-button
-      aria-label="Import CSV"
-      data-transaction-actions-bar
-    >
-      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="text-xs md:text-sm">Import</span>
-    </button>
-  </div>
-
-  {/* Export CSV */}
-  <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
-    <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
-      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="text-xs md:text-sm">Export</span>
-    </button>
-  </div>
-
-  {/* Scan Receipt */}
-  <div class="tooltip tooltip-bottom" data-tip="Scan receipt with AI">
-    <button
-      type="button"
-      class="btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
-      data-scan-receipt-button
-      aria-label="Scan receipt"
-    >
-      <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="text-xs md:text-sm md:hidden">Scan</span>
-      <span class="text-sm hidden md:inline">Scan Receipt</span>
-    </button>
-  </div>
-
-  {/* Right side: Expense + Income with accent ghost style */}
-  <div slot="primary" class="flex items-center gap-1 md:gap-2">
-    <div class="tooltip tooltip-bottom" data-tip="Add new expense">
-      <button type="button" class={accentGhostBtn} data-add-expense-button aria-label="Add expense">
-        <CircleMinus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <CircleMinus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="text-xs md:text-sm">Expense</span>
+  <div slot="secondary-visible" class="flex items-center gap-1 md:gap-2">
+    {/* Import CSV */}
+    <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
+      <button
+        type="button"
+        class={ghostBtn}
+        data-import-csv-button
+        aria-label="Import CSV"
+        data-transaction-actions-bar
+      >
+        <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Import</span>
       </button>
     </div>
 
-    <div class="tooltip tooltip-bottom" data-tip="Add new income">
-      <button type="button" class={accentGhostBtn} data-add-income-button aria-label="Add income">
-        <CirclePlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <CirclePlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="text-xs md:text-sm">Income</span>
+    {/* Export CSV */}
+    <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
+      <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
+        <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Export</span>
       </button>
     </div>
   </div>
+
+  <ActionOverflowMenu
+    slot="overflow"
+    actions={[{ id: 'scan-receipt', label: 'Scan Receipt', dataTestId: 'scan-receipt-btn' }]}
+  />
 </ActionBar>
 
 <script>
@@ -100,24 +72,8 @@ const accentGhostBtn =
     if ((container as HTMLElement).dataset.initialized === 'true') return;
     (container as HTMLElement).dataset.initialized = 'true';
 
-    // Add Expense button — open drawer with expense tab
-    const addExpenseBtn = container.querySelector('[data-add-expense-button]');
-    addExpenseBtn?.addEventListener('click', () => {
-      document.dispatchEvent(
-        new CustomEvent('open-transaction-drawer', { detail: { type: 'expense' } })
-      );
-    });
-
-    // Add Income button — open drawer with income tab
-    const addIncomeBtn = container.querySelector('[data-add-income-button]');
-    addIncomeBtn?.addEventListener('click', () => {
-      document.dispatchEvent(
-        new CustomEvent('open-transaction-drawer', { detail: { type: 'income' } })
-      );
-    });
-
-    // Scan Receipt button
-    const scanBtn = container.querySelector('[data-scan-receipt-button]');
+    // Scan Receipt button (in overflow menu)
+    const scanBtn = container.querySelector('[data-action-id="scan-receipt"]');
     scanBtn?.addEventListener('click', () => {
       addToast('Receipt scanning coming soon!', 'info');
     });

@@ -385,24 +385,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       {
         !isHistoricalView && (
           <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-            {/* View Timeline */}
-            <div class="tooltip tooltip-bottom" data-tip="View timeline">
-              <button
-                type="button"
-                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
-                aria-label={`View ${name} timeline`}
-                data-history-account={id}
-                data-account-name={name}
-                data-account-type={categoryLabel}
-                data-account-currency={currency}
-                data-account-balance={balance}
-                data-testid="account-history-btn"
-              >
-                <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Manage Menu (Edit Details + Deactivate) */}
+            {/* Manage Menu (Timeline + Edit Details + Deactivate) */}
             <div class="dropdown dropdown-end" data-dropdown-menu>
               <div class="tooltip tooltip-bottom" data-tip="More actions">
                 <button
@@ -420,6 +403,23 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
                 class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-44 border border-base-300"
                 role="menu"
               >
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex items-center gap-2"
+                    aria-label={`View ${name} timeline`}
+                    data-history-account={id}
+                    data-account-name={name}
+                    data-account-type={categoryLabel}
+                    data-account-currency={currency}
+                    data-account-balance={balance}
+                    data-testid="account-history-btn"
+                  >
+                    <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
+                    Timeline
+                  </button>
+                </li>
                 <li role="none">
                   <button
                     type="button"

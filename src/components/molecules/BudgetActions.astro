@@ -17,9 +17,10 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Tags, Download, Upload, Zap } from '@lucide/astro';
+import { Plus, Tags, Download, Upload } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
-import BudgetCopyActionButton from './BudgetCopyActionButton.astro';
+import ActionOverflowMenu from './ActionOverflowMenu.astro';
+import type { OverflowAction } from './ActionOverflowMenu.astro';
 import {
   BUDGET_ACTIONS_DESKTOP_CARD_CLASS,
   BUDGET_ACTIONS_MOBILE_SCROLL_CLASS,
@@ -48,6 +49,25 @@ const ghostBtn =
 
 const accentGhostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
+
+// Build overflow actions for Copy and Initialize All
+const overflowActions: OverflowAction[] = [];
+if (showCopyAction) {
+  overflowActions.push({
+    id: 'copy-budget',
+    label: 'Copy Budget',
+    disabled: disableCopyAction,
+    title: disableCopyAction && copyActionTooltip ? copyActionTooltip : undefined,
+    dataTestId: 'copy-budget-btn',
+  });
+}
+if (uninitializedCount > 0) {
+  overflowActions.push({
+    id: 'initialize-budgets',
+    label: 'Initialize All',
+    dataTestId: 'initialize-budgets-btn',
+  });
+}
 ---
 
 <ActionBar
@@ -57,72 +77,49 @@ const accentGhostBtn =
   ariaLabel="Budget actions"
   edgeBleed
 >
-  {/* Categories */}
-  <div class="tooltip tooltip-bottom" data-tip="Manage categories">
-    <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
-      <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="text-xs md:text-sm">Categories</span>
-    </a>
+  <div slot="secondary-visible" class="flex items-center gap-1 md:gap-2">
+    {/* Categories */}
+    <div class="tooltip tooltip-bottom" data-tip="Manage categories">
+      <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
+        <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Categories</span>
+      </a>
+    </div>
+
+    {/* Import */}
+    <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
+      <button
+        type="button"
+        class={ghostBtn}
+        aria-label="Import budgets from CSV"
+        data-budget-import-btn
+        data-testid="budget-import-btn"
+      >
+        <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span>Import</span>
+      </button>
+    </div>
+
+    {/* Export */}
+    <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
+      <button
+        type="button"
+        class={ghostBtn}
+        aria-label="Export budgets to CSV"
+        data-budget-export-btn
+        data-testid="budget-export-btn"
+      >
+        <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span>Export</span>
+      </button>
+    </div>
   </div>
 
-  {/* Import */}
-  <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
-    <button
-      type="button"
-      class={ghostBtn}
-      aria-label="Import budgets from CSV"
-      data-budget-import-btn
-      data-testid="budget-import-btn"
-    >
-      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span>Import</span>
-    </button>
-  </div>
-
-  {/* Export */}
-  <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
-    <button
-      type="button"
-      class={ghostBtn}
-      aria-label="Export budgets to CSV"
-      data-budget-export-btn
-      data-testid="budget-export-btn"
-    >
-      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span>Export</span>
-    </button>
-  </div>
-
-  <div id="budget-copy-action-container">
-    <BudgetCopyActionButton
-      showCopyAction={showCopyAction}
-      disableCopyAction={disableCopyAction}
-      copyActionTooltip={copyActionTooltip}
-    />
-  </div>
-
-  {/* Initialize All Budgets — only shown when there are uninitialized categories */}
-  {
-    uninitializedCount > 0 && (
-      <div class="tooltip tooltip-bottom" data-tip="Initialize all uninitialized budgets">
-        <button
-          type="button"
-          class={ghostBtn}
-          id="initialize-budgets-btn"
-          data-target-modal="initialize-budgets-modal"
-          aria-label="Initialize all budgets"
-          data-testid="initialize-budgets-btn"
-        >
-          <Zap size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Zap size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs sm:text-sm">Initialize All</span>
-        </button>
-      </div>
-    )
-  }
+  {/* Overflow: Copy Budget + Initialize All */}
+  {overflowActions.length > 0 && <ActionOverflowMenu slot="overflow" actions={overflowActions} />}
 
   {/* Primary Action - New Budget */}
   <div slot="primary" class="tooltip tooltip-bottom" data-tip="Set new budget">
@@ -166,9 +163,34 @@ const accentGhostBtn =
     btn.addEventListener('click', handler);
   }
 
+  function initOverflowAction(actionId: string, modalId: string) {
+    const btn = document.querySelector(`[data-action-id="${actionId}"]`) as HTMLElement | null;
+    if (!btn || handlerMap.has(btn)) return;
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const modal = document.getElementById(modalId) as HTMLDialogElement;
+      if (modal) modal.showModal();
+    };
+
+    handlerMap.set(btn, handler);
+    btn.addEventListener('click', handler);
+  }
+
   function cleanupBudgetActionButtons() {
-    ['set-new-budget-btn', 'copy-budget-btn', 'initialize-budgets-btn'].forEach((buttonId) => {
+    ['set-new-budget-btn'].forEach((buttonId) => {
       const btn = document.getElementById(buttonId);
+      if (btn) {
+        const handler = handlerMap.get(btn);
+        if (handler) {
+          btn.removeEventListener('click', handler);
+          handlerMap.delete(btn);
+        }
+      }
+    });
+    ['copy-budget', 'initialize-budgets'].forEach((actionId) => {
+      const btn = document.querySelector(`[data-action-id="${actionId}"]`) as HTMLElement | null;
       if (btn) {
         const handler = handlerMap.get(btn);
         if (handler) {
@@ -181,8 +203,8 @@ const accentGhostBtn =
 
   function initBudgetActionButtons() {
     initModalTriggerButton('set-new-budget-btn');
-    initModalTriggerButton('copy-budget-btn');
-    initModalTriggerButton('initialize-budgets-btn');
+    initOverflowAction('copy-budget', 'copy-budget-modal');
+    initOverflowAction('initialize-budgets', 'initialize-budgets-modal');
     document.removeEventListener('budget-content-updated', handleBudgetContentUpdated);
     document.addEventListener('budget-content-updated', handleBudgetContentUpdated);
   }

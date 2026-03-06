@@ -64,11 +64,10 @@ function announceToScreenReader(message: string): void {
  */
 export function showLoadingState(): void {
   const summaryContainer = document.getElementById('budget-summary-container');
-  const copyActionContainer = document.getElementById('budget-copy-action-container');
   const cardsContainer = document.getElementById('budget-cards-container');
   const adviceContainer = document.getElementById('budget-advice-container');
 
-  [summaryContainer, copyActionContainer, cardsContainer, adviceContainer].forEach((container) => {
+  [summaryContainer, cardsContainer, adviceContainer].forEach((container) => {
     if (container) {
       container.classList.add('opacity-50', 'pointer-events-none');
       container.setAttribute('aria-busy', 'true');
@@ -83,11 +82,10 @@ export function showLoadingState(): void {
  */
 export function hideLoadingState(): void {
   const summaryContainer = document.getElementById('budget-summary-container');
-  const copyActionContainer = document.getElementById('budget-copy-action-container');
   const cardsContainer = document.getElementById('budget-cards-container');
   const adviceContainer = document.getElementById('budget-advice-container');
 
-  [summaryContainer, copyActionContainer, cardsContainer, adviceContainer].forEach((container) => {
+  [summaryContainer, cardsContainer, adviceContainer].forEach((container) => {
     if (container) {
       container.classList.remove('opacity-50', 'pointer-events-none');
       container.removeAttribute('aria-busy');
@@ -119,16 +117,27 @@ export function renderSummaryHtml(html: string): void {
 }
 
 /**
- * Render copy action segment from server-rendered HTML
+ * Sync copy action state from server-rendered partial HTML.
+ * Parses disabled/title state from the partial and applies to the overflow button.
  */
 export function renderCopyActionHtml(html: string): void {
-  const container = document.getElementById('budget-copy-action-container');
-  if (!container) {
-    console.error('[BudgetRenderer] #budget-copy-action-container not found!');
-    return;
-  }
+  const btn = document.querySelector('[data-action-id="copy-budget"]') as HTMLButtonElement | null;
+  if (!btn) return;
 
-  container.innerHTML = html;
+  // Parse the partial to extract disabled state and tooltip
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const partialBtn = doc.querySelector('button') as HTMLButtonElement | null;
+
+  if (partialBtn) {
+    btn.disabled = partialBtn.disabled;
+    const title = partialBtn.getAttribute('title');
+    if (title) {
+      btn.setAttribute('title', title);
+    } else {
+      btn.removeAttribute('title');
+    }
+  }
 }
 
 /**

@@ -20,13 +20,18 @@ import { formatCurrency } from '@/lib/formatting';
 import type { AccountClass } from '@/lib/types/account';
 import type { Currency } from '@/lib/constants/currency';
 
-// Tooltip descriptions for each account class
+// Tooltip descriptions for each account class (shown on hover via Info icon)
 const ACCOUNT_CLASS_DESCRIPTIONS: Record<AccountClass, string> = {
-  liquid:
-    'Readily accessible cash — bank accounts, e-wallets, petty cash. Available for immediate spending or emergencies.',
-  non_liquid:
-    'Long-term investments and holdings — stocks, mutual funds, bonds, crypto, property. Value may fluctuate; not instantly cashable.',
-  debt: 'Outstanding liabilities — credit card balances, loans, mortgages. Shown as negative in your net worth.',
+  liquid: 'Cash and equivalents available for immediate use',
+  non_liquid: 'Investments and holdings with fluctuating value',
+  debt: 'Liabilities shown as negative in net worth',
+};
+
+// Concise subtitles shown below the title
+const ACCOUNT_CLASS_SUBTITLES: Record<AccountClass, string> = {
+  liquid: 'Cash & equivalents',
+  non_liquid: 'Investments & holdings',
+  debt: 'Liabilities & loans',
 };
 
 export interface Props {
@@ -59,8 +64,10 @@ const displayTitle = accountClass ? `${type} Accounts` : type;
 
 const visibleTotals = totals.filter((row) => row.amount > 0);
 
-// Generate subtitle based on type
-const subtitle = classDescription || `Managing your ${type.toLowerCase()} holdings`;
+// Generate subtitle: concise phrase for the card header
+const subtitle = accountClass
+  ? ACCOUNT_CLASS_SUBTITLES[accountClass]
+  : `Managing your ${type.toLowerCase()} holdings`;
 
 const cardClasses = [
   'bg-base-100 rounded-card border border-base-300 shadow-sm overflow-hidden transition-all duration-300',
