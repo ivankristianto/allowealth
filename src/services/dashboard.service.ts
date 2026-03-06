@@ -518,31 +518,22 @@ export class DashboardService {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      // Get all budgets for the month with their category info
-      const monthBudgets = await trackQuery('DashboardService.getBudgets', perf, async () =>
-        this.db.query.budgets.findMany({
-          where: and(
-            eq(this.schema.budgets.workspace_id, workspaceId),
-            eq(this.schema.budgets.month, month),
-            eq(this.schema.budgets.year, year),
-            eq(this.schema.budgets.currency, currency)
-          ),
-          with: {
-            category: true,
-          },
-        })
-      );
-
-      // Filter to only active expense categories
-      const expenseBudgets = monthBudgets.filter(
-        (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
-      );
-
-      // Get total spent per category for the month
-      const categorySpending = await trackQuery(
-        'DashboardService.getCategorySpending',
-        perf,
-        async () =>
+      // Get all budgets for the month and total spent per category in parallel
+      const [monthBudgets, categorySpending] = await Promise.all([
+        trackQuery('DashboardService.getBudgets', perf, async () =>
+          this.db.query.budgets.findMany({
+            where: and(
+              eq(this.schema.budgets.workspace_id, workspaceId),
+              eq(this.schema.budgets.month, month),
+              eq(this.schema.budgets.year, year),
+              eq(this.schema.budgets.currency, currency)
+            ),
+            with: {
+              category: true,
+            },
+          })
+        ),
+        trackQuery('DashboardService.getCategorySpending', perf, async () =>
           (this.db as any)
             .select({
               category_id: this.schema.transactions.category_id,
@@ -560,6 +551,12 @@ export class DashboardService {
               )
             )
             .groupBy(this.schema.transactions.category_id)
+        ),
+      ]);
+
+      // Filter to only active expense categories
+      const expenseBudgets = monthBudgets.filter(
+        (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
       );
 
       // Create map of spending by category
