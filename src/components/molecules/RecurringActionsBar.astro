@@ -1,15 +1,13 @@
 ---
 import { Plus } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
+import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 
 export interface Props {
   className?: string;
 }
 
 const { className = '' } = Astro.props;
-
-const accentGhostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
 <ActionBar className={className} ariaLabel="Recurring actions" edgeBleed>

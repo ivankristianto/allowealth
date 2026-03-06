@@ -316,12 +316,23 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 - Actionable buttons use `rounded-2xl` by default.
 - Outline/ghost buttons must keep accessible borders (`border-accent` or `border-base-300` variants), not low-opacity-only borders like `border-accent/10`.
 - `rounded-full` is only for intentional circular non-action UI (status dots, avatars, progress markers), not action buttons.
+- ActionBar/toolbar buttons should reuse `ghostBtn` / `accentGhostBtn` from `@/lib/ui/action-button-classes`.
+- Keep `min-h-11 min-w-11` (44x44px) on ActionBar buttons to preserve tap-safe target size on mobile.
 
 ```astro
 <Button variant="primary" type="submit">Save</Button>
 <Button variant="outline" size="sm">Filter</Button>
 <Button variant="danger" onclick="confirmDelete()">Delete</Button>
 <Button loading={isSubmitting}>Submitting...</Button>
+```
+
+```astro
+---
+import { ghostBtn, accentGhostBtn } from '@/lib/ui/action-button-classes';
+---
+
+<button type="button" class={ghostBtn}>Secondary</button>
+<button type="button" class={accentGhostBtn}>Primary</button>
 ```
 
 **Variants:** `primary` | `secondary` | `outline` | `ghost` | `danger` | `warning` | `success`

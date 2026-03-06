@@ -11,6 +11,7 @@ import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro'
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
 import { CalendarDays, Info, List, Plus } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
+import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 import { DEFAULT_CURRENCY } from '@/lib/constants/currency';
 import { buildRecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import {
@@ -181,15 +182,6 @@ const templatesHelpId = 'recurring-templates-help';
             Review and manage your monthly recurring transactions.
           </p>
         </div>
-        <button
-          type="button"
-          class="btn btn-accent rounded-lg sm:rounded-xl min-h-11 h-11 gap-2 px-4 font-semibold"
-          data-open-recurring-template
-          aria-label="Create new recurring transaction"
-        >
-          <Plus size={16} class="stroke-current" aria-hidden="true" />
-          New Recurring
-        </button>
       </div>
 
       <div id="recurring-stats-container" class="mt-4">
@@ -295,7 +287,7 @@ const templatesHelpId = 'recurring-templates-help';
       </section>
 
       <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div class="flex items-center gap-1.5">
               <h2 class="text-sm font-bold uppercase tracking-wide text-base-content/70">
@@ -326,6 +318,16 @@ const templatesHelpId = 'recurring-templates-help';
               View and manage all your recurring payments.
             </p>
           </div>
+          <button
+            type="button"
+            class={accentGhostBtn}
+            data-open-recurring-template
+            aria-label="Create new recurring transaction"
+          >
+            <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="text-xs md:text-sm">New Recurring</span>
+          </button>
         </div>
 
         <div class="mt-4" id="recurring-template-list-container">

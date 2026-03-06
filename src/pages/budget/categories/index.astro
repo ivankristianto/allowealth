@@ -14,6 +14,7 @@ import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
 import CategoryModal from '@/components/organisms/CategoryModal.astro';
 import CategoryDeleteDialog from '@/components/organisms/CategoryDeleteDialog.astro';
+import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
 
 const user = Astro.locals.user!;
 const currentPath = '/budget/categories';
@@ -32,12 +33,6 @@ if (searchQuery) {
   const query = searchQuery.toLowerCase();
   filteredCategories = filteredCategories.filter((c) => c.name.toLowerCase().includes(query));
 }
-
-const ghostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
-
-const accentGhostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
 <ProtectedLayout
