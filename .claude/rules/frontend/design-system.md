@@ -144,6 +144,15 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 - ✅ **Use responsive rounding** (`rounded-lg sm:rounded-xl`) for buttons that appear in toolbars
 - ❌ **Use bare `btn btn-outline` or `btn btn-sm` without a `rounded-*` class** — produces inconsistent rounding
 
+## ActionBar Button Classes
+
+Use shared class presets from `@/lib/ui/action-button-classes` for ActionBar/toolbar buttons.
+
+- ✅ Use `ghostBtn` for neutral secondary actions
+- ✅ Use `accentGhostBtn` for primary toolbar actions
+- ✅ Keep `min-h-11 min-w-11` (44x44px) for mobile touch target accessibility and consistent icon/button alignment
+- ❌ Duplicate long button class strings inline across pages/components
+
 ## DaisyUI Components
 
 ```html

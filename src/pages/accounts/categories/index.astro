@@ -14,6 +14,7 @@ import AccountCategoryDeleteDialog from '@/components/organisms/AccountCategoryD
 import AccountCategoryTablePartial from '@/components/partials/AccountCategoryTablePartial.astro';
 import { ArrowLeft, Plus, Search } from '@lucide/astro';
 import { accountCategoryService, accountService } from '@/services';
+import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
 
 const currentPath = '/accounts/categories';
 const user = Astro.locals.user!;
@@ -54,12 +55,6 @@ if (searchQuery) {
       (category.description || '').toLowerCase().includes(query)
   );
 }
-
-const ghostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
-
-const accentGhostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
 <ProtectedLayout
