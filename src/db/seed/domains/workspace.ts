@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { workspaces, workspaceMeta } from '@/db/schema';
 import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
 import { nanoid } from 'nanoid';
+import { SEEDER_CONFIG } from '../config';
 
 /**
  * Seed workspace first (required for users)
@@ -30,9 +31,9 @@ export async function seedWorkspace(): Promise<string> {
   const workspaceMetaEntries = [
     {
       key: WORKSPACE_META_KEYS.CURRENCY,
-      value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY],
+      value: SEEDER_CONFIG.PRIMARY_CURRENCY,
     },
-    { key: 'secondary_currency', value: 'USD' },
+    { key: 'secondary_currency', value: SEEDER_CONFIG.SECONDARY_CURRENCY },
     {
       key: WORKSPACE_META_KEYS.WEEK_START,
       value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START],

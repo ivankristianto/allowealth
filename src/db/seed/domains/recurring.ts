@@ -1,3 +1,4 @@
+import { SEEDER_CONFIG } from '../config';
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
 /**
@@ -14,6 +15,7 @@ import {
 import { nanoid } from 'nanoid';
 import { eq } from 'drizzle-orm';
 import { SEED_TIME_HOUR } from '../lib/dates';
+import { amt } from '../lib/amounts';
 import { RECURRING_TEMPLATE_DATA } from '../data/recurring';
 
 /**
@@ -67,8 +69,8 @@ export async function seedRecurringData(
       created_by_user_id: userId,
       name: seedTemplate.name,
       type: seedTemplate.type,
-      amount: seedTemplate.amount,
-      currency: 'IDR',
+      amount: amt(Number(seedTemplate.amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
+      currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
       category_id: categoryId,
       account_id: accountId,
       day_of_month: seedTemplate.dayOfMonth,
@@ -167,8 +169,8 @@ export async function seedRecurringData(
         category_id: categoryId,
         account_id: accountId,
         type: seedTemplate.type,
-        amount: seedTemplate.amount,
-        currency: 'IDR',
+        amount: amt(Number(seedTemplate.amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description,
         transaction_date: transactionDate,
         created_at: transactionDate,
@@ -180,7 +182,7 @@ export async function seedRecurringData(
         .set({
           status: 'confirmed',
           transaction_id: transactionId,
-          confirmed_amount: seedTemplate.amount,
+          confirmed_amount: amt(Number(seedTemplate.amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
           confirmed_at: transactionDate,
           updated_at: transactionDate,
         })

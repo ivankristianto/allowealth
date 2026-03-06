@@ -1,3 +1,4 @@
+import { SEEDER_CONFIG } from '../config';
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
 /**
@@ -11,7 +12,7 @@ import { nanoid } from 'nanoid';
 import { getSeedMonths, specificDate, SEED_TIME_HOUR } from '../lib/dates';
 import { amt, randomAmount } from '../lib/amounts';
 import { CATEGORY_STYLES, EXPENSE_CATEGORIES } from '../data/categories';
-import { PAYMENT_ACCOUNTS } from '../data/accounts';
+import { getPaymentAccounts } from '../data/accounts';
 import { INCOME_TEMPLATES, EXPENSE_TRANSACTIONS } from '../data/transactions';
 
 // Transfer templates: from -> to with amount ranges
@@ -67,7 +68,7 @@ export async function seedIncomeTransactions(
   console.log('💰 Seeding income transactions...');
 
   let count = 0;
-  const paymentAccountNames = PAYMENT_ACCOUNTS.map((a) => a.name);
+  const paymentAccountNames = getPaymentAccounts().map((a) => a.name);
   const now = new Date();
   const seedMonths = monthsToSeed ?? getSeedMonths();
 
@@ -121,8 +122,8 @@ export async function seedIncomeTransactions(
         category_id: finalCategoryId,
         account_id: accountId,
         type: 'income',
-        amount: amt(income.amount),
-        currency: 'IDR',
+        amount: amt(income.amount, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: income.description,
         transaction_date: transactionDate,
         created_at: createdAt,
@@ -150,7 +151,7 @@ export async function seedExpenseTransactions(
 
   let count = 0;
   const months = monthsToSeed ?? getSeedMonths();
-  const paymentAccountNames = PAYMENT_ACCOUNTS.map((a) => a.name);
+  const paymentAccountNames = getPaymentAccounts().map((a) => a.name);
 
   for (const { year, month } of months) {
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -192,8 +193,8 @@ export async function seedExpenseTransactions(
         category_id: categoryId,
         account_id: accountId,
         type: 'expense',
-        amount: amt(Math.round(amount)),
-        currency: 'IDR',
+        amount: amt(Math.round(amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: expense.description,
         transaction_date: transactionDate,
         created_at: createdAt,
@@ -212,7 +213,7 @@ export async function seedExpenseTransactions(
         const categoryId = categoryMap.get(randomCategory.name);
         if (!categoryId) continue;
 
-        const amount = randomAmount(50000, 500000);
+        const amount = randomAmount(50000, 500000, SEEDER_CONFIG.PRIMARY_CURRENCY);
         const transactionDate = specificDate(year, month, day);
         if (!transactionDate) continue;
 
@@ -232,7 +233,7 @@ export async function seedExpenseTransactions(
           account_id: accountId,
           type: 'expense',
           amount,
-          currency: 'IDR',
+          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
           description: `Daily expense - ${randomCategory.name}`,
           transaction_date: transactionDate,
           created_at: createdAt,
@@ -287,8 +288,8 @@ export async function seedTransferTransactions(
           account_id: fromAccountId,
           to_account_id: toAccountId,
           type: 'transfer',
-          amount: amt(Math.round(amount)),
-          currency: 'IDR',
+          amount: amt(Math.round(amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
+          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
           description: tmpl.description,
           transaction_date: transactionDate,
           created_at: createdAt,
@@ -341,7 +342,7 @@ export async function seedMemberTransactions(
         const accountId = accountMap.get(accountName);
         if (!accountId) continue;
 
-        const amount = randomAmount(25000, 450000);
+        const amount = randomAmount(25000, 450000, SEEDER_CONFIG.PRIMARY_CURRENCY);
         const transactionDate = specificDate(year, month, day);
         if (!transactionDate) continue;
 
@@ -365,7 +366,7 @@ export async function seedMemberTransactions(
           account_id: accountId,
           type: 'expense',
           amount,
-          currency: 'IDR',
+          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
           description,
           transaction_date: transactionDate,
           created_at: createdAt,

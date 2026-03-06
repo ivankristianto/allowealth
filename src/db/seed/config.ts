@@ -27,3 +27,13 @@ export const DEMO_SUPER_ADMIN = {
 
 // Snapshot growth rate
 export const SNAPSHOT_GROWTH_RATE = 0.05; // 5% growth per month for snapshots
+
+// Global seeder configuration
+export const SEEDER_CONFIG = {
+  PRIMARY_CURRENCY: 'IDR',
+  SECONDARY_CURRENCY: 'USD',
+};
+
+export function setSeederConfig(config: Partial<typeof SEEDER_CONFIG>) {
+  Object.assign(SEEDER_CONFIG, config);
+}

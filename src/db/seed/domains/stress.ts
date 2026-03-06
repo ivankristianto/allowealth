@@ -1,3 +1,4 @@
+import { SEEDER_CONFIG } from '../config';
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
 /**
@@ -20,11 +21,11 @@ import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { hashPassword } from '@/lib/auth/password';
 import { nanoid } from 'nanoid';
 import { getTrailingMonths, specificDate, SEED_TIME_HOUR } from '../lib/dates';
-import { amt } from '../lib/amounts';
+import { amt, approxAmt } from '../lib/amounts';
 import { EXPENSE_CATEGORIES } from '../data/categories';
-import { PAYMENT_ACCOUNTS, LOAN_ACCOUNTS, ACCOUNT_TYPES } from '../data/accounts';
+import { getPaymentAccounts, getLoanAccounts, getAccountTypes } from '../data/accounts';
 
-const ALL_ACCOUNTS = [...PAYMENT_ACCOUNTS, ...LOAN_ACCOUNTS, ...ACCOUNT_TYPES];
+const getAllAccounts = () => [...getPaymentAccounts(), ...getLoanAccounts(), ...getAccountTypes()];
 
 export type FamilyMemberProfile = {
   userId: string;
@@ -328,8 +329,8 @@ export async function seedStressData(
         category_id: categoryId,
         account_id: accountId,
         type: 'income',
-        amount: amt(amount),
-        currency: 'IDR',
+        amount: amt(amount, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: profile.incomeCategory,
         transaction_date: txDate,
         created_at: createdAt,
@@ -381,8 +382,8 @@ export async function seedStressData(
           category_id: categoryId,
           account_id: accountId,
           type: 'expense',
-          amount: amt(amount),
-          currency: 'IDR',
+          amount: amt(amount, SEEDER_CONFIG.PRIMARY_CURRENCY),
+          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
           description,
           transaction_date: txDate,
           created_at: createdAt,
@@ -401,8 +402,11 @@ export async function seedStressData(
         category_id: categoryMap.get(category.name)!,
         month,
         year,
-        budget_amount: amt(Math.round(category.budget * inflationFactor)),
-        currency: 'IDR' as const,
+        budget_amount: approxAmt(
+          Math.round(category.budget * inflationFactor),
+          SEEDER_CONFIG.PRIMARY_CURRENCY
+        ),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         is_closed: false,
         notes: null,
         created_at: now,
@@ -423,15 +427,21 @@ export async function seedStressData(
       recorded_at: Date;
     }> = [];
     for (const [accountName, accountId] of accountMap.entries()) {
-      const accountConfig = ALL_ACCOUNTS.find((account) => account.name === accountName);
-      const baseBalance = Number(accountConfig?.balance || 0) || 1_000_000;
+      // Skip history for closed accounts
+      if (accountName.includes('(Closed)')) continue;
+
+      const accountConfig = getAllAccounts().find((account) => account.name === accountName);
+      if (!accountConfig) {
+        throw new Error(`Account template not found for name: ${accountName}`);
+      }
+      const baseBalance = Number(accountConfig.balance || 0);
       const trendFactor = 1 + monthIndex * 0.0015;
       const variation = 0.94 + Math.random() * 0.12;
       const balance = Math.round(baseBalance * trendFactor * variation);
       historyValues.push({
         id: nanoid(),
         account_id: accountId,
-        balance: amt(balance),
+        balance: amt(balance, accountConfig.currency),
         notes: `Stress monthly close ${year}-${String(month).padStart(2, '0')}`,
         recorded_at: new Date(year, month - 1, Math.min(28, maxDay), SEED_TIME_HOUR, 0, 0, 0),
       });
@@ -453,18 +463,23 @@ export async function seedStressData(
       notes: `Stress snapshot ${snapshotDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
       created_at: snapshotDate,
     });
-    const snapshotItems = Array.from(accountMap.entries()).map(([accountName, accountId]) => {
-      const accountConfig = ALL_ACCOUNTS.find((account) => account.name === accountName);
-      const baseBalance = Number(accountConfig?.balance || 0) || 1_000_000;
-      const variation = 0.9 + Math.random() * 0.2;
-      return {
-        id: nanoid(),
-        snapshot_id: snapshotId,
-        account_id: accountId,
-        balance: amt(Math.round(baseBalance * variation)),
-        currency: accountConfig?.currency || 'IDR',
-      };
-    });
+    const snapshotItems = Array.from(accountMap.entries())
+      .filter(([accountName]) => !accountName.includes('(Closed)'))
+      .map(([accountName, accountId]) => {
+        const accountConfig = getAllAccounts().find((account) => account.name === accountName);
+        if (!accountConfig) {
+          throw new Error(`Account template not found for name: ${accountName}`);
+        }
+        const baseBalance = Number(accountConfig.balance || 0);
+        const variation = 0.9 + Math.random() * 0.2;
+        return {
+          id: nanoid(),
+          snapshot_id: snapshotId,
+          account_id: accountId,
+          balance: amt(Math.round(baseBalance * variation), accountConfig.currency),
+          currency: accountConfig.currency,
+        };
+      });
     if (snapshotItems.length > 0) {
       await db.insert(accountSnapshotItems).values(snapshotItems);
     }
