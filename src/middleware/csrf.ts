@@ -18,8 +18,15 @@ import {
   isCsrfExempt,
 } from '@/lib/csrf';
 
+const PUBLIC_STATIC_PATHS = new Set(['/', '/privacy', '/terms']);
+
 export const csrf: MiddlewareHandler = async (context, next) => {
   const pathname = context.url.pathname;
+
+  if (context.isPrerendered || PUBLIC_STATIC_PATHS.has(pathname)) {
+    return next();
+  }
+
   const method = context.request.method;
   const isApiRequest = pathname.startsWith('/api/');
   const isAuthenticated = !!context.locals.session;

@@ -50,9 +50,12 @@ describe('static public security architecture', () => {
 
   test('authentication middleware skips prerendered routes', () => {
     const authMiddleware = read('src/middleware/auth.ts');
+    const csrfMiddleware = read('src/middleware/csrf.ts');
 
-    expect(authMiddleware).toContain('if (context.isPrerendered)');
+    expect(authMiddleware).toContain('context.isPrerendered || PUBLIC_STATIC_PATHS.has');
     expect(authMiddleware).toContain('context.locals.user = null;');
     expect(authMiddleware).toContain('context.locals.session = null;');
+    expect(authMiddleware).toContain('PUBLIC_STATIC_PATHS');
+    expect(csrfMiddleware).toContain('PUBLIC_STATIC_PATHS');
   });
 });
