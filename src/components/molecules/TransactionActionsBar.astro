@@ -2,23 +2,20 @@
 /**
  * Transaction Actions Bar Component
  *
- * Action bar with Import CSV, Export CSV visible secondary actions.
- * Scan Receipt moved to overflow menu. Add Expense/Income removed
+ * Action bar with Import CSV, Export CSV as visible secondary actions.
+ * Scan Receipt as primary action (right side). Add Expense/Income removed
  * (handled by FAB / transaction drawer triggers elsewhere).
  */
 
-import { Upload, Download } from '@lucide/astro';
+import { Upload, Download, Camera } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
-import ActionOverflowMenu from './ActionOverflowMenu.astro';
+import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
 
 export interface Props {
   className?: string;
 }
 
 const { className = '' } = Astro.props;
-
-const ghostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
 ---
 
 <ActionBar className={className} ariaLabel="Transaction actions" edgeBleed>
@@ -48,10 +45,21 @@ const ghostBtn =
     </div>
   </div>
 
-  <ActionOverflowMenu
-    slot="overflow"
-    actions={[{ id: 'scan-receipt', label: 'Scan Receipt', dataTestId: 'scan-receipt-btn' }]}
-  />
+  {/* Primary Action - Scan Receipt */}
+  <div slot="primary" class="tooltip tooltip-bottom" data-tip="Scan receipt">
+    <button
+      type="button"
+      class={accentGhostBtn}
+      data-scan-receipt-button
+      aria-label="Scan receipt"
+      data-testid="scan-receipt-btn"
+    >
+      <Camera size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Camera size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden sm:inline">Scan Receipt</span>
+      <span class="sm:hidden">Scan</span>
+    </button>
+  </div>
 </ActionBar>
 
 <script>
@@ -72,8 +80,8 @@ const ghostBtn =
     if ((container as HTMLElement).dataset.initialized === 'true') return;
     (container as HTMLElement).dataset.initialized = 'true';
 
-    // Scan Receipt button (in overflow menu)
-    const scanBtn = container.querySelector('[data-action-id="scan-receipt"]');
+    // Scan Receipt button (primary action)
+    const scanBtn = container.querySelector('[data-scan-receipt-button]');
     scanBtn?.addEventListener('click', () => {
       addToast('Receipt scanning coming soon!', 'info');
     });
