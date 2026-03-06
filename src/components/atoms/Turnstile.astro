@@ -26,6 +26,7 @@ import { getEnv } from '@/lib/env';
 
 const { theme = 'auto', className = '' } = Astro.props;
 const siteKey = getEnv('PUBLIC_TURNSTILE_SITE_KEY');
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 {
@@ -46,7 +47,13 @@ const siteKey = getEnv('PUBLIC_TURNSTILE_SITE_KEY');
 
 {
   siteKey && (
-    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+    <script
+      is:inline
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+      nonce={cspNonce}
+      async
+      defer
+    />
   )
 }
 

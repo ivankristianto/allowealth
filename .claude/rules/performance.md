@@ -452,6 +452,8 @@ export const prerender = true;
 
 - ✅ **Prerender public pages** - landing, pricing, about
 - ✅ **Client-side auth detection** for conditional UI
+- ✅ **Use `public/_headers` for prerendered page security headers** - Cloudflare serves prerendered HTML outside the worker
+- ✅ **Keep shared prerendered-page scripts external** - static HTML cannot safely depend on per-request CSP nonces
 - ❌ **SSR for static content** - slower, no CDN caching
 
 ### Lazy Loading Charts

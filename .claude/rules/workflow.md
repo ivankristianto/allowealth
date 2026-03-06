@@ -55,6 +55,8 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - Database: Use abstraction layer with environment-specific drivers
 - Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only on Workers)
 - Dev/preview scripts: Must use `bun --bun` flag to ensure Bun runtime (Astro CLI defaults to Node.js)
+- Prerendered HTML on Cloudflare bypasses Astro middleware entirely; do not rely on middleware headers or per-request CSP nonces for static pages
+- Static public routes must keep scripts external and define their security headers in `public/_headers`
 
 ## Code Quality Standards
 

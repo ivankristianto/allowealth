@@ -3,12 +3,10 @@
  *
  * Adds Content-Security-Policy (with nonce-based script allowlisting),
  * X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, and
- * Referrer-Policy headers to every response. For HTML responses, injects
- * nonce attributes into all <script> tags so they pass CSP validation.
+ * Referrer-Policy headers to every response.
  */
 
 import type { MiddlewareHandler } from 'astro';
-import type { PerfCollector } from '@/lib/perf';
 
 const isDev = import.meta.env.DEV;
 
@@ -57,11 +55,6 @@ function buildCSPHeader(nonce: string): string {
     .join('; ');
 }
 
-/** Add nonce attribute to every <script> tag that doesn't already have one */
-function injectScriptNonces(html: string, nonce: string): string {
-  return html.replace(/<script(?![^>]*\bnonce\b)([^>]*)>/gi, `<script nonce="${nonce}"$1>`);
-}
-
 /** Set common security headers on a Headers object */
 function setSecurityHeaders(headers: Headers, nonce: string): void {
   headers.set('Content-Security-Policy', buildCSPHeader(nonce));
@@ -92,77 +85,6 @@ export const securityHeaders: MiddlewareHandler = async (context, next) => {
   context.locals.cspNonce = nonce;
 
   const response = await next();
-  const contentType = response.headers.get('Content-Type') || '';
-
-  // Fast path: JSON/API responses — set headers without body processing
-  if (contentType.includes('application/json') || contentType.includes('application/octet')) {
-    const headers = cloneHeaders(response);
-    setSecurityHeaders(headers, nonce);
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    });
-  }
-
-  const perf = context.locals.perf as PerfCollector | undefined;
-  return applySecurityHeaders(response, nonce, perf);
-};
-
-/** Check if body starts with an HTML doctype or html tag (case-insensitive, ignoring leading whitespace) */
-function looksLikeHtml(body: string): boolean {
-  // Find first non-whitespace character index
-  let i = 0;
-  while (
-    i < body.length &&
-    (body[i] === ' ' || body[i] === '\n' || body[i] === '\r' || body[i] === '\t')
-  ) {
-    i++;
-  }
-  // Check first ~20 chars case-insensitively instead of lowercasing the entire body
-  const prefix = body.slice(i, i + 20).toLowerCase();
-  return prefix.startsWith('<!doctype') || prefix.startsWith('<html');
-}
-
-/**
- * Apply security headers and optionally inject nonces into HTML responses.
- * Reads the body only when Content-Type suggests HTML.
- */
-async function applySecurityHeaders(
-  response: Response,
-  nonce: string,
-  perf?: PerfCollector
-): Promise<Response> {
-  const contentType = response.headers.get('Content-Type') || '';
-  const mightBeHtml = contentType === '' || contentType.includes('text/html');
-
-  if (mightBeHtml) {
-    const readStart = performance.now();
-    const body = await response.text();
-    const readDuration = performance.now() - readStart;
-    perf?.recordPhase('csp.readBody', readDuration);
-
-    const isHtml = looksLikeHtml(body);
-
-    let finalBody = body;
-    if (isHtml) {
-      const nonceStart = performance.now();
-      finalBody = injectScriptNonces(body, nonce);
-      const nonceDuration = performance.now() - nonceStart;
-      perf?.recordPhase('csp.injectNonces', nonceDuration);
-    }
-
-    const headers = cloneHeaders(response);
-    setSecurityHeaders(headers, nonce);
-
-    return new Response(finalBody, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    });
-  }
-
-  // Non-HTML response — add headers without touching the body
   const headers = cloneHeaders(response);
   setSecurityHeaders(headers, nonce);
 
@@ -171,4 +93,4 @@ async function applySecurityHeaders(
     statusText: response.statusText,
     headers,
   });
-}
+};

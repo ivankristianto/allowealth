@@ -26,6 +26,13 @@ export const authentication: MiddlewareHandler = async (context, next) => {
   const perf = context.locals.perf;
   const authStart = performance.now();
 
+  if (context.isPrerendered) {
+    context.locals.user = null;
+    context.locals.session = null;
+    perf?.recordPhase('mw.auth', performance.now() - authStart);
+    return next();
+  }
+
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
 
   // Auth API endpoints manage auth_hint themselves via raw Set-Cookie headers.

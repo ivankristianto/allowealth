@@ -58,6 +58,7 @@ const {
   loginLink = '/login',
   initialServerError = '',
 } = Astro.props;
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <div class="card bg-base-100 shadow-2xl border border-base-300">
@@ -171,7 +172,7 @@ const {
   }
 </style>
 
-<script src="/scripts/registration-validation.js" is:inline></script>
+<script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
 
 <script>
   const form = document.querySelector('[data-registration-form]') as HTMLFormElement | null;

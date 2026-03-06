@@ -77,6 +77,20 @@ export default defineConfig({
     remotePatterns: [],
   },
   vite: {
+    build: {
+      // Keep processed Astro scripts external so CSP does not require
+      // per-request HTML nonce injection in middleware.
+      assetsInlineLimit: 0,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/chart.js')) return 'chartjs';
+            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion'))
+              return 'motion';
+          },
+        },
+      },
+    },
     plugins: [
       tailwindcss(),
       visualizer({
@@ -148,17 +162,6 @@ export default defineConfig({
         'bun:sqlite',
         'bun:test',
       ],
-    },
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules/chart.js')) return 'chartjs';
-            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion'))
-              return 'motion';
-          },
-        },
-      },
     },
     resolve: {
       alias: {
