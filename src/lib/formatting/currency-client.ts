@@ -1,1 +1,1 @@
-export { formatCurrency, formatCurrencyCompact } from './currency-core';
+export { formatCurrency } from './currency-core';
