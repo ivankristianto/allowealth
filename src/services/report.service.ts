@@ -58,6 +58,12 @@ export interface TrendDataPoint {
   expenses: string; // Decimal string
 }
 
+export interface MonthlyNetSavingsByMonthRow {
+  income: string;
+  expenses: string;
+  netSavings: string;
+}
+
 /**
  * Category intelligence row for table
  */
@@ -658,6 +664,37 @@ export class ReportService {
     });
 
     return results;
+  }
+
+  /**
+   * Get workspace-level monthly income, expenses, and net savings keyed by YYYY-MM.
+   */
+  async getMonthlyNetSavingsByMonth(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency = 'IDR'
+  ): Promise<Map<string, MonthlyNetSavingsByMonthRow>> {
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
+
+    const aggregateMap = await this.getTrendAggregateByMonth(
+      workspaceId,
+      startDate,
+      endDate,
+      currency
+    );
+
+    const result = new Map<string, MonthlyNetSavingsByMonthRow>();
+    for (const [monthKey, row] of aggregateMap.entries()) {
+      result.set(monthKey, {
+        income: row.income,
+        expenses: row.expenses,
+        netSavings: decimalSubtract(row.income, row.expenses),
+      });
+    }
+
+    return result;
   }
 
   // ============================================
