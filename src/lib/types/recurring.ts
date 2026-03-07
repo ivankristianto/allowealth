@@ -16,6 +16,8 @@ export interface RecurringTemplate {
   category_id: string;
   account_id: string;
   day_of_month: number;
+  frequency: 'weekly' | 'monthly';
+  interval_count: number;
   start_date: string;
   end_date: string | null;
   total_occurrences: number | null;
@@ -97,4 +99,41 @@ export interface RecurringStats {
 export interface RecurringCalendarDay {
   date: string;
   occurrences: RecurringOccurrenceOutput[];
+}
+
+export interface ForecastFilters {
+  accountIds?: string[];
+  type?: 'income' | 'expense';
+  status?: 'active' | 'paused' | 'all';
+}
+
+export interface ForecastRow {
+  templateId: string;
+  templateName: string;
+  templateType: Exclude<TransactionType, 'transfer'>;
+  frequencyLabel: string;
+  currency: Currency;
+  status: RecurringTemplateStatus;
+  category: {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+  };
+  account: {
+    id: string;
+    name: string;
+  };
+  months: Record<string, string | null>;
+}
+
+export interface ForecastCurrencyTotals {
+  currency: Currency;
+  months: Record<string, { income: string; expense: string; net: string }>;
+}
+
+export interface ForecastResult {
+  rows: ForecastRow[];
+  totals: ForecastCurrencyTotals[];
+  monthKeys: string[];
 }
