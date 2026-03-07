@@ -1,0 +1,180 @@
+---
+/**
+ * ActionExpandable Component
+ *
+ * Expand/collapse pattern for action bars. Shows primary actions always,
+ * secondary actions in an expandable section with smooth animation.
+ *
+ * @example
+ * <ActionExpandable>
+ *   <!-- Always visible actions -->
+ *   <div slot="always-visible">...</div>
+ *   <!-- Actions shown when expanded -->
+ *   <div slot="expandable">...</div>
+ * </ActionExpandable>
+ */
+
+import { ChevronDown } from '@lucide/astro';
+
+export interface Props {
+  className?: string;
+  ariaLabel?: string;
+  expandLabel?: string;
+  collapseLabel?: string;
+}
+
+const {
+  className = '',
+  ariaLabel = 'More actions',
+  expandLabel = 'More',
+  collapseLabel = 'Less',
+} = Astro.props;
+
+const hasAlwaysVisible = Astro.slots.has('always-visible');
+const hasExpandable = Astro.slots.has('expandable');
+
+// Generate unique ID for accessibility
+const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+{
+  hasExpandable ? (
+    <div class={`action-expandable ${className}`} data-action-expandable aria-label={ariaLabel}>
+      {/* Always visible actions */}
+      {hasAlwaysVisible && (
+        <div class="action-expandable__visible">
+          <slot name="always-visible" />
+        </div>
+      )}
+
+      {/* Expandable section */}
+      <div id={expandId} class="action-expandable__content" data-expandable-content>
+        <div class="action-expandable__content-inner">
+          <slot name="expandable" />
+        </div>
+      </div>
+
+      {/* Toggle button */}
+      <button
+        type="button"
+        class="action-expandable__toggle btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
+        data-expandable-toggle
+        data-collapse-label={collapseLabel}
+        aria-expanded="false"
+        aria-controls={hasExpandable ? expandId : undefined}
+      >
+        <span class="action-expandable__label" data-toggle-label>
+          {expandLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          class="action-expandable__chevron stroke-current transition-transform duration-300"
+          data-toggle-chevron
+          aria-hidden="true"
+        />
+      </button>
+    </div>
+  ) : (
+    /* No expandable content - just render visible slot */
+    hasAlwaysVisible && <slot name="always-visible" />
+  )
+}
+
+<style>
+  .action-expandable {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .action-expandable {
+      gap: 0.5rem;
+    }
+  }
+
+  .action-expandable__visible {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .action-expandable__visible {
+      gap: 0.5rem;
+    }
+  }
+
+  .action-expandable__content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .action-expandable__content.is-expanded {
+    grid-template-rows: 1fr;
+  }
+
+  .action-expandable__content-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 0;
+  }
+
+  @media (min-width: 768px) {
+    .action-expandable__content-inner {
+      gap: 0.5rem;
+    }
+  }
+
+  .action-expandable__toggle.is-expanded .action-expandable__chevron {
+    transform: rotate(180deg);
+  }
+</style>
+
+<script>
+  function initActionExpandables() {
+    document.querySelectorAll<HTMLElement>('[data-action-expandable]').forEach((container) => {
+      const toggle = container.querySelector<HTMLButtonElement>('[data-expandable-toggle]');
+      const content = container.querySelector<HTMLElement>('[data-expandable-content]');
+      const label = container.querySelector<HTMLElement>('[data-toggle-label]');
+
+      if (!toggle || !content) return;
+      if (toggle.dataset.initialized === 'true') return;
+      toggle.dataset.initialized = 'true';
+
+      const originalLabel = label?.textContent?.trim() || 'More';
+      const collapseLabel = toggle.dataset.collapseLabel || 'Less';
+
+      toggle.addEventListener('click', () => {
+        const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+
+        if (isExpanded) {
+          // Collapse
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.classList.remove('is-expanded');
+          content.classList.remove('is-expanded');
+          if (label) label.textContent = originalLabel;
+        } else {
+          // Expand
+          toggle.setAttribute('aria-expanded', 'true');
+          toggle.classList.add('is-expanded');
+          content.classList.add('is-expanded');
+          if (label) label.textContent = collapseLabel;
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initActionExpandables, { once: true });
+  } else {
+    initActionExpandables();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initActionExpandables);
+</script>
