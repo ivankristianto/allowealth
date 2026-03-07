@@ -1,0 +1,216 @@
+---
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import { ArrowLeft } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+import { recurringForecastService, accountService } from '@/services';
+import type { ForecastFilters } from '@/lib/types/recurring';
+
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+
+const url = Astro.url;
+const typeParam = url.searchParams.get('type');
+const statusParam = url.searchParams.get('status');
+const accountsParam = url.searchParams.get('accounts');
+
+const filters: ForecastFilters = {};
+if (typeParam === 'income' || typeParam === 'expense') filters.type = typeParam;
+if (statusParam === 'active' || statusParam === 'paused' || statusParam === 'all') {
+  filters.status = statusParam;
+} else {
+  filters.status = 'active';
+}
+if (accountsParam) {
+  const ids = accountsParam
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (ids.length > 0) filters.accountIds = ids;
+}
+
+const perf = Astro.locals.perf;
+
+const [forecast, accounts] = await Promise.all([
+  recurringForecastService.getForecast(user.workspaceId, filters, 12, perf),
+  accountService.findAll(user.workspaceId, undefined, perf),
+]);
+
+const selectedAccounts = filters.accountIds ?? [];
+
+function formatMonthHeader(key: string): string {
+  const [y, m] = key.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+}
+---
+
+<ProtectedLayout title="Recurring Forecast" currentPath="/recurring/forecast">
+  <div class="mx-auto max-w-7xl space-y-5 px-1 pb-10 sm:px-2 sm:space-y-6 lg:px-6">
+    <div class="flex items-center gap-3">
+      <a
+        href="/recurring"
+        class="btn btn-sm btn-ghost btn-square rounded-lg"
+        aria-label="Back to recurring"
+      >
+        <ArrowLeft size={18} class="stroke-current" aria-hidden="true" />
+      </a>
+      <h1 class="text-lg font-bold text-base-content sm:text-xl">Recurring Forecast</h1>
+    </div>
+
+    <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+      <form method="get" action="/recurring/forecast" class="flex flex-wrap items-end gap-3">
+        <label class="form-control w-full max-w-xs">
+          <span class="label-text text-xs font-semibold">Accounts</span>
+          <select name="accounts" multiple class="select select-bordered select-sm w-full">
+            {
+              accounts.map((acc) => (
+                <option value={acc.id} selected={selectedAccounts.includes(acc.id)}>
+                  {acc.name}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+
+        <label class="form-control w-full max-w-[10rem]">
+          <span class="label-text text-xs font-semibold">Type</span>
+          <select name="type" class="select select-bordered select-sm w-full">
+            <option value="" selected={!filters.type}>All</option>
+            <option value="income" selected={filters.type === 'income'}>Income</option>
+            <option value="expense" selected={filters.type === 'expense'}>Expense</option>
+          </select>
+        </label>
+
+        <label class="form-control w-full max-w-[10rem]">
+          <span class="label-text text-xs font-semibold">Status</span>
+          <select name="status" class="select select-bordered select-sm w-full">
+            <option value="active" selected={filters.status === 'active'}>Active</option>
+            <option value="paused" selected={filters.status === 'paused'}>Paused</option>
+            <option value="all" selected={filters.status === 'all'}>All</option>
+          </select>
+        </label>
+
+        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+      </form>
+    </section>
+
+    {
+      forecast.rows.length === 0 ? (
+        <section class="rounded-3xl border border-base-300 bg-base-100 p-8 text-center shadow-sm">
+          <p class="text-base-content/60">No recurring templates match the selected filters.</p>
+        </section>
+      ) : (
+        <section class="rounded-3xl border border-base-300 bg-base-100 shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="table table-sm w-full">
+              <thead>
+                <tr>
+                  <th class="sticky left-0 z-10 bg-base-100 min-w-[12rem]">Template</th>
+                  <th class="text-center">Freq.</th>
+                  {forecast.monthKeys.map((key) => (
+                    <th class="text-right whitespace-nowrap">{formatMonthHeader(key)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {forecast.rows.map((row) => (
+                  <tr class:list={[row.status === 'paused' && 'opacity-40']}>
+                    <td class="sticky left-0 z-10 bg-base-100">
+                      <div class="flex items-center gap-2">
+                        <span
+                          class:list={[
+                            'inline-block h-2 w-2 rounded-full shrink-0',
+                            row.templateType === 'income' ? 'bg-success' : 'bg-error',
+                          ]}
+                        />
+                        <div class="min-w-0">
+                          <div class="truncate text-sm font-medium">{row.templateName}</div>
+                          <div class="truncate text-xs text-base-content/50">
+                            {row.account.name}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-center text-xs text-base-content/60">{row.frequencyLabel}</td>
+                    {forecast.monthKeys.map((key) => (
+                      <td class="text-right tabular-nums text-sm whitespace-nowrap">
+                        {row.months[key] != null ? (
+                          formatCurrency(row.months[key]!, row.currency)
+                        ) : (
+                          <span class="text-base-content/20">&mdash;</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {forecast.totals.length > 0 && (
+            <div class="border-t border-base-300 p-4 sm:p-5">
+              {forecast.totals.map((t) => (
+                <div class="mb-3 last:mb-0">
+                  <h3 class="text-xs font-bold uppercase tracking-wide text-base-content/50 mb-2">
+                    Totals ({t.currency})
+                  </h3>
+                  <div class="overflow-x-auto">
+                    <table class="table table-sm w-full">
+                      <thead>
+                        <tr>
+                          <th class="sticky left-0 z-10 bg-base-100 min-w-[12rem]" />
+                          <th />
+                          {forecast.monthKeys.map((key) => (
+                            <th class="text-right whitespace-nowrap">{formatMonthHeader(key)}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="sticky left-0 z-10 bg-base-100 text-sm font-medium text-success">
+                            Income
+                          </td>
+                          <td />
+                          {forecast.monthKeys.map((key) => (
+                            <td class="text-right tabular-nums text-sm text-success whitespace-nowrap">
+                              {t.months[key]
+                                ? formatCurrency(t.months[key].income, t.currency)
+                                : '—'}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td class="sticky left-0 z-10 bg-base-100 text-sm font-medium text-error">
+                            Expense
+                          </td>
+                          <td />
+                          {forecast.monthKeys.map((key) => (
+                            <td class="text-right tabular-nums text-sm text-error whitespace-nowrap">
+                              {t.months[key]
+                                ? formatCurrency(t.months[key].expense, t.currency)
+                                : '—'}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr class="font-bold">
+                          <td class="sticky left-0 z-10 bg-base-100 text-sm">Net</td>
+                          <td />
+                          {forecast.monthKeys.map((key) => (
+                            <td class="text-right tabular-nums text-sm whitespace-nowrap">
+                              {t.months[key] ? formatCurrency(t.months[key].net, t.currency) : '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )
+    }
+  </div>
+</ProtectedLayout>
