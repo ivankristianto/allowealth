@@ -29,20 +29,17 @@ export const GET: APIRoute = async (context) => {
       annualRate: settings.forecastAnnualRate,
     };
 
-    // Fetch workspace's accounts with history
-    const accountsWithHistory = await accountService.findAllWithHistory(auth.workspaceId);
+    const accountsWithHistory = await accountService.findAllWithHistoryForForecast(
+      auth.workspaceId,
+      settings.currency
+    );
 
-    // Scope forecast to workspace primary currency and exclude debt accounts.
-    const forecastAccounts: AccountWithHistory[] = accountsWithHistory
-      .filter(
-        (account) => account.currency === settings.currency && account.account_class !== 'debt'
-      )
-      .map((account) => ({
-        balance: parseFloat(account.balance),
-        currency: settings.currency,
-        accountClass: account.account_class,
-        history: account.history,
-      }));
+    const forecastAccounts: AccountWithHistory[] = accountsWithHistory.map((account) => ({
+      balance: parseFloat(account.balance),
+      currency: settings.currency,
+      accountClass: account.account_class,
+      history: account.history,
+    }));
 
     const actualBalanceTimeline = aggregateAccountHistory(forecastAccounts);
 
@@ -51,6 +48,7 @@ export const GET: APIRoute = async (context) => {
         assumptions,
         ...buildForecastRealityCheck({
           accounts: [],
+          actualBalanceTimeline: [],
           actualNetSavings: [],
           monthlyTopup: assumptions.monthlyTopup,
           annualRate: assumptions.annualRate,
@@ -80,6 +78,7 @@ export const GET: APIRoute = async (context) => {
       assumptions,
       ...buildForecastRealityCheck({
         accounts: forecastAccounts,
+        actualBalanceTimeline,
         actualNetSavings,
         monthlyTopup: assumptions.monthlyTopup,
         annualRate: assumptions.annualRate,

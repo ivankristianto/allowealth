@@ -13,6 +13,8 @@ export interface Props {
 
 const { monthlyTopup, annualRate, currency = 'IDR', className = '' } = Astro.props;
 const assumptionsId = `forecast-assumptions-${Math.random().toString(36).slice(2, 11)}`;
+const statusId = `${assumptionsId}-status`;
+const errorId = `${assumptionsId}-error`;
 ---
 
 <Card
@@ -39,6 +41,7 @@ const assumptionsId = `forecast-assumptions-${Math.random().toString(36).slice(2
       </div>
 
       <p
+        id={statusId}
         data-forecast-assumptions-status
         role="status"
         aria-live="polite"
@@ -64,6 +67,7 @@ const assumptionsId = `forecast-assumptions-${Math.random().toString(36).slice(2
           className="input-bordered bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
           value={monthlyTopup}
           ariaLabel={`Monthly top-up amount in ${currency}`}
+          ariaDescribedBy={`${statusId} ${errorId}`}
         />
       </div>
 
@@ -81,11 +85,18 @@ const assumptionsId = `forecast-assumptions-${Math.random().toString(36).slice(2
           min="0"
           max="100"
           aria-label="Expected annual percentage yield"
+          aria-describedby={`${statusId} ${errorId}`}
+          aria-invalid="false"
         />
       </div>
     </div>
 
-    <p data-forecast-assumptions-error class="hidden text-sm font-medium text-error" role="alert">
+    <p
+      id={errorId}
+      data-forecast-assumptions-error
+      class="hidden text-sm font-medium text-error"
+      role="alert"
+    >
     </p>
   </div>
 </Card>

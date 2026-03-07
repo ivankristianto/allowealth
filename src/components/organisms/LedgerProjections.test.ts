@@ -15,4 +15,13 @@ describe('LedgerProjections yearly breakdown', () => {
     expect(source).toContain('<summary');
     expect(source).toContain('row.months');
   });
+
+  it('explains that historical balances are required for forecast details', () => {
+    expect(source).toContain('historical balances');
+  });
+
+  it('renders a screen-reader-only table for yearly and monthly projection rows', () => {
+    expect(source).toContain('aria-label="Ledger projections data table"');
+    expect(source).toContain('<table class="sr-only"');
+  });
 });

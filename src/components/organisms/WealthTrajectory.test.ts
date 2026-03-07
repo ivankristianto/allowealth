@@ -44,4 +44,28 @@ describe('WealthTrajectory reality-check chart', () => {
     expect(source).toContain('borderDash');
     expect(source).toContain('Current Trajectory');
   });
+
+  it('keeps the chart copy aligned with the reality-check spec', () => {
+    expect(source).toContain('Compare planned growth against actual balances');
+    expect(source).toContain('historical balances');
+    expect(source).not.toContain('next decade');
+  });
+
+  it('reads chart dataset colors from theme tokens instead of hardcoded values', () => {
+    expect(source).toContain('--color-accent');
+    expect(source).toContain('--color-info');
+    expect(source).toContain('--color-warning');
+    expect(source).toContain('readThemeColor');
+  });
+
+  it('renders a screen-reader-only data table for the visible chart window', () => {
+    expect(source).toContain('aria-label="Wealth trajectory data table"');
+    expect(source).toContain('visibleTimeline.map');
+  });
+
+  it('serializes only the focused chart window to the client payload', () => {
+    expect(source).toContain('const visibleChartWindow =');
+    expect(source).toContain('timeline: visibleTimeline');
+    expect(source).toContain('chartWindow: visibleChartWindow');
+  });
 });

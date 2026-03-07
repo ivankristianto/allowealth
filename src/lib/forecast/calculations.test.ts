@@ -112,6 +112,67 @@ describe('buildForecastRealityCheck', () => {
     ]);
   });
 
+  test('carries forward the latest known account balance across months without a fresh snapshot', () => {
+    expect(typeof calculations.aggregateAccountHistory).toBe('function');
+
+    const actualBalances = calculations.aggregateAccountHistory([
+      {
+        balance: 1200,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [
+          { date: '2024-01-31', amount: 1000 },
+          { date: '2024-03-31', amount: 1200 },
+        ],
+      },
+      {
+        balance: 600,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [
+          { date: '2024-01-31', amount: 500 },
+          { date: '2024-02-29', amount: 550 },
+          { date: '2024-03-31', amount: 600 },
+        ],
+      },
+    ] as AccountWithHistory[]);
+
+    expect(actualBalances).toEqual([
+      { key: '2024-01', balance: 1500, interest: 0 },
+      { key: '2024-02', balance: 1550, interest: 0 },
+      { key: '2024-03', balance: 1800, interest: 0 },
+    ]);
+  });
+
+  test('keeps each account balance carried through the shared latest historical month', () => {
+    expect(typeof calculations.aggregateAccountHistory).toBe('function');
+
+    const actualBalances = calculations.aggregateAccountHistory([
+      {
+        balance: 1000,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [{ date: '2024-01-31', amount: 1000 }],
+      },
+      {
+        balance: 1400,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [
+          { date: '2024-01-31', amount: 1200 },
+          { date: '2024-02-29', amount: 1300 },
+          { date: '2024-03-31', amount: 1400 },
+        ],
+      },
+    ] as AccountWithHistory[]);
+
+    expect(actualBalances).toEqual([
+      { key: '2024-01', balance: 2200, interest: 0 },
+      { key: '2024-02', balance: 2300, interest: 0 },
+      { key: '2024-03', balance: 2400, interest: 0 },
+    ]);
+  });
+
   test('starts the timeline at the earliest historical balance month', () => {
     const result = buildRealityCheckResult();
 
@@ -204,5 +265,31 @@ describe('buildForecastRealityCheck', () => {
     expect(result.summary.currentTrajectoryEndingBalance).toBeDefined();
     expect(result.summary.latestActualBalance).toBe(1200);
     expect(result.summary).not.toHaveProperty('year10Target');
+  });
+
+  test('reuses precomputed actual balances when they are provided', () => {
+    const result = forecastCalculations.buildForecastRealityCheck({
+      accounts: [],
+      actualBalanceTimeline: [
+        { key: '2024-01', balance: 1000, interest: 0 },
+        { key: '2024-02', balance: 1100, interest: 0 },
+      ],
+      actualNetSavings: [
+        { key: '2024-01', income: 500, expenses: 100, netSavings: 400 },
+        { key: '2024-02', income: 500, expenses: 200, netSavings: 300 },
+      ],
+      monthlyTopup: 100,
+      annualRate: 12,
+      monthsForward: 2,
+    } as any);
+
+    expect(result.timeline.map((point) => point.key)).toEqual([
+      '2024-01',
+      '2024-02',
+      '2024-03',
+      '2024-04',
+    ]);
+    expect(result.timeline[0]?.actualBalance).toBe(1000);
+    expect(result.summary.latestActualBalance).toBe(1100);
   });
 });

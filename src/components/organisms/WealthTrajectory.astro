@@ -58,9 +58,28 @@ const {
 
 // Generate unique ID for this chart instance
 const chartId = `wealth-trajectory-chart-${Math.random().toString(36).slice(2, 11)}`;
+const hasChartWindow = chartWindow.endIndex >= chartWindow.startIndex && chartWindow.endIndex >= 0;
+const visibleTimeline = hasChartWindow
+  ? timeline.slice(chartWindow.startIndex, chartWindow.endIndex + 1)
+  : timeline;
+const visibleChartWindow = {
+  startIndex: visibleTimeline.length > 0 ? 0 : -1,
+  endIndex: visibleTimeline.length > 0 ? visibleTimeline.length - 1 : -1,
+  startKey: visibleTimeline[0]?.key ?? null,
+  endKey: visibleTimeline[visibleTimeline.length - 1]?.key ?? null,
+  latestActualKey:
+    visibleTimeline.findLast((point) => point.actualBalance !== null)?.key ??
+    chartWindow.latestActualKey,
+};
 
 // Serialize chart payload for client-side script
-const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
+const serializedChartPayload = JSON.stringify({
+  timeline: visibleTimeline,
+  chartWindow: visibleChartWindow,
+})
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
 ---
 
 <Card
@@ -74,10 +93,11 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
     {/* Header */}
     <div class="flex-shrink-0">
       <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
-        Wealth Trajectory
+        Wealth Growth
       </h2>
       <p class="text-sm text-base-content/60 mt-2 font-medium">
-        Predicting global account growth over the next decade.
+        Compare planned growth against actual balances and the current trajectory across the focused
+        forecast window.
       </p>
     </div>
 
@@ -113,7 +133,9 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
       ) : timeline.length === 0 ? (
         /* Empty State */
         <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No forecast data available.</p>
+          <p class="text-base-content/60 font-medium">
+            Forecast needs historical balances before it can compare plan versus reality.
+          </p>
         </div>
       ) : (
         /* Chart and Summary */
@@ -133,7 +155,26 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
             />
           </div>
 
-          {/* @TODO: P2 - Accessibility: Add ARIA live region for screen reader announcements on chart updates */}
+          <table class="sr-only" aria-label="Wealth trajectory data table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Planned Balance</th>
+                <th>Actual Balance</th>
+                <th>Current Trajectory</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleTimeline.map((point) => (
+                <tr>
+                  <td>{point.dateLabel}</td>
+                  <td>{point.plannedBalance ?? '—'}</td>
+                  <td>{point.actualBalance ?? '—'}</td>
+                  <td>{point.currentTrajectoryBalance ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {/* Summary Statistics Cards */}
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
@@ -177,6 +218,7 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
   import { Chart } from '@/lib/chart-setup';
   import { isValidCurrency } from '@/lib/constants/currency';
   import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { colors } from '@/lib/tokens';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import {
     buildWealthTrajectoryChartSeries,
@@ -204,11 +246,16 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
         chart.options.plugins.tooltip.backgroundColor = dark
           ? 'rgba(248, 250, 252, 0.95)'
           : 'rgba(15, 23, 42, 0.9)';
-        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.titleColor = dark ? colors.primary : colors.primaryLight;
+        chart.options.plugins.tooltip.bodyColor = dark ? colors.primary : colors.primaryLight;
         chart.update('none');
       }
     });
+  }
+
+  function readThemeColor(variableName: string, fallback: string): string {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
   }
 
   /**
@@ -237,13 +284,11 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
 
     const dark = isDarkTheme();
 
-    // @TODO: P3 - Extract color and opacity values to design tokens or constants
-    // Color configuration
-    const plannedColor = '#15803d'; // forest-600 (accent)
-    const actualColor = '#0ea5e9'; // sky-500 (info)
-    const currentTrajectoryColor = '#8b5cf6'; // violet-500
+    const plannedColor = readThemeColor('--color-accent', colors.accent);
+    const actualColor = readThemeColor('--color-info', colors.info);
+    const currentTrajectoryColor = readThemeColor('--color-warning', colors.warning);
     const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
-    const textColor = dark ? '#94a3b8' : '#64748b';
+    const textColor = dark ? colors.slate[400] : colors.slate[500];
 
     const chart = new Chart<'line'>(ctx, {
       type: 'line',
@@ -317,8 +362,8 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow });
           },
           tooltip: {
             backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            titleColor: dark ? colors.primary : colors.primaryLight,
+            bodyColor: dark ? colors.primary : colors.primaryLight,
             padding: 12,
             cornerRadius: 8,
             displayColors: true,

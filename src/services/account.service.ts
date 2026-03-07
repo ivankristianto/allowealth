@@ -59,6 +59,49 @@ export class AccountService {
     return chunks;
   }
 
+  private async attachHistoryToAccounts<T extends { id: string }>(
+    allAccounts: T[],
+    perf?: PerfCollector,
+    phasePrefix = 'AccountService.findAllWithHistory'
+  ): Promise<Array<T & { history: Array<{ date: Date; amount: number }> }>> {
+    perf?.recordPhase(`${phasePrefix}.accountCount`, allAccounts.length);
+
+    if (allAccounts.length === 0) {
+      return [];
+    }
+
+    const accountIds = allAccounts.map((account) => account.id);
+    const idChunks = this.chunkIds(accountIds, 500);
+    perf?.recordPhase(`${phasePrefix}.chunkCount`, idChunks.length);
+    const historyResults = await Promise.all(
+      idChunks.map((chunk) =>
+        this.db.query.accountHistory.findMany({
+          where: inArray(this.schema.accountHistory.account_id, chunk),
+          orderBy: (accountHistory: any, { asc }: any) => [asc(accountHistory.recorded_at)],
+        })
+      )
+    );
+    const allHistory = historyResults.flat();
+    allHistory.sort((a, b) => a.recorded_at.getTime() - b.recorded_at.getTime());
+    perf?.recordPhase(`${phasePrefix}.historyRowsFetched`, allHistory.length);
+
+    const historyMap = new Map<string, Array<{ date: Date; amount: number }>>();
+    for (const historyRow of allHistory) {
+      if (!historyMap.has(historyRow.account_id)) {
+        historyMap.set(historyRow.account_id, []);
+      }
+      historyMap.get(historyRow.account_id)!.push({
+        date: historyRow.recorded_at,
+        amount: parseFloat(historyRow.balance),
+      });
+    }
+
+    return allAccounts.map((account) => ({
+      ...account,
+      history: historyMap.get(account.id) || [],
+    }));
+  }
+
   /**
    * Create a new AccountService with database injection
    * @param db - Database instance (injected for testability)
@@ -830,47 +873,26 @@ export class AccountService {
    */
   async findAllWithHistory(workspaceId: string, perf?: PerfCollector) {
     const allAccounts = await this.findAll(workspaceId);
-    perf?.recordPhase('AccountService.findAllWithHistory.accountCount', allAccounts.length);
+    return this.attachHistoryToAccounts(allAccounts, perf, 'AccountService.findAllWithHistory');
+  }
 
-    if (allAccounts.length === 0) {
-      return [];
-    }
+  /**
+   * Get forecast-scoped active accounts with history for a workspace.
+   * Filters by currency first and excludes debt accounts before loading history.
+   */
+  async findAllWithHistoryForForecast(
+    workspaceId: string,
+    currency: Currency,
+    perf?: PerfCollector
+  ) {
+    const currencyAccounts = await this.findAll(workspaceId, { currency });
+    const forecastAccounts = currencyAccounts.filter((account) => account.account_class !== 'debt');
 
-    // Bulk query: fetch all history for all accounts in one query
-    const accountIds = allAccounts.map((a) => a.id);
-    const idChunks = this.chunkIds(accountIds, 500);
-    perf?.recordPhase('AccountService.findAllWithHistory.chunkCount', idChunks.length);
-    const historyResults = await Promise.all(
-      idChunks.map((chunk) =>
-        this.db.query.accountHistory.findMany({
-          where: inArray(this.schema.accountHistory.account_id, chunk),
-          orderBy: (accountHistory: any, { asc }: any) => [asc(accountHistory.recorded_at)],
-        })
-      )
+    return this.attachHistoryToAccounts(
+      forecastAccounts,
+      perf,
+      'AccountService.findAllWithHistoryForForecast'
     );
-    const allHistory = historyResults.flat();
-    allHistory.sort((a, b) => a.recorded_at.getTime() - b.recorded_at.getTime());
-    perf?.recordPhase('AccountService.findAllWithHistory.historyRowsFetched', allHistory.length);
-
-    // Group history by account_id
-    const historyMap = new Map<string, Array<{ date: Date; amount: number }>>();
-    for (const h of allHistory) {
-      if (!historyMap.has(h.account_id)) {
-        historyMap.set(h.account_id, []);
-      }
-      historyMap.get(h.account_id)!.push({
-        date: h.recorded_at,
-        amount: parseFloat(h.balance),
-      });
-    }
-
-    // Map accounts to their history arrays
-    const accountsWithHistory = allAccounts.map((account) => ({
-      ...account,
-      history: historyMap.get(account.id) || [],
-    }));
-
-    return accountsWithHistory;
   }
 
   /**

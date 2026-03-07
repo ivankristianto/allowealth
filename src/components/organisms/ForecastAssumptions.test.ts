@@ -24,6 +24,13 @@ describe('ForecastAssumptions component', () => {
     expect(componentSource).toContain('Saved');
   });
 
+  it('associates both inputs with the live status and inline error surfaces', () => {
+    expect(componentSource).toContain('ariaDescribedBy');
+    expect(componentSource).toContain('forecast-assumptions-status');
+    expect(componentSource).toContain('forecast-assumptions-error');
+    expect(clientSource).toContain('aria-invalid');
+  });
+
   it('debounces workspace settings saves in the client script', () => {
     expect(clientSource).toContain('/api/workspace/settings');
     expect(clientSource).toContain("method: 'PUT'");
@@ -33,11 +40,22 @@ describe('ForecastAssumptions component', () => {
 
   it('wires the forecast page to the assumptions card before the charts', () => {
     expect(pageSource).toContain('ForecastAssumptions');
+    expect(pageSource).toContain('Reality-check forecast');
     expect(pageSource).not.toContain('monthlyTopup=5000000');
     expect(pageSource).not.toContain('annualRate=7');
+    expect(pageSource).not.toContain('Spending forecast');
     expect(pageSource).not.toContain('Predict your financial future based on current accounts');
     expect(pageSource.indexOf('<ForecastAssumptions')).toBeLessThan(
       pageSource.indexOf('<WealthTrajectory')
+    );
+  });
+
+  it('uses the approved reality-check chart copy and missing-history guidance', () => {
+    expect(wealthTrajectorySource).toContain('Wealth Growth');
+    expect(wealthTrajectorySource).toContain('Compare planned growth against actual balances');
+    expect(wealthTrajectorySource).toContain('Forecast needs historical balances');
+    expect(wealthTrajectorySource).not.toContain(
+      'Predicting global account growth over the next decade.'
     );
   });
 

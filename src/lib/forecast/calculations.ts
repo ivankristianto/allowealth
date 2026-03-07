@@ -52,6 +52,61 @@ function roundCurrency(value: Decimal.Value): number {
   return new Decimal(value).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toNumber();
 }
 
+function getLatestSnapshotByMonth(history: AccountWithHistory['history'] = []) {
+  const latestHistoryByMonth = new Map<string, { date: Date; amount: number }>();
+
+  history.forEach((point) => {
+    const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
+    const key = toMonthKey(date);
+    const existingPoint = latestHistoryByMonth.get(key);
+
+    if (!existingPoint || date.getTime() >= existingPoint.date.getTime()) {
+      latestHistoryByMonth.set(key, { date, amount: point.amount });
+    }
+  });
+
+  return Array.from(latestHistoryByMonth.entries()).sort(([leftKey], [rightKey]) =>
+    leftKey.localeCompare(rightKey)
+  );
+}
+
+function buildCarriedMonthlySnapshots(
+  history: AccountWithHistory['history'] = [],
+  carryThroughKey?: string
+) {
+  const snapshotsByMonth = getLatestSnapshotByMonth(history);
+  if (snapshotsByMonth.length === 0) {
+    return [];
+  }
+
+  const carriedSnapshots: Array<{ key: string; amount: number }> = [];
+  let previousKey = snapshotsByMonth[0][0];
+  let previousAmount = snapshotsByMonth[0][1].amount;
+
+  carriedSnapshots.push({ key: previousKey, amount: previousAmount });
+
+  for (const [key, snapshot] of snapshotsByMonth.slice(1)) {
+    const missingMonthKeys = createMonthRange(previousKey, key).slice(1, -1);
+
+    missingMonthKeys.forEach((missingKey) => {
+      carriedSnapshots.push({ key: missingKey, amount: previousAmount });
+    });
+
+    carriedSnapshots.push({ key, amount: snapshot.amount });
+    previousKey = key;
+    previousAmount = snapshot.amount;
+  }
+
+  if (carryThroughKey && carryThroughKey > previousKey) {
+    const trailingMonthKeys = createMonthRange(previousKey, carryThroughKey).slice(1);
+    trailingMonthKeys.forEach((missingKey) => {
+      carriedSnapshots.push({ key: missingKey, amount: previousAmount });
+    });
+  }
+
+  return carriedSnapshots;
+}
+
 function createMonthRange(startKey: string, endKey: string): string[] {
   const monthKeys: string[] = [];
   const startDate = fromMonthKey(startKey);
@@ -176,31 +231,30 @@ export function calculateForecast(
  */
 export function aggregateAccountHistory(accounts: AccountWithHistory[]): MonthlyHistoricalData[] {
   const monthlyTotals: Record<string, { balance: number; interest: number }> = {};
+  const forecastAccounts = getForecastAccounts(accounts);
+  const latestHistoricalKey = forecastAccounts.reduce<string | null>((latestKey, account) => {
+    const snapshotsByMonth = getLatestSnapshotByMonth(account.history);
+    const accountLatestKey = snapshotsByMonth[snapshotsByMonth.length - 1]?.[0] ?? null;
 
-  getForecastAccounts(accounts).forEach((account) => {
-    const latestHistoryByMonth = new Map<string, { date: Date; amount: number }>();
+    if (!accountLatestKey) {
+      return latestKey;
+    }
 
-    account.history?.forEach((point) => {
-      const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
-      const key = toMonthKey(date);
-      const existingPoint = latestHistoryByMonth.get(key);
+    return !latestKey || accountLatestKey > latestKey ? accountLatestKey : latestKey;
+  }, null);
 
-      if (!existingPoint || date.getTime() >= existingPoint.date.getTime()) {
-        latestHistoryByMonth.set(key, { date, amount: point.amount });
+  forecastAccounts.forEach((account) => {
+    buildCarriedMonthlySnapshots(account.history, latestHistoricalKey ?? undefined).forEach(
+      ({ key, amount }) => {
+        if (!monthlyTotals[key]) {
+          monthlyTotals[key] = { balance: 0, interest: 0 };
+        }
+
+        // Accumulate the latest month-end balance from each account.
+        monthlyTotals[key].interest = 0;
+        monthlyTotals[key].balance += amount;
       }
-    });
-
-    latestHistoryByMonth.forEach((point, key) => {
-      const { amount } = point;
-
-      if (!monthlyTotals[key]) {
-        monthlyTotals[key] = { balance: 0, interest: 0 };
-      }
-
-      // Accumulate the latest month-end balance from each account.
-      monthlyTotals[key].interest = 0;
-      monthlyTotals[key].balance += amount;
-    });
+    );
   });
 
   return Object.entries(monthlyTotals)
@@ -350,6 +404,7 @@ export function buildForecastRealityCheck(
 ): ForecastRealityCheckResult {
   const {
     accounts,
+    actualBalanceTimeline: providedActualBalanceTimeline,
     actualNetSavings,
     monthlyTopup,
     annualRate,
@@ -357,7 +412,7 @@ export function buildForecastRealityCheck(
     monthsForward = DEFAULT_FORECAST_MONTHS_FORWARD,
   } = input;
 
-  const actualBalanceTimeline = aggregateAccountHistory(accounts);
+  const actualBalanceTimeline = providedActualBalanceTimeline ?? aggregateAccountHistory(accounts);
   if (actualBalanceTimeline.length === 0) {
     return {
       timeline: [],

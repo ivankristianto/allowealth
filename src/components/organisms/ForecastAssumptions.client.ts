@@ -52,6 +52,15 @@ function setInlineError(container: HTMLElement, message?: string): void {
   errorEl.classList.add('hidden');
 }
 
+function setInputInvalid(container: HTMLElement, isInvalid: boolean): void {
+  const inputs = container.querySelectorAll<HTMLInputElement>(
+    'input[name="forecastMonthlyTopup"], input[name="forecastAnnualRate"]'
+  );
+  inputs.forEach((input) => {
+    input.setAttribute('aria-invalid', isInvalid ? 'true' : 'false');
+  });
+}
+
 function validateAssumptions(monthlyTopup: number, annualRate: number): string | null {
   if (!Number.isFinite(monthlyTopup) || monthlyTopup < 0) {
     return 'Monthly Top-Up must be 0 or more.';
@@ -81,6 +90,7 @@ async function saveForecastAssumptions(
   const annualRate = annualRateValue === '' ? 0 : Number(annualRateValue);
   const validationError = validateAssumptions(monthlyTopup, annualRate);
   if (validationError) {
+    setInputInvalid(container, true);
     setStatus(container, 'error');
     setInlineError(container, validationError);
     return;
@@ -95,6 +105,7 @@ async function saveForecastAssumptions(
   requestControllers.set(assumptionsId, requestController);
 
   setInlineError(container);
+  setInputInvalid(container, false);
   setStatus(container, 'saving');
 
   try {
@@ -171,6 +182,7 @@ function initForecastAssumptions(): void {
       inputVersions.set(assumptionsId, nextVersion);
 
       setInlineError(container);
+      setInputInvalid(container, false);
       setStatus(container, 'idle');
 
       const existingTimer = debounceTimers.get(assumptionsId);
@@ -189,6 +201,7 @@ function initForecastAssumptions(): void {
     apyInput.addEventListener('input', scheduleSave, { signal });
 
     setInlineError(container);
+    setInputInvalid(container, false);
     setStatus(container, 'idle');
     inputVersions.set(assumptionsId, 0);
   });

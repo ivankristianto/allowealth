@@ -34,7 +34,19 @@ const hasChartWindow = chartWindow.endIndex >= chartWindow.startIndex && chartWi
 const visibleTimeline = hasChartWindow
   ? timeline.slice(chartWindow.startIndex, chartWindow.endIndex + 1)
   : timeline;
-const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
+const visibleChartWindow = {
+  startIndex: visibleTimeline.length > 0 ? 0 : -1,
+  endIndex: visibleTimeline.length > 0 ? visibleTimeline.length - 1 : -1,
+  startKey: visibleTimeline[0]?.key ?? null,
+  endKey: visibleTimeline[visibleTimeline.length - 1]?.key ?? null,
+  latestActualKey:
+    visibleTimeline.findLast((point) => point.actualBalance !== null)?.key ??
+    chartWindow.latestActualKey,
+};
+const serializedChartPayload = JSON.stringify({
+  timeline: visibleTimeline,
+  chartWindow: visibleChartWindow,
+})
   .replace(/</g, '\\u003c')
   .replace(/>/g, '\\u003e')
   .replace(/&/g, '\\u0026');
@@ -73,7 +85,9 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
         </div>
       ) : visibleTimeline.length === 0 ? (
         <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No monthly gains data available.</p>
+          <p class="text-base-content/60 font-medium">
+            Forecast needs historical balances before it can compare plan versus reality.
+          </p>
         </div>
       ) : (
         <div
@@ -120,6 +134,7 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
   import { Chart } from '@/lib/chart-setup';
   import { isValidCurrency } from '@/lib/constants/currency';
   import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { colors } from '@/lib/tokens';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import type { Currency } from '@/lib/constants/currency';
   import type { ForecastChartWindow, ForecastTimelinePoint } from '@/lib/forecast';
@@ -154,19 +169,19 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
         chart.options.plugins.tooltip.backgroundColor = dark
           ? 'rgba(248, 250, 252, 0.95)'
           : 'rgba(15, 23, 42, 0.9)';
-        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.titleColor = dark ? colors.primary : colors.primaryLight;
+        chart.options.plugins.tooltip.bodyColor = dark ? colors.primary : colors.primaryLight;
       }
 
       if (chart.options.plugins?.legend?.labels) {
-        chart.options.plugins.legend.labels.color = dark ? '#94a3b8' : '#64748b';
+        chart.options.plugins.legend.labels.color = dark ? colors.slate[400] : colors.slate[500];
       }
 
       if (chart.options.scales?.x?.ticks) {
-        chart.options.scales.x.ticks.color = dark ? '#94a3b8' : '#64748b';
+        chart.options.scales.x.ticks.color = dark ? colors.slate[400] : colors.slate[500];
       }
       if (chart.options.scales?.y?.ticks) {
-        chart.options.scales.y.ticks.color = dark ? '#94a3b8' : '#64748b';
+        chart.options.scales.y.ticks.color = dark ? colors.slate[400] : colors.slate[500];
       }
       if (chart.options.scales?.y?.grid) {
         chart.options.scales.y.grid.color = dark
@@ -176,6 +191,11 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
 
       chart.update('none');
     });
+  }
+
+  function readThemeColor(variableName: string, fallback: string): string {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
   }
 
   function initForecastMonthlyGainsChart(
@@ -202,7 +222,9 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
 
     const dark = isDarkTheme();
     const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
-    const textColor = dark ? '#94a3b8' : '#64748b';
+    const textColor = dark ? colors.slate[400] : colors.slate[500];
+    const forecastInterestColor = readThemeColor('--color-warning', colors.warning);
+    const actualNetSavingsColor = readThemeColor('--color-success', colors.success);
 
     const chart = new Chart(ctx, {
       type: 'bar',
@@ -212,14 +234,14 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
           {
             label: 'Forecast Interest',
             data: forecastInterest,
-            backgroundColor: '#f59e0b',
+            backgroundColor: forecastInterestColor,
             borderRadius: 6,
             borderSkipped: false,
           },
           {
             label: 'Actual Net Savings',
             data: actualNetSavings,
-            backgroundColor: '#10b981',
+            backgroundColor: actualNetSavingsColor,
             borderRadius: 6,
             borderSkipped: false,
           },
@@ -249,8 +271,8 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
           },
           tooltip: {
             backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            titleColor: dark ? colors.primary : colors.primaryLight,
+            bodyColor: dark ? colors.primary : colors.primaryLight,
             padding: 12,
             cornerRadius: 8,
             displayColors: true,

@@ -163,6 +163,7 @@ export interface ForecastRealityCheckSummary {
 
 export interface ForecastRealityCheckInput {
   accounts: AccountWithHistory[];
+  actualBalanceTimeline?: MonthlyHistoricalData[];
   actualNetSavings: Array<{
     key: string;
     income: number;

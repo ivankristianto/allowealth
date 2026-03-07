@@ -19,11 +19,14 @@ function createApiContext(user?: TestLocalsUser) {
 describe('GET /api/forecast', () => {
   const originalGetSettings = workspaceMetaService.getSettings;
   const originalFindAllWithHistory = accountService.findAllWithHistory;
+  const originalFindAllWithHistoryForForecast = (accountService as any)
+    .findAllWithHistoryForForecast;
   const originalGetMonthlyNetSavingsByMonth = reportService.getMonthlyNetSavingsByMonth;
 
   afterEach(() => {
     workspaceMetaService.getSettings = originalGetSettings;
     accountService.findAllWithHistory = originalFindAllWithHistory;
+    (accountService as any).findAllWithHistoryForForecast = originalFindAllWithHistoryForForecast;
     reportService.getMonthlyNetSavingsByMonth = originalGetMonthlyNetSavingsByMonth;
   });
 
@@ -47,7 +50,10 @@ describe('GET /api/forecast', () => {
       forecastMonthlyTopup: 250,
       forecastAnnualRate: 12,
     })) as any;
-    accountService.findAllWithHistory = mock(async () => [
+    accountService.findAllWithHistory = mock(async () => {
+      throw new Error('findAllWithHistory should not be used for forecast');
+    }) as any;
+    (accountService as any).findAllWithHistoryForForecast = mock(async () => [
       {
         id: 'account-asset-idr',
         balance: '1200',
@@ -57,28 +63,6 @@ describe('GET /api/forecast', () => {
           { date: new Date('2024-01-15'), amount: 1000 },
           { date: new Date('2024-02-15'), amount: 1100 },
           { date: new Date('2024-03-15'), amount: 1200 },
-        ],
-      },
-      {
-        id: 'account-debt-idr',
-        balance: '3800',
-        currency: 'IDR',
-        account_class: 'debt',
-        history: [
-          { date: new Date('2024-01-15'), amount: 4000 },
-          { date: new Date('2024-02-15'), amount: 3900 },
-          { date: new Date('2024-03-15'), amount: 3800 },
-        ],
-      },
-      {
-        id: 'account-asset-usd',
-        balance: '999',
-        currency: 'USD',
-        account_class: 'asset',
-        history: [
-          { date: new Date('2024-01-15'), amount: 999 },
-          { date: new Date('2024-02-15'), amount: 999 },
-          { date: new Date('2024-03-15'), amount: 999 },
         ],
       },
     ]) as any;
@@ -96,6 +80,10 @@ describe('GET /api/forecast', () => {
     );
 
     expect(response.status).toBe(200);
+    expect((accountService as any).findAllWithHistoryForForecast).toHaveBeenCalledWith(
+      'workspace-1',
+      'IDR'
+    );
     expect(reportService.getMonthlyNetSavingsByMonth).toHaveBeenCalledTimes(1);
 
     const payload = await response.json();
