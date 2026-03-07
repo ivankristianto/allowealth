@@ -219,6 +219,8 @@ export class RecurringTemplateService {
         category_id: validated.category_id,
         account_id: validated.account_id,
         day_of_month: validated.day_of_month,
+        frequency: validated.frequency,
+        interval_count: validated.interval_count,
         start_date: validated.start_date,
         end_date: validated.end_date ?? null,
         total_occurrences: validated.total_occurrences ?? null,
@@ -447,6 +449,8 @@ export class RecurringTemplateService {
       'category_id',
       'account_id',
       'day_of_month',
+      'frequency',
+      'interval_count',
       'start_date',
       'end_date',
       'total_occurrences',
@@ -486,6 +490,8 @@ export class RecurringTemplateService {
       category_id: updatePayload.category_id ?? existing.category_id,
       account_id: updatePayload.account_id ?? existing.account_id,
       day_of_month: updatePayload.day_of_month ?? existing.day_of_month,
+      frequency: updatePayload.frequency ?? existing.frequency,
+      interval_count: updatePayload.interval_count ?? existing.interval_count,
       start_date: updatePayload.start_date ?? existing.start_date,
       end_date: mergedEndDate ?? undefined,
       total_occurrences: mergedTotalOccurrences ?? undefined,
@@ -825,7 +831,9 @@ export class RecurringTemplateService {
       const dueDate = calculateDueDate(
         template.start_date,
         template.day_of_month,
-        occurrenceNumber - startOccurrence
+        occurrenceNumber - startOccurrence,
+        template.frequency ?? 'monthly',
+        template.interval_count ?? 1
       );
 
       if (dueDate > lookaheadEnd) {
