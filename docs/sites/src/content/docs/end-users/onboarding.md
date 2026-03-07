@@ -14,104 +14,77 @@ Complete these five steps to build a working budget baseline. The process takes 
 
 ## Step 1: Choose Your Currency
 
-Allowealth supports primary and secondary currencies for multi-currency households.
+Everything in Allowealth is organized by currency. Pick the one you use most, then optionally add a secondary currency for cross-currency accounts.
 
-1. Navigate to the onboarding wizard (opens automatically on first login)
-2. Select your primary currency from the dropdown
-3. Optionally add a secondary currency if you maintain accounts in multiple currencies
-4. Click **Continue**
+![Step 1: Choose Your Currency](https://images.allowealth.io/onboarding-step1-currency.png)
 
-**Note:** You cannot change currencies after creating accounts or transactions. Choose carefully.
+1. Navigate to the onboarding wizard (opens automatically on first login).
+2. Select your primary currency from the dropdown. This is required.
+3. Check **I also use a second currency** if you maintain accounts in multiple currencies, and select your secondary currency.
+4. Click **Continue**.
 
 ## Step 2: Add Your Accounts
 
-Add accounts where your money lives. Include checking, savings, investments, credit cards, and loans.
+Add the accounts you use daily. Start with one or two important accounts first. You can add more anytime. Each account starts with your current balance so your budget reflects reality from day one.
 
-### Add Accounts One by One
+![Step 2: Add Your Accounts](https://images.allowealth.io/onboarding-step2-accounts.png)
 
-1. Click **Add Account**
-2. Enter the account name (for example, "Chase Checking")
-3. Select the account type:
-   - **Liquid:** Cash, checking accounts, e-wallets
-   - **Non-liquid:** Savings, investments, bonds, stocks
-   - **Debt:** Credit cards, loans
-4. Enter the current balance
-5. Select the currency
-6. Click **Save**
+1. Enter your **Account name** (for example, "Checking Account").
+2. Select the account **Type** (Bank Account, Cash, E-Wallet, or Credit Card).
+3. Enter your **Current balance**.
+4. Click **Add account**.
+5. Once your accounts are added, click **Continue**.
 
-### Add Multiple Accounts (Bulk)
-
-1. Click **Bulk Add** at the bottom of the accounts list
-2. Enter each account on a separate row
-3. Fill in name, type, currency, and balance
-4. Click **Create Accounts**
-
-**Recommended minimum:** Add at least one checking account and one savings account.
+![Accounts Added](https://images.allowealth.io/onboarding-step2-accounts-added.png)
 
 ## Step 3: Enter Monthly Income
 
-Record your expected monthly income by currency.
+Record your expected monthly income. This is the total money available for the month. In the next step, you will allocate it across spending categories. This is a planning number, not a transaction. You can change it later in Settings.
 
-1. Enter your monthly income amount in the primary currency field
-2. If you have income in a secondary currency, enter that amount separately
-3. Click **Continue**
+![Step 3: Enter Monthly Income](https://images.allowealth.io/onboarding-step3-income.png)
 
-This income figure helps calculate budget allocations in the next step.
+1. Enter your **Monthly income** amount in the field provided.
+2. Click **Continue**.
 
 ## Step 4: Allocate Your Budget
 
-Distribute your income across spending categories.
+Give every amount a job. Adjust the suggested category budgets until the allocation reflects how you actually spend.
 
-1. Review the default expense categories
-2. Enter a monthly budget amount for each category you plan to use
-3. The allocation bar shows what percentage of income you have allocated
-4. Click **Continue** when finished
+![Step 4: Allocate Your Budget](https://images.allowealth.io/onboarding-step4-budget.png)
 
-**Tips:**
-
-- Start with major categories: groceries, rent, utilities, transportation
-- Leave some income unallocated for unexpected expenses
-- You can adjust these amounts later in the Budget section
+1. Review the default expense categories and their suggested allocations.
+2. Adjust the amounts for each category to match your expected spending.
+3. Add, rename, or remove categories using the provided fields and buttons.
+4. The allocation bar shows your progress. Make sure you distribute your entire income.
+5. Click **Continue** when finished.
 
 ## Step 5: Record Your First Expense
 
-Add a real transaction to activate your budget tracking.
+Record one real expense to close the loop. Any amount works, even a coffee, as long as it reflects what you spent today.
 
-1. Select a category for the expense
-2. Choose the account you paid from
-3. Enter the amount
-4. Add a description (for example, "Grocery shopping")
-5. Select the date
-6. Click **Save Expense**
+![Step 5: Record Your First Expense](https://images.allowealth.io/onboarding-step5-expense.png)
 
-Congratulations. You have completed onboarding. Allowealth redirects you to the Dashboard where you can view your financial snapshot.
+1. Enter the expense **Amount**.
+2. Select the **Category** from the dropdown.
+3. Choose the **Account** you paid from.
+4. Add an optional **Description** (for example, "Groceries").
+5. The **Date** defaults to today, but you can change it if needed.
+6. Click **Complete setup** to finish.
+
+Congratulations! You have completed onboarding. Allowealth will redirect you to the Dashboard where you can view your financial snapshot.
 
 ## Post-Onboarding Checklist
 
 After completing the wizard, verify these items:
 
-- [ ] Dashboard displays correct account totals
-- [ ] Budget shows your allocated categories
-- [ ] Your first expense appears in Recent Transactions
-- [ ] Reports show data for the current month
+- [ ] Dashboard displays correct account totals.
+- [ ] Budget shows your allocated categories.
+- [ ] Your first expense appears in Recent Transactions.
+- [ ] Reports show data for the current month.
 
 ## Next Steps
 
-- Add more transactions from the past week to build historical data
-- Set up recurring transactions for bills and subscriptions
-- Invite family members from Settings → Members
-- Review the [Daily Workflow guide](./daily-workflow/) for maintenance routines
-
-## Troubleshooting
-
-### Cannot Change Currency
-
-Currency locks after creating your first account. Contact your workspace administrator if you need to reset the workspace.
-
-### Missing Categories
-
-Default categories appear in Step 4. You can add custom categories later in the Budget or Transactions sections.
-
-### Income Shows Wrong Currency
-
-Income entries match your workspace currencies. Update workspace currencies in Settings if needed (only available before adding accounts).
+- Add more transactions from the past week to build historical data.
+- Set up recurring transactions for bills and subscriptions.
+- Invite family members from Settings → Members.
+- Review the [Daily Workflow guide](./daily-workflow/) for maintenance routines.
