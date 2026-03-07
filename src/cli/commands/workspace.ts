@@ -121,6 +121,7 @@ export default defineCommand({
 
         const { db, workspaces, workspaceMeta, users } = await import('@/db');
         const { eq, sql } = await import('drizzle-orm');
+        const { isValidWorkspaceMetaKey } = await import('@/lib/constants/workspace-meta-keys');
 
         console.log('Fetching workspaces...\n');
 
@@ -151,8 +152,17 @@ export default defineCommand({
           console.log(`  Members:    ${memberResult[0]?.count ?? 0}`);
 
           if (metaRecords.length > 0) {
+            const visibleMetaRecords = metaRecords.filter((meta) =>
+              isValidWorkspaceMetaKey(meta.meta_key)
+            );
+
+            if (visibleMetaRecords.length === 0) {
+              console.log('─'.repeat(80));
+              continue;
+            }
+
             console.log(`  Settings:`);
-            for (const meta of metaRecords) {
+            for (const meta of visibleMetaRecords) {
               console.log(`    ${meta.meta_key}: ${meta.meta_value}`);
             }
           }

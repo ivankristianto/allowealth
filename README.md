@@ -308,7 +308,6 @@ Each workspace has configurable settings that apply to all members:
 
 - **Currency** - Primary currency for displaying amounts (e.g., IDR, USD, EUR)
 - **Week Start** - First day of the week (`monday` or `sunday`) for reports and charts
-- **Compact Numbers** - Display large numbers in compact format (e.g., "1.2K" vs "1,200")
 
 Settings can be configured during workspace creation or modified via the CLI commands.
 

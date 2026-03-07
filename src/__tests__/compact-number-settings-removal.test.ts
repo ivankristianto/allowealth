@@ -44,18 +44,22 @@ describe('compact number settings removal', () => {
 
     expect(cliSource).not.toContain(removedKebabSetting);
     expect(cliSource).not.toContain(removedConstantName);
+    expect(cliSource).toContain('isValidWorkspaceMetaKey(meta.meta_key)');
     expect(seedSource).not.toContain(removedConstantName);
     expect(seedSource).not.toContain(removedSnakeSetting);
   });
 
-  it('removes compact number documentation from product docs', () => {
+  it('removes compact number documentation and legacy raw-setting displays', () => {
     const readmeSource = read('README.md');
     const settingsDocSource = read('docs/sites/src/content/docs/end-users/settings.md');
     const architectureDocSource = read('docs/architecture/004-database-schema.md');
+    const superAdminSource = read('src/services/super-admin.service.ts');
 
     expect(readmeSource).not.toContain(removedKebabSetting);
     expect(readmeSource).not.toContain(removedSnakeSetting);
+    expect(readmeSource).not.toContain(['Compact', ' Numbers'].join(''));
     expect(settingsDocSource).not.toContain(compactNumberLabel);
     expect(architectureDocSource).not.toContain(removedCamelSetting);
+    expect(superAdminSource).toContain('isValidWorkspaceMetaKey(meta.meta_key)');
   });
 });
