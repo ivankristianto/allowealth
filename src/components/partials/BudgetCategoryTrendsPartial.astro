@@ -10,7 +10,7 @@
  * Each cell = spent + budget amounts with colored status dot
  */
 
-import { formatCurrencyCompact } from '@/lib/formatting';
+import { formatCurrency } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
 import { resolveCategoryIconComponent } from '@/lib/utils/categoryIconRegistry';
@@ -129,11 +129,11 @@ for (const cat of categories) {
                                 }
                               />
                               <span class="text-sm font-bold">
-                                {formatCurrencyCompact(spentAmount, currency)}
+                                {formatCurrency(spentAmount, currency)}
                               </span>
                             </span>
                             <span class="text-xs text-base-content/35 font-medium">
-                              of {formatCurrencyCompact(budgetAmount, currency)}
+                              of {formatCurrency(budgetAmount, currency)}
                             </span>
                           </a>
                         ) : (

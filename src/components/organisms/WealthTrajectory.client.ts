@@ -6,7 +6,7 @@
  */
 
 import { addToast } from '@/lib/stores/toastStore';
-import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import type { ForecastResult } from '@/lib/forecast';
@@ -202,7 +202,7 @@ function updateSummaryCards(
     const year10TargetCard = summaryCards[0];
     const year10TargetValue = year10TargetCard.querySelector('h3');
     if (year10TargetValue) {
-      year10TargetValue.textContent = formatCurrencyCompact(summary.year10Target, currency);
+      year10TargetValue.textContent = formatCurrency(summary.year10Target, currency);
     }
     // Update label with correct year
     const year10Label = year10TargetCard.querySelector('[class*="StatLabel"]');
@@ -214,7 +214,7 @@ function updateSummaryCards(
     const totalInterestCard = summaryCards[1];
     const totalInterestValue = totalInterestCard.querySelector('h3');
     if (totalInterestValue) {
-      totalInterestValue.textContent = formatCurrencyCompact(summary.totalInterest, currency);
+      totalInterestValue.textContent = formatCurrency(summary.totalInterest, currency);
     }
 
     // Update Growth Multiple

@@ -18,7 +18,7 @@ import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
-import { formatCurrencyCompact } from '@/lib/formatting';
+import { formatCurrency } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
@@ -181,7 +181,7 @@ const serializedInput = JSON.stringify(input);
                 YEAR {input.years} TARGET
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-base-content">
-                {formatCurrencyCompact(summary.year10Target, currency)}
+                {formatCurrency(summary.year10Target, currency)}
               </h3>
             </div>
 
@@ -192,7 +192,7 @@ const serializedInput = JSON.stringify(input);
                 TOTAL INTEREST EARNED{' '}
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-accent">
-                {formatCurrencyCompact(summary.totalInterest, currency)}
+                {formatCurrency(summary.totalInterest, currency)}
               </h3>
             </div>
 
@@ -216,7 +216,7 @@ const serializedInput = JSON.stringify(input);
 <script>
   import { Chart } from '@/lib/chart-setup';
   import { isValidCurrency } from '@/lib/constants/currency';
-  import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import type { Currency } from '@/lib/constants/currency';
   import type { ForecastDataPoint } from '@/lib/forecast';
@@ -366,7 +366,7 @@ const serializedInput = JSON.stringify(input);
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
                 if (value === null) return '';
-                return `${label}: ${formatCurrencyCompact(value, currency)}`;
+                return `${label}: ${formatCurrency(value, currency)}`;
               },
             },
           },
@@ -401,7 +401,7 @@ const serializedInput = JSON.stringify(input);
                 weight: 600 as any,
               },
               callback: (value) => {
-                return formatCurrencyCompact(Number(value), currency);
+                return formatCurrency(Number(value), currency);
               },
             },
             border: {

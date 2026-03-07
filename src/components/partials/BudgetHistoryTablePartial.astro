@@ -9,7 +9,7 @@
  * The client injects this directly into #budget-history-table-body.
  */
 
-import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
+import { formatCurrency, formatPercentage } from '@/lib/formatting';
 import { getBudgetStatus } from '@/lib/utils/budget';
 import { tokenClasses } from '@/lib/tokens';
 import Badge from '../atoms/Badge.astro';
@@ -139,7 +139,7 @@ const sortedHistory = [...history].sort((a, b) => {
                           Balance
                         </div>
                         <div class={`font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
-                          {formatCurrencyCompact(balance, currency)}
+                          {formatCurrency(balance, currency)}
                         </div>
                       </div>
                       <div>
@@ -228,7 +228,7 @@ const sortedHistory = [...history].sort((a, b) => {
                     <span
                       class={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}
                     >
-                      {formatCurrencyCompact(balance, currency)}
+                      {formatCurrency(balance, currency)}
                     </span>
                   ) : (
                     <span class="text-sm font-bold text-base-content/30">No data</span>
