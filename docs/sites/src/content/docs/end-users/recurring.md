@@ -91,12 +91,14 @@ Toggle back to list view with the **List** button.
    - **Amount** - Fixed amount or range
    - **Category** - For reporting
    - **Account** - Where money moves
-   - **Frequency** - How often it repeats:
-     - Daily
+   - **Frequency** - How often it repeats. Choose a preset:
      - Weekly
-     - Monthly
+     - Biweekly
+     - Monthly (default)
      - Quarterly
-     - Yearly
+     - Semi-annual
+     - Annual
+     - Or set a custom interval
    - **Start Date** - When the schedule begins
    - **End Date** - Optional expiration
 3. Click **Save**
@@ -153,13 +155,15 @@ Deleting a template:
 
 Choose how often the transaction repeats:
 
-| Frequency | Description        | Example             |
-| --------- | ------------------ | ------------------- |
-| Daily     | Every day          | Daily parking       |
-| Weekly    | Every 7 days       | Weekly allowance    |
-| Monthly   | Same date monthly  | Rent, subscriptions |
-| Quarterly | Every 3 months     | Insurance premiums  |
-| Yearly    | Same date annually | Membership renewals |
+| Frequency   | Description                | Example              |
+| ----------- | -------------------------- | -------------------- |
+| Weekly      | Every 7 days               | Weekly allowance     |
+| Biweekly    | Every 14 days              | Biweekly payroll     |
+| Monthly     | Same date monthly          | Rent, subscriptions  |
+| Quarterly   | Every 3 months             | Insurance premiums   |
+| Semi-annual | Every 6 months             | Bond coupon payments |
+| Annual      | Same date annually         | Membership renewals  |
+| Custom      | Any interval you configure | Every 2 weeks, etc.  |
 
 ### Monthly Scheduling
 
@@ -167,6 +171,17 @@ Monthly templates generate occurrences on the same day each month:
 
 - Started on the 15th → repeats on the 15th
 - Started on the 31st → adjusts to month-end for shorter months
+
+## Forecast
+
+View projected recurring cash flow for the next 12 months:
+
+1. Click **Forecast** on the recurring page header
+2. The table shows each template with monthly columns
+3. Filter by account, type, or status
+4. Review income and expense totals by currency
+
+See [Recurring Forecast](/end-users/recurring-forecast) for details.
 
 ## Variable Amounts
 
