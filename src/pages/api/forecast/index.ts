@@ -1,160 +1,89 @@
-/**
- * Forecast API Endpoint
- *
- * GET /api/forecast
- * Calculate wealth trajectory forecast based on user's current accounts
- * and projected monthly contributions with interest rates.
- */
-
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
-import { accountService, workspaceMetaService } from '@/services';
+import { accountService, reportService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import {
-  calculateForecast,
   aggregateAccountHistory,
-  mergeRealAndForecast,
-  calculateGrowthMultiple,
-  calculateCurrentTotal,
-  type ForecastResult,
+  buildForecastRealityCheck,
   type AccountWithHistory,
 } from '@/lib/forecast';
-import Decimal from 'decimal.js';
 
-// Validation schema for query parameters
-const forecastQuerySchema = z.object({
-  monthlyTopup: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val) return true;
-        const num = parseFloat(val);
-        return !isNaN(num) && num >= 0 && num <= 1000000000000;
-      },
-      { message: 'Monthly top-up must be between 0 and 1 trillion' }
-    )
-    .transform((val) => (val ? parseFloat(val) : 5000000)),
-  annualRate: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val) return true;
-        const num = parseFloat(val);
-        return !isNaN(num) && num >= 0 && num <= 100;
-      },
-      { message: 'Annual rate must be between 0 and 100%' }
-    )
-    .transform((val) => (val ? parseFloat(val) : 7)), // Default: 7%
-  years: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val) return true;
-        const num = parseInt(val);
-        return !isNaN(num) && num >= 1 && num <= 30; // Max 30 years per OpenAPI spec
-      },
-      { message: 'Years must be between 1 and 30' }
-    )
-    .transform((val) => (val ? parseInt(val) : 10)), // Default: 10 years
-});
+function monthKeyToDateRange(monthKey: string): { startDate: Date; endDate: Date } {
+  const [year, month] = monthKey.split('-').map(Number);
+  return {
+    startDate: new Date(year, month - 1, 1),
+    endDate: new Date(year, month, 0, 23, 59, 59),
+  };
+}
 
 /**
  * GET /api/forecast
- * Calculate and return wealth trajectory forecast
- *
- * Query Parameters:
- * - monthlyTopup: Monthly contribution amount (default: 5000000)
- * - annualRate: Annual percentage yield (default: 7)
- * - years: Number of years to forecast (default: 10)
- *
- * Response:
- * - dataPoints: Array of monthly forecast data points
- * - summary: { year10Target, totalInterest, growthMultiple, currentTotal }
- * - input: { monthlyTopup, annualRate, years }
+ * Build and return the saved-assumption forecast reality-check view.
  */
 export const GET: APIRoute = async (context) => {
-  const { url } = context;
-
   try {
     const auth = getAuthenticatedUser(context);
-
-    // Validate and parse query parameters
-    const queryParams = {
-      monthlyTopup: url.searchParams.get('monthlyTopup'),
-      annualRate: url.searchParams.get('annualRate'),
-      years: url.searchParams.get('years'),
+    const settings = await workspaceMetaService.getSettings(auth.workspaceId);
+    const assumptions = {
+      monthlyTopup: settings.forecastMonthlyTopup,
+      annualRate: settings.forecastAnnualRate,
     };
-
-    const validation = forecastQuerySchema.safeParse(queryParams);
-
-    // @TODO: P3 - Standardize error response format across all endpoints for consistency
-    if (!validation.success) {
-      return errorResponse(
-        'Invalid query parameters',
-        400,
-        'VALIDATION_ERROR',
-        validation.error.issues
-      );
-    }
-
-    const { monthlyTopup, annualRate, years } = validation.data;
-
-    // @TODO: Mock data - Add development mode check to return mock forecast data when no real accounts exist
-    // This would allow testing the forecast UI without seeding account history data
-    // Example: if (isDev && accountsWithHistory.length === 0) return mockForecastResponse()
-
-    // Scope forecast to workspace primary currency (no cross-currency conversion)
-    const primaryCurrency = await workspaceMetaService.getCurrency(auth.workspaceId);
 
     // Fetch workspace's accounts with history
     const accountsWithHistory = await accountService.findAllWithHistory(auth.workspaceId);
 
-    // Convert to forecast-compatible format
+    // Scope forecast to workspace primary currency and exclude debt accounts.
     const forecastAccounts: AccountWithHistory[] = accountsWithHistory
-      .filter((account) => account.currency === primaryCurrency)
+      .filter(
+        (account) => account.currency === settings.currency && account.account_class !== 'debt'
+      )
       .map((account) => ({
         balance: parseFloat(account.balance),
-        currency: primaryCurrency,
+        currency: settings.currency,
+        accountClass: account.account_class,
         history: account.history,
       }));
 
-    // Calculate current total
-    const currentTotal = calculateCurrentTotal(forecastAccounts);
+    const actualBalanceTimeline = aggregateAccountHistory(forecastAccounts);
 
-    // Generate forecast data
-    const forecastData = calculateForecast(currentTotal, monthlyTopup, annualRate, years);
+    if (actualBalanceTimeline.length === 0) {
+      return successResponse({
+        assumptions,
+        ...buildForecastRealityCheck({
+          accounts: [],
+          actualNetSavings: [],
+          monthlyTopup: assumptions.monthlyTopup,
+          annualRate: assumptions.annualRate,
+        }),
+      });
+    }
 
-    // Aggregate real historical data
-    const realHistoricalData = aggregateAccountHistory(forecastAccounts);
-
-    // Merge real and forecast data
-    const mergedData = mergeRealAndForecast(realHistoricalData, forecastData);
-
-    // Calculate summary statistics
-    const finalDataPoint = mergedData[mergedData.length - 1];
-    const totalInterest = mergedData.reduce(
-      (sum, point) => new Decimal(sum).plus(point.forecastInterest).toNumber(),
-      0
+    const firstHistoricalMonth = actualBalanceTimeline[0].key;
+    const latestHistoricalMonth = actualBalanceTimeline[actualBalanceTimeline.length - 1].key;
+    const { startDate } = monthKeyToDateRange(firstHistoricalMonth);
+    const { endDate } = monthKeyToDateRange(latestHistoricalMonth);
+    const actualNetSavingsByMonth = await reportService.getMonthlyNetSavingsByMonth(
+      auth.workspaceId,
+      startDate,
+      endDate,
+      settings.currency
     );
-    const growthMultiple = calculateGrowthMultiple(finalDataPoint.forecastBalance, currentTotal);
 
-    const result: ForecastResult = {
-      dataPoints: mergedData,
-      summary: {
-        year10Target: finalDataPoint.forecastBalance,
-        totalInterest: Math.round(totalInterest),
-        growthMultiple,
-        currentTotal: Math.round(currentTotal),
-      },
-      input: {
-        monthlyTopup,
-        annualRate,
-        years,
-      },
+    const actualNetSavings = Array.from(actualNetSavingsByMonth.entries()).map(([key, row]) => ({
+      key,
+      income: Number(row.income),
+      expenses: Number(row.expenses),
+      netSavings: Number(row.netSavings),
+    }));
+
+    const result = {
+      assumptions,
+      ...buildForecastRealityCheck({
+        accounts: forecastAccounts,
+        actualNetSavings,
+        monthlyTopup: assumptions.monthlyTopup,
+        annualRate: assumptions.annualRate,
+      }),
     };
 
     return successResponse(result);
