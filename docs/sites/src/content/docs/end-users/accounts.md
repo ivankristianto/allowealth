@@ -10,234 +10,152 @@ audience:
   - user
 ---
 
-Accounts represent where your money and liabilities live. Organize them by type to understand your complete financial position.
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Account Types
+Accounts are the foundation of your financial tracking in Allowealth. They represent where your money lives and what you owe. By organizing accounts into classes, you can see a complete picture of your financial health.
 
-Allowealth organizes accounts into three classes:
+## Overview of Accounts
 
-### Liquid Accounts
+![Accounts Overview](https://images.allowealth.io/accounts-overview.png)
 
-Cash and cash-equivalent accounts you can access immediately:
+Allowealth groups accounts into three main categories:
 
-- **Cash** - Physical currency
-- **Bank Account** - Checking and savings accounts
-- **E-Wallet** - Digital wallets and payment apps
-
-### Non-Liquid Accounts
-
-Investment accounts that may take time to convert to cash:
-
-- **Mutual Fund** - Pooled investment funds
-- **Bond** - Fixed-income securities
-- **Stock** - Individual stock holdings
-- **Crypto** - Cryptocurrency holdings
-- **Other** - Miscellaneous investments
-
-### Debt Accounts
-
-Credit and loan accounts representing money you owe:
-
-- **Credit Card** - Revolving credit accounts
-- **Loan** - Fixed-term debt (mortgage, car loan, personal loan)
-
-## Viewing Accounts
-
-The Accounts page displays all accounts grouped by class. Each group shows:
-
-- **Account name** - The display name you assigned
-- **Type** - Account classification
-- **Balance** - Current amount
-- **Currency** - Account denomination
-- **Last updated** - When the balance was last modified
+- **Liquid Accounts**: Cash, bank accounts, and e-wallets that you can access immediately.
+- **Non-Liquid Accounts**: Investments like mutual funds, bonds, stocks, and cryptocurrency.
+- **Debt Accounts**: Credit cards and loans that represent your liabilities.
 
 ### Portfolio Summary
 
-The summary card at the top displays:
+The summary cards at the top of the page provide an instant view of your financial position:
 
-- **Total Assets** - Sum of liquid and non-liquid accounts by currency
-- **Total Debt** - Sum of debt accounts by currency
-- **Net Worth** - Assets minus debt
-- **Allocation** - Visual breakdown by account class
+- **Total Accounts**: The sum of all your liquid and non-liquid assets.
+- **Total Debt**: The total of all your liabilities.
+- **Net Worth**: Your total assets minus your total debt.
+- **Account Allocation**: A visual breakdown of how your wealth is distributed across different account types.
 
-### Month Navigation
+### Time Navigation
 
-Use the month selector to view historical account snapshots. Past months show read-only data. Current month allows editing.
+Use the month selector at the top to view historical snapshots. Past months show read-only data, while the current month allows full editing and balance updates. Click **Today** to return to the current period.
 
-Click **Today** to return to the current month view.
+## Add New Accounts
 
-## Adding Accounts
+You can register accounts individually or add several at once using the bulk tool.
 
-### Add a Single Account
+<Tabs>
+  <TabItem label="Single Account">
+    ![Add New Account](https://images.allowealth.io/accounts-add-new.png)
 
-1. Click **Add Account** in the action bar
-2. Fill in the form:
-   - **Name** - Descriptive label (for example, "Chase Checking")
-   - **Type** - Select from account types
-   - **Category** - Optional grouping
-   - **Currency** - Account denomination
-   - **Balance** - Current amount
-3. Click **Save**
+    <Steps>
+    1. Click **Add new account** in the action bar.
+    2. Enter a descriptive **Account Name** (e.g., "Chase Checking").
+    3. Select an **Account Category** to group similar accounts.
+    4. Choose the **Currency** for this account.
+    5. Enter the current **Initial Balance**.
+    6. Click **Register Account**.
+    </Steps>
 
-### Add Multiple Accounts (Bulk)
+  </TabItem>
+  <TabItem label="Bulk Add">
+    ![Bulk Add Accounts](https://images.allowealth.io/accounts-bulk-add.png)
 
-1. Click **Bulk Add** in the action bar
-2. Enter each account on a separate row:
-   - Name
-   - Type (dropdown)
-   - Currency
-   - Balance
-3. Click **Add Row** for additional accounts
-4. Click **Create Accounts** when finished
+    <Steps>
+    1. Click **Bulk add accounts** in the action bar.
+    2. For each account, enter the name, type, currency, and balance.
+    3. Use **Add Row** to include more accounts.
+    4. Click **Create Accounts** when you are ready.
+    </Steps>
 
-## Managing Account Balances
+  </TabItem>
+</Tabs>
 
-### Update Balance
+## Manage Account Balances
 
-1. Find the account in the list
-2. Click the balance amount or the **Update** button
-3. Enter the new balance
-4. Add a note explaining the change (optional)
-5. Click **Save**
+Keep your financial data accurate by recording balance changes as they happen.
+
+### Update a Balance
+
+![Update Balance](https://images.allowealth.io/accounts-update-balance.png)
+
+<Steps>
+1. Locate the account in the list and click the **Update** icon (pencil).
+2. Select the **Date** the new balance was recorded.
+3. Enter the **New Balance**.
+4. Add an optional **Note** to document the reason for the change.
+5. Click **Update Value**.
+</Steps>
 
 ### View Balance History
 
-1. Click the account name or **History** button
-2. View a list of all balance changes
-3. See dates, amounts, and notes for each update
+![Account History](https://images.allowealth.io/accounts-history.png)
 
-## Transferring Funds
+To see how an account balance has changed over time, click **Timeline** from the account's "More actions" menu. This displays a chronological list of all recorded balance updates and transfers.
 
-Record money moved between your own accounts:
+### Edit Account Details
 
-1. Click **Transfer** in the action bar
-2. Select the **Source** account
-3. Select the **Destination** account
-4. Enter the **Amount**
-5. Add a **Description** (optional)
-6. Select the **Date**
-7. Click **Transfer**
+![Edit Account](https://images.allowealth.io/accounts-edit.png)
 
-The transfer creates two linked transactions:
+You can modify an account's name, category, or owner at any time:
 
-- An expense from the source account
-- Income to the destination account
+<Steps>
+1. Click the **More actions** (ellipsis) icon on the account.
+2. Select **Edit Details**.
+3. Update the information in the modal.
+4. Click **Save Changes**.
+</Steps>
 
-Transfers between accounts with different currencies use the exchange rate you specify.
+### View Full Details
 
-## Account Categories
+![Account Details](https://images.allowealth.io/accounts-details.png)
 
-Organize accounts with custom categories.
+Click the **Details** link or the account name to open the dedicated account page. This view provides a deep dive into the account's performance, current status, and full transaction history.
 
-### Create a Category
+## Transfer Between Accounts
 
-1. Click **Categories** in the action bar
-2. Click **Add Category**
-3. Enter a name
-4. Choose a color
-5. Click **Save**
+Record money moving between your own accounts without affecting your income or expense reports.
 
-### Assign Accounts to Categories
+![Transfer Between Accounts](https://images.allowealth.io/accounts-transfer.png)
 
-1. Edit an account
-2. Select a category from the dropdown
-3. Save changes
+<Steps>
+1. Click **Transfer between accounts** in the action bar.
+2. Select the source account in the **From** field.
+3. Select the destination account in the **To** field.
+4. Enter the **Amount** to move.
+5. Add an optional **Note**.
+6. Click **Transfer**.
+</Steps>
 
-Categories help group related accounts (for example, "Retirement" for multiple investment accounts).
+_Note: Both accounts must use the same currency to perform a direct transfer._
 
-## Closing Accounts
+## Organize with Categories
 
-Archive accounts you no longer use:
+Categories help you group accounts for better reporting and organization.
 
-1. Find the account in the list
-2. Click **Close Account**
-3. Confirm the closure
+![Manage Categories](https://images.allowealth.io/accounts-categories.png)
 
-Closed accounts:
+<Steps>
+1. Click **Categories** in the action bar.
+2. Click **Add Category** to create a new group.
+3. Assign a name and a color for easy identification.
+4. When adding or editing an account, select the category from the dropdown menu.
+</Steps>
 
-- Remain visible in historical month views
-- No longer accept new transactions
-- Continue contributing to net worth calculations for past months
+## Close and Archive Accounts
 
-View closed accounts by clicking **View Closed** in the action bar.
+If you no longer use an account, you should deactivate it rather than delete it. This preserves your historical financial data.
 
-## Filtering Accounts
+<Steps>
+1. Click the **More actions** (ellipsis) icon on the account.
+2. Select **Deactivate**.
+3. Confirm that you want to close the account.
+</Steps>
 
-### Search by Name
+Deactivated accounts are moved to the **Closed Accounts** view and no longer appear in your active lists.
 
-Type in the search box to filter accounts by name.
-
-### Filter by Type
-
-Use the type dropdown to show only specific account types.
-
-### Filter by Category
-
-Select a category to show only accounts in that group.
-
-### Personal View
-
-Click **My Accounts** to show only accounts you created. Click **All Accounts** to return to the full view.
+![Closed Accounts](https://images.allowealth.io/accounts-closed.png)
 
 ## Best Practices
 
-### Set Up Accounts in Order
-
-1. Add daily spending accounts first (checking, cash)
-2. Add savings and investment accounts
-3. Add debt accounts last for accurate net worth
-
-### Update Balances Regularly
-
-- Update liquid accounts weekly
-- Update investment accounts monthly
-- Update debt accounts when statements arrive
-
-### Use Clear Names
-
-Name accounts so all workspace members understand them:
-
-- "Chase Checking - Joint" not "Checking"
-- "Vanguard 401k" not "Retirement"
-
-### Close, Do Not Delete
-
-Close inactive accounts rather than deleting them. This preserves historical accuracy in reports.
-
-## Troubleshooting
-
-### Account Balance Looks Wrong
-
-1. Check the month selector shows the correct period
-2. Verify you updated the balance recently
-3. Check for missing transactions in that account
-4. Confirm the account uses the correct currency
-
-### Cannot Transfer Between Accounts
-
-Transfers require:
-
-- Two different accounts
-- Valid balances in the source account
-- Current month view (not historical)
-
-### Account Disappeared
-
-1. Check you are not in "My Accounts" view
-2. Verify the account is not closed (click **View Closed**)
-3. Clear all filters
-4. Confirm you have permission to view the account
-
-### Currency Shows Incorrectly
-
-Account currencies lock after creation. If you selected the wrong currency:
-
-1. Close the incorrect account
-2. Create a new account with the correct currency
-3. Add a note explaining the change
-
-## Related Features
-
-- **Dashboard** - View account totals in the summary widget
-- **Transactions** - See all transactions for an account
-- **Reports** - Analyze account performance over time
+- **Update Regularly**: Record liquid account balances weekly and investment balances monthly.
+- **Use Clear Names**: Name accounts uniquely (e.g., "Ally Savings - Emergency Fund") to avoid confusion.
+- **Preserve History**: Always close inactive accounts instead of deleting them to maintain accurate net worth reports.
+- **Filter Your View**: Use the search bar or the owner filter to quickly find specific accounts in a large portfolio.

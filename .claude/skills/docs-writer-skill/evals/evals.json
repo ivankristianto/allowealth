@@ -1,0 +1,17 @@
+{
+  "skill_name": "docs-writer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Update the end-user docs for the dashboard page located at docs/sites/src/content/docs/end-users/dashboard.md. Capture screenshots from http://docs.allowealth.local:4321/dashboard using the credentials demo@example.com / demo123456789. Save the screenshot to docs/sites/public/images/dashboard-overview.png and embed it in the doc.",
+      "expected_output": "The dashboard.md file is created or updated with clear documentation using writing-clearly-and-concisely rules, and the screenshot from Chrome DevTools is embedded.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Please improve our settings page documentation in docs/sites/src/content/docs/end-users/settings.md. Take a screenshot of the main settings area at http://docs.allowealth.local:4321/settings using the demo credentials demo@example.com / demo123456789. Put the screenshot in docs/sites/public/images/settings-page.png.",
+      "expected_output": "The settings.md file is created or updated with high-quality instructions following writing-clearly-and-concisely rules, and the settings page screenshot is embedded.",
+      "files": []
+    }
+  ]
+}
