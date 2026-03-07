@@ -16,6 +16,8 @@ interface RecurringTemplateLike {
   category: { id: string };
   account: { id: string };
   day_of_month: number;
+  frequency: 'weekly' | 'monthly';
+  interval_count: number;
   start_date: string;
   end_date: string | null;
   total_occurrences: number | null;
@@ -96,6 +98,25 @@ function initRecurringTemplateForm(): void {
   const startMonthInput = form.querySelector(
     'input[name="start_month"]'
   ) as HTMLInputElement | null;
+
+  const frequencySelect = form.querySelector(
+    'select[name="frequency"]'
+  ) as HTMLSelectElement | null;
+  const intervalCountInput = form.querySelector(
+    'input[name="interval_count"]'
+  ) as HTMLInputElement | null;
+  const frequencyUnitLabel = form.querySelector(
+    '[data-frequency-unit-label]'
+  ) as HTMLElement | null;
+  const dayOfMonthBlock = form.querySelector(
+    '[data-recurring-day-of-month-block]'
+  ) as HTMLElement | null;
+  const frequencyPresetBtns = Array.from(
+    form.querySelectorAll<HTMLButtonElement>('[data-frequency-preset]')
+  );
+  const dayOfMonthSelect = form.querySelector(
+    'select[name="day_of_month"]'
+  ) as HTMLSelectElement | null;
 
   const ACTIVE_TYPE_CLASSES = [
     'bg-white',
@@ -210,6 +231,28 @@ function initRecurringTemplateForm(): void {
     }
   };
 
+  const syncFrequencyUI = (): void => {
+    const freq = frequencySelect?.value || 'monthly';
+    const interval = Number(intervalCountInput?.value || '1');
+
+    if (dayOfMonthBlock) {
+      dayOfMonthBlock.classList.toggle('hidden', freq === 'weekly');
+    }
+    if (dayOfMonthSelect) {
+      dayOfMonthSelect.required = freq === 'monthly';
+    }
+    if (frequencyUnitLabel) {
+      frequencyUnitLabel.textContent = freq === 'weekly' ? 'week(s)' : 'month(s)';
+    }
+
+    const presetKey = `${freq}-${interval}`;
+    frequencyPresetBtns.forEach((btn) => {
+      const isActive = btn.dataset.frequencyPreset === presetKey;
+      btn.classList.toggle('btn-active', isActive);
+      btn.classList.toggle('btn-accent', isActive);
+    });
+  };
+
   const setType = (type: 'expense' | 'income'): void => {
     typeInputs.forEach((input) => {
       input.checked = input.value === type;
@@ -236,6 +279,8 @@ function initRecurringTemplateForm(): void {
     if (useDate) useDate.checked = false;
     if (totalOccurrencesInput) totalOccurrencesInput.value = '12';
     if (descriptionDetails) descriptionDetails.open = false;
+    if (frequencySelect) frequencySelect.value = 'monthly';
+    if (intervalCountInput) intervalCountInput.value = '1';
 
     if (amountInput && currencySelect) {
       const currency = isValidCurrency(currencySelect.value)
@@ -248,6 +293,7 @@ function initRecurringTemplateForm(): void {
     setType('expense');
     syncEndConditionUI();
     syncInstallmentState();
+    syncFrequencyUI();
     form.dataset.mode = 'create';
 
     if (drawerHeading) drawerHeading.textContent = 'New Recurring';
@@ -286,6 +332,8 @@ function initRecurringTemplateForm(): void {
     setFieldValue('category_id', template.category?.id || '');
     setFieldValue('account_id', template.account?.id || '');
     setFieldValue('day_of_month', String(template.day_of_month));
+    setFieldValue('frequency', template.frequency || 'monthly');
+    setFieldValue('interval_count', String(template.interval_count || 1));
     setFieldValue('start_month', template.start_date.slice(0, 7));
     setFieldValue('description', template.description || '');
     if (descriptionDetails) {
@@ -321,6 +369,7 @@ function initRecurringTemplateForm(): void {
 
     syncEndConditionUI();
     syncInstallmentState();
+    syncFrequencyUI();
   };
 
   const populateCreatePrefill = (prefill: RecurringTemplatePrefill): void => {
@@ -403,7 +452,12 @@ function initRecurringTemplateForm(): void {
       form.querySelector('textarea[name="description"]') as HTMLTextAreaElement | null
     )?.value.trim();
 
-    if (!name || !amount || !currency || !categoryId || !accountId || !dayOfMonth || !startMonth) {
+    const isWeekly = (frequencySelect?.value || 'monthly') === 'weekly';
+    if (!name || !amount || !currency || !categoryId || !accountId || !startMonth) {
+      showError('Please complete all required fields.');
+      return null;
+    }
+    if (!isWeekly && !dayOfMonth) {
       showError('Please complete all required fields.');
       return null;
     }
@@ -423,10 +477,16 @@ function initRecurringTemplateForm(): void {
       category_id: categoryId,
       account_id: accountId,
       day_of_month: Number(dayOfMonth),
+      frequency: frequencySelect?.value || 'monthly',
+      interval_count: Number(intervalCountInput?.value || '1'),
       start_date: `${startMonth}-01`,
       is_installment: false,
       starting_occurrence_number: 1,
     };
+
+    if ((frequencySelect?.value || 'monthly') === 'weekly') {
+      delete payload.day_of_month;
+    }
 
     if (description) {
       payload.description = description;
@@ -536,6 +596,37 @@ function initRecurringTemplateForm(): void {
     },
     { signal }
   );
+
+  frequencySelect?.addEventListener(
+    'change',
+    () => {
+      syncFrequencyUI();
+    },
+    { signal }
+  );
+
+  intervalCountInput?.addEventListener(
+    'input',
+    () => {
+      syncFrequencyUI();
+    },
+    { signal }
+  );
+
+  frequencyPresetBtns.forEach((btn) => {
+    btn.addEventListener(
+      'click',
+      () => {
+        const preset = btn.dataset.frequencyPreset;
+        if (!preset) return;
+        const [freq, count] = preset.split('-');
+        if (frequencySelect) frequencySelect.value = freq;
+        if (intervalCountInput) intervalCountInput.value = count;
+        syncFrequencyUI();
+      },
+      { signal }
+    );
+  });
 
   cancelBtn?.addEventListener(
     'click',
