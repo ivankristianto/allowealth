@@ -80,6 +80,8 @@ export async function seedRecurringData(
       is_installment: seedTemplate.isInstallment || false,
       installment_label: seedTemplate.installmentLabel || null,
       starting_occurrence_number: startingOccurrence,
+      frequency: seedTemplate.frequency || 'monthly',
+      interval_count: seedTemplate.intervalCount || 1,
       description: seedTemplate.description || null,
       status: templateStatus,
       created_at: now,
@@ -93,7 +95,13 @@ export async function seedRecurringData(
 
     for (let offset = 0; offset < 72; offset++) {
       const occurrenceNumber = startingOccurrence + offset;
-      const dueDate = calculateDueDate(seedTemplate.startDate, seedTemplate.dayOfMonth, offset);
+      const dueDate = calculateDueDate(
+        seedTemplate.startDate,
+        seedTemplate.dayOfMonth,
+        offset,
+        seedTemplate.frequency || 'monthly',
+        seedTemplate.intervalCount || 1
+      );
 
       if (dueDate < windowStartIso) {
         continue;
