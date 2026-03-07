@@ -5,7 +5,7 @@ import {
   stripAmountFormatting,
   formatAmountForDisplay,
 } from '@/lib/formatting/amount-input';
-import { DEFAULT_CURRENCY, isValidCurrency } from '@/lib/constants/currency';
+import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 interface RecurringTemplateLike {
   id: string;
@@ -48,6 +48,14 @@ function getCurrentMonthValue(): string {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
+}
+
+function getCurrentDateValue(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function initRecurringTemplateForm(): void {
@@ -98,6 +106,15 @@ function initRecurringTemplateForm(): void {
   const startMonthInput = form.querySelector(
     'input[name="start_month"]'
   ) as HTMLInputElement | null;
+  const startDateInput = form.querySelector(
+    'input[name="start_date_input"]'
+  ) as HTMLInputElement | null;
+  const startMonthBlock = form.querySelector(
+    '[data-recurring-start-month-block]'
+  ) as HTMLElement | null;
+  const startDateBlock = form.querySelector(
+    '[data-recurring-start-date-block]'
+  ) as HTMLElement | null;
 
   const frequencySelect = form.querySelector(
     'select[name="frequency"]'
@@ -234,15 +251,34 @@ function initRecurringTemplateForm(): void {
   const syncFrequencyUI = (): void => {
     const freq = frequencySelect?.value || 'monthly';
     const interval = Number(intervalCountInput?.value || '1');
+    const isWeekly = freq === 'weekly';
 
     if (dayOfMonthBlock) {
-      dayOfMonthBlock.classList.toggle('hidden', freq === 'weekly');
+      dayOfMonthBlock.classList.toggle('hidden', isWeekly);
+    }
+    if (startMonthBlock) {
+      startMonthBlock.classList.toggle('hidden', isWeekly);
+    }
+    if (startDateBlock) {
+      startDateBlock.classList.toggle('hidden', !isWeekly);
     }
     if (dayOfMonthSelect) {
-      dayOfMonthSelect.required = freq === 'monthly';
+      dayOfMonthSelect.required = !isWeekly;
+    }
+    if (startMonthInput) {
+      startMonthInput.required = !isWeekly;
+      if (!isWeekly && !startMonthInput.value && startDateInput?.value) {
+        startMonthInput.value = startDateInput.value.slice(0, 7);
+      }
+    }
+    if (startDateInput) {
+      startDateInput.required = isWeekly;
+      if (isWeekly && !startDateInput.value && startMonthInput?.value) {
+        startDateInput.value = `${startMonthInput.value}-01`;
+      }
     }
     if (frequencyUnitLabel) {
-      frequencyUnitLabel.textContent = freq === 'weekly' ? 'week(s)' : 'month(s)';
+      frequencyUnitLabel.textContent = isWeekly ? 'week(s)' : 'month(s)';
     }
 
     const presetKey = `${freq}-${interval}`;
@@ -261,6 +297,22 @@ function initRecurringTemplateForm(): void {
     filterCategoryOptions();
   };
 
+  const setFieldValue = (name: string, value: string): void => {
+    const field = form.querySelector(`[name="${name}"]`) as
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement
+      | null;
+    if (field) field.value = value;
+  };
+
+  const syncAmountInputFormatter = (currencyValue: Currency): void => {
+    if (!amountInput) return;
+    amountFormatter?.cleanup();
+    amountFormatter = attachAmountFormatter(amountInput, currencyValue);
+    amountInput.setAttribute('data-amount-currency', currencyValue);
+  };
+
   const resetFormState = (): void => {
     form.reset();
     clearError();
@@ -274,6 +326,7 @@ function initRecurringTemplateForm(): void {
     if (templateId) templateId.value = '';
     if (startingInput) startingInput.value = '1';
     if (startMonthInput) startMonthInput.value = getCurrentMonthValue();
+    if (startDateInput) startDateInput.value = getCurrentDateValue();
 
     if (useCount) useCount.checked = true;
     if (useDate) useDate.checked = false;
@@ -282,12 +335,11 @@ function initRecurringTemplateForm(): void {
     if (frequencySelect) frequencySelect.value = 'monthly';
     if (intervalCountInput) intervalCountInput.value = '1';
 
-    if (amountInput && currencySelect) {
+    if (currencySelect) {
       const currency = isValidCurrency(currencySelect.value)
         ? currencySelect.value
         : DEFAULT_CURRENCY;
-      amountFormatter?.cleanup();
-      amountFormatter = attachAmountFormatter(amountInput, currency);
+      syncAmountInputFormatter(currency);
     }
 
     setType('expense');
@@ -307,15 +359,6 @@ function initRecurringTemplateForm(): void {
     if (drawerHeading) drawerHeading.textContent = 'Edit Recurring';
     if (drawerSubtitle) drawerSubtitle.textContent = `Editing "${template.name}"`;
 
-    const setFieldValue = (name: string, value: string): void => {
-      const field = form.querySelector(`[name="${name}"]`) as
-        | HTMLInputElement
-        | HTMLSelectElement
-        | HTMLTextAreaElement
-        | null;
-      if (field) field.value = value;
-    };
-
     setFieldValue('template_id', template.id);
     setFieldValue('name', template.name);
 
@@ -323,11 +366,7 @@ function initRecurringTemplateForm(): void {
     setFieldValue('amount', formatAmountForDisplay(template.amount, currencyValue));
     setFieldValue('currency', template.currency);
 
-    if (amountInput) {
-      amountFormatter?.cleanup();
-      amountFormatter = attachAmountFormatter(amountInput, currencyValue);
-      amountInput.setAttribute('data-amount-currency', currencyValue);
-    }
+    syncAmountInputFormatter(currencyValue);
 
     setFieldValue('category_id', template.category?.id || '');
     setFieldValue('account_id', template.account?.id || '');
@@ -335,6 +374,7 @@ function initRecurringTemplateForm(): void {
     setFieldValue('frequency', template.frequency || 'monthly');
     setFieldValue('interval_count', String(template.interval_count || 1));
     setFieldValue('start_month', template.start_date.slice(0, 7));
+    setFieldValue('start_date_input', template.start_date);
     setFieldValue('description', template.description || '');
     if (descriptionDetails) {
       descriptionDetails.open = Boolean(
@@ -375,15 +415,6 @@ function initRecurringTemplateForm(): void {
   const populateCreatePrefill = (prefill: RecurringTemplatePrefill): void => {
     resetFormState();
 
-    const setFieldValue = (name: string, value: string): void => {
-      const field = form.querySelector(`[name="${name}"]`) as
-        | HTMLInputElement
-        | HTMLSelectElement
-        | HTMLTextAreaElement
-        | null;
-      if (field) field.value = value;
-    };
-
     setType(prefill.type);
     setFieldValue('name', prefill.name);
 
@@ -391,16 +422,13 @@ function initRecurringTemplateForm(): void {
     setFieldValue('amount', formatAmountForDisplay(prefill.amount, currencyValue));
     setFieldValue('currency', prefill.currency);
 
-    if (amountInput) {
-      amountFormatter?.cleanup();
-      amountFormatter = attachAmountFormatter(amountInput, currencyValue);
-      amountInput.setAttribute('data-amount-currency', currencyValue);
-    }
+    syncAmountInputFormatter(currencyValue);
 
     setFieldValue('category_id', prefill.category_id);
     setFieldValue('account_id', prefill.account_id);
     setFieldValue('day_of_month', String(prefill.day_of_month));
     setFieldValue('start_month', prefill.start_month);
+    setFieldValue('start_date_input', `${prefill.start_month}-01`);
     setFieldValue('description', prefill.description || '');
 
     if (descriptionDetails) {
@@ -448,12 +476,21 @@ function initRecurringTemplateForm(): void {
       form.querySelector('select[name="day_of_month"]') as HTMLSelectElement | null
     )?.value;
     const startMonth = startMonthInput?.value;
+    const startDate = startDateInput?.value;
     const description = (
       form.querySelector('textarea[name="description"]') as HTMLTextAreaElement | null
     )?.value.trim();
 
     const isWeekly = (frequencySelect?.value || 'monthly') === 'weekly';
-    if (!name || !amount || !currency || !categoryId || !accountId || !startMonth) {
+    if (!name || !amount || !currency || !categoryId || !accountId) {
+      showError('Please complete all required fields.');
+      return null;
+    }
+    if (isWeekly && !startDate) {
+      showError('Please complete all required fields.');
+      return null;
+    }
+    if (!isWeekly && !startMonth) {
       showError('Please complete all required fields.');
       return null;
     }
@@ -479,7 +516,7 @@ function initRecurringTemplateForm(): void {
       day_of_month: Number(dayOfMonth),
       frequency: frequencySelect?.value || 'monthly',
       interval_count: Number(intervalCountInput?.value || '1'),
-      start_date: `${startMonth}-01`,
+      start_date: isWeekly ? startDate! : `${startMonth!}-01`,
       is_installment: false,
       starting_occurrence_number: 1,
     };
@@ -550,9 +587,7 @@ function initRecurringTemplateForm(): void {
         const currency = isValidCurrency(currencySelect.value)
           ? currencySelect.value
           : DEFAULT_CURRENCY;
-        amountFormatter?.cleanup();
-        amountFormatter = attachAmountFormatter(amountInput, currency);
-        amountInput.setAttribute('data-amount-currency', currency);
+        syncAmountInputFormatter(currency);
         amountInput.value = formatAmountForDisplay(
           stripAmountFormatting(amountInput.value, currency),
           currency

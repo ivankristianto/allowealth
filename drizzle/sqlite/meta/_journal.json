@@ -15,6 +15,13 @@
       "when": 1772866610029,
       "tag": "0001_lucky_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772876389217,
+      "tag": "0002_spotty_ted_forrester",
+      "breakpoints": true
     }
   ]
 }

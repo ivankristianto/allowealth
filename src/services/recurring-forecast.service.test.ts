@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { computeForecast, getFrequencyLabel } from './recurring-forecast.service';
+import { computeForecast } from './recurring-forecast.service';
 import type { RecurringTemplateOutput } from '@/lib/types/recurring';
+import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
 
 function makeTemplate(
   overrides: Partial<RecurringTemplateOutput> & {
@@ -46,34 +47,40 @@ function makeTemplate(
   } as RecurringTemplateOutput;
 }
 
-describe('getFrequencyLabel', () => {
+describe('formatRecurringFrequencyLabel', () => {
   it('returns "Weekly" for weekly with interval 1', () => {
-    expect(getFrequencyLabel('weekly', 1)).toBe('Weekly');
+    expect(formatRecurringFrequencyLabel('weekly', 1)).toBe('Weekly');
   });
 
   it('returns "Biweekly" for weekly with interval 2', () => {
-    expect(getFrequencyLabel('weekly', 2)).toBe('Biweekly');
+    expect(formatRecurringFrequencyLabel('weekly', 2)).toBe('Biweekly');
   });
 
   it('returns "Monthly" for monthly with interval 1', () => {
-    expect(getFrequencyLabel('monthly', 1)).toBe('Monthly');
+    expect(formatRecurringFrequencyLabel('monthly', 1)).toBe('Monthly');
   });
 
   it('returns "Quarterly" for monthly with interval 3', () => {
-    expect(getFrequencyLabel('monthly', 3)).toBe('Quarterly');
+    expect(formatRecurringFrequencyLabel('monthly', 3)).toBe('Quarterly');
   });
 
   it('returns "Semi-annual" for monthly with interval 6', () => {
-    expect(getFrequencyLabel('monthly', 6)).toBe('Semi-annual');
+    expect(formatRecurringFrequencyLabel('monthly', 6)).toBe('Semi-annual');
   });
 
   it('returns "Annual" for monthly with interval 12', () => {
-    expect(getFrequencyLabel('monthly', 12)).toBe('Annual');
+    expect(formatRecurringFrequencyLabel('monthly', 12)).toBe('Annual');
   });
 
   it('returns custom label for non-standard intervals', () => {
-    expect(getFrequencyLabel('weekly', 3)).toBe('Every 3 weeks');
-    expect(getFrequencyLabel('monthly', 5)).toBe('Every 5 months');
+    expect(formatRecurringFrequencyLabel('weekly', 3)).toBe('Every 3 weeks');
+    expect(formatRecurringFrequencyLabel('monthly', 5)).toBe('Every 5 months');
+  });
+
+  it('returns schedule label for monthly interval 1 when requested', () => {
+    expect(
+      formatRecurringFrequencyLabel('monthly', 1, { dayOfMonth: 15, variant: 'schedule' })
+    ).toBe('Every 15th');
   });
 });
 

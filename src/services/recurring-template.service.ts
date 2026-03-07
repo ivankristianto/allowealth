@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, like, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, inArray, like, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -14,6 +14,11 @@ import {
 } from '@/lib/validation/recurring';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
+import {
+  mapRecurringTemplateOutput,
+  type RecurringOccurrenceStats,
+  type RecurringTemplateWithRelations,
+} from './recurring-template-output';
 
 const log = createLogger('recurring-template');
 
@@ -63,34 +68,10 @@ export class RecurringTemplateService {
   }
 
   private mapTemplateOutput(
-    template: any,
-    occurrenceStats: {
-      pendingCount: number;
-      confirmedCount: number;
-      skippedCount: number;
-      nextDueDate: string | null;
-    }
+    template: RecurringTemplateWithRelations,
+    occurrenceStats: RecurringOccurrenceStats
   ): RecurringTemplateOutput {
-    const isTemplateActive = template.status === 'active';
-    return {
-      ...template,
-      category: {
-        id: template.category.id,
-        name: template.category.name,
-        type: template.category.type,
-        icon: template.category.icon,
-        color: template.category.color,
-      },
-      account: {
-        id: template.account.id,
-        name: template.account.name,
-        type: template.account.type,
-      },
-      pendingCount: isTemplateActive ? occurrenceStats.pendingCount : 0,
-      confirmedCount: occurrenceStats.confirmedCount,
-      skippedCount: occurrenceStats.skippedCount,
-      nextDueDate: isTemplateActive ? occurrenceStats.nextDueDate : null,
-    };
+    return mapRecurringTemplateOutput(template, occurrenceStats);
   }
 
   private async validateTemplateReferences(
@@ -521,7 +502,29 @@ export class RecurringTemplateService {
       ),
     });
 
+    const hasScheduleChanges =
+      validated.day_of_month !== undefined ||
+      validated.frequency !== undefined ||
+      validated.interval_count !== undefined ||
+      validated.start_date !== undefined ||
+      validated.end_date !== undefined ||
+      validated.total_occurrences !== undefined ||
+      validated.starting_occurrence_number !== undefined;
+
     if (updated && updated.status === 'active') {
+      if (hasScheduleChanges) {
+        const today = toIsoDate(new Date());
+        await this.db
+          .delete(this.schema.recurringOccurrences)
+          .where(
+            and(
+              eq(this.schema.recurringOccurrences.template_id, id),
+              eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+              eq(this.schema.recurringOccurrences.status, 'pending'),
+              gte(this.schema.recurringOccurrences.due_date, today)
+            )
+          );
+      }
       await this._generateForTemplate(updated as RecurringTemplate);
     }
 

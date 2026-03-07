@@ -12,24 +12,14 @@ import type {
 } from '@/lib/types/recurring';
 import type { Currency } from '@/lib/enums';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
+import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
+import { normalizeForecastFilters } from '@/lib/utils/recurring-forecast-filters';
+import {
+  mapRecurringTemplateOutput,
+  type RecurringTemplateWithRelations,
+} from './recurring-template-output';
 
 const log = createLogger('recurring-forecast');
-
-const FREQUENCY_LABELS: Record<string, string> = {
-  'weekly:1': 'Weekly',
-  'weekly:2': 'Biweekly',
-  'monthly:1': 'Monthly',
-  'monthly:3': 'Quarterly',
-  'monthly:6': 'Semi-annual',
-  'monthly:12': 'Annual',
-};
-
-export function getFrequencyLabel(frequency: 'weekly' | 'monthly', intervalCount: number): string {
-  const key = `${frequency}:${intervalCount}`;
-  if (FREQUENCY_LABELS[key]) return FREQUENCY_LABELS[key];
-  const unit = frequency === 'weekly' ? 'weeks' : 'months';
-  return `Every ${intervalCount} ${unit}`;
-}
 
 export function computeForecast(
   templates: RecurringTemplateOutput[],
@@ -61,7 +51,7 @@ export function computeForecast(
   const rows: ForecastRow[] = templates.map((tpl) => {
     const frequency = tpl.frequency ?? 'monthly';
     const intervalCount = tpl.interval_count ?? 1;
-    const frequencyLabel = getFrequencyLabel(frequency, intervalCount);
+    const frequencyLabel = formatRecurringFrequencyLabel(frequency, intervalCount);
 
     const months: Record<string, string | null> = {};
     for (const mk of monthKeys) {
@@ -191,7 +181,8 @@ export class RecurringForecastService {
     monthCount: number = 12,
     perf?: PerfCollector
   ): Promise<ForecastResult> {
-    const filterKey = hashFilters({ ...filters, monthCount } as Record<string, unknown>);
+    const normalizedFilters = normalizeForecastFilters(filters);
+    const filterKey = hashFilters({ ...normalizedFilters, monthCount } as Record<string, unknown>);
     const cacheKey = CacheKeys.recurringForecast(workspaceId, filterKey);
     const cache = getCacheManager();
 
@@ -209,19 +200,20 @@ export class RecurringForecastService {
     // Build query conditions
     const conditions = [eq(this.schema.recurringTemplates.workspace_id, workspaceId)];
 
-    if (filters.status && filters.status !== 'all') {
-      conditions.push(eq(this.schema.recurringTemplates.status, filters.status));
-    } else if (!filters.status) {
-      // Default: show active + paused
+    if (normalizedFilters.status === 'all') {
       conditions.push(inArray(this.schema.recurringTemplates.status, ['active', 'paused']));
+    } else {
+      conditions.push(eq(this.schema.recurringTemplates.status, normalizedFilters.status));
     }
 
-    if (filters.type) {
-      conditions.push(eq(this.schema.recurringTemplates.type, filters.type));
+    if (normalizedFilters.type) {
+      conditions.push(eq(this.schema.recurringTemplates.type, normalizedFilters.type));
     }
 
-    if (filters.accountIds && filters.accountIds.length > 0) {
-      conditions.push(inArray(this.schema.recurringTemplates.account_id, filters.accountIds));
+    if (normalizedFilters.accountIds && normalizedFilters.accountIds.length > 0) {
+      conditions.push(
+        inArray(this.schema.recurringTemplates.account_id, normalizedFilters.accountIds)
+      );
     }
 
     const templates = await trackQuery('forecast.findTemplates', perf, async () => {
@@ -235,25 +227,14 @@ export class RecurringForecastService {
     });
 
     // Map to RecurringTemplateOutput shape
-    const mapped: RecurringTemplateOutput[] = templates.map((t: any) => ({
-      ...t,
-      category: {
-        id: t.category.id,
-        name: t.category.name,
-        type: t.category.type,
-        icon: t.category.icon,
-        color: t.category.color,
-      },
-      account: {
-        id: t.account.id,
-        name: t.account.name,
-        type: t.account.type,
-      },
-      nextDueDate: null,
-      pendingCount: 0,
-      confirmedCount: 0,
-      skippedCount: 0,
-    }));
+    const mapped: RecurringTemplateOutput[] = templates.map((template) =>
+      mapRecurringTemplateOutput(template as RecurringTemplateWithRelations, {
+        pendingCount: 0,
+        confirmedCount: 0,
+        skippedCount: 0,
+        nextDueDate: null,
+      })
+    );
 
     const now = new Date();
     const startYear = now.getUTCFullYear();

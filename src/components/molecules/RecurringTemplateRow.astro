@@ -3,6 +3,7 @@ import { CircleMinus, CirclePlus, EllipsisVertical, Pause, Play, Ban, Pencil } f
 import { formatCurrency } from '@/lib/formatting';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import type { RecurringTemplateOutput } from '@/lib/types/recurring';
+import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
 
 export interface Props {
   template: RecurringTemplateOutput;
@@ -21,36 +22,19 @@ const statusClassMap: Record<RecurringTemplateOutput['status'], string> = {
 
 const statusClass = statusClassMap[template.status];
 
-function daySuffix(day: number): string {
-  const mod10 = day % 10;
-  const mod100 = day % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${day}st`;
-  if (mod10 === 2 && mod100 !== 12) return `${day}nd`;
-  if (mod10 === 3 && mod100 !== 13) return `${day}rd`;
-  return `${day}th`;
-}
-
 const installmentProgress =
   template.is_installment && template.total_occurrences
     ? Math.min(100, Math.round((template.confirmedCount / template.total_occurrences) * 100))
     : 0;
 
-function frequencyLabel(): string {
-  const freq = template.frequency || 'monthly';
-  const interval = template.interval_count || 1;
-
-  if (freq === 'weekly') {
-    if (interval === 1) return 'Weekly';
-    if (interval === 2) return 'Biweekly';
-    return `Every ${interval} weeks`;
+const frequencyLabel = formatRecurringFrequencyLabel(
+  template.frequency || 'monthly',
+  template.interval_count || 1,
+  {
+    dayOfMonth: template.day_of_month,
+    variant: 'schedule',
   }
-
-  if (interval === 1) return `Every ${daySuffix(template.day_of_month)}`;
-  if (interval === 3) return 'Quarterly';
-  if (interval === 6) return 'Semi-annual';
-  if (interval === 12) return 'Annual';
-  return `Every ${interval} months`;
-}
+);
 ---
 
 <tr
@@ -91,7 +75,7 @@ function frequencyLabel(): string {
   <td class="py-3.5 px-4 text-sm font-bold">{formatCurrency(template.amount, template.currency)}</td
   >
   <td class="py-3.5 px-4">
-    <span class="text-sm text-base-content/60 font-medium block">{frequencyLabel()}</span>
+    <span class="text-sm text-base-content/60 font-medium block">{frequencyLabel}</span>
     {
       template.nextDueDate && (
         <span class="text-xs text-base-content/40 block mt-0.5">Next: {template.nextDueDate}</span>

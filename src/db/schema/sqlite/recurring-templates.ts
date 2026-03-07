@@ -46,6 +46,11 @@ export const recurringTemplates = sqliteTable(
   (table) => [
     index('recurring_templates_workspace_id_idx').on(table.workspace_id),
     index('recurring_templates_workspace_id_status_idx').on(table.workspace_id, table.status),
+    index('recurring_templates_workspace_id_account_id_idx').on(
+      table.workspace_id,
+      table.account_id
+    ),
+    index('recurring_templates_workspace_id_type_idx').on(table.workspace_id, table.type),
     index('recurring_templates_category_id_idx').on(table.category_id),
   ]
 );

@@ -1,34 +1,17 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { ArrowLeft } from '@lucide/astro';
+import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro';
+import { ArrowLeft, Wallet } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { recurringForecastService, accountService } from '@/services';
-import type { ForecastFilters } from '@/lib/types/recurring';
+import { buildForecastFilters } from '@/lib/utils/recurring-forecast-filters';
 
 const user = Astro.locals.user;
 if (!user?.id) {
   return Astro.redirect('/login');
 }
 
-const url = Astro.url;
-const typeParam = url.searchParams.get('type');
-const statusParam = url.searchParams.get('status');
-const accountsParam = url.searchParams.get('accounts');
-
-const filters: ForecastFilters = {};
-if (typeParam === 'income' || typeParam === 'expense') filters.type = typeParam;
-if (statusParam === 'active' || statusParam === 'paused' || statusParam === 'all') {
-  filters.status = statusParam;
-} else {
-  filters.status = 'active';
-}
-if (accountsParam) {
-  const ids = accountsParam
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean);
-  if (ids.length > 0) filters.accountIds = ids;
-}
+const filters = buildForecastFilters(Astro.url.searchParams);
 
 const perf = Astro.locals.perf;
 
@@ -38,10 +21,41 @@ const [forecast, accounts] = await Promise.all([
 ]);
 
 const selectedAccounts = filters.accountIds ?? [];
+const forecastAccounts = accounts
+  .map((account) => ({ id: account.id, name: account.name, group: account.type }))
+  .sort((a, b) => {
+    const normalizeGroup = (value: string) => value.toLowerCase().replace(/[\s-]+/g, '_');
+    const liquidGroups = new Set([
+      'cash',
+      'bank_account',
+      'bank_accounts',
+      'e_wallet',
+      'e_wallets',
+      'credit_card',
+      'credit_cards',
+    ]);
+    const aIsLiquid = liquidGroups.has(normalizeGroup(a.group));
+    const bIsLiquid = liquidGroups.has(normalizeGroup(b.group));
+
+    if (aIsLiquid && !bIsLiquid) return -1;
+    if (!aIsLiquid && bIsLiquid) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
 function formatMonthHeader(key: string): string {
   const [y, m] = key.split('-').map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+}
+
+function formatSignedAmount(amount: string, type: 'income' | 'expense', currency: string): string {
+  const numeric = Number.parseFloat(amount);
+  const signed = type === 'expense' ? -Math.abs(numeric) : Math.abs(numeric);
+  return formatCurrency(signed.toFixed(2), currency);
+}
+
+function formatNegativeAmount(amount: string, currency: string): string {
+  const numeric = Number.parseFloat(amount);
+  return formatCurrency((-Math.abs(numeric)).toFixed(2), currency);
 }
 ---
 
@@ -60,18 +74,24 @@ function formatMonthHeader(key: string): string {
 
     <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
       <form method="get" action="/recurring/forecast" class="flex flex-wrap items-end gap-3">
-        <label class="form-control w-full max-w-xs">
-          <span class="label-text text-xs font-semibold">Accounts</span>
-          <select name="accounts" multiple class="select select-bordered select-sm w-full">
-            {
-              accounts.map((acc) => (
-                <option value={acc.id} selected={selectedAccounts.includes(acc.id)}>
-                  {acc.name}
-                </option>
-              ))
-            }
-          </select>
-        </label>
+        <MultiSelectDropdown
+          id="forecast-account"
+          label="All Accounts"
+          inputName="accounts"
+          selectedIds={selectedAccounts}
+          items={forecastAccounts}
+          searchable={true}
+          searchPlaceholder="Search accounts..."
+          filterEventType="accounts"
+          class="w-full max-w-xs"
+        >
+          <Wallet
+            size={16}
+            class="stroke-current text-base-content/40"
+            aria-hidden="true"
+            slot="icon"
+          />
+        </MultiSelectDropdown>
 
         <label class="form-control w-full max-w-[10rem]">
           <span class="label-text text-xs font-semibold">Type</span>
@@ -91,7 +111,8 @@ function formatMonthHeader(key: string): string {
           </select>
         </label>
 
-        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+        <button type="submit" class="btn btn-sm btn-primary rounded-lg sm:rounded-xl">Filter</button
+        >
       </form>
     </section>
 
@@ -104,6 +125,7 @@ function formatMonthHeader(key: string): string {
         <section class="rounded-3xl border border-base-300 bg-base-100 shadow-sm">
           <div class="overflow-x-auto">
             <table class="table table-sm w-full">
+              <caption class="sr-only">Recurring forecast table by template and month</caption>
               <thead>
                 <tr>
                   <th class="sticky left-0 z-10 bg-base-100 min-w-[12rem]">Template</th>
@@ -115,28 +137,38 @@ function formatMonthHeader(key: string): string {
               </thead>
               <tbody>
                 {forecast.rows.map((row) => (
-                  <tr class:list={[row.status === 'paused' && 'opacity-40']}>
-                    <td class="sticky left-0 z-10 bg-base-100">
+                  <tr class:list={[row.status === 'paused' && 'bg-base-200/30']}>
+                    <th scope="row" class="sticky left-0 z-10 bg-base-100 text-left">
                       <div class="flex items-center gap-2">
                         <span
                           class:list={[
                             'inline-block h-2 w-2 rounded-full shrink-0',
                             row.templateType === 'income' ? 'bg-success' : 'bg-error',
                           ]}
+                          aria-hidden="true"
                         />
                         <div class="min-w-0">
                           <div class="truncate text-sm font-medium">{row.templateName}</div>
-                          <div class="truncate text-xs text-base-content/50">
-                            {row.account.name}
+                          <div class="truncate text-xs text-base-content/60">
+                            <span>{row.account.name}</span>
+                            <span class="mx-1 text-base-content/40">•</span>
+                            <span
+                              class:list={[
+                                'font-semibold',
+                                row.templateType === 'income' ? 'text-success' : 'text-error',
+                              ]}
+                            >
+                              {row.templateType === 'income' ? 'Income' : 'Expense'}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    </td>
+                    </th>
                     <td class="text-center text-xs text-base-content/60">{row.frequencyLabel}</td>
                     {forecast.monthKeys.map((key) => (
                       <td class="text-right tabular-nums text-sm whitespace-nowrap">
                         {row.months[key] != null ? (
-                          formatCurrency(row.months[key]!, row.currency)
+                          formatSignedAmount(row.months[key]!, row.templateType, row.currency)
                         ) : (
                           <span class="text-base-content/20">&mdash;</span>
                         )}
@@ -157,6 +189,7 @@ function formatMonthHeader(key: string): string {
                   </h3>
                   <div class="overflow-x-auto">
                     <table class="table table-sm w-full">
+                      <caption class="sr-only">Recurring totals table for {t.currency}</caption>
                       <thead>
                         <tr>
                           <th class="sticky left-0 z-10 bg-base-100 min-w-[12rem]" />
@@ -168,9 +201,12 @@ function formatMonthHeader(key: string): string {
                       </thead>
                       <tbody>
                         <tr>
-                          <td class="sticky left-0 z-10 bg-base-100 text-sm font-medium text-success">
+                          <th
+                            scope="row"
+                            class="sticky left-0 z-10 bg-base-100 text-left text-sm font-medium text-success"
+                          >
                             Income
-                          </td>
+                          </th>
                           <td />
                           {forecast.monthKeys.map((key) => (
                             <td class="text-right tabular-nums text-sm text-success whitespace-nowrap">
@@ -181,20 +217,25 @@ function formatMonthHeader(key: string): string {
                           ))}
                         </tr>
                         <tr>
-                          <td class="sticky left-0 z-10 bg-base-100 text-sm font-medium text-error">
+                          <th
+                            scope="row"
+                            class="sticky left-0 z-10 bg-base-100 text-left text-sm font-medium text-error"
+                          >
                             Expense
-                          </td>
+                          </th>
                           <td />
                           {forecast.monthKeys.map((key) => (
                             <td class="text-right tabular-nums text-sm text-error whitespace-nowrap">
                               {t.months[key]
-                                ? formatCurrency(t.months[key].expense, t.currency)
+                                ? formatNegativeAmount(t.months[key].expense, t.currency)
                                 : '—'}
                             </td>
                           ))}
                         </tr>
                         <tr class="font-bold">
-                          <td class="sticky left-0 z-10 bg-base-100 text-sm">Net</td>
+                          <th scope="row" class="sticky left-0 z-10 bg-base-100 text-left text-sm">
+                            Net
+                          </th>
                           <td />
                           {forecast.monthKeys.map((key) => (
                             <td class="text-right tabular-nums text-sm whitespace-nowrap">
