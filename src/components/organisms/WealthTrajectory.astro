@@ -96,8 +96,7 @@ const serializedChartPayload = JSON.stringify({
         Wealth Growth
       </h2>
       <p class="text-sm text-base-content/60 mt-2 font-medium">
-        Compare planned growth against actual balances and the current trajectory across the focused
-        forecast window.
+        Planned growth, actual balances, and current trajectory — last 12 months and next 24.
       </p>
     </div>
 
@@ -134,7 +133,7 @@ const serializedChartPayload = JSON.stringify({
         /* Empty State */
         <div class="p-12 text-center">
           <p class="text-base-content/60 font-medium">
-            Forecast needs historical balances before it can compare plan versus reality.
+            Add account balance history to see your plan versus reality.
           </p>
         </div>
       ) : (
@@ -175,6 +174,29 @@ const serializedChartPayload = JSON.stringify({
               ))}
             </tbody>
           </table>
+
+          {/* Current Trajectory Info */}
+          <div role="note" class="alert alert-soft alert-info text-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 shrink-0 stroke-current"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>
+              <strong>Current Trajectory</strong> starts at your latest actual balance and grows
+              each month using your 3-month average net savings plus the planned APY. It shows where
+              you are headed if recent behavior continues.
+            </span>
+          </div>
 
           {/* Summary Statistics Cards */}
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">

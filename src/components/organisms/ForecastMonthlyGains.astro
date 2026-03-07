@@ -66,7 +66,7 @@ const serializedChartPayload = JSON.stringify({
           Monthly Gains Comparison
         </h3>
         <p class="text-sm text-base-content/60 mt-2 font-medium">
-          Forecast Interest versus Actual Net Savings across the focused forecast window.
+          Monthly forecast interest earned versus actual net savings.
         </p>
       </div>
       <StatLabel size="sm" color="neutral">Forecast Interest · Actual Net Savings</StatLabel>
@@ -86,7 +86,7 @@ const serializedChartPayload = JSON.stringify({
       ) : visibleTimeline.length === 0 ? (
         <div class="p-12 text-center">
           <p class="text-base-content/60 font-medium">
-            Forecast needs historical balances before it can compare plan versus reality.
+            Add account balance history to see your plan versus reality.
           </p>
         </div>
       ) : (
