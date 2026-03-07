@@ -40,6 +40,8 @@ import { WorkspaceMetaServiceError, ServiceErrorCode } from './service-errors';
 const META_VALUE_MAX_SIZE = 4096;
 const CURRENCY_LOCKED_MESSAGE =
   'Currency settings cannot be changed after creating accounts, budgets, or transactions';
+const MAX_FORECAST_MONTHLY_TOPUP = 1_000_000_000_000;
+const MAX_FORECAST_ANNUAL_RATE = 100;
 
 /**
  * Convert string to boolean for meta values
@@ -54,6 +56,50 @@ function metaValueToBoolean(value: string | null, defaultValue: boolean): boolea
  */
 function booleanToMetaValue(value: boolean): string {
   return value ? 'true' : 'false';
+}
+
+function parseMetaNumber(value: string): number {
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    throw new Error('Value must be a finite number');
+  }
+  return parsedValue;
+}
+
+function metaValueToNumber(
+  value: string | null,
+  defaultValue: number,
+  options: { min: number; max: number }
+): number {
+  if (value === null || value.length === 0) {
+    return defaultValue;
+  }
+
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return defaultValue;
+  }
+
+  if (parsedValue < options.min || parsedValue > options.max) {
+    return defaultValue;
+  }
+
+  return parsedValue;
+}
+
+function numberToMetaValue(value: number): string {
+  return value.toString();
+}
+
+function validateNumberMetaValue(
+  value: string,
+  options: { label: string; min: number; max: number }
+): void {
+  const parsedValue = parseMetaNumber(value);
+
+  if (parsedValue < options.min || parsedValue > options.max) {
+    throw new Error(`${options.label} must be between ${options.min} and ${options.max}`);
+  }
 }
 
 /**
@@ -110,6 +156,22 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
           throw new Error('Monthly income must be valid JSON');
         }
       }
+      break;
+
+    case WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP:
+      validateNumberMetaValue(value, {
+        label: 'Forecast monthly top-up',
+        min: 0,
+        max: MAX_FORECAST_MONTHLY_TOPUP,
+      });
+      break;
+
+    case WORKSPACE_META_KEYS.FORECAST_ANNUAL_RATE:
+      validateNumberMetaValue(value, {
+        label: 'Forecast annual rate',
+        min: 0,
+        max: MAX_FORECAST_ANNUAL_RATE,
+      });
       break;
 
     case WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED:
@@ -549,6 +611,46 @@ export class WorkspaceMetaService {
   }
 
   /**
+   * Get workspace's saved forecast monthly top-up
+   */
+  async getForecastMonthlyTopup(workspaceId: string): Promise<number> {
+    const value = await this.get(workspaceId, WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP);
+    return metaValueToNumber(value, DEFAULT_WORKSPACE_SETTINGS.forecastMonthlyTopup, {
+      min: 0,
+      max: MAX_FORECAST_MONTHLY_TOPUP,
+    });
+  }
+
+  /**
+   * Set workspace's saved forecast monthly top-up
+   */
+  async setForecastMonthlyTopup(workspaceId: string, value: number): Promise<void> {
+    await this.set(
+      workspaceId,
+      WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP,
+      numberToMetaValue(value)
+    );
+  }
+
+  /**
+   * Get workspace's saved forecast annual rate
+   */
+  async getForecastAnnualRate(workspaceId: string): Promise<number> {
+    const value = await this.get(workspaceId, WORKSPACE_META_KEYS.FORECAST_ANNUAL_RATE);
+    return metaValueToNumber(value, DEFAULT_WORKSPACE_SETTINGS.forecastAnnualRate, {
+      min: 0,
+      max: MAX_FORECAST_ANNUAL_RATE,
+    });
+  }
+
+  /**
+   * Set workspace's saved forecast annual rate
+   */
+  async setForecastAnnualRate(workspaceId: string, value: number): Promise<void> {
+    await this.set(workspaceId, WORKSPACE_META_KEYS.FORECAST_ANNUAL_RATE, numberToMetaValue(value));
+  }
+
+  /**
    * Get whether first expense was explicitly skipped in onboarding.
    */
   async getOnboardingExpenseSkipped(workspaceId: string): Promise<boolean> {
@@ -602,6 +704,22 @@ export class WorkspaceMetaService {
         DEFAULT_WORKSPACE_SETTINGS.compactNumbers
       ),
       monthlyIncome: metaAll[WORKSPACE_META_KEYS.MONTHLY_INCOME] ?? '',
+      forecastMonthlyTopup: metaValueToNumber(
+        metaAll[WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP],
+        DEFAULT_WORKSPACE_SETTINGS.forecastMonthlyTopup,
+        {
+          min: 0,
+          max: MAX_FORECAST_MONTHLY_TOPUP,
+        }
+      ),
+      forecastAnnualRate: metaValueToNumber(
+        metaAll[WORKSPACE_META_KEYS.FORECAST_ANNUAL_RATE],
+        DEFAULT_WORKSPACE_SETTINGS.forecastAnnualRate,
+        {
+          min: 0,
+          max: MAX_FORECAST_ANNUAL_RATE,
+        }
+      ),
     };
   }
 
