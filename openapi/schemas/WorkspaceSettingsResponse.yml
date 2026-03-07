@@ -16,6 +16,17 @@ WorkspaceSettingsResponse:
             - id
             - name
             - settings
+          example:
+            id: "ws_123e4567-e89b-12d3-a456-426614174000"
+            name: "Family Budget"
+            settings:
+              currency: "IDR"
+              secondaryCurrency: "USD"
+              weekStart: "monday"
+              compactNumbers: true
+              monthlyIncome: '{"IDR":"15000000"}'
+              forecastMonthlyTopup: 5000000
+              forecastAnnualRate: 7
           properties:
             id:
               type: string

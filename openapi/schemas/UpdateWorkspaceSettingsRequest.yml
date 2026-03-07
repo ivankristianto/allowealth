@@ -31,3 +31,23 @@ UpdateWorkspaceSettingsRequest:
       type: boolean
       description: Whether to show compact number formatting
       example: true
+    monthlyIncome:
+      type: object
+      description: Map of currency code to monthly income amount strings.
+      additionalProperties:
+        type: string
+        pattern: '^\d+(\.\d{1,2})?$'
+      example:
+        IDR: "15000000"
+    forecastMonthlyTopup:
+      type: number
+      minimum: 0
+      maximum: 1000000000000
+      description: Saved monthly contribution used by the forecast page.
+      example: 5000000
+    forecastAnnualRate:
+      type: number
+      minimum: 0
+      maximum: 100
+      description: Saved expected annual percentage yield used by the forecast page.
+      example: 7

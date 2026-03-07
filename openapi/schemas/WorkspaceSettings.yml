@@ -6,6 +6,9 @@ WorkspaceSettings:
     - secondaryCurrency
     - weekStart
     - compactNumbers
+    - monthlyIncome
+    - forecastMonthlyTopup
+    - forecastAnnualRate
   properties:
     currency:
       type: string
@@ -29,3 +32,15 @@ WorkspaceSettings:
       type: boolean
       description: Whether to show compact number formatting (e.g., 1.5M instead of 1,500,000)
       example: true
+    monthlyIncome:
+      type: string
+      description: JSON-encoded map of currency code to monthly income amount strings.
+      example: '{"IDR":"15000000"}'
+    forecastMonthlyTopup:
+      type: number
+      description: Saved monthly contribution used by the forecast page.
+      example: 5000000
+    forecastAnnualRate:
+      type: number
+      description: Saved expected annual percentage yield used by the forecast page.
+      example: 7

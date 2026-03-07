@@ -14,6 +14,8 @@ import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 
 const currencySchema = z.enum(AVAILABLE_CURRENCIES);
+const MAX_FORECAST_MONTHLY_TOPUP = 1_000_000_000_000;
+const MAX_FORECAST_ANNUAL_RATE = 100;
 
 /**
  * Schema for PUT request body - workspace settings update
@@ -32,6 +34,8 @@ const updateWorkspaceSettingsSchema = z.object({
       { message: 'Invalid currency code' }
     )
     .optional(),
+  forecastMonthlyTopup: z.number().min(0).max(MAX_FORECAST_MONTHLY_TOPUP).optional(),
+  forecastAnnualRate: z.number().min(0).max(MAX_FORECAST_ANNUAL_RATE).optional(),
 });
 
 /**
@@ -62,6 +66,8 @@ export const GET: APIRoute = async (context) => {
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
         monthlyIncome: settings.monthlyIncome,
+        forecastMonthlyTopup: settings.forecastMonthlyTopup,
+        forecastAnnualRate: settings.forecastAnnualRate,
       },
     });
   } catch (error) {
@@ -92,8 +98,16 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, currency, secondaryCurrency, weekStart, compactNumbers, monthlyIncome } =
-      validation.data;
+    const {
+      name,
+      currency,
+      secondaryCurrency,
+      weekStart,
+      compactNumbers,
+      monthlyIncome,
+      forecastMonthlyTopup,
+      forecastAnnualRate,
+    } = validation.data;
 
     // Name changes require admin role
     if (name !== undefined && auth.role !== 'admin') {
@@ -127,6 +141,12 @@ export const PUT: APIRoute = async (context) => {
     if (monthlyIncome !== undefined) {
       await workspaceMetaService.setMonthlyIncome(auth.workspaceId, monthlyIncome);
     }
+    if (forecastMonthlyTopup !== undefined) {
+      await workspaceMetaService.setForecastMonthlyTopup(auth.workspaceId, forecastMonthlyTopup);
+    }
+    if (forecastAnnualRate !== undefined) {
+      await workspaceMetaService.setForecastAnnualRate(auth.workspaceId, forecastAnnualRate);
+    }
 
     // Invalidate layout cache since workspace settings changed (best-effort)
     try {
@@ -150,6 +170,8 @@ export const PUT: APIRoute = async (context) => {
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
         monthlyIncome: settings.monthlyIncome,
+        forecastMonthlyTopup: settings.forecastMonthlyTopup,
+        forecastAnnualRate: settings.forecastAnnualRate,
       },
     });
   } catch (error) {
