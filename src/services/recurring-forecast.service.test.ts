@@ -199,4 +199,49 @@ describe('computeForecast', () => {
     expect(result.rows[0].months['2024-03']).toBeNull();
     expect(result.rows[0].months['2024-04']).toBeNull();
   });
+
+  it('projects active template started years before forecast window', () => {
+    const tpl = makeTemplate({
+      start_date: '2020-01-01',
+      day_of_month: 15,
+      amount: '100.00',
+      frequency: 'monthly',
+      interval_count: 1,
+    });
+    const result = computeForecast([tpl], 2026, 6, 3);
+    expect(result.rows[0].months['2026-06']).toBe('100.00');
+    expect(result.rows[0].months['2026-07']).toBe('100.00');
+    expect(result.rows[0].months['2026-08']).toBe('100.00');
+  });
+
+  it('projects weekly template started years before forecast window', () => {
+    const tpl = makeTemplate({
+      start_date: '2020-01-06',
+      day_of_month: 0,
+      amount: '50.00',
+      frequency: 'weekly',
+      interval_count: 1,
+    });
+    const result = computeForecast([tpl], 2026, 3, 1);
+    const marchAmount = parseFloat(result.rows[0].months['2026-03']!);
+    // March 2026 should have 4-5 weekly occurrences
+    expect(marchAmount).toBeGreaterThanOrEqual(200);
+  });
+
+  it('projects quarterly template started years before forecast window', () => {
+    const tpl = makeTemplate({
+      start_date: '2020-01-15',
+      day_of_month: 15,
+      amount: '500.00',
+      frequency: 'monthly',
+      interval_count: 3,
+    });
+    // Quarterly starting Jan 2020: Jan, Apr, Jul, Oct, Jan, Apr...
+    // 2026-01, 2026-04, 2026-07, 2026-10 should have amounts
+    const result = computeForecast([tpl], 2026, 1, 6);
+    expect(result.rows[0].months['2026-01']).toBe('500.00');
+    expect(result.rows[0].months['2026-02']).toBeNull();
+    expect(result.rows[0].months['2026-03']).toBeNull();
+    expect(result.rows[0].months['2026-04']).toBe('500.00');
+  });
 });

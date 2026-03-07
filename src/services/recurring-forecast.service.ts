@@ -59,8 +59,8 @@ export function computeForecast(
   >();
 
   const rows: ForecastRow[] = templates.map((tpl) => {
-    const frequency = (tpl as any).frequency as 'weekly' | 'monthly';
-    const intervalCount = (tpl as any).interval_count as number;
+    const frequency = tpl.frequency ?? 'monthly';
+    const intervalCount = tpl.interval_count ?? 1;
     const frequencyLabel = getFrequencyLabel(frequency, intervalCount);
 
     const months: Record<string, string | null> = {};
@@ -68,9 +68,23 @@ export function computeForecast(
       months[mk] = null;
     }
 
-    const maxIterations = frequency === 'weekly' ? monthCount * 6 : monthCount * 2;
+    // Calculate starting offset to skip pre-window occurrences
+    const startDate = new Date(tpl.start_date + 'T00:00:00Z');
+    const windowStartDate = new Date(Date.UTC(startYear, startMonth - 1, 1));
+    let startOffset = 0;
+    if (frequency === 'weekly') {
+      const msGap = windowStartDate.getTime() - startDate.getTime();
+      const weeksGap = Math.floor(msGap / (intervalCount * 7 * 86400000));
+      startOffset = Math.max(0, weeksGap - 2);
+    } else {
+      const monthsGap =
+        (startYear - startDate.getUTCFullYear()) * 12 + (startMonth - 1 - startDate.getUTCMonth());
+      startOffset = Math.max(0, Math.floor(monthsGap / intervalCount) - 2);
+    }
+    const maxIterations =
+      startOffset + (frequency === 'weekly' ? (monthCount + 1) * 6 : (monthCount + 1) * 2);
 
-    for (let offset = 0; offset < maxIterations; offset++) {
+    for (let offset = startOffset; offset < maxIterations; offset++) {
       const dueDate = calculateDueDate(
         tpl.start_date,
         tpl.day_of_month,

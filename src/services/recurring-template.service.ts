@@ -219,7 +219,7 @@ export class RecurringTemplateService {
         currency: validated.currency,
         category_id: validated.category_id,
         account_id: validated.account_id,
-        day_of_month: validated.day_of_month,
+        day_of_month: validated.day_of_month ?? 0,
         frequency: validated.frequency,
         interval_count: validated.interval_count,
         start_date: validated.start_date,
