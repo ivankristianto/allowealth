@@ -19,7 +19,6 @@ if (!user?.id) {
   return Astro.redirect('/login');
 }
 
-const FORECAST_YEARS = 2;
 const settings = await workspaceMetaService.getSettings(user.workspaceId);
 const primaryCurrency = settings.currency;
 
@@ -40,24 +39,18 @@ function toLegacyForecastData(data: ForecastPageData): ForecastResult {
     realInterest: null,
   }));
 
-  const growthMultiple =
-    data.summary.latestActualBalance > 0
-      ? Math.round((data.summary.plannedEndingBalance / data.summary.latestActualBalance) * 100) /
-        100
-      : 0;
-
   return {
     dataPoints,
     summary: {
       year10Target: data.summary.plannedEndingBalance,
       totalInterest: data.summary.totalForecastInterest,
-      growthMultiple,
+      growthMultiple: 0,
       currentTotal: data.summary.latestActualBalance,
     },
     input: {
       monthlyTopup: data.assumptions.monthlyTopup,
       annualRate: data.assumptions.annualRate,
-      years: FORECAST_YEARS,
+      years: 2,
     },
   };
 }
@@ -100,7 +93,7 @@ const emptyForecastData: ForecastResult = {
   input: {
     monthlyTopup: assumptions.monthlyTopup,
     annualRate: assumptions.annualRate,
-    years: FORECAST_YEARS,
+    years: 2,
   },
 };
 ---
@@ -115,18 +108,24 @@ const emptyForecastData: ForecastResult = {
 
     {/* Wealth Trajectory Section */}
     {
-      legacyForecastData ? (
+      forecastData ? (
         <WealthTrajectory
-          data={legacyForecastData.dataPoints}
-          summary={legacyForecastData.summary}
-          input={legacyForecastData.input}
+          timeline={forecastData.timeline}
+          chartWindow={forecastData.chartWindow}
+          summary={forecastData.summary}
           currency={primaryCurrency}
         />
       ) : (
         <WealthTrajectory
-          data={emptyForecastData.dataPoints}
-          summary={emptyForecastData.summary}
-          input={emptyForecastData.input}
+          timeline={[]}
+          summary={{
+            latestActualKey: null,
+            latestActualBalance: 0,
+            plannedEndingBalance: 0,
+            currentTrajectoryEndingBalance: 0,
+            totalForecastInterest: 0,
+            trailingAverageNetSavings: 0,
+          }}
           currency={primaryCurrency}
           error={error || 'Failed to load forecast data'}
         />
