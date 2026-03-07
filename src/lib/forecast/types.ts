@@ -1,3 +1,5 @@
+import type { Currency } from '@/lib/constants/currency';
+
 /**
  * Forecast Calculation Types
  *
@@ -74,6 +76,8 @@ export interface AccountWithHistory {
   balance: number;
   /** Account currency */
   currency: Currency;
+  /** Optional account classification used to exclude debt from wealth forecasting */
+  accountClass?: string;
   /** Historical balance records */
   history?: HistoricalDataPoint[];
 }
@@ -88,4 +92,92 @@ export interface MonthlyHistoricalData {
   balance: number;
   /** Interest earned (0 for historical data without interest tracking) */
   interest: number;
+}
+
+export interface ActualBalancePoint {
+  key: string;
+  dateLabel: string;
+  actualBalance: number;
+}
+
+export interface ActualNetSavingsPoint {
+  key: string;
+  dateLabel: string;
+  income: number;
+  expenses: number;
+  netSavings: number;
+}
+
+export interface PlannedBalancePoint {
+  key: string;
+  dateLabel: string;
+  plannedBalance: number;
+  forecastInterest: number;
+}
+
+export interface CurrentTrajectoryPoint {
+  key: string;
+  dateLabel: string;
+  currentTrajectoryBalance: number;
+}
+
+export interface ForecastTimelinePoint {
+  key: string;
+  dateLabel: string;
+  actualBalance: number | null;
+  plannedBalance: number | null;
+  currentTrajectoryBalance: number | null;
+  forecastInterest: number | null;
+  actualNetSavings: number | null;
+  income: number | null;
+  expenses: number | null;
+}
+
+export interface ForecastChartWindow {
+  startIndex: number;
+  endIndex: number;
+  startKey: string | null;
+  endKey: string | null;
+  latestActualKey: string | null;
+}
+
+export interface ForecastYearBreakdownRow {
+  year: number;
+  yearLabel: string;
+  plannedEndingBalance: number | null;
+  actualEndingBalance: number | null;
+  currentTrajectoryEndingBalance: number | null;
+  forecastInterestTotal: number;
+  actualNetSavingsTotal: number;
+  months: ForecastTimelinePoint[];
+}
+
+export interface ForecastRealityCheckSummary {
+  latestActualKey: string | null;
+  latestActualBalance: number;
+  plannedEndingBalance: number;
+  currentTrajectoryEndingBalance: number;
+  totalForecastInterest: number;
+  trailingAverageNetSavings: number;
+}
+
+export interface ForecastRealityCheckInput {
+  accounts: AccountWithHistory[];
+  actualNetSavings: Array<{
+    key: string;
+    income: number;
+    expenses: number;
+    netSavings: number;
+  }>;
+  monthlyTopup: number;
+  annualRate: number;
+  monthsBack?: number;
+  monthsForward?: number;
+}
+
+export interface ForecastRealityCheckResult {
+  timeline: ForecastTimelinePoint[];
+  chartWindow: ForecastChartWindow;
+  yearlyBreakdown: ForecastYearBreakdownRow[];
+  summary: ForecastRealityCheckSummary;
 }

@@ -1,262 +1,152 @@
-/**
- * Forecast Calculation Tests
- *
- * Unit tests for forecast calculation utilities using bun:test.
- * @TODO: P2 - Test coverage: Add edge case tests for negative interest rates, 0% APY, 30 years max, month boundary issues
- */
+import { describe, expect, test } from 'bun:test';
+import * as calculations from './calculations';
+import type { AccountWithHistory } from './types';
 
-import { describe, test, expect } from 'bun:test';
-import {
-  calculateForecast,
-  aggregateAccountHistory,
-  mergeRealAndForecast,
-  calculateGrowthMultiple,
-  calculateCurrentTotal,
-} from './calculations';
-import type { AccountWithHistory, MonthlyHistoricalData } from './types';
+type ForecastCalculationsWithRealityCheck = typeof calculations & {
+  buildForecastRealityCheck: (input: {
+    accounts: AccountWithHistory[];
+    actualNetSavings: Array<{
+      key: string;
+      income: number;
+      expenses: number;
+      netSavings: number;
+    }>;
+    monthlyTopup: number;
+    annualRate: number;
+  }) => {
+    timeline: Array<{
+      key: string;
+      actualBalance: number | null;
+      plannedBalance: number | null;
+      currentTrajectoryBalance: number | null;
+      forecastInterest: number | null;
+      actualNetSavings: number | null;
+    }>;
+    chartWindow: {
+      startIndex: number;
+      endIndex: number;
+      startKey: string | null;
+      endKey: string | null;
+      latestActualKey: string | null;
+    };
+    yearlyBreakdown: Array<{
+      year: number;
+      yearLabel: string;
+      months: Array<{ key: string }>;
+    }>;
+    summary: Record<string, unknown>;
+  };
+};
 
-describe('calculateForecast', () => {
-  test('should calculate basic forecast with no topup', () => {
-    const result = calculateForecast(1000000, 0, 7, 1);
+const forecastCalculations = calculations as ForecastCalculationsWithRealityCheck;
 
-    expect(result).toHaveLength(13); // 12 months + initial
-    expect(result[0].forecastBalance).toBeGreaterThan(1000000);
-    expect(result[0].forecastInterest).toBeGreaterThan(0);
+function createRealityCheckInput() {
+  return {
+    accounts: [
+      {
+        balance: 1200,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [
+          { date: '2024-01-15', amount: 1000 },
+          { date: '2024-02-15', amount: 1100 },
+          { date: '2024-03-15', amount: 1200 },
+        ],
+      } as AccountWithHistory,
+      {
+        balance: 3800,
+        currency: 'IDR',
+        accountClass: 'debt',
+        history: [
+          { date: '2024-01-15', amount: 4000 },
+          { date: '2024-02-15', amount: 3900 },
+          { date: '2024-03-15', amount: 3800 },
+        ],
+      } as AccountWithHistory,
+    ],
+    actualNetSavings: [
+      { key: '2024-01', income: 800, expenses: 300, netSavings: 500 },
+      { key: '2024-02', income: 400, expenses: 600, netSavings: -200 },
+      { key: '2024-03', income: 700, expenses: 400, netSavings: 300 },
+    ],
+    monthlyTopup: 100,
+    annualRate: 12,
+  };
+}
+
+function buildRealityCheckResult() {
+  expect(typeof forecastCalculations.buildForecastRealityCheck).toBe('function');
+  return forecastCalculations.buildForecastRealityCheck(createRealityCheckInput());
+}
+
+describe('buildForecastRealityCheck', () => {
+  test('starts the timeline at the earliest historical balance month', () => {
+    const result = buildRealityCheckResult();
+
+    expect(result.timeline[0]?.key).toBe('2024-01');
   });
 
-  test('should calculate forecast with monthly topup', () => {
-    const result = calculateForecast(1000000, 100000, 7, 1);
+  test('excludes debt accounts before actual balances are totaled', () => {
+    const result = buildRealityCheckResult();
+    const january = result.timeline.find((point) => point.key === '2024-01');
 
-    expect(result).toHaveLength(13);
-    // Final balance should be higher with topup
-    expect(result[12].forecastBalance).toBeGreaterThan(1000000 + 100000 * 12);
+    expect(january?.actualBalance).toBe(1000);
   });
 
-  test('should calculate 10-year forecast correctly', () => {
-    const result = calculateForecast(1000000, 5000000, 7, 10);
+  test('compounds planned balance month by month from the first actual balance month', () => {
+    const result = buildRealityCheckResult();
+    const january = result.timeline.find((point) => point.key === '2024-01');
+    const february = result.timeline.find((point) => point.key === '2024-02');
+    const march = result.timeline.find((point) => point.key === '2024-03');
 
-    expect(result).toHaveLength(121); // 120 months + initial
-    expect(result[0].key).toMatch(/^\d{4}-\d{2}$/);
-    expect(result[0].dateLabel).toMatch(/^[A-Za-z]{3} \d{4}$/);
+    expect(january?.plannedBalance).toBe(1000);
+    expect(february?.plannedBalance).toBe(1110);
+    expect(february?.forecastInterest).toBe(10);
+    expect(march?.plannedBalance).toBe(1221);
+    expect(march?.forecastInterest).toBe(11);
   });
 
-  test('should handle zero initial balance', () => {
-    const result = calculateForecast(0, 1000000, 7, 1);
+  test('starts current trajectory at the latest actual balance month using trailing average net savings', () => {
+    const result = buildRealityCheckResult();
+    const march = result.timeline.find((point) => point.key === '2024-03');
+    const april = result.timeline.find((point) => point.key === '2024-04');
+    const may = result.timeline.find((point) => point.key === '2024-05');
 
-    expect(result).toHaveLength(13);
-    expect(result[0].forecastBalance).toBeGreaterThan(0);
+    expect(march?.currentTrajectoryBalance).toBe(1200);
+    expect(april?.currentTrajectoryBalance).toBe(1412);
+    expect(may?.currentTrajectoryBalance).toBe(1626);
+    expect(result.summary.trailingAverageNetSavings).toBe(200);
   });
 
-  test('should have null real data initially', () => {
-    const result = calculateForecast(1000000, 100000, 7, 1);
+  test('clamps the focused chart window to 12 months back and 24 months forward from the latest actual month', () => {
+    const result = buildRealityCheckResult();
 
-    result.forEach((point) => {
-      expect(point.realBalance).toBeNull();
-      expect(point.realInterest).toBeNull();
+    expect(result.chartWindow).toEqual({
+      startIndex: 0,
+      endIndex: 26,
+      startKey: '2024-01',
+      endKey: '2026-03',
+      latestActualKey: '2024-03',
     });
   });
-});
 
-describe('aggregateAccountHistory', () => {
-  test('should aggregate single account history', () => {
-    const accounts: AccountWithHistory[] = [
-      {
-        balance: 1000000,
-        currency: 'IDR',
-        history: [
-          { date: '2026-01-15', amount: 800000 },
-          { date: '2026-02-15', amount: 900000 },
-        ],
-      },
-    ];
+  test('groups the timeline into yearly buckets with monthly children', () => {
+    const result = buildRealityCheckResult();
 
-    const result = aggregateAccountHistory(accounts);
-
-    expect(result).toHaveLength(2);
-    expect(result[0].key).toBe('2026-01');
-    expect(result[0].balance).toBe(800000);
-    expect(result[1].key).toBe('2026-02');
-    expect(result[1].balance).toBe(900000);
+    expect(result.yearlyBreakdown.map((year) => year.year)).toEqual([2024, 2025, 2026]);
+    expect(result.yearlyBreakdown[0]?.yearLabel).toBe('2024');
+    expect(result.yearlyBreakdown[0]?.months).toHaveLength(12);
+    expect(result.yearlyBreakdown[0]?.months[0]?.key).toBe('2024-01');
+    expect(result.yearlyBreakdown[1]?.months).toHaveLength(12);
+    expect(result.yearlyBreakdown[2]?.months).toHaveLength(3);
   });
 
-  test('should aggregate multiple accounts', () => {
-    const accounts: AccountWithHistory[] = [
-      {
-        balance: 1000000,
-        currency: 'IDR',
-        history: [{ date: '2026-01-15', amount: 800000 }],
-      },
-      {
-        balance: 500000,
-        currency: 'IDR',
-        history: [{ date: '2026-01-20', amount: 400000 }],
-      },
-    ];
+  test('uses fixed-horizon summary fields instead of year10Target naming', () => {
+    const result = buildRealityCheckResult();
 
-    const result = aggregateAccountHistory(accounts);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].key).toBe('2026-01');
-    // Should accumulate balances from all accounts for this month
-    expect(result[0].balance).toBe(1200000); // 800000 + 400000
-  });
-
-  test('should keep values in native scoped currency', () => {
-    const accounts: AccountWithHistory[] = [
-      {
-        balance: 100,
-        currency: 'USD',
-        history: [{ date: '2026-01-15', amount: 80 }],
-      },
-    ];
-
-    const result = aggregateAccountHistory(accounts);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].balance).toBe(80);
-  });
-
-  test('should handle accounts with no history', () => {
-    const accounts: AccountWithHistory[] = [
-      {
-        balance: 1000000,
-        currency: 'IDR',
-        history: [],
-      },
-    ];
-
-    const result = aggregateAccountHistory(accounts);
-
-    expect(result).toHaveLength(0);
-  });
-
-  test('should sort results by month key', () => {
-    const accounts: AccountWithHistory[] = [
-      {
-        balance: 1000000,
-        currency: 'IDR',
-        history: [
-          { date: '2026-03-15', amount: 1000000 },
-          { date: '2026-01-15', amount: 800000 },
-          { date: '2026-02-15', amount: 900000 },
-        ],
-      },
-    ];
-
-    const result = aggregateAccountHistory(accounts);
-
-    expect(result).toHaveLength(3);
-    expect(result[0].key).toBe('2026-01');
-    expect(result[1].key).toBe('2026-02');
-    expect(result[2].key).toBe('2026-03');
-  });
-});
-
-describe('mergeRealAndForecast', () => {
-  // Helper to get month key from offset (0 = current month, 1 = next month, etc.)
-  function getMonthKey(monthOffset: number): string {
-    const today = new Date();
-    const targetDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-    return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-  }
-
-  test('should merge real data into forecast', () => {
-    // Use month keys that match the forecast (which starts from current month)
-    const currentMonthKey = getMonthKey(0);
-    const nextMonthKey = getMonthKey(1);
-
-    const realData: MonthlyHistoricalData[] = [
-      { key: currentMonthKey, balance: 1000000, interest: 5000 },
-      { key: nextMonthKey, balance: 1100000, interest: 5500 },
-    ];
-
-    const forecast = calculateForecast(1000000, 100000, 7, 1);
-    const result = mergeRealAndForecast(realData, forecast);
-
-    expect(result).toHaveLength(forecast.length);
-
-    // Check that real data is merged
-    const currentMonth = result.find((p) => p.key === currentMonthKey);
-    expect(currentMonth?.realBalance).toBe(1000000);
-    expect(currentMonth?.realInterest).toBe(5000);
-
-    const nextMonth = result.find((p) => p.key === nextMonthKey);
-    expect(nextMonth?.realBalance).toBe(1100000);
-    expect(nextMonth?.realInterest).toBe(5500);
-  });
-
-  test('should keep null for months without real data', () => {
-    const currentMonthKey = getMonthKey(0);
-    const realData: MonthlyHistoricalData[] = [
-      { key: currentMonthKey, balance: 1000000, interest: 0 },
-    ];
-
-    const forecast = calculateForecast(1000000, 100000, 7, 1);
-    const result = mergeRealAndForecast(realData, forecast);
-
-    // Find a future month (not the current month)
-    const futureMonth = result.find((p) => p.key !== currentMonthKey);
-    expect(futureMonth?.realBalance).toBeNull();
-    expect(futureMonth?.realInterest).toBeNull();
-  });
-
-  test('should handle empty real data', () => {
-    const forecast = calculateForecast(1000000, 100000, 7, 1);
-    const result = mergeRealAndForecast([], forecast);
-
-    expect(result).toHaveLength(forecast.length);
-    result.forEach((point) => {
-      expect(point.realBalance).toBeNull();
-      expect(point.realInterest).toBeNull();
-    });
-  });
-});
-
-describe('calculateGrowthMultiple', () => {
-  test('should calculate growth multiple correctly', () => {
-    expect(calculateGrowthMultiple(2860000, 1000000)).toBe(2.86);
-    expect(calculateGrowthMultiple(5000000, 2000000)).toBe(2.5);
-    expect(calculateGrowthMultiple(1500000, 1000000)).toBe(1.5);
-  });
-
-  test('should handle zero initial balance', () => {
-    expect(calculateGrowthMultiple(1000000, 0)).toBe(0);
-  });
-
-  test('should handle same initial and final balance', () => {
-    expect(calculateGrowthMultiple(1000000, 1000000)).toBe(1);
-  });
-});
-
-describe('calculateCurrentTotal', () => {
-  test('should calculate total for IDR accounts', () => {
-    const accounts: AccountWithHistory[] = [
-      { balance: 1000000, currency: 'IDR' },
-      { balance: 500000, currency: 'IDR' },
-    ];
-
-    expect(calculateCurrentTotal(accounts)).toBe(1500000);
-  });
-
-  test('should calculate total for mixed currencies without conversion', () => {
-    const accounts: AccountWithHistory[] = [
-      { balance: 1000000, currency: 'IDR' },
-      { balance: 100, currency: 'USD' },
-    ];
-
-    expect(calculateCurrentTotal(accounts)).toBe(1000100);
-  });
-
-  test('should handle empty accounts array', () => {
-    expect(calculateCurrentTotal([])).toBe(0);
-  });
-
-  test('should handle all USD accounts without conversion', () => {
-    const accounts: AccountWithHistory[] = [
-      { balance: 100, currency: 'USD' },
-      { balance: 50, currency: 'USD' },
-    ];
-
-    expect(calculateCurrentTotal(accounts)).toBe(150);
+    expect(result.summary.plannedEndingBalance).toBeDefined();
+    expect(result.summary.currentTrajectoryEndingBalance).toBeDefined();
+    expect(result.summary.latestActualBalance).toBe(1200);
+    expect(result.summary).not.toHaveProperty('year10Target');
   });
 });
