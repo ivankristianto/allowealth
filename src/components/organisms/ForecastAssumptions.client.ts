@@ -12,6 +12,7 @@ let controller: AbortController | null = null;
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const requestControllers = new Map<string, AbortController>();
 const formatterHandles = new Map<string, AmountFormatterHandle>();
+const inputVersions = new Map<string, number>();
 
 function getAssumptionsId(container: HTMLElement): string {
   return container.dataset.forecastAssumptionsId || 'forecast-assumptions';
@@ -63,7 +64,11 @@ function validateAssumptions(monthlyTopup: number, annualRate: number): string |
   return null;
 }
 
-async function saveForecastAssumptions(container: HTMLElement, currency: Currency): Promise<void> {
+async function saveForecastAssumptions(
+  container: HTMLElement,
+  currency: Currency,
+  inputVersion: number
+): Promise<void> {
   const topupInput = container.querySelector<HTMLInputElement>(
     'input[name="forecastMonthlyTopup"]'
   );
@@ -82,6 +87,8 @@ async function saveForecastAssumptions(container: HTMLElement, currency: Currenc
   }
 
   const assumptionsId = getAssumptionsId(container);
+  const isLatestVersion = () => inputVersions.get(assumptionsId) === inputVersion;
+
   requestControllers.get(assumptionsId)?.abort();
 
   const requestController = new AbortController();
@@ -109,10 +116,18 @@ async function saveForecastAssumptions(container: HTMLElement, currency: Currenc
       throw new Error(result.error?.message || 'Failed to save forecast assumptions.');
     }
 
+    if (!isLatestVersion()) {
+      return;
+    }
+
     setInlineError(container);
     setStatus(container, 'saved');
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
+      return;
+    }
+
+    if (!isLatestVersion()) {
       return;
     }
 
@@ -150,13 +165,21 @@ function initForecastAssumptions(): void {
     formatterHandles.set(assumptionsId, attachAmountFormatter(topupInput, currency));
 
     const scheduleSave = () => {
+      requestControllers.get(assumptionsId)?.abort();
+
+      const nextVersion = (inputVersions.get(assumptionsId) ?? 0) + 1;
+      inputVersions.set(assumptionsId, nextVersion);
+
+      setInlineError(container);
+      setStatus(container, 'idle');
+
       const existingTimer = debounceTimers.get(assumptionsId);
       if (existingTimer) {
         clearTimeout(existingTimer);
       }
 
       const timer = setTimeout(() => {
-        void saveForecastAssumptions(container, currency);
+        void saveForecastAssumptions(container, currency, nextVersion);
       }, DEBOUNCE_MS);
 
       debounceTimers.set(assumptionsId, timer);
@@ -167,6 +190,7 @@ function initForecastAssumptions(): void {
 
     setInlineError(container);
     setStatus(container, 'idle');
+    inputVersions.set(assumptionsId, 0);
   });
 }
 
@@ -182,6 +206,8 @@ function cleanupForecastAssumptions(): void {
 
   formatterHandles.forEach((handle) => handle.cleanup());
   formatterHandles.clear();
+
+  inputVersions.clear();
 }
 
 export { initForecastAssumptions, cleanupForecastAssumptions };

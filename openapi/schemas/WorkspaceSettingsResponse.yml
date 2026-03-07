@@ -24,7 +24,8 @@ WorkspaceSettingsResponse:
               secondaryCurrency: "USD"
               weekStart: "monday"
               compactNumbers: true
-              monthlyIncome: '{"IDR":"15000000"}'
+              monthlyIncome:
+                IDR: "15000000"
               forecastMonthlyTopup: 5000000
               forecastAnnualRate: 7
           properties:

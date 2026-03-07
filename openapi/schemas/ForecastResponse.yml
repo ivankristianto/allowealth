@@ -116,6 +116,8 @@ properties:
               example: 54000
             actualNetSavingsTotal:
               type: number
+              nullable: true
+              description: Sum of actual net savings for months with recorded actual data in that year.
               example: 600000
             months:
               type: array

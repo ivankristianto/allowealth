@@ -17,6 +17,28 @@ const currencySchema = z.enum(AVAILABLE_CURRENCIES);
 const MAX_FORECAST_MONTHLY_TOPUP = 1_000_000_000_000;
 const MAX_FORECAST_ANNUAL_RATE = 100;
 
+function parseMonthlyIncome(value: string): Record<string, string> {
+  if (!value) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[0] === 'string' && typeof entry[1] === 'string'
+      )
+    );
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Schema for PUT request body - workspace settings update
  */
@@ -65,7 +87,7 @@ export const GET: APIRoute = async (context) => {
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
-        monthlyIncome: settings.monthlyIncome,
+        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
       },
@@ -169,7 +191,7 @@ export const PUT: APIRoute = async (context) => {
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
         compactNumbers: settings.compactNumbers,
-        monthlyIncome: settings.monthlyIncome,
+        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
       },

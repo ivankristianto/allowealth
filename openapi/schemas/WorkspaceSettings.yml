@@ -33,9 +33,13 @@ WorkspaceSettings:
       description: Whether to show compact number formatting (e.g., 1.5M instead of 1,500,000)
       example: true
     monthlyIncome:
-      type: string
-      description: JSON-encoded map of currency code to monthly income amount strings.
-      example: '{"IDR":"15000000"}'
+      type: object
+      description: Map of currency code to monthly income amount strings.
+      additionalProperties:
+        type: string
+        pattern: '^\d+(\.\d{1,2})?$'
+      example:
+        IDR: "15000000"
     forecastMonthlyTopup:
       type: number
       description: Saved monthly contribution used by the forecast page.

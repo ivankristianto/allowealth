@@ -89,6 +89,28 @@ function calculateTrailingAverageNetSavings(
   return roundCurrency(totalNetSavings.dividedBy(trailingWindow.length));
 }
 
+function normalizeActualNetSavings(
+  actualNetSavings: ForecastRealityCheckInput['actualNetSavings'],
+  startKey: string,
+  endKey: string
+): ForecastRealityCheckInput['actualNetSavings'] {
+  const actualNetSavingsMap = new Map(actualNetSavings.map((point) => [point.key, point]));
+
+  return createMonthRange(startKey, endKey).map((key) => {
+    const point = actualNetSavingsMap.get(key);
+    if (point) {
+      return point;
+    }
+
+    return {
+      key,
+      income: 0,
+      expenses: 0,
+      netSavings: 0,
+    };
+  });
+}
+
 /**
  * Calculate forecast data points for wealth trajectory
  *
@@ -156,18 +178,28 @@ export function aggregateAccountHistory(accounts: AccountWithHistory[]): Monthly
   const monthlyTotals: Record<string, { balance: number; interest: number }> = {};
 
   getForecastAccounts(accounts).forEach((account) => {
+    const latestHistoryByMonth = new Map<string, { date: Date; amount: number }>();
+
     account.history?.forEach((point) => {
       const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
       const key = toMonthKey(date);
+      const existingPoint = latestHistoryByMonth.get(key);
+
+      if (!existingPoint || date.getTime() >= existingPoint.date.getTime()) {
+        latestHistoryByMonth.set(key, { date, amount: point.amount });
+      }
+    });
+
+    latestHistoryByMonth.forEach((point, key) => {
+      const { amount } = point;
 
       if (!monthlyTotals[key]) {
         monthlyTotals[key] = { balance: 0, interest: 0 };
       }
 
-      // Accumulate balance from all accounts for this month
-      // Interest calculation from historical data is complex, so we set it to 0
-      monthlyTotals[key].balance += point.amount;
+      // Accumulate the latest month-end balance from each account.
       monthlyTotals[key].interest = 0;
+      monthlyTotals[key].balance += amount;
     });
   });
 
@@ -289,10 +321,16 @@ export function groupForecastTimelineByYear(
         (sum, point) => new Decimal(sum).plus(point.forecastInterest ?? 0),
         new Decimal(0)
       );
-      const actualNetSavingsTotal = months.reduce(
-        (sum, point) => new Decimal(sum).plus(point.actualNetSavings ?? 0),
-        new Decimal(0)
-      );
+      const monthsWithActualNetSavings = months.filter((point) => point.actualNetSavings !== null);
+      const actualNetSavingsTotal =
+        monthsWithActualNetSavings.length === 0
+          ? null
+          : roundCurrency(
+              monthsWithActualNetSavings.reduce(
+                (sum, point) => new Decimal(sum).plus(point.actualNetSavings ?? 0),
+                new Decimal(0)
+              )
+            );
 
       return {
         year,
@@ -301,7 +339,7 @@ export function groupForecastTimelineByYear(
         actualEndingBalance,
         currentTrajectoryEndingBalance,
         forecastInterestTotal: roundCurrency(forecastInterestTotal),
-        actualNetSavingsTotal: roundCurrency(actualNetSavingsTotal),
+        actualNetSavingsTotal,
         months,
       };
     });
@@ -339,14 +377,21 @@ export function buildForecastRealityCheck(
   const earliestActualKey = actualBalanceTimeline[0].key;
   const latestActualKey = actualBalanceTimeline[actualBalanceTimeline.length - 1].key;
   const latestActualBalance = actualBalanceTimeline[actualBalanceTimeline.length - 1].balance;
+  const normalizedActualNetSavings = normalizeActualNetSavings(
+    actualNetSavings,
+    earliestActualKey,
+    latestActualKey
+  );
   const endKey = toMonthKey(addMonths(fromMonthKey(latestActualKey), monthsForward));
   const monthKeys = createMonthRange(earliestActualKey, endKey);
   const actualBalanceMap = new Map(
     actualBalanceTimeline.map((point) => [point.key, point.balance])
   );
-  const actualNetSavingsMap = new Map(actualNetSavings.map((point) => [point.key, point]));
+  const actualNetSavingsMap = new Map(
+    normalizedActualNetSavings.map((point) => [point.key, point])
+  );
   const trailingAverageNetSavings = calculateTrailingAverageNetSavings(
-    actualNetSavings,
+    normalizedActualNetSavings,
     latestActualKey
   );
   const monthlyRate = new Decimal(annualRate).dividedBy(100).dividedBy(12);

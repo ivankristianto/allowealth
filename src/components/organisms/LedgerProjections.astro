@@ -31,7 +31,11 @@ function formatValue(value: number | null, valueCurrency: Currency): string {
   return value === null ? '—' : formatCurrencyCompact(value, valueCurrency);
 }
 
-function formatSignedValue(value: number, valueCurrency: Currency): string {
+function formatSignedValue(value: number | null, valueCurrency: Currency): string {
+  if (value === null) {
+    return '—';
+  }
+
   const prefix = value > 0 ? '+' : '';
   return `${prefix}${formatCurrencyCompact(value, valueCurrency)}`;
 }

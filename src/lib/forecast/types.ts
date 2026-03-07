@@ -148,7 +148,7 @@ export interface ForecastYearBreakdownRow {
   actualEndingBalance: number | null;
   currentTrajectoryEndingBalance: number | null;
   forecastInterestTotal: number;
-  actualNetSavingsTotal: number;
+  actualNetSavingsTotal: number | null;
   months: ForecastTimelinePoint[];
 }
 

@@ -30,6 +30,10 @@ const {
 } = Astro.props;
 
 const chartId = `forecast-monthly-gains-chart-${Math.random().toString(36).slice(2, 11)}`;
+const hasChartWindow = chartWindow.endIndex >= chartWindow.startIndex && chartWindow.endIndex >= 0;
+const visibleTimeline = hasChartWindow
+  ? timeline.slice(chartWindow.startIndex, chartWindow.endIndex + 1)
+  : timeline;
 const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
   .replace(/</g, '\\u003c')
   .replace(/>/g, '\\u003e')
@@ -67,7 +71,7 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
             {error}
           </p>
         </div>
-      ) : timeline.length === 0 ? (
+      ) : visibleTimeline.length === 0 ? (
         <div class="p-12 text-center">
           <p class="text-base-content/60 font-medium">No monthly gains data available.</p>
         </div>
@@ -88,7 +92,7 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
     }
 
     {
-      !loading && !error && timeline.length > 0 && (
+      !loading && !error && visibleTimeline.length > 0 && (
         <table class="sr-only" aria-label="Monthly gains data table">
           <thead>
             <tr>
@@ -98,11 +102,11 @@ const serializedChartPayload = JSON.stringify({ timeline, chartWindow })
             </tr>
           </thead>
           <tbody>
-            {timeline.map((point) => (
+            {visibleTimeline.map((point) => (
               <tr>
                 <td>{point.dateLabel}</td>
                 <td>{point.forecastInterest ?? 0}</td>
-                <td>{point.actualNetSavings ?? 0}</td>
+                <td>{point.actualNetSavings === null ? '—' : point.actualNetSavings}</td>
               </tr>
             ))}
           </tbody>

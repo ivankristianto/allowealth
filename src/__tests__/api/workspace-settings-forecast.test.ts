@@ -45,7 +45,7 @@ describe('workspace settings forecast API', () => {
     secondaryCurrency: '',
     weekStart: 'monday' as const,
     compactNumbers: true,
-    monthlyIncome: '',
+    monthlyIncome: '{"IDR":"15000000"}',
     forecastMonthlyTopup: 9000000,
     forecastAnnualRate: 9.5,
   };
@@ -75,6 +75,7 @@ describe('workspace settings forecast API', () => {
     expect(workspaceMetaService.setForecastAnnualRate).toHaveBeenCalledWith('workspace-1', 9.5);
 
     const payload = await response.json();
+    expect(payload.data.settings.monthlyIncome).toEqual({ IDR: '15000000' });
     expect(payload.data.settings.forecastMonthlyTopup).toBe(9000000);
     expect(payload.data.settings.forecastAnnualRate).toBe(9.5);
   });
@@ -90,6 +91,7 @@ describe('workspace settings forecast API', () => {
     expect(response.status).toBe(200);
 
     const payload = await response.json();
+    expect(payload.data.settings.monthlyIncome).toEqual({ IDR: '15000000' });
     expect(payload.data.settings.forecastMonthlyTopup).toBe(9000000);
     expect(payload.data.settings.forecastAnnualRate).toBe(9.5);
   });

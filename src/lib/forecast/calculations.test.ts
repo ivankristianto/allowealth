@@ -32,6 +32,7 @@ type ForecastCalculationsWithRealityCheck = typeof calculations & {
     yearlyBreakdown: Array<{
       year: number;
       yearLabel: string;
+      actualNetSavingsTotal: number | null;
       months: Array<{ key: string }>;
     }>;
     summary: Record<string, unknown>;
@@ -80,6 +81,37 @@ function buildRealityCheckResult() {
 }
 
 describe('buildForecastRealityCheck', () => {
+  test('uses the latest snapshot per account when multiple balance snapshots exist in the same month', () => {
+    expect(typeof calculations.aggregateAccountHistory).toBe('function');
+
+    const actualBalances = calculations.aggregateAccountHistory([
+      {
+        balance: 1000,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [
+          { date: '2024-01-01', amount: 900 },
+          { date: '2024-01-31', amount: 1000 },
+          { date: '2024-02-15', amount: 1100 },
+        ],
+      },
+      {
+        balance: 500,
+        currency: 'IDR',
+        accountClass: 'asset',
+        history: [
+          { date: '2024-01-20', amount: 500 },
+          { date: '2024-02-20', amount: 550 },
+        ],
+      },
+    ] as AccountWithHistory[]);
+
+    expect(actualBalances).toEqual([
+      { key: '2024-01', balance: 1500, interest: 0 },
+      { key: '2024-02', balance: 1650, interest: 0 },
+    ]);
+  });
+
   test('starts the timeline at the earliest historical balance month', () => {
     const result = buildRealityCheckResult();
 
@@ -118,6 +150,23 @@ describe('buildForecastRealityCheck', () => {
     expect(result.summary.trailingAverageNetSavings).toBe(200);
   });
 
+  test('fills missing actual net savings months with zeros before computing trailing averages', () => {
+    const result = forecastCalculations.buildForecastRealityCheck({
+      ...createRealityCheckInput(),
+      actualNetSavings: [
+        { key: '2024-01', income: 800, expenses: 300, netSavings: 500 },
+        { key: '2024-03', income: 700, expenses: 400, netSavings: 300 },
+      ],
+    });
+
+    const february = result.timeline.find((point) => point.key === '2024-02');
+    const april = result.timeline.find((point) => point.key === '2024-04');
+
+    expect(february?.actualNetSavings).toBe(0);
+    expect(result.summary.trailingAverageNetSavings).toBe(267);
+    expect(april?.currentTrajectoryBalance).toBe(1479);
+  });
+
   test('clamps the focused chart window to 12 months back and 24 months forward from the latest actual month', () => {
     const result = buildRealityCheckResult();
 
@@ -139,6 +188,13 @@ describe('buildForecastRealityCheck', () => {
     expect(result.yearlyBreakdown[0]?.months[0]?.key).toBe('2024-01');
     expect(result.yearlyBreakdown[1]?.months).toHaveLength(12);
     expect(result.yearlyBreakdown[2]?.months).toHaveLength(3);
+  });
+
+  test('keeps yearly actual net savings totals null when a year has no actual months', () => {
+    const result = buildRealityCheckResult();
+
+    expect(result.yearlyBreakdown[1]?.actualNetSavingsTotal).toBeNull();
+    expect(result.yearlyBreakdown[2]?.actualNetSavingsTotal).toBeNull();
   });
 
   test('uses fixed-horizon summary fields instead of year10Target naming', () => {
