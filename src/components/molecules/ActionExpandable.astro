@@ -16,7 +16,7 @@
  * </ActionExpandable>
  */
 
-import { ChevronDown } from '@lucide/astro';
+import { ChevronRight } from '@lucide/astro';
 
 export interface Props {
   className?: string;
@@ -68,7 +68,7 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
         <span class="action-expandable__label" data-toggle-label>
           {expandLabel}
         </span>
-        <ChevronDown
+        <ChevronRight
           size={16}
           class="action-expandable__chevron stroke-current"
           data-toggle-chevron
@@ -147,7 +147,7 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
   }
 
   .action-expandable__toggle.is-expanded .action-expandable__chevron {
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
 
   /* Hover state */
