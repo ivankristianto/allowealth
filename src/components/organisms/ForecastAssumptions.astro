@@ -1,0 +1,91 @@
+---
+import Card from '@/components/atoms/Card.astro';
+import AmountInput from '@/components/atoms/AmountInput.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  monthlyTopup: number;
+  annualRate: number;
+  currency?: Currency;
+  className?: string;
+}
+
+const { monthlyTopup, annualRate, currency = 'IDR', className = '' } = Astro.props;
+const assumptionsId = `forecast-assumptions-${Math.random().toString(36).slice(2, 11)}`;
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Forecast assumptions"
+>
+  <div
+    class="space-y-6"
+    data-forecast-assumptions
+    data-forecast-assumptions-id={assumptionsId}
+    data-currency={currency}
+  >
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div class="space-y-2">
+        <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
+          Forecast Assumptions
+        </h2>
+        <p class="text-sm md:text-base text-base-content/60">
+          These values are saved to workspace settings and used the next time this forecast loads.
+        </p>
+      </div>
+
+      <p
+        data-forecast-assumptions-status
+        role="status"
+        aria-live="polite"
+        class="text-sm font-medium text-base-content/60"
+        data-idle-label="Values are saved to workspace settings"
+        data-saving-label="Saving..."
+        data-saved-label="Saved"
+        data-error-label="Save failed"
+      >
+        Values are saved to workspace settings
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+      <div class="space-y-2">
+        <label for={`${assumptionsId}-topup`} class="block">
+          <StatLabel size="sm" color="neutral">Monthly Top-Up ({currency})</StatLabel>
+        </label>
+        <AmountInput
+          id={`${assumptionsId}-topup`}
+          name="forecastMonthlyTopup"
+          currency={currency}
+          className="input-bordered bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
+          value={monthlyTopup}
+          ariaLabel={`Monthly top-up amount in ${currency}`}
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for={`${assumptionsId}-apy`} class="block">
+          <StatLabel size="sm" color="neutral">Expected APY (%)</StatLabel>
+        </label>
+        <input
+          type="number"
+          id={`${assumptionsId}-apy`}
+          name="forecastAnnualRate"
+          class="input input-bordered w-full bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
+          value={annualRate}
+          step="0.1"
+          min="0"
+          max="100"
+          aria-label="Expected annual percentage yield"
+        />
+      </div>
+    </div>
+
+    <p data-forecast-assumptions-error class="hidden text-sm font-medium text-error" role="alert">
+    </p>
+  </div>
+</Card>

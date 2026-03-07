@@ -2,9 +2,8 @@
 /**
  * WealthTrajectory Component
  *
- * Displays wealth trajectory forecast with interactive area chart showing
- * forecasted balance vs real historical data. Includes input controls for
- * monthly top-up and expected APY, plus summary statistics cards.
+ * Displays wealth trajectory forecast with an area chart showing
+ * forecasted balance vs real historical data, plus summary statistics cards.
  *
  * @param {ForecastDataPoint[]} data - Array of monthly forecast data points
  * @param {object} summary - Summary statistics (year10Target, totalInterest, growthMultiple)
@@ -17,7 +16,6 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
-import AmountInput from '@/components/atoms/AmountInput.astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
 import type { ForecastDataPoint } from '@/lib/forecast';
@@ -67,55 +65,14 @@ const serializedInput = JSON.stringify(input);
   aria-label="Wealth trajectory forecast"
 >
   <div class="space-y-6 md:space-y-8">
-    {/* Header with title and input controls */}
-    <div
-      class="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-6 lg:gap-8"
-    >
-      <div class="flex-shrink-0">
-        <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
-          Wealth Trajectory
-        </h2>
-        <p class="text-sm text-base-content/60 mt-2 font-medium">
-          Predicting global account growth over the next decade.
-        </p>
-      </div>
-
-      {/* Input Controls */}
-      <div
-        class="flex flex-wrap gap-4 md:gap-6 items-end w-full lg:w-auto"
-        data-wealth-trajectory-controls
-      >
-        <div class="flex-1 min-w-[140px] space-y-2">
-          <label for={`${chartId}-topup`} class="block">
-            <StatLabel size="sm" color="neutral"> MONTHLY TOP-UP ({currency}) </StatLabel>
-          </label>
-          <AmountInput
-            id={`${chartId}-topup`}
-            name="monthlyTopup"
-            currency={currency}
-            className="input-bordered bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
-            value={input.monthlyTopup}
-            ariaLabel={`Monthly top-up amount in ${currency}`}
-          />
-        </div>
-
-        <div class="flex-1 min-w-[120px] space-y-2">
-          <label for={`${chartId}-apy`} class="block">
-            <StatLabel size="sm" color="neutral"> EXPECTED APY (%) </StatLabel>
-          </label>
-          <input
-            type="number"
-            id={`${chartId}-apy`}
-            name="annualRate"
-            class="input input-bordered w-full bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
-            value={input.annualRate}
-            step="0.1"
-            min="0"
-            max="100"
-            aria-label="Expected annual percentage yield"
-          />
-        </div>
-      </div>
+    {/* Header */}
+    <div class="flex-shrink-0">
+      <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
+        Wealth Trajectory
+      </h2>
+      <p class="text-sm text-base-content/60 mt-2 font-medium">
+        Predicting global account growth over the next decade.
+      </p>
     </div>
 
     {/* Loading State */}
