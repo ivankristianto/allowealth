@@ -93,6 +93,9 @@ export const PUT: APIRoute = async (context) => {
       updateData.installment_label = payload.installment_label;
     if (payload.starting_occurrence_number !== undefined)
       updateData.starting_occurrence_number = Number(payload.starting_occurrence_number);
+    if (payload.frequency !== undefined) updateData.frequency = payload.frequency;
+    if (payload.interval_count !== undefined)
+      updateData.interval_count = Number(payload.interval_count);
     if (payload.description !== undefined) updateData.description = payload.description;
     const updated = await recurringTemplateService.update(
       id,
