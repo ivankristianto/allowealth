@@ -2,8 +2,10 @@
 /**
  * ActionExpandable Component
  *
- * Expand/collapse pattern for action bars. Shows primary actions always,
- * secondary actions in an expandable section with smooth animation.
+ * Horizontal expand/collapse pattern for action bars. Shows primary actions always,
+ * secondary actions expand horizontally inline with smooth animation.
+ *
+ * The "More" button animates: chevron rotates 180deg, button scales slightly on active
  *
  * @example
  * <ActionExpandable>
@@ -47,37 +49,36 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
         </div>
       )}
 
-      {/* Expandable section */}
+      {/* Expandable section - animates horizontally */}
       <div id={expandId} class="action-expandable__content" data-expandable-content>
         <div class="action-expandable__content-inner">
           <slot name="expandable" />
         </div>
       </div>
 
-      {/* Toggle button */}
+      {/* Toggle button with animation */}
       <button
         type="button"
         class="action-expandable__toggle btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
         data-expandable-toggle
         data-collapse-label={collapseLabel}
         aria-expanded="false"
-        aria-controls={hasExpandable ? expandId : undefined}
+        aria-controls={expandId}
       >
         <span class="action-expandable__label" data-toggle-label>
           {expandLabel}
         </span>
         <ChevronDown
           size={16}
-          class="action-expandable__chevron stroke-current transition-transform duration-300"
+          class="action-expandable__chevron stroke-current"
           data-toggle-chevron
           aria-hidden="true"
         />
       </button>
     </div>
-  ) : (
-    /* No expandable content - just render visible slot */
-    hasAlwaysVisible && <slot name="always-visible" />
-  )
+  ) : hasAlwaysVisible ? (
+    <slot name="always-visible" />
+  ) : null
 }
 
 <style>
@@ -105,22 +106,23 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
     }
   }
 
+  /* Horizontal expand animation using grid */
   .action-expandable__content {
     display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    grid-template-columns: 0fr;
+    transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }
 
   .action-expandable__content.is-expanded {
-    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
   }
 
   .action-expandable__content-inner {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    min-height: 0;
+    min-width: 0;
   }
 
   @media (min-width: 768px) {
@@ -129,8 +131,37 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
     }
   }
 
+  /* More button animations */
+  .action-expandable__toggle {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .action-expandable__chevron {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Expanded state for toggle button */
+  .action-expandable__toggle.is-expanded {
+    background-color: var(--color-base-200, hsl(var(--b2)));
+    transform: scale(0.98);
+  }
+
   .action-expandable__toggle.is-expanded .action-expandable__chevron {
     transform: rotate(180deg);
+  }
+
+  /* Hover state */
+  .action-expandable__toggle:hover {
+    background-color: var(--color-base-200, hsl(var(--b2)));
+  }
+
+  /* Active/press state */
+  .action-expandable__toggle:active {
+    transform: scale(0.95);
+  }
+
+  .action-expandable__toggle.is-expanded:active {
+    transform: scale(0.96);
   }
 </style>
 
