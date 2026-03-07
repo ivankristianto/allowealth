@@ -8,6 +8,13 @@
       "when": 1772417127774,
       "tag": "0000_perpetual_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1772866610029,
+      "tag": "0001_lucky_sandman",
+      "breakpoints": true
     }
   ]
 }
