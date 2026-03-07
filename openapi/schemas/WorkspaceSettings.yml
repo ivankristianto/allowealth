@@ -5,7 +5,6 @@ WorkspaceSettings:
     - currency
     - secondaryCurrency
     - weekStart
-    - compactNumbers
   properties:
     currency:
       type: string
@@ -25,7 +24,3 @@ WorkspaceSettings:
       enum: [sunday, monday]
       description: First day of the week for calendar views
       example: "monday"
-    compactNumbers:
-      type: boolean
-      description: Whether to show compact number formatting (e.g., 1.5M instead of 1,500,000)
-      example: true

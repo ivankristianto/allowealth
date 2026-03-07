@@ -23,7 +23,6 @@ const updateWorkspaceSettingsSchema = z.object({
   currency: currencySchema.optional(),
   secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
   weekStart: z.enum(['monday', 'sunday']).optional(),
-  compactNumbers: z.boolean().optional(),
   monthlyIncome: z
     .record(z.string(), z.string().regex(/^\d+(\.\d{1,2})?$/))
     .refine(
@@ -60,7 +59,6 @@ export const GET: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        compactNumbers: settings.compactNumbers,
         monthlyIncome: settings.monthlyIncome,
       },
     });
@@ -80,7 +78,7 @@ export const GET: APIRoute = async (context) => {
  * PUT /api/workspace/settings
  *
  * Updates workspace settings. Admin only for name changes.
- * All members can update preferences (currency, weekStart, compactNumbers).
+ * All members can update preferences (currency, secondaryCurrency, weekStart, monthlyIncome).
  */
 export const PUT: APIRoute = async (context) => {
   try {
@@ -92,8 +90,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, currency, secondaryCurrency, weekStart, compactNumbers, monthlyIncome } =
-      validation.data;
+    const { name, currency, secondaryCurrency, weekStart, monthlyIncome } = validation.data;
 
     // Name changes require admin role
     if (name !== undefined && auth.role !== 'admin') {
@@ -121,9 +118,6 @@ export const PUT: APIRoute = async (context) => {
     if (weekStart !== undefined) {
       await workspaceMetaService.setWeekStart(auth.workspaceId, weekStart);
     }
-    if (compactNumbers !== undefined) {
-      await workspaceMetaService.setCompactNumbers(auth.workspaceId, compactNumbers);
-    }
     if (monthlyIncome !== undefined) {
       await workspaceMetaService.setMonthlyIncome(auth.workspaceId, monthlyIncome);
     }
@@ -148,7 +142,6 @@ export const PUT: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        compactNumbers: settings.compactNumbers,
         monthlyIncome: settings.monthlyIncome,
       },
     });

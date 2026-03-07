@@ -38,10 +38,6 @@ export async function seedWorkspace(): Promise<string> {
       key: WORKSPACE_META_KEYS.WEEK_START,
       value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START],
     },
-    {
-      key: WORKSPACE_META_KEYS.COMPACT_NUMBERS,
-      value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
-    },
     // Keep demo workspace onboarding-complete for E2E and local demos.
     { key: WORKSPACE_META_KEYS.MONTHLY_INCOME, value: '30000000' },
   ] as const;

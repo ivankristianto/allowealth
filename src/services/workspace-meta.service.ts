@@ -91,12 +91,6 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
       }
       break;
 
-    case WORKSPACE_META_KEYS.COMPACT_NUMBERS:
-      if (value !== 'true' && value !== 'false') {
-        throw new Error('Compact numbers must be "true" or "false"');
-      }
-      break;
-
     case WORKSPACE_META_KEYS.MONTHLY_INCOME:
       // JSON string of { currency: amount } pairs, e.g. {"IDR":"10000000"}
       // Empty string is valid (unset)
@@ -502,27 +496,6 @@ export class WorkspaceMetaService {
   }
 
   /**
-   * Get whether to display compact numbers
-   *
-   * @param workspaceId - Workspace ID
-   * @returns Boolean (default true)
-   */
-  async getCompactNumbers(workspaceId: string): Promise<boolean> {
-    const value = await this.get(workspaceId, WORKSPACE_META_KEYS.COMPACT_NUMBERS);
-    return metaValueToBoolean(value, DEFAULT_WORKSPACE_SETTINGS.compactNumbers);
-  }
-
-  /**
-   * Set whether to display compact numbers
-   *
-   * @param workspaceId - Workspace ID
-   * @param value - Boolean
-   */
-  async setCompactNumbers(workspaceId: string, value: boolean): Promise<void> {
-    await this.set(workspaceId, WORKSPACE_META_KEYS.COMPACT_NUMBERS, booleanToMetaValue(value));
-  }
-
-  /**
    * Get workspace's monthly income as a currency-to-amount map
    *
    * @param workspaceId - Workspace ID
@@ -597,10 +570,6 @@ export class WorkspaceMetaService {
       currency,
       secondaryCurrency,
       weekStart,
-      compactNumbers: metaValueToBoolean(
-        metaAll[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
-        DEFAULT_WORKSPACE_SETTINGS.compactNumbers
-      ),
       monthlyIncome: metaAll[WORKSPACE_META_KEYS.MONTHLY_INCOME] ?? '',
     };
   }

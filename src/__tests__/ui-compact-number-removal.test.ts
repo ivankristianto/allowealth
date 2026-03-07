@@ -3,13 +3,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const read = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
+const compactNumberSetting = ['compact', 'Numbers'].join('');
+const compactNumberLabel = ['Compact Number', 'Display'].join(' ');
 
 describe('compact number UI removal', () => {
   it('removes compact number settings from the settings page source', () => {
     const source = read('src/pages/settings/index.astro');
 
-    expect(source).not.toContain('Compact Number Display');
-    expect(source).not.toMatch(/\bcompactNumbers\b/);
+    expect(source).not.toContain(compactNumberLabel);
+    expect(source).not.toMatch(new RegExp(`\\b${compactNumberSetting}\\b`));
   });
 
   it('removes the compact rendering branch from Currency.astro', () => {

@@ -371,19 +371,19 @@ Root entity for multi-tenant data isolation. All financial data belongs to a wor
 
 #### `workspace_meta`
 
-Flexible key-value storage for workspace settings (currency preferences, display options, etc.).
+Flexible key-value storage for workspace settings (currency preferences, calendar defaults, etc.).
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**: `workspace_id` → `workspaces.id` (cascade delete)
 - **Key Fields**:
-  - `meta_key`: Setting key (e.g., 'currency', 'secondary_currency', 'weekStart', 'compactNumbers')
+  - `meta_key`: Setting key (e.g., 'currency', 'secondary_currency', 'week_start', 'monthly_income')
   - `meta_value`: Setting value (JSON string or simple value)
 - **Unique Constraint**: (`workspace_id`, `meta_key`)
 - **Common Settings**:
   - `currency`: Primary workspace currency (IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR)
   - `secondary_currency`: Optional secondary workspace currency (empty string means disabled)
-  - `weekStart`: Week start day ('sunday' | 'monday')
-  - `compactNumbers`: Whether to show compact numbers (boolean as string)
+  - `week_start`: Week start day ('sunday' | 'monday')
+  - `monthly_income`: Monthly household income by currency
 
 #### `workspace_invitations`
 

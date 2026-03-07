@@ -27,7 +27,3 @@ UpdateWorkspaceSettingsRequest:
       enum: [sunday, monday]
       description: First day of the week for calendar views
       example: "monday"
-    compactNumbers:
-      type: boolean
-      description: Whether to show compact number formatting
-      example: true

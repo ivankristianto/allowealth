@@ -40,11 +40,6 @@ export default defineCommand({
           description: 'Week start day (monday or sunday)',
           default: 'monday',
         },
-        'compact-numbers': {
-          type: 'string',
-          description: 'Compact number formatting (true or false)',
-          default: 'true',
-        },
         'public-url': {
           type: 'string',
           description: 'Base URL for the signup link (overrides PUBLIC_URL env var)',
@@ -88,11 +83,6 @@ export default defineCommand({
         const weekStart =
           (args['week-start'] as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
         await metaService.set(workspace.id, WORKSPACE_META_KEYS.WEEK_START, weekStart);
-
-        const compactNumbers =
-          (args['compact-numbers'] as string) ||
-          WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS];
-        await metaService.set(workspace.id, WORKSPACE_META_KEYS.COMPACT_NUMBERS, compactNumbers);
 
         const currencyLogValue = currency || 'unset (configured in onboarding step 1)';
         console.log(

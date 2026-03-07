@@ -25,7 +25,6 @@ paths:
                     currency: "IDR"
                     secondaryCurrency: "USD"
                     weekStart: "monday"
-                    compactNumbers: true
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '500':
@@ -36,7 +35,7 @@ paths:
       summary: Update workspace settings
       description: |
         Update workspace settings. Only workspace admins can update settings.
-        Available settings: name, currency, secondaryCurrency, weekStart, compactNumbers.
+        Available settings: name, currency, secondaryCurrency, weekStart.
       security:
         - sessionAuth: []
       requestBody:
@@ -61,7 +60,6 @@ paths:
                     currency: "IDR"
                     secondaryCurrency: "USD"
                     weekStart: "monday"
-                    compactNumbers: true
         '400':
           description: Validation error or invalid input
           content:
