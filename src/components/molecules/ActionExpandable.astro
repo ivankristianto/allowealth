@@ -16,7 +16,7 @@
  * </ActionExpandable>
  */
 
-import { ChevronRight } from '@lucide/astro';
+import { ChevronRight, ChevronLeft } from '@lucide/astro';
 
 export interface Props {
   className?: string;
@@ -70,8 +70,14 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
         </span>
         <ChevronRight
           size={16}
-          class="action-expandable__chevron stroke-current"
-          data-toggle-chevron
+          class="action-expandable__chevron action-expandable__chevron--right stroke-current"
+          data-toggle-chevron-right
+          aria-hidden="true"
+        />
+        <ChevronLeft
+          size={16}
+          class="action-expandable__chevron action-expandable__chevron--left stroke-current"
+          data-toggle-chevron-left
           aria-hidden="true"
         />
       </button>
@@ -146,8 +152,17 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
     transform: scale(0.98);
   }
 
-  .action-expandable__toggle.is-expanded .action-expandable__chevron {
-    transform: rotate(90deg);
+  /* Chevron visibility - right when collapsed, left when expanded */
+  .action-expandable__chevron--left {
+    display: none;
+  }
+
+  .action-expandable__toggle.is-expanded .action-expandable__chevron--right {
+    display: none;
+  }
+
+  .action-expandable__toggle.is-expanded .action-expandable__chevron--left {
+    display: block;
   }
 
   /* Hover state */
