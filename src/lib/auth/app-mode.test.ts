@@ -2,15 +2,23 @@ import { afterEach, describe, expect, it } from 'bun:test';
 import { APP_MODES, getAppMode, isAppOnly } from './app-mode';
 import { setTestEnv } from '@/lib/env';
 
+const originalAppMode = process.env.APP_MODE;
+
 describe('app mode policy', () => {
   afterEach(() => {
     setTestEnv(null);
+
+    if (originalAppMode === undefined) {
+      delete process.env.APP_MODE;
+      return;
+    }
+
+    process.env.APP_MODE = originalAppMode;
   });
 
   it('defaults to full when APP_MODE is not set', () => {
-    setTestEnv({
-      APP_MODE: undefined,
-    });
+    delete process.env.APP_MODE;
+    setTestEnv({});
 
     expect(getAppMode()).toBe(APP_MODES.FULL);
     expect(isAppOnly()).toBe(false);

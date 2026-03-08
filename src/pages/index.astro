@@ -2,17 +2,15 @@
 /**
  * Landing Page
  *
- * Prerendered homepage in full mode.
- * In app-only mode this route is rendered through middleware and redirects.
+ * Rendered through middleware so APP_MODE can redirect at runtime.
  */
 
-import { APP_MODES, getAppMode } from '@/lib/auth/app-mode';
 import PublicLayout from '@/layouts/PublicLayout.astro';
 import HeroSection from '@/components/molecules/landing/HeroSection.astro';
 import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
 import FeaturesGrid from '@/components/molecules/landing/FeaturesGrid.astro';
 
-export const prerender = getAppMode() !== APP_MODES.APP_ONLY;
+export const prerender = false;
 ---
 
 <PublicLayout title="allowealth - Track Your Wealth">
