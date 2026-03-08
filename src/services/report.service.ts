@@ -1086,7 +1086,7 @@ export class ReportService {
     const { dialect } = getDatabaseConfig();
     return dialect === 'postgresql'
       ? sql<string>`to_char(${column}, 'YYYY-MM')`
-      : sql<string>`strftime('%Y-%m', ${column} / 1000, 'unixepoch')`;
+      : sql<string>`strftime('%Y-%m', ${column}, 'unixepoch')`;
   }
 
   private toMonthKey(date: Date): string {
