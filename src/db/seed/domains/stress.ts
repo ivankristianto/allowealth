@@ -137,7 +137,7 @@ export async function seedStressData(
       incomeCategory: 'Dad Salary',
       incomeBase: 22_000_000,
       incomeDay: 25,
-      preferredAccounts: ['Current Account', 'BCA Credit Card'],
+      preferredAccounts: ['BCA - 2332', 'BCA Credit Card'],
       spendingWeights: [
         {
           category: 'Utility Bills',
@@ -168,7 +168,7 @@ export async function seedStressData(
       incomeCategory: 'Mom Salary',
       incomeBase: 12_500_000,
       incomeDay: 24,
-      preferredAccounts: ['Current Account', 'OVO', 'GoPay'],
+      preferredAccounts: ['BCA - 2332', 'OVO', 'GoPay'],
       spendingWeights: [
         {
           category: 'Food & Groceries',

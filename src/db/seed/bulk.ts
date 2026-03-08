@@ -96,7 +96,7 @@ export async function seedBulkTransactions(
     }
   }
 
-  const largeAmountAccountIds = ['Current Account', 'BCA Credit Card', 'Mandiri Credit Card']
+  const largeAmountAccountIds = ['BCA - 2332', 'BCA Credit Card', 'Mandiri Credit Card']
     .map((n) => accountNameToId.get(n))
     .filter((id): id is string => !!id);
 
@@ -262,10 +262,10 @@ export async function seedBulkTransactions(
   // --- Benchmark transfer transactions ---
   console.log('   Inserting benchmark transfer transactions...');
   const transferPairs = [
-    { from: 'Current Account', to: 'Cash' },
-    { from: 'Current Account', to: 'GoPay' },
-    { from: 'Current Account', to: 'OVO' },
-    { from: 'Cash', to: 'Current Account' },
+    { from: 'BCA - 2332', to: 'Cash' },
+    { from: 'BCA - 2332', to: 'GoPay' },
+    { from: 'BCA - 2332', to: 'OVO' },
+    { from: 'Cash', to: 'BCA - 2332' },
   ];
 
   for (let mi = 0; mi < benchMonths.length && canQueueMoreTransactions(); mi++) {

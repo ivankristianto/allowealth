@@ -58,15 +58,15 @@ const TRANSFER_TEMPLATES = [
   },
   {
     from: CURRENT_ACCOUNT_NAME,
-    to: 'Emergency Savings',
+    to: 'Jenius - 8812',
     amount: [1_500_000, 4_000_000] as [number, number],
     description: 'Emergency Fund Top-up',
   },
   {
     from: CURRENT_ACCOUNT_NAME,
-    to: 'Fixed Deposit - BCA',
-    amount: [2_000_000, 5_000_000] as [number, number],
-    description: 'Fixed Deposit Placement',
+    to: 'BCA Deposit - 9912',
+    amount: [2_500_000, 10_000_000] as [number, number],
+    description: 'Fixed Deposit Addition',
   },
 ];
 
