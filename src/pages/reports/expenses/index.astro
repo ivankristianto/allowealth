@@ -1,0 +1,250 @@
+---
+/**
+ * Expense Report Page
+ *
+ * Detailed expense analysis with:
+ * - Summary metrics (income, expenses, savings, budget health)
+ * - Expense breakdown donut chart + income vs expenses bar chart
+ * - Category spending table with drill-down
+ * - Member spending table
+ *
+ * @see docs/architecture/002-interactive-pages.md
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import ReportSelector from '@/components/molecules/ReportSelector.astro';
+import ReportsSectionNav from '@/components/molecules/ReportsSectionNav.astro';
+import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
+
+import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
+import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
+import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
+
+import { reportService, accountService, workspaceMetaService } from '@/services';
+import type { ExpenseReportData } from '@/services/report.service';
+import { safeParseDecimal } from '@/lib/utils/decimal';
+import { formatMonthYear } from '@/lib/utils/date';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+
+const currentPath = '/reports/expenses';
+
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+
+const url = Astro.url;
+const urlRange = url.searchParams.get('range');
+const urlPeriod = url.searchParams.get('period');
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
+const selectedCurrency =
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
+    : workspaceCurrencyConfig.primary;
+
+const defaultRange: 'monthly' | 'yearly' =
+  urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
+
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
+  const date = new Date(currentYear, currentMonth - 1 - i, 1);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const monthStr = month.toString().padStart(2, '0');
+  return { key: `${year}-${monthStr}`, label: formatMonthYear(date) };
+});
+
+const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
+  const year = currentYear - i;
+  return { key: year.toString(), label: year.toString() };
+});
+
+let defaultPeriod: string;
+if (urlPeriod) {
+  const isMonthlyFormat = /^\d{4}-\d{2}$/.test(urlPeriod);
+  const isYearlyFormat = /^\d{4}$/.test(urlPeriod);
+  if (defaultRange === 'monthly' && isMonthlyFormat) {
+    defaultPeriod = urlPeriod;
+  } else if (defaultRange === 'yearly' && isYearlyFormat) {
+    defaultPeriod = urlPeriod;
+  } else {
+    defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
+  }
+} else {
+  defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
+}
+
+const currency: Currency = selectedCurrency;
+
+let expenseData: ExpenseReportData;
+try {
+  expenseData = await reportService.getExpenseReport(
+    user.workspaceId,
+    defaultPeriod,
+    defaultRange,
+    currency
+  );
+} catch (error) {
+  console.error('Error fetching expense report:', error);
+  return Astro.redirect('/reports?error=failed-to-load');
+}
+
+// Fetch account totals
+let totalAccounts = 0;
+let totalDebt = 0;
+try {
+  const classTotals = await accountService.getTotalByClass(user.workspaceId);
+  for (const row of classTotals) {
+    const total = parseFloat(row.total || '0');
+    if (isNaN(total)) continue;
+    if (row.currency !== currency) continue;
+    if (row.account_class === 'debt') {
+      totalDebt += Math.abs(total);
+    } else {
+      totalAccounts += total;
+    }
+  }
+} catch {
+  // Non-critical
+}
+
+const memberTotals = expenseData.memberSummary.reduce(
+  (acc, row) => ({
+    income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
+    expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
+    count: acc.count + row.transactionCount,
+  }),
+  { income: 0, expenses: 0, count: 0 }
+);
+
+const reportDataForPartials = {
+  totalIncome: expenseData.totalIncome,
+  totalExpenses: expenseData.totalExpenses,
+  netSavings: expenseData.netSavings,
+  budgetHealth: expenseData.budgetHealth,
+  expenseCategories: expenseData.expenseCategories,
+  currency,
+  expenseByCategory: expenseData.expenseByCategory.map((cat) => ({
+    name: cat.name,
+    value: safeParseDecimal(cat.value),
+  })),
+  trendData: expenseData.trendData.map((trend) => ({
+    name: trend.name,
+    income: safeParseDecimal(trend.income),
+    expenses: safeParseDecimal(trend.expenses),
+  })),
+  recurringBreakdown: expenseData.recurringBreakdown
+    ? {
+        recurringTotal: safeParseDecimal(expenseData.recurringBreakdown.recurringTotal),
+        oneTimeTotal: safeParseDecimal(expenseData.recurringBreakdown.oneTimeTotal),
+      }
+    : null,
+  categoryIntelligence: expenseData.categoryIntelligence.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    spent: safeParseDecimal(cat.spent),
+    budgetLimit: cat.budgetLimit ? safeParseDecimal(cat.budgetLimit) : null,
+    icon: cat.icon,
+    color: cat.color,
+  })),
+};
+
+const selectedPeriodLabel =
+  defaultRange === 'monthly'
+    ? monthlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod
+    : yearlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod;
+
+const reportState = { range: defaultRange, period: defaultPeriod, currency };
+---
+
+<ProtectedLayout title="Expense Report" currentPath={currentPath} subtitle={selectedPeriodLabel}>
+  <div slot="header" data-selector-container>
+    <ReportSelector
+      selectedRange={defaultRange}
+      selectedPeriod={defaultPeriod}
+      monthlyPeriods={monthlyPeriods}
+      yearlyPeriods={yearlyPeriods}
+    />
+  </div>
+
+  <div
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+    data-current-currency={currency}
+    data-api-endpoint="/api/reports/expenses"
+  >
+    <ReportsSectionNav activeSection="expenses" state={reportState} />
+
+    <Breadcrumb
+      items={[
+        { label: 'Overview', href: '/reports' },
+        { label: 'Expenses' },
+        {
+          label: 'Member Spending',
+          href: `/reports/members?range=${defaultRange}&period=${defaultPeriod}`,
+        },
+      ]}
+    />
+
+    <div data-summary-container>
+      <ReportSummaryCardsPartial
+        totalIncome={reportDataForPartials.totalIncome}
+        totalExpenses={reportDataForPartials.totalExpenses}
+        netSavings={reportDataForPartials.netSavings}
+        budgetHealth={reportDataForPartials.budgetHealth}
+        expenseCategories={reportDataForPartials.expenseCategories}
+        currency={reportDataForPartials.currency}
+        totalAccounts={totalAccounts}
+        totalDebt={totalDebt}
+      />
+    </div>
+
+    <div data-charts-container>
+      <ReportChartsPartial
+        expenseByCategory={reportDataForPartials.expenseByCategory}
+        trendData={reportDataForPartials.trendData}
+        recurringBreakdown={reportDataForPartials.recurringBreakdown ?? undefined}
+        currency={currency}
+        resourceAllocationSubtitle={defaultRange === 'monthly'
+          ? 'EXPENSE MIX'
+          : 'YEARLY EXPENSE MIX'}
+        financialVelocitySubtitle={defaultRange === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
+      />
+    </div>
+
+    <div data-table-container>
+      <CategoryTablePartial
+        categories={reportDataForPartials.categoryIntelligence}
+        subtitle="SORTED BY AMOUNT SPENT"
+        range={defaultRange}
+      />
+    </div>
+
+    <div data-member-table-container>
+      <MemberSpendingTablePartial
+        members={expenseData.memberSummary}
+        totals={memberTotals}
+        currency={currency}
+        range={defaultRange}
+        period={defaultPeriod}
+      />
+    </div>
+
+    <CategoryDrillDownModal id="category-drilldown-modal" />
+  </div>
+</ProtectedLayout>
+
+<script>
+  import '@/components/organisms/ReportsPage.client.ts';
+</script>

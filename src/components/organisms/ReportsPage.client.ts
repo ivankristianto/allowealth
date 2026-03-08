@@ -33,6 +33,9 @@ interface ReportState {
 // Track if listeners are already attached to prevent duplicates
 let listenersAttached = false;
 
+// Configurable API endpoint (read from data-api-endpoint attribute)
+let apiEndpoint = '/api/reports';
+
 /**
  * Generate default period based on current date
  * This is only used as a fallback if URL params and DOM elements don't provide values
@@ -130,7 +133,7 @@ async function fetchReportHtml(
   params.set('period', period);
   params.set('currency', currency);
 
-  const response = await fetch(`/api/reports?${params.toString()}`);
+  const response = await fetch(`${apiEndpoint}?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch report data: ${response.statusText}`);
@@ -211,7 +214,7 @@ async function fetchAndRenderSelector(): Promise<void> {
     params.set('period', currentState.period);
     params.set('currency', currentState.currency);
 
-    const response = await fetch(`/api/reports?${params.toString()}`);
+    const response = await fetch(`${apiEndpoint}?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch selector: ${response.statusText}`);
@@ -348,6 +351,11 @@ export function initReportsPage(): void {
       currentState.period = periodInput.value;
     }
   }
+
+  // Read configurable API endpoint from DOM
+  apiEndpoint =
+    document.querySelector('[data-api-endpoint]')?.getAttribute('data-api-endpoint') ||
+    '/api/reports';
 
   // Read currency from cookie (header-level switcher manages this)
   const cookieCurrency = getActiveCurrencyFromCookie();
