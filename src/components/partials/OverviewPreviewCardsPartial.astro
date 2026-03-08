@@ -13,6 +13,21 @@ interface PreviewCategory {
   value: string;
 }
 
+interface PreviewCard {
+  title: string;
+  description: string;
+  totalLabel: string;
+  cta: string;
+  href: string;
+  categories: PreviewCategory[];
+  total: string;
+  totalValue: number;
+  emptyState: string;
+  testId: string;
+  icon: typeof TrendingUp;
+  iconClass: string;
+}
+
 export interface Props {
   incomePreview: { topCategories: PreviewCategory[]; total: string };
   expensePreview: { topCategories: PreviewCategory[]; total: string };
@@ -35,128 +50,101 @@ const incomeTotal = toNumber(incomePreview.total);
 const expenseTotal = toNumber(expensePreview.total);
 const getShare = (value: string, total: number) =>
   total > 0 ? `${((toNumber(value) / total) * 100).toFixed(1)}% of total` : '0.0% of total';
+
+const previewCards: PreviewCard[] = [
+  {
+    title: 'Income sources',
+    description: 'See the largest income sources for the selected period.',
+    totalLabel: 'Total income',
+    cta: 'View income breakdown',
+    href: incomeHref,
+    categories: incomeCategories,
+    total: incomePreview.total,
+    totalValue: incomeTotal,
+    emptyState: 'No income sources were recorded for this period yet.',
+    testId: 'reports-overview-income-sources',
+    icon: TrendingUp,
+    iconClass: 'text-success',
+  },
+  {
+    title: 'Expense categories',
+    description: 'See the spending categories with the biggest impact.',
+    totalLabel: 'Total expenses',
+    cta: 'View expense breakdown',
+    href: expensesHref,
+    categories: expenseCategories,
+    total: expensePreview.total,
+    totalValue: expenseTotal,
+    emptyState: 'No expense categories were recorded for this period yet.',
+    testId: 'reports-overview-expense-categories',
+    icon: TrendingDown,
+    iconClass: 'text-error',
+  },
+];
 ---
 
 <div class="@container" data-overview-previews>
   <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6">
-    <div
-      class="card border border-base-300 bg-base-100 shadow-sm"
-      data-testid="reports-overview-income-sources"
-    >
-      <div class="card-body gap-5 p-5 sm:p-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div class="space-y-2">
-            <div class="flex items-center gap-2">
-              <TrendingUp size={18} class="text-success" aria-hidden="true" />
-              <h3 class="text-lg font-semibold tracking-tight text-primary">Income sources</h3>
-            </div>
-            <p class="max-w-xl text-sm leading-6 text-base-content/70">
-              Every income source recorded in this period, ranked from largest to smallest so you
-              can immediately see what is carrying the month.
-            </p>
-          </div>
-          <div class="rounded-2xl bg-success/10 px-4 py-3 text-left sm:min-w-48 sm:text-right">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-success/80">Total income</p>
-            <p class="mt-1 text-base font-semibold tabular-nums text-success">
-              {formatCurrency(incomePreview.total, currency)}
-            </p>
-          </div>
-        </div>
+    {
+      previewCards.map((card) => {
+        const Icon = card.icon;
 
-        {
-          incomeCategories.length > 0 ? (
-            <ol class="divide-y divide-base-200">
-              {incomeCategories.map((category, index) => (
-                <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 py-3">
-                  <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-success/10 text-sm font-semibold text-success">
-                    {index + 1}
-                  </span>
-                  <div class="min-w-0">
-                    <p class="truncate font-medium text-base-content">{category.name}</p>
-                    <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
-                      {getShare(category.value, incomeTotal)}
-                    </p>
+        return (
+          <div class="card border border-base-300 bg-base-100 shadow-sm" data-testid={card.testId}>
+            <div class="card-body gap-5 p-5 sm:p-6">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <Icon size={18} class={card.iconClass} aria-hidden="true" />
+                    <h3 class="text-lg font-semibold tracking-tight text-primary">{card.title}</h3>
                   </div>
-                  <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
-                    {formatCurrency(category.value, currency)}
+                  <p class="max-w-xl text-sm leading-6 text-base-content/70">{card.description}</p>
+                </div>
+                <div class="rounded-2xl border border-base-200 bg-base-200/60 px-4 py-3 sm:min-w-48 sm:text-right">
+                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-base-content/60">
+                    {card.totalLabel}
                   </p>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p class="rounded-2xl bg-base-200 px-4 py-4 text-sm text-base-content/60">
-              No income sources were recorded for this period yet.
-            </p>
-          )
-        }
+                  <p class="mt-1 text-base font-semibold tabular-nums text-base-content">
+                    {formatCurrency(card.total, currency)}
+                  </p>
+                </div>
+              </div>
 
-        <a
-          href={incomeHref}
-          class="btn btn-outline btn-sm gap-2 rounded-lg sm:rounded-xl self-start text-success"
-        >
-          Open Income Report <ArrowRight size={14} aria-hidden="true" />
-        </a>
-      </div>
-    </div>
+              {card.categories.length > 0 ? (
+                <ol class="overflow-hidden rounded-2xl border border-base-200 bg-base-100 divide-y divide-base-200">
+                  {card.categories.map((category, index) => (
+                    <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3 sm:items-center">
+                      <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-base-200 bg-base-200/60 text-sm font-semibold text-base-content/70">
+                        {index + 1}
+                      </span>
+                      <div class="min-w-0">
+                        <p class="truncate font-medium text-base-content">{category.name}</p>
+                        <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
+                          {getShare(category.value, card.totalValue)}
+                        </p>
+                      </div>
+                      <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
+                        {formatCurrency(category.value, currency)}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p class="rounded-2xl border border-base-200 bg-base-200/60 px-4 py-4 text-sm text-base-content/60">
+                  {card.emptyState}
+                </p>
+              )}
 
-    <div
-      class="card border border-base-300 bg-base-100 shadow-sm"
-      data-testid="reports-overview-expense-categories"
-    >
-      <div class="card-body gap-5 p-5 sm:p-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div class="space-y-2">
-            <div class="flex items-center gap-2">
-              <TrendingDown size={18} class="text-error" aria-hidden="true" />
-              <h3 class="text-lg font-semibold tracking-tight text-primary">Expense categories</h3>
+              <a
+                href={card.href}
+                class="btn btn-outline btn-sm gap-2 rounded-lg sm:rounded-xl self-start"
+              >
+                {card.cta} <ArrowRight size={14} aria-hidden="true" />
+              </a>
             </div>
-            <p class="max-w-xl text-sm leading-6 text-base-content/70">
-              Review the largest spending categories first to understand what is pulling the period
-              higher, then open the expense report for deeper investigation.
-            </p>
           </div>
-          <div class="rounded-2xl bg-error/10 px-4 py-3 text-left sm:min-w-48 sm:text-right">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-error/80">Total expenses</p>
-            <p class="mt-1 text-base font-semibold tabular-nums text-error">
-              {formatCurrency(expensePreview.total, currency)}
-            </p>
-          </div>
-        </div>
-
-        {
-          expenseCategories.length > 0 ? (
-            <ol class="divide-y divide-base-200">
-              {expenseCategories.map((category, index) => (
-                <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 py-3">
-                  <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-error/10 text-sm font-semibold text-error">
-                    {index + 1}
-                  </span>
-                  <div class="min-w-0">
-                    <p class="truncate font-medium text-base-content">{category.name}</p>
-                    <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
-                      {getShare(category.value, expenseTotal)}
-                    </p>
-                  </div>
-                  <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
-                    {formatCurrency(category.value, currency)}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p class="rounded-2xl bg-base-200 px-4 py-4 text-sm text-base-content/60">
-              No expense categories were recorded for this period yet.
-            </p>
-          )
-        }
-
-        <a
-          href={expensesHref}
-          class="btn btn-outline btn-sm gap-2 rounded-lg sm:rounded-xl self-start text-error"
-        >
-          Open Expense Report <ArrowRight size={14} aria-hidden="true" />
-        </a>
-      </div>
-    </div>
+        );
+      })
+    }
   </div>
 </div>
