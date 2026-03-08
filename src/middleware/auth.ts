@@ -12,6 +12,7 @@
 
 import type { MiddlewareHandler } from 'astro';
 import { auth, type User, type Session } from '@/lib/auth/lucia';
+import { isAppOnly } from '@/lib/auth/app-mode';
 import { logError } from '@/lib/logger';
 import { getCachedSession, cacheSession } from '@/lib/auth/session-cache';
 
@@ -26,8 +27,9 @@ const PUBLIC_STATIC_PATHS = new Set(['/', '/privacy', '/terms']);
 export const authentication: MiddlewareHandler = async (context, next) => {
   const perf = context.locals.perf;
   const authStart = performance.now();
+  const isPublicStaticPath = PUBLIC_STATIC_PATHS.has(context.url.pathname);
 
-  if (context.isPrerendered || PUBLIC_STATIC_PATHS.has(context.url.pathname)) {
+  if (context.isPrerendered || (isPublicStaticPath && !isAppOnly())) {
     context.locals.user = null;
     context.locals.session = null;
     perf?.recordPhase('mw.auth', performance.now() - authStart);

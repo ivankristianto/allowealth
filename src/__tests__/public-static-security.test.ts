@@ -12,15 +12,15 @@ function getHeadersBlock(content: string, route: string): string {
 }
 
 describe('static public security architecture', () => {
-  test('landing and legal pages are explicitly prerendered', () => {
-    const staticPages = [
+  test('landing and legal pages stay server-rendered for runtime APP_MODE redirects', () => {
+    const runtimePages = [
       'src/pages/index.astro',
       'src/pages/privacy.astro',
       'src/pages/terms.astro',
     ];
 
-    for (const pagePath of staticPages) {
-      expect(read(pagePath)).toContain('export const prerender = true;');
+    for (const pagePath of runtimePages) {
+      expect(read(pagePath)).toContain('export const prerender = false;');
     }
   });
 
@@ -31,7 +31,7 @@ describe('static public security architecture', () => {
     expect(baseLayout).not.toContain('<script is:inline nonce={cspNonce}>');
   });
 
-  test('static headers define CSP for prerendered public routes', () => {
+  test('static headers still define CSP for public routes', () => {
     expect(existsSync('public/_headers')).toBe(true);
 
     const headersFile = read('public/_headers');
@@ -48,11 +48,13 @@ describe('static public security architecture', () => {
     }
   });
 
-  test('authentication middleware skips prerendered routes', () => {
+  test('authentication middleware skips public marketing routes in full mode', () => {
     const authMiddleware = read('src/middleware/auth.ts');
     const csrfMiddleware = read('src/middleware/csrf.ts');
 
-    expect(authMiddleware).toContain('context.isPrerendered || PUBLIC_STATIC_PATHS.has');
+    expect(authMiddleware).toContain(
+      'context.isPrerendered || (isPublicStaticPath && !isAppOnly())'
+    );
     expect(authMiddleware).toContain('context.locals.user = null;');
     expect(authMiddleware).toContain('context.locals.session = null;');
     expect(authMiddleware).toContain('PUBLIC_STATIC_PATHS');
