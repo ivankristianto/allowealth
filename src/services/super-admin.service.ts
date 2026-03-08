@@ -10,6 +10,7 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, sql, desc, asc, like, and, isNull } from 'drizzle-orm';
+import { isValidWorkspaceMetaKey } from '@/lib/constants/workspace-meta-keys';
 import { SuperAdminServiceError, ServiceErrorCode } from './service-errors';
 
 // === Interfaces ===
@@ -360,6 +361,9 @@ export class SuperAdminService {
     // Build settings map
     const settings: Record<string, string> = {};
     for (const meta of metaRecords) {
+      if (!isValidWorkspaceMetaKey(meta.meta_key)) {
+        continue;
+      }
       settings[meta.meta_key] = meta.meta_value;
     }
 

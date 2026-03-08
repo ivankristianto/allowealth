@@ -73,15 +73,6 @@ Select which day begins your financial week:
 
 This affects weekly report groupings and calendar displays.
 
-### Compact Number Display
-
-Toggle between display formats:
-
-- **Enabled:** Rp 1.5M (shorter, rounded)
-- **Disabled:** Rp 1.500.000 (full precision)
-
-Enable for easier scanning. Disable for exact amounts.
-
 ## Members
 
 Manage who can access your workspace.

@@ -15,7 +15,7 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
-import { formatCurrencyCompact } from '@/lib/formatting';
+import { formatCurrency } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
 import type {
   ForecastChartWindow,
@@ -206,7 +206,7 @@ const serializedChartPayload = JSON.stringify({
                 LATEST ACTUAL BALANCE
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-base-content">
-                {formatCurrencyCompact(summary.latestActualBalance, currency)}
+                {formatCurrency(summary.latestActualBalance, currency)}
               </h3>
             </div>
 
@@ -216,7 +216,7 @@ const serializedChartPayload = JSON.stringify({
                 PLANNED ENDING BALANCE
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-accent">
-                {formatCurrencyCompact(summary.plannedEndingBalance, currency)}
+                {formatCurrency(summary.plannedEndingBalance, currency)}
               </h3>
             </div>
 
@@ -226,7 +226,7 @@ const serializedChartPayload = JSON.stringify({
                 CURRENT TRAJECTORY ENDING BALANCE
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-success">
-                {formatCurrencyCompact(summary.currentTrajectoryEndingBalance, currency)}
+                {formatCurrency(summary.currentTrajectoryEndingBalance, currency)}
               </h3>
             </div>
           </div>
@@ -239,7 +239,7 @@ const serializedChartPayload = JSON.stringify({
 <script>
   import { Chart } from '@/lib/chart-setup';
   import { isValidCurrency } from '@/lib/constants/currency';
-  import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
   import { colors } from '@/lib/tokens';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import {
@@ -394,7 +394,7 @@ const serializedChartPayload = JSON.stringify({
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
                 if (value === null) return '';
-                return `${label}: ${formatCurrencyCompact(value, currency)}`;
+                return `${label}: ${formatCurrency(value, currency)}`;
               },
             },
           },
@@ -429,7 +429,7 @@ const serializedChartPayload = JSON.stringify({
                 weight: 600 as any,
               },
               callback: (value) => {
-                return formatCurrencyCompact(Number(value), currency);
+                return formatCurrency(Number(value), currency);
               },
             },
             border: {

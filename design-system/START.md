@@ -55,12 +55,7 @@ See the full component inventory in `design-system/02-components.md` (atoms, mol
 
 ```typescript
 import { colors, fontSizes, spacing, tokenClasses } from '@/lib/tokens';
-import {
-  formatCurrency,
-  formatCurrencyCompact,
-  formatPercentage,
-  formatCompactNumber,
-} from '@/lib/formatting';
+import { formatCurrency, formatPercentage } from '@/lib/formatting';
 ```
 
 ### Import Icons
@@ -176,9 +171,7 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 
 ```typescript
 formatCurrency(150000, 'IDR'); // "Rp150.000"
-formatCurrencyCompact(1500000, 'IDR'); // "Rp1.5M"
 formatPercentage(85.5, 2); // "85.50%"
-formatCompactNumber(1500000); // "1.5M"
 getBudgetStatusClass(percentage); // 'status-ok' | 'status-warning' | 'status-danger'
 ```
 

@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  formatCompactNumber,
-  formatCurrency,
-  formatCurrencyCompact,
-  formatPercentage,
-} from '@/lib/formatting';
+import { formatCurrency, formatPercentage } from '@/lib/formatting';
 
 describe('currency formatting', () => {
   it('formats IDR with dot thousands and 2 decimals', () => {
@@ -22,18 +17,6 @@ describe('currency formatting', () => {
     expect(formatCurrency(-2500, 'USD')).toBe('-$2,500.00');
   });
 
-  it('formats compact currency with K/M/B suffixes', () => {
-    expect(formatCurrencyCompact(1500, 'IDR')).toBe('Rp1.5K');
-    expect(formatCurrencyCompact(1_000_000, 'IDR')).toBe('Rp1M');
-    expect(formatCurrencyCompact(2_500_000_000, 'IDR')).toBe('Rp2.5B');
-    expect(formatCurrencyCompact(-1500, 'USD')).toBe('-$1.5K');
-  });
-
-  it('falls back to full format for small values', () => {
-    expect(formatCurrencyCompact(999, 'IDR')).toBe('Rp999');
-    expect(formatCurrencyCompact(999, 'USD')).toBe('$999');
-  });
-
   it('handles invalid numeric inputs as zero', () => {
     expect(formatCurrency(Number.NaN, 'IDR')).toBe('Rp0,00');
     expect(formatCurrency(Number.POSITIVE_INFINITY, 'USD')).toBe('$0.00');
@@ -44,14 +27,8 @@ describe('currency formatting', () => {
   });
 });
 
-describe('percentage and compact number formatting', () => {
+describe('percentage formatting', () => {
   it('formats percentages with fixed decimals', () => {
     expect(formatPercentage(85.5, 2)).toBe('85.50%');
-  });
-
-  it('formats compact numbers with K/M/B suffixes', () => {
-    expect(formatCompactNumber(1500)).toBe('1.5K');
-    expect(formatCompactNumber(1_000_000)).toBe('1M');
-    expect(formatCompactNumber(-2500000)).toBe('-2.5M');
   });
 });

@@ -7,14 +7,14 @@
 export const DEMO_ADMIN = {
   email: 'demo@example.com',
   password: 'demo123456789', // Must be at least 12 chars
-  name: 'Demo User',
+  name: 'Dad',
   role: 'admin' as const,
 };
 
 export const DEMO_MEMBER = {
   email: 'member@example.com',
   password: 'demo123456789', // Must be at least 12 chars
-  name: 'Demo Member',
+  name: 'Mom',
   role: 'member' as const,
 };
 

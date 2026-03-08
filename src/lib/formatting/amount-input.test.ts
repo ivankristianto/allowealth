@@ -3,7 +3,7 @@ import {
   stripAmountFormatting,
   formatAmountForDisplay,
   formatAmountForTyping,
-} from '../amount-input';
+} from './amount-input';
 
 describe('stripAmountFormatting', () => {
   describe('IDR (thousands=".", decimal=",")', () => {

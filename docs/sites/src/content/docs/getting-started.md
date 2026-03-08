@@ -19,15 +19,14 @@ Run Allowealth locally in four steps.
 - Bun 1.x
 - Git access to this repository
 
-## Step 1: Install dependencies
+## Step 1: Bootstrap the project
 
 ```bash
-bun install
 cp .env.example .env
-bun run db:reset
+./scripts/setup.sh
 ```
 
-This creates the database schema and seeds demo data.
+This script installs dependencies, creates the database schema, and seeds demo data.
 
 ## Step 2: Start the dev server
 
@@ -57,4 +56,4 @@ Your local environment is ready.
 
 - Read [Core Concepts](/core-concepts/) to understand workspaces and roles
 - Follow [End User Onboarding](/end-users/onboarding/) for daily workflows
-- See [Developer Setup](/developers/local-development/) for contribution guidelines
+- See [Developer Setup](/developers/setup-and-deployment/) for contribution guidelines

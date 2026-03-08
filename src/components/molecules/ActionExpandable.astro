@@ -1,0 +1,194 @@
+---
+/**
+ * ActionExpandable Component
+ *
+ * Horizontal expand/collapse pattern for action bars. Shows primary actions always,
+ * secondary actions expand horizontally inline with smooth animation.
+ *
+ * The "More" button animates: chevron rotates 180deg, button scales slightly on active
+ *
+ * @example
+ * <ActionExpandable>
+ *   <!-- Always visible actions -->
+ *   <div slot="always-visible">...</div>
+ *   <!-- Actions shown when expanded -->
+ *   <div slot="expandable">...</div>
+ * </ActionExpandable>
+ */
+
+import { ChevronRight, ChevronLeft } from '@lucide/astro';
+
+export interface Props {
+  className?: string;
+  ariaLabel?: string;
+  expandLabel?: string;
+  collapseLabel?: string;
+}
+
+const {
+  className = '',
+  ariaLabel = 'More actions',
+  expandLabel = 'More',
+  collapseLabel = 'Less',
+} = Astro.props;
+
+const hasAlwaysVisible = Astro.slots.has('always-visible');
+const hasExpandable = Astro.slots.has('expandable');
+
+// Generate unique ID for accessibility
+const expandId = `expandable-${crypto.randomUUID()}`;
+---
+
+{
+  hasExpandable ? (
+    <div class={`action-expandable ${className}`} data-action-expandable aria-label={ariaLabel}>
+      {/* Always visible actions */}
+      {hasAlwaysVisible && (
+        <div class="action-expandable__visible">
+          <slot name="always-visible" />
+        </div>
+      )}
+
+      {/* Expandable section - animates horizontally */}
+      <div
+        id={expandId}
+        class="action-expandable__content"
+        data-expandable-content
+        aria-hidden="true"
+        inert
+      >
+        <div class="action-expandable__content-inner">
+          <slot name="expandable" />
+        </div>
+      </div>
+
+      {/* Toggle button with animation */}
+      <button
+        type="button"
+        class="action-expandable__toggle btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
+        data-expandable-toggle
+        data-expand-label={expandLabel}
+        data-collapse-label={collapseLabel}
+        aria-expanded="false"
+        aria-controls={expandId}
+      >
+        <span class="action-expandable__label" data-toggle-label>
+          {expandLabel}
+        </span>
+        <ChevronRight
+          size={16}
+          class="action-expandable__chevron action-expandable__chevron--right stroke-current"
+          data-toggle-chevron-right
+          aria-hidden="true"
+        />
+        <ChevronLeft
+          size={16}
+          class="action-expandable__chevron action-expandable__chevron--left stroke-current"
+          data-toggle-chevron-left
+          aria-hidden="true"
+        />
+      </button>
+    </div>
+  ) : hasAlwaysVisible ? (
+    <slot name="always-visible" />
+  ) : null
+}
+
+<style>
+  .action-expandable {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .action-expandable {
+      gap: 0.5rem;
+    }
+  }
+
+  .action-expandable__visible {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .action-expandable__visible {
+      gap: 0.5rem;
+    }
+  }
+
+  /* Horizontal expand animation using grid */
+  .action-expandable__content {
+    display: grid;
+    grid-template-columns: 0fr;
+    transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .action-expandable__content.is-expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .action-expandable__content-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  @media (min-width: 768px) {
+    .action-expandable__content-inner {
+      gap: 0.5rem;
+    }
+  }
+
+  /* More button animations */
+  .action-expandable__toggle {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .action-expandable__chevron {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Expanded state for toggle button */
+  .action-expandable__toggle.is-expanded {
+    background-color: var(--color-base-200, hsl(var(--b2)));
+    transform: scale(0.98);
+  }
+
+  /* Chevron visibility - right when collapsed, left when expanded */
+  .action-expandable__chevron--left {
+    display: none;
+  }
+
+  .action-expandable__toggle.is-expanded .action-expandable__chevron--right {
+    display: none;
+  }
+
+  .action-expandable__toggle.is-expanded .action-expandable__chevron--left {
+    display: block;
+  }
+
+  /* Hover state */
+  .action-expandable__toggle:hover {
+    background-color: var(--color-base-200, hsl(var(--b2)));
+  }
+
+  /* Active/press state */
+  .action-expandable__toggle:active {
+    transform: scale(0.95);
+  }
+
+  .action-expandable__toggle.is-expanded:active {
+    transform: scale(0.96);
+  }
+</style>
+
+<script>
+  import { setupActionExpandableLifecycle } from './ActionExpandable.client';
+
+  setupActionExpandableLifecycle();
+</script>

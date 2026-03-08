@@ -178,7 +178,7 @@ Workspaces provide a shared financial context for families, teams, or groups. Ea
 ### Key Concepts
 
 - **Data Isolation:** Each workspace has completely separate financial data
-- **Workspace Settings:** Currency, week start, and number formatting preferences apply to all members
+- **Workspace Settings:** Currency and week-start preferences apply to all members
 - **Role-Based Access:** Admins have full control, members have limited permissions
 - **Cascade Delete:** Deleting a workspace removes all associated data permanently
 
@@ -193,7 +193,7 @@ Create a new workspace with custom settings and admin invitation:
 bun run cli:create-workspace -- --name "My Family" --email admin@example.com
 
 # Create with custom settings
-bun run cli:create-workspace -- --name "Business" --email owner@business.com --currency USD --week-start sunday --compact-numbers true
+bun run cli:create-workspace -- --name "Business" --email owner@business.com --currency USD --week-start sunday
 ```
 
 **Example Output:**
@@ -219,7 +219,6 @@ Invitation link:
 - `--email, -e` - Admin email address (required, prompts if missing)
 - `--currency, -c` - Default currency code (default: IDR)
 - `--week-start, -w` - Week start day: `monday` or `sunday` (default: monday)
-- `--compact-numbers` - Use compact formatting: `true` or `false` (default: true)
 - `--public-url` - Base URL for the signup link (overrides `PUBLIC_URL` env var)
 
 #### List Workspaces
@@ -246,7 +245,6 @@ Workspace: My Family
   Settings:
     currency: IDR
     week_start: monday
-    compact_numbers: true
 ────────────────────────────────────────────────────────────────────────────────
 
 Workspace: Business
@@ -256,7 +254,6 @@ Workspace: Business
   Settings:
     currency: USD
     week_start: sunday
-    compact_numbers: false
 ────────────────────────────────────────────────────────────────────────────────
 
 Total: 2 workspace(s)
@@ -311,7 +308,6 @@ Each workspace has configurable settings that apply to all members:
 
 - **Currency** - Primary currency for displaying amounts (e.g., IDR, USD, EUR)
 - **Week Start** - First day of the week (`monday` or `sunday`) for reports and charts
-- **Compact Numbers** - Display large numbers in compact format (e.g., "1.2K" vs "1,200")
 
 Settings can be configured during workspace creation or modified via the CLI commands.
 

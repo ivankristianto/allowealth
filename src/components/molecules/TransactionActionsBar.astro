@@ -7,10 +7,9 @@
  * (handled by FAB / transaction drawer triggers elsewhere).
  */
 
-import { Upload, Download } from '@lucide/astro';
+import { Upload, Download, ScanLine } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
-import ActionOverflowMenu from './ActionOverflowMenu.astro';
-import type { OverflowAction } from './ActionOverflowMenu.astro';
+import ActionExpandable from './ActionExpandable.astro';
 import { ghostBtn } from '@/lib/ui/action-button-classes';
 
 export interface Props {
@@ -18,43 +17,56 @@ export interface Props {
 }
 
 const { className = '' } = Astro.props;
-const overflowActions: OverflowAction[] = [
-  {
-    id: 'scan-receipt',
-    label: 'Scan Receipt',
-    dataTestId: 'scan-receipt-btn',
-  },
-];
 ---
 
 <ActionBar className={className} ariaLabel="Transaction actions" edgeBleed>
   <div slot="secondary-visible" class="flex items-center gap-1 md:gap-2">
-    {/* Import CSV */}
-    <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
-      <button
-        type="button"
-        class={ghostBtn}
-        data-import-csv-button
-        aria-label="Import CSV"
-        data-transaction-actions-bar
-      >
-        <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="text-xs md:text-sm">Import</span>
-      </button>
-    </div>
+    <ActionExpandable>
+      {/* Always visible: Import */}
+      <div slot="always-visible" class="flex items-center gap-1 md:gap-2">
+        <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
+          <button
+            type="button"
+            class={ghostBtn}
+            data-import-csv-button
+            aria-label="Import CSV"
+            data-transaction-actions-bar
+          >
+            <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="text-xs md:text-sm">Import</span>
+          </button>
+        </div>
+      </div>
 
-    {/* Export CSV */}
-    <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
-      <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
-        <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="text-xs md:text-sm">Export</span>
-      </button>
-    </div>
+      {/* Expandable: Export, Scan Receipt */}
+      <div slot="expandable" class="flex items-center gap-1 md:gap-2">
+        {/* Export CSV */}
+        <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
+          <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
+            <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="text-xs md:text-sm">Export</span>
+          </button>
+        </div>
+
+        {/* Scan Receipt */}
+        <div class="tooltip tooltip-bottom" data-tip="Scan receipt (coming soon)">
+          <button
+            type="button"
+            class={ghostBtn}
+            data-action-id="scan-receipt"
+            data-testid="scan-receipt-btn"
+            aria-label="Scan receipt"
+          >
+            <ScanLine size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <ScanLine size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="text-xs md:text-sm">Scan</span>
+          </button>
+        </div>
+      </div>
+    </ActionExpandable>
   </div>
-
-  <ActionOverflowMenu slot="overflow" actions={overflowActions} />
 </ActionBar>
 
 <script>

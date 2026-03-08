@@ -25,7 +25,11 @@ paths:
                     currency: "IDR"
                     secondaryCurrency: "USD"
                     weekStart: "monday"
-                    compactNumbers: true
+                    monthlyIncome:
+                      IDR: "5000000"
+                      USD: "250"
+                    forecastMonthlyTopup: 5000000
+                    forecastAnnualRate: 7
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '500':
@@ -35,8 +39,10 @@ paths:
       tags: [Workspace]
       summary: Update workspace settings
       description: |
-        Update workspace settings. Only workspace admins can update settings.
-        Available settings: name, currency, secondaryCurrency, weekStart, compactNumbers.
+        Update workspace settings. Workspace admins can update the workspace name, and all members
+        can update saved preferences.
+        Available settings: name, currency, secondaryCurrency, weekStart, monthlyIncome,
+        forecastMonthlyTopup, forecastAnnualRate.
       security:
         - sessionAuth: []
       requestBody:
@@ -61,7 +67,11 @@ paths:
                     currency: "IDR"
                     secondaryCurrency: "USD"
                     weekStart: "monday"
-                    compactNumbers: true
+                    monthlyIncome:
+                      IDR: "5000000"
+                      USD: "250"
+                    forecastMonthlyTopup: 5000000
+                    forecastAnnualRate: 7
         '400':
           description: Validation error or invalid input
           content:

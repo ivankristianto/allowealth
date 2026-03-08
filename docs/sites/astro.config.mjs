@@ -42,7 +42,7 @@ export default defineConfig({
         {
           label: 'Guides: Developers',
           items: [
-            { slug: 'developers/local-development' },
+            { slug: 'developers/setup-and-deployment' },
             { slug: 'developers/feature-workflow' },
           ],
         },
@@ -55,6 +55,7 @@ export default defineConfig({
             { slug: 'reference/architecture' },
           ],
         },
+        { slug: 'changelog' },
       ],
     }),
     sitemap(),

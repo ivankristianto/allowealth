@@ -6,7 +6,7 @@
  * Re-exports formatCurrency and formatPercentage from canonical formatting utilities.
  *
  * Usage in preview fixtures:
- * import { getStatusColor, getStatusBg, getStatusBadge, getProgressBarColor } from './__tests__/budget-health-test-utils';
+ * import { getStatusColor, getStatusBg, getStatusBadge, getProgressBarColor } from './test-helpers/budget-health';
  */
 
 import { formatCurrency } from '@/lib/formatting/currency-client';

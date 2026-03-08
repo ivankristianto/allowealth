@@ -27,18 +27,16 @@ UpdateWorkspaceSettingsRequest:
       enum: [sunday, monday]
       description: First day of the week for calendar views
       example: "monday"
-    compactNumbers:
-      type: boolean
-      description: Whether to show compact number formatting
-      example: true
     monthlyIncome:
       type: object
-      description: Map of currency code to monthly income amount strings.
+      description: >
+        Optional monthly income amounts keyed by currency code. Send an empty object to clear it.
       additionalProperties:
         type: string
         pattern: '^\d+(\.\d{1,2})?$'
       example:
         IDR: "15000000"
+        USD: "250"
     forecastMonthlyTopup:
       type: number
       minimum: 0

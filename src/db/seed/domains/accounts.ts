@@ -20,19 +20,35 @@ import { amt } from '../lib/amounts';
 import { SNAPSHOT_GROWTH_RATE } from '../config';
 import { getPaymentAccounts, getLoanAccounts, getAccountTypes } from '../data/accounts';
 
-// Accounts created by the member user (personal e-wallets, some stocks, a credit card)
+// Accounts created by the mom user
 const MEMBER_OWNED_ACCOUNTS = new Set([
   'GoPay',
   'OVO',
   'Mandiri Credit Card',
-  'Stock - AAPL',
-  'Stock - GOOGL',
-  'Chase Checking',
+  'Kids Education Fund',
+  'Fixed Deposit - BCA',
   'Car Loan - Innova',
 ]);
 
 // Combined list of all accounts for lookup
 const getAllAccounts = () => [...getPaymentAccounts(), ...getLoanAccounts(), ...getAccountTypes()];
+
+function calculateHistoricalBalance(
+  accountConfig: ReturnType<typeof getAllAccounts>[number],
+  monthsAgo: number,
+  variationRatio: number
+): number {
+  const currentBalance = parseFloat(accountConfig.balance.toString());
+  const isDebtAccount = deriveAccountClass(accountConfig.type) === 'debt';
+
+  if (isDebtAccount) {
+    const debtFactor = 1 + monthsAgo * 0.04;
+    return currentBalance * debtFactor * variationRatio;
+  }
+
+  const assetFactor = Math.max(0.7, 1 - monthsAgo * 0.03);
+  return currentBalance * assetFactor * variationRatio;
+}
 
 /**
  * Seed accounts (both payment accounts and investment accounts)
@@ -158,7 +174,7 @@ export async function seedAccounts(
   accountMap.set('Old Savings (Closed)', closedId);
 
   const memberCount = MEMBER_OWNED_ACCOUNTS.size;
-  console.log(`✓ Created ${accountMap.size} accounts (${memberCount} owned by member)`);
+  console.log(`✓ Created ${accountMap.size} accounts (${memberCount} owned by mom)`);
   return accountMap;
 }
 
@@ -176,15 +192,9 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
     const accountConfig = getAllAccounts().find((a) => a.name === accountName);
     if (!accountConfig) continue;
 
-    const baseBalance = parseFloat(accountConfig.balance.toString());
-
     // Generate entries for each of the past 6 months
     for (let monthsAgo = 6; monthsAgo >= 0; monthsAgo--) {
       const monthDate = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
-
-      // Simulate gradual growth/decline over time (older = further from current)
-      const growthFactor = 1 - monthsAgo * 0.03; // ~3% growth per month
-      const monthBaseBalance = baseBalance * growthFactor;
 
       if (monthsAgo <= 2) {
         // Recent months: biweekly entries (1st and 15th)
@@ -200,9 +210,9 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
           );
           if (recordedAt > now) continue;
 
-          const variation = (Math.random() - 0.5) * monthBaseBalance * 0.04; // ±2% variation
+          const variationRatio = 0.98 + Math.random() * 0.04;
           const balance = amt(
-            monthBaseBalance + variation,
+            calculateHistoricalBalance(accountConfig, monthsAgo, variationRatio),
             accountConfig.currency,
             (accountConfig as any).baseScale || 'primary'
           );
@@ -230,9 +240,9 @@ export async function seedAccountHistory(accountMap: Map<string, string>): Promi
         );
         if (recordedAt > now) continue;
 
-        const variation = (Math.random() - 0.5) * monthBaseBalance * 0.06; // ±3% variation for older
+        const variationRatio = 0.97 + Math.random() * 0.06;
         const balance = amt(
-          monthBaseBalance + variation,
+          calculateHistoricalBalance(accountConfig, monthsAgo, variationRatio),
           accountConfig.currency,
           (accountConfig as any).baseScale || 'primary'
         );
@@ -266,8 +276,16 @@ export async function seedAccountUpdateReminders(
   const now = new Date();
   let reminderCount = 0;
 
-  // Create update reminders for investment accounts
-  const investmentAccountIds = ['Stock - BBRI', 'Stock - BBCA', 'Stock - AAPL', 'Stock - MSFT']
+  // Create update reminders for savings and investment accounts
+  const investmentAccountIds = [
+    'Emergency Savings',
+    'Kids Education Fund',
+    'Fixed Deposit - BCA',
+    'Bond Ladder',
+    'Dividend Portfolio',
+    'Retirement Mutual Fund',
+    'USD Travel Fund',
+  ]
     .map((name) => accountMap.get(name))
     .filter((id): id is string => !!id);
 
@@ -318,33 +336,8 @@ export async function seedAccountSnapshots(
   const now = new Date();
   const months = monthsToSeed ?? getTrailingMonths(3);
 
-  const assetAccountIds = [
-    'Cash',
-    'BCA Credit Card',
-    'Mandiri Credit Card',
-    'GoPay',
-    'OVO',
-    'Transfer',
-    'BCA Savings',
-    'Chase Checking',
-    'DBS Savings',
-    'Reksa Dana BCAP',
-    'Stock - BBRI',
-    'Stock - BBCA',
-    'Stock - AAPL',
-    'Stock - MSFT',
-    'Stock - GOOGL',
-    'Stock - AMZN',
-    'ORI020',
-    'SBN032',
-    'SBR010',
-    'Corporate Bond - ABC',
-    'Corporate Bond - XYZ',
-    'Bitcoin',
-    'Ethereum',
-    'Tether (USDT)',
-    'USD Coin (USDC)',
-  ]
+  const snapshotAccountIds = getAllAccounts()
+    .map((account) => account.name)
     .map((name) => accountMap.get(name))
     .filter((id): id is string => !!id);
 
@@ -365,17 +358,21 @@ export async function seedAccountSnapshots(
 
     // Get market growth factor (simulated - older months have lower values)
     const monthsAgo = (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month);
-    const marketFactor = Math.pow(1 + SNAPSHOT_GROWTH_RATE, -monthsAgo);
-
-    for (const accountId of assetAccountIds) {
+    for (const accountId of snapshotAccountIds) {
       // Find account balance
       const accountName = [...accountMap.entries()].find(([, id]) => id === accountId)?.[0];
       const accountConfig = getAllAccounts().find((a) => a.name === accountName);
       if (!accountConfig) continue;
 
-      const currentBalance = parseFloat(accountConfig.balance.toString());
-      // Apply market factor and add some variation
-      const snapshotBalance = currentBalance * marketFactor * (0.95 + Math.random() * 0.1);
+      const isDebtAccount = deriveAccountClass(accountConfig.type) === 'debt';
+      const trajectoryFactor = isDebtAccount
+        ? 1 + monthsAgo * SNAPSHOT_GROWTH_RATE
+        : Math.pow(1 + SNAPSHOT_GROWTH_RATE, -monthsAgo);
+      const variationRatio = isDebtAccount
+        ? 0.99 + Math.random() * 0.02
+        : 0.95 + Math.random() * 0.1;
+      const snapshotBalance =
+        parseFloat(accountConfig.balance.toString()) * trajectoryFactor * variationRatio;
 
       await db.insert(accountSnapshotItems).values({
         id: nanoid(),

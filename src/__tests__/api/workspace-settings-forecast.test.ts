@@ -44,8 +44,7 @@ describe('workspace settings forecast API', () => {
     currency: 'IDR' as const,
     secondaryCurrency: '',
     weekStart: 'monday' as const,
-    compactNumbers: true,
-    monthlyIncome: '{"IDR":"15000000"}',
+    monthlyIncome: { IDR: '15000000' },
     forecastMonthlyTopup: 9000000,
     forecastAnnualRate: 9.5,
   };
