@@ -137,7 +137,7 @@ export async function seedStressData(
       incomeCategory: 'Dad Salary',
       incomeBase: 22_000_000,
       incomeDay: 25,
-      preferredAccounts: ['Transfer', 'BCA Credit Card'],
+      preferredAccounts: ['Current Account', 'BCA Credit Card'],
       spendingWeights: [
         {
           category: 'Utility Bills',
@@ -168,7 +168,7 @@ export async function seedStressData(
       incomeCategory: 'Mom Salary',
       incomeBase: 12_500_000,
       incomeDay: 24,
-      preferredAccounts: ['Transfer', 'OVO', 'GoPay'],
+      preferredAccounts: ['Current Account', 'OVO', 'GoPay'],
       spendingWeights: [
         {
           category: 'Food & Groceries',
@@ -196,7 +196,7 @@ export async function seedStressData(
     {
       userId: extraMembers[0]!.id,
       label: extraMembers[0]!.label,
-      incomeCategory: 'Side Business',
+      incomeCategory: 'Other Side Income',
       incomeBase: 2_200_000,
       incomeDay: 12,
       preferredAccounts: ['GoPay', 'OVO', 'Cash'],
@@ -227,7 +227,7 @@ export async function seedStressData(
     {
       userId: extraMembers[1]!.id,
       label: extraMembers[1]!.label,
-      incomeCategory: 'Other Income',
+      incomeCategory: 'Other Side Income',
       incomeBase: 900_000,
       incomeDay: 6,
       preferredAccounts: ['Cash', 'GoPay'],

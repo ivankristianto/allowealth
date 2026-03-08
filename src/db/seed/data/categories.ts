@@ -83,37 +83,53 @@ export const CATEGORY_STYLES: Record<
   // Income categories
   'Dad Salary': { icon: 'banknote', color: 'bg-success', description: 'Monthly salary income' },
   'Mom Salary': { icon: 'banknote', color: 'bg-success', description: 'Monthly salary income' },
-  'Side Business': {
+  Bonds: {
+    icon: 'badge-percent',
+    color: 'bg-success',
+    description: 'Coupon income from government and corporate bonds',
+  },
+  'Fixed Deposits': {
+    icon: 'piggy-bank',
+    color: 'bg-success',
+    description: 'Interest income from time deposits',
+  },
+  Dividends: {
+    icon: 'chart-column',
+    color: 'bg-success',
+    description: 'Dividend income from equity investments',
+  },
+  'Other Side Income': {
     icon: 'banknote',
     color: 'bg-success',
-    description: 'Income from freelance or side projects',
-  },
-  Dividend: { icon: 'banknote', color: 'bg-success', description: 'Investment dividend payments' },
-  'Other Income': {
-    icon: 'circle-dot',
-    color: 'bg-primary',
-    description: 'Miscellaneous income from various sources',
+    description: 'Income from freelance work and side projects',
   },
 };
 
 // Expense categories with their budgets
 export const EXPENSE_CATEGORIES = [
   { name: 'Holiday', budget: 3000000 },
-  { name: 'Food & Groceries', budget: 8000000 },
-  { name: 'Dine Out', budget: 3000000 },
-  { name: 'Utility Bills', budget: 2000000 },
-  { name: 'Misc. Cost', budget: 2000000 },
-  { name: 'Entertainment', budget: 1500000 },
-  { name: 'Housekeeper Salary', budget: 6000000 },
-  { name: 'Transportation', budget: 1500000 },
-  { name: 'Installment Debt', budget: 8000000 },
-  { name: 'House Expenses', budget: 3000000 },
+  { name: 'Food & Groceries', budget: 7000000 },
+  { name: 'Dine Out', budget: 1800000 },
+  { name: 'Utility Bills', budget: 2500000 },
+  { name: 'Misc. Cost', budget: 1500000 },
+  { name: 'Entertainment', budget: 1200000 },
+  { name: 'Housekeeper Salary', budget: 3000000 },
+  { name: 'Transportation', budget: 2200000 },
+  { name: 'Installment Debt', budget: 15000000 },
+  { name: 'House Expenses', budget: 3200000 },
   { name: 'House Renovation', budget: 5000000 },
-  { name: 'Insurance', budget: 3000000 },
-  { name: 'Kids Expenses', budget: 5000000 },
-  { name: 'Pocket Money', budget: 1000000 },
-  { name: 'Work Support', budget: 3000000 },
+  { name: 'Insurance', budget: 2200000 },
+  { name: 'Kids Expenses', budget: 6500000 },
+  { name: 'Pocket Money', budget: 1200000 },
+  { name: 'Work Support', budget: 1200000 },
 ];
 
 // Income categories
-export const INCOME_CATEGORIES = [{ name: 'Other Income', budget: 0 }];
+export const INCOME_CATEGORIES = [
+  { name: 'Dad Salary', budget: 0 },
+  { name: 'Mom Salary', budget: 0 },
+  { name: 'Bonds', budget: 0 },
+  { name: 'Fixed Deposits', budget: 0 },
+  { name: 'Dividends', budget: 0 },
+  { name: 'Other Side Income', budget: 0 },
+];

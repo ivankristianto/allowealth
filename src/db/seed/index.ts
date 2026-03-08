@@ -331,7 +331,14 @@ async function seed() {
     );
 
     // Seed base transactions
-    await seedIncomeTransactions(workspaceId, adminUserId, categoryMap, accountMap, monthsToSeed);
+    await seedIncomeTransactions(
+      workspaceId,
+      adminUserId,
+      memberUserId,
+      categoryMap,
+      accountMap,
+      monthsToSeed
+    );
     await seedExpenseTransactions(workspaceId, adminUserId, categoryMap, accountMap, monthsToSeed);
     await seedTransferTransactions(workspaceId, adminUserId, accountMap, monthsToSeed);
 
@@ -386,10 +393,10 @@ async function seed() {
     }
 
     console.log('\n📋 Demo Credentials:');
-    console.log('\n   Admin User:');
+    console.log('\n   Dad User:');
     console.log(`   Email:    ${DEMO_ADMIN.email}`);
     console.log(`   Password: ${DEMO_ADMIN.password}`);
-    console.log('\n   Member User:');
+    console.log('\n   Mom User:');
     console.log(`   Email:    ${DEMO_MEMBER.email}`);
     console.log(`   Password: ${DEMO_MEMBER.password}`);
     if (options.isLegacyStress) {
