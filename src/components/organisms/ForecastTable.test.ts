@@ -41,4 +41,9 @@ describe('ForecastTable component', () => {
     expect(source).not.toContain('group-hover:bg-base-200/30');
     expect(source).toContain('border-r border-base-300 bg-base-200');
   });
+
+  it('uses Schedule as the frequency column header', () => {
+    expect(source).not.toMatch(/>Freq\.<\/th>/);
+    expect(source).toMatch(/>\s*Schedule\s*<\/th>/);
+  });
 });

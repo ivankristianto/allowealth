@@ -45,4 +45,8 @@ describe('ForecastCashflowChart context-aware subtitle', () => {
     expect(source).toMatch(/typeFilter === 'income'/);
     expect(source).toMatch(/typeFilter === 'expense'/);
   });
+
+  it('caps bar width to prevent oversized bars at low month counts', () => {
+    expect(source).toContain('maxBarThickness');
+  });
 });
