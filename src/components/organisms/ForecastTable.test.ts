@@ -26,4 +26,19 @@ describe('ForecastTable component', () => {
   it('exposes the full recurring name when the visible label is truncated', () => {
     expect(source).toMatch(/<span\s+title=\{row\.templateName\}/);
   });
+
+  it('includes a right-edge scroll fade overlay with a data attribute for JS control', () => {
+    expect(source).toMatch(/data-scroll-fade/);
+  });
+
+  it('includes a client script that hides the overlay when fully scrolled', () => {
+    expect(source).toMatch(/scrollLeft\s*\+\s*clientWidth/);
+    expect(source).toContain('data-scrolled-end');
+  });
+
+  it('uses opaque sticky surfaces so scrolled values do not bleed under the recurring column', () => {
+    expect(source).not.toContain('bg-base-200/50');
+    expect(source).not.toContain('group-hover:bg-base-200/30');
+    expect(source).toContain('border-r border-base-300 bg-base-200');
+  });
 });
