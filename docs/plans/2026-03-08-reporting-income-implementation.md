@@ -27,6 +27,9 @@
 - Reuse existing transaction/category/account schemas; do not add an `incomes` table.
 - Keep `/reports` fast by not fetching expense-detail and income-detail payloads together.
 - Preserve the current protected-route and multi-currency behavior.
+- Keep currency selection in the existing global header; do not add a report-local currency control.
+- Separate page clients are acceptable because Overview, Expenses, and Income are separate routes, but shared URL/fetch/render plumbing should still be extracted instead of duplicated.
+- Reuse existing infrastructure where it fits: `createRenderHelper(...)`, `getTrendAggregateByMonth(...)`, `CategoryDrillDownModal.astro`, `CategoryDrillDownPartial.astro`, and `PaginationPartial.astro`.
 - Use TDD for every task below.
 - Add the required git trailer to every commit:
 
@@ -362,6 +365,7 @@ Then:
 
 - update `ReportsPage.client.ts` to use `buildReportUrl()` instead of manually replacing only `range` and `period`
 - keep `currency` and `user_id` when present
+- keep `ReportSelector.astro` focused on report-level controls only (range, period, and optional member if supported); currency stays in the global header
 - add a reusable `ReportsSectionNav.astro` that links to `Overview`, `Expenses`, and `Income`
 
 **Step 4: Teach the renderer about any new partial containers**
@@ -427,6 +431,24 @@ export interface ExpenseReportData extends ReportData {
   recurringBreakdown: RecurringBreakdown | null;
   memberSummary: MemberSummaryRow[];
 }
+export interface IncomeHistoryData {
+  transactions: CategoryTransactionsData['transactions'];
+  total: number;
+  page: number;
+  pageSize: number;
+  appliedFilters: {
+    userId?: string;
+    sourceType?: 'active' | 'passive' | 'other';
+    categoryId?: string;
+  };
+}
+export interface IncomeReportFilters {
+  userId?: string;
+  sourceType?: 'active' | 'passive' | 'other';
+  categoryId?: string;
+  page?: number;
+  pageSize?: number;
+}
 export interface IncomeReportData {
   summary: {
     totalIncome: string;
@@ -438,7 +460,7 @@ export interface IncomeReportData {
   sourceMix: CategoryExpense[];
   sourceGroupTrend: Array<{ name: string; active: string; passive: string; other: string }>;
   members: Array<{ userId: string; userName: string; totalIncome: string; transactionCount: number }>;
-  history: CategoryTransactionsData;
+  history: IncomeHistoryData;
 }
 ```
 
@@ -446,7 +468,7 @@ Add public methods:
 
 - `getOverviewReport(workspaceId, period, range, currency, userId?)`
 - `getExpenseReport(workspaceId, period, range, currency, userId?)`
-- `getIncomeReport(workspaceId, period, range, currency, page = 1, pageSize = 25, userId?)`
+- `getIncomeReport(workspaceId, period, range, currency, filters?: IncomeReportFilters)`
 
 Add private helpers:
 
@@ -457,6 +479,8 @@ Add private helpers:
 - `getMemberIncomeSummary(...)`
 
 Make the `other` bucket explicit when a category is missing or defaulted.
+Reuse `getTrendAggregateByMonth(...)` for the monthly source-group rollups instead of building a second month-aggregation path.
+Clamp `filters.pageSize` with `PAGINATION.DEFAULT_PAGE_SIZE` / `PAGINATION.MAX_PAGE_SIZE`, and allow `getIncomeHistory(...)` to honor optional `userId`, `sourceType`, and `categoryId` filters when the page state or drill-down sets them.
 
 **Step 4: Extend the benchmark**
 
@@ -515,6 +539,14 @@ it('returns lightweight overview partials', async () => {
   expect(html).not.toContain('<!-- PARTIAL:table -->');
   expect(html).not.toContain('<!-- PARTIAL:members -->');
 });
+
+it('rejects invalid member filters for overview reports', async () => {
+  const response = await GET(
+    createApiContext('http://localhost/api/reports?range=monthly&period=2026-02&user_id=not-in-workspace')
+  );
+
+  expect(response.status).toBe(400);
+});
 ```
 
 **Step 2: Run the test to verify it fails**
@@ -538,13 +570,17 @@ Update `src/pages/reports/index.astro` so it:
 - uses `ReportsSectionNav.astro` with `Overview` active
 - fetches only `getOverviewReport(...)`
 - renders summary, chart, and preview containers
+- shows Overview-local empty/error states instead of redirecting away on fetch failures
 - initializes `OverviewReportsPage.client.ts`
 
 Update `src/pages/api/reports/index.ts` so it:
 
+- reuses `createRenderHelper(...)`
+- validates optional `user_id` against the existing workspace-member lookup and rejects invalid or cross-workspace IDs with `400`
 - calls `reportService.getOverviewReport(...)`
 - supports `_partial=summary|charts|previews|selector|all`
 - drops the heavy category-table and member-table work from the Overview endpoint
+- returns Overview-local HTML error content for partial requests instead of falling back to expense-era redirect behavior
 
 **Step 4: Run the focused test**
 
@@ -597,6 +633,16 @@ it('returns expense-detail partials', async () => {
   expect(html).toContain('<!-- PARTIAL:table -->');
   expect(html).toContain('<!-- PARTIAL:members -->');
 });
+
+it('rejects invalid member filters for expense reports', async () => {
+  const response = await GET(
+    createApiContext(
+      'http://localhost/api/reports/expenses?range=monthly&period=2026-02&user_id=not-in-workspace'
+    )
+  );
+
+  expect(response.status).toBe(400);
+});
 ```
 
 **Step 2: Run the test to verify it fails**
@@ -623,6 +669,8 @@ Set `ReportsSectionNav.astro` to `Expenses` active and point the client fetches 
 **Step 4: Create the matching endpoint**
 
 In `src/pages/api/reports/expenses/index.ts`, move the old report-detail logic from `/api/reports/index.ts` and switch it to `reportService.getExpenseReport(...)`.
+Reuse `createRenderHelper(...)` so partial rendering stays aligned with the existing report endpoints.
+Apply the same optional `user_id` validation rule as Overview and Income, returning `400` for invalid or cross-workspace values.
 
 Update `src/pages/reports/members/index.astro` breadcrumbs so they return to `/reports/expenses`, not the Overview page.
 
@@ -653,10 +701,14 @@ git commit -m $'feat(reports): split expense detail into its own page\n\nCo-auth
 - Create: `src/components/partials/IncomeSourceTablePartial.astro`
 - Create: `src/components/partials/IncomeHistoryTablePartial.astro`
 - Create: `src/components/partials/IncomeMemberTablePartial.astro`
+- Modify: `src/components/organisms/CategoryDrillDownModal.astro`
+- Modify: `src/components/partials/CategoryDrillDownPartial.astro`
 - Create: `src/components/organisms/IncomeReportsPage.client.ts`
 - Create: `src/pages/reports/income/index.astro`
 - Create: `src/pages/api/reports/income/index.ts`
 - Create: `src/pages/api/reports/income/index.test.ts`
+- Modify: `src/pages/api/reports/category-drilldown.ts`
+- Create: `src/pages/api/reports/category-drilldown.test.ts`
 
 **Step 1: Write the failing income-endpoint test**
 
@@ -677,12 +729,25 @@ it('returns income detail data with source groups and history', async () => {
   expect(Array.isArray(payload.data.sourceMix)).toBe(true);
   expect(Array.isArray(payload.data.history.transactions)).toBe(true);
 });
+
+it('rejects invalid member filters for income reports', async () => {
+  const response = await GET(
+    createApiContext(
+      'http://localhost/api/reports/income?range=monthly&period=2026-02&user_id=not-in-workspace'
+    )
+  );
+
+  expect(response.status).toBe(400);
+});
 ```
+
+Create `src/pages/api/reports/category-drilldown.test.ts` with a case that proves income source rows still open through the shared drill-down endpoint and render the adapted modal content for income categories.
 
 **Step 2: Run the test to verify it fails**
 
 ```bash
 bun test src/pages/api/reports/income/index.test.ts
+bun test src/pages/api/reports/category-drilldown.test.ts
 ```
 
 Expected: FAIL because the route does not exist yet.
@@ -700,6 +765,7 @@ Create:
 - `IncomeMemberTablePartial.astro` for member income totals and share of total income
 
 Use `PaginationPartial.astro` for the history footer instead of inventing new pagination markup.
+Reuse `CategoryDrillDownModal.astro` and adapt `CategoryDrillDownPartial.astro` so income source rows can open the existing drill-down flow with income-focused copy and paginated transaction history instead of introducing a second modal system.
 
 **Step 4: Build the page and endpoint**
 
@@ -709,18 +775,25 @@ In `src/pages/reports/income/index.astro`:
 - use the shared report selector
 - SSR the first income payload from `reportService.getIncomeReport(...)`
 - render containers for summary, charts, source table, member table, and history table
+- reflect optional drill-down filters (such as `source_type` and `category_id`) in URL state without expanding the always-visible top-level filter bar
+- show Income-local empty/error states when there is no data or a fetch fails
 - initialize `IncomeReportsPage.client.ts`
 
 In `src/pages/api/reports/income/index.ts`:
 
-- validate `range`, `period`, `currency`, `page`, and `pageSize`
+- reuse `createRenderHelper(...)`
+- validate `range`, `period`, `currency`, `page`, and `pageSize`, defaulting/clamping `pageSize` with `PAGINATION.DEFAULT_PAGE_SIZE` and `PAGINATION.MAX_PAGE_SIZE`
+- validate optional `user_id` against `workspaceService.getMembers(...)` or the equivalent existing workspace-member lookup and reject invalid or cross-workspace IDs with `400`
+- support optional `source_type` and `category_id` query params so income history honors drill-down state when present
 - call `reportService.getIncomeReport(...)`
 - support HTML partials for summary, charts, sources, members, history, and selector
+- keep income drill-down requests on the existing `/api/reports/category-drilldown` endpoint, extended for income categories rather than forked into a new endpoint
 
 **Step 5: Run the focused test**
 
 ```bash
 bun test src/pages/api/reports/income/index.test.ts
+bun test src/pages/api/reports/category-drilldown.test.ts
 ```
 
 Expected: PASS.
@@ -736,7 +809,7 @@ Expected: PASS with the real page contract now consuming the service shape.
 **Step 7: Commit**
 
 ```bash
-git add src/components/organisms/ResourceAllocationChart.astro src/components/organisms/IncomeSourceTrendChart.astro src/components/partials/IncomeSummaryCardsPartial.astro src/components/partials/IncomeChartsPartial.astro src/components/partials/IncomeSourceTablePartial.astro src/components/partials/IncomeHistoryTablePartial.astro src/components/partials/IncomeMemberTablePartial.astro src/components/organisms/IncomeReportsPage.client.ts src/pages/reports/income/index.astro src/pages/api/reports/income/index.ts src/pages/api/reports/income/index.test.ts
+git add src/components/organisms/ResourceAllocationChart.astro src/components/organisms/IncomeSourceTrendChart.astro src/components/organisms/CategoryDrillDownModal.astro src/components/partials/IncomeSummaryCardsPartial.astro src/components/partials/IncomeChartsPartial.astro src/components/partials/IncomeSourceTablePartial.astro src/components/partials/IncomeHistoryTablePartial.astro src/components/partials/IncomeMemberTablePartial.astro src/components/partials/CategoryDrillDownPartial.astro src/components/organisms/IncomeReportsPage.client.ts src/pages/reports/income/index.astro src/pages/api/reports/income/index.ts src/pages/api/reports/income/index.test.ts src/pages/api/reports/category-drilldown.ts src/pages/api/reports/category-drilldown.test.ts
 git commit -m $'feat(reports): add dedicated income reporting page\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>'
 ```
 
@@ -803,8 +876,11 @@ Expected: FAIL because docs and routes are incomplete.
   - `openOverviewSection()`
   - `openExpenseSection()`
   - `openIncomeSection()`
+  - `openIncomeSourceDrilldown()`
   - `expectIncomeSummaryVisible()`
+  - `expectIncomeEmptyState()`
 - adjust `cross-page-totals.spec.ts` so it asserts the new Overview layout instead of the old expense table
+- extend `income-detail.spec.ts` so it covers drill-down-driven history filtering and the Income empty state
 
 **Step 4: Run the focused tests**
 
@@ -818,7 +894,7 @@ Expected: PASS.
 **Step 5: Run the full verification suite**
 
 ```bash
-bun test src/db/index.integration.test.ts src/pages/api/categories/index.test.ts src/pages/api/categories/[id].test.ts src/lib/reporting/report-state.test.ts src/services/__tests__/report-income-report.test.ts src/pages/api/reports/index.test.ts src/pages/api/reports/expenses/index.test.ts src/pages/api/reports/income/index.test.ts tests/integration/api/reports/openapi-contract.test.ts
+bun test src/db/index.integration.test.ts src/pages/api/categories/index.test.ts src/pages/api/categories/[id].test.ts src/lib/reporting/report-state.test.ts src/services/__tests__/report-income-report.test.ts src/pages/api/reports/index.test.ts src/pages/api/reports/expenses/index.test.ts src/pages/api/reports/income/index.test.ts src/pages/api/reports/category-drilldown.test.ts tests/integration/api/reports/openapi-contract.test.ts
 bun test src/services/__tests__/performance-benchmark.test.ts
 bun run lint:fix
 bun run stylelint:fix

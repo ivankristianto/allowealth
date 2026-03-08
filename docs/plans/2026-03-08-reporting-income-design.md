@@ -42,7 +42,8 @@ The Overview page remains the first stop for the question, "How healthy are we o
   - Shows total income, active income, passive income, period-over-period change, source mix, income trend, member income breakdown, and historical income transactions.
 - Shared report navigation
   - Use a consistent secondary navigation under Reports: `Overview`, `Expenses`, and `Income`.
-  - Keep the filter state in the URL so switching pages preserves range, period, currency, and optional member selection.
+  - Keep report filter state in the URL so switching pages preserves range, period, and optional member selection.
+  - Preserve currency through the existing global header behavior instead of duplicating a currency selector inside report pages.
 
 This split keeps the mental model clear: Overview is for health, Expense is for outflow diagnosis, and Income is for inflow analysis.
 
@@ -80,12 +81,13 @@ Existing transaction indexes already support the core filters on workspace, tran
 
 **UX and Components**
 
-All three report pages should share one filter bar with:
+All three report pages should share one report-level filter bar with:
 
 - range toggle
 - period selector
-- currency selector
 - optional member filter if the current reports flow already supports it
+
+Currency should remain in the existing global header or workspace-level control. Do not move or duplicate currency selection inside the report page filter bar.
 
 The Overview page should stay compact. It should not repeat the full Expense or Income experience. Instead, it should provide:
 
@@ -102,7 +104,9 @@ The Income page should be intentionally different from the Expense page. Its pri
 - active-versus-passive trend chart
 - member income table
 - paginated historical income table
-- income drill-downs by source category
+- income drill-downs by source category that reuse the existing `CategoryDrillDownModal` pattern
+
+The income history table should honor any optional member, source-group, or source-category filter already present in page state. Source-group and source-category filters can be introduced through drill-down and URL state rather than by expanding the always-visible top-level filter bar.
 
 The Expense page can remain close to the existing design, but with its role made explicit as the deep-dive destination for outflow analysis.
 
@@ -111,6 +115,7 @@ The Expense page can remain close to the existing design, but with its role made
 - If the workspace has no income data for the selected range, show an Income-specific empty state instead of a generic blank report.
 - If some income categories are unclassified, show them under `Other income` and make that bucket visible in the UI.
 - Keep loading, empty, and error states isolated per page so a slow or failed Income request does not break the Overview or Expense pages.
+- Surface page and API failures as local report states instead of redirecting away from the current report or silently collapsing into a generic empty payload.
 - Preserve existing decimal-safe calculations and multi-currency rules so income totals remain consistent with the rest of the product.
 
 **Testing**
@@ -119,7 +124,7 @@ Add verification for the new reporting shape at multiple levels:
 
 - unit tests for income source-group aggregation, active/passive totals, period-over-period comparisons, and `Other income` fallback behavior
 - integration tests for shared filter persistence across Overview, Expense, and Income pages
-- service and API tests for Overview, Expense, and Income partial responses
+- service and API tests for Overview, Expense, and Income partial responses, including invalid member-filter rejection
 - performance benchmarks for the Overview payload and the new Income payload
 - end-to-end coverage for navigating from Overview to Income, keeping filter context, and drilling into historical income details
 
