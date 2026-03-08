@@ -1,7 +1,8 @@
 ---
 import StatCard from '@/components/atoms/StatCard.astro';
-import { formatCurrency } from '@/lib/formatting';
+import { formatCurrency, formatPercentage } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
+import { TrendingDown, TrendingUp } from '@lucide/astro';
 
 export interface Props {
   totalIncome: string;
@@ -13,55 +14,72 @@ export interface Props {
 
 const { totalIncome, totalExpenses, netSavings, savingsRate, currency } = Astro.props;
 
-const badge =
-  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
-const currencyBadge = (c: Currency) =>
-  c === 'USD' ? `${badge} bg-info/10 text-info` : `${badge} bg-success/10 text-success`;
-
 const rateNum = parseFloat(savingsRate) || 0;
+const netSavingsNum = parseFloat(netSavings) || 0;
+const isNetPositive = netSavingsNum >= 0;
+const savingsRateSummary =
+  rateNum < 0
+    ? 'Spending is above income for this period'
+    : rateNum >= 20
+      ? 'A healthy share of income is being kept'
+      : rateNum > 0
+        ? 'Income is ahead, but with a smaller buffer'
+        : 'No savings were recorded for this period';
 ---
 
 <div class="@container" data-summary-cards>
   <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-4 gap-4 @2xl:gap-6">
-    <StatCard title="TOTAL INCOME">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-            {formatCurrency(totalIncome, currency)}
-          </p>
-        </div>
-      </Fragment>
-    </StatCard>
-
-    <StatCard title="TOTAL EXPENSES">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-            {formatCurrency(totalExpenses, currency)}
-          </p>
-        </div>
-      </Fragment>
-    </StatCard>
-
-    <StatCard title="NET SAVINGS">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-accent tracking-tight leading-none truncate">
-            {formatCurrency(netSavings, currency)}
-          </p>
-        </div>
-      </Fragment>
+    <StatCard
+      title="Total income"
+      value={formatCurrency(totalIncome, currency)}
+      valueColor="text-success"
+      subtitle="Money received during this period"
+      iconVariant="success"
+      data-testid="reports-overview-income-card"
+    >
+      <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
     </StatCard>
 
     <StatCard
-      title="SAVINGS RATE"
-      value={`${rateNum.toFixed(1)}%`}
+      title="Total expenses"
+      value={formatCurrency(totalExpenses, currency)}
+      valueColor="text-error"
+      subtitle="Money spent during this period"
+      iconVariant="error"
+      data-testid="reports-overview-expense-card"
+    >
+      <TrendingDown slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+    </StatCard>
+
+    <StatCard
+      title="Net savings"
+      value={formatCurrency(netSavings, currency)}
+      valueColor={isNetPositive ? 'text-accent' : 'text-error'}
+      subtitle={isNetPositive ? 'Income is covering expenses' : 'Expenses are higher than income'}
+      iconVariant={isNetPositive ? 'accent' : 'error'}
+      data-testid="reports-overview-savings-card"
+    >
+      {
+        (
+          <Fragment slot="icon">
+            {isNetPositive ? (
+              <TrendingUp size={48} class="stroke-current" aria-hidden="true" />
+            ) : (
+              <TrendingDown size={48} class="stroke-current" aria-hidden="true" />
+            )}
+          </Fragment>
+        )
+      }
+    </StatCard>
+
+    <StatCard
+      title="Savings rate"
+      value={formatPercentage(rateNum, 1)}
       valueColor={rateNum >= 0 ? 'text-success' : 'text-error'}
+      subtitle={savingsRateSummary}
       progress={Math.min(Math.abs(rateNum), 100)}
       progressColor={rateNum >= 0 ? 'bg-success' : 'bg-error'}
+      data-testid="reports-overview-savings-rate-card"
     />
   </div>
 </div>

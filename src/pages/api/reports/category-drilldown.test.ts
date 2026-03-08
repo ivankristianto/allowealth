@@ -63,4 +63,44 @@ describe('/api/reports/category-drilldown income support', () => {
     const html = await response.text();
     expect(html).toContain('Salary');
   });
+
+  it('infers income transaction type when categoryType is omitted', async () => {
+    workspaceMetaService.getWorkspaceCurrencies = mock(async () => ({
+      primary: 'IDR',
+      secondary: null,
+    })) as any;
+    reportService.getCategoryTransactions = mock(async () => ({
+      transactions: [
+        {
+          id: 'txn-1',
+          amount: '5000000',
+          currency: 'IDR',
+          description: 'Salary',
+          transactionDate: new Date('2026-02-01'),
+          accountName: 'Bank BCA',
+          createdByName: 'Test',
+          hasHistory: false,
+        },
+      ],
+      total: '5000000',
+      categoryName: 'Salary',
+      categoryType: 'income',
+      totalCount: 1,
+      limit: 100,
+      offset: 0,
+      hasMore: false,
+    })) as any;
+
+    const response = await GET(
+      createApiContext(
+        'http://localhost/api/reports/category-drilldown?categoryId=abcdefghijklmnopqrstu&categoryName=Salary&period=2026-02&range=monthly&currency=IDR&spent=5000000'
+      )
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.success).toBe(true);
+    expect(payload.data.transactions[0]?.type).toBe('income');
+    expect(payload.data.transactions[0]?.category.type).toBe('income');
+  });
 });

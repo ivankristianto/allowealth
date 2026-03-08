@@ -119,6 +119,7 @@ export interface CategoryTransactionsData {
   transactions: CategoryTransaction[];
   total: string; // Sum of transactions
   categoryName: string;
+  categoryType: 'expense' | 'income';
   totalCount: number;
   limit: number;
   offset: number;
@@ -597,6 +598,7 @@ export class ReportService {
         transactions: transactionsData,
         total,
         categoryName: category.name,
+        categoryType: category.type === 'income' ? 'income' : 'expense',
         totalCount,
         limit,
         offset,
@@ -821,11 +823,11 @@ export class ReportService {
         savingsRate,
         trendData,
         incomePreview: {
-          topCategories: incomeCategories.slice(0, 3),
+          topCategories: incomeCategories,
           total: totalIncome,
         },
         expensePreview: {
-          topCategories: expenseCategories.slice(0, 3),
+          topCategories: expenseCategories,
           total: totalExpenses,
         },
       };

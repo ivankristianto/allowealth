@@ -495,7 +495,7 @@ describe('Income Report Integration', () => {
       expect(rate).toBeLessThan(92);
     });
 
-    it('returns top 3 income and expense preview categories', async () => {
+    it('returns all income and expense preview categories sorted descending by value', async () => {
       const result = await reportService.getOverviewReport(
         WORKSPACE_ID,
         '2025-01',
@@ -503,9 +503,19 @@ describe('Income Report Integration', () => {
         CURRENCY
       );
 
-      expect(result.incomePreview.topCategories.length).toBeLessThanOrEqual(3);
+      expect(result.incomePreview.topCategories).toHaveLength(5);
+      expect(result.incomePreview.topCategories.map((category) => category.name)).toEqual([
+        'Salary',
+        'Freelance',
+        'Dividends',
+        'Rental',
+        'Gifts',
+      ]);
       expect(result.incomePreview.total).toBe('24500000');
-      expect(result.expensePreview.topCategories.length).toBeLessThanOrEqual(3);
+      expect(result.expensePreview.topCategories).toHaveLength(1);
+      expect(result.expensePreview.topCategories.map((category) => category.name)).toEqual([
+        'Food',
+      ]);
       expect(result.expensePreview.total).toBe('2000000');
     });
 

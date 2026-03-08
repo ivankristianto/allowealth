@@ -308,21 +308,21 @@ export class ReportsPage extends BasePage {
 
   /** Navigate to the Overview section tab. */
   async openOverviewSection(): Promise<void> {
-    const tab = this.page.locator('[data-section-nav] a[href*="/reports"]').first();
+    const tab = this.page.locator('[data-report-section="overview"]').first();
     await tab.click();
     await this.waitForPageLoad();
   }
 
   /** Navigate to the Expenses section tab. */
   async openExpenseSection(): Promise<void> {
-    const tab = this.page.locator('[data-section-nav] a[href*="/reports/expenses"]');
+    const tab = this.page.locator('[data-report-section="expenses"]');
     await tab.click();
     await this.waitForPageLoad();
   }
 
   /** Navigate to the Income section tab. */
   async openIncomeSection(): Promise<void> {
-    const tab = this.page.locator('[data-section-nav] a[href*="/reports/income"]');
+    const tab = this.page.locator('[data-report-section="income"]');
     await tab.click();
     await this.waitForPageLoad();
   }

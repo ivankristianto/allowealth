@@ -20,7 +20,7 @@ import {
 } from './ReportsRenderer.client';
 import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
-import { isValidCurrency } from '@/lib/constants/currency';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 interface ReportState {
   range: 'monthly' | 'yearly';

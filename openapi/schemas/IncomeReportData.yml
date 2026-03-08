@@ -2,62 +2,58 @@
 IncomeReportData:
   type: object
   properties:
-    totalIncome:
-      type: string
-      description: Total income for the period (decimal string)
-      example: "9750000"
-    incomeBySource:
+    summary:
+      type: object
+      properties:
+        totalIncome:
+          type: string
+          description: Total income for the period (decimal string)
+          example: "13000000"
+        activeIncome:
+          type: string
+          description: Total active income for the period
+          example: "10000000"
+        passiveIncome:
+          type: string
+          description: Total passive income for the period
+          example: "2500000"
+        otherIncome:
+          type: string
+          description: Total income classified as other for the period
+          example: "500000"
+        growthVsPreviousPeriod:
+          type: string
+          description: Percentage growth compared with the previous period (decimal string)
+          example: "15.5"
+      required:
+        - totalIncome
+        - activeIncome
+        - passiveIncome
+        - otherIncome
+        - growthVsPreviousPeriod
+    sourceMix:
       type: array
-      description: Income breakdown by source category for donut chart
+      description: Income mix by category, sorted descending by value
       items:
         type: object
         properties:
           name:
             type: string
-            description: Category name
+            description: Income category name
           value:
             type: string
-            description: Income amount (decimal string)
-        required:
-          - name
-          - value
-    sourceGroups:
-      type: array
-      description: Income grouped by source type (active/passive/other)
-      items:
-        type: object
-        properties:
-          type:
+            description: Income amount for the category (decimal string)
+          sourceType:
             type: string
             enum: [active, passive, other]
             description: Income source classification
-          total:
-            type: string
-            description: Total income for this source type (decimal string)
-          percentage:
-            type: number
-            description: Percentage of total income
-          categories:
-            type: array
-            items:
-              type: object
-              properties:
-                id:
-                  type: string
-                name:
-                  type: string
-                total:
-                  type: string
-                transactionCount:
-                  type: integer
         required:
-          - type
-          - total
-          - percentage
-          - categories
-    trendData:
+          - name
+          - value
+          - sourceType
+    sourceGroupTrend:
       type: array
-      description: Income trend data by source type over time
+      description: Income trend by source classification over time
       items:
         type: object
         properties:
@@ -66,10 +62,37 @@ IncomeReportData:
             description: Period label
           active:
             type: string
+            description: Active income total for the period
           passive:
             type: string
+            description: Passive income total for the period
           other:
             type: string
+            description: Other income total for the period
+        required:
+          - name
+          - active
+          - passive
+          - other
+    members:
+      type: array
+      description: Per-member income totals for the selected period
+      items:
+        type: object
+        properties:
+          userId:
+            type: string
+          userName:
+            type: string
+          totalIncome:
+            type: string
+          transactionCount:
+            type: integer
+        required:
+          - userId
+          - userName
+          - totalIncome
+          - transactionCount
     history:
       type: object
       description: Paginated income transaction history
@@ -85,36 +108,57 @@ IncomeReportData:
                 type: string
               amount:
                 type: string
-              date:
+              currency:
                 type: string
-              categoryName:
+              transaction_date:
                 type: string
-              memberName:
+              category_name:
                 type: string
+              category_icon:
+                type: string
+              category_color:
+                type: string
+              income_source_type:
+                type: string
+                enum: [active, passive, other]
+              created_by_name:
+                type: string
+            required:
+              - id
+              - description
+              - amount
+              - currency
+              - transaction_date
+              - category_name
+              - category_icon
+              - category_color
+              - income_source_type
+              - created_by_name
         total:
           type: integer
         page:
           type: integer
         pageSize:
           type: integer
-    memberBreakdown:
-      type: array
-      description: Per-member income summary
-      items:
-        type: object
-        properties:
-          userId:
-            type: string
-          displayName:
-            type: string
-          totalIncome:
-            type: string
-          transactionCount:
-            type: integer
-          topSource:
-            type: string
+        appliedFilters:
+          type: object
+          properties:
+            userId:
+              type: string
+            sourceType:
+              type: string
+              enum: [active, passive, other]
+            categoryId:
+              type: string
+      required:
+        - transactions
+        - total
+        - page
+        - pageSize
+        - appliedFilters
   required:
-    - totalIncome
-    - incomeBySource
-    - sourceGroups
-    - trendData
+    - summary
+    - sourceMix
+    - sourceGroupTrend
+    - members
+    - history

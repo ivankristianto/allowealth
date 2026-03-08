@@ -10,6 +10,7 @@
  * @see docs/architecture/002-interactive-pages.md
  */
 
+import { Info } from '@lucide/astro';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
 import ReportsSectionNav from '@/components/molecules/ReportsSectionNav.astro';
@@ -135,6 +136,55 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
     data-current-currency={currency}
   >
     <ReportsSectionNav activeSection="overview" state={reportState} />
+
+    <section
+      class="card border border-base-300 bg-base-100 shadow-sm"
+      data-testid="reports-overview-guide"
+    >
+      <div class="card-body gap-4 p-5 sm:p-6">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 rounded-2xl bg-info/10 p-2 text-info">
+            <Info size={18} aria-hidden="true" />
+          </span>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <p class="text-xs font-bold uppercase tracking-[0.2em] text-base-content/50">
+                How to use this page
+              </p>
+              <h2 class="text-lg font-semibold tracking-tight text-primary">
+                Start here to understand whether this period is healthy overall.
+              </h2>
+            </div>
+            <p class="max-w-4xl text-sm leading-6 text-base-content/70">
+              Use the summary cards to compare income, expenses, and savings at a glance. Review the
+              chart for recent movement, then open the Income or Expenses report when you need the
+              full breakdown behind each number.
+            </p>
+            <ul class="grid gap-3 text-sm text-base-content/70 md:grid-cols-3">
+              <li class="rounded-2xl bg-base-200 px-4 py-3">
+                <span class="font-semibold text-base-content">1. Check coverage</span>
+                <p class="mt-1">
+                  Confirm that income is still covering spending for the selected period.
+                </p>
+              </li>
+              <li class="rounded-2xl bg-base-200 px-4 py-3">
+                <span class="font-semibold text-base-content">2. Review the trend</span>
+                <p class="mt-1">
+                  Compare recent inflows and outflows to spot improving or weakening months.
+                </p>
+              </li>
+              <li class="rounded-2xl bg-base-200 px-4 py-3">
+                <span class="font-semibold text-base-content">3. Use the ranked lists</span>
+                <p class="mt-1">
+                  Open the detail reports after you identify the biggest income sources or expense
+                  drivers.
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
 
     {/* Summary Metric Cards */}
     <div data-summary-container>

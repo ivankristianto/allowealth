@@ -4,66 +4,60 @@ OverviewReportData:
   properties:
     totalIncome:
       type: string
-      description: Total income for the period (decimal string)
+      description: Total income for the selected period (decimal string)
       example: "9750000"
     totalExpenses:
       type: string
-      description: Total expenses for the period (decimal string)
+      description: Total expenses for the selected period (decimal string)
       example: "4735000"
     netSavings:
       type: string
-      description: Net savings (income - expenses) (decimal string)
+      description: Net savings for the selected period (income - expenses, decimal string)
       example: "5015000"
-    budgetHealth:
-      type: number
-      description: Budget health percentage (0-100+)
-      example: 85.5
-    expenseCategories:
-      type: integer
-      description: Count of categories with expenses
-      example: 6
-    expenseByCategory:
-      type: array
-      description: Top expense categories for donut chart
-      items:
-        $ref: "./CategoryExpense.yml#/CategoryExpense"
+    savingsRate:
+      type: string
+      description: Savings rate as a decimal string percentage
+      example: "51.4"
     trendData:
       type: array
-      description: Financial velocity trend data for bar chart
+      description: Income versus expense trend for recent periods
       items:
         $ref: "./TrendDataPoint.yml#/TrendDataPoint"
-    expensePreview:
+    incomePreview:
       type: object
-      description: Top expense categories preview for overview
+      description: Ranked income sources preview for the overview page
       properties:
         topCategories:
           type: array
           items:
-            type: object
-            properties:
-              name:
-                type: string
-              spent:
-                type: string
-    incomePreview:
+            $ref: "./CategoryExpense.yml#/CategoryExpense"
+        total:
+          type: string
+          description: Total income for the selected period
+          example: "9750000"
+      required:
+        - topCategories
+        - total
+    expensePreview:
       type: object
-      description: Income source group preview for overview
+      description: Ranked expense categories preview for the overview page
       properties:
-        sourceGroups:
+        topCategories:
           type: array
           items:
-            type: object
-            properties:
-              type:
-                type: string
-                enum: [active, passive, other]
-              total:
-                type: string
+            $ref: "./CategoryExpense.yml#/CategoryExpense"
+        total:
+          type: string
+          description: Total expenses for the selected period
+          example: "4735000"
+      required:
+        - topCategories
+        - total
   required:
     - totalIncome
     - totalExpenses
     - netSavings
-    - budgetHealth
-    - expenseCategories
-    - expenseByCategory
+    - savingsRate
     - trendData
+    - incomePreview
+    - expensePreview

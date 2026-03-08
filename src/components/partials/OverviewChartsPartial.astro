@@ -12,11 +12,22 @@ export interface Props {
   trendData: TrendData[];
   currency: Currency;
   subtitle?: string;
+  description?: string;
 }
 
-const { trendData, currency, subtitle = 'INCOME VS. EXPENSES' } = Astro.props;
+const {
+  trendData,
+  currency,
+  subtitle = 'INCOME VS. EXPENSES',
+  description = 'Compare recent income and expenses to see whether the selected period is strengthening or falling behind.',
+} = Astro.props;
 ---
 
 <div class="@container" data-report-charts>
-  <FinancialVelocityChart data={trendData} currency={currency} subtitle={subtitle} />
+  <FinancialVelocityChart
+    data={trendData}
+    currency={currency}
+    subtitle={subtitle}
+    description={description}
+  />
 </div>

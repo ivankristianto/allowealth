@@ -142,7 +142,7 @@ export const GET: APIRoute = async (context) => {
     );
 
     // 4. Transform transactions to TransactionOutput format
-    const resolvedType = categoryType || 'expense';
+    const resolvedType = categoryType ?? categoryTransactionsData.categoryType;
     const transactions = categoryTransactionsData.transactions.map((txn) => ({
       id: txn.id,
       amount: String(txn.amount),

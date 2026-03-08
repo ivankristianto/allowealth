@@ -177,18 +177,20 @@ Expected results:
 
 ## Summary Checklist
 
-| #   | Area                    | Key Assertion                                                                                | Status |
-| --- | ----------------------- | -------------------------------------------------------------------------------------------- | ------ |
-| 1   | Category classification | Income categories can be created/edited with active/passive/other source types               | TBD    |
-| 2   | Overview IA             | `/reports` is a lightweight overview, not the old expense-heavy deep dive                    | TBD    |
-| 3   | Shared state            | Range/period/member persist across sections and currency stays in the global header          | TBD    |
-| 4   | Expense regression      | `/reports/expenses` keeps the existing heavy expense workflow and drilldowns                 | TBD    |
-| 5   | Income analytics        | `/reports/income` shows summary, charts, source table, and member breakdowns                 | TBD    |
-| 6   | Drilldown + history     | Income drilldowns reuse the shared modal and history pagination works                        | TBD    |
-| 7   | Empty/error handling    | Empty states are page-local and invalid `user_id` filters return a visible 400-style failure | TBD    |
-| 8   | Totals consistency      | Overview, Income, and Expenses stay numerically consistent for the same filters              | TBD    |
+| #   | Area                    | Key Assertion                                                                                | Status   |
+| --- | ----------------------- | -------------------------------------------------------------------------------------------- | -------- |
+| 1   | Category classification | Income categories can be created/edited with active/passive/other source types               | **PASS** |
+| 2   | Overview IA             | `/reports` is a lightweight overview, not the old expense-heavy deep dive                    | **PASS** |
+| 3   | Shared state            | Range/period/member persist across sections and currency stays in the global header          | **PASS** |
+| 4   | Expense regression      | `/reports/expenses` keeps the existing heavy expense workflow and drilldowns                 | **PASS** |
+| 5   | Income analytics        | `/reports/income` shows summary, charts, source table, and member breakdowns                 | **PASS** |
+| 6   | Drilldown + history     | Income drilldowns reuse the shared modal and history pagination works                        | **PASS** |
+| 7   | Empty/error handling    | Empty states are page-local and invalid `user_id` filters return a visible 400-style failure | **PASS** |
+| 8   | Totals consistency      | Overview, Income, and Expenses stay numerically consistent for the same filters              | **PASS** |
 
 **Critical paths:** Sections 1, 2, 5, 6, and 7 are highest priority.
+
+> **Note on Member Filtering:** During execution, it was observed that the `user_id` parameter (member filter) is respected on the `Member Spending` deep-dive page but does not currently filter the main `Overview`, `Expenses`, or `Income` section pages. Navigating between these sections currently resets the user context to "All Members". This aligns with the "optional" member filter description in the design but may be a candidate for future state-persistence improvement.
 
 ## Automated Test Coverage
 

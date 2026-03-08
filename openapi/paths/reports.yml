@@ -101,13 +101,7 @@ paths:
                   totalIncome: "9750000"
                   totalExpenses: "4735000"
                   netSavings: "5015000"
-                  budgetHealth: 85.5
-                  expenseCategories: 6
-                  expenseByCategory:
-                    - name: "Utilities"
-                      value: "1850000"
-                    - name: "Dining"
-                      value: "905000"
+                  savingsRate: "51.4"
                   trendData:
                     - name: "Dec"
                       income: "25245000"
@@ -121,15 +115,17 @@ paths:
                   expensePreview:
                     topCategories:
                       - name: "Utilities"
-                        spent: "1850000"
+                        value: "1850000"
                       - name: "Dining"
-                        spent: "905000"
+                        value: "905000"
+                    total: "4735000"
                   incomePreview:
-                    sourceGroups:
-                      - type: "active"
-                        total: "7500000"
-                      - type: "passive"
-                        total: "2250000"
+                    topCategories:
+                      - name: "Salary"
+                        value: "7500000"
+                      - name: "Dividends"
+                        value: "2250000"
+                    total: "9750000"
             text/html:
               schema:
                 type: string
@@ -383,32 +379,23 @@ paths:
               example:
                 success: true
                 data:
-                  totalIncome: "9750000"
-                  incomeBySource:
+                  summary:
+                    totalIncome: "9750000"
+                    activeIncome: "8250000"
+                    passiveIncome: "1500000"
+                    otherIncome: "0"
+                    growthVsPreviousPeriod: "15.5"
+                  sourceMix:
                     - name: "Salary"
                       value: "7500000"
+                      sourceType: "active"
                     - name: "Dividends"
                       value: "1500000"
+                      sourceType: "passive"
                     - name: "Freelance"
                       value: "750000"
-                  sourceGroups:
-                    - type: "active"
-                      total: "8250000"
-                      percentage: 84.6
-                      categories:
-                        - id: "cat_salary"
-                          name: "Salary"
-                          total: "7500000"
-                          transactionCount: 1
-                    - type: "passive"
-                      total: "1500000"
-                      percentage: 15.4
-                      categories:
-                        - id: "cat_dividends"
-                          name: "Dividends"
-                          total: "1500000"
-                          transactionCount: 2
-                  trendData:
+                      sourceType: "active"
+                  sourceGroupTrend:
                     - name: "Dec"
                       active: "7500000"
                       passive: "1200000"
@@ -421,6 +408,27 @@ paths:
                       active: "8250000"
                       passive: "1500000"
                       other: "0"
+                  members:
+                    - userId: "user_123"
+                      userName: "Alex"
+                      totalIncome: "9750000"
+                      transactionCount: 3
+                  history:
+                    transactions:
+                      - id: "txn_123"
+                        description: "Monthly Salary"
+                        amount: "7500000"
+                        currency: "IDR"
+                        transaction_date: "2026-02-01"
+                        category_name: "Salary"
+                        category_icon: "banknote"
+                        category_color: "bg-success"
+                        income_source_type: "active"
+                        created_by_name: "Alex"
+                    total: 1
+                    page: 1
+                    pageSize: 25
+                    appliedFilters: {}
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':

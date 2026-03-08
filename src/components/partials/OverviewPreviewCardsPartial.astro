@@ -24,84 +24,137 @@ const { incomePreview, expensePreview, currency, state } = Astro.props;
 
 const incomeHref = buildReportUrl(REPORT_SECTION_PATHS.income, state);
 const expensesHref = buildReportUrl(REPORT_SECTION_PATHS.expenses, state);
+const toNumber = (value: string) => Number.parseFloat(value) || 0;
+const incomeCategories = [...incomePreview.topCategories].sort(
+  (left, right) => toNumber(right.value) - toNumber(left.value)
+);
+const expenseCategories = [...expensePreview.topCategories].sort(
+  (left, right) => toNumber(right.value) - toNumber(left.value)
+);
+const incomeTotal = toNumber(incomePreview.total);
+const expenseTotal = toNumber(expensePreview.total);
+const getShare = (value: string, total: number) =>
+  total > 0 ? `${((toNumber(value) / total) * 100).toFixed(1)}% of total` : '0.0% of total';
 ---
 
 <div class="@container" data-overview-previews>
   <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6">
-    {/* Income Preview Card */}
-    <div class="card bg-base-100 shadow-sm border border-base-200">
-      <div class="card-body p-4 sm:p-6">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <TrendingUp size={18} class="text-success" />
-            <h3 class="font-semibold text-sm uppercase tracking-wider text-base-content/70">
-              Top Income Sources
-            </h3>
+    <div
+      class="card border border-base-300 bg-base-100 shadow-sm"
+      data-testid="reports-overview-income-sources"
+    >
+      <div class="card-body gap-5 p-5 sm:p-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <TrendingUp size={18} class="text-success" aria-hidden="true" />
+              <h3 class="text-lg font-semibold tracking-tight text-primary">Income sources</h3>
+            </div>
+            <p class="max-w-xl text-sm leading-6 text-base-content/70">
+              Every income source recorded in this period, ranked from largest to smallest so you
+              can immediately see what is carrying the month.
+            </p>
           </div>
-          <p class="text-sm font-bold text-success">
-            {formatCurrency(incomePreview.total, currency)}
-          </p>
+          <div class="rounded-2xl bg-success/10 px-4 py-3 text-left sm:min-w-48 sm:text-right">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-success/80">Total income</p>
+            <p class="mt-1 text-base font-semibold tabular-nums text-success">
+              {formatCurrency(incomePreview.total, currency)}
+            </p>
+          </div>
         </div>
+
         {
-          incomePreview.topCategories.length > 0 ? (
-            <ul class="space-y-2 mb-4">
-              {incomePreview.topCategories.map((cat) => (
-                <li class="flex items-center justify-between text-sm">
-                  <span class="text-base-content/80 truncate">{cat.name}</span>
-                  <span class="font-medium text-base-content tabular-nums">
-                    {formatCurrency(cat.value, currency)}
+          incomeCategories.length > 0 ? (
+            <ol class="divide-y divide-base-200">
+              {incomeCategories.map((category, index) => (
+                <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 py-3">
+                  <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-success/10 text-sm font-semibold text-success">
+                    {index + 1}
                   </span>
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-base-content">{category.name}</p>
+                    <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
+                      {getShare(category.value, incomeTotal)}
+                    </p>
+                  </div>
+                  <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
+                    {formatCurrency(category.value, currency)}
+                  </p>
                 </li>
               ))}
-            </ul>
+            </ol>
           ) : (
-            <p class="text-sm text-base-content/50 mb-4">No income recorded</p>
+            <p class="rounded-2xl bg-base-200 px-4 py-4 text-sm text-base-content/60">
+              No income sources were recorded for this period yet.
+            </p>
           )
         }
+
         <a
           href={incomeHref}
-          class="btn btn-ghost btn-sm gap-1 self-end text-success hover:text-success"
+          class="btn btn-outline btn-sm gap-2 rounded-lg sm:rounded-xl self-start text-success"
         >
-          View Income Report <ArrowRight size={14} />
+          Open Income Report <ArrowRight size={14} aria-hidden="true" />
         </a>
       </div>
     </div>
 
-    {/* Expense Preview Card */}
-    <div class="card bg-base-100 shadow-sm border border-base-200">
-      <div class="card-body p-4 sm:p-6">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <TrendingDown size={18} class="text-error" />
-            <h3 class="font-semibold text-sm uppercase tracking-wider text-base-content/70">
-              Top Expense Categories
-            </h3>
+    <div
+      class="card border border-base-300 bg-base-100 shadow-sm"
+      data-testid="reports-overview-expense-categories"
+    >
+      <div class="card-body gap-5 p-5 sm:p-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <TrendingDown size={18} class="text-error" aria-hidden="true" />
+              <h3 class="text-lg font-semibold tracking-tight text-primary">Expense categories</h3>
+            </div>
+            <p class="max-w-xl text-sm leading-6 text-base-content/70">
+              Review the largest spending categories first to understand what is pulling the period
+              higher, then open the expense report for deeper investigation.
+            </p>
           </div>
-          <p class="text-sm font-bold text-error">
-            {formatCurrency(expensePreview.total, currency)}
-          </p>
+          <div class="rounded-2xl bg-error/10 px-4 py-3 text-left sm:min-w-48 sm:text-right">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-error/80">Total expenses</p>
+            <p class="mt-1 text-base font-semibold tabular-nums text-error">
+              {formatCurrency(expensePreview.total, currency)}
+            </p>
+          </div>
         </div>
+
         {
-          expensePreview.topCategories.length > 0 ? (
-            <ul class="space-y-2 mb-4">
-              {expensePreview.topCategories.map((cat) => (
-                <li class="flex items-center justify-between text-sm">
-                  <span class="text-base-content/80 truncate">{cat.name}</span>
-                  <span class="font-medium text-base-content tabular-nums">
-                    {formatCurrency(cat.value, currency)}
+          expenseCategories.length > 0 ? (
+            <ol class="divide-y divide-base-200">
+              {expenseCategories.map((category, index) => (
+                <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 py-3">
+                  <span class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-error/10 text-sm font-semibold text-error">
+                    {index + 1}
                   </span>
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-base-content">{category.name}</p>
+                    <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
+                      {getShare(category.value, expenseTotal)}
+                    </p>
+                  </div>
+                  <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
+                    {formatCurrency(category.value, currency)}
+                  </p>
                 </li>
               ))}
-            </ul>
+            </ol>
           ) : (
-            <p class="text-sm text-base-content/50 mb-4">No expenses recorded</p>
+            <p class="rounded-2xl bg-base-200 px-4 py-4 text-sm text-base-content/60">
+              No expense categories were recorded for this period yet.
+            </p>
           )
         }
+
         <a
           href={expensesHref}
-          class="btn btn-ghost btn-sm gap-1 self-end text-error hover:text-error"
+          class="btn btn-outline btn-sm gap-2 rounded-lg sm:rounded-xl self-start text-error"
         >
-          View Expense Report <ArrowRight size={14} />
+          Open Expense Report <ArrowRight size={14} aria-hidden="true" />
         </a>
       </div>
     </div>
