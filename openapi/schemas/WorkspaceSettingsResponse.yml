@@ -23,7 +23,6 @@ WorkspaceSettingsResponse:
               currency: "IDR"
               secondaryCurrency: "USD"
               weekStart: "monday"
-              compactNumbers: true
               monthlyIncome:
                 IDR: "15000000"
               forecastMonthlyTopup: 5000000

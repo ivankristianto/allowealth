@@ -3,8 +3,7 @@
  * BudgetActions Component
  *
  * Action buttons row for the Budget page.
- * Mobile order: New Budget, Categories, Import, Export, Copy, Initialize All, AI Rebalancer.
- * (AI Rebalancer is intentionally disabled for now.)
+ * Mobile order: New Budget, Categories, Copy Budget, (More: Import, Export, Initialize All).
  * Uses ActionBar for consistent layout.
  *
  * Note: History is in BudgetHeaderControls (header slot).
@@ -19,8 +18,7 @@
 
 import { Plus, Tags, Download, Upload } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
-import ActionOverflowMenu from './ActionOverflowMenu.astro';
-import type { OverflowAction } from './ActionOverflowMenu.astro';
+import ActionExpandable from './ActionExpandable.astro';
 import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
 import {
   BUDGET_ACTIONS_DESKTOP_CARD_CLASS,
@@ -44,25 +42,6 @@ const {
   copyActionTooltip = '',
   className = '',
 } = Astro.props;
-
-// Build overflow actions for Copy and Initialize All
-const overflowActions: OverflowAction[] = [];
-if (showCopyAction) {
-  overflowActions.push({
-    id: 'copy-budget',
-    label: 'Copy Budget',
-    disabled: disableCopyAction,
-    title: disableCopyAction && copyActionTooltip ? copyActionTooltip : undefined,
-    dataTestId: 'copy-budget-btn',
-  });
-}
-if (uninitializedCount > 0) {
-  overflowActions.push({
-    id: 'initialize-budgets',
-    label: 'Initialize All',
-    dataTestId: 'initialize-budgets-btn',
-  });
-}
 ---
 
 <ActionBar
@@ -72,49 +51,159 @@ if (uninitializedCount > 0) {
   ariaLabel="Budget actions"
   edgeBleed
 >
+  {/* Secondary Actions - Categories, Copy, and Expandable (Import/Export/Initialize) */}
   <div slot="secondary-visible" class="flex items-center gap-1 md:gap-2">
-    {/* Categories */}
-    <div class="tooltip tooltip-bottom" data-tip="Manage categories">
-      <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
-        <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="text-xs md:text-sm">Categories</span>
-      </a>
-    </div>
+    <ActionExpandable>
+      {/* Always visible: Categories */}
+      <div slot="always-visible" class="flex items-center gap-1 md:gap-2">
+        {/* Categories */}
+        <div class="tooltip tooltip-bottom" data-tip="Manage categories">
+          <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
+            <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span class="text-xs md:text-sm">Categories</span>
+          </a>
+        </div>
 
-    {/* Import */}
-    <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
-      <button
-        type="button"
-        class={ghostBtn}
-        aria-label="Import budgets from CSV"
-        data-budget-import-btn
-        data-testid="budget-import-btn"
-      >
-        <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span>Import</span>
-      </button>
-    </div>
+        {/* Copy Budget */}
+        {
+          showCopyAction && (
+            <div
+              class="tooltip tooltip-bottom"
+              data-tip={disableCopyAction ? copyActionTooltip : 'Copy budget'}
+            >
+              <button
+                type="button"
+                class={ghostBtn}
+                disabled={disableCopyAction}
+                title={disableCopyAction ? copyActionTooltip : undefined}
+                data-action-id="copy-budget"
+                data-testid="copy-budget-btn"
+                aria-label="Copy budget"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="stroke-current md:hidden"
+                  aria-hidden="true"
+                >
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="stroke-current hidden md:block"
+                  aria-hidden="true"
+                >
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
+                <span class="text-xs md:text-sm">Copy</span>
+              </button>
+            </div>
+          )
+        }
+      </div>
 
-    {/* Export */}
-    <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
-      <button
-        type="button"
-        class={ghostBtn}
-        aria-label="Export budgets to CSV"
-        data-budget-export-btn
-        data-testid="budget-export-btn"
-      >
-        <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span>Export</span>
-      </button>
-    </div>
+      {/* Expandable: Import, Export, Initialize All */}
+      <div slot="expandable" class="flex items-center gap-1 md:gap-2">
+        {/* Import */}
+        <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
+          <button
+            type="button"
+            class={ghostBtn}
+            aria-label="Import budgets from CSV"
+            data-budget-import-btn
+            data-testid="budget-import-btn"
+          >
+            <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span>Import</span>
+          </button>
+        </div>
+
+        {/* Export */}
+        <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
+          <button
+            type="button"
+            class={ghostBtn}
+            aria-label="Export budgets to CSV"
+            data-budget-export-btn
+            data-testid="budget-export-btn"
+          >
+            <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <span>Export</span>
+          </button>
+        </div>
+
+        {/* Initialize All */}
+        {
+          uninitializedCount > 0 && (
+            <div
+              class="tooltip tooltip-bottom"
+              data-tip="Initialize all categories with default budgets"
+            >
+              <button
+                type="button"
+                class={ghostBtn}
+                data-action-id="initialize-budgets"
+                data-testid="initialize-budgets-btn"
+                aria-label="Initialize all budgets"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="stroke-current md:hidden"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="stroke-current hidden md:block"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span class="text-xs md:text-sm">Initialize All</span>
+              </button>
+            </div>
+          )
+        }
+      </div>
+    </ActionExpandable>
   </div>
-
-  {/* Overflow: Copy Budget + Initialize All */}
-  {overflowActions.length > 0 && <ActionOverflowMenu slot="overflow" actions={overflowActions} />}
 
   {/* Primary Action - New Budget */}
   <div slot="primary" class="tooltip tooltip-bottom" data-tip="Set new budget">

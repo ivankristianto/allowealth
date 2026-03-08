@@ -40,11 +40,6 @@ export default defineCommand({
           description: 'Week start day (monday or sunday)',
           default: 'monday',
         },
-        'compact-numbers': {
-          type: 'string',
-          description: 'Compact number formatting (true or false)',
-          default: 'true',
-        },
         'public-url': {
           type: 'string',
           description: 'Base URL for the signup link (overrides PUBLIC_URL env var)',
@@ -89,11 +84,6 @@ export default defineCommand({
           (args['week-start'] as string) || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
         await metaService.set(workspace.id, WORKSPACE_META_KEYS.WEEK_START, weekStart);
 
-        const compactNumbers =
-          (args['compact-numbers'] as string) ||
-          WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS];
-        await metaService.set(workspace.id, WORKSPACE_META_KEYS.COMPACT_NUMBERS, compactNumbers);
-
         const currencyLogValue = currency || 'unset (configured in onboarding step 1)';
         console.log(
           `  Set workspace settings (currency: ${currencyLogValue}, weekStart: ${weekStart})`
@@ -131,6 +121,7 @@ export default defineCommand({
 
         const { db, workspaces, workspaceMeta, users } = await import('@/db');
         const { eq, sql } = await import('drizzle-orm');
+        const { isValidWorkspaceMetaKey } = await import('@/lib/constants/workspace-meta-keys');
 
         console.log('Fetching workspaces...\n');
 
@@ -161,8 +152,17 @@ export default defineCommand({
           console.log(`  Members:    ${memberResult[0]?.count ?? 0}`);
 
           if (metaRecords.length > 0) {
+            const visibleMetaRecords = metaRecords.filter((meta) =>
+              isValidWorkspaceMetaKey(meta.meta_key)
+            );
+
+            if (visibleMetaRecords.length === 0) {
+              console.log('─'.repeat(80));
+              continue;
+            }
+
             console.log(`  Settings:`);
-            for (const meta of metaRecords) {
+            for (const meta of visibleMetaRecords) {
               console.log(`    ${meta.meta_key}: ${meta.meta_value}`);
             }
           }

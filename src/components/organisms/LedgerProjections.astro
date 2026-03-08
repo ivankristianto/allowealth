@@ -13,7 +13,7 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
-import { formatCurrencyCompact } from '@/lib/formatting';
+import { formatCurrency } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
 import type { ForecastYearBreakdownRow } from '@/lib/forecast';
 
@@ -28,7 +28,7 @@ export interface Props {
 const { data = [], currency = 'IDR', loading = false, error, className = '' } = Astro.props;
 
 function formatValue(value: number | null, valueCurrency: Currency): string {
-  return value === null ? '—' : formatCurrencyCompact(value, valueCurrency);
+  return value === null ? '—' : formatCurrency(value, valueCurrency);
 }
 
 function formatSignedValue(value: number | null, valueCurrency: Currency): string {
@@ -37,7 +37,7 @@ function formatSignedValue(value: number | null, valueCurrency: Currency): strin
   }
 
   const prefix = value > 0 ? '+' : '';
-  return `${prefix}${formatCurrencyCompact(value, valueCurrency)}`;
+  return `${prefix}${formatCurrency(value, valueCurrency)}`;
 }
 ---
 

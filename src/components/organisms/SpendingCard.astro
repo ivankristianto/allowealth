@@ -5,7 +5,7 @@
  * Monthly spending overview card with progress bar, income, and net savings.
  */
 import { Scale } from '@lucide/astro';
-import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting';
+import { formatCurrency } from '@/lib/formatting';
 import { getBudgetStatusClass, type BudgetStatusClassName } from '@/lib/tokens';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
@@ -65,7 +65,7 @@ const progressBarStatus = getProgressBarStatus(status);
 const iconBadgeVariant = getIconBadgeVariant(status);
 
 const spentFormatted = formatCurrency(spent, currency);
-const budgetFormatted = formatCurrencyCompact(budget, currency);
+const budgetFormatted = formatCurrency(budget, currency);
 const remainingFormatted = formatCurrency(remaining, currency);
 const incomeFormatted = formatCurrency(income, currency);
 const netSavingsFormatted = formatCurrency(Math.abs(netSavings), currency);

@@ -107,6 +107,35 @@ describe('WorkspaceMetaService forecast settings', () => {
     expect(settings.forecastAnnualRate).toBe(8.5);
   });
 
+  it('rejects invalid monthly income keys and amount strings', async () => {
+    const service = new WorkspaceMetaService(createMockDb() as any);
+
+    await expect(service.setMonthlyIncome('workspace-1', { BTC: '1000' } as any)).rejects.toThrow(
+      'Monthly income must be an object keyed by supported currency codes with decimal amount strings'
+    );
+    await expect(
+      service.setMonthlyIncome('workspace-1', { IDR: 'invalid-amount' } as any)
+    ).rejects.toThrow(
+      'Monthly income must be an object keyed by supported currency codes with decimal amount strings'
+    );
+  });
+
+  it('filters invalid persisted monthly income entries when reading settings', async () => {
+    const service = new WorkspaceMetaService(
+      createMockDb({
+        [WORKSPACE_META_KEYS.MONTHLY_INCOME]:
+          '{"IDR":"5000000","USD":"250.50","BTC":"1000","EUR":"invalid"}',
+      }) as any
+    );
+
+    const settings = await service.getSettings('workspace-1');
+
+    expect(settings.monthlyIncome).toEqual({
+      IDR: '5000000',
+      USD: '250.50',
+    });
+  });
+
   it('rejects negative forecast assumption values', async () => {
     const service = new WorkspaceMetaService(createMockDb() as any) as ForecastWorkspaceMetaService;
 

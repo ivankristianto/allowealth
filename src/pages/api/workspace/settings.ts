@@ -11,32 +11,14 @@ import { logError } from '@/lib/utils';
 import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/service-errors';
 import { z } from 'zod';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
+import {
+  MONTHLY_INCOME_AMOUNT_PATTERN,
+  parseMonthlyIncomeValue,
+} from '@/lib/constants/workspace-meta-keys';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
 
 const currencySchema = z.enum(AVAILABLE_CURRENCIES);
-
-function parseMonthlyIncome(value: string): Record<string, string> {
-  if (!value) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return {};
-    }
-
-    return Object.fromEntries(
-      Object.entries(parsed).filter(
-        (entry): entry is [string, string] =>
-          typeof entry[0] === 'string' && typeof entry[1] === 'string'
-      )
-    );
-  } catch {
-    return {};
-  }
-}
 
 /**
  * Schema for PUT request body - workspace settings update
@@ -46,9 +28,8 @@ const updateWorkspaceSettingsSchema = z.object({
   currency: currencySchema.optional(),
   secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
   weekStart: z.enum(['monday', 'sunday']).optional(),
-  compactNumbers: z.boolean().optional(),
   monthlyIncome: z
-    .record(z.string(), z.string().regex(/^\d+(\.\d{1,2})?$/))
+    .record(z.string(), z.string().regex(MONTHLY_INCOME_AMOUNT_PATTERN))
     .refine(
       (obj) =>
         Object.keys(obj).every((k) => (AVAILABLE_CURRENCIES as readonly string[]).includes(k)),
@@ -85,8 +66,7 @@ export const GET: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        compactNumbers: settings.compactNumbers,
-        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
+        monthlyIncome: parseMonthlyIncomeValue(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
       },
@@ -107,7 +87,8 @@ export const GET: APIRoute = async (context) => {
  * PUT /api/workspace/settings
  *
  * Updates workspace settings. Admin only for name changes.
- * All members can update preferences (currency, weekStart, compactNumbers).
+ * All members can update preferences (currency, secondaryCurrency, weekStart, monthlyIncome,
+ * forecastMonthlyTopup, forecastAnnualRate).
  */
 export const PUT: APIRoute = async (context) => {
   try {
@@ -124,7 +105,6 @@ export const PUT: APIRoute = async (context) => {
       currency,
       secondaryCurrency,
       weekStart,
-      compactNumbers,
       monthlyIncome,
       forecastMonthlyTopup,
       forecastAnnualRate,
@@ -156,9 +136,6 @@ export const PUT: APIRoute = async (context) => {
     if (weekStart !== undefined) {
       await workspaceMetaService.setWeekStart(auth.workspaceId, weekStart);
     }
-    if (compactNumbers !== undefined) {
-      await workspaceMetaService.setCompactNumbers(auth.workspaceId, compactNumbers);
-    }
     if (monthlyIncome !== undefined) {
       await workspaceMetaService.setMonthlyIncome(auth.workspaceId, monthlyIncome);
     }
@@ -189,8 +166,7 @@ export const PUT: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        compactNumbers: settings.compactNumbers,
-        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
+        monthlyIncome: parseMonthlyIncomeValue(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
       },

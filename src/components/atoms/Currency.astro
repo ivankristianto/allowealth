@@ -6,19 +6,17 @@
  *
  * @param {number} amount - The amount to display
  * @param {string} currency - Currency code: IDR, USD
- * @param {boolean} compact - Use compact notation (e.g., 2.5M)
  * @param {boolean} showSign - Show +/- sign for positive/negative
  * @param {string} size - Text size: sm, md, lg, xl
  * @param {string} variant - Color variant: default, positive, negative, neutral
  * @param {string} className - Additional CSS classes
  */
 
-import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting/currency';
+import { formatCurrency } from '@/lib/formatting/currency';
 
 export interface Props {
   amount: number;
   currency?: Currency;
-  compact?: boolean;
   showSign?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'default' | 'positive' | 'negative' | 'neutral';
@@ -28,7 +26,6 @@ export interface Props {
 const {
   amount,
   currency = 'IDR',
-  compact = false,
   showSign = false,
   size = 'md',
   variant = 'default',
@@ -49,9 +46,7 @@ const variantClasses: Record<string, string> = {
   neutral: 'text-neutral',
 };
 
-let formattedAmount = compact
-  ? formatCurrencyCompact(amount, currency)
-  : formatCurrency(amount, currency);
+let formattedAmount = formatCurrency(amount, currency);
 
 // Add sign if requested and amount is not zero
 if (showSign && amount !== 0) {

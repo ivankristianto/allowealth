@@ -8,8 +8,13 @@ describe('Transactions action hierarchy', () => {
     expect(content).not.toContain('data-add-income-button');
   });
 
-  it('uses ActionOverflowMenu for lower-frequency actions', () => {
+  it('uses ActionExpandable for lower-frequency actions', () => {
     const content = readFileSync('src/components/molecules/TransactionActionsBar.astro', 'utf8');
-    expect(content).toContain('ActionOverflowMenu');
+    expect(content).toContain('ActionExpandable');
+    expect(content).toContain('slot="always-visible"');
+    expect(content).toContain('slot="expandable"');
+    expect(content).toContain('Import');
+    expect(content).toContain('Export');
+    expect(content).toContain('Scan');
   });
 });

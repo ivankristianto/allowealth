@@ -1,9 +1,6 @@
 import Decimal from 'decimal.js';
 import { DEFAULT_CURRENCY, type Currency } from '@/lib/constants/currency';
-import {
-  formatCurrency as formatCurrencyCore,
-  formatCurrencyCompact as formatCurrencyCompactCore,
-} from './currency-core';
+import { formatCurrency as formatCurrencyCore } from './currency-core';
 
 Decimal.set({
   precision: 28,
@@ -37,11 +34,4 @@ export function formatCurrency(
   currency: Currency | string = DEFAULT_CURRENCY
 ): string {
   return formatCurrencyCore(toNumber(amount), currency);
-}
-
-export function formatCurrencyCompact(
-  amount: string | number,
-  currency: Currency | string = DEFAULT_CURRENCY
-): string {
-  return formatCurrencyCompactCore(toNumber(amount), currency);
 }

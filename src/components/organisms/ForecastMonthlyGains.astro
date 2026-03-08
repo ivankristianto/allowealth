@@ -133,7 +133,7 @@ const serializedChartPayload = JSON.stringify({
 <script>
   import { Chart } from '@/lib/chart-setup';
   import { isValidCurrency } from '@/lib/constants/currency';
-  import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
   import { colors } from '@/lib/tokens';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import type { Currency } from '@/lib/constants/currency';
@@ -281,7 +281,7 @@ const serializedChartPayload = JSON.stringify({
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
                 if (value === null) return '';
-                return `${label}: ${formatCurrencyCompact(value, currency)}`;
+                return `${label}: ${formatCurrency(value, currency)}`;
               },
             },
           },
@@ -315,7 +315,7 @@ const serializedChartPayload = JSON.stringify({
                 size: 10,
                 weight: 600 as any,
               },
-              callback: (value) => formatCurrencyCompact(Number(value), currency),
+              callback: (value) => formatCurrency(Number(value), currency),
             },
             border: {
               display: false,

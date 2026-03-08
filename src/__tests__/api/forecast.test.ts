@@ -45,8 +45,7 @@ describe('GET /api/forecast', () => {
       currency: 'IDR',
       secondaryCurrency: '',
       weekStart: 'monday',
-      compactNumbers: true,
-      monthlyIncome: '',
+      monthlyIncome: {},
       forecastMonthlyTopup: 250,
       forecastAnnualRate: 12,
     })) as any;

@@ -54,7 +54,6 @@ let workspaceData = {
     currency: 'IDR',
     secondaryCurrency: '',
     weekStart: 'monday',
-    compactNumbers: true,
   },
 };
 let canChangeCurrency = true;
@@ -92,7 +91,6 @@ try {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        compactNumbers: settings.compactNumbers,
       },
     };
 
@@ -423,25 +421,6 @@ const dataActions = [
                       }
                     </select>
                   </div>
-
-                  <div
-                    class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-200 p-6 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="space-y-1">
-                      <h3 class="font-semibold text-base-content">Compact Number Display</h3>
-                      <p class="text-sm text-base-content/60">
-                        Show amounts as Rp 1.5M instead of Rp 1.500.000
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      class="toggle toggle-accent"
-                      name="compactNumbers"
-                      id="compact-numbers"
-                      aria-label="Compact number display"
-                      checked={workspaceData.settings.compactNumbers}
-                    />
-                  </div>
                 </form>
               </div>
             </section>
@@ -740,7 +719,6 @@ const dataActions = [
 
       const payload: Record<string, unknown> = {
         weekStart: formData.get('weekStart'),
-        compactNumbers: formData.get('compactNumbers') === 'on',
       };
       if (canEditCurrencySettings) {
         payload.currency = primaryCurrencySelect?.value ?? formData.get('currency');

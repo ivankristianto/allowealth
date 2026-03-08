@@ -1,3 +1,2 @@
-export { formatCurrency, formatCurrencyCompact } from './currency';
-export { formatCompactNumber } from './currency-core';
+export { formatCurrency } from './currency';
 export { formatPercentage } from './percentage';
