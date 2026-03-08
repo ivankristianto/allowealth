@@ -68,7 +68,7 @@ describe('recurring forecast page', () => {
     );
     expect(page).toContain('const chartData: ForecastChartDataPoint[] = activeTotals');
     expect(page).toMatch(
-      /\{\s*forecast\.rows\.length > 0 && \(\s*<ForecastCashflowChart data=\{chartData\} currency=\{activeCurrency\} \/>\s*\)\s*\}/
+      /\{\s*forecast\.rows\.length > 0 && \(\s*<ForecastCashflowChart data=\{chartData\} currency=\{activeCurrency\} typeFilter=\{typeFilter\} \/>\s*\)\s*\}/
     );
     expect(page).not.toContain(
       '{chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
@@ -79,5 +79,18 @@ describe('recurring forecast page', () => {
     const page = readForecastPage();
 
     expect(page).toMatch(/class="[^"]*sticky[^"]*top-0[^"]*z-\d+[^"]*rounded-3xl[^"]*border[^"]*"/);
+  });
+
+  it('imports ForecastSummary and renders it when activeTotals is present', () => {
+    const page = readForecastPage();
+
+    expect(page).toContain(
+      "import ForecastSummary from '@/components/organisms/ForecastSummary.astro';"
+    );
+    expect(page).toContain('<ForecastSummary');
+    expect(page).toContain('income={summaryIncome}');
+    expect(page).toContain('expense={summaryExpense}');
+    expect(page).toContain('net={summaryNet}');
+    expect(page).toContain('monthCount={monthCount}');
   });
 });

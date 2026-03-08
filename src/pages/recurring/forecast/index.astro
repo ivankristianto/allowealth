@@ -2,6 +2,7 @@
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import ForecastCashflowChart from '@/components/organisms/ForecastCashflowChart.astro';
 import type { ForecastChartDataPoint } from '@/components/organisms/ForecastCashflowChart.astro';
+import ForecastSummary from '@/components/organisms/ForecastSummary.astro';
 import ForecastTable from '@/components/organisms/ForecastTable.astro';
 import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
@@ -52,6 +53,24 @@ const chartData: ForecastChartDataPoint[] = activeTotals
       };
     })
   : [];
+
+const summaryIncome = activeTotals
+  ? forecast.monthKeys
+      .reduce((sum, key) => sum + Number.parseFloat(activeTotals.months[key]?.income ?? '0'), 0)
+      .toFixed(2)
+  : '0';
+
+const summaryExpense = activeTotals
+  ? forecast.monthKeys
+      .reduce((sum, key) => sum + Number.parseFloat(activeTotals.months[key]?.expense ?? '0'), 0)
+      .toFixed(2)
+  : '0';
+
+const summaryNet = activeTotals
+  ? forecast.monthKeys
+      .reduce((sum, key) => sum + Number.parseFloat(activeTotals.months[key]?.net ?? '0'), 0)
+      .toFixed(2)
+  : '0';
 
 const selectedAccounts = filters.accountIds ?? [];
 const liquidLabels = new Set(['Cash', 'Bank Account', 'E-Wallet', 'Credit Card']);
@@ -220,6 +239,18 @@ const typeOptions = [
         </div>
       </form>
     </section>
+
+    {
+      activeTotals && (
+        <ForecastSummary
+          income={summaryIncome}
+          expense={summaryExpense}
+          net={summaryNet}
+          currency={activeCurrency}
+          monthCount={monthCount}
+        />
+      )
+    }
 
     {
       forecast.rows.length > 0 && (
