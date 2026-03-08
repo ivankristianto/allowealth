@@ -11,7 +11,7 @@ describe('default household seed scenario', () => {
   });
 
   it('includes the requested household accounts and income sources', () => {
-    expect(getPaymentAccounts().some((account) => account.name === 'Current Account')).toBe(true);
+    expect(getPaymentAccounts().some((account) => account.name === 'BCA - 2332')).toBe(true);
     const loanNames = getLoanAccounts().map((account) => account.name);
     const investmentNames = getAccountTypes().map((account) => account.name);
     const incomeCategoryNames = INCOME_CATEGORIES.map((category) => category.name);
@@ -20,10 +20,18 @@ describe('default household seed scenario', () => {
       expect(loanNames.includes(name)).toBe(true);
     }
     for (const name of [
-      'Emergency Savings',
-      'Fixed Deposit - BCA',
-      'Bond Ladder',
+      'Jenius - 8812',
+      'BCA Deposit - 9912',
+      'Mandiri Deposit - 1122',
+      'SBR012 Bond',
+      'ORI023 Bond',
+      'SR018 Sukuk',
       'Dividend Portfolio',
+      'Sucorinvest Money Market Fund',
+      'Schroder Dana Prestasi',
+      'Batavia Dana Kas Maxima',
+      'DBS - 5521',
+      'Antam Gold 10g',
     ] as const) {
       expect(investmentNames.includes(name)).toBe(true);
     }
@@ -49,7 +57,7 @@ describe('default household seed scenario', () => {
     expect(nets.some((value) => value < 0)).toBe(true);
   });
 
-  it('pays both parents and passive income sources into the current account plan', () => {
+  it('pays both parents and passive income sources into the BCA - 2332 plan', () => {
     const monthPlan = getIncomeTemplateForMonth(0);
     const categories = monthPlan.map((entry) => entry.category);
     const momSalary = monthPlan.find((entry) => entry.category === 'Mom Salary');
@@ -65,6 +73,6 @@ describe('default household seed scenario', () => {
       expect(categories.includes(name)).toBe(true);
     }
     expect(momSalary?.owner).toBe('mom');
-    expect(new Set(monthPlan.map((entry) => entry.account))).toEqual(new Set(['Current Account']));
+    expect(new Set(monthPlan.map((entry) => entry.account))).toEqual(new Set(['BCA - 2332']));
   });
 });

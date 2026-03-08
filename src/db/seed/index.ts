@@ -2,15 +2,15 @@
  * Database Seeder
  *
  * Seeds the database with realistic sample data for testing and development.
- * Can be run multiple times - will clear existing data before seeding.
+ * You can run this multiple times; it clears existing data before seeding.
  *
  * Usage: bun run src/db/seed/index.ts [options]
  *
  * Options:
- *   --months=N          Number of months to seed transactions for (default: 3)
- *   --transactions=N    Number of extra transactions to seed (default: 0)
- *   --benchmark         Legacy: equivalent to --months=12 --transactions=10000
- *   --stress            Legacy: equivalent to --months=60 (5 years)
+ *   --months=N          Seed transactions for this many months (default: 6)
+ *   --transactions=N    Seed this many extra transactions (default: 0)
+ *   --benchmark         Legacy: adds 10,000 transactions over 12 months
+ *   --stress            Legacy: generates 5 years of family data
  *   --help              Show this help message
  */
 
@@ -74,8 +74,8 @@ const isProduction = import.meta.env.MODE === 'production';
 const allowSeed = import.meta.env.ALLOW_SEED === 'true';
 
 if (isProduction && !allowSeed) {
-  console.error('❌ Seeding is disabled in production.');
-  console.error('   Set ALLOW_SEED=true to override (use with caution).');
+  console.error('❌ Seeding disabled in production.');
+  console.error('   Set ALLOW_SEED=true to override (use caution).');
   process.exit(1);
 }
 
@@ -101,7 +101,7 @@ function parseArgs(): SeedOptions & {
   // Check for help
   if (args.includes('--help') || args.includes('-h')) {
     return {
-      months: 3,
+      months: 6,
       transactions: 0,
       recurringTemplates: 0,
       primaryCurrency: 'IDR',
@@ -117,7 +117,7 @@ function parseArgs(): SeedOptions & {
   const isLegacyStress = args.includes('--stress');
 
   // Parse --months=N
-  let months = 3;
+  let months = 6;
   const monthsArg = args.find((arg) => arg.startsWith('--months='));
   if (monthsArg) {
     const value = parseInt(monthsArg.split('=')[1], 10);
@@ -189,16 +189,16 @@ Database Seeder
 Usage: bun run db:seed [options]
 
 Options:
-  --months=N               Number of months to seed transactions for (default: 3)
-  --transactions=N         Number of extra transactions to seed (default: 0)
-  --primary-currency=CUR   Primary currency to use (default: IDR)
-  --secondary-currency=CUR Secondary currency to use (default: USD)
-  --benchmark              Legacy: equivalent to --months=12 --transactions=10000
-  --stress                 Legacy: equivalent to --months=60 (5 years of family data)
+  --months=N               Seed transactions for this many months (default: 6)
+  --transactions=N         Seed this many extra transactions (default: 0)
+  --primary-currency=CUR   Set primary currency (default: IDR)
+  --secondary-currency=CUR Set secondary currency (default: USD)
+  --benchmark              Legacy: adds 10,000 transactions over 12 months
+  --stress                 Legacy: generates 5 years of family data
   --help, -h               Show this help message
 
 Examples:
-  bun run db:seed                                   # Default: 3 months base data
+  bun run db:seed                                   # Default: 6 months of base data
   bun run db:seed --primary-currency=EUR --secondary-currency=GBP
   bun run db:seed --months=6                        # 6 months of base data
   bun run db:seed --months=12 --transactions=5000   # 12 months + 5000 extra transactions
@@ -261,7 +261,7 @@ async function clearAllTables() {
   } catch (error) {
     if (error instanceof Error && error.message.includes('no such table')) {
       console.error('❌ Database tables not found.');
-      console.error('💡 Run `bun run db:reset` to create tables first.');
+      console.error("💡 Run 'bun run db:reset' to create tables.");
       process.exit(1);
     }
     throw error;

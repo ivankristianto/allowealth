@@ -52,7 +52,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
               <caption class="sr-only">Recurring forecast by month</caption>
               <thead>
                 <tr class="bg-base-200/50 border-b border-base-300">
-                  <th class="sticky left-0 z-30 bg-base-200/50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 min-w-56">
+                  <th class="sticky left-0 z-30 w-80 min-w-80 max-w-80 overflow-hidden bg-base-200/50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40">
                     Recurring
                   </th>
                   <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 whitespace-nowrap">
@@ -75,9 +75,9 @@ function formatNegativeAmount(amount: string, currency: string): string {
                   >
                     <th
                       scope="row"
-                      class="sticky left-0 z-10 bg-base-100 px-6 py-5 text-left group-hover:bg-base-200/30 transition-colors"
+                      class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden bg-base-100 px-6 py-5 text-left transition-colors group-hover:bg-base-200/30"
                     >
-                      <div class="flex items-center gap-2.5">
+                      <div class="flex min-w-0 items-center gap-2.5">
                         <span
                           class:list={[
                             'inline-block h-2 w-2 shrink-0 rounded-full',
@@ -85,9 +85,12 @@ function formatNegativeAmount(amount: string, currency: string): string {
                           ]}
                           aria-hidden="true"
                         />
-                        <div class="min-w-0">
-                          <div class="flex items-center gap-2">
-                            <span class="truncate text-sm font-bold text-base-content">
+                        <div class="min-w-0 flex-1 overflow-hidden">
+                          <div class="flex min-w-0 items-center gap-2">
+                            <span
+                              title={row.templateName}
+                              class="block min-w-0 flex-1 truncate text-sm font-bold text-base-content"
+                            >
                               {row.templateName}
                             </span>
                             {row.status === 'paused' && (
@@ -134,7 +137,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                   <>
                     <tr class="border-t-2 border-base-300">
                       <th
-                        class="sticky left-0 z-10 bg-base-100 px-6 pt-5 pb-2 text-left text-xs font-bold uppercase tracking-widest text-base-content/40"
+                        class="sticky left-0 z-10 overflow-hidden bg-base-100 px-6 pt-5 pb-2 text-left text-xs font-bold uppercase tracking-widest text-base-content/40"
                         colspan={2}
                       >
                         Totals ({total.currency})
@@ -146,7 +149,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                     <tr class="group transition-colors hover:bg-base-200/30">
                       <th
                         scope="row"
-                        class="sticky left-0 z-10 bg-base-100 px-6 py-3 text-left text-sm font-bold text-success group-hover:bg-base-200/30 transition-colors"
+                        class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden bg-base-100 px-6 py-3 text-left text-sm font-bold text-success transition-colors group-hover:bg-base-200/30"
                       >
                         Income
                       </th>
@@ -162,7 +165,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                     <tr class="group transition-colors hover:bg-base-200/30">
                       <th
                         scope="row"
-                        class="sticky left-0 z-10 bg-base-100 px-6 py-3 text-left text-sm font-bold text-error group-hover:bg-base-200/30 transition-colors"
+                        class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden bg-base-100 px-6 py-3 text-left text-sm font-bold text-error transition-colors group-hover:bg-base-200/30"
                       >
                         Expense
                       </th>
@@ -178,7 +181,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                     <tr class="group font-bold transition-colors hover:bg-base-200/30">
                       <th
                         scope="row"
-                        class="sticky left-0 z-10 bg-base-100 px-6 py-3 text-left text-sm text-info group-hover:bg-base-200/30 transition-colors"
+                        class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden bg-base-100 px-6 py-3 text-left text-sm text-info transition-colors group-hover:bg-base-200/30"
                       >
                         Net
                       </th>

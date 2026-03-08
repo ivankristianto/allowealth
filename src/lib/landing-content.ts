@@ -61,6 +61,11 @@ export interface FeatureGridItem {
   size?: 'normal' | 'large'; // Text size variant
 }
 
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 // ============================================================================
 // Pricing Data
 // ============================================================================
@@ -143,11 +148,12 @@ export const showcaseItems: ShowcaseItem[] = [
     icon: 'LayoutDashboard',
     iconColor: 'text-primary',
     iconBg: 'bg-primary/10',
-    title: 'Everything in',
-    titleHighlight: 'one place.',
+    title: 'Shared clarity',
+    titleHighlight: 'every day.',
     highlightColor: 'text-primary',
-    description: 'See monthly spending, account totals, and budget health in one view, every day.',
-    features: ['Monthly spending overview', 'Account totals', 'Budget health'],
+    description:
+      'See household or group spending, account totals, and budget health in one shared view, without the admin work.',
+    features: ['Shared monthly overview', 'Group account totals', 'Shared budget health'],
     featureIconColor: 'text-primary',
     imageUrl: '/screenshots/dashboard.jpg',
     imageAlt: 'allowealth Dashboard',
@@ -158,16 +164,12 @@ export const showcaseItems: ShowcaseItem[] = [
     icon: 'ArrowLeftRight',
     iconColor: 'text-accent',
     iconBg: 'bg-accent/10',
-    title: 'Track every dollar',
-    titleHighlight: 'in and out.',
+    title: 'Track spending',
+    titleHighlight: 'together.',
     highlightColor: 'text-accent',
     description:
-      'Record income and expenses. Filter by month, category, or account. Import from CSV.',
-    features: [
-      'Log income and expenses',
-      'Filter by month, category, account',
-      'Import CSV from your bank',
-    ],
+      'Record income and expenses as a household or community. No more guessing who paid for what. Import easily from your bank.',
+    features: ['Log shared expenses', 'Filter by month or category', 'Import bank statements'],
     featureIconColor: 'text-accent',
     imageUrl: '/screenshots/transactions.jpg',
     imageAlt: 'allowealth Transactions',
@@ -183,7 +185,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'not just track it.',
     highlightColor: 'text-success',
     description:
-      'Set limits by category and get alerts before you overspend. Plan each month and carry budgets forward.',
+      'Set limits by category and get alerts before you overspend. Plan each month together and stay accountable.',
     features: ['Category limits with alerts', 'Monthly budget planning', 'Copy budgets forward'],
     featureIconColor: 'text-success',
     imageUrl: '/screenshots/budget.jpg',
@@ -270,8 +272,9 @@ export const featureGridItems: FeatureGridItem[] = [
     icon: 'Users',
     iconColor: 'text-primary',
     iconBg: 'bg-primary/10',
-    title: 'For Everyone',
-    description: 'Individuals, families, or your small community — one workspace adapts to all.',
+    title: 'Built for Households & Communities',
+    description:
+      'Couples, young families, and small groups — a shared financial workspace that keeps everyone on the same page.',
     colSpan: 'md:col-span-7',
     variant: 'light',
     size: 'large',
@@ -282,7 +285,7 @@ export const featureGridItems: FeatureGridItem[] = [
     iconColor: 'text-accent',
     iconBg: 'bg-accent/10',
     title: 'You Own Your Data',
-    description: 'Open source. Self-host it. No lock-in, ever.',
+    description: 'Hosted for convenience, or self-hosted for complete control. No lock-in, ever.',
     colSpan: 'md:col-span-4',
     variant: 'light',
   },
@@ -292,9 +295,41 @@ export const featureGridItems: FeatureGridItem[] = [
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
     title: 'Forecast',
-    description: 'Project savings, explore what-ifs, and plan your financial future.',
+    description: 'Project savings, explore what-ifs, and plan your financial future together.',
     colSpan: 'md:col-span-8',
     variant: 'light',
+  },
+];
+
+// ============================================================================
+// FAQ Data
+// ============================================================================
+
+export const faqItems: FaqItem[] = [
+  {
+    question: 'How is Allowealth different from a spreadsheet?',
+    answer:
+      'Spreadsheets are powerful but high-maintenance. Allowealth gives you a structured, mobile-friendly workspace designed specifically for money. It handles multi-currency, recurring transactions, and shared access much more elegantly than a row of cells.',
+  },
+  {
+    question: 'Can I manage money with my partner or group?',
+    answer:
+      'Yes! Allowealth is built for collaboration. You can invite your partner, family members, or community leads to a shared workspace where everyone can see the same data in real-time.',
+  },
+  {
+    question: 'Is my financial data secure?',
+    answer:
+      'Security is our priority. Your data is encrypted, and we never sell your information. For maximum privacy, you can also choose to self-host Allowealth on your own infrastructure.',
+  },
+  {
+    question: 'Do I have to pay to use Allowealth?',
+    answer:
+      'The core version of Allowealth is free and open-source. You can self-host it for free forever. We offer a hosted SaaS version for a small monthly fee if you prefer convenience, automatic backups, and managed updates.',
+  },
+  {
+    question: 'What currencies do you support?',
+    answer:
+      'Allowealth supports all major global currencies, including IDR, USD, EUR, and more. You can track accounts in different currencies and see your total net worth in your preferred base currency.',
   },
 ];
 
@@ -303,16 +338,16 @@ export const featureGridItems: FeatureGridItem[] = [
 // ============================================================================
 
 export const heroContent = {
-  badge: 'Open Source · Free Forever',
-  title: 'Track your',
-  titleHighlightPrefix: 'wealth. ',
-  titleHighlight: 'Your way.',
+  badge: 'For Households & Communities',
+  title: 'Manage money',
+  titleHighlightPrefix: 'together. ',
+  titleHighlight: 'Without stress.',
   description:
-    'For individuals, families, and small communities. Track income, expenses, budgets, and accounts in one place. Self-host it or use our cloud.',
+    'A shared money operating system for households and small communities. See where your money goes, plan budgets together, and skip the spreadsheets.',
   ctaGuest: 'Get Started Free',
   ctaLoggedIn: 'Go to Dashboard',
-  ctaSecondary: 'View on GitHub',
-  ctaSecondaryHref: 'https://github.com/ivankristianto/allowealth',
+  ctaSecondary: 'See how it works',
+  ctaSecondaryHref: '#showcase',
 };
 
 // ============================================================================
@@ -321,6 +356,6 @@ export const heroContent = {
 
 export const brandContent = {
   name: 'allowealth',
-  tagline: 'Open source personal finance for individuals, families, and small communities.',
-  copyright: `© ${new Date().getFullYear()} allowealth. Free and open source.`,
+  tagline: 'A shared money operating system for households and small communities.',
+  copyright: `© ${new Date().getFullYear()} allowealth. Manage money together.`,
 };

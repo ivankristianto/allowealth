@@ -19,11 +19,14 @@
 import { createConsola, type LogObject } from 'consola/core';
 import { getEnv } from '@/lib/env';
 
-const isDev = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'development';
+const isDev =
+  (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'development') ||
+  (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development');
 // Bun test does not set import.meta.env.MODE; it sets process.env.NODE_ENV instead.
 const isTest =
   (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test') ||
-  (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test');
+  (typeof process !== 'undefined' &&
+    (process.env?.NODE_ENV === 'test' || process.env?.BUN_ENV === 'test'));
 
 /**
  * Map standard log level names to consola numeric levels.

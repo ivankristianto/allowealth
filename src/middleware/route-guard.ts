@@ -9,6 +9,7 @@
  */
 
 import type { MiddlewareHandler } from 'astro';
+import { isAppOnly } from '@/lib/auth/app-mode';
 
 const PROTECTED_PREFIXES = [
   '/admin',
@@ -28,9 +29,19 @@ const PROTECTED_PREFIXES = [
 
 /** Pages that authenticated users should be redirected away from */
 const AUTH_PAGES = ['/login', '/signup', '/register'] as const;
+const APP_ONLY_PUBLIC_ROUTES = ['/', '/privacy', '/terms'] as const;
 
 export const routeGuard: MiddlewareHandler = async (context, next) => {
   const { pathname } = context.url;
+
+  if (isAppOnly() && APP_ONLY_PUBLIC_ROUTES.some((route) => pathname === route)) {
+    if (context.locals.user) {
+      const target = context.locals.user.role === 'super_admin' ? '/admin' : '/dashboard';
+      return context.redirect(target, 302);
+    }
+
+    return context.redirect('/login', 302);
+  }
 
   // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
