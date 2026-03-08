@@ -74,6 +74,8 @@ const THRESHOLDS: Record<string, { maxQueries: number | null; maxMs: number }> =
   'AccountService.getTotalByClass': { maxQueries: 3, maxMs: 200 },
   'AccountService.getSnapshotForMonth': { maxQueries: 10, maxMs: 300 },
 
+  'ReportService.getOverviewReport': { maxQueries: null, maxMs: 350 },
+  'ReportService.getIncomeReport': { maxQueries: null, maxMs: 500 },
   'ReportService.getRecurringBreakdown': { maxQueries: null, maxMs: 300 },
   'ReportService.getMemberSummary': { maxQueries: null, maxMs: 300 },
   'ReportService.getCategoryTransactions': { maxQueries: null, maxMs: 300 },
@@ -303,6 +305,7 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
       .run();
   }
 
+  const incomeSourceTypes = ['active', 'passive', 'other'] as const;
   for (let i = 0; i < NUM_INCOME_CATEGORIES; i++) {
     db.insert(schema.categories)
       .values({
@@ -311,6 +314,7 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
         created_by_user_id: USER_ID,
         name: `Income Cat ${i + 1}`,
         type: 'income',
+        income_source_type: incomeSourceTypes[i % incomeSourceTypes.length],
         icon: 'banknote',
         color: 'bg-success',
         is_active: true,
@@ -707,6 +711,40 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
 
       expect(result).toBeDefined();
       assertTime('ReportService.getCategoryTransactions', durationMs);
+    });
+
+    it('getOverviewReport', async () => {
+      const period = `${TEST_MONTH.year}-${String(TEST_MONTH.month).padStart(2, '0')}`;
+      const start = performance.now();
+      const result = await reportService.getOverviewReport(
+        WORKSPACE_ID,
+        period,
+        'monthly',
+        CURRENCY,
+        USER_ID
+      );
+      const durationMs = performance.now() - start;
+
+      expect(result).toBeDefined();
+      expect(result.trendData).toBeDefined();
+      expect(result.incomePreview).toBeDefined();
+      expect(result.expensePreview).toBeDefined();
+      assertTime('ReportService.getOverviewReport', durationMs);
+    });
+
+    it('getIncomeReport', async () => {
+      const period = `${TEST_MONTH.year}-${String(TEST_MONTH.month).padStart(2, '0')}`;
+      const start = performance.now();
+      const result = await reportService.getIncomeReport(WORKSPACE_ID, period, 'monthly', CURRENCY);
+      const durationMs = performance.now() - start;
+
+      expect(result).toBeDefined();
+      expect(result.summary).toBeDefined();
+      expect(result.sourceMix).toBeDefined();
+      expect(result.sourceGroupTrend).toBeDefined();
+      expect(result.members).toBeDefined();
+      expect(result.history).toBeDefined();
+      assertTime('ReportService.getIncomeReport', durationMs);
     });
   });
 
