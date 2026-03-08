@@ -119,7 +119,7 @@ const sourceGroupTrend = incomeData.sourceGroupTrend.map((t) => ({
 const sourceCategories = incomeData.sourceMix.map((s) => ({
   name: s.name,
   value: s.value,
-  sourceType: 'active',
+  sourceType: s.sourceType,
 }));
 
 const selectedPeriodLabel =

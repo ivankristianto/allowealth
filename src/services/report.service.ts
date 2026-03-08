@@ -51,6 +51,13 @@ export interface CategoryExpense {
 }
 
 /**
+ * Income category with source type classification
+ */
+export interface IncomeCategoryExpense extends CategoryExpense {
+  sourceType: 'active' | 'passive' | 'other';
+}
+
+/**
  * Trend data point for bar chart
  */
 export interface TrendDataPoint {
@@ -194,7 +201,7 @@ export interface IncomeReportData {
     otherIncome: string;
     growthVsPreviousPeriod: string;
   };
-  sourceMix: CategoryExpense[];
+  sourceMix: IncomeCategoryExpense[];
   sourceGroupTrend: Array<{ name: string; active: string; passive: string; other: string }>;
   members: Array<{
     userId: string;
@@ -491,6 +498,7 @@ export class ReportService {
     options: {
       limit?: number;
       offset?: number;
+      type?: 'expense' | 'income';
     } = {}
   ): Promise<CategoryTransactionsData> {
     // Validate inputs
@@ -534,10 +542,11 @@ export class ReportService {
       const requestedOffset = Number.isFinite(options.offset) ? Number(options.offset) : 0;
       const limit = Math.min(500, Math.max(1, Math.floor(requestedLimit)));
       const offset = Math.max(0, Math.floor(requestedOffset));
+      const transactionType = options.type || (category.type === 'income' ? 'income' : 'expense');
       const whereClause = and(
         eq(this.schema.transactions.workspace_id, workspaceId),
         eq(this.schema.transactions.category_id, categoryId),
-        eq(this.schema.transactions.type, 'expense'),
+        eq(this.schema.transactions.type, transactionType),
         eq(this.schema.transactions.currency, currency),
         gte(this.schema.transactions.transaction_date, startDate),
         lte(this.schema.transactions.transaction_date, endDate),
@@ -1583,10 +1592,11 @@ export class ReportService {
     endDate: Date,
     currency: Currency,
     userId?: string
-  ): Promise<CategoryExpense[]> {
+  ): Promise<IncomeCategoryExpense[]> {
     const categoryIncome = await (this.db as any)
       .select({
         category_name: this.schema.categories.name,
+        source_type: sql<string>`COALESCE(${this.schema.categories.income_source_type}, 'other')`,
         total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
@@ -1605,7 +1615,7 @@ export class ReportService {
           ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
         )
       )
-      .groupBy(this.schema.categories.name)
+      .groupBy(this.schema.categories.name, this.schema.categories.income_source_type)
       .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`);
 
     if (categoryIncome.length === 0) {
@@ -1615,6 +1625,9 @@ export class ReportService {
     return categoryIncome.map((cat: any) => ({
       name: cat.category_name,
       value: cat.total?.toString() || '0',
+      sourceType: (['active', 'passive', 'other'].includes(cat.source_type)
+        ? cat.source_type
+        : 'other') as 'active' | 'passive' | 'other',
     }));
   }
 

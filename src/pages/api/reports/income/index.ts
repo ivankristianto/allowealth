@@ -8,6 +8,7 @@ import { safeParseDecimal } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { formatMonthYear } from '@/lib/utils/date';
 import { isValidCurrency } from '@/lib/constants/currency';
+import { isValidNanoid } from '@/lib/validation/nanoid';
 import { PAGINATION } from '@/lib/constants/pagination';
 
 import IncomeSummaryCardsPartial from '@/components/partials/IncomeSummaryCardsPartial.astro';
@@ -128,8 +129,15 @@ export const GET: APIRoute = async (context) => {
       Math.max(1, isNaN(pageSizeParam) ? PAGINATION.DEFAULT_PAGE_SIZE : pageSizeParam)
     );
 
-    const sourceType = url.searchParams.get('source_type') as 'active' | 'passive' | 'other' | null;
-    const categoryId = url.searchParams.get('category_id') || undefined;
+    const VALID_SOURCE_TYPES = ['active', 'passive', 'other'] as const;
+    const sourceTypeParam = url.searchParams.get('source_type');
+    const sourceType =
+      sourceTypeParam && VALID_SOURCE_TYPES.includes(sourceTypeParam as any)
+        ? (sourceTypeParam as 'active' | 'passive' | 'other')
+        : undefined;
+    const categoryIdParam = url.searchParams.get('category_id');
+    const categoryId =
+      categoryIdParam && isValidNanoid(categoryIdParam) ? categoryIdParam : undefined;
 
     // Fetch income report data
     const incomeData = await reportService.getIncomeReport(
@@ -139,7 +147,7 @@ export const GET: APIRoute = async (context) => {
       currency,
       {
         userId,
-        sourceType: sourceType || undefined,
+        sourceType,
         categoryId,
         page,
         pageSize,
@@ -192,7 +200,7 @@ export const GET: APIRoute = async (context) => {
         const categories = incomeData.sourceMix.map((s) => ({
           name: s.name,
           value: s.value,
-          sourceType: 'active',
+          sourceType: s.sourceType,
         }));
         const sourcesHtml = await container.renderToString(IncomeSourceTablePartial, {
           props: {

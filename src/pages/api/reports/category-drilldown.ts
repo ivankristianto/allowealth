@@ -48,6 +48,7 @@ export const GET: APIRoute = async (context) => {
     const categoryName = url.searchParams.get('categoryName');
     const categoryIcon = url.searchParams.get('categoryIcon') || 'tag';
     const categoryColor = url.searchParams.get('categoryColor') || 'bg-base-300';
+    const categoryType = url.searchParams.get('categoryType') as 'expense' | 'income' | null;
     const spent = parseFloat(url.searchParams.get('spent') || '0');
     const budgetLimitParam = url.searchParams.get('budgetLimit');
     const budgetLimit = budgetLimitParam ? parseFloat(budgetLimitParam) : null;
@@ -136,21 +137,23 @@ export const GET: APIRoute = async (context) => {
       {
         limit,
         offset,
+        type: categoryType || undefined,
       }
     );
 
     // 4. Transform transactions to TransactionOutput format
+    const resolvedType = categoryType || 'expense';
     const transactions = categoryTransactionsData.transactions.map((txn) => ({
       id: txn.id,
       amount: String(txn.amount),
       currency: txn.currency,
-      type: 'expense' as const,
+      type: resolvedType as 'expense' | 'income',
       transaction_date: txn.transactionDate,
       description: txn.description || '',
       category: {
         id: categoryId,
         name: categoryName,
-        type: 'expense' as const,
+        type: resolvedType as 'expense' | 'income',
       },
       account: {
         id: '', // Account ID not available in CategoryTransaction
