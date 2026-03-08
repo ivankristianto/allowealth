@@ -455,7 +455,7 @@ function initRecurringPage(): void {
           detail: { prefill: templatePrefill, source: 'transaction' },
         })
       );
-      addToast('Review the pre-filled recurring template and save when ready.', 'info');
+      addToast('Review the pre-filled recurring transaction and save when ready.', 'info');
       clearConversionQueryParams();
     });
   }
@@ -852,7 +852,10 @@ function initRecurringPage(): void {
       templatePage = 1;
       void refreshTemplateList(signal).catch((error) => {
         if (error instanceof Error && error.name === 'AbortError') return;
-        addToast(error instanceof Error ? error.message : 'Failed to filter templates', 'error');
+        addToast(
+          error instanceof Error ? error.message : 'Failed to filter recurring transactions',
+          'error'
+        );
       });
     },
     { signal }
@@ -873,7 +876,10 @@ function initRecurringPage(): void {
         templatePage = 1;
         void refreshTemplateList(signal).catch((error) => {
           if (error instanceof Error && error.name === 'AbortError') return;
-          addToast(error instanceof Error ? error.message : 'Failed to search templates', 'error');
+          addToast(
+            error instanceof Error ? error.message : 'Failed to search recurring transactions',
+            'error'
+          );
         });
       }, 300);
     },

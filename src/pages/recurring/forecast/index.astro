@@ -2,10 +2,11 @@
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import ForecastCashflowChart from '@/components/organisms/ForecastCashflowChart.astro';
 import type { ForecastChartDataPoint } from '@/components/organisms/ForecastCashflowChart.astro';
+import ForecastTable from '@/components/organisms/ForecastTable.astro';
 import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
-import { formatCurrency } from '@/lib/formatting';
+import { formatMonthHeader } from '@/lib/formatting';
 import { getAccountTypeLabel } from '@/lib/types/account';
 import { buildForecastFilters } from '@/lib/utils/recurring-forecast-filters';
 import { accountService, recurringForecastService, workspaceMetaService } from '@/services';
@@ -17,7 +18,6 @@ if (!user?.id) {
 }
 
 const { monthCount, ...filters } = buildForecastFilters(Astro.url.searchParams);
-filters.status = 'all';
 
 const perf = Astro.locals.perf;
 
@@ -26,25 +26,6 @@ const [forecast, accounts, currencyConfig] = await Promise.all([
   accountService.findAll(user.workspaceId, undefined, perf),
   workspaceMetaService.getWorkspaceCurrencies(user.workspaceId),
 ]);
-
-function formatMonthHeader(key: string): string {
-  const [year, month] = key.split('-').map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
-    month: 'short',
-    year: '2-digit',
-  });
-}
-
-function formatSignedAmount(amount: string, type: 'income' | 'expense', currency: string): string {
-  const numeric = Number.parseFloat(amount);
-  const signed = type === 'expense' ? -Math.abs(numeric) : Math.abs(numeric);
-  return formatCurrency(signed.toFixed(2), currency);
-}
-
-function formatNegativeAmount(amount: string, currency: string): string {
-  const numeric = Number.parseFloat(amount);
-  return formatCurrency((-Math.abs(numeric)).toFixed(2), currency);
-}
 
 const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
 const workspaceCurrencies = [
@@ -94,6 +75,7 @@ function buildFilterUrl(overrides: Record<string, string | undefined>): string {
 
   if (filters.type) params.set('type', filters.type);
   if (selectedAccounts.length > 0) params.set('accounts', selectedAccounts.join(','));
+  if (filters.status === 'all') params.set('status', 'all');
 
   for (const [key, value] of Object.entries(overrides)) {
     if (value === undefined || value === '') {
@@ -108,11 +90,20 @@ function buildFilterUrl(overrides: Record<string, string | undefined>): string {
   return qs ? `/recurring/forecast?${qs}` : '/recurring/forecast';
 }
 
+const showPaused = filters.status === 'all';
+const typeFilter = filters.type ?? '';
+
 const rangeOptions = [
   { value: 3, label: '3M' },
   { value: 6, label: '6M' },
   { value: 12, label: '12M' },
   { value: 24, label: '24M' },
+];
+
+const typeOptions = [
+  { value: '', label: 'All' },
+  { value: 'income', label: 'Income' },
+  { value: 'expense', label: 'Expense' },
 ];
 ---
 
@@ -125,42 +116,58 @@ const rangeOptions = [
         id="forecast-filters"
         method="get"
         action="/recurring/forecast"
-        class="flex flex-wrap items-end gap-3"
+        class="flex flex-col gap-3 sm:gap-4"
+        role="search"
+        aria-label="Filter recurring forecast"
       >
-        <MultiSelectDropdown
-          id="forecast-account"
-          label="All Accounts"
-          inputName="accounts"
-          selectedIds={selectedAccounts}
-          items={forecastAccounts}
-          searchable={true}
-          searchPlaceholder="Search accounts..."
-          filterEventType="accounts"
-          class="w-full max-w-xs"
-        >
-          <Wallet
-            size={16}
-            class="stroke-current text-base-content/40"
-            aria-hidden="true"
-            slot="icon"
-          />
-        </MultiSelectDropdown>
-
-        <label class="form-control w-full max-w-[10rem]">
-          <span class="label-text text-xs font-semibold">Type</span>
-          <select name="type" class="select select-bordered select-sm w-full" data-auto-submit>
-            <option value="" selected={!filters.type}>All</option>
-            <option value="income" selected={filters.type === 'income'}>Income</option>
-            <option value="expense" selected={filters.type === 'expense'}>Expense</option>
-          </select>
-        </label>
-
-        {monthCount !== 12 && <input type="hidden" name="monthCount" value={monthCount} />}
-
-        <div class="form-control">
-          <span class="label-text text-xs font-semibold">Range</span>
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Type filter pills */}
           <div
-            class="flex gap-0.5 rounded-xl bg-base-200 p-1"
+            class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
+            role="group"
+            aria-label="Filter by type"
+          >
+            {
+              typeOptions.map((opt) => (
+                <button
+                  type="button"
+                  class:list={[
+                    'px-3 sm:px-5 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2',
+                    typeFilter === opt.value
+                      ? 'bg-base-100 shadow text-primary'
+                      : 'text-base-content/50 hover:text-base-content/70',
+                  ]}
+                  data-filter-type-btn={opt.value}
+                  aria-pressed={typeFilter === opt.value}
+                >
+                  {opt.label}
+                </button>
+              ))
+            }
+          </div>
+
+          {/* Account dropdown */}
+          <MultiSelectDropdown
+            id="forecast-account"
+            label="All Accounts"
+            inputName="accounts"
+            selectedIds={selectedAccounts}
+            items={forecastAccounts}
+            searchable={true}
+            searchPlaceholder="Search accounts..."
+            filterEventType="accounts"
+          >
+            <Wallet
+              size={16}
+              class="stroke-current text-base-content/40"
+              aria-hidden="true"
+              slot="icon"
+            />
+          </MultiSelectDropdown>
+
+          {/* Range pills */}
+          <div
+            class="flex gap-0.5 rounded-xl bg-base-200 p-1 shrink-0"
             role="group"
             aria-label="Forecast range"
           >
@@ -171,7 +178,7 @@ const rangeOptions = [
                     monthCount: opt.value === 12 ? undefined : String(opt.value),
                   })}
                   class:list={[
-                    'min-h-[32px] items-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all flex',
+                    'flex min-h-11 items-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
                     monthCount === opt.value
                       ? 'bg-base-100 text-primary shadow'
                       : 'text-base-content/50 hover:text-base-content/70',
@@ -183,6 +190,31 @@ const rangeOptions = [
               ))
             }
           </div>
+
+          {/* Include Paused toggle */}
+          <label
+            class="flex cursor-pointer items-center gap-2 shrink-0 ml-auto"
+            for="show-paused-toggle"
+          >
+            <span class="text-xs font-bold text-base-content/50">Include Paused</span>
+            <input
+              type="checkbox"
+              id="show-paused-toggle"
+              class="toggle toggle-sm toggle-accent"
+              role="switch"
+              checked={showPaused}
+              data-show-paused
+            />
+          </label>
+
+          {/* Hidden inputs for form state */}
+          <input type="hidden" name="type" value={typeFilter} id="forecast-type-hidden" />
+          {monthCount !== 12 && <input type="hidden" name="monthCount" value={monthCount} />}
+          {
+            showPaused && (
+              <input type="hidden" name="status" value="all" id="forecast-status-hidden" />
+            )
+          }
         </div>
       </form>
     </section>
@@ -193,157 +225,7 @@ const rangeOptions = [
       )
     }
 
-    {
-      forecast.rows.length === 0 ? (
-        <section class="rounded-3xl border border-base-300 bg-base-100 p-8 text-center shadow-sm">
-          <p class="text-base-content/60">No recurring templates match the selected filters.</p>
-        </section>
-      ) : (
-        <section class="relative rounded-3xl border border-base-300 bg-base-100 shadow-sm">
-          <div class="pointer-events-none absolute right-0 top-0 bottom-0 z-20 w-8 rounded-r-3xl bg-gradient-to-l from-base-100 to-transparent" />
-
-          <div class="max-h-[50vh] overflow-x-auto overflow-y-auto">
-            <table class="table w-full">
-              <caption class="sr-only">Recurring forecast by template and month</caption>
-              <thead class="sticky top-0 z-20 bg-base-100">
-                <tr>
-                  <th class="sticky left-0 z-30 min-w-[14rem] bg-base-100 px-4 py-3">Template</th>
-                  <th class="bg-base-100 px-3 py-3 text-center whitespace-nowrap">Freq.</th>
-                  {forecast.monthKeys.map((key) => (
-                    <th class="bg-base-100 px-3 py-3 text-right whitespace-nowrap">
-                      {formatMonthHeader(key)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {forecast.rows.map((row, index) => (
-                  <tr
-                    class:list={[
-                      'transition-colors hover:bg-base-200/30',
-                      row.status === 'paused' && 'opacity-50',
-                      index % 2 === 1 && 'bg-base-200/20',
-                    ]}
-                  >
-                    <th scope="row" class="sticky left-0 z-10 bg-base-100 px-4 py-3 text-left">
-                      <div class="flex items-center gap-2">
-                        <span
-                          class:list={[
-                            'inline-block h-2 w-2 shrink-0 rounded-full',
-                            row.templateType === 'income' ? 'bg-success' : 'bg-error',
-                          ]}
-                          aria-hidden="true"
-                        />
-                        <div class="min-w-0">
-                          <div class="flex items-center gap-2">
-                            <span class="truncate text-sm font-medium">{row.templateName}</span>
-                            {row.status === 'paused' && (
-                              <span class="badge badge-ghost badge-xs whitespace-nowrap">
-                                Paused
-                              </span>
-                            )}
-                          </div>
-                          <div class="truncate text-xs text-base-content/60">
-                            <span>{row.account.name}</span>
-                            <span class="mx-1 text-base-content/40">&bull;</span>
-                            <span
-                              class:list={[
-                                'font-semibold',
-                                row.templateType === 'income' ? 'text-success' : 'text-error',
-                              ]}
-                            >
-                              {row.templateType === 'income' ? 'Income' : 'Expense'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </th>
-                    <td class="px-3 py-3 text-center text-xs text-base-content/60">
-                      {row.frequencyLabel}
-                    </td>
-                    {forecast.monthKeys.map((key) => (
-                      <td class="px-3 py-3 text-right text-sm tabular-nums whitespace-nowrap">
-                        {row.months[key] != null ? (
-                          formatSignedAmount(row.months[key]!, row.templateType, row.currency)
-                        ) : (
-                          <span class="text-base-content/20">&mdash;</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-
-              <tfoot>
-                {forecast.totals.map((total) => (
-                  <>
-                    <tr class="border-t-2 border-base-300 text-xs font-bold uppercase tracking-wide text-base-content/50">
-                      <th
-                        class="sticky left-0 z-10 bg-base-100 px-4 pt-4 pb-2 text-left"
-                        colspan="2"
-                      >
-                        Totals ({total.currency})
-                      </th>
-                      {forecast.monthKeys.map(() => (
-                        <td />
-                      ))}
-                    </tr>
-                    <tr class="transition-colors hover:bg-base-200/30">
-                      <th
-                        scope="row"
-                        class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm font-medium text-success"
-                      >
-                        Income
-                      </th>
-                      <td />
-                      {forecast.monthKeys.map((key) => (
-                        <td class="px-3 py-2 text-right text-sm tabular-nums text-success whitespace-nowrap">
-                          {total.months[key]
-                            ? formatCurrency(total.months[key].income, total.currency)
-                            : '—'}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr class="transition-colors hover:bg-base-200/30">
-                      <th
-                        scope="row"
-                        class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm font-medium text-error"
-                      >
-                        Expense
-                      </th>
-                      <td />
-                      {forecast.monthKeys.map((key) => (
-                        <td class="px-3 py-2 text-right text-sm tabular-nums text-error whitespace-nowrap">
-                          {total.months[key]
-                            ? formatNegativeAmount(total.months[key].expense, total.currency)
-                            : '—'}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr class="font-bold transition-colors hover:bg-base-200/30">
-                      <th
-                        scope="row"
-                        class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm"
-                      >
-                        Net
-                      </th>
-                      <td />
-                      {forecast.monthKeys.map((key) => (
-                        <td class="px-3 py-2 text-right text-sm tabular-nums whitespace-nowrap">
-                          {total.months[key]
-                            ? formatCurrency(total.months[key].net, total.currency)
-                            : '—'}
-                        </td>
-                      ))}
-                    </tr>
-                  </>
-                ))}
-              </tfoot>
-            </table>
-          </div>
-        </section>
-      )
-    }
+    <ForecastTable rows={forecast.rows} totals={forecast.totals} monthKeys={forecast.monthKeys} />
   </div>
 </ProtectedLayout>
 
@@ -386,10 +268,58 @@ const rangeOptions = [
     const form = document.getElementById('forecast-filters');
     if (!(form instanceof HTMLFormElement)) return;
 
-    form.querySelectorAll<HTMLSelectElement>('select[data-auto-submit]').forEach((select) => {
-      select.addEventListener('change', () => form.requestSubmit(), { signal });
+    const typeHidden = document.getElementById('forecast-type-hidden') as HTMLInputElement | null;
+
+    // Type filter pill buttons
+    document.querySelectorAll<HTMLButtonElement>('[data-filter-type-btn]').forEach((btn) => {
+      btn.addEventListener(
+        'click',
+        () => {
+          const newType = btn.dataset.filterTypeBtn ?? '';
+          if (typeHidden) typeHidden.value = newType;
+
+          // Update visual state
+          document.querySelectorAll<HTMLButtonElement>('[data-filter-type-btn]').forEach((b) => {
+            const isActive = b.dataset.filterTypeBtn === newType;
+            b.setAttribute('aria-pressed', String(isActive));
+            b.classList.toggle('bg-base-100', isActive);
+            b.classList.toggle('shadow', isActive);
+            b.classList.toggle('text-primary', isActive);
+            b.classList.toggle('text-base-content/50', !isActive);
+            b.classList.toggle('hover:text-base-content/70', !isActive);
+          });
+
+          form.requestSubmit();
+        },
+        { signal }
+      );
     });
 
+    // Include Paused toggle
+    const showPausedToggle = document.querySelector<HTMLInputElement>('[data-show-paused]');
+    if (showPausedToggle) {
+      showPausedToggle.addEventListener(
+        'change',
+        () => {
+          if (showPausedToggle.checked) {
+            if (!document.getElementById('forecast-status-hidden')) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'status';
+              input.value = 'all';
+              input.id = 'forecast-status-hidden';
+              form.appendChild(input);
+            }
+          } else {
+            document.getElementById('forecast-status-hidden')?.remove();
+          }
+          form.requestSubmit();
+        },
+        { signal }
+      );
+    }
+
+    // Account filter change
     const handleFilterChange = (event: Event) => {
       if (!(event instanceof CustomEvent) || !isForecastFilterChangeDetail(event.detail)) return;
       if (event.detail.type === 'accounts') {

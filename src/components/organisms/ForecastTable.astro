@@ -1,0 +1,203 @@
+---
+/**
+ * ForecastTable Component
+ *
+ * Displays recurring forecast data in a table with monthly projections.
+ * Follows the BudgetTable design pattern with proper header styling,
+ * dividers, and consistent padding.
+ */
+
+import { Wallet } from '@lucide/astro';
+import { formatCurrency, formatMonthHeader } from '@/lib/formatting';
+import type { ForecastRow, ForecastCurrencyTotals } from '@/lib/types/recurring';
+export interface Props {
+  rows: ForecastRow[];
+  totals: ForecastCurrencyTotals[];
+  monthKeys: string[];
+}
+
+const { rows = [], totals = [], monthKeys = [] } = Astro.props;
+
+function formatSignedAmount(amount: string, type: 'income' | 'expense', currency: string): string {
+  const numeric = Number.parseFloat(amount);
+  const signed = type === 'expense' ? -Math.abs(numeric) : Math.abs(numeric);
+  return formatCurrency(signed.toFixed(2), currency);
+}
+
+function formatNegativeAmount(amount: string, currency: string): string {
+  const numeric = Number.parseFloat(amount);
+  return formatCurrency((-Math.abs(numeric)).toFixed(2), currency);
+}
+---
+
+{
+  rows.length === 0 ? (
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-base-200">
+        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
+      </div>
+      <h3 class="mb-2 text-lg font-bold text-base-content">No recurring items found</h3>
+      <p class="max-w-sm text-sm text-base-content/60">
+        No recurring transactions match the selected filters. Try adjusting your filters or create
+        new recurring transactions.
+      </p>
+    </div>
+  ) : (
+    <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm">
+      <div class="overflow-hidden rounded-3xl">
+        <div class="relative">
+          <div class="pointer-events-none absolute bottom-0 right-0 top-0 z-20 w-8 rounded-r-3xl bg-gradient-to-l from-base-100 to-transparent" />
+          <div class="max-h-[60vh] overflow-x-auto overflow-y-auto">
+            <table class="w-full text-left border-collapse">
+              <caption class="sr-only">Recurring forecast by month</caption>
+              <thead>
+                <tr class="bg-base-200/50 border-b border-base-300">
+                  <th class="sticky left-0 z-30 bg-base-200/50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 min-w-56">
+                    Recurring
+                  </th>
+                  <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 whitespace-nowrap">
+                    Freq.
+                  </th>
+                  {monthKeys.map((key) => (
+                    <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 whitespace-nowrap">
+                      {formatMonthHeader(key)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-base-300">
+                {rows.map((row) => (
+                  <tr
+                    class:list={[
+                      'group transition-colors hover:bg-base-200/30',
+                      row.status === 'paused' && 'opacity-50',
+                    ]}
+                  >
+                    <th
+                      scope="row"
+                      class="sticky left-0 z-10 bg-base-100 px-6 py-5 text-left group-hover:bg-base-200/30 transition-colors"
+                    >
+                      <div class="flex items-center gap-2.5">
+                        <span
+                          class:list={[
+                            'inline-block h-2 w-2 shrink-0 rounded-full',
+                            row.templateType === 'income' ? 'bg-success' : 'bg-error',
+                          ]}
+                          aria-hidden="true"
+                        />
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-2">
+                            <span class="truncate text-sm font-bold text-base-content">
+                              {row.templateName}
+                            </span>
+                            {row.status === 'paused' && (
+                              <span class="badge badge-ghost badge-xs whitespace-nowrap">
+                                Paused
+                              </span>
+                            )}
+                          </div>
+                          <div class="truncate text-xs text-base-content/50">
+                            <span>{row.account.name}</span>
+                            <span class="mx-1 text-base-content/30">&bull;</span>
+                            <span
+                              class:list={[
+                                'font-semibold',
+                                row.templateType === 'income' ? 'text-success' : 'text-error',
+                              ]}
+                            >
+                              {row.templateType === 'income' ? 'Income' : 'Expense'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </th>
+                    <td class="px-4 py-5 text-center text-xs text-base-content/50">
+                      {row.frequencyLabel}
+                    </td>
+                    {monthKeys.map((key) => (
+                      <td class="px-4 py-5 text-right text-sm font-medium tabular-nums whitespace-nowrap">
+                        {row.months[key] != null ? (
+                          <span>
+                            {formatSignedAmount(row.months[key]!, row.templateType, row.currency)}
+                          </span>
+                        ) : (
+                          <span class="text-base-content/20">&mdash;</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+
+              <tfoot>
+                {totals.map((total) => (
+                  <>
+                    <tr class="border-t-2 border-base-300">
+                      <th
+                        class="sticky left-0 z-10 bg-base-100 px-6 pt-5 pb-2 text-left text-xs font-bold uppercase tracking-widest text-base-content/40"
+                        colspan={2}
+                      >
+                        Totals ({total.currency})
+                      </th>
+                      {monthKeys.map(() => (
+                        <td />
+                      ))}
+                    </tr>
+                    <tr class="group transition-colors hover:bg-base-200/30">
+                      <th
+                        scope="row"
+                        class="sticky left-0 z-10 bg-base-100 px-6 py-3 text-left text-sm font-bold text-success group-hover:bg-base-200/30 transition-colors"
+                      >
+                        Income
+                      </th>
+                      <td />
+                      {monthKeys.map((key) => (
+                        <td class="px-4 py-3 text-right text-sm font-medium tabular-nums text-success whitespace-nowrap">
+                          {total.months[key]
+                            ? formatCurrency(total.months[key].income, total.currency)
+                            : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr class="group transition-colors hover:bg-base-200/30">
+                      <th
+                        scope="row"
+                        class="sticky left-0 z-10 bg-base-100 px-6 py-3 text-left text-sm font-bold text-error group-hover:bg-base-200/30 transition-colors"
+                      >
+                        Expense
+                      </th>
+                      <td />
+                      {monthKeys.map((key) => (
+                        <td class="px-4 py-3 text-right text-sm font-medium tabular-nums text-error whitespace-nowrap">
+                          {total.months[key]
+                            ? formatNegativeAmount(total.months[key].expense, total.currency)
+                            : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr class="group font-bold transition-colors hover:bg-base-200/30">
+                      <th
+                        scope="row"
+                        class="sticky left-0 z-10 bg-base-100 px-6 py-3 text-left text-sm text-info group-hover:bg-base-200/30 transition-colors"
+                      >
+                        Net
+                      </th>
+                      <td />
+                      {monthKeys.map((key) => (
+                        <td class="px-4 py-3 text-right text-sm font-bold tabular-nums text-info whitespace-nowrap">
+                          {total.months[key]
+                            ? formatCurrency(total.months[key].net, total.currency)
+                            : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                  </>
+                ))}
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
