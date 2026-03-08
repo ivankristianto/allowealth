@@ -64,8 +64,8 @@ describe('recurring forecast page', () => {
       '{monthCount !== 12 && <input type="hidden" name="monthCount" value={monthCount} />}'
     );
     expect(page).toContain('const chartData: ForecastChartDataPoint[] = activeTotals');
-    expect(page).toContain(
-      '{forecast.rows.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
+    expect(page).toMatch(
+      /\{\s*forecast\.rows\.length > 0 && \(\s*<ForecastCashflowChart data=\{chartData\} currency=\{activeCurrency\} \/>\s*\)\s*\}/
     );
     expect(page).not.toContain(
       '{chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
