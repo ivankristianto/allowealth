@@ -40,6 +40,8 @@ describe('recurring forecast page', () => {
     expect(page).toContain(
       'class="pointer-events-none absolute right-0 top-0 bottom-0 z-20 w-8 rounded-r-3xl bg-gradient-to-l from-base-100 to-transparent"'
     );
+    expect(page).toContain('class="max-h-[50vh] overflow-x-auto overflow-y-auto"');
+    expect(page.match(/<tfoot/g)?.length ?? 0).toBe(1);
     expect(page).toContain("row.status === 'paused' && 'opacity-50'");
     expect(page).toContain('badge badge-ghost badge-xs');
   });
@@ -53,5 +55,20 @@ describe('recurring forecast page', () => {
       "window.addEventListener('filterChange', handleFilterChange, { signal });"
     );
     expect(page).toContain("document.addEventListener('astro:page-load', initForecastFilters);");
+  });
+
+  it('preserves non-default monthCount across filter submissions and hides the chart on empty results', () => {
+    const page = readForecastPage();
+
+    expect(page).toContain(
+      '{monthCount !== 12 && <input type="hidden" name="monthCount" value={monthCount} />}'
+    );
+    expect(page).toContain('const chartData: ForecastChartDataPoint[] = activeTotals');
+    expect(page).toContain(
+      '{forecast.rows.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
+    );
+    expect(page).not.toContain(
+      '{chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
+    );
   });
 });

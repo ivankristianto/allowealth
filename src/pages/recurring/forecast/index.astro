@@ -59,16 +59,18 @@ const activeCurrency: Currency =
     : currencyConfig.primary;
 
 const activeTotals = forecast.totals.find((total) => total.currency === activeCurrency);
-const chartData: ForecastChartDataPoint[] = forecast.monthKeys.map((key) => {
-  const month = activeTotals?.months[key];
+const chartData: ForecastChartDataPoint[] = activeTotals
+  ? forecast.monthKeys.map((key) => {
+      const month = activeTotals.months[key];
 
-  return {
-    name: formatMonthHeader(key),
-    income: month ? Number.parseFloat(month.income) : 0,
-    expenses: month ? Number.parseFloat(month.expense) : 0,
-    net: month ? Number.parseFloat(month.net) : 0,
-  };
-});
+      return {
+        name: formatMonthHeader(key),
+        income: Number.parseFloat(month.income),
+        expenses: Number.parseFloat(month.expense),
+        net: Number.parseFloat(month.net),
+      };
+    })
+  : [];
 
 const selectedAccounts = filters.accountIds ?? [];
 const liquidLabels = new Set(['Cash', 'Bank Account', 'E-Wallet', 'Credit Card']);
@@ -153,6 +155,8 @@ const rangeOptions = [
           </select>
         </label>
 
+        {monthCount !== 12 && <input type="hidden" name="monthCount" value={monthCount} />}
+
         <div class="form-control">
           <span class="label-text text-xs font-semibold">Range</span>
           <div
@@ -183,7 +187,11 @@ const rangeOptions = [
       </form>
     </section>
 
-    {chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}
+    {
+      forecast.rows.length > 0 && (
+        <ForecastCashflowChart data={chartData} currency={activeCurrency} />
+      )
+    }
 
     {
       forecast.rows.length === 0 ? (
@@ -194,7 +202,7 @@ const rangeOptions = [
         <section class="relative rounded-3xl border border-base-300 bg-base-100 shadow-sm">
           <div class="pointer-events-none absolute right-0 top-0 bottom-0 z-20 w-8 rounded-r-3xl bg-gradient-to-l from-base-100 to-transparent" />
 
-          <div class="overflow-x-auto">
+          <div class="max-h-[50vh] overflow-x-auto overflow-y-auto">
             <table class="table w-full">
               <caption class="sr-only">Recurring forecast by template and month</caption>
               <thead class="sticky top-0 z-20 bg-base-100">
@@ -266,66 +274,71 @@ const rangeOptions = [
                 ))}
               </tbody>
 
-              {forecast.totals.map((total) => (
-                <tfoot class="border-t-2 border-base-300">
-                  <tr class="text-xs font-bold uppercase tracking-wide text-base-content/50">
-                    <th class="sticky left-0 z-10 bg-base-100 px-4 pt-4 pb-2 text-left" colspan="2">
-                      Totals ({total.currency})
-                    </th>
-                    {forecast.monthKeys.map(() => (
+              <tfoot>
+                {forecast.totals.map((total) => (
+                  <>
+                    <tr class="border-t-2 border-base-300 text-xs font-bold uppercase tracking-wide text-base-content/50">
+                      <th
+                        class="sticky left-0 z-10 bg-base-100 px-4 pt-4 pb-2 text-left"
+                        colspan="2"
+                      >
+                        Totals ({total.currency})
+                      </th>
+                      {forecast.monthKeys.map(() => (
+                        <td />
+                      ))}
+                    </tr>
+                    <tr class="transition-colors hover:bg-base-200/30">
+                      <th
+                        scope="row"
+                        class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm font-medium text-success"
+                      >
+                        Income
+                      </th>
                       <td />
-                    ))}
-                  </tr>
-                  <tr class="transition-colors hover:bg-base-200/30">
-                    <th
-                      scope="row"
-                      class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm font-medium text-success"
-                    >
-                      Income
-                    </th>
-                    <td />
-                    {forecast.monthKeys.map((key) => (
-                      <td class="px-3 py-2 text-right text-sm tabular-nums text-success whitespace-nowrap">
-                        {total.months[key]
-                          ? formatCurrency(total.months[key].income, total.currency)
-                          : '—'}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr class="transition-colors hover:bg-base-200/30">
-                    <th
-                      scope="row"
-                      class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm font-medium text-error"
-                    >
-                      Expense
-                    </th>
-                    <td />
-                    {forecast.monthKeys.map((key) => (
-                      <td class="px-3 py-2 text-right text-sm tabular-nums text-error whitespace-nowrap">
-                        {total.months[key]
-                          ? formatNegativeAmount(total.months[key].expense, total.currency)
-                          : '—'}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr class="font-bold transition-colors hover:bg-base-200/30">
-                    <th
-                      scope="row"
-                      class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm"
-                    >
-                      Net
-                    </th>
-                    <td />
-                    {forecast.monthKeys.map((key) => (
-                      <td class="px-3 py-2 text-right text-sm tabular-nums whitespace-nowrap">
-                        {total.months[key]
-                          ? formatCurrency(total.months[key].net, total.currency)
-                          : '—'}
-                      </td>
-                    ))}
-                  </tr>
-                </tfoot>
-              ))}
+                      {forecast.monthKeys.map((key) => (
+                        <td class="px-3 py-2 text-right text-sm tabular-nums text-success whitespace-nowrap">
+                          {total.months[key]
+                            ? formatCurrency(total.months[key].income, total.currency)
+                            : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr class="transition-colors hover:bg-base-200/30">
+                      <th
+                        scope="row"
+                        class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm font-medium text-error"
+                      >
+                        Expense
+                      </th>
+                      <td />
+                      {forecast.monthKeys.map((key) => (
+                        <td class="px-3 py-2 text-right text-sm tabular-nums text-error whitespace-nowrap">
+                          {total.months[key]
+                            ? formatNegativeAmount(total.months[key].expense, total.currency)
+                            : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr class="font-bold transition-colors hover:bg-base-200/30">
+                      <th
+                        scope="row"
+                        class="sticky left-0 z-10 bg-base-100 px-4 py-2 text-left text-sm"
+                      >
+                        Net
+                      </th>
+                      <td />
+                      {forecast.monthKeys.map((key) => (
+                        <td class="px-3 py-2 text-right text-sm tabular-nums whitespace-nowrap">
+                          {total.months[key]
+                            ? formatCurrency(total.months[key].net, total.currency)
+                            : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                  </>
+                ))}
+              </tfoot>
             </table>
           </div>
         </section>
