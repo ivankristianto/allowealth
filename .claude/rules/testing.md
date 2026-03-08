@@ -13,6 +13,31 @@ paths:
 - **Integration tests**: Required for user-facing features.
 - **E2E tests**: Required for critical user flows. Tag `@critical` for CI smoke runs.
 
+## Test Organization
+
+Use test scope, not personal preference, to decide placement.
+
+**Default layout:**
+
+- `src/**/foo.test.ts` for unit tests tied to one module, component, store, utility, or command
+- `tests/integration/**` for multi-module and API route Bun tests
+- `tests/architecture/**` for source-shape, markup-contract, and design-system guard tests
+- `tests/regression/**` for bug-lock and review-feedback regressions that span multiple files
+- `tests/perf/**` for performance and benchmark suites
+- `tests/helpers/**` for shared Bun-test helpers
+- `e2e/tests/**/*.spec.ts` for Playwright only
+
+**Rules:**
+
+- ✅ **Default to colocated `*.test.ts`** for single-module Bun tests
+- ✅ **Use top-level `tests/` scope folders** for cross-cutting Bun tests
+- ✅ **Use `.test.ts` for Bun and `.spec.ts` for Playwright** to make runner intent obvious
+- ✅ **Mirror the runtime path where practical** - prefer `tests/integration/api/budgets/initialize.test.ts` over flattened names
+- ✅ **Keep non-test support code in explicit helper folders** - `tests/helpers/**` or `src/**/test-helpers/**`
+- ❌ **Create new `src/**/**tests**` directories\*\* - migrate legacy ones toward the scope-based layout instead
+- ❌ **Store non-test files in test folders without a `helpers` segment**
+- ❌ **Keep duplicate tests that cover the same contract in multiple paths**
+
 ## Unit Testing (bun:test)
 
 ```typescript
