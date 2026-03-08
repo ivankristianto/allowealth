@@ -1,0 +1,30 @@
+[
+  {
+    "query": "I need to update the end-user documentation for the transactions page. Can you take a screenshot of it from http://docs.allowealth.local:4321/transactions and update the docs/sites/src/content/docs/end-users/transactions.md file? Use the demo account to log in.",
+    "should_trigger": true
+  },
+  {
+    "query": "The accounts page docs are outdated. Please capture a new screenshot of http://docs.allowealth.local:4321/accounts and rewrite the documentation in docs/sites/src/content/docs/end-users/accounts.md to be more professional.",
+    "should_trigger": true
+  },
+  {
+    "query": "Take a screenshot of the budget page at http://docs.allowealth.local:4321/budget and add it to the user guide.",
+    "should_trigger": true
+  },
+  { "query": "How do I log in to the allowealth app?", "should_trigger": false },
+  { "query": "Fix the bug in the transactions API.", "should_trigger": false },
+  { "query": "Create a new react component for the dashboard.", "should_trigger": false },
+  {
+    "query": "Rewrite this sentence to be more concise: 'The reason why we are doing this is because we want to improve the user experience.'",
+    "should_trigger": false
+  },
+  { "query": "Show me the current database schema.", "should_trigger": false },
+  {
+    "query": "I want to improve the help content for the reports view. It's at http://docs.allowealth.local:4321/reports. Use demo@example.com / demo123456789. The file is docs/sites/src/content/docs/end-users/reports.md.",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you check if the dashboard page is loading correctly at http://docs.allowealth.local:4321/dashboard?",
+    "should_trigger": false
+  }
+]

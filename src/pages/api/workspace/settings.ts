@@ -12,8 +12,31 @@ import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/ser
 import { z } from 'zod';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 import { getCacheManager, CacheTags } from '@/lib/cache';
+import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
 
 const currencySchema = z.enum(AVAILABLE_CURRENCIES);
+
+function parseMonthlyIncome(value: string): Record<string, string> {
+  if (!value) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[0] === 'string' && typeof entry[1] === 'string'
+      )
+    );
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Schema for PUT request body - workspace settings update
@@ -31,6 +54,8 @@ const updateWorkspaceSettingsSchema = z.object({
       { message: 'Invalid currency code' }
     )
     .optional(),
+  forecastMonthlyTopup: z.number().min(0).max(MAX_FORECAST_MONTHLY_TOPUP).optional(),
+  forecastAnnualRate: z.number().min(0).max(MAX_FORECAST_ANNUAL_RATE).optional(),
 });
 
 /**
@@ -59,7 +84,9 @@ export const GET: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        monthlyIncome: settings.monthlyIncome,
+        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
+        forecastMonthlyTopup: settings.forecastMonthlyTopup,
+        forecastAnnualRate: settings.forecastAnnualRate,
       },
     });
   } catch (error) {
@@ -78,7 +105,8 @@ export const GET: APIRoute = async (context) => {
  * PUT /api/workspace/settings
  *
  * Updates workspace settings. Admin only for name changes.
- * All members can update preferences (currency, secondaryCurrency, weekStart, monthlyIncome).
+ * All members can update preferences (currency, secondaryCurrency, weekStart, monthlyIncome,
+ * forecastMonthlyTopup, forecastAnnualRate).
  */
 export const PUT: APIRoute = async (context) => {
   try {
@@ -90,7 +118,15 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, currency, secondaryCurrency, weekStart, monthlyIncome } = validation.data;
+    const {
+      name,
+      currency,
+      secondaryCurrency,
+      weekStart,
+      monthlyIncome,
+      forecastMonthlyTopup,
+      forecastAnnualRate,
+    } = validation.data;
 
     // Name changes require admin role
     if (name !== undefined && auth.role !== 'admin') {
@@ -121,6 +157,12 @@ export const PUT: APIRoute = async (context) => {
     if (monthlyIncome !== undefined) {
       await workspaceMetaService.setMonthlyIncome(auth.workspaceId, monthlyIncome);
     }
+    if (forecastMonthlyTopup !== undefined) {
+      await workspaceMetaService.setForecastMonthlyTopup(auth.workspaceId, forecastMonthlyTopup);
+    }
+    if (forecastAnnualRate !== undefined) {
+      await workspaceMetaService.setForecastAnnualRate(auth.workspaceId, forecastAnnualRate);
+    }
 
     // Invalidate layout cache since workspace settings changed (best-effort)
     try {
@@ -142,7 +184,9 @@ export const PUT: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        monthlyIncome: settings.monthlyIncome,
+        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
+        forecastMonthlyTopup: settings.forecastMonthlyTopup,
+        forecastAnnualRate: settings.forecastAnnualRate,
       },
     });
   } catch (error) {

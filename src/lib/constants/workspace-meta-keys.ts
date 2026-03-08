@@ -15,6 +15,8 @@ export const WORKSPACE_META_KEYS = {
   SECONDARY_CURRENCY: 'secondary_currency',
   WEEK_START: 'week_start',
   MONTHLY_INCOME: 'monthly_income',
+  FORECAST_MONTHLY_TOPUP: 'forecast_monthly_topup',
+  FORECAST_ANNUAL_RATE: 'forecast_annual_rate',
   ONBOARDING_EXPENSE_SKIPPED: 'onboarding_expense_skipped',
 } as const;
 
@@ -31,6 +33,8 @@ export const WORKSPACE_META_DEFAULTS: Record<WorkspaceMetaKey, string> = {
   [WORKSPACE_META_KEYS.SECONDARY_CURRENCY]: '',
   [WORKSPACE_META_KEYS.WEEK_START]: 'monday',
   [WORKSPACE_META_KEYS.MONTHLY_INCOME]: '',
+  [WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP]: '5000000',
+  [WORKSPACE_META_KEYS.FORECAST_ANNUAL_RATE]: '7',
   [WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED]: 'false',
 };
 
@@ -60,6 +64,8 @@ export interface WorkspaceSettings {
   secondaryCurrency: Currency | '';
   weekStart: WeekStart;
   monthlyIncome: string;
+  forecastMonthlyTopup: number;
+  forecastAnnualRate: number;
 }
 
 /**
@@ -70,4 +76,6 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   secondaryCurrency: '',
   weekStart: 'monday',
   monthlyIncome: '',
+  forecastMonthlyTopup: 5000000,
+  forecastAnnualRate: 7,
 };

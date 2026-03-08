@@ -128,6 +128,7 @@ export class RecurringOccurrenceService {
         CacheTags.RECURRING,
         CacheTags.RECURRING_OCCURRENCES,
         CacheTags.RECURRING_CALENDAR,
+        CacheTags.RECURRING_FORECAST,
         CacheTags.TRANSACTIONS,
         CacheTags.DASHBOARD,
       ],

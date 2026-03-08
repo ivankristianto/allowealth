@@ -27,3 +27,23 @@ UpdateWorkspaceSettingsRequest:
       enum: [sunday, monday]
       description: First day of the week for calendar views
       example: "monday"
+    monthlyIncome:
+      type: object
+      description: Map of currency code to monthly income amount strings. Send an empty object to clear it.
+      additionalProperties:
+        type: string
+        pattern: '^\d+(\.\d{1,2})?$'
+      example:
+        IDR: "15000000"
+    forecastMonthlyTopup:
+      type: number
+      minimum: 0
+      maximum: 1000000000000
+      description: Saved monthly contribution used by the forecast page.
+      example: 5000000
+    forecastAnnualRate:
+      type: number
+      minimum: 0
+      maximum: 100
+      description: Saved expected annual percentage yield used by the forecast page.
+      example: 7

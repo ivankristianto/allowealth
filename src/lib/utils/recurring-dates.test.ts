@@ -29,6 +29,43 @@ describe('calculateDueDate', () => {
   test('caps non-leap year february', () => {
     expect(calculateDueDate('2026-01-01', 29, 1)).toBe('2026-02-28');
   });
+
+  test('monthly interval=3 (quarterly)', () => {
+    expect(calculateDueDate('2026-01-15', 15, 0, 'monthly', 3)).toBe('2026-01-15');
+    expect(calculateDueDate('2026-01-15', 15, 1, 'monthly', 3)).toBe('2026-04-15');
+    expect(calculateDueDate('2026-01-15', 15, 2, 'monthly', 3)).toBe('2026-07-15');
+  });
+
+  test('monthly interval=6 (semi-annual)', () => {
+    expect(calculateDueDate('2026-01-12', 12, 0, 'monthly', 6)).toBe('2026-01-12');
+    expect(calculateDueDate('2026-01-12', 12, 1, 'monthly', 6)).toBe('2026-07-12');
+    expect(calculateDueDate('2026-01-12', 12, 2, 'monthly', 6)).toBe('2027-01-12');
+  });
+
+  test('monthly interval=12 (annual)', () => {
+    expect(calculateDueDate('2026-01-01', 1, 0, 'monthly', 12)).toBe('2026-01-01');
+    expect(calculateDueDate('2026-01-01', 1, 1, 'monthly', 12)).toBe('2027-01-01');
+  });
+
+  test('weekly interval=1', () => {
+    expect(calculateDueDate('2026-01-12', 0, 0, 'weekly', 1)).toBe('2026-01-12');
+    expect(calculateDueDate('2026-01-12', 0, 1, 'weekly', 1)).toBe('2026-01-19');
+    expect(calculateDueDate('2026-01-12', 0, 4, 'weekly', 1)).toBe('2026-02-09');
+  });
+
+  test('weekly interval=2 (biweekly)', () => {
+    expect(calculateDueDate('2026-01-12', 0, 0, 'weekly', 2)).toBe('2026-01-12');
+    expect(calculateDueDate('2026-01-12', 0, 1, 'weekly', 2)).toBe('2026-01-26');
+    expect(calculateDueDate('2026-01-12', 0, 2, 'weekly', 2)).toBe('2026-02-09');
+  });
+
+  test('weekly ignores dayOfMonth parameter', () => {
+    expect(calculateDueDate('2026-01-12', 31, 1, 'weekly', 1)).toBe('2026-01-19');
+  });
+
+  test('defaults to monthly interval=1 when params omitted', () => {
+    expect(calculateDueDate('2026-01-01', 15, 1)).toBe('2026-02-15');
+  });
 });
 
 describe('shouldGenerateOccurrence', () => {

@@ -1,140 +1,89 @@
 /**
  * WealthTrajectory Tests
  *
- * Verifies client-side summary updates and guards against script cleanup regressions.
+ * Verifies chart window scoping and guards against script cleanup regressions.
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { Window } from 'happy-dom';
+import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { formatCurrency } from '@/lib/formatting';
+import type { ForecastChartWindow, ForecastTimelinePoint } from '@/lib/forecast';
+
+import { buildWealthTrajectoryChartSeries } from './WealthTrajectory.client';
 
 const sourcePath = fileURLToPath(new URL('./WealthTrajectory.astro', import.meta.url));
 const source = readFileSync(sourcePath, 'utf-8');
+const clientSourcePath = fileURLToPath(new URL('./WealthTrajectory.client.ts', import.meta.url));
+const clientSource = readFileSync(clientSourcePath, 'utf-8');
 
-describe('WealthTrajectory client formatting', () => {
-  let originalWindow: typeof globalThis.window | undefined;
-  let originalDocument: typeof globalThis.document | undefined;
-  let originalFetch: typeof globalThis.fetch | undefined;
-  let originalNavigator: Navigator | undefined;
+const sampleTimeline: ForecastTimelinePoint[] = [
+  {
+    key: '2025-01',
+    dateLabel: 'Jan 2025',
+    actualBalance: 8_500_000,
+    plannedBalance: 8_600_000,
+    currentTrajectoryBalance: 8_550_000,
+    forecastInterest: 45_000,
+    actualNetSavings: 300_000,
+    income: 4_000_000,
+    expenses: 3_700_000,
+  },
+  {
+    key: '2025-02',
+    dateLabel: 'Feb 2025',
+    actualBalance: 8_950_000,
+    plannedBalance: 9_100_000,
+    currentTrajectoryBalance: 9_000_000,
+    forecastInterest: 48_000,
+    actualNetSavings: 320_000,
+    income: 4_100_000,
+    expenses: 3_780_000,
+  },
+  {
+    key: '2025-03',
+    dateLabel: 'Mar 2025',
+    actualBalance: null,
+    plannedBalance: 9_650_000,
+    currentTrajectoryBalance: 9_420_000,
+    forecastInterest: 52_000,
+    actualNetSavings: null,
+    income: null,
+    expenses: null,
+  },
+];
 
-  beforeEach(() => {
-    originalWindow = globalThis.window;
-    originalDocument = globalThis.document;
-    originalFetch = globalThis.fetch;
-    originalNavigator = globalThis.navigator;
-
-    const window = new Window({ url: 'http://localhost/forecast' });
-    const { document } = window;
-    (window as unknown as { SyntaxError: typeof SyntaxError }).SyntaxError = SyntaxError;
-
-    (globalThis as Record<string, unknown>).window = window;
-    (globalThis as Record<string, unknown>).document = document;
-    (globalThis as Record<string, unknown>).navigator = window.navigator;
-    (globalThis as Record<string, unknown>).HTMLElement = window.HTMLElement;
-    (globalThis as Record<string, unknown>).HTMLInputElement = window.HTMLInputElement;
-    (globalThis as Record<string, unknown>).CustomEvent = window.CustomEvent;
-    (globalThis as Record<string, unknown>).Event = window.Event;
-
-    document.body.innerHTML = `
-      <section role="region">
-        <div data-wealth-trajectory-controls>
-          <input name="monthlyTopup" value="5000000" />
-          <input name="annualRate" value="7" />
-        </div>
-        <div data-chart-id="chart-1" data-currency="IDR"></div>
-        <div class="grid">
-          <div><h3>—</h3></div>
-          <div><h3>—</h3></div>
-          <div><h3>—</h3></div>
-        </div>
-      </section>
-    `;
-
-    (
-      window as unknown as { wealthTrajectoryCharts: Record<string, unknown> }
-    ).wealthTrajectoryCharts = {
-      'chart-1': {
-        chart: {
-          data: {
-            labels: [],
-            datasets: [{ data: [] }, { data: [] }],
-          },
-          update: mock(() => {}),
-        },
-        data: [],
-      },
+describe('WealthTrajectory chart series builder', () => {
+  it('limits chart series to the focused chart window', () => {
+    const chartWindow: ForecastChartWindow = {
+      startIndex: 1,
+      endIndex: 2,
+      startKey: '2025-02',
+      endKey: '2025-03',
+      latestActualKey: '2025-02',
     };
+
+    const series = buildWealthTrajectoryChartSeries(sampleTimeline, chartWindow);
+
+    expect(series.labels).toEqual(['Feb 2025', 'Mar 2025']);
+    expect(series.plannedBalance).toEqual([9_100_000, 9_650_000]);
+    expect(series.actualBalance).toEqual([8_950_000, null]);
+    expect(series.currentTrajectoryBalance).toEqual([9_000_000, 9_420_000]);
   });
 
-  afterEach(() => {
-    (globalThis as Record<string, unknown>).window = originalWindow;
-    (globalThis as Record<string, unknown>).document = originalDocument;
-    (globalThis as Record<string, unknown>).navigator = originalNavigator;
-    (globalThis as Record<string, unknown>).fetch = originalFetch;
-  });
+  it('uses the full timeline when no focused chart window is present', () => {
+    const chartWindow: ForecastChartWindow = {
+      startIndex: 0,
+      endIndex: -1,
+      startKey: null,
+      endKey: null,
+      latestActualKey: '2025-02',
+    };
 
-  it('updates live summary cards with full currency values after forecast refresh', async () => {
-    const fetchMock = mock(async () => {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: {
-            dataPoints: [
-              {
-                key: '2025-01',
-                dateLabel: 'Jan 2025',
-                forecastBalance: 12_500_000,
-                forecastInterest: 450_000,
-                realBalance: 11_800_000,
-                realInterest: 400_000,
-              },
-            ],
-            summary: {
-              year10Target: 12_500_000,
-              totalInterest: 3_500_000,
-              growthMultiple: 2.5,
-              currentTotal: 5_000_000,
-            },
-            input: {
-              monthlyTopup: 5_000_000,
-              annualRate: 7.5,
-              years: 10,
-            },
-          },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    });
-    (globalThis as Record<string, unknown>).fetch = fetchMock;
+    const series = buildWealthTrajectoryChartSeries(sampleTimeline, chartWindow);
 
-    const { initWealthTrajectoryInputs } = await import('./WealthTrajectory.client');
-    initWealthTrajectoryInputs();
-
-    const apyInput = document.querySelector('input[name="annualRate"]') as HTMLInputElement | null;
-    if (!apyInput) throw new Error('Expected annualRate input in test DOM');
-
-    apyInput.value = '7.5';
-    apyInput.dispatchEvent(new window.Event('input', { bubbles: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 650));
-
-    const cards = document.querySelectorAll('.grid > div');
-    const year10Value = cards[0]?.querySelector('h3')?.textContent;
-    const totalInterestValue = cards[1]?.querySelector('h3')?.textContent;
-    const firstFetchUrl = (fetchMock as any).mock.calls[0]?.[0];
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(firstFetchUrl).toContain('/api/forecast?monthlyTopup=5000000&annualRate=7.5&years=10');
-    expect(year10Value).toBe(formatCurrency(12_500_000, 'IDR'));
-    expect(totalInterestValue).toBe(formatCurrency(3_500_000, 'IDR'));
-    expect(year10Value).not.toContain('Rp12.5M');
-    expect(totalInterestValue).not.toContain('Rp3.5M');
+    expect(series.labels).toEqual(['Jan 2025', 'Feb 2025', 'Mar 2025']);
+    expect(series.plannedBalance).toEqual([8_600_000, 9_100_000, 9_650_000]);
   });
 });
 
@@ -143,5 +92,61 @@ describe('WealthTrajectory chart lifecycle cleanup', () => {
     expect(source).not.toContain('let chartObserver');
     expect(source).not.toContain('let themeObserver');
     expect(source).not.toContain('let systemThemeMediaQuery');
+  });
+});
+
+describe('WealthTrajectory reality-check chart', () => {
+  it('renders the approved legend labels', () => {
+    expect(source).toContain('Planned Balance');
+    expect(source).toContain('Actual Balance');
+    expect(source).toContain('Current Trajectory');
+  });
+
+  it('does not render inline assumption controls', () => {
+    expect(source).not.toContain('data-wealth-trajectory-controls');
+    expect(source).not.toContain('MONTHLY TOP-UP');
+    expect(source).not.toContain('EXPECTED APY');
+  });
+
+  it('uses chart window metadata to scope the default viewport', () => {
+    expect(source).toContain('chartWindow');
+    expect(clientSource).toContain('startIndex');
+    expect(clientSource).toContain('endIndex');
+  });
+
+  it('renders current trajectory with a dashed stroke', () => {
+    expect(source).toContain('borderDash');
+    expect(source).toContain('Current Trajectory');
+  });
+
+  it('formats summary cards with full currency values', () => {
+    expect(source).toContain('formatCurrency(summary.latestActualBalance, currency)');
+    expect(source).toContain('formatCurrency(summary.plannedEndingBalance, currency)');
+    expect(source).toContain('formatCurrency(summary.currentTrajectoryEndingBalance, currency)');
+    expect(source).not.toContain('formatCurrencyCompact');
+  });
+
+  it('keeps the chart copy aligned with the reality-check spec', () => {
+    expect(source).toContain('Planned growth, actual balances, and current trajectory');
+    expect(source).toContain('Add account balance history to see your plan versus reality.');
+    expect(source).not.toContain('next decade');
+  });
+
+  it('reads chart dataset colors from theme tokens instead of hardcoded values', () => {
+    expect(source).toContain('--color-accent');
+    expect(source).toContain('--color-info');
+    expect(source).toContain('--color-warning');
+    expect(source).toContain('readThemeColor');
+  });
+
+  it('renders a screen-reader-only data table for the visible chart window', () => {
+    expect(source).toContain('aria-label="Wealth trajectory data table"');
+    expect(source).toContain('visibleTimeline.map');
+  });
+
+  it('serializes only the focused chart window to the client payload', () => {
+    expect(source).toContain('const visibleChartWindow =');
+    expect(source).toContain('timeline: visibleTimeline');
+    expect(source).toContain('chartWindow: visibleChartWindow');
   });
 });

@@ -9,7 +9,7 @@ import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.
 import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
-import { CalendarDays, Info, List, Plus } from '@lucide/astro';
+import { CalendarDays, Info, List, Plus, TrendingUp } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
 import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 import { DEFAULT_CURRENCY } from '@/lib/constants/currency';
@@ -174,14 +174,18 @@ const templatesHelpId = 'recurring-templates-help';
                   tokenClasses.textXs,
                 ]}
               >
-                Monthly summary of recurring income and expenses with quick actions.
+                Schedule summary of recurring income and expenses with quick actions.
               </div>
             </div>
           </div>
           <p class="mt-1 text-sm text-base-content/60">
-            Review and manage your monthly recurring transactions.
+            Review and manage your recurring transactions across any schedule.
           </p>
         </div>
+        <a href="/recurring/forecast" class={`${accentGhostBtn} px-3`}>
+          <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
+          <span class="text-xs font-semibold">Forecast</span>
+        </a>
       </div>
 
       <div id="recurring-stats-container" class="mt-4">

@@ -52,6 +52,10 @@ export const CacheKeys = {
   recurringCalendar: (workspaceId: string, year: number, month: number): string =>
     `${PREFIX}:recurring-calendar:${workspaceId}:${year}:${month}`,
 
+  /** Recurring forecast: cache:recurring-forecast:{workspaceId}:{filtersHash} */
+  recurringForecast: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:recurring-forecast:${workspaceId}:${filtersHash}`,
+
   /** User settings: cache:settings:{userId} */
   settings: (userId: string): string => `${PREFIX}:settings:${userId}`,
 

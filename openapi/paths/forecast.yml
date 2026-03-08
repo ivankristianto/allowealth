@@ -1,41 +1,13 @@
 /forecast:
   get:
-    summary: Get wealth trajectory forecast
-    description: Calculate wealth trajectory forecast based on user's current accounts and projected monthly contributions with interest rates.
+    summary: Get forecast reality-check data
+    description: >
+      Build the forecast reality-check view using the workspace's saved forecast assumptions,
+      primary-currency non-debt accounts, monthly actual net savings, a fixed 24-month-forward
+      horizon, focused chart window metadata, and yearly grouped breakdown rows.
     operationId: getForecast
     tags:
       - Forecast
-    parameters:
-      - name: monthlyTopup
-        in: query
-        description: Monthly contribution amount in IDR
-        required: false
-        schema:
-          type: number
-          default: 5000000
-          minimum: 0
-          maximum: 1000000000000
-          example: 5000000
-      - name: annualRate
-        in: query
-        description: Annual percentage yield (e.g., 7 for 7%)
-        required: false
-        schema:
-          type: number
-          default: 7
-          minimum: 0
-          maximum: 100
-          example: 7
-      - name: years
-        in: query
-        description: Number of years to forecast
-        required: false
-        schema:
-          type: integer
-          default: 10
-          minimum: 1
-          maximum: 30
-          example: 10
     responses:
       '200':
         description: Forecast calculated successfully

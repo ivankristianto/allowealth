@@ -131,4 +131,42 @@ describe('AccountService.findAllWithHistory N+1 fix', () => {
     expect(result).toHaveLength(1);
     expect(result[0].history).toEqual([]);
   });
+
+  it('loads history only for forecast-scoped accounts', async () => {
+    const workspaceId = 'workspace-1';
+    const accounts = [
+      createMockAccount({
+        id: 'asset-idr',
+        workspace_id: workspaceId,
+        currency: 'IDR',
+        account_class: 'liquid',
+      }),
+      createMockAccount({
+        id: 'debt-idr',
+        workspace_id: workspaceId,
+        currency: 'IDR',
+        account_class: 'debt',
+      }),
+      createMockAccount({
+        id: 'asset-usd',
+        workspace_id: workspaceId,
+        currency: 'USD',
+        account_class: 'liquid',
+      }),
+    ];
+
+    (accountService as any).findAll = mock(
+      async (_workspaceId: string, filters?: { currency?: string }) =>
+        accounts.filter((account) => !filters?.currency || account.currency === filters.currency)
+    );
+    (mockDb.query.accountHistory as any).findMany.mockResolvedValue([
+      { account_id: 'asset-idr', balance: '1000', recorded_at: new Date('2026-01-01') },
+    ]);
+
+    const result = await (accountService as any).findAllWithHistoryForForecast(workspaceId, 'IDR');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('asset-idr');
+    expect((mockDb.query.accountHistory as any).findMany).toHaveBeenCalledTimes(1);
+  });
 });

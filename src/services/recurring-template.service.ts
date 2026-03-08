@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, like, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, inArray, like, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -14,6 +14,11 @@ import {
 } from '@/lib/validation/recurring';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
+import {
+  mapRecurringTemplateOutput,
+  type RecurringOccurrenceStats,
+  type RecurringTemplateWithRelations,
+} from './recurring-template-output';
 
 const log = createLogger('recurring-template');
 
@@ -54,6 +59,7 @@ export class RecurringTemplateService {
         CacheTags.RECURRING,
         CacheTags.RECURRING_OCCURRENCES,
         CacheTags.RECURRING_CALENDAR,
+        CacheTags.RECURRING_FORECAST,
         CacheTags.TRANSACTIONS,
         CacheTags.DASHBOARD,
       ],
@@ -62,34 +68,10 @@ export class RecurringTemplateService {
   }
 
   private mapTemplateOutput(
-    template: any,
-    occurrenceStats: {
-      pendingCount: number;
-      confirmedCount: number;
-      skippedCount: number;
-      nextDueDate: string | null;
-    }
+    template: RecurringTemplateWithRelations,
+    occurrenceStats: RecurringOccurrenceStats
   ): RecurringTemplateOutput {
-    const isTemplateActive = template.status === 'active';
-    return {
-      ...template,
-      category: {
-        id: template.category.id,
-        name: template.category.name,
-        type: template.category.type,
-        icon: template.category.icon,
-        color: template.category.color,
-      },
-      account: {
-        id: template.account.id,
-        name: template.account.name,
-        type: template.account.type,
-      },
-      pendingCount: isTemplateActive ? occurrenceStats.pendingCount : 0,
-      confirmedCount: occurrenceStats.confirmedCount,
-      skippedCount: occurrenceStats.skippedCount,
-      nextDueDate: isTemplateActive ? occurrenceStats.nextDueDate : null,
-    };
+    return mapRecurringTemplateOutput(template, occurrenceStats);
   }
 
   private async validateTemplateReferences(
@@ -218,7 +200,9 @@ export class RecurringTemplateService {
         currency: validated.currency,
         category_id: validated.category_id,
         account_id: validated.account_id,
-        day_of_month: validated.day_of_month,
+        day_of_month: validated.day_of_month ?? 0,
+        frequency: validated.frequency,
+        interval_count: validated.interval_count,
         start_date: validated.start_date,
         end_date: validated.end_date ?? null,
         total_occurrences: validated.total_occurrences ?? null,
@@ -447,6 +431,8 @@ export class RecurringTemplateService {
       'category_id',
       'account_id',
       'day_of_month',
+      'frequency',
+      'interval_count',
       'start_date',
       'end_date',
       'total_occurrences',
@@ -486,6 +472,8 @@ export class RecurringTemplateService {
       category_id: updatePayload.category_id ?? existing.category_id,
       account_id: updatePayload.account_id ?? existing.account_id,
       day_of_month: updatePayload.day_of_month ?? existing.day_of_month,
+      frequency: updatePayload.frequency ?? existing.frequency,
+      interval_count: updatePayload.interval_count ?? existing.interval_count,
       start_date: updatePayload.start_date ?? existing.start_date,
       end_date: mergedEndDate ?? undefined,
       total_occurrences: mergedTotalOccurrences ?? undefined,
@@ -514,7 +502,29 @@ export class RecurringTemplateService {
       ),
     });
 
+    const hasScheduleChanges =
+      validated.day_of_month !== undefined ||
+      validated.frequency !== undefined ||
+      validated.interval_count !== undefined ||
+      validated.start_date !== undefined ||
+      validated.end_date !== undefined ||
+      validated.total_occurrences !== undefined ||
+      validated.starting_occurrence_number !== undefined;
+
     if (updated && updated.status === 'active') {
+      if (hasScheduleChanges) {
+        const today = toIsoDate(new Date());
+        await this.db
+          .delete(this.schema.recurringOccurrences)
+          .where(
+            and(
+              eq(this.schema.recurringOccurrences.template_id, id),
+              eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+              eq(this.schema.recurringOccurrences.status, 'pending'),
+              gte(this.schema.recurringOccurrences.due_date, today)
+            )
+          );
+      }
       await this._generateForTemplate(updated as RecurringTemplate);
     }
 
@@ -825,7 +835,9 @@ export class RecurringTemplateService {
       const dueDate = calculateDueDate(
         template.start_date,
         template.day_of_month,
-        occurrenceNumber - startOccurrence
+        occurrenceNumber - startOccurrence,
+        template.frequency ?? 'monthly',
+        template.interval_count ?? 1
       );
 
       if (dueDate > lookaheadEnd) {
