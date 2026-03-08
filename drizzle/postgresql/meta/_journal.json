@@ -8,6 +8,20 @@
       "when": 1772417134593,
       "tag": "0000_black_radioactive_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772869381612,
+      "tag": "0001_youthful_energizer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772876389231,
+      "tag": "0002_chunky_nick_fury",
+      "breakpoints": true
     }
   ]
 }

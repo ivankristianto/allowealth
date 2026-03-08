@@ -22,6 +22,8 @@ const amountValidation = z
     { message: 'Amount must be greater than 0' }
   );
 
+const frequencyEnum = z.enum(['weekly', 'monthly']);
+
 const baseRecurringTemplateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200, 'Name must not exceed 200 characters'),
   type: categoryTypeEnum,
@@ -29,7 +31,9 @@ const baseRecurringTemplateSchema = z.object({
   currency: currencyEnum,
   category_id: z.string().min(1, 'Category is required'),
   account_id: z.string().min(1, 'Account is required'),
-  day_of_month: z.number().int().min(1).max(31),
+  day_of_month: z.number().int().min(1).max(31).optional(),
+  frequency: frequencyEnum.default('monthly'),
+  interval_count: z.number().int().min(1).max(52).default(1),
   start_date: dateStringValidation,
   end_date: dateStringValidation.optional(),
   total_occurrences: z.number().int().min(1).optional(),
@@ -42,6 +46,15 @@ const baseRecurringTemplateSchema = z.object({
 
 function refineRecurringTemplate<T extends z.ZodTypeAny>(schema: T): T {
   return schema
+    .refine(
+      (data: any) =>
+        data.frequency === 'weekly' ||
+        (data.day_of_month !== undefined && data.day_of_month !== null),
+      {
+        message: 'Day of month is required for monthly frequency',
+        path: ['day_of_month'],
+      }
+    )
     .refine((data: any) => Boolean(data.total_occurrences || data.end_date), {
       message: 'At least one end condition is required',
       path: ['total_occurrences'],
@@ -79,6 +92,8 @@ export const updateRecurringTemplateSchema = z
     category_id: z.string().min(1).optional(),
     account_id: z.string().min(1).optional(),
     day_of_month: z.number().int().min(1).max(31).optional(),
+    frequency: frequencyEnum.optional(),
+    interval_count: z.number().int().min(1).max(52).optional(),
     start_date: dateStringValidation.optional(),
     end_date: dateStringValidation.nullable().optional(),
     total_occurrences: z.number().int().min(1).nullable().optional(),
@@ -115,7 +130,9 @@ export const createRecurringTemplateAPISchema = refineRecurringTemplate(
     currency: currencyEnum,
     category_id: z.string().min(1, 'Category is required'),
     account_id: z.string().min(1, 'Account is required'),
-    day_of_month: z.coerce.number().int().min(1).max(31),
+    day_of_month: z.coerce.number().int().min(1).max(31).optional(),
+    frequency: frequencyEnum.default('monthly'),
+    interval_count: z.coerce.number().int().min(1).max(52).default(1),
     start_date: dateStringValidation,
     end_date: dateStringValidation.optional(),
     total_occurrences: z.coerce.number().int().min(1).optional(),
@@ -136,6 +153,8 @@ export const updateRecurringTemplateAPISchema = z
     category_id: z.string().min(1).optional(),
     account_id: z.string().min(1).optional(),
     day_of_month: z.coerce.number().int().min(1).max(31).optional(),
+    frequency: frequencyEnum.optional(),
+    interval_count: z.coerce.number().int().min(1).max(52).optional(),
     start_date: dateStringValidation.optional(),
     end_date: dateStringValidation.nullable().optional(),
     total_occurrences: z.union([z.coerce.number().int().min(1), z.null()]).optional(),

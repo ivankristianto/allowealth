@@ -9,6 +9,8 @@ export interface RecurringTemplateSeed {
   dayOfMonth: number;
   category: string;
   account: string;
+  frequency?: 'weekly' | 'monthly';
+  intervalCount?: number;
   startDate: string;
   endDate?: string;
   totalOccurrences?: number;
@@ -73,5 +75,41 @@ export const RECURRING_TEMPLATE_DATA: RecurringTemplateSeed[] = [
     account: 'Transfer',
     endDate: '2027-12-31',
     startDate: '2026-01-01',
+  },
+  {
+    name: 'Weekly Groceries',
+    type: 'expense',
+    amount: '750000',
+    dayOfMonth: 6,
+    category: 'Groceries',
+    account: 'Cash',
+    frequency: 'weekly',
+    intervalCount: 1,
+    startDate: '2026-01-06',
+    endDate: '2026-12-31',
+  },
+  {
+    name: 'Bond Coupon - ABC',
+    type: 'income',
+    amount: '3000000',
+    dayOfMonth: 12,
+    category: 'Investment Income',
+    account: 'Transfer',
+    frequency: 'monthly',
+    intervalCount: 6,
+    startDate: '2026-01-12',
+    endDate: '2028-12-31',
+  },
+  {
+    name: 'Quarterly Insurance',
+    type: 'expense',
+    amount: '2500000',
+    dayOfMonth: 1,
+    category: 'Insurance',
+    account: 'Transfer',
+    frequency: 'monthly',
+    intervalCount: 3,
+    startDate: '2026-01-01',
+    endDate: '2027-12-31',
   },
 ];

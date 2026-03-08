@@ -22,6 +22,7 @@ export const CacheTags = {
   RECURRING: 'recurring' as const,
   RECURRING_OCCURRENCES: 'recurring-occurrences' as const,
   RECURRING_CALENDAR: 'recurring-calendar' as const,
+  RECURRING_FORECAST: 'recurring-forecast' as const,
   SESSION: 'session' as const,
   CATEGORIES: 'categories' as const,
   ACCOUNTS: 'accounts' as const,

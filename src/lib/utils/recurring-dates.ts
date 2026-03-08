@@ -22,12 +22,22 @@ function toIsoDate(value: Date): string {
 export function calculateDueDate(
   startDate: Date | string,
   dayOfMonth: number,
-  occurrenceOffset: number
+  occurrenceOffset: number,
+  frequency: 'weekly' | 'monthly' = 'monthly',
+  intervalCount: number = 1
 ): string {
   const start = toUtcDate(startDate);
-  const target = new Date(
-    Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + occurrenceOffset, 1)
-  );
+
+  if (frequency === 'weekly') {
+    const daysOffset = occurrenceOffset * intervalCount * 7;
+    const target = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + daysOffset)
+    );
+    return toIsoDate(target);
+  }
+
+  const monthOffset = occurrenceOffset * intervalCount;
+  const target = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + monthOffset, 1));
 
   const daysInTargetMonth = new Date(
     Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)

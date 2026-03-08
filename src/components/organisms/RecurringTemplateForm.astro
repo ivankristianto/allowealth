@@ -74,6 +74,64 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </label>
     </div>
 
+    <div class="space-y-3" data-recurring-frequency-block>
+      <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Frequency</span>
+      <div class="flex flex-wrap gap-1.5" data-frequency-presets>
+        <button
+          type="button"
+          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
+          data-frequency-preset="weekly-1">Weekly</button
+        >
+        <button
+          type="button"
+          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-active btn-accent"
+          data-frequency-preset="monthly-1">Monthly</button
+        >
+        <button
+          type="button"
+          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
+          data-frequency-preset="monthly-3">Quarterly</button
+        >
+        <button
+          type="button"
+          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
+          data-frequency-preset="monthly-6">Semi-annual</button
+        >
+        <button
+          type="button"
+          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
+          data-frequency-preset="monthly-12">Annual</button
+        >
+      </div>
+      <div class="grid grid-cols-[1fr_auto_auto] items-end gap-2">
+        <label class="form-control gap-1">
+          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Cycle</span>
+          <select
+            name="frequency"
+            class="select select-bordered select-sm h-9 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
+          >
+            <option value="monthly" selected>Monthly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </label>
+        <label class="form-control gap-1">
+          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Every</span>
+          <input
+            type="number"
+            name="interval_count"
+            min="1"
+            max="52"
+            value="1"
+            class="input input-bordered input-sm h-9 w-16 rounded-lg border border-base-300 bg-base-100 text-center text-sm font-medium"
+          />
+        </label>
+        <span
+          class="flex h-9 items-center text-sm font-medium text-base-content/60"
+          data-frequency-unit-label>month(s)</span
+        >
+      </div>
+    </div>
+
     <div class="rounded-lg border border-base-300 bg-base-100 p-3" data-recurring-amount-field>
       <div class="grid grid-cols-[1fr_auto] items-end gap-3">
         <label class="form-control gap-1.5">
@@ -145,8 +203,8 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </select>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-      <label class="form-control gap-1.5">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <label class="form-control gap-1.5" data-recurring-day-of-month-block>
         <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
           >Day of month</span
         >
@@ -163,7 +221,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         </select>
       </label>
 
-      <label class="form-control gap-1.5">
+      <label class="form-control gap-1.5" data-recurring-start-month-block>
         <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
           >Start month</span
         >
@@ -173,6 +231,24 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
             name="start_month"
             class="input input-bordered h-10 w-full rounded-lg border border-base-300 bg-base-100 pr-10 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
             required
+          />
+          <CalendarClock
+            size={16}
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40"
+            aria-hidden="true"
+          />
+        </div>
+      </label>
+
+      <label class="form-control hidden gap-1.5" data-recurring-start-date-block>
+        <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+          >Start date</span
+        >
+        <div class="relative">
+          <input
+            type="date"
+            name="start_date_input"
+            class="input input-bordered h-10 w-full rounded-lg border border-base-300 bg-base-100 pr-10 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
           />
           <CalendarClock
             size={16}

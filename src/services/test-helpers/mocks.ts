@@ -317,6 +317,8 @@ export function createMockRecurringTemplate(
     category_id: 'cat-1',
     account_id: 'account-1',
     day_of_month: 1,
+    frequency: 'monthly',
+    interval_count: 1,
     start_date: '2026-01-01',
     end_date: null,
     total_occurrences: 12,

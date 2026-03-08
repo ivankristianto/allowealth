@@ -1,0 +1,2 @@
+ALTER TABLE "recurring_templates" ADD COLUMN "frequency" text DEFAULT 'monthly' NOT NULL;--> statement-breakpoint
+ALTER TABLE "recurring_templates" ADD COLUMN "interval_count" integer DEFAULT 1 NOT NULL;
