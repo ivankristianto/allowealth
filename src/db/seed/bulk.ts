@@ -63,7 +63,14 @@ export async function seedBulkTransactions(
       categoryNameToId.set(cat.name, id);
     }
   }
-  for (const name of ['Dad Salary', 'Mom Salary', 'Side Business', 'Dividend']) {
+  for (const name of [
+    'Dad Salary',
+    'Mom Salary',
+    'Bonds',
+    'Fixed Deposits',
+    'Dividends',
+    'Other Side Income',
+  ]) {
     const id = categoryMap.get(name);
     if (id) {
       incomeCategoryIds.push(id);
@@ -89,7 +96,7 @@ export async function seedBulkTransactions(
     }
   }
 
-  const largeAmountAccountIds = ['Transfer', 'BCA Credit Card', 'Mandiri Credit Card']
+  const largeAmountAccountIds = ['Current Account', 'BCA Credit Card', 'Mandiri Credit Card']
     .map((n) => accountNameToId.get(n))
     .filter((id): id is string => !!id);
 
@@ -140,7 +147,7 @@ export async function seedBulkTransactions(
       if (!canQueueMoreTransactions()) break;
       const day = Math.min(tmpl.day, maxDay);
       const txDate = new Date(year, month - 1, day, SEED_TIME_HOUR, 0, 0, 0);
-      const catId = categoryNameToId.get(tmpl.description) ?? uniqueIncomeCategoryIds[0];
+      const catId = categoryNameToId.get(tmpl.category) ?? uniqueIncomeCategoryIds[0];
       const accountId =
         tmpl.amount >= 5_000_000
           ? (largeAmountAccountIds[0] ?? paymentAccountIds[0])
@@ -255,10 +262,10 @@ export async function seedBulkTransactions(
   // --- Benchmark transfer transactions ---
   console.log('   Inserting benchmark transfer transactions...');
   const transferPairs = [
-    { from: 'Transfer', to: 'Cash' },
-    { from: 'Transfer', to: 'GoPay' },
-    { from: 'Transfer', to: 'OVO' },
-    { from: 'Cash', to: 'Transfer' },
+    { from: 'Current Account', to: 'Cash' },
+    { from: 'Current Account', to: 'GoPay' },
+    { from: 'Current Account', to: 'OVO' },
+    { from: 'Cash', to: 'Current Account' },
   ];
 
   for (let mi = 0; mi < benchMonths.length && canQueueMoreTransactions(); mi++) {

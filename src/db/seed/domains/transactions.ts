@@ -11,56 +11,120 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getSeedMonths, specificDate, SEED_TIME_HOUR } from '../lib/dates';
 import { amt, randomAmount } from '../lib/amounts';
-import { CATEGORY_STYLES, EXPENSE_CATEGORIES } from '../data/categories';
-import { getPaymentAccounts } from '../data/accounts';
-import { INCOME_TEMPLATES, EXPENSE_TRANSACTIONS } from '../data/transactions';
+import { CATEGORY_STYLES } from '../data/categories';
+import { CURRENT_ACCOUNT_NAME } from '../data/accounts';
+import {
+  DAILY_LIVING_EXPENSES,
+  getExpensePlanForMonth,
+  getIncomeTemplateForMonth,
+} from '../data/transactions';
 
-// Transfer templates: from -> to with amount ranges
 const TRANSFER_TEMPLATES = [
   {
-    from: 'Transfer',
+    from: CURRENT_ACCOUNT_NAME,
     to: 'Cash',
-    amount: [1000000, 3000000] as [number, number],
+    amount: [800_000, 2_200_000] as [number, number],
     description: 'ATM Withdrawal',
   },
   {
-    from: 'Transfer',
+    from: CURRENT_ACCOUNT_NAME,
     to: 'GoPay',
-    amount: [200000, 500000] as [number, number],
+    amount: [250_000, 600_000] as [number, number],
     description: 'Top-up GoPay',
   },
   {
-    from: 'Transfer',
+    from: CURRENT_ACCOUNT_NAME,
     to: 'OVO',
-    amount: [200000, 500000] as [number, number],
+    amount: [250_000, 600_000] as [number, number],
     description: 'Top-up OVO',
   },
   {
     from: 'Cash',
-    to: 'Transfer',
-    amount: [500000, 2000000] as [number, number],
+    to: CURRENT_ACCOUNT_NAME,
+    amount: [500_000, 1_500_000] as [number, number],
     description: 'Cash Deposit',
   },
   {
-    from: 'Transfer',
+    from: CURRENT_ACCOUNT_NAME,
     to: 'BCA Credit Card',
-    amount: [2000000, 5000000] as [number, number],
+    amount: [2_500_000, 6_000_000] as [number, number],
     description: 'Credit Card Payment',
   },
   {
-    from: 'Transfer',
+    from: CURRENT_ACCOUNT_NAME,
     to: 'Mandiri Credit Card',
-    amount: [1000000, 3000000] as [number, number],
+    amount: [1_500_000, 3_500_000] as [number, number],
     description: 'Credit Card Payment',
   },
+  {
+    from: CURRENT_ACCOUNT_NAME,
+    to: 'Emergency Savings',
+    amount: [1_500_000, 4_000_000] as [number, number],
+    description: 'Emergency Fund Top-up',
+  },
+  {
+    from: CURRENT_ACCOUNT_NAME,
+    to: 'Fixed Deposit - BCA',
+    amount: [2_000_000, 5_000_000] as [number, number],
+    description: 'Fixed Deposit Placement',
+  },
 ];
+
+function pickRandom<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)]!;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function varyAmount(amount: number, variance = 0.05): number {
+  return Math.round(amount * (1 - variance + Math.random() * variance * 2));
+}
+
+async function ensureIncomeCategory(
+  workspaceId: string,
+  userId: string,
+  categoryMap: Map<string, string>,
+  categoryName: string,
+  createdAt: Date
+) {
+  const existingId = categoryMap.get(categoryName);
+  if (existingId) {
+    return existingId;
+  }
+
+  const newId = nanoid();
+  const style = CATEGORY_STYLES[categoryName] || {
+    icon: 'circle-dot',
+    color: 'bg-slate-500',
+  };
+
+  await db.insert(categories).values({
+    id: newId,
+    workspace_id: workspaceId,
+    created_by_user_id: userId,
+    name: categoryName,
+    type: 'income',
+    description: style.description || null,
+    icon: style.icon,
+    color: style.color,
+    is_active: true,
+    created_at: createdAt,
+    updated_at: createdAt,
+  });
+
+  categoryMap.set(categoryName, newId);
+  return newId;
+}
 
 /**
  * Seed income transactions
  */
 export async function seedIncomeTransactions(
   workspaceId: string,
-  userId: string,
+  dadUserId: string,
+  momUserId: string,
   categoryMap: Map<string, string>,
   accountMap: Map<string, string>,
   monthsToSeed?: Array<{ year: number; month: number }>
@@ -68,61 +132,42 @@ export async function seedIncomeTransactions(
   console.log('💰 Seeding income transactions...');
 
   let count = 0;
-  const paymentAccountNames = getPaymentAccounts().map((a) => a.name);
   const now = new Date();
   const seedMonths = monthsToSeed ?? getSeedMonths();
 
-  for (let i = 0; i < seedMonths.length; i++) {
-    const { year, month } = seedMonths[i];
-    const templateIndex = seedMonths.length - 1 - i;
-    const template = INCOME_TEMPLATES[templateIndex] || INCOME_TEMPLATES[0];
+  for (let monthIndex = 0; monthIndex < seedMonths.length; monthIndex++) {
+    const { year, month } = seedMonths[monthIndex]!;
+    const incomeTemplate = getIncomeTemplateForMonth(monthIndex);
 
-    for (const income of template) {
-      const categoryId = categoryMap.get(income.description);
-      if (!categoryId) {
-        const newId = nanoid();
-        const style = CATEGORY_STYLES[income.description] || {
-          icon: 'circle-dot',
-          color: 'bg-slate-500',
-        };
-        await db.insert(categories).values({
-          id: newId,
-          workspace_id: workspaceId,
-          created_by_user_id: userId,
-          name: income.description,
-          type: 'income',
-          description: style.description || null,
-          icon: style.icon,
-          color: style.color,
-          is_active: true,
-          created_at: now,
-          updated_at: now,
-        });
-        categoryMap.set(income.description, newId);
-      }
-
-      const finalCategoryId = categoryMap.get(income.description)!;
-      const accountName =
-        paymentAccountNames[Math.floor(Math.random() * paymentAccountNames.length)];
-      const accountId = accountMap.get(accountName || 'Transfer')!;
+    for (const income of incomeTemplate) {
+      const categoryId = await ensureIncomeCategory(
+        workspaceId,
+        dadUserId,
+        categoryMap,
+        income.category,
+        now
+      );
+      const createdByUserId = income.owner === 'mom' ? momUserId : dadUserId;
+      const accountId =
+        accountMap.get(income.account) ?? accountMap.get(CURRENT_ACCOUNT_NAME) ?? null;
+      if (!accountId) continue;
 
       const daysInMonth = new Date(year, month, 0).getDate();
       const day = Math.min(income.day, daysInMonth);
-
       const transactionDate = specificDate(year, month, day);
       if (!transactionDate) continue;
 
       const createdAt = new Date(transactionDate);
-      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 4), 0, 0, 0);
 
       await db.insert(transactions).values({
         id: nanoid(),
         workspace_id: workspaceId,
-        created_by_user_id: userId,
-        category_id: finalCategoryId,
+        created_by_user_id: createdByUserId,
+        category_id: categoryId,
         account_id: accountId,
         type: 'income',
-        amount: amt(income.amount, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        amount: amt(varyAmount(income.amount, 0.03), SEEDER_CONFIG.PRIMARY_CURRENCY),
         currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: income.description,
         transaction_date: transactionDate,
@@ -135,6 +180,35 @@ export async function seedIncomeTransactions(
 
   console.log(`✓ Created ${count} income transactions`);
   return count;
+}
+
+function buildDailyExpenseAllocations(
+  totalBudget: number,
+  minAmount: number,
+  maxAmount: number
+): number[] {
+  const averageAmount = Math.round((minAmount + maxAmount) / 2);
+  const transactionCount = clamp(Math.round(totalBudget / averageAmount), 8, 18);
+  const amounts: number[] = [];
+  let remaining = totalBudget;
+
+  for (let index = 0; index < transactionCount; index++) {
+    const remainingSlots = transactionCount - index - 1;
+    if (remainingSlots === 0) {
+      amounts.push(remaining);
+      break;
+    }
+
+    const averageRemaining = Math.round(remaining / (remainingSlots + 1));
+    const minimumAllowed = Math.max(minAmount, remaining - maxAmount * remainingSlots);
+    const maximumAllowed = Math.min(maxAmount, remaining - minAmount * remainingSlots);
+    const nextAmount = clamp(varyAmount(averageRemaining, 0.18), minimumAllowed, maximumAllowed);
+
+    amounts.push(nextAmount);
+    remaining -= nextAmount;
+  }
+
+  return amounts.filter((amount) => amount > 0);
 }
 
 /**
@@ -151,40 +225,27 @@ export async function seedExpenseTransactions(
 
   let count = 0;
   const months = monthsToSeed ?? getSeedMonths();
-  const paymentAccountNames = getPaymentAccounts().map((a) => a.name);
 
-  for (const { year, month } of months) {
-    const daysInMonth = new Date(year, month, 0).getDate();
+  for (let monthIndex = 0; monthIndex < months.length; monthIndex++) {
+    const { year, month } = months[monthIndex]!;
+    const expensePlan = getExpensePlanForMonth(monthIndex);
+    const plannedExpenses = [
+      ...expensePlan.fixedExpenses,
+      ...expensePlan.variableExpenses,
+      ...expensePlan.extraExpenses,
+    ];
 
-    for (const expense of EXPENSE_TRANSACTIONS) {
-      if (expense.months && !expense.months.includes(month)) {
-        continue;
-      }
-
+    for (const expense of plannedExpenses) {
       const categoryId = categoryMap.get(expense.category);
-      if (!categoryId) continue;
+      const accountId =
+        accountMap.get(expense.account) ?? accountMap.get(CURRENT_ACCOUNT_NAME) ?? null;
+      if (!categoryId || !accountId) continue;
 
-      let amount: number;
-      if (Array.isArray(expense.amount)) {
-        amount = expense.amount[0] + Math.random() * (expense.amount[1] - expense.amount[0]);
-      } else {
-        amount = expense.amount * (0.95 + Math.random() * 0.1);
-      }
-
-      const day = 1 + Math.floor(Math.random() * daysInMonth);
-      const transactionDate = specificDate(year, month, day);
+      const transactionDate = specificDate(year, month, expense.day);
       if (!transactionDate) continue;
 
       const createdAt = new Date(transactionDate);
-      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
-
-      let accountName = paymentAccountNames[Math.floor(Math.random() * paymentAccountNames.length)];
-      if (amount > 500000) {
-        accountName = Math.random() > 0.5 ? 'Transfer' : 'BCA Credit Card';
-      }
-
-      const accountId = accountMap.get(accountName || 'Transfer');
-      if (!accountId) continue;
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 6), 0, 0, 0);
 
       await db.insert(transactions).values({
         id: nanoid(),
@@ -193,7 +254,7 @@ export async function seedExpenseTransactions(
         category_id: categoryId,
         account_id: accountId,
         type: 'expense',
-        amount: amt(Math.round(amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
+        amount: amt(varyAmount(expense.amount, 0.05), SEEDER_CONFIG.PRIMARY_CURRENCY),
         currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
         description: expense.description,
         transaction_date: transactionDate,
@@ -203,44 +264,51 @@ export async function seedExpenseTransactions(
       count++;
     }
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      if (Math.random() > 0.7) continue;
+    const [minDailyAmount, maxDailyAmount] = expensePlan.profile.dailyExpenseAmountRange;
+    const dailyAmounts = buildDailyExpenseAllocations(
+      expensePlan.profile.plannedDailyExpenseTotal,
+      minDailyAmount,
+      maxDailyAmount
+    );
+    const daysInMonth = new Date(year, month, 0).getDate();
 
-      const numDailyExpenses = 1 + Math.floor(Math.random() * 4);
-      for (let i = 0; i < numDailyExpenses; i++) {
-        const randomCategory =
-          EXPENSE_CATEGORIES[Math.floor(Math.random() * EXPENSE_CATEGORIES.length)];
-        const categoryId = categoryMap.get(randomCategory.name);
-        if (!categoryId) continue;
+    for (let index = 0; index < dailyAmounts.length; index++) {
+      const dailyTemplate = pickRandom(DAILY_LIVING_EXPENSES);
+      const categoryId = categoryMap.get(dailyTemplate.category);
+      if (!categoryId) continue;
 
-        const amount = randomAmount(50000, 500000, SEEDER_CONFIG.PRIMARY_CURRENCY);
-        const transactionDate = specificDate(year, month, day);
-        if (!transactionDate) continue;
+      const day = clamp(
+        Math.round(((index + 1) * daysInMonth) / (dailyAmounts.length + 1)) +
+          Math.floor(Math.random() * 3) -
+          1,
+        1,
+        daysInMonth
+      );
+      const accountName = pickRandom(dailyTemplate.accountOptions);
+      const accountId = accountMap.get(accountName);
+      if (!accountId) continue;
 
-        const createdAt = new Date(transactionDate);
-        createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 12), 0, 0, 0);
+      const transactionDate = specificDate(year, month, day);
+      if (!transactionDate) continue;
 
-        const accountName =
-          paymentAccountNames[Math.floor(Math.random() * paymentAccountNames.length)];
-        const accountId = accountMap.get(accountName || 'Cash');
-        if (!accountId) continue;
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
-        await db.insert(transactions).values({
-          id: nanoid(),
-          workspace_id: workspaceId,
-          created_by_user_id: userId,
-          category_id: categoryId,
-          account_id: accountId,
-          type: 'expense',
-          amount,
-          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
-          description: `Daily expense - ${randomCategory.name}`,
-          transaction_date: transactionDate,
-          created_at: createdAt,
-          updated_at: createdAt,
-        });
-        count++;
-      }
+      await db.insert(transactions).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        category_id: categoryId,
+        account_id: accountId,
+        type: 'expense',
+        amount: amt(dailyAmounts[index]!, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+        description: pickRandom(dailyTemplate.descriptions),
+        transaction_date: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+      count++;
     }
   }
 
@@ -263,40 +331,37 @@ export async function seedTransferTransactions(
   const seedMonths = monthsToSeed ?? getSeedMonths();
 
   for (const { year, month } of seedMonths) {
-    const daysInMonth = new Date(year, month, 0).getDate();
-
-    for (const tmpl of TRANSFER_TEMPLATES) {
-      const fromAccountId = accountMap.get(tmpl.from);
-      const toAccountId = accountMap.get(tmpl.to);
+    for (const template of TRANSFER_TEMPLATES) {
+      const fromAccountId = accountMap.get(template.from);
+      const toAccountId = accountMap.get(template.to);
       if (!fromAccountId || !toAccountId) continue;
 
-      const numTransfers = 1 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < numTransfers; i++) {
-        const day = 1 + Math.floor(Math.random() * daysInMonth);
-        const transactionDate = specificDate(year, month, day);
-        if (!transactionDate) continue;
+      const transactionDate = specificDate(year, month, 1 + Math.floor(Math.random() * 26));
+      if (!transactionDate) continue;
 
-        const createdAt = new Date(transactionDate);
-        createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
 
-        const amount = tmpl.amount[0] + Math.random() * (tmpl.amount[1] - tmpl.amount[0]);
-
-        await db.insert(transactions).values({
-          id: nanoid(),
-          workspace_id: workspaceId,
-          created_by_user_id: userId,
-          account_id: fromAccountId,
-          to_account_id: toAccountId,
-          type: 'transfer',
-          amount: amt(Math.round(amount), SEEDER_CONFIG.PRIMARY_CURRENCY),
-          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
-          description: tmpl.description,
-          transaction_date: transactionDate,
-          created_at: createdAt,
-          updated_at: createdAt,
-        });
-        count++;
-      }
+      await db.insert(transactions).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        account_id: fromAccountId,
+        to_account_id: toAccountId,
+        type: 'transfer',
+        amount: amt(
+          Math.round(
+            template.amount[0] + Math.random() * (template.amount[1] - template.amount[0])
+          ),
+          SEEDER_CONFIG.PRIMARY_CURRENCY
+        ),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+        description: template.description,
+        transaction_date: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+      count++;
     }
   }
 
@@ -305,7 +370,7 @@ export async function seedTransferTransactions(
 }
 
 /**
- * Seed transactions for member user (Mom)
+ * Seed transactions for the mom user
  */
 export async function seedMemberTransactions(
   workspaceId: string,
@@ -314,7 +379,7 @@ export async function seedMemberTransactions(
   accountMap: Map<string, string>,
   monthsToSeed?: Array<{ year: number; month: number }>
 ): Promise<number> {
-  console.log('👩 Seeding member transactions...');
+  console.log('👩 Seeding mom transactions...');
 
   let count = 0;
   const months = monthsToSeed ?? getSeedMonths();
@@ -323,61 +388,49 @@ export async function seedMemberTransactions(
   for (const { year, month } of months) {
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    // Member creates some personal expenses
-    for (let day = 1; day <= daysInMonth; day += 2 + Math.floor(Math.random() * 5)) {
-      const numExpenses = 1 + Math.floor(Math.random() * 3);
-      for (let i = 0; i < numExpenses; i++) {
-        const categoryNames = [
-          'Food & Groceries',
-          'Transportation',
-          'Entertainment',
-          'Pocket Money',
-        ];
-        const categoryName = categoryNames[Math.floor(Math.random() * categoryNames.length)];
-        const categoryId = categoryMap.get(categoryName);
-        if (!categoryId) continue;
+    for (let day = 2; day <= daysInMonth; day += 3 + Math.floor(Math.random() * 4)) {
+      const categoryName = pickRandom([
+        'Food & Groceries',
+        'Kids Expenses',
+        'Entertainment',
+        'Pocket Money',
+      ]);
+      const categoryId = categoryMap.get(categoryName);
+      const accountId = accountMap.get(pickRandom(memberAccountNames));
+      if (!categoryId || !accountId) continue;
 
-        const accountName =
-          memberAccountNames[Math.floor(Math.random() * memberAccountNames.length)];
-        const accountId = accountMap.get(accountName);
-        if (!accountId) continue;
+      const transactionDate = specificDate(year, month, day);
+      if (!transactionDate) continue;
 
-        const amount = randomAmount(25000, 450000, SEEDER_CONFIG.PRIMARY_CURRENCY);
-        const transactionDate = specificDate(year, month, day);
-        if (!transactionDate) continue;
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
-        const createdAt = new Date(transactionDate);
-        createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
+      const descriptions: Record<string, string[]> = {
+        'Food & Groceries': ['Fruit Shop', 'Supermarket', 'Bakery', 'Milk Refill'],
+        'Kids Expenses': ['School Snack', 'Books', 'Craft Materials', 'Class Contribution'],
+        Entertainment: ['Movie', 'Playdate Cafe', 'Streaming', 'Ice Cream Outing'],
+        'Pocket Money': ['Coffee', 'Personal Care', 'Snacks', 'Stationery'],
+      };
 
-        const descriptions: Record<string, string[]> = {
-          'Food & Groceries': ['Supermarket', 'Market', 'Convenience Store', 'Bakery'],
-          Transportation: ['Gasoline', 'Toll', 'Parking', 'Ride-hailing'],
-          Entertainment: ['Movie', 'Game', 'Streaming', 'Cafe'],
-          'Pocket Money': ['Coffee', 'Snacks', 'Personal Care', 'Stationery'],
-        };
-        const description =
-          descriptions[categoryName][Math.floor(Math.random() * descriptions[categoryName].length)];
-
-        await db.insert(transactions).values({
-          id: nanoid(),
-          workspace_id: workspaceId,
-          created_by_user_id: memberUserId,
-          category_id: categoryId,
-          account_id: accountId,
-          type: 'expense',
-          amount,
-          currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
-          description,
-          transaction_date: transactionDate,
-          created_at: createdAt,
-          updated_at: createdAt,
-        });
-        count++;
-      }
+      await db.insert(transactions).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: memberUserId,
+        category_id: categoryId,
+        account_id: accountId,
+        type: 'expense',
+        amount: randomAmount(40_000, 420_000, SEEDER_CONFIG.PRIMARY_CURRENCY),
+        currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+        description: pickRandom(descriptions[categoryName]!),
+        transaction_date: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+      count++;
     }
   }
 
-  console.log(`✓ Created ${count} member transactions`);
+  console.log(`✓ Created ${count} mom transactions`);
   return count;
 }
 
