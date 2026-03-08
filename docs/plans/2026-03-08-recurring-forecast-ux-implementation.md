@@ -492,7 +492,7 @@ git commit -m "feat(forecast): add cashflow chart component with stacked bars an
 
 **Context:** This is a full rewrite of the page. The changes are:
 
-1. **Back button**: "← Recurring" (destination, not current page)
+1. **Breadcrumb**: Replace back button with `Breadcrumb` component: `Recurring > Forecast` (reuse existing `@/components/atoms/Breadcrumb.astro`)
 2. **Filters**: Remove status dropdown, remove Filter button. Type select and account dropdown auto-submit on change. Add segmented range picker (3M/6M/12M/24M).
 3. **Account labels**: Use `getAccountTypeLabel()` for group names
 4. **Chart**: Add `ForecastCashflowChart` between filters and table, fed by active currency totals
@@ -510,7 +510,8 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro';
 import ForecastCashflowChart from '@/components/organisms/ForecastCashflowChart.astro';
 import type { ForecastChartDataPoint } from '@/components/organisms/ForecastCashflowChart.astro';
-import { ArrowLeft, Wallet } from '@lucide/astro';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
+import { Wallet } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { recurringForecastService, accountService, workspaceMetaService } from '@/services';
 import { buildForecastFilters } from '@/lib/utils/recurring-forecast-filters';
@@ -614,24 +615,15 @@ function buildFilterUrl(overrides: Record<string, string | undefined>): string {
 const rangeOptions = [
   { value: 3, label: '3M' },
   { value: 6, label: '6M' },
-  { value: 12, label: '1Y' },
-  { value: 24, label: '2Y' },
+  { value: 12, label: '12M' },
+  { value: 24, label: '24M' },
 ];
 ---
 
 <ProtectedLayout title="Recurring Forecast" currentPath="/recurring/forecast">
   <div class="mx-auto max-w-7xl space-y-5 px-1 pb-10 sm:space-y-6 sm:px-2 lg:px-6">
-    {/* Header */}
-    <div class="flex items-center gap-3">
-      <a
-        href="/recurring"
-        class="btn btn-sm btn-ghost btn-square rounded-lg"
-        aria-label="Back to recurring"
-      >
-        <ArrowLeft size={18} class="stroke-current" aria-hidden="true" />
-      </a>
-      <h1 class="text-lg font-bold text-base-content sm:text-xl">Recurring Forecast</h1>
-    </div>
+    {/* Breadcrumb */}
+    <Breadcrumb items={[{ label: 'Recurring', href: '/recurring' }, { label: 'Forecast' }]} />
 
     {/* Filters */}
     <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
@@ -641,8 +633,6 @@ const rangeOptions = [
         action="/recurring/forecast"
         class="flex flex-wrap items-end gap-3"
       >
-        <input type="hidden" name="status" value="all" />
-
         <MultiSelectDropdown
           id="forecast-account"
           label="All Accounts"
@@ -722,14 +712,14 @@ const rangeOptions = [
         <div class="overflow-x-auto">
           <table class="table w-full">
             <caption class="sr-only">Recurring forecast by template and month</caption>
-            <thead>
+            <thead class="sticky top-0 z-20 bg-base-100">
               <tr>
-                <th class="sticky left-0 z-10 bg-base-100 min-w-[14rem] px-4 py-3">
+                <th class="sticky left-0 z-30 bg-base-100 min-w-[14rem] px-4 py-3">
                   Template
                 </th>
-                <th class="px-3 py-3 text-center whitespace-nowrap">Freq.</th>
+                <th class="px-3 py-3 text-center whitespace-nowrap bg-base-100">Freq.</th>
                 {forecast.monthKeys.map((key) => (
-                  <th class="px-3 py-3 text-right whitespace-nowrap">{formatMonthHeader(key)}</th>
+                  <th class="px-3 py-3 text-right whitespace-nowrap bg-base-100">{formatMonthHeader(key)}</th>
                 ))}
               </tr>
             </thead>
@@ -860,26 +850,46 @@ const rangeOptions = [
 
 <script>
   // Auto-submit form when type select changes or account dropdown updates
-  const form = document.getElementById('forecast-filters') as HTMLFormElement | null;
+  function initForecastFilters(): void {
+    const form = document.getElementById('forecast-filters') as HTMLFormElement | null;
+    if (!form) return;
 
-  if (form) {
     form.querySelectorAll<HTMLSelectElement>('select[data-auto-submit]').forEach((select) => {
       select.addEventListener('change', () => form.submit());
     });
 
-    window.addEventListener('filterChange', ((e: CustomEvent) => {
+    const handleFilterChange = ((e: CustomEvent) => {
       if (e.detail?.type === 'accounts') {
         form.submit();
       }
-    }) as EventListener);
+    }) as EventListener;
+
+    window.addEventListener('filterChange', handleFilterChange);
+
+    // Cleanup on view transitions to prevent listener accumulation
+    document.addEventListener(
+      'astro:before-swap',
+      () => window.removeEventListener('filterChange', handleFilterChange),
+      { once: true }
+    );
   }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initForecastFilters);
+  } else {
+    initForecastFilters();
+  }
+  document.addEventListener('astro:after-swap', initForecastFilters);
 </script>
 ```
 
 **Key design decisions in this rewrite:**
 
+- **Breadcrumb** replaces back button — reuses existing `Breadcrumb` atom: `Recurring > Forecast`.
 - **Range picker uses `<a>` links** — no JS needed, server renders the correct URLs. Default (12) omits `monthCount` param for clean URLs.
-- **Status always `'all'`** via hidden input — paused rows shown dimmed, no status dropdown.
+- **Status always `'all'`** — hardcoded in frontmatter, no hidden input needed. Paused rows shown dimmed, no status dropdown.
+- **Sticky `<thead>`** with `sticky top-0 z-20` — month headers stay visible when scrolling vertically on mobile. Template column header gets `z-30` (intersection of sticky-left + sticky-top).
+- **Listener cleanup** — filterChange listener removed on `astro:before-swap` to prevent accumulation with view transitions.
 - **Type select auto-submits** via `data-auto-submit` + client script.
 - **Account dropdown auto-submits** by listening for `filterChange` custom event from `MultiSelectDropdown`.
 - **Totals inside `<tfoot>`** of the same `<table>` — single scroll container. No separate `overflow-x-auto` div.
@@ -946,7 +956,7 @@ Start dev server and verify in Chrome:
 6. Click range picker buttons — page reloads with different month counts
 7. Verify paused rows show dimmed with "Paused" badge
 8. Verify right-edge fade instead of hard clipping
-9. Verify back button says "← Recurring"
+9. Verify breadcrumb shows "Recurring > Forecast" with link on "Recurring"
 10. Check mobile view — filters stack, table scrolls
 
 **Step 5: Fix any issues found, then final commit if needed**

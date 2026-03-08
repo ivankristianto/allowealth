@@ -20,7 +20,7 @@ Full redesign of `/recurring/forecast` to fix a data integrity bug, improve read
 
 ```
 ┌──────────────────────────────────────────────────┐
-│ ← Recurring              Recurring Forecast      │
+│ Recurring > Forecast                             │
 ├──────────────────────────────────────────────────┤
 │ [All Accounts ▼]  [Type ▼]   [3M|6M|12M|24M]    │
 ├──────────────────────────────────────────────────┤
@@ -83,9 +83,9 @@ Follow the design system table patterns:
 - Rendered with reduced opacity (`opacity-50`) and a "Paused" badge beside the template name.
 - Do not contribute to totals (existing service behavior, no change needed).
 
-### 6. Back Button
+### 6. Breadcrumb Navigation
 
-Label changes from "Recurring Forecast" to "Recurring" (names the destination, not the current page).
+Replace the back button with a breadcrumb: `Recurring > Forecast`. Reuse the existing `Breadcrumb` atom component. "Recurring" links to `/recurring`; "Forecast" is the current page (no link).
 
 ### 7. Data Flow
 
