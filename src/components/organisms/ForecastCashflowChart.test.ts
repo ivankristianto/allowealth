@@ -35,3 +35,14 @@ describe('ForecastCashflowChart component', () => {
     expect(source).toContain("document.addEventListener('astro:after-swap', lifecycle.init);");
   });
 });
+
+describe('ForecastCashflowChart context-aware subtitle', () => {
+  it('exports a typeFilter prop and uses it in the subtitle text', () => {
+    expect(source).toContain("typeFilter?: '' | 'income' | 'expense'");
+  });
+
+  it('shows income-only subtitle when typeFilter is income', () => {
+    expect(source).toMatch(/typeFilter === 'income'/);
+    expect(source).toMatch(/typeFilter === 'expense'/);
+  });
+});

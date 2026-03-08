@@ -16,9 +16,23 @@ export interface Props {
   currency?: Currency;
   loading?: boolean;
   className?: string;
+  typeFilter?: '' | 'income' | 'expense';
 }
 
-const { data = [], currency = 'IDR', loading = false, className = '' } = Astro.props;
+const {
+  data = [],
+  currency = 'IDR',
+  loading = false,
+  className = '',
+  typeFilter = '',
+} = Astro.props;
+
+const chartSubtitle =
+  typeFilter === 'income'
+    ? 'Projected monthly income from your active recurring transactions'
+    : typeFilter === 'expense'
+      ? 'Projected monthly expenses from your active recurring transactions'
+      : 'Projected monthly income and expenses from your active recurring transactions';
 
 const serializedData = JSON.stringify(data)
   .replace(/</g, '\\u003c')
@@ -52,9 +66,7 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
           </button>
         </div>
       </div>
-      <p class="text-xs text-base-content/50">
-        Projected monthly income and expenses from your active recurring transactions
-      </p>
+      <p class="text-xs text-base-content/50">{chartSubtitle}</p>
     </div>
 
     {
