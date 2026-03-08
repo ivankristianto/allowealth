@@ -5,7 +5,7 @@
  * - Query count per service method (catches N+1 regressions)
  * - Wall-clock execution time (catches catastrophic regressions)
  *
- * Run: bun test tests/perf/services/performance-benchmark.test.ts
+ * Run: bun test src/services/__tests__/performance-benchmark.test.ts
  *
  * CI usage: the test writes results to `perf-results.json` in the project root
  * for the `scripts/analyze-performance.ts` reporter to consume.
@@ -35,10 +35,6 @@ import { AccountCategoryService } from '@/services/account-category.service';
 import { WorkspaceService } from '@/services/workspace.service';
 import { UserService } from '@/services/user.service';
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const DB_PATH = join(import.meta.dir, `bench-${nanoid(8)}.sqlite`);
 const RESULTS_PATH = join(process.cwd(), 'perf-results.json');
 const WORKSPACE_ID = `ws-${nanoid(8)}`;
@@ -47,28 +43,20 @@ const MEMBER_USER_ID = `usr-${nanoid(8)}`;
 const CURRENCY = 'IDR';
 const NOW = new Date();
 
-// Trailing 12-month window — all months guaranteed in the past
 const BENCH_MONTHS: Array<{ year: number; month: number }> = [];
 for (let i = 11; i >= 0; i--) {
   const d = new Date(NOW.getFullYear(), NOW.getMonth() - i, 1);
   BENCH_MONTHS.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
 }
-// Use a recent past month for test queries (middle of the window)
 const TEST_MONTH = BENCH_MONTHS[6];
 
-// Data scale
 const NUM_EXPENSE_CATEGORIES = 10;
 const NUM_INCOME_CATEGORIES = 3;
 const NUM_ACCOUNTS = 5;
 const NUM_TRANSACTIONS = 10_000;
 const NUM_RECURRING_TEMPLATES = 20;
 
-// ---------------------------------------------------------------------------
-// Thresholds — generous to avoid flaky tests, tight enough to catch N+1
-// ---------------------------------------------------------------------------
-
 const THRESHOLDS: Record<string, { maxQueries: number | null; maxMs: number }> = {
-  // Original 7
   'ReportService.getMonthlyReport': { maxQueries: null, maxMs: 500 },
   'ReportService.getYearlyReport': { maxQueries: null, maxMs: 500 },
   'TransactionService.getMonthSummary': { maxQueries: null, maxMs: 200 },
@@ -77,7 +65,6 @@ const THRESHOLDS: Record<string, { maxQueries: number | null; maxMs: number }> =
   'RecurringTemplateService.findAll': { maxQueries: 5, maxMs: 300 },
   'AccountService.getHistory': { maxQueries: 5, maxMs: 200 },
 
-  // P1 — Page-load hot paths
   'DashboardService.getDashboardData': { maxQueries: 15, maxMs: 500 },
   'BudgetService.getMonthlyOverview': { maxQueries: 10, maxMs: 300 },
   'BudgetService.getBudgetHistory': { maxQueries: 15, maxMs: 500 },
@@ -87,8 +74,6 @@ const THRESHOLDS: Record<string, { maxQueries: number | null; maxMs: number }> =
   'AccountService.getTotalByClass': { maxQueries: 3, maxMs: 200 },
   'AccountService.getSnapshotForMonth': { maxQueries: 10, maxMs: 300 },
 
-  // P2 — User interaction paths
-  // Note: maxQueries is null for methods that don't accept PerfCollector
   'ReportService.getRecurringBreakdown': { maxQueries: null, maxMs: 300 },
   'ReportService.getMemberSummary': { maxQueries: null, maxMs: 300 },
   'ReportService.getCategoryTransactions': { maxQueries: null, maxMs: 300 },
@@ -106,7 +91,6 @@ const THRESHOLDS: Record<string, { maxQueries: number | null; maxMs: number }> =
   'AccountService.getLastBalanceBefore': { maxQueries: null, maxMs: 200 },
   'WorkspaceService.getOnboardingStatus': { maxQueries: null, maxMs: 200 },
 
-  // P3 — Simple lookups
   'TransactionService.findById': { maxQueries: 3, maxMs: 100 },
   'RecurringTemplateService.findById': { maxQueries: null, maxMs: 100 },
   'RecurringTemplateService.hasTemplates': { maxQueries: null, maxMs: 100 },
@@ -124,22 +108,13 @@ const THRESHOLDS: Record<string, { maxQueries: number | null; maxMs: number }> =
   'UserService.getById': { maxQueries: null, maxMs: 100 },
 };
 
-// ---------------------------------------------------------------------------
-// ID pools (pre-generated for FK references)
-// ---------------------------------------------------------------------------
-
 const expenseCategoryIds = Array.from({ length: NUM_EXPENSE_CATEGORIES }, () => `cat-${nanoid(8)}`);
 const incomeCategoryIds = Array.from({ length: NUM_INCOME_CATEGORIES }, () => `cat-${nanoid(8)}`);
 const accountIds = Array.from({ length: NUM_ACCOUNTS }, () => `acc-${nanoid(8)}`);
 const accountCategoryIds = [`acat-${nanoid(8)}`, `acat-${nanoid(8)}`];
 const templateIds = Array.from({ length: NUM_RECURRING_TEMPLATES }, () => `tpl-${nanoid(8)}`);
 
-// Will be populated during seeding
 let firstTxnId = '';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -155,10 +130,6 @@ function dateInMonth(year: number, month: number, day?: number): Date {
   return new Date(year, month - 1, Math.min(d, maxDay), 12, 0, 0);
 }
 
-// ---------------------------------------------------------------------------
-// Results collector — written to JSON after all tests
-// ---------------------------------------------------------------------------
-
 interface BenchmarkResult {
   method: string;
   queries: number | null;
@@ -172,7 +143,6 @@ const results: BenchmarkResult[] = [];
 
 function recordResult(method: string, queries: number | null, durationMs: number) {
   const threshold = THRESHOLDS[method];
-  // queries===null means no PerfCollector was used — skip query check
   const queryOk =
     threshold.maxQueries === null || queries === null || queries <= threshold.maxQueries;
   const timeOk = durationMs < threshold.maxMs;
@@ -186,14 +156,9 @@ function recordResult(method: string, queries: number | null, durationMs: number
   });
 }
 
-// ---------------------------------------------------------------------------
-// Database setup
-// ---------------------------------------------------------------------------
-
 let rawDb: Database;
 let db: ReturnType<typeof drizzle>;
 
-// Services under test
 let reportService: ReportService;
 let transactionService: TransactionService;
 let recurringOccurrenceService: RecurringOccurrenceService;
@@ -207,7 +172,6 @@ let workspaceService: WorkspaceService;
 let userService: UserService;
 
 beforeAll(() => {
-  // 1. Create temp SQLite database
   rawDb = new Database(DB_PATH);
   rawDb.prepare('PRAGMA journal_mode = WAL').run();
   rawDb.prepare('PRAGMA synchronous = NORMAL').run();
@@ -216,13 +180,10 @@ beforeAll(() => {
 
   db = drizzle(rawDb, { schema });
 
-  // 2. Apply all migrations
   migrate(db, { migrationsFolder: join(process.cwd(), 'drizzle', 'sqlite') });
 
-  // 3. Seed data
   seedDatabase(db);
 
-  // 4. Instantiate services with benchmark DB
   const benchDb = db as unknown as IDatabase;
   reportService = new ReportService(benchDb);
   transactionService = new TransactionService(benchDb);
@@ -238,7 +199,6 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  // Write results JSON for the CI reporter
   writeFileSync(
     RESULTS_PATH,
     JSON.stringify(
@@ -258,25 +218,17 @@ afterAll(() => {
 
   try {
     rawDb?.close();
-  } catch {
-    // ignore
-  }
+  } catch {}
   if (existsSync(DB_PATH)) unlinkSync(DB_PATH);
-  // WAL/SHM files
   for (const suffix of ['-wal', '-shm']) {
     const p = DB_PATH + suffix;
     if (existsSync(p)) unlinkSync(p);
   }
 });
 
-// ---------------------------------------------------------------------------
-// Seeding
-// ---------------------------------------------------------------------------
-
 function seedDatabase(db: ReturnType<typeof drizzle>) {
   const now = new Date();
 
-  // Workspace
   db.insert(schema.workspaces)
     .values({
       id: WORKSPACE_ID,
@@ -287,7 +239,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     })
     .run();
 
-  // Workspace meta (for getOnboardingStatus)
   db.insert(schema.workspaceMeta)
     .values([
       {
@@ -309,7 +260,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     ])
     .run();
 
-  // Admin user
   db.insert(schema.users)
     .values({
       id: USER_ID,
@@ -323,7 +273,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     })
     .run();
 
-  // Member user (for getMemberSummary)
   db.insert(schema.users)
     .values({
       id: MEMBER_USER_ID,
@@ -337,7 +286,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     })
     .run();
 
-  // Expense categories
   for (let i = 0; i < NUM_EXPENSE_CATEGORIES; i++) {
     db.insert(schema.categories)
       .values({
@@ -355,7 +303,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
       .run();
   }
 
-  // Income categories
   for (let i = 0; i < NUM_INCOME_CATEGORIES; i++) {
     db.insert(schema.categories)
       .values({
@@ -373,7 +320,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
       .run();
   }
 
-  // Account categories (for AccountCategoryService.findAll)
   db.insert(schema.accountCategories)
     .values([
       {
@@ -399,7 +345,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     ])
     .run();
 
-  // Accounts
   const accountTypes = ['cash', 'bank_account', 'e_wallet', 'bank_account', 'mutual_fund'] as const;
   for (let i = 0; i < NUM_ACCOUNTS; i++) {
     db.insert(schema.accounts)
@@ -422,7 +367,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
       .run();
   }
 
-  // Account history — 12 trailing months per account
   for (const accId of accountIds) {
     for (const { year, month } of BENCH_MONTHS) {
       db.insert(schema.accountHistory)
@@ -436,7 +380,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     }
   }
 
-  // Account snapshots (3 months for getSnapshotForMonth)
   for (let si = 0; si < 3; si++) {
     const sm = BENCH_MONTHS[BENCH_MONTHS.length - 1 - si];
     const snapshotId = `snap-${nanoid(8)}`;
@@ -466,7 +409,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     }
   }
 
-  // Budgets (one per expense category per trailing month)
   for (const catId of expenseCategoryIds) {
     for (const { year, month } of BENCH_MONTHS) {
       db.insert(schema.budgets)
@@ -486,7 +428,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     }
   }
 
-  // Transactions (~10k spread across trailing 12 months)
   const txnBatchSize = 500;
   const txnValues: Array<{
     id: string;
@@ -505,7 +446,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
 
   const allTxnIds: string[] = [];
 
-  // Admin user transactions (~9.5k)
   const adminTxnCount = NUM_TRANSACTIONS - 500;
   for (let i = 0; i < adminTxnCount; i++) {
     const isIncome = Math.random() < 0.25;
@@ -535,7 +475,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     }
   }
 
-  // Member user transactions (~500)
   for (let i = 0; i < 500; i++) {
     const isIncome = Math.random() < 0.2;
     const bm = BENCH_MONTHS[i % BENCH_MONTHS.length];
@@ -567,10 +506,8 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     txnValues.length = 0;
   }
 
-  // Save first transaction ID for findById test
   firstTxnId = allTxnIds[0];
 
-  // Audit logs (~100 entries for getHistory / getTransactionIdsWithHistory)
   const auditValues: Array<{
     id: string;
     workspace_id: string;
@@ -604,7 +541,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
     db.insert(schema.auditLogs).values(auditValues).run();
   }
 
-  // Recurring templates + occurrences
   for (let t = 0; t < NUM_RECURRING_TEMPLATES; t++) {
     const isIncome = t < 3;
     const catId = isIncome ? randomItem(incomeCategoryIds) : randomItem(expenseCategoryIds);
@@ -663,10 +599,6 @@ function seedDatabase(db: ReturnType<typeof drizzle>) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Assertion helpers
-// ---------------------------------------------------------------------------
-
 interface PerfResult {
   queryCount: number;
   durationMs: number;
@@ -703,14 +635,7 @@ function assertTime(method: string, durationMs: number) {
   expect(durationMs).toBeLessThan(t.maxMs);
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
-  // =======================================================================
-  // ReportService
-  // =======================================================================
   describe('ReportService', () => {
     it('getMonthlyReport', async () => {
       const period = `${TEST_MONTH.year}-${String(TEST_MONTH.month).padStart(2, '0')}`;
@@ -785,9 +710,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // TransactionService
-  // =======================================================================
   describe('TransactionService', () => {
     it('getMonthSummary', async () => {
       const startDate = new Date(TEST_MONTH.year, TEST_MONTH.month - 1, 1);
@@ -864,9 +786,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // RecurringOccurrenceService
-  // =======================================================================
   describe('RecurringOccurrenceService', () => {
     it('getStats', async () => {
       const start = performance.now();
@@ -919,9 +838,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // RecurringTemplateService
-  // =======================================================================
   describe('RecurringTemplateService', () => {
     it('findAll', async () => {
       const result = await measureWithPerf(async (perf) => {
@@ -949,9 +865,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // AccountService
-  // =======================================================================
   describe('AccountService', () => {
     it('getHistory', async () => {
       const result = await measureWithPerf(async (perf) => {
@@ -1058,9 +971,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // BudgetService
-  // =======================================================================
   describe('BudgetService', () => {
     it('getMonthlyOverview', async () => {
       const result = await measureWithPerf(async (perf) => {
@@ -1120,7 +1030,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
       );
       const durationMs = performance.now() - start;
 
-      // Result may be null if no budget exists for this category/month combo
       expect(result === null || typeof result === 'object').toBe(true);
       assertTime('BudgetService.getBudgetByCategory', durationMs);
     });
@@ -1140,9 +1049,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // DashboardService
-  // =======================================================================
   describe('DashboardService', () => {
     it('getDashboardData', async () => {
       const result = await measureWithPerf(async (perf) => {
@@ -1158,9 +1064,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // CategoryService
-  // =======================================================================
   describe('CategoryService', () => {
     it('findAll', async () => {
       const result = await measureWithPerf(async (perf) => {
@@ -1177,9 +1080,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // AccountCategoryService
-  // =======================================================================
   describe('AccountCategoryService', () => {
     it('findAll', async () => {
       const start = performance.now();
@@ -1191,9 +1091,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // WorkspaceService
-  // =======================================================================
   describe('WorkspaceService', () => {
     it('getOnboardingStatus', async () => {
       const start = performance.now();
@@ -1215,9 +1112,6 @@ describe('Performance Benchmark (real SQLite, ~10k transactions)', () => {
     });
   });
 
-  // =======================================================================
-  // UserService
-  // =======================================================================
   describe('UserService', () => {
     it('getById', async () => {
       const start = performance.now();
