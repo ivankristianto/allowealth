@@ -2,16 +2,18 @@
 /**
  * Forecast Page
  *
- * Displays wealth trajectory forecasting with interactive area chart
- * and detailed 120-month ledger projections table.
+ * Displays the forecast reality-check page with saved assumptions,
+ * balance comparison charts, and a yearly ledger breakdown.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import ForecastAssumptions from '@/components/organisms/ForecastAssumptions.astro';
+import ForecastMonthlyGains from '@/components/organisms/ForecastMonthlyGains.astro';
 import WealthTrajectory from '@/components/organisms/WealthTrajectory.astro';
 import LedgerProjections from '@/components/organisms/LedgerProjections.astro';
-import type { ForecastResult } from '@/lib/forecast';
+import type { ForecastRealityCheckData, ForecastRealityCheckSummary } from '@/lib/forecast';
+import { getForecastRealityCheckData } from '@/lib/forecast/server';
 import { workspaceMetaService } from '@/services';
-import type { Currency } from '@/lib/constants/currency';
 
 const currentPath = '/forecast';
 const user = Astro.locals.user;
@@ -19,67 +21,73 @@ if (!user?.id) {
   return Astro.redirect('/login');
 }
 
-const primaryCurrency: Currency = await workspaceMetaService.getCurrency(user.workspaceId);
+const settings = await workspaceMetaService.getSettings(user.workspaceId);
+const primaryCurrency = settings.currency;
 
-// Fetch initial forecast data from API
-let forecastData: ForecastResult | null = null;
+let forecastData: ForecastRealityCheckData | null = null;
 let error: string | null = null;
 
 try {
-  // Default parameters: 5,000,000 monthly, 7% APY, 10 years
-  const apiUrl = `${Astro.url.origin}/api/forecast?monthlyTopup=5000000&annualRate=7&years=10`;
-
-  const response = await fetch(apiUrl, {
-    headers: {
-      cookie: Astro.request.headers.get('cookie') || '',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch forecast data: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error('Invalid API response format');
-  }
-
-  forecastData = result.data;
+  forecastData = await getForecastRealityCheckData(user.workspaceId);
 } catch (err) {
   console.error('Error fetching forecast data:', err);
   error = err instanceof Error ? err.message : 'Failed to load forecast data';
 }
+
+const assumptions = forecastData?.assumptions ?? {
+  monthlyTopup: settings.forecastMonthlyTopup,
+  annualRate: settings.forecastAnnualRate,
+};
+const emptySummary: ForecastRealityCheckSummary = {
+  latestActualKey: null,
+  latestActualBalance: 0,
+  plannedEndingBalance: 0,
+  currentTrajectoryEndingBalance: 0,
+  totalForecastInterest: 0,
+  trailingAverageNetSavings: 0,
+};
 ---
 
-<ProtectedLayout title="Forecast" currentPath={currentPath} subtitle="Spending forecast">
+<ProtectedLayout title="Forecast" currentPath={currentPath} subtitle="Reality-check forecast">
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    {/* Page Header */}
-    <div>
-      <h1 class="text-2xl md:text-3xl font-bold text-base-content leading-none tracking-tight">
-        Forecast
-      </h1>
-      <p class="text-sm md:text-base text-base-content/60 mt-2">
-        Predict your financial future based on current accounts and projected contributions.
-      </p>
-    </div>
+    <ForecastAssumptions
+      monthlyTopup={assumptions.monthlyTopup}
+      annualRate={assumptions.annualRate}
+      currency={primaryCurrency}
+    />
 
     {/* Wealth Trajectory Section */}
     {
       forecastData ? (
         <WealthTrajectory
-          data={forecastData.dataPoints}
+          timeline={forecastData.timeline}
+          chartWindow={forecastData.chartWindow}
           summary={forecastData.summary}
-          input={forecastData.input}
           currency={primaryCurrency}
         />
       ) : (
         <WealthTrajectory
-          data={[]}
-          summary={{ year10Target: 0, totalInterest: 0, growthMultiple: 0, currentTotal: 0 }}
-          input={{ monthlyTopup: 5000000, annualRate: 7, years: 10 }}
+          timeline={[]}
+          summary={emptySummary}
           currency={primaryCurrency}
           error={error || 'Failed to load forecast data'}
+        />
+      )
+    }
+
+    {/* Monthly Gains Section */}
+    {
+      forecastData ? (
+        <ForecastMonthlyGains
+          timeline={forecastData.timeline}
+          chartWindow={forecastData.chartWindow}
+          currency={primaryCurrency}
+        />
+      ) : (
+        <ForecastMonthlyGains
+          timeline={[]}
+          currency={primaryCurrency}
+          error={error || 'Failed to load monthly gains data'}
         />
       )
     }
@@ -87,7 +95,7 @@ try {
     {/* Ledger Projections Section */}
     {
       forecastData ? (
-        <LedgerProjections data={forecastData.dataPoints} currency={primaryCurrency} />
+        <LedgerProjections data={forecastData.yearlyBreakdown} currency={primaryCurrency} />
       ) : (
         <LedgerProjections
           data={[]}
@@ -100,6 +108,5 @@ try {
 </ProtectedLayout>
 
 <script>
-  // Import client-side script for WealthTrajectory input handling
-  import '@/components/organisms/WealthTrajectory.client';
+  import '@/components/organisms/ForecastAssumptions.client';
 </script>

@@ -627,6 +627,122 @@ function createMemberSummaryMockDatabase(): IDatabase {
   } as unknown as IDatabase;
 }
 
+type ReportServiceWithMonthlyNetSavings = ReportService & {
+  getMonthlyNetSavingsByMonth(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency?: string
+  ): Promise<Map<string, { income: string; expenses: string; netSavings: string }>>;
+};
+
+function createMonthlyNetSavingsMockDatabase(): IDatabase {
+  const mockTransactions = [
+    {
+      workspace_id: 'workspace-1',
+      type: 'income',
+      amount: '1000',
+      currency: 'IDR',
+      transaction_date: new Date('2024-01-05'),
+      deleted_at: null,
+    },
+    {
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '250',
+      currency: 'IDR',
+      transaction_date: new Date('2024-01-08'),
+      deleted_at: null,
+    },
+    {
+      workspace_id: 'workspace-1',
+      type: 'income',
+      amount: '500',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-03'),
+      deleted_at: null,
+    },
+    {
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '800',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-19'),
+      deleted_at: null,
+    },
+    {
+      workspace_id: 'workspace-1',
+      type: 'expense',
+      amount: '400',
+      currency: 'IDR',
+      transaction_date: new Date('2024-03-11'),
+      deleted_at: null,
+    },
+    {
+      workspace_id: 'workspace-1',
+      type: 'income',
+      amount: '999',
+      currency: 'USD',
+      transaction_date: new Date('2024-02-12'),
+      deleted_at: null,
+    },
+    {
+      workspace_id: 'workspace-2',
+      type: 'expense',
+      amount: '999',
+      currency: 'IDR',
+      transaction_date: new Date('2024-02-12'),
+      deleted_at: null,
+    },
+  ];
+
+  return {
+    select: (_columns: any) => ({
+      from: (_table: any) => ({
+        where: (condition: any) => ({
+          groupBy: async (_column: any) => {
+            const params = extractParamValues(condition);
+            const workspaceId =
+              params.find((value) => typeof value === 'string' && value.startsWith('workspace-')) ||
+              'workspace-1';
+            const currency = params.find((value) => value === 'IDR' || value === 'USD') || 'IDR';
+            const [startDate, endDate] = params.filter((value) => value instanceof Date) as Date[];
+
+            const grouped = new Map<string, { income: number; expenses: number }>();
+
+            for (const transaction of mockTransactions) {
+              if (transaction.workspace_id !== workspaceId) continue;
+              if (transaction.currency !== currency) continue;
+              if (transaction.deleted_at !== null) continue;
+              if (startDate && transaction.transaction_date < startDate) continue;
+              if (endDate && transaction.transaction_date > endDate) continue;
+
+              const monthKey = transaction.transaction_date.toISOString().slice(0, 7);
+              const aggregate = grouped.get(monthKey) || { income: 0, expenses: 0 };
+
+              if (transaction.type === 'income') {
+                aggregate.income += Number(transaction.amount);
+              } else {
+                aggregate.expenses += Number(transaction.amount);
+              }
+
+              grouped.set(monthKey, aggregate);
+            }
+
+            return Array.from(grouped.entries())
+              .sort(([leftMonth], [rightMonth]) => leftMonth.localeCompare(rightMonth))
+              .map(([month_bucket, aggregate]) => ({
+                month_bucket,
+                income: String(aggregate.income),
+                expenses: String(aggregate.expenses),
+              }));
+          },
+        }),
+      }),
+    }),
+  } as unknown as IDatabase;
+}
+
 describe('ReportService', () => {
   let service: ReportService;
   let mockDb: IDatabase;
@@ -843,6 +959,29 @@ describe('ReportService', () => {
       await expect(
         errorService.getMemberSummary('workspace-1', '2024-02', 'monthly', 'IDR')
       ).rejects.toThrow('Database unavailable');
+    });
+  });
+
+  describe('getMonthlyNetSavingsByMonth', () => {
+    test('returns month-keyed income expenses and net savings for a workspace currency range', async () => {
+      const aggregateService = new ReportService(
+        createMonthlyNetSavingsMockDatabase()
+      ) as ReportServiceWithMonthlyNetSavings;
+
+      expect(typeof aggregateService.getMonthlyNetSavingsByMonth).toBe('function');
+
+      const result = await aggregateService.getMonthlyNetSavingsByMonth(
+        'workspace-1',
+        new Date('2024-01-01T00:00:00.000Z'),
+        new Date('2024-03-31T23:59:59.000Z'),
+        'IDR'
+      );
+
+      expect(Array.from(result.entries())).toEqual([
+        ['2024-01', { income: '1000', expenses: '250', netSavings: '750' }],
+        ['2024-02', { income: '500', expenses: '800', netSavings: '-300' }],
+        ['2024-03', { income: '0', expenses: '400', netSavings: '-400' }],
+      ]);
     });
   });
 

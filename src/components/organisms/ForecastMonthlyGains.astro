@@ -1,0 +1,396 @@
+---
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+import type { Currency } from '@/lib/constants/currency';
+import type { ForecastChartWindow, ForecastTimelinePoint } from '@/lib/forecast';
+
+export interface Props {
+  timeline: ForecastTimelinePoint[];
+  chartWindow?: ForecastChartWindow;
+  currency?: Currency;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  timeline = [],
+  chartWindow = {
+    startIndex: 0,
+    endIndex: -1,
+    startKey: null,
+    endKey: null,
+    latestActualKey: null,
+  },
+  currency = 'IDR',
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+const chartId = `forecast-monthly-gains-chart-${Math.random().toString(36).slice(2, 11)}`;
+const hasChartWindow = chartWindow.endIndex >= chartWindow.startIndex && chartWindow.endIndex >= 0;
+const visibleTimeline = hasChartWindow
+  ? timeline.slice(chartWindow.startIndex, chartWindow.endIndex + 1)
+  : timeline;
+const visibleChartWindow = {
+  startIndex: visibleTimeline.length > 0 ? 0 : -1,
+  endIndex: visibleTimeline.length > 0 ? visibleTimeline.length - 1 : -1,
+  startKey: visibleTimeline[0]?.key ?? null,
+  endKey: visibleTimeline[visibleTimeline.length - 1]?.key ?? null,
+  latestActualKey:
+    visibleTimeline.findLast((point) => point.actualBalance !== null)?.key ??
+    chartWindow.latestActualKey,
+};
+const serializedChartPayload = JSON.stringify({
+  timeline: visibleTimeline,
+  chartWindow: visibleChartWindow,
+})
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Forecast monthly gains comparison"
+>
+  <div class="flex flex-col gap-6 md:gap-8">
+    <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h3 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
+          Monthly Gains Comparison
+        </h3>
+        <p class="text-sm text-base-content/60 mt-2 font-medium">
+          Monthly forecast interest earned versus actual net savings.
+        </p>
+      </div>
+      <StatLabel size="sm" color="neutral">Forecast Interest · Actual Net Savings</StatLabel>
+    </div>
+
+    {
+      loading ? (
+        <div class="py-6 min-h-[300px]">
+          <Skeleton variant="rectangular" width="100%" height="300px" className="rounded-card" />
+        </div>
+      ) : error ? (
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : visibleTimeline.length === 0 ? (
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">
+            Add account balance history to see your plan versus reality.
+          </p>
+        </div>
+      ) : (
+        <div
+          class="h-[300px] w-full min-h-[300px]"
+          data-chart-data={serializedChartPayload}
+          data-currency={currency}
+          id={`${chartId}-container`}
+        >
+          <canvas
+            id={chartId}
+            aria-label="Monthly gains chart showing Forecast Interest and Actual Net Savings"
+            role="img"
+          />
+        </div>
+      )
+    }
+
+    {
+      !loading && !error && visibleTimeline.length > 0 && (
+        <table class="sr-only" aria-label="Monthly gains data table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Forecast Interest</th>
+              <th>Actual Net Savings</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleTimeline.map((point) => (
+              <tr>
+                <td>{point.dateLabel}</td>
+                <td>{point.forecastInterest ?? 0}</td>
+                <td>{point.actualNetSavings === null ? '—' : point.actualNetSavings}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+</Card>
+
+<script>
+  import { Chart } from '@/lib/chart-setup';
+  import { isValidCurrency } from '@/lib/constants/currency';
+  import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { colors } from '@/lib/tokens';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import type { Currency } from '@/lib/constants/currency';
+  import type { ForecastChartWindow, ForecastTimelinePoint } from '@/lib/forecast';
+
+  interface MonthlyGainsChartPayload {
+    timeline: ForecastTimelinePoint[];
+    chartWindow: ForecastChartWindow;
+  }
+
+  interface ChartData {
+    chart: Chart<'bar'>;
+    data: MonthlyGainsChartPayload;
+  }
+
+  const charts: Record<string, ChartData> = {};
+
+  function isNullableFiniteNumber(value: unknown): value is number | null {
+    return value === null || (typeof value === 'number' && isFinite(value));
+  }
+
+  function getVisibleTimeline(payload: MonthlyGainsChartPayload): ForecastTimelinePoint[] {
+    const { timeline, chartWindow } = payload;
+    const hasWindow = chartWindow.endIndex >= chartWindow.startIndex && chartWindow.endIndex >= 0;
+    return hasWindow ? timeline.slice(chartWindow.startIndex, chartWindow.endIndex + 1) : timeline;
+  }
+
+  function updateChartThemeColors(): void {
+    const dark = isDarkTheme();
+
+    Object.values(charts).forEach(({ chart }) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? colors.primary : colors.primaryLight;
+        chart.options.plugins.tooltip.bodyColor = dark ? colors.primary : colors.primaryLight;
+      }
+
+      if (chart.options.plugins?.legend?.labels) {
+        chart.options.plugins.legend.labels.color = dark ? colors.slate[400] : colors.slate[500];
+      }
+
+      if (chart.options.scales?.x?.ticks) {
+        chart.options.scales.x.ticks.color = dark ? colors.slate[400] : colors.slate[500];
+      }
+      if (chart.options.scales?.y?.ticks) {
+        chart.options.scales.y.ticks.color = dark ? colors.slate[400] : colors.slate[500];
+      }
+      if (chart.options.scales?.y?.grid) {
+        chart.options.scales.y.grid.color = dark
+          ? 'rgba(148, 163, 184, 0.1)'
+          : 'rgba(148, 163, 184, 0.15)';
+      }
+
+      chart.update('none');
+    });
+  }
+
+  function readThemeColor(variableName: string, fallback: string): string {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+  }
+
+  function initForecastMonthlyGainsChart(
+    chartId: string,
+    payload: MonthlyGainsChartPayload,
+    currency: Currency
+  ): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+    if (!canvas) return;
+
+    if (charts[chartId]?.chart) {
+      charts[chartId].chart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const visibleTimeline = getVisibleTimeline(payload);
+    if (visibleTimeline.length === 0) return;
+
+    const labels = visibleTimeline.map((point) => point.dateLabel);
+    const forecastInterest = visibleTimeline.map((point) => point.forecastInterest ?? 0);
+    const actualNetSavings = visibleTimeline.map((point) => point.actualNetSavings);
+
+    const dark = isDarkTheme();
+    const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
+    const textColor = dark ? colors.slate[400] : colors.slate[500];
+    const forecastInterestColor = readThemeColor('--color-warning', colors.warning);
+    const actualNetSavingsColor = readThemeColor('--color-success', colors.success);
+
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Forecast Interest',
+            data: forecastInterest,
+            backgroundColor: forecastInterestColor,
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+          {
+            label: 'Actual Net Savings',
+            data: actualNetSavings,
+            backgroundColor: actualNetSavingsColor,
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 700,
+              },
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 20,
+            },
+          },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? colors.primary : colors.primaryLight,
+            bodyColor: dark ? colors.primary : colors.primaryLight,
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+                if (value === null) return '';
+                return `${label}: ${formatCurrencyCompact(value, currency)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 600 as any,
+              },
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 12,
+            },
+            border: {
+              display: false,
+            },
+          },
+          y: {
+            grid: {
+              color: gridColor,
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 600 as any,
+              },
+              callback: (value) => formatCurrencyCompact(Number(value), currency),
+            },
+            border: {
+              display: false,
+            },
+          },
+        },
+      },
+    });
+
+    charts[chartId] = { chart: chart as any, data: payload };
+  }
+
+  function parseChartData(raw: unknown): MonthlyGainsChartPayload | null {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const candidate = raw as Partial<MonthlyGainsChartPayload>;
+    if (!Array.isArray(candidate.timeline) || !candidate.chartWindow) return null;
+
+    const validTimeline = candidate.timeline.filter(
+      (point) =>
+        typeof point?.dateLabel === 'string' &&
+        point.dateLabel.length > 0 &&
+        point.dateLabel.length <= 50 &&
+        isNullableFiniteNumber(point?.forecastInterest) &&
+        isNullableFiniteNumber(point?.actualNetSavings)
+    );
+    if (
+      typeof candidate.chartWindow.startIndex !== 'number' ||
+      typeof candidate.chartWindow.endIndex !== 'number'
+    ) {
+      return null;
+    }
+
+    return validTimeline.length > 0
+      ? {
+          timeline: validTimeline,
+          chartWindow: candidate.chartWindow,
+        }
+      : null;
+  }
+
+  const lifecycle = createChartLifecycle<MonthlyGainsChartPayload>({
+    containerSelector: '[id^="forecast-monthly-gains-chart-"][id$="-container"]',
+    parseData: parseChartData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      const currencyAttr = container.getAttribute('data-currency');
+      const currency: Currency =
+        currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+      initForecastMonthlyGainsChart(chartId, data, currency);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((chartId) => {
+        const entry = charts[chartId];
+        if (entry?.chart) {
+          try {
+            entry.chart.destroy();
+          } catch (error) {
+            // Chart may already be destroyed
+          }
+        }
+        delete charts[chartId];
+      });
+    },
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
+  } else {
+    lifecycle.init();
+  }
+
+  window.addEventListener('beforeunload', lifecycle.cleanup);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
+</script>

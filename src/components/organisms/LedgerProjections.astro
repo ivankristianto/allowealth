@@ -2,11 +2,9 @@
 /**
  * LedgerProjections Component
  *
- * Displays a detailed 120-month breakdown table showing forecast and real data
- * for wealth trajectory projections. Includes columns for period, forecast interest,
- * forecast balance, real interest, and real balance.
+ * Displays a yearly forecast ledger with expandable monthly child rows.
  *
- * @param {ForecastDataPoint[]} data - Array of monthly forecast data points
+ * @param {ForecastYearBreakdownRow[]} data - Array of yearly breakdown rows
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
@@ -17,10 +15,10 @@ import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
-import type { ForecastDataPoint } from '@/lib/forecast';
+import type { ForecastYearBreakdownRow } from '@/lib/forecast';
 
 export interface Props {
-  data: ForecastDataPoint[];
+  data: ForecastYearBreakdownRow[];
   currency?: Currency;
   loading?: boolean;
   error?: string;
@@ -28,6 +26,19 @@ export interface Props {
 }
 
 const { data = [], currency = 'IDR', loading = false, error, className = '' } = Astro.props;
+
+function formatValue(value: number | null, valueCurrency: Currency): string {
+  return value === null ? '—' : formatCurrencyCompact(value, valueCurrency);
+}
+
+function formatSignedValue(value: number | null, valueCurrency: Currency): string {
+  if (value === null) {
+    return '—';
+  }
+
+  const prefix = value > 0 ? '+' : '';
+  return `${prefix}${formatCurrencyCompact(value, valueCurrency)}`;
+}
 ---
 
 <Card
@@ -37,19 +48,17 @@ const { data = [], currency = 'IDR', loading = false, error, className = '' } = 
   role="region"
   aria-label="Ledger projections table"
 >
-  {/* Header */}
   <div class="p-6 md:p-8 border-b border-base-300">
     <h3 class="text-lg md:text-xl font-bold text-base-content tracking-tight leading-none">
       Ledger Projections
     </h3>
-    <StatLabel size="sm" color="neutral" className="mt-1"> 120 MONTH DETAILED BREAKDOWN </StatLabel>
+    <StatLabel size="sm" color="neutral" className="mt-1">YEARLY BREAKDOWN</StatLabel>
   </div>
 
-  {/* Loading State */}
   {
     loading ? (
       <div class="p-6 md:p-8 space-y-3">
-        {Array.from({ length: 10 }).map(() => (
+        {Array.from({ length: 6 }).map(() => (
           <div class="flex items-center justify-between gap-4 p-4 bg-base-200/30 rounded-xl">
             <Skeleton variant="text" width="80px" height="16px" />
             <Skeleton variant="text" width="100px" height="16px" />
@@ -60,125 +69,138 @@ const { data = [], currency = 'IDR', loading = false, error, className = '' } = 
         ))}
       </div>
     ) : error ? (
-      /* Error State */
       <div class="p-12 text-center">
         <p class="text-error font-medium" role="alert">
           {error}
         </p>
       </div>
     ) : data.length === 0 ? (
-      /* Empty State */
       <div class="p-12 text-center">
-        <p class="text-base-content/60 font-medium">No projection data available.</p>
+        <p class="text-base-content/60 font-medium">
+          Add account balance history to see your plan versus reality.
+        </p>
       </div>
     ) : (
-      /* Table with horizontal scroll on mobile */
-      <div class="table-scroll-hint">
-        <div class="overflow-x-auto">
-          <table class="table w-full">
-            <thead class="sticky top-0 bg-base-200/50 backdrop-blur-sm z-10">
-              <tr class="border-b border-base-300">
-                <th class="px-6 md:px-8 py-4 md:py-5 text-left">
-                  <StatLabel size="sm" color="neutral">
-                    {' '}
-                    PERIOD{' '}
-                  </StatLabel>
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-right">
-                  <StatLabel size="sm" color="accent">
-                    {' '}
-                    FORECAST INTEREST{' '}
-                  </StatLabel>
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-right">
-                  <StatLabel size="sm" color="accent">
-                    {' '}
-                    FORECAST BALANCE{' '}
-                  </StatLabel>
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-right">
-                  <StatLabel size="sm" color="success">
-                    {' '}
-                    REAL INTEREST{' '}
-                  </StatLabel>
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-right">
-                  <StatLabel size="sm" color="success">
-                    {' '}
-                    REAL BALANCE{' '}
-                  </StatLabel>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-base-300">
-              {data.map((row) => (
-                <tr class="group hover:bg-base-200/50 transition-colors">
-                  {/* Period */}
-                  <td class="px-6 md:px-8 py-3 md:py-4">
-                    <span class="text-sm font-bold text-base-content">{row.dateLabel}</span>
-                  </td>
+      <>
+        <div class="table-scroll-hint">
+          <div class="overflow-x-auto">
+            <div class="min-w-[880px]">
+              <div class="grid grid-cols-[1.5fr_repeat(4,minmax(0,1fr))] gap-4 px-6 md:px-8 py-4 md:py-5 border-b border-base-300 bg-base-200/50">
+                <StatLabel size="sm" color="neutral">
+                  PERIOD
+                </StatLabel>
+                <StatLabel size="sm" color="accent" className="text-right">
+                  PLANNED ENDING BALANCE
+                </StatLabel>
+                <StatLabel size="sm" color="success" className="text-right">
+                  ACTUAL ENDING BALANCE
+                </StatLabel>
+                <StatLabel size="sm" color="accent" className="text-right">
+                  FORECAST INTEREST
+                </StatLabel>
+                <StatLabel size="sm" color="success" className="text-right">
+                  ACTUAL NET SAVINGS
+                </StatLabel>
+              </div>
 
-                  {/* Forecast Interest */}
-                  <td class="px-6 md:px-8 py-3 md:py-4 text-right">
-                    <span class="text-sm font-medium text-base-content/60">
-                      +{formatCurrencyCompact(row.forecastInterest, currency)}
-                    </span>
-                  </td>
+              <div class="divide-y divide-base-300">
+                {data.map((row) => (
+                  <details class="group" data-ledger-year-row>
+                    <summary class="grid grid-cols-[1.5fr_repeat(4,minmax(0,1fr))] gap-4 px-6 md:px-8 py-4 md:py-5 cursor-pointer list-none hover:bg-base-200/40 transition-colors [&::-webkit-details-marker]:hidden">
+                      <div class="flex items-center gap-3">
+                        <span class="text-base-content/40 text-xs font-bold transition-transform group-open:rotate-90">
+                          ▶
+                        </span>
+                        <div class="flex flex-col">
+                          <span class="text-sm font-bold text-base-content">{row.yearLabel}</span>
+                          <span class="text-xs text-base-content/50 uppercase tracking-widest">
+                            {row.months.length} months
+                          </span>
+                        </div>
+                      </div>
+                      <div class="text-right text-sm font-bold text-accent">
+                        {formatValue(row.plannedEndingBalance, currency)}
+                      </div>
+                      <div class="text-right text-sm font-bold text-success">
+                        {formatValue(row.actualEndingBalance, currency)}
+                      </div>
+                      <div class="text-right text-sm font-medium text-accent">
+                        {formatSignedValue(row.forecastInterestTotal, currency)}
+                      </div>
+                      <div class="text-right text-sm font-medium text-success">
+                        {formatSignedValue(row.actualNetSavingsTotal, currency)}
+                      </div>
+                    </summary>
 
-                  {/* Forecast Balance */}
-                  <td class="px-6 md:px-8 py-3 md:py-4 text-right">
-                    <span class="text-sm font-bold text-accent">
-                      {formatCurrencyCompact(row.forecastBalance, currency)}
-                    </span>
-                  </td>
-
-                  {/* Real Interest */}
-                  <td class="px-6 md:px-8 py-3 md:py-4 text-right">
-                    <span class="text-sm font-medium text-base-content/40">
-                      {row.realInterest !== null
-                        ? `+${formatCurrencyCompact(row.realInterest, currency)}`
-                        : '—'}
-                    </span>
-                  </td>
-
-                  {/* Real Balance */}
-                  <td class="px-6 md:px-8 py-3 md:py-4 text-right">
-                    <span class="text-sm font-bold text-success">
-                      {row.realBalance !== null
-                        ? formatCurrencyCompact(row.realBalance, currency)
-                        : '—'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <div class="bg-base-200/20 border-t border-base-300/60">
+                      {row.months.map((month) => (
+                        <div
+                          class="grid grid-cols-[1.5fr_repeat(4,minmax(0,1fr))] gap-4 px-6 md:px-8 py-3 md:py-4 text-sm"
+                          data-ledger-month-row
+                        >
+                          <div class="font-medium text-base-content/70">{month.dateLabel}</div>
+                          <div class="text-right font-medium text-base-content">
+                            {formatValue(month.plannedBalance, currency)}
+                          </div>
+                          <div class="text-right font-medium text-base-content">
+                            {formatValue(month.actualBalance, currency)}
+                          </div>
+                          <div class="text-right font-medium text-base-content/70">
+                            {formatSignedValue(month.forecastInterest ?? 0, currency)}
+                          </div>
+                          <div class="text-right font-medium text-base-content/70">
+                            {month.actualNetSavings === null
+                              ? '—'
+                              : formatSignedValue(month.actualNetSavings, currency)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <table class="sr-only" aria-label="Ledger projections data table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Planned Ending Balance</th>
+              <th>Actual Ending Balance</th>
+              <th>Forecast Interest</th>
+              <th>Actual Net Savings</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <>
+                <tr>
+                  <th scope="row">{`${row.yearLabel} summary`}</th>
+                  <td>{formatValue(row.plannedEndingBalance, currency)}</td>
+                  <td>{formatValue(row.actualEndingBalance, currency)}</td>
+                  <td>{formatSignedValue(row.forecastInterestTotal, currency)}</td>
+                  <td>{formatSignedValue(row.actualNetSavingsTotal, currency)}</td>
+                </tr>
+                {row.months.map((month) => (
+                  <tr>
+                    <th scope="row">{`${row.yearLabel} ${month.dateLabel}`}</th>
+                    <td>{formatValue(month.plannedBalance, currency)}</td>
+                    <td>{formatValue(month.actualBalance, currency)}</td>
+                    <td>{formatSignedValue(month.forecastInterest ?? 0, currency)}</td>
+                    <td>
+                      {month.actualNetSavings === null
+                        ? '—'
+                        : formatSignedValue(month.actualNetSavings, currency)}
+                    </td>
+                  </tr>
+                ))}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </>
     )
   }
 </Card>
-
-<style>
-  /* Ensure sticky header works properly */
-  thead {
-    position: sticky;
-    top: 0;
-  }
-
-  /* Improve table scrolling on mobile */
-  .overflow-x-auto {
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Optional: Add subtle shadow to sticky header */
-  thead::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 1px;
-    background: hsl(var(--bc) / 0.1);
-  }
-</style>

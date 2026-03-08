@@ -2,13 +2,11 @@
 /**
  * WealthTrajectory Component
  *
- * Displays wealth trajectory forecast with interactive area chart showing
- * forecasted balance vs real historical data. Includes input controls for
- * monthly top-up and expected APY, plus summary statistics cards.
+ * Displays the forecast reality-check balance chart and summary cards.
  *
- * @param {ForecastDataPoint[]} data - Array of monthly forecast data points
- * @param {object} summary - Summary statistics (year10Target, totalInterest, growthMultiple)
- * @param {object} input - Input parameters (monthlyTopup, annualRate, years)
+ * @param {ForecastTimelinePoint[]} timeline - Full monthly timeline from the forecast API
+ * @param {ForecastChartWindow} chartWindow - Focused default viewport metadata
+ * @param {object} summary - Reality-check summary statistics
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
@@ -17,24 +15,18 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
-import AmountInput from '@/components/atoms/AmountInput.astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
-import type { ForecastDataPoint } from '@/lib/forecast';
+import type {
+  ForecastChartWindow,
+  ForecastRealityCheckSummary,
+  ForecastTimelinePoint,
+} from '@/lib/forecast';
 
 export interface Props {
-  data: ForecastDataPoint[];
-  summary: {
-    year10Target: number;
-    totalInterest: number;
-    growthMultiple: number;
-    currentTotal: number;
-  };
-  input: {
-    monthlyTopup: number;
-    annualRate: number;
-    years: number;
-  };
+  timeline: ForecastTimelinePoint[];
+  chartWindow?: ForecastChartWindow;
+  summary: ForecastRealityCheckSummary;
   currency?: Currency;
   loading?: boolean;
   error?: string;
@@ -42,9 +34,22 @@ export interface Props {
 }
 
 const {
-  data = [],
-  summary = { year10Target: 0, totalInterest: 0, growthMultiple: 0, currentTotal: 0 },
-  input = { monthlyTopup: 5000000, annualRate: 7, years: 10 },
+  timeline = [],
+  chartWindow = {
+    startIndex: 0,
+    endIndex: -1,
+    startKey: null,
+    endKey: null,
+    latestActualKey: null,
+  },
+  summary = {
+    latestActualKey: null,
+    latestActualBalance: 0,
+    plannedEndingBalance: 0,
+    currentTrajectoryEndingBalance: 0,
+    totalForecastInterest: 0,
+    trailingAverageNetSavings: 0,
+  },
   currency = 'IDR',
   loading = false,
   error,
@@ -53,10 +58,28 @@ const {
 
 // Generate unique ID for this chart instance
 const chartId = `wealth-trajectory-chart-${Math.random().toString(36).slice(2, 11)}`;
+const hasChartWindow = chartWindow.endIndex >= chartWindow.startIndex && chartWindow.endIndex >= 0;
+const visibleTimeline = hasChartWindow
+  ? timeline.slice(chartWindow.startIndex, chartWindow.endIndex + 1)
+  : timeline;
+const visibleChartWindow = {
+  startIndex: visibleTimeline.length > 0 ? 0 : -1,
+  endIndex: visibleTimeline.length > 0 ? visibleTimeline.length - 1 : -1,
+  startKey: visibleTimeline[0]?.key ?? null,
+  endKey: visibleTimeline[visibleTimeline.length - 1]?.key ?? null,
+  latestActualKey:
+    visibleTimeline.findLast((point) => point.actualBalance !== null)?.key ??
+    chartWindow.latestActualKey,
+};
 
-// Serialize data for client-side script
-const serializedData = JSON.stringify(data);
-const serializedInput = JSON.stringify(input);
+// Serialize chart payload for client-side script
+const serializedChartPayload = JSON.stringify({
+  timeline: visibleTimeline,
+  chartWindow: visibleChartWindow,
+})
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
 ---
 
 <Card
@@ -67,55 +90,14 @@ const serializedInput = JSON.stringify(input);
   aria-label="Wealth trajectory forecast"
 >
   <div class="space-y-6 md:space-y-8">
-    {/* Header with title and input controls */}
-    <div
-      class="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-6 lg:gap-8"
-    >
-      <div class="flex-shrink-0">
-        <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
-          Wealth Trajectory
-        </h2>
-        <p class="text-sm text-base-content/60 mt-2 font-medium">
-          Predicting global account growth over the next decade.
-        </p>
-      </div>
-
-      {/* Input Controls */}
-      <div
-        class="flex flex-wrap gap-4 md:gap-6 items-end w-full lg:w-auto"
-        data-wealth-trajectory-controls
-      >
-        <div class="flex-1 min-w-[140px] space-y-2">
-          <label for={`${chartId}-topup`} class="block">
-            <StatLabel size="sm" color="neutral"> MONTHLY TOP-UP ({currency}) </StatLabel>
-          </label>
-          <AmountInput
-            id={`${chartId}-topup`}
-            name="monthlyTopup"
-            currency={currency}
-            className="input-bordered bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
-            value={input.monthlyTopup}
-            ariaLabel={`Monthly top-up amount in ${currency}`}
-          />
-        </div>
-
-        <div class="flex-1 min-w-[120px] space-y-2">
-          <label for={`${chartId}-apy`} class="block">
-            <StatLabel size="sm" color="neutral"> EXPECTED APY (%) </StatLabel>
-          </label>
-          <input
-            type="number"
-            id={`${chartId}-apy`}
-            name="annualRate"
-            class="input input-bordered w-full bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
-            value={input.annualRate}
-            step="0.1"
-            min="0"
-            max="100"
-            aria-label="Expected annual percentage yield"
-          />
-        </div>
-      </div>
+    {/* Header */}
+    <div class="flex-shrink-0">
+      <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
+        Wealth Growth
+      </h2>
+      <p class="text-sm text-base-content/60 mt-2 font-medium">
+        Planned growth, actual balances, and current trajectory — last 12 months and next 24.
+      </p>
     </div>
 
     {/* Loading State */}
@@ -147,10 +129,12 @@ const serializedInput = JSON.stringify(input);
             {error}
           </p>
         </div>
-      ) : data.length === 0 ? (
+      ) : timeline.length === 0 ? (
         /* Empty State */
         <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No forecast data available.</p>
+          <p class="text-base-content/60 font-medium">
+            Add account balance history to see your plan versus reality.
+          </p>
         </div>
       ) : (
         /* Chart and Summary */
@@ -159,51 +143,90 @@ const serializedInput = JSON.stringify(input);
           <div
             id={`${chartId}-container`}
             class="h-[300px] md:h-[400px] w-full bg-base-200/20 rounded-card p-4 md:p-8 border border-base-300/50"
-            data-chart-data={serializedData}
-            data-chart-input={serializedInput}
+            data-chart-data={serializedChartPayload}
             data-chart-id={chartId}
             data-currency={currency}
           >
             <canvas
               id={chartId}
-              aria-label="Wealth trajectory area chart showing forecasted balance and real history"
+              aria-label="Wealth trajectory line chart showing planned, actual, and current trajectory balances"
               role="img"
             />
           </div>
 
-          {/* @TODO: P2 - Accessibility: Add ARIA live region for screen reader announcements on chart updates */}
+          <table class="sr-only" aria-label="Wealth trajectory data table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Planned Balance</th>
+                <th>Actual Balance</th>
+                <th>Current Trajectory</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleTimeline.map((point) => (
+                <tr>
+                  <td>{point.dateLabel}</td>
+                  <td>{point.plannedBalance ?? '—'}</td>
+                  <td>{point.actualBalance ?? '—'}</td>
+                  <td>{point.currentTrajectoryBalance ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Current Trajectory Info */}
+          <div role="note" class="alert alert-soft alert-info text-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 shrink-0 stroke-current"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>
+              <strong>Current Trajectory</strong> starts at your latest actual balance and grows
+              each month using your 3-month average net savings plus the planned APY. It shows where
+              you are headed if recent behavior continues.
+            </span>
+          </div>
 
           {/* Summary Statistics Cards */}
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            {/* Year 10 Target */}
+            {/* Latest Actual Balance */}
             <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50">
               <StatLabel size="sm" color="neutral" className="mb-2">
-                YEAR {input.years} TARGET
+                LATEST ACTUAL BALANCE
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-base-content">
-                {formatCurrencyCompact(summary.year10Target, currency)}
+                {formatCurrencyCompact(summary.latestActualBalance, currency)}
               </h3>
             </div>
 
-            {/* Total Interest Earned */}
+            {/* Planned Ending Balance */}
             <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50">
               <StatLabel size="sm" color="neutral" className="mb-2">
-                {' '}
-                TOTAL INTEREST EARNED{' '}
+                PLANNED ENDING BALANCE
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-accent">
-                {formatCurrencyCompact(summary.totalInterest, currency)}
+                {formatCurrencyCompact(summary.plannedEndingBalance, currency)}
               </h3>
             </div>
 
-            {/* Growth Multiple */}
+            {/* Current Trajectory Ending Balance */}
             <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50">
               <StatLabel size="sm" color="neutral" className="mb-2">
-                {' '}
-                GROWTH MULTIPLE{' '}
+                CURRENT TRAJECTORY ENDING BALANCE
               </StatLabel>
               <h3 class="text-xl md:text-2xl font-bold text-success">
-                {summary.growthMultiple.toFixed(2)}x
+                {formatCurrencyCompact(summary.currentTrajectoryEndingBalance, currency)}
               </h3>
             </div>
           </div>
@@ -217,13 +240,17 @@ const serializedInput = JSON.stringify(input);
   import { Chart } from '@/lib/chart-setup';
   import { isValidCurrency } from '@/lib/constants/currency';
   import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+  import { colors } from '@/lib/tokens';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import {
+    buildWealthTrajectoryChartSeries,
+    type WealthTrajectoryChartPayload,
+  } from '@/components/organisms/WealthTrajectory.client';
   import type { Currency } from '@/lib/constants/currency';
-  import type { ForecastDataPoint } from '@/lib/forecast';
 
   interface ChartInstance {
     chart: Chart<'line'>;
-    data: ForecastDataPoint[];
+    data: WealthTrajectoryChartPayload;
   }
 
   // Store chart instances globally for cleanup and expose to window for client-side updates
@@ -241,11 +268,16 @@ const serializedInput = JSON.stringify(input);
         chart.options.plugins.tooltip.backgroundColor = dark
           ? 'rgba(248, 250, 252, 0.95)'
           : 'rgba(15, 23, 42, 0.9)';
-        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.titleColor = dark ? colors.primary : colors.primaryLight;
+        chart.options.plugins.tooltip.bodyColor = dark ? colors.primary : colors.primaryLight;
         chart.update('none');
       }
     });
+  }
+
+  function readThemeColor(variableName: string, fallback: string): string {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
   }
 
   /**
@@ -253,7 +285,7 @@ const serializedInput = JSON.stringify(input);
    */
   function initWealthTrajectoryChart(
     chartId: string,
-    data: ForecastDataPoint[],
+    payload: WealthTrajectoryChartPayload,
     currency: Currency
   ): void {
     const canvas = document.getElementById(chartId) as HTMLCanvasElement;
@@ -268,18 +300,17 @@ const serializedInput = JSON.stringify(input);
     if (!ctx) return;
 
     // Prepare chart data
-    const labels = data.map((d) => d.dateLabel);
-    const forecastData = data.map((d) => d.forecastBalance);
-    const realData = data.map((d) => d.realBalance);
+    const { labels, plannedBalance, actualBalance, currentTrajectoryBalance } =
+      buildWealthTrajectoryChartSeries(payload.timeline, payload.chartWindow);
+    if (labels.length === 0) return;
 
     const dark = isDarkTheme();
 
-    // @TODO: P3 - Extract color and opacity values to design tokens or constants
-    // Color configuration
-    const forecastColor = '#15803d'; // forest-600 (accent)
-    const realColor = '#0ea5e9'; // sky-500 (info)
+    const plannedColor = readThemeColor('--color-accent', colors.accent);
+    const actualColor = readThemeColor('--color-info', colors.info);
+    const currentTrajectoryColor = readThemeColor('--color-warning', colors.warning);
     const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
-    const textColor = dark ? '#94a3b8' : '#64748b';
+    const textColor = dark ? colors.slate[400] : colors.slate[500];
 
     const chart = new Chart<'line'>(ctx, {
       type: 'line',
@@ -287,47 +318,44 @@ const serializedInput = JSON.stringify(input);
         labels,
         datasets: [
           {
-            label: 'Forecast Balance',
-            data: forecastData,
-            borderColor: forecastColor,
-            backgroundColor: (context) => {
-              const chart = context.chart;
-              const { ctx, chartArea } = chart;
-              if (!chartArea) return forecastColor;
-
-              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-              gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-              gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
-              return gradient;
-            },
+            label: 'Planned Balance',
+            data: plannedBalance,
+            borderColor: plannedColor,
+            backgroundColor: plannedColor,
             borderWidth: 3,
-            fill: true,
+            fill: false,
             tension: 0.4,
             pointRadius: 0,
             pointHoverRadius: 6,
-            pointBackgroundColor: forecastColor,
+            pointBackgroundColor: plannedColor,
+            spanGaps: false,
           },
           {
-            label: 'Real History',
-            data: realData,
-            borderColor: realColor,
-            backgroundColor: (context) => {
-              const chart = context.chart;
-              const { ctx, chartArea } = chart;
-              if (!chartArea) return realColor;
-
-              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-              gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
-              gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
-              return gradient;
-            },
+            label: 'Actual Balance',
+            data: actualBalance,
+            borderColor: actualColor,
+            backgroundColor: actualColor,
             borderWidth: 3,
-            fill: true,
+            fill: false,
             tension: 0.4,
             pointRadius: 0,
             pointHoverRadius: 6,
-            pointBackgroundColor: realColor,
+            pointBackgroundColor: actualColor,
             spanGaps: false, // Don't connect null values
+          },
+          {
+            label: 'Current Trajectory',
+            data: currentTrajectoryBalance,
+            borderColor: currentTrajectoryColor,
+            backgroundColor: currentTrajectoryColor,
+            borderWidth: 3,
+            borderDash: [8, 6],
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: currentTrajectoryColor,
+            spanGaps: false,
           },
         ],
       },
@@ -356,8 +384,8 @@ const serializedInput = JSON.stringify(input);
           },
           tooltip: {
             backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            titleColor: dark ? colors.primary : colors.primaryLight,
+            bodyColor: dark ? colors.primary : colors.primaryLight,
             padding: 12,
             cornerRadius: 8,
             displayColors: true,
@@ -413,23 +441,45 @@ const serializedInput = JSON.stringify(input);
     });
 
     // @TODO: P3 - Remove 'as any' type assertion by properly typing the chart variable
-    charts[chartId] = { chart: chart as any, data };
+    charts[chartId] = { chart: chart as any, data: payload };
   }
 
-  function parseChartData(raw: unknown): ForecastDataPoint[] | null {
-    if (!Array.isArray(raw)) return null;
-    const validData = raw.filter(
+  function isNullableFiniteNumber(value: unknown): value is number | null {
+    return value === null || (typeof value === 'number' && isFinite(value));
+  }
+
+  function parseChartData(raw: unknown): WealthTrajectoryChartPayload | null {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const candidate = raw as Partial<WealthTrajectoryChartPayload>;
+    if (!Array.isArray(candidate.timeline) || !candidate.chartWindow) return null;
+
+    const validTimeline = candidate.timeline.filter(
       (item) =>
-        typeof item?.forecastBalance === 'number' &&
-        isFinite(item.forecastBalance) &&
+        typeof item?.key === 'string' &&
         typeof item?.dateLabel === 'string' &&
         item.dateLabel.length > 0 &&
-        item.dateLabel.length <= 50
-    ) as ForecastDataPoint[];
-    return validData.length > 0 ? validData : null;
+        item.dateLabel.length <= 50 &&
+        isNullableFiniteNumber(item?.plannedBalance) &&
+        isNullableFiniteNumber(item?.actualBalance) &&
+        isNullableFiniteNumber(item?.currentTrajectoryBalance)
+    );
+    if (
+      typeof candidate.chartWindow.startIndex !== 'number' ||
+      typeof candidate.chartWindow.endIndex !== 'number'
+    ) {
+      return null;
+    }
+
+    return validTimeline.length > 0
+      ? {
+          timeline: validTimeline,
+          chartWindow: candidate.chartWindow,
+        }
+      : null;
   }
 
-  const lifecycle = createChartLifecycle<ForecastDataPoint[]>({
+  const lifecycle = createChartLifecycle<WealthTrajectoryChartPayload>({
     containerSelector: '[id^="wealth-trajectory-chart-"][id$="-container"]',
     parseData: parseChartData,
     onInit: (container, data) => {

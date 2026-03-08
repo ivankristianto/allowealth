@@ -10,191 +10,117 @@ audience:
   - user
 ---
 
-Forecast projects your future financial position based on current behavior. Use it for retirement planning, goal setting, and understanding the long-term impact of today's savings rate.
+Forecast helps you compare your planned savings path with what has actually happened in your workspace. It is designed for reality checks: you can save planning assumptions, compare them with real balances, and see how recent net savings trends would carry forward.
 
-## How Forecasting Works
+## How Forecast Works
 
-The forecast calculator projects wealth growth using three inputs:
+Forecast combines four pieces of information:
 
-- **Monthly Contribution** - How much you add to savings each month
-- **Annual Return Rate** - Expected investment growth percentage
-- **Time Horizon** - Number of years to project
+- **Saved assumptions** - Your workspace-level Monthly Top-Up and Expected APY
+- **Actual balances** - Historical balances from primary-currency, non-debt accounts
+- **Actual net savings** - Monthly income minus expenses from your reports
+- **Current trajectory** - A forward path based on your latest actual balance and recent average net savings
 
-The calculation compounds monthly contributions and assumed returns to show potential future balances.
+The result is a focused comparison between plan, reality, and current momentum instead of a single long-range projection.
+
+## Saved Forecast Assumptions
+
+At the top of the page, Forecast Assumptions lets you edit:
+
+- **Monthly Top-Up** - How much you expect to add each month
+- **Expected APY** - The annual return rate used for the planned balance path
+
+These values are **saved to workspace settings**. They are reused the next time the forecast page loads, so everyone in the workspace sees the same baseline assumptions.
+
+### Important
+
+- Changes save automatically after you stop typing
+- Invalid values show inline errors
+- Updating the assumptions does **not** recalculate the charts instantly; reload the forecast page to see the new saved assumptions applied
 
 ## Wealth Trajectory Chart
 
-The main chart displays projected wealth over time:
+The main chart compares three balance lines:
 
-- **X-axis** - Years from now
-- **Y-axis** - Total accumulated wealth
-- **Area fill** - Visual representation of growth
-- **Hover points** - Exact balance at any year
+- **Planned Balance** - Your saved top-up and APY applied across the forecast timeline
+- **Actual Balance** - Historical balances recorded from your accounts
+- **Current Trajectory** - A dashed line extending forward from the latest actual balance using recent average net savings
 
-The chart shows the power of compound growth: small increases in monthly savings produce large differences over decades.
+Instead of showing an oversized long-range chart, the default viewport focuses on the period around your latest real balance: recent history plus the next part of the forecast window.
 
-## Input Controls
+## Monthly Gains Comparison
 
-Adjust assumptions to test different scenarios:
+The second chart compares monthly gains:
 
-### Monthly Top-Up
+- **Forecast Interest** - Interest produced by the planned balance path
+- **Actual Net Savings** - Real monthly savings after subtracting expenses from income
 
-Enter the amount you plan to save or invest each month. This should be money available after expenses.
+Use this chart to see whether your actual cash flow is supporting the plan you expect to follow.
 
-**Tips:**
+## Yearly Ledger Breakdown
 
-- Use your current average monthly savings for realistic projections
-- Increase the amount to see the impact of saving more
-- Decrease to see the cost of reduced savings
+The ledger now defaults to **year rows** instead of a long flat monthly list.
 
-### Annual Rate
+Each year row shows:
 
-Enter your expected average annual investment return.
+- **Planned Ending Balance**
+- **Actual Ending Balance**
+- **Forecast Interest**
+- **Actual Net Savings**
 
-**Common benchmarks:**
+Expand a year row to reveal the monthly rows inside it. This makes it easier to scan yearly totals first, then drill into the specific months that explain the difference.
 
-- **Conservative (5-6%)** - Bonds, high-yield savings
-- **Moderate (7-8%)** - Balanced stock/bond portfolio
-- **Aggressive (9-10%)** - Stock-heavy portfolio
+## How To Use Forecast Effectively
 
-**Note:** These are long-term averages. Actual returns vary year to year.
+### 1. Save realistic assumptions
 
-### Years
+Start with a Monthly Top-Up you can actually sustain and an Expected APY that reflects a conservative long-term average.
 
-Select how far into the future to project.
+### 2. Compare plan vs reality
 
-**Common timeframes:**
+If Actual Balance keeps trailing Planned Balance, check the monthly gains chart to see whether real net savings are lower than expected.
 
-- **5 years** - Near-term goals (emergency fund, car purchase)
-- **10 years** - Medium-term goals (house down payment)
-- **20-30 years** - Retirement planning
+### 3. Watch current momentum
 
-The chart updates automatically as you change inputs.
+Current Trajectory shows what happens if recent savings behavior continues. This is often the fastest way to spot whether you are improving, stalling, or falling behind.
 
-## Summary Statistics
+### 4. Expand the years that matter
 
-The card displays key outcomes for your scenario:
-
-- **Final Amount** - Projected balance at the end of the period
-- **Total Contributed** - Sum of all monthly deposits (principal)
-- **Total Interest** - Growth from returns alone
-- **Growth Multiple** - Final balance divided by total contributions
-
-## Ledger Projections Table
-
-The detailed table shows year-by-year breakdown:
-
-| Column              | Description              |
-| ------------------- | ------------------------ |
-| Year                | Time period              |
-| Starting Balance    | Amount at year beginning |
-| Annual Contribution | Monthly top-up × 12      |
-| Interest Earned     | Growth from returns      |
-| Ending Balance      | Total at year end        |
-
-Use this table to see exactly how the balance builds each year.
-
-## Scenario Planning
-
-Test different life scenarios:
-
-### Scenario 1: Maintain Current Savings
-
-1. Enter your actual monthly savings amount
-2. Use a conservative return rate (6-7%)
-3. Project to retirement age
-4. Note the final amount
-
-### Scenario 2: Increase Savings
-
-1. Increase monthly contribution by 10-20%
-2. Keep other inputs the same
-3. Compare final amount to Scenario 1
-
-### Scenario 3: Higher Returns
-
-1. Keep monthly contribution the same
-2. Increase return rate by 1-2%
-3. Compare final amount to Scenario 1
-
-### Scenario 4: Longer Timeline
-
-1. Keep contributions and returns the same
-2. Extend years by 5-10
-3. See the impact of starting earlier
+Use the yearly ledger to open only the years you want to investigate instead of scanning every month at once.
 
 ## Important Limitations
 
-### Forecasts Are Estimates
+Forecast is still an estimate. Results can differ because:
 
-Actual results will differ from projections because:
+- market returns are not constant
+- monthly savings can change
+- account histories may be incomplete
+- taxes, fees, and inflation are not modeled
 
-- Investment returns fluctuate year to year
-- Monthly contributions may vary
-- Inflation affects purchasing power
-- Life events change financial plans
-
-### Not Financial Advice
-
-This tool illustrates compound growth. It does not:
-
-- Recommend specific investments
-- Account for taxes
-- Factor in inflation
-- Consider fees or expenses
-
-Consult a financial advisor for personalized planning.
-
-## Best Practices
-
-### Use Conservative Assumptions
-
-Better to be pleasantly surprised than disappointed:
-
-- Use lower return rates (6-7% for planning)
-- Assume you will miss some contribution months
-- Round down monthly savings estimates
-
-### Update Regularly
-
-Revisit forecasts quarterly or when major changes occur:
-
-- Income changes
-- Expense reductions
-- New financial goals
-- Market condition shifts
-
-### Compare to Goals
-
-Work backward from targets:
-
-1. Determine your goal (for example, $1 million at retirement)
-2. Calculate required monthly savings
-3. Adjust budget to meet that contribution level
+Forecast is a planning tool, not financial advice.
 
 ## Troubleshooting
 
-### Chart Not Updating
+### I changed the assumptions but the charts did not move
 
-1. Verify all three inputs have values
-2. Ensure amounts are positive numbers
-3. Check annual rate is realistic (not 50%+)
-4. Refresh the page if needed
+The new values are saved immediately, but the page uses the saved assumptions from the last load. Refresh the forecast page to pull the latest saved settings into the charts.
 
-### Numbers Seem Too High
+### My actual balances look lower than expected
 
-1. Check you entered annual rate, not monthly (7% not 0.58%)
-2. Verify monthly contribution is realistic
-3. Confirm time horizon is correct
+Check whether:
 
-### Numbers Seem Too Low
+- the account is in your workspace's primary currency
+- the account is classified as debt
+- recent monthly net savings were lower or negative
 
-1. Confirm monthly contribution amount
-2. Check if you are using a very conservative return rate
-3. Verify the time horizon includes all years you plan to save
+Debt accounts are excluded from the wealth forecast so the comparison focuses on asset growth.
+
+### The current trajectory looks different from the planned path
+
+That is expected. Planned Balance uses your saved assumptions, while Current Trajectory follows your recent real net savings trend from the latest actual balance.
 
 ## Related Features
 
-- **Calculators** - Run specific scenarios with the compound interest tool
-- **Accounts** - Review current balances as a starting point
-- **Reports** - Analyze historical savings rates for realistic inputs
+- **Settings** - Manage the workspace settings that store forecast assumptions
+- **Reports** - Review the income and expense history behind Actual Net Savings
+- **Accounts** - Confirm the balances and history feeding the Actual Balance line

@@ -6,7 +6,165 @@
  */
 
 import Decimal from 'decimal.js';
-import type { ForecastDataPoint, AccountWithHistory, MonthlyHistoricalData } from './types';
+import type {
+  AccountWithHistory,
+  ForecastChartWindow,
+  ForecastDataPoint,
+  ForecastRealityCheckInput,
+  ForecastRealityCheckResult,
+  ForecastTimelinePoint,
+  ForecastYearBreakdownRow,
+  MonthlyHistoricalData,
+} from './types';
+
+const DEFAULT_HISTORY_MONTHS_BACK = 12;
+const DEFAULT_FORECAST_MONTHS_FORWARD = 24;
+
+function isDebtAccount(account: AccountWithHistory): boolean {
+  return account.accountClass === 'debt';
+}
+
+function getForecastAccounts(accounts: AccountWithHistory[]): AccountWithHistory[] {
+  return accounts.filter((account) => !isDebtAccount(account));
+}
+
+function toMonthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function fromMonthKey(key: string): Date {
+  const [year, month] = key.split('-').map(Number);
+  return new Date(year, month - 1, 1);
+}
+
+function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function toDateLabel(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function roundCurrency(value: Decimal.Value): number {
+  return new Decimal(value).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toNumber();
+}
+
+function getLatestSnapshotByMonth(history: AccountWithHistory['history'] = []) {
+  const latestHistoryByMonth = new Map<string, { date: Date; amount: number }>();
+
+  history.forEach((point) => {
+    const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
+    const key = toMonthKey(date);
+    const existingPoint = latestHistoryByMonth.get(key);
+
+    if (!existingPoint || date.getTime() >= existingPoint.date.getTime()) {
+      latestHistoryByMonth.set(key, { date, amount: point.amount });
+    }
+  });
+
+  return Array.from(latestHistoryByMonth.entries()).sort(([leftKey], [rightKey]) =>
+    leftKey.localeCompare(rightKey)
+  );
+}
+
+function buildCarriedMonthlySnapshots(
+  history: AccountWithHistory['history'] = [],
+  carryThroughKey?: string
+) {
+  const snapshotsByMonth = getLatestSnapshotByMonth(history);
+  if (snapshotsByMonth.length === 0) {
+    return [];
+  }
+
+  const carriedSnapshots: Array<{ key: string; amount: number }> = [];
+  let previousKey = snapshotsByMonth[0][0];
+  let previousAmount = snapshotsByMonth[0][1].amount;
+
+  carriedSnapshots.push({ key: previousKey, amount: previousAmount });
+
+  for (const [key, snapshot] of snapshotsByMonth.slice(1)) {
+    const missingMonthKeys = createMonthRange(previousKey, key).slice(1, -1);
+
+    missingMonthKeys.forEach((missingKey) => {
+      carriedSnapshots.push({ key: missingKey, amount: previousAmount });
+    });
+
+    carriedSnapshots.push({ key, amount: snapshot.amount });
+    previousKey = key;
+    previousAmount = snapshot.amount;
+  }
+
+  if (carryThroughKey && carryThroughKey > previousKey) {
+    const trailingMonthKeys = createMonthRange(previousKey, carryThroughKey).slice(1);
+    trailingMonthKeys.forEach((missingKey) => {
+      carriedSnapshots.push({ key: missingKey, amount: previousAmount });
+    });
+  }
+
+  return carriedSnapshots;
+}
+
+function createMonthRange(startKey: string, endKey: string): string[] {
+  const monthKeys: string[] = [];
+  const startDate = fromMonthKey(startKey);
+  const endDate = fromMonthKey(endKey);
+
+  for (
+    let currentDate = new Date(startDate);
+    currentDate <= endDate;
+    currentDate = addMonths(currentDate, 1)
+  ) {
+    monthKeys.push(toMonthKey(currentDate));
+  }
+
+  return monthKeys;
+}
+
+function calculateTrailingAverageNetSavings(
+  actualNetSavings: ForecastRealityCheckInput['actualNetSavings'],
+  latestActualKey: string
+): number {
+  const trailingWindow = actualNetSavings
+    .filter((point) => point.key <= latestActualKey)
+    .sort((left, right) => left.key.localeCompare(right.key))
+    .slice(-3);
+
+  if (trailingWindow.length === 0) {
+    return 0;
+  }
+
+  const totalNetSavings = trailingWindow.reduce(
+    (sum, point) => new Decimal(sum).plus(point.netSavings),
+    new Decimal(0)
+  );
+
+  return roundCurrency(totalNetSavings.dividedBy(trailingWindow.length));
+}
+
+function normalizeActualNetSavings(
+  actualNetSavings: ForecastRealityCheckInput['actualNetSavings'],
+  startKey: string,
+  endKey: string
+): ForecastRealityCheckInput['actualNetSavings'] {
+  const actualNetSavingsMap = new Map(actualNetSavings.map((point) => [point.key, point]));
+
+  return createMonthRange(startKey, endKey).map((key) => {
+    const point = actualNetSavingsMap.get(key);
+    if (point) {
+      return point;
+    }
+
+    return {
+      key,
+      income: 0,
+      expenses: 0,
+      netSavings: 0,
+    };
+  });
+}
 
 /**
  * Calculate forecast data points for wealth trajectory
@@ -73,21 +231,30 @@ export function calculateForecast(
  */
 export function aggregateAccountHistory(accounts: AccountWithHistory[]): MonthlyHistoricalData[] {
   const monthlyTotals: Record<string, { balance: number; interest: number }> = {};
+  const forecastAccounts = getForecastAccounts(accounts);
+  const latestHistoricalKey = forecastAccounts.reduce<string | null>((latestKey, account) => {
+    const snapshotsByMonth = getLatestSnapshotByMonth(account.history);
+    const accountLatestKey = snapshotsByMonth[snapshotsByMonth.length - 1]?.[0] ?? null;
 
-  accounts.forEach((account) => {
-    account.history?.forEach((point) => {
-      const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (!accountLatestKey) {
+      return latestKey;
+    }
 
-      if (!monthlyTotals[key]) {
-        monthlyTotals[key] = { balance: 0, interest: 0 };
+    return !latestKey || accountLatestKey > latestKey ? accountLatestKey : latestKey;
+  }, null);
+
+  forecastAccounts.forEach((account) => {
+    buildCarriedMonthlySnapshots(account.history, latestHistoricalKey ?? undefined).forEach(
+      ({ key, amount }) => {
+        if (!monthlyTotals[key]) {
+          monthlyTotals[key] = { balance: 0, interest: 0 };
+        }
+
+        // Accumulate the latest month-end balance from each account.
+        monthlyTotals[key].interest = 0;
+        monthlyTotals[key].balance += amount;
       }
-
-      // Accumulate balance from all accounts for this month
-      // Interest calculation from historical data is complex, so we set it to 0
-      monthlyTotals[key].balance += point.amount;
-      monthlyTotals[key].interest = 0;
-    });
+    );
   });
 
   return Object.entries(monthlyTotals)
@@ -149,7 +316,204 @@ export function calculateGrowthMultiple(finalBalance: number, initialBalance: nu
  * @returns Total value in the scoped currency
  */
 export function calculateCurrentTotal(accounts: AccountWithHistory[]): number {
-  return accounts.reduce((sum, account) => {
+  return getForecastAccounts(accounts).reduce((sum, account) => {
     return new Decimal(sum).plus(account.balance).toNumber();
   }, 0);
+}
+
+export function calculateFocusedChartWindow(
+  timeline: ForecastTimelinePoint[],
+  latestActualKey: string | null,
+  monthsBack = DEFAULT_HISTORY_MONTHS_BACK,
+  monthsForward = DEFAULT_FORECAST_MONTHS_FORWARD
+): ForecastChartWindow {
+  if (!latestActualKey || timeline.length === 0) {
+    return {
+      startIndex: 0,
+      endIndex: -1,
+      startKey: null,
+      endKey: null,
+      latestActualKey: null,
+    };
+  }
+
+  const latestActualIndex = timeline.findIndex((point) => point.key === latestActualKey);
+  const startIndex = Math.max(0, latestActualIndex - monthsBack);
+  const endIndex = Math.min(timeline.length - 1, latestActualIndex + monthsForward);
+
+  return {
+    startIndex,
+    endIndex,
+    startKey: timeline[startIndex]?.key ?? null,
+    endKey: timeline[endIndex]?.key ?? null,
+    latestActualKey,
+  };
+}
+
+export function groupForecastTimelineByYear(
+  timeline: ForecastTimelinePoint[]
+): ForecastYearBreakdownRow[] {
+  const grouped = new Map<number, ForecastTimelinePoint[]>();
+
+  for (const point of timeline) {
+    const year = Number(point.key.slice(0, 4));
+    const existing = grouped.get(year) ?? [];
+    existing.push(point);
+    grouped.set(year, existing);
+  }
+
+  return Array.from(grouped.entries())
+    .sort(([leftYear], [rightYear]) => leftYear - rightYear)
+    .map(([year, months]) => {
+      const actualEndingBalance =
+        months.findLast((point) => point.actualBalance !== null)?.actualBalance ?? null;
+      const currentTrajectoryEndingBalance =
+        months.findLast((point) => point.currentTrajectoryBalance !== null)
+          ?.currentTrajectoryBalance ?? null;
+
+      const forecastInterestTotal = months.reduce(
+        (sum, point) => new Decimal(sum).plus(point.forecastInterest ?? 0),
+        new Decimal(0)
+      );
+      const monthsWithActualNetSavings = months.filter((point) => point.actualNetSavings !== null);
+      const actualNetSavingsTotal =
+        monthsWithActualNetSavings.length === 0
+          ? null
+          : roundCurrency(
+              monthsWithActualNetSavings.reduce(
+                (sum, point) => new Decimal(sum).plus(point.actualNetSavings ?? 0),
+                new Decimal(0)
+              )
+            );
+
+      return {
+        year,
+        yearLabel: String(year),
+        plannedEndingBalance: months[months.length - 1]?.plannedBalance ?? null,
+        actualEndingBalance,
+        currentTrajectoryEndingBalance,
+        forecastInterestTotal: roundCurrency(forecastInterestTotal),
+        actualNetSavingsTotal,
+        months,
+      };
+    });
+}
+
+export function buildForecastRealityCheck(
+  input: ForecastRealityCheckInput
+): ForecastRealityCheckResult {
+  const {
+    accounts,
+    actualBalanceTimeline: providedActualBalanceTimeline,
+    actualNetSavings,
+    monthlyTopup,
+    annualRate,
+    monthsBack = DEFAULT_HISTORY_MONTHS_BACK,
+    monthsForward = DEFAULT_FORECAST_MONTHS_FORWARD,
+  } = input;
+
+  const actualBalanceTimeline = providedActualBalanceTimeline ?? aggregateAccountHistory(accounts);
+  if (actualBalanceTimeline.length === 0) {
+    return {
+      timeline: [],
+      chartWindow: calculateFocusedChartWindow([], null, monthsBack, monthsForward),
+      yearlyBreakdown: [],
+      summary: {
+        latestActualKey: null,
+        latestActualBalance: 0,
+        plannedEndingBalance: 0,
+        currentTrajectoryEndingBalance: 0,
+        totalForecastInterest: 0,
+        trailingAverageNetSavings: 0,
+      },
+    };
+  }
+
+  const earliestActualKey = actualBalanceTimeline[0].key;
+  const latestActualKey = actualBalanceTimeline[actualBalanceTimeline.length - 1].key;
+  const latestActualBalance = actualBalanceTimeline[actualBalanceTimeline.length - 1].balance;
+  const normalizedActualNetSavings = normalizeActualNetSavings(
+    actualNetSavings,
+    earliestActualKey,
+    latestActualKey
+  );
+  const endKey = toMonthKey(addMonths(fromMonthKey(latestActualKey), monthsForward));
+  const monthKeys = createMonthRange(earliestActualKey, endKey);
+  const actualBalanceMap = new Map(
+    actualBalanceTimeline.map((point) => [point.key, point.balance])
+  );
+  const actualNetSavingsMap = new Map(
+    normalizedActualNetSavings.map((point) => [point.key, point])
+  );
+  const trailingAverageNetSavings = calculateTrailingAverageNetSavings(
+    normalizedActualNetSavings,
+    latestActualKey
+  );
+  const monthlyRate = new Decimal(annualRate).dividedBy(100).dividedBy(12);
+
+  let plannedBalance = new Decimal(actualBalanceTimeline[0].balance);
+  let currentTrajectoryBalance = new Decimal(latestActualBalance);
+
+  const timeline: ForecastTimelinePoint[] = monthKeys.map((key, index) => {
+    const monthDate = fromMonthKey(key);
+    const actualSavingsPoint = actualNetSavingsMap.get(key);
+
+    let forecastInterest = 0;
+    if (index > 0) {
+      const interest = plannedBalance.times(monthlyRate);
+      plannedBalance = plannedBalance.plus(interest).plus(monthlyTopup);
+      forecastInterest = roundCurrency(interest);
+    }
+
+    let currentTrajectoryPoint: number | null = null;
+    if (key === latestActualKey) {
+      currentTrajectoryPoint = roundCurrency(currentTrajectoryBalance);
+    } else if (key > latestActualKey) {
+      const interest = currentTrajectoryBalance.times(monthlyRate);
+      currentTrajectoryBalance = currentTrajectoryBalance
+        .plus(interest)
+        .plus(trailingAverageNetSavings);
+      currentTrajectoryPoint = roundCurrency(currentTrajectoryBalance);
+    }
+
+    return {
+      key,
+      dateLabel: toDateLabel(monthDate),
+      actualBalance: actualBalanceMap.get(key) ?? null,
+      plannedBalance: roundCurrency(plannedBalance),
+      currentTrajectoryBalance: currentTrajectoryPoint,
+      forecastInterest,
+      actualNetSavings: actualSavingsPoint?.netSavings ?? null,
+      income: actualSavingsPoint?.income ?? null,
+      expenses: actualSavingsPoint?.expenses ?? null,
+    };
+  });
+
+  const chartWindow = calculateFocusedChartWindow(
+    timeline,
+    latestActualKey,
+    monthsBack,
+    monthsForward
+  );
+  const yearlyBreakdown = groupForecastTimelineByYear(timeline);
+  const totalForecastInterest = timeline.reduce(
+    (sum, point) => new Decimal(sum).plus(point.forecastInterest ?? 0),
+    new Decimal(0)
+  );
+
+  return {
+    timeline,
+    chartWindow,
+    yearlyBreakdown,
+    summary: {
+      latestActualKey,
+      latestActualBalance,
+      plannedEndingBalance: timeline[timeline.length - 1]?.plannedBalance ?? 0,
+      currentTrajectoryEndingBalance:
+        timeline.findLast((point) => point.currentTrajectoryBalance !== null)
+          ?.currentTrajectoryBalance ?? latestActualBalance,
+      totalForecastInterest: roundCurrency(totalForecastInterest),
+      trailingAverageNetSavings,
+    },
+  };
 }
