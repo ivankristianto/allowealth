@@ -5,10 +5,11 @@
  * Legal page with terms of service content.
  */
 
+import { APP_MODES, getAppMode } from '@/lib/auth/app-mode';
 import PublicLayout from '@/layouts/PublicLayout.astro';
 import { brandContent } from '@/lib/landing-content';
 
-export const prerender = true;
+export const prerender = getAppMode() !== APP_MODES.APP_ONLY;
 
 const lastUpdated = 'January 30, 2025';
 ---

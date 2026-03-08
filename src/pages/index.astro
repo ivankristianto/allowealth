@@ -2,16 +2,17 @@
 /**
  * Landing Page
  *
- * Static prerendered homepage for all users.
- * Auth state is detected client-side via auth_hint cookie to swap CTAs.
+ * Prerendered homepage in full mode.
+ * In app-only mode this route is rendered through middleware and redirects.
  */
 
-export const prerender = true;
-
+import { APP_MODES, getAppMode } from '@/lib/auth/app-mode';
 import PublicLayout from '@/layouts/PublicLayout.astro';
 import HeroSection from '@/components/molecules/landing/HeroSection.astro';
 import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
 import FeaturesGrid from '@/components/molecules/landing/FeaturesGrid.astro';
+
+export const prerender = getAppMode() !== APP_MODES.APP_ONLY;
 ---
 
 <PublicLayout title="allowealth - Track Your Wealth">

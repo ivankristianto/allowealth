@@ -52,6 +52,8 @@ declare global {
   interface ImportMetaEnv {
     /** Base URL for API endpoints (default: /api) */
     readonly PUBLIC_API_URL?: string;
+    /** App mode: full (default) or app_only */
+    readonly APP_MODE?: 'app_only' | 'full';
     /** Signup mode: invite_only (default) or public */
     readonly SIGNUP_MODE?: 'invite_only' | 'public';
 

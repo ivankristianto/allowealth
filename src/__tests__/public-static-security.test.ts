@@ -20,7 +20,9 @@ describe('static public security architecture', () => {
     ];
 
     for (const pagePath of staticPages) {
-      expect(read(pagePath)).toContain('export const prerender = true;');
+      expect(read(pagePath)).toContain(
+        'export const prerender = getAppMode() !== APP_MODES.APP_ONLY;'
+      );
     }
   });
 
@@ -52,7 +54,9 @@ describe('static public security architecture', () => {
     const authMiddleware = read('src/middleware/auth.ts');
     const csrfMiddleware = read('src/middleware/csrf.ts');
 
-    expect(authMiddleware).toContain('context.isPrerendered || PUBLIC_STATIC_PATHS.has');
+    expect(authMiddleware).toContain(
+      'context.isPrerendered || (isPublicStaticPath && !isAppOnly())'
+    );
     expect(authMiddleware).toContain('context.locals.user = null;');
     expect(authMiddleware).toContain('context.locals.session = null;');
     expect(authMiddleware).toContain('PUBLIC_STATIC_PATHS');
