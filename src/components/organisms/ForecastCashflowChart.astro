@@ -1,0 +1,320 @@
+---
+import Card from '@/components/atoms/Card.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface ForecastChartDataPoint {
+  name: string;
+  income: number;
+  expenses: number;
+  net: number;
+}
+
+export interface Props {
+  data: ForecastChartDataPoint[];
+  currency?: Currency;
+  loading?: boolean;
+  className?: string;
+}
+
+const { data = [], currency = 'IDR', loading = false, className = '' } = Astro.props;
+
+const serializedData = JSON.stringify(data)
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+
+const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 11)}`;
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Monthly cashflow forecast"
+>
+  <div class="flex flex-col gap-6">
+    <h4 class="font-bold text-base text-base-content tracking-tight">Cashflow Forecast</h4>
+
+    {
+      loading ? (
+        <div class="min-h-[280px]">
+          <Skeleton variant="rectangular" width="100%" height="280px" className="rounded-2xl" />
+        </div>
+      ) : data.length === 0 ? (
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No forecast data for this currency.</p>
+        </div>
+      ) : (
+        <div
+          class="h-[280px] w-full min-h-[280px]"
+          data-chart-data={serializedData}
+          data-currency={currency}
+          id={`${chartId}-container`}
+        >
+          <canvas
+            id={chartId}
+            aria-label={`Cashflow forecast chart for ${data.length} months`}
+            role="img"
+          />
+        </div>
+      )
+    }
+
+    {
+      !loading && data.length > 0 && (
+        <table class="sr-only" aria-label="Cashflow forecast data table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Income</th>
+              <th>Expenses</th>
+              <th>Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item) => (
+              <tr>
+                <td>{item.name}</td>
+                <td>{item.income}</td>
+                <td>{item.expenses}</td>
+                <td>{item.net}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+</Card>
+
+<script>
+  import { Chart } from '@/lib/chart-setup';
+  import { isValidCurrency } from '@/lib/constants/currency';
+  import type { Currency } from '@/lib/constants/currency';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+
+  interface ForecastChartDataPoint {
+    name: string;
+    income: number;
+    expenses: number;
+    net: number;
+  }
+
+  interface ChartEntry {
+    chart: Chart;
+    data: ForecastChartDataPoint[];
+  }
+
+  const charts: Record<string, ChartEntry> = {};
+
+  function updateChartThemeColors(): void {
+    const dark = isDarkTheme();
+
+    Object.values(charts).forEach(({ chart }) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+      }
+
+      if (chart.options.plugins?.legend?.labels) {
+        chart.options.plugins.legend.labels.color = dark ? '#94a3b8' : '#64748b';
+      }
+
+      if (chart.options.scales?.x?.ticks) {
+        chart.options.scales.x.ticks.color = dark ? '#94a3b8' : '#64748b';
+      }
+      if (chart.options.scales?.y?.ticks) {
+        chart.options.scales.y.ticks.color = dark ? '#94a3b8' : '#64748b';
+      }
+      if (chart.options.scales?.y?.grid) {
+        chart.options.scales.y.grid.color = dark
+          ? 'rgba(148, 163, 184, 0.1)'
+          : 'rgba(148, 163, 184, 0.15)';
+      }
+
+      chart.update('none');
+    });
+  }
+
+  function initForecastChart(
+    chartId: string,
+    data: ForecastChartDataPoint[],
+    currency: Currency
+  ): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    if (charts[chartId]?.chart) {
+      charts[chartId].chart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const labels = data.map((d) => d.name);
+    const incomeData = data.map((d) => d.income);
+    const expensesData = data.map((d) => d.expenses);
+    const netData = data.map((d) => d.net);
+
+    const dark = isDarkTheme();
+    const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
+    const textColor = dark ? '#94a3b8' : '#64748b';
+
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            type: 'bar' as const,
+            label: 'Income',
+            data: incomeData,
+            backgroundColor: '#10b981',
+            borderRadius: 4,
+            borderSkipped: false,
+            stack: 'cashflow',
+            order: 2,
+          },
+          {
+            type: 'bar' as const,
+            label: 'Expenses',
+            data: expensesData,
+            backgroundColor: '#f43f5e',
+            borderRadius: 4,
+            borderSkipped: false,
+            stack: 'cashflow',
+            order: 2,
+          },
+          {
+            type: 'line' as const,
+            label: 'Net',
+            data: netData,
+            borderColor: '#0ea5e9',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#0ea5e9',
+            fill: false,
+            order: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: textColor,
+              font: { size: 10, weight: 700 },
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 20,
+            },
+          },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
+            padding: 12,
+            cornerRadius: 12,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+                return `${label}: ${formatCurrency(value, currency)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textColor, font: { size: 10, weight: 700 } },
+            border: { display: false },
+          },
+          y: {
+            display: false,
+            grid: { color: gridColor },
+            border: { display: false },
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+
+    charts[chartId] = { chart, data };
+  }
+
+  function parseChartData(raw: unknown): ForecastChartDataPoint[] | null {
+    if (!Array.isArray(raw)) return null;
+    const validData = raw.filter(
+      (item) =>
+        typeof item?.income === 'number' &&
+        isFinite(item.income) &&
+        item.income >= 0 &&
+        typeof item?.expenses === 'number' &&
+        isFinite(item.expenses) &&
+        item.expenses >= 0 &&
+        typeof item?.net === 'number' &&
+        isFinite(item.net) &&
+        typeof item?.name === 'string' &&
+        item.name.length > 0 &&
+        item.name.length <= 100
+    ) as ForecastChartDataPoint[];
+    return validData.length > 0 ? validData : null;
+  }
+
+  const lifecycle = createChartLifecycle<ForecastChartDataPoint[]>({
+    containerSelector: '[id^="forecast-cashflow-chart-"][id$="-container"]',
+    parseData: parseChartData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      const currencyAttr = container.getAttribute('data-currency');
+      const currency: Currency =
+        currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+      initForecastChart(chartId, data, currency);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((chartId) => {
+        const entry = charts[chartId];
+        if (entry?.chart) {
+          try {
+            entry.chart.destroy();
+          } catch (error) {
+            console.warn('Failed to destroy chart:', chartId, error);
+          }
+        }
+        delete charts[chartId];
+      });
+    },
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
+  } else {
+    lifecycle.init();
+  }
+
+  window.addEventListener('beforeunload', lifecycle.cleanup);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
+  document.addEventListener('charts:reinit', lifecycle.init);
+</script>
