@@ -39,7 +39,10 @@ export async function seedWorkspace(): Promise<string> {
       value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START],
     },
     // Keep demo workspace onboarding-complete for E2E and local demos.
-    { key: WORKSPACE_META_KEYS.MONTHLY_INCOME, value: '30000000' },
+    {
+      key: WORKSPACE_META_KEYS.MONTHLY_INCOME,
+      value: JSON.stringify({ [SEEDER_CONFIG.PRIMARY_CURRENCY]: '30000000' }),
+    },
   ] as const;
 
   for (const entry of workspaceMetaEntries) {

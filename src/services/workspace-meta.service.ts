@@ -26,6 +26,9 @@ import {
   WORKSPACE_META_KEYS,
   type WorkspaceMetaKey,
   type WorkspaceSettings,
+  type MonthlyIncomeMap,
+  isMonthlyIncomeMap,
+  parseMonthlyIncomeValue,
   type WeekStart,
   WORKSPACE_META_DEFAULTS,
   WEEK_START_VALUES,
@@ -140,13 +143,18 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
       // JSON string of { currency: amount } pairs, e.g. {"IDR":"10000000"}
       // Empty string is valid (unset)
       if (value.length > 0) {
+        let parsed: unknown;
+
         try {
-          const parsed = JSON.parse(value);
-          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-            throw new Error('Monthly income must be a JSON object');
-          }
+          parsed = JSON.parse(value);
         } catch {
           throw new Error('Monthly income must be valid JSON');
+        }
+
+        if (!isMonthlyIncomeMap(parsed)) {
+          throw new Error(
+            'Monthly income must be an object keyed by supported currency codes with decimal amount strings'
+          );
         }
       }
       break;
@@ -562,14 +570,9 @@ export class WorkspaceMetaService {
    * @param workspaceId - Workspace ID
    * @returns Record of currency code to amount string (e.g., {"IDR":"10000000"})
    */
-  async getMonthlyIncome(workspaceId: string): Promise<Record<string, string>> {
+  async getMonthlyIncome(workspaceId: string): Promise<MonthlyIncomeMap> {
     const value = await this.get(workspaceId, WORKSPACE_META_KEYS.MONTHLY_INCOME);
-    if (!value) return {};
-    try {
-      return JSON.parse(value);
-    } catch {
-      return {};
-    }
+    return parseMonthlyIncomeValue(value);
   }
 
   /**
@@ -578,7 +581,7 @@ export class WorkspaceMetaService {
    * @param workspaceId - Workspace ID
    * @param income - Record of currency code to amount string
    */
-  async setMonthlyIncome(workspaceId: string, income: Record<string, string>): Promise<void> {
+  async setMonthlyIncome(workspaceId: string, income: MonthlyIncomeMap): Promise<void> {
     await this.set(workspaceId, WORKSPACE_META_KEYS.MONTHLY_INCOME, JSON.stringify(income));
   }
 
@@ -671,7 +674,7 @@ export class WorkspaceMetaService {
       currency,
       secondaryCurrency,
       weekStart,
-      monthlyIncome: metaAll[WORKSPACE_META_KEYS.MONTHLY_INCOME] ?? '',
+      monthlyIncome: parseMonthlyIncomeValue(metaAll[WORKSPACE_META_KEYS.MONTHLY_INCOME]),
       forecastMonthlyTopup: metaValueToNumber(
         metaAll[WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP],
         DEFAULT_WORKSPACE_SETTINGS.forecastMonthlyTopup,

@@ -28,6 +28,8 @@ const {
   closedCount = 0,
   className = '',
 } = Astro.props;
+
+const hasExpandableActions = !isHistoricalView || closedCount > 0;
 ---
 
 <ActionBar className={className} ariaLabel="Account actions" edgeBleed>
@@ -73,42 +75,42 @@ const {
       </div>
 
       {/* Expandable: Bulk Add, Closed accounts */}
-      <div slot="expandable" class="flex items-center gap-1 md:gap-2">
-        {/* Bulk Add */}
-        {
-          !isHistoricalView && (
-            <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
-              <button
-                type="button"
-                class={ghostBtn}
-                aria-label="Bulk add accounts"
-                data-bulk-add-accounts-btn
-                data-testid="bulk-add-accounts-btn"
-              >
-                <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-                <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-                <span class="text-xs md:text-sm">Bulk</span>
-              </button>
-            </div>
-          )
-        }
+      {
+        hasExpandableActions && (
+          <div slot="expandable" class="flex items-center gap-1 md:gap-2">
+            {/* Bulk Add */}
+            {!isHistoricalView && (
+              <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
+                <button
+                  type="button"
+                  class={ghostBtn}
+                  aria-label="Bulk add accounts"
+                  data-bulk-add-accounts-btn
+                  data-testid="bulk-add-accounts-btn"
+                >
+                  <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+                  <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+                  <span class="text-xs md:text-sm">Bulk</span>
+                </button>
+              </div>
+            )}
 
-        {/* Closed accounts */}
-        {
-          closedCount > 0 && (
-            <div class="tooltip tooltip-bottom" data-tip="View closed accounts">
-              <a
-                href="/accounts/closed"
-                class={ghostBtn}
-                aria-label="View closed accounts"
-                data-testid="view-closed-accounts-btn"
-              >
-                <span class="text-xs md:text-sm">Closed ({closedCount})</span>
-              </a>
-            </div>
-          )
-        }
-      </div>
+            {/* Closed accounts */}
+            {closedCount > 0 && (
+              <div class="tooltip tooltip-bottom" data-tip="View closed accounts">
+                <a
+                  href="/accounts/closed"
+                  class={ghostBtn}
+                  aria-label="View closed accounts"
+                  data-testid="view-closed-accounts-btn"
+                >
+                  <span class="text-xs md:text-sm">Closed ({closedCount})</span>
+                </a>
+              </div>
+            )}
+          </div>
+        )
+      }
     </ActionExpandable>
   </div>
 

@@ -50,7 +50,13 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
       )}
 
       {/* Expandable section - animates horizontally */}
-      <div id={expandId} class="action-expandable__content" data-expandable-content>
+      <div
+        id={expandId}
+        class="action-expandable__content"
+        data-expandable-content
+        aria-hidden="true"
+        inert
+      >
         <div class="action-expandable__content-inner">
           <slot name="expandable" />
         </div>
@@ -61,6 +67,7 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
         type="button"
         class="action-expandable__toggle btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
         data-expandable-toggle
+        data-expand-label={expandLabel}
         data-collapse-label={collapseLabel}
         aria-expanded="false"
         aria-controls={expandId}
@@ -181,46 +188,7 @@ const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
 </style>
 
 <script>
-  function initActionExpandables() {
-    document.querySelectorAll<HTMLElement>('[data-action-expandable]').forEach((container) => {
-      const toggle = container.querySelector<HTMLButtonElement>('[data-expandable-toggle]');
-      const content = container.querySelector<HTMLElement>('[data-expandable-content]');
-      const label = container.querySelector<HTMLElement>('[data-toggle-label]');
+  import { setupActionExpandableLifecycle } from './ActionExpandable.client';
 
-      if (!toggle || !content) return;
-      if (toggle.dataset.initialized === 'true') return;
-      toggle.dataset.initialized = 'true';
-
-      const originalLabel = label?.textContent?.trim() || 'More';
-      const collapseLabel = toggle.dataset.collapseLabel || 'Less';
-
-      toggle.addEventListener('click', () => {
-        const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-
-        if (isExpanded) {
-          // Collapse
-          toggle.setAttribute('aria-expanded', 'false');
-          toggle.classList.remove('is-expanded');
-          content.classList.remove('is-expanded');
-          if (label) label.textContent = originalLabel;
-        } else {
-          // Expand
-          toggle.setAttribute('aria-expanded', 'true');
-          toggle.classList.add('is-expanded');
-          content.classList.add('is-expanded');
-          if (label) label.textContent = collapseLabel;
-        }
-      });
-    });
-  }
-
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initActionExpandables, { once: true });
-  } else {
-    initActionExpandables();
-  }
-
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initActionExpandables);
+  setupActionExpandableLifecycle();
 </script>

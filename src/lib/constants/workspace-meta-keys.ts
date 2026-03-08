@@ -1,4 +1,4 @@
-import { DEFAULT_CURRENCY, type Currency } from './currency';
+import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from './currency';
 
 /**
  * Workspace Meta Keys Constants
@@ -55,6 +55,52 @@ export function isValidWorkspaceMetaKey(key: string): key is WorkspaceMetaKey {
  */
 export const WEEK_START_VALUES = ['monday', 'sunday'] as const;
 export type WeekStart = (typeof WEEK_START_VALUES)[number];
+export type MonthlyIncomeMap = Partial<Record<Currency, string>>;
+export const MONTHLY_INCOME_AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/;
+
+export function isValidMonthlyIncomeAmount(value: unknown): value is string {
+  return typeof value === 'string' && MONTHLY_INCOME_AMOUNT_PATTERN.test(value);
+}
+
+export function isMonthlyIncomeMap(value: unknown): value is MonthlyIncomeMap {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(
+    ([currency, amount]) => isValidCurrency(currency) && isValidMonthlyIncomeAmount(amount)
+  );
+}
+
+export function parseMonthlyIncomeValue(
+  value: string | MonthlyIncomeMap | null | undefined
+): MonthlyIncomeMap {
+  if (!value) return {};
+
+  if (typeof value !== 'string') {
+    return Object.fromEntries(
+      Object.entries(value).filter(
+        ([currency, amount]) => isValidCurrency(currency) && isValidMonthlyIncomeAmount(amount)
+      )
+    ) as MonthlyIncomeMap;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([currency, amount]) => isValidCurrency(currency) && isValidMonthlyIncomeAmount(amount)
+      )
+    ) as MonthlyIncomeMap;
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Type-safe workspace settings derived from meta values
@@ -63,7 +109,7 @@ export interface WorkspaceSettings {
   currency: Currency;
   secondaryCurrency: Currency | '';
   weekStart: WeekStart;
-  monthlyIncome: string;
+  monthlyIncome: MonthlyIncomeMap;
   forecastMonthlyTopup: number;
   forecastAnnualRate: number;
 }
@@ -75,7 +121,7 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   currency: DEFAULT_CURRENCY,
   secondaryCurrency: '',
   weekStart: 'monday',
-  monthlyIncome: '',
+  monthlyIncome: {},
   forecastMonthlyTopup: 5000000,
   forecastAnnualRate: 7,
 };

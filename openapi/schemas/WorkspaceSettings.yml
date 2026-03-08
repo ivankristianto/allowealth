@@ -29,12 +29,14 @@ WorkspaceSettings:
       example: "monday"
     monthlyIncome:
       type: object
-      description: Map of currency code to monthly income amount strings.
+      description: >
+        Optional monthly income amounts keyed by currency code. Empty object when not configured.
       additionalProperties:
         type: string
         pattern: '^\d+(\.\d{1,2})?$'
       example:
         IDR: "15000000"
+        USD: "250"
     forecastMonthlyTopup:
       type: number
       description: Saved monthly contribution used by the forecast page.

@@ -43,25 +43,26 @@ describe('compact number UI removal', () => {
   it('updates wealth trajectory summary and chart formatting to full values', () => {
     const source = read('src/components/organisms/WealthTrajectory.astro');
 
-    expect(source).toContain('formatCurrency(summary.year10Target, currency)');
-    expect(source).toContain('formatCurrency(summary.totalInterest, currency)');
+    expect(source).toContain('formatCurrency(summary.latestActualBalance, currency)');
+    expect(source).toContain('formatCurrency(summary.plannedEndingBalance, currency)');
+    expect(source).toContain('formatCurrency(summary.currentTrajectoryEndingBalance, currency)');
     expect(source).toContain('return `${label}: ${formatCurrency(value, currency)}`;');
     expect(source).toContain('return formatCurrency(Number(value), currency);');
   });
 
-  it('updates wealth trajectory live client updates to full values', () => {
+  it('keeps the wealth trajectory client free of legacy compact formatting helpers', () => {
     const source = read('src/components/organisms/WealthTrajectory.client.ts');
 
-    expect(source).toContain('formatCurrency(summary.year10Target, currency)');
-    expect(source).toContain('formatCurrency(summary.totalInterest, currency)');
+    expect(source).toContain('buildWealthTrajectoryChartSeries');
+    expect(source).not.toContain('formatCurrencyCompact');
   });
 
   it('updates ledger projections to use full currency formatting', () => {
     const source = read('src/components/organisms/LedgerProjections.astro');
 
-    expect(source).toContain('formatCurrency(row.forecastInterest, currency)');
-    expect(source).toContain('formatCurrency(row.forecastBalance, currency)');
-    expect(source).toContain('formatCurrency(row.realInterest, currency)');
-    expect(source).toContain('formatCurrency(row.realBalance, currency)');
+    expect(source).toContain('formatValue(row.plannedEndingBalance, currency)');
+    expect(source).toContain('formatValue(row.actualEndingBalance, currency)');
+    expect(source).toContain('formatSignedValue(row.forecastInterestTotal, currency)');
+    expect(source).toContain('formatSignedValue(row.actualNetSavingsTotal, currency)');
   });
 });

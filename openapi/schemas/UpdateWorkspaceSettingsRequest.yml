@@ -29,12 +29,14 @@ UpdateWorkspaceSettingsRequest:
       example: "monday"
     monthlyIncome:
       type: object
-      description: Map of currency code to monthly income amount strings. Send an empty object to clear it.
+      description: >
+        Optional monthly income amounts keyed by currency code. Send an empty object to clear it.
       additionalProperties:
         type: string
         pattern: '^\d+(\.\d{1,2})?$'
       example:
         IDR: "15000000"
+        USD: "250"
     forecastMonthlyTopup:
       type: number
       minimum: 0

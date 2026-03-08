@@ -11,32 +11,14 @@ import { logError } from '@/lib/utils';
 import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/service-errors';
 import { z } from 'zod';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
+import {
+  MONTHLY_INCOME_AMOUNT_PATTERN,
+  parseMonthlyIncomeValue,
+} from '@/lib/constants/workspace-meta-keys';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
 
 const currencySchema = z.enum(AVAILABLE_CURRENCIES);
-
-function parseMonthlyIncome(value: string): Record<string, string> {
-  if (!value) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return {};
-    }
-
-    return Object.fromEntries(
-      Object.entries(parsed).filter(
-        (entry): entry is [string, string] =>
-          typeof entry[0] === 'string' && typeof entry[1] === 'string'
-      )
-    );
-  } catch {
-    return {};
-  }
-}
 
 /**
  * Schema for PUT request body - workspace settings update
@@ -47,7 +29,7 @@ const updateWorkspaceSettingsSchema = z.object({
   secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
   weekStart: z.enum(['monday', 'sunday']).optional(),
   monthlyIncome: z
-    .record(z.string(), z.string().regex(/^\d+(\.\d{1,2})?$/))
+    .record(z.string(), z.string().regex(MONTHLY_INCOME_AMOUNT_PATTERN))
     .refine(
       (obj) =>
         Object.keys(obj).every((k) => (AVAILABLE_CURRENCIES as readonly string[]).includes(k)),
@@ -84,7 +66,7 @@ export const GET: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
+        monthlyIncome: parseMonthlyIncomeValue(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
       },
@@ -184,7 +166,7 @@ export const PUT: APIRoute = async (context) => {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
-        monthlyIncome: parseMonthlyIncome(settings.monthlyIncome),
+        monthlyIncome: parseMonthlyIncomeValue(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
       },
