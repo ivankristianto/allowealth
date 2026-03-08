@@ -57,6 +57,8 @@ export class CategoryService {
           created_by_user_id: validated.created_by_user_id,
           name: validated.name,
           type: validated.type,
+          income_source_type:
+            validated.type === 'income' ? (validated.income_source_type ?? 'other') : 'other',
           description: validated.description,
           icon: validated.icon,
           color: validated.color,
@@ -148,6 +150,10 @@ export class CategoryService {
     if (validated.icon !== undefined) updateData.icon = validated.icon;
     if (validated.color !== undefined) updateData.color = validated.color;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
+    if (validated.income_source_type !== undefined) {
+      updateData.income_source_type =
+        validated.type === 'income' || !validated.type ? validated.income_source_type : 'other';
+    }
 
     await trackQuery('CategoryService.update', perf, async () => {
       return this.db

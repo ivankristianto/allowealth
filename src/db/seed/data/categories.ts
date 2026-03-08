@@ -126,10 +126,10 @@ export const EXPENSE_CATEGORIES = [
 
 // Income categories
 export const INCOME_CATEGORIES = [
-  { name: 'Dad Salary', budget: 0 },
-  { name: 'Mom Salary', budget: 0 },
-  { name: 'Bonds', budget: 0 },
-  { name: 'Fixed Deposits', budget: 0 },
-  { name: 'Dividends', budget: 0 },
-  { name: 'Other Side Income', budget: 0 },
+  { name: 'Dad Salary', budget: 0, incomeSourceType: 'active' as const },
+  { name: 'Mom Salary', budget: 0, incomeSourceType: 'active' as const },
+  { name: 'Bonds', budget: 0, incomeSourceType: 'passive' as const },
+  { name: 'Fixed Deposits', budget: 0, incomeSourceType: 'passive' as const },
+  { name: 'Dividends', budget: 0, incomeSourceType: 'passive' as const },
+  { name: 'Other Side Income', budget: 0, incomeSourceType: 'active' as const },
 ];

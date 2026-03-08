@@ -32,6 +32,7 @@ export async function seedCategories(
       created_by_user_id: userId,
       name: cat.name,
       type: 'income',
+      income_source_type: cat.incomeSourceType ?? 'other',
       description: style.description || null,
       icon: style.icon,
       color: style.color,

@@ -185,6 +185,11 @@ if (searchQuery) {
                         >
                           {category.name}
                         </span>
+                        {category.type === 'income' && (
+                          <span class="badge badge-sm badge-ghost ml-2">
+                            {category.income_source_type}
+                          </span>
+                        )}
                       </td>
                       <td class="px-8 py-5 hidden md:table-cell">
                         <span
