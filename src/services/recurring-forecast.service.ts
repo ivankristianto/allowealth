@@ -11,6 +11,7 @@ import type {
   RecurringTemplateOutput,
 } from '@/lib/types/recurring';
 import type { Currency } from '@/lib/enums';
+import { decimalAdd, decimalRound, decimalSubtract } from '@/lib/utils/decimal';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
 import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
 import { normalizeForecastFilters } from '@/lib/utils/recurring-forecast-filters';
@@ -45,7 +46,7 @@ export function computeForecast(
   // Per-currency totals accumulator
   const currencyTotalsMap = new Map<
     Currency,
-    Record<string, { income: number; expense: number }>
+    Record<string, { income: string; expense: string }>
   >();
 
   const rows: ForecastRow[] = templates.map((tpl) => {
@@ -99,28 +100,27 @@ export function computeForecast(
 
       const mk = dueDate.slice(0, 7); // "YYYY-MM"
       if (months[mk] !== undefined) {
-        const prev = months[mk] ? parseFloat(months[mk]!) : 0;
-        months[mk] = (prev + parseFloat(tpl.amount)).toFixed(2);
+        const previousAmount = months[mk] ?? '0';
+        months[mk] = decimalRound(decimalAdd(previousAmount, tpl.amount));
       }
     }
 
     // Accumulate totals only for active templates
     if (tpl.status === 'active') {
       if (!currencyTotalsMap.has(tpl.currency)) {
-        const init: Record<string, { income: number; expense: number }> = {};
+        const init: Record<string, { income: string; expense: string }> = {};
         for (const mk of monthKeys) {
-          init[mk] = { income: 0, expense: 0 };
+          init[mk] = { income: '0', expense: '0' };
         }
         currencyTotalsMap.set(tpl.currency, init);
       }
       const totals = currencyTotalsMap.get(tpl.currency)!;
       for (const mk of monthKeys) {
         if (months[mk]) {
-          const amt = parseFloat(months[mk]!);
           if (tpl.type === 'income') {
-            totals[mk].income += amt;
+            totals[mk].income = decimalAdd(totals[mk].income, months[mk]!);
           } else {
-            totals[mk].expense += amt;
+            totals[mk].expense = decimalAdd(totals[mk].expense, months[mk]!);
           }
         }
       }
@@ -153,9 +153,9 @@ export function computeForecast(
       for (const mk of monthKeys) {
         const { income, expense } = monthMap[mk];
         months[mk] = {
-          income: income.toFixed(2),
-          expense: expense.toFixed(2),
-          net: (income - expense).toFixed(2),
+          income: decimalRound(income),
+          expense: decimalRound(expense),
+          net: decimalRound(decimalSubtract(income, expense)),
         };
       }
       return { currency, months };

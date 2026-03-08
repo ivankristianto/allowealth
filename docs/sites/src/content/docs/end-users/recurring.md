@@ -91,14 +91,7 @@ Toggle back to list view with the **List** button.
    - **Amount** - Fixed amount or range
    - **Category** - For reporting
    - **Account** - Where money moves
-   - **Frequency** - How often it repeats. Choose a preset:
-     - Weekly
-     - Biweekly
-     - Monthly (default)
-     - Quarterly
-     - Semi-annual
-     - Annual
-     - Or set a custom interval
+   - **Frequency** - How often it repeats. Choose a preset (Weekly, Monthly, Quarterly, Semi-annual, Annual) or set a custom interval such as biweekly
    - **Start Date** - When the schedule begins
    - **End Date** - Optional expiration
 3. Click **Save**

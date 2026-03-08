@@ -251,4 +251,23 @@ describe('computeForecast', () => {
     expect(result.rows[0].months['2026-03']).toBeNull();
     expect(result.rows[0].months['2026-04']).toBe('500.00');
   });
+
+  it('preserves exact large currency amounts in rows and totals', () => {
+    const tpl = makeTemplate({
+      amount: '999999999999999.99',
+      start_date: '2024-01-01',
+      day_of_month: 1,
+      frequency: 'monthly',
+      interval_count: 1,
+    });
+
+    const result = computeForecast([tpl], 2024, 1, 1);
+
+    expect(result.rows[0].months['2024-01']).toBe('999999999999999.99');
+
+    const usdTotals = result.totals.find((total) => total.currency === 'USD');
+    expect(usdTotals).toBeDefined();
+    expect(usdTotals!.months['2024-01'].expense).toBe('999999999999999.99');
+    expect(usdTotals!.months['2024-01'].net).toBe('-999999999999999.99');
+  });
 });
