@@ -5,7 +5,7 @@
  * - Query count per service method (catches N+1 regressions)
  * - Wall-clock execution time (catches catastrophic regressions)
  *
- * Run: bun test src/services/__tests__/performance-benchmark.test.ts
+ * Run: bun test tests/perf/services/performance-benchmark.test.ts
  *
  * CI usage: the test writes results to `perf-results.json` in the project root
  * for the `scripts/analyze-performance.ts` reporter to consume.
@@ -23,17 +23,17 @@ import * as schema from '@/db/schema/sqlite';
 import type { IDatabase } from '@/db';
 import { PerfCollector } from '@/lib/perf/collector';
 
-import { ReportService } from '../report.service';
-import { TransactionService } from '../transaction.service';
-import { RecurringOccurrenceService } from '../recurring-occurrence.service';
-import { RecurringTemplateService } from '../recurring-template.service';
-import { AccountService } from '../account.service';
-import { BudgetService } from '../budget.service';
-import { DashboardService } from '../dashboard.service';
-import { CategoryService } from '../category.service';
-import { AccountCategoryService } from '../account-category.service';
-import { WorkspaceService } from '../workspace.service';
-import { UserService } from '../user.service';
+import { ReportService } from '@/services/report.service';
+import { TransactionService } from '@/services/transaction.service';
+import { RecurringOccurrenceService } from '@/services/recurring-occurrence.service';
+import { RecurringTemplateService } from '@/services/recurring-template.service';
+import { AccountService } from '@/services/account.service';
+import { BudgetService } from '@/services/budget.service';
+import { DashboardService } from '@/services/dashboard.service';
+import { CategoryService } from '@/services/category.service';
+import { AccountCategoryService } from '@/services/account-category.service';
+import { WorkspaceService } from '@/services/workspace.service';
+import { UserService } from '@/services/user.service';
 
 // ---------------------------------------------------------------------------
 // Constants

@@ -7,7 +7,7 @@
  * and generates a markdown report for PR comments.
  *
  * Usage:
- *   bun test src/services/__tests__/performance-benchmark.test.ts
+ *   bun test tests/perf/services/performance-benchmark.test.ts
  *   bun run scripts/analyze-performance.ts > perf-report.md
  */
 
@@ -57,7 +57,7 @@ function analyze(): string {
   if (!existsSync(resultsPath)) {
     throw new Error(
       'perf-results.json not found. Run the benchmark test first:\n' +
-        '  bun test src/services/__tests__/performance-benchmark.test.ts'
+        '  bun test tests/perf/services/performance-benchmark.test.ts'
     );
   }
 
