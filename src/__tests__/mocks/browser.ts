@@ -18,14 +18,22 @@ export function createMockCrypto() {
   return {
     install: () => {
       originalRandomUUID = globalThis.crypto?.randomUUID;
-      globalThis.crypto = { ...globalThis.crypto, randomUUID: mockRandomUUID } as Crypto;
+      Object.defineProperty(globalThis.crypto, 'randomUUID', {
+        value: mockRandomUUID,
+        writable: true,
+        configurable: true,
+      });
     },
     reset: () => {
       counter = 0;
     },
     uninstall: () => {
       if (originalRandomUUID) {
-        globalThis.crypto = { ...globalThis.crypto, randomUUID: originalRandomUUID } as Crypto;
+        Object.defineProperty(globalThis.crypto, 'randomUUID', {
+          value: originalRandomUUID,
+          writable: true,
+          configurable: true,
+        });
       }
     },
   };

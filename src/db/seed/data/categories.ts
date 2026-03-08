@@ -12,28 +12,28 @@ export const CATEGORY_STYLES: Record<
   Holiday: {
     icon: 'plane',
     color: 'bg-secondary',
-    description: 'Travel, vacations, and holiday-related expenses',
+    description: 'Travel and vacations',
   },
   'Food & Groceries': {
     icon: 'shopping-basket',
     color: 'bg-info',
-    description: 'Daily food shopping and grocery purchases',
+    description: 'Groceries and daily food',
   },
   'Dine Out': {
     icon: 'utensils',
     color: 'bg-warning',
-    description: 'Restaurant meals and takeout orders',
+    description: 'Restaurant meals and takeout',
   },
   'Work Support': { icon: 'briefcase', color: 'bg-neutral', description: 'Work-related expenses' },
   'Pocket Money': {
     icon: 'wallet',
     color: 'bg-secondary',
-    description: 'Personal spending money and small allowances',
+    description: 'Personal spending and allowances',
   },
   'Kids Expenses': {
     icon: 'user',
     color: 'bg-secondary',
-    description: 'Education, activities, and supplies for children',
+    description: "Children's education, activities, and supplies",
   },
   'Utility Bills': {
     icon: 'zap',
@@ -43,12 +43,12 @@ export const CATEGORY_STYLES: Record<
   'Misc. Cost': {
     icon: 'package',
     color: 'bg-neutral',
-    description: 'Miscellaneous and uncategorized expenses',
+    description: 'Uncategorized expenses',
   },
   Entertainment: {
     icon: 'smile',
     color: 'bg-secondary',
-    description: 'Movies, games, and recreational activities',
+    description: 'Movies, games, and recreation',
   },
   'Housekeeper Salary': {
     icon: 'users',
@@ -58,22 +58,22 @@ export const CATEGORY_STYLES: Record<
   Transportation: {
     icon: 'car',
     color: 'bg-secondary',
-    description: 'Fuel, parking, tolls, and public transport',
+    description: 'Fuel, transit, and parking',
   },
   'Installment Debt': {
     icon: 'home',
     color: 'bg-error',
-    description: 'Monthly mortgage or loan payments',
+    description: 'Mortgage and loan payments',
   },
   'House Expenses': {
     icon: 'shopping-cart',
     color: 'bg-success',
-    description: 'General household supplies and maintenance costs',
+    description: 'Household supplies and maintenance',
   },
   'House Renovation': {
     icon: 'hammer',
     color: 'bg-warning',
-    description: 'Home improvement and renovation costs',
+    description: 'Home improvements and renovations',
   },
   Insurance: {
     icon: 'shield',
@@ -86,22 +86,22 @@ export const CATEGORY_STYLES: Record<
   Bonds: {
     icon: 'badge-percent',
     color: 'bg-success',
-    description: 'Coupon income from government and corporate bonds',
+    description: 'Bond coupons',
   },
   'Fixed Deposits': {
     icon: 'piggy-bank',
     color: 'bg-success',
-    description: 'Interest income from time deposits',
+    description: 'Time deposit interest',
   },
   Dividends: {
     icon: 'chart-column',
     color: 'bg-success',
-    description: 'Dividend income from equity investments',
+    description: 'Equity dividends',
   },
   'Other Side Income': {
     icon: 'banknote',
     color: 'bg-success',
-    description: 'Income from freelance work and side projects',
+    description: 'Freelance work and side projects',
   },
 };
 

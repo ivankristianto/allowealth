@@ -1,17 +1,23 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeEach, afterEach, describe, expect, it, mock } from 'bun:test';
 import { ApiKeyService } from '@/services/api-key.service';
 import { CacheTags, getCacheManager, resetCacheManager } from '@/lib/cache';
 import { createMockDatabase, resetMockDatabase } from '@/services/test-helpers/mocks';
+import { setTestEnv } from '@/lib/env';
 
 describe('ApiKeyService cache contract', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
   let apiKeyService: ApiKeyService;
 
   beforeEach(() => {
+    setTestEnv({ CACHE_DRIVER: 'memory' });
     resetCacheManager();
     mockDb = createMockDatabase();
     apiKeyService = new ApiKeyService(mockDb);
     resetMockDatabase(mockDb);
+  });
+
+  afterEach(() => {
+    setTestEnv(null);
   });
 
   it('validateCached reuses cached auth context and avoids repeated PBKDF2 validation', async () => {

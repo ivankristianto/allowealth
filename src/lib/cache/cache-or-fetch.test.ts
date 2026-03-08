@@ -1,9 +1,17 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { resetCacheManager } from '@/lib/cache';
 import { cacheOrFetch } from './cache-or-fetch';
+import { setTestEnv } from '@/lib/env';
 
 describe('cacheOrFetch', () => {
-  beforeEach(() => resetCacheManager());
+  beforeEach(() => {
+    setTestEnv({ CACHE_DRIVER: 'memory' });
+    resetCacheManager();
+  });
+
+  afterEach(() => {
+    setTestEnv(null);
+  });
 
   it('calls fetch and returns result on cache miss', async () => {
     const result = await cacheOrFetch('test:miss', { ttl: 60 }, async () => ({ value: 42 }));

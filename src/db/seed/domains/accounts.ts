@@ -25,8 +25,8 @@ const MEMBER_OWNED_ACCOUNTS = new Set([
   'GoPay',
   'OVO',
   'Mandiri Credit Card',
-  'Kids Education Fund',
-  'Fixed Deposit - BCA',
+  'CIMB - 4410',
+  'BCA Deposit - 9912',
   'Car Loan - Innova',
 ]);
 
@@ -278,13 +278,19 @@ export async function seedAccountUpdateReminders(
 
   // Create update reminders for savings and investment accounts
   const investmentAccountIds = [
-    'Emergency Savings',
-    'Kids Education Fund',
-    'Fixed Deposit - BCA',
-    'Bond Ladder',
+    'Jenius - 8812',
+    'CIMB - 4410',
+    'BCA Deposit - 9912',
+    'Mandiri Deposit - 1122',
+    'SBR012 Bond',
+    'ORI023 Bond',
+    'SR018 Sukuk',
     'Dividend Portfolio',
-    'Retirement Mutual Fund',
-    'USD Travel Fund',
+    'Sucorinvest Money Market Fund',
+    'Schroder Dana Prestasi',
+    'Batavia Dana Kas Maxima',
+    'DBS - 5521',
+    'Antam Gold 10g',
   ]
     .map((name) => accountMap.get(name))
     .filter((id): id is string => !!id);

@@ -3,7 +3,7 @@ import { SEEDER_CONFIG } from '../config';
  * Account Data Templates
  */
 
-export const CURRENT_ACCOUNT_NAME = 'Current Account';
+export const CURRENT_ACCOUNT_NAME = 'BCA - 2332';
 
 // Payment accounts (used for day-to-day spending and settlement)
 export const getPaymentAccounts = () => [
@@ -72,27 +72,45 @@ export const getLoanAccounts = () => [
 // Savings and investment accounts
 export const getAccountTypes = () => [
   {
-    name: 'Emergency Savings',
+    name: 'Jenius - 8812',
     type: 'bank_account' as const,
     balance: 45_000_000,
     currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
   {
-    name: 'Kids Education Fund',
+    name: 'CIMB - 4410',
     type: 'bank_account' as const,
     balance: 26_000_000,
     currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
   {
-    name: 'Fixed Deposit - BCA',
+    name: 'BCA Deposit - 9912',
     type: 'bank_account' as const,
     balance: 120_000_000,
     currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
   {
-    name: 'Bond Ladder',
+    name: 'Mandiri Deposit - 1122',
+    type: 'bank_account' as const,
+    balance: 50_000_000,
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+  },
+  {
+    name: 'SBR012 Bond',
     type: 'bond' as const,
     balance: 78_000_000,
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+  },
+  {
+    name: 'ORI023 Bond',
+    type: 'bond' as const,
+    balance: 20_000_000,
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+  },
+  {
+    name: 'SR018 Sukuk',
+    type: 'bond' as const,
+    balance: 15_000_000,
     currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
   {
@@ -102,16 +120,34 @@ export const getAccountTypes = () => [
     currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
   {
-    name: 'Retirement Mutual Fund',
+    name: 'Sucorinvest Money Market Fund',
     type: 'mutual_fund' as const,
     balance: 41_000_000,
     currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
   {
-    name: 'USD Travel Fund',
+    name: 'Schroder Dana Prestasi',
+    type: 'mutual_fund' as const,
+    balance: 25_000_000,
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+  },
+  {
+    name: 'Batavia Dana Kas Maxima',
+    type: 'mutual_fund' as const,
+    balance: 15_000_000,
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
+  },
+  {
+    name: 'DBS - 5521',
     type: 'bank_account' as const,
     balance: 4_500,
     currency: SEEDER_CONFIG.SECONDARY_CURRENCY,
     baseScale: 'secondary' as const,
+  },
+  {
+    name: 'Antam Gold 10g',
+    type: 'other' as const,
+    balance: 14_500_000,
+    currency: SEEDER_CONFIG.PRIMARY_CURRENCY,
   },
 ];

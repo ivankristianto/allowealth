@@ -2,20 +2,21 @@
 /**
  * Landing Page
  *
- * Static prerendered homepage for all users.
- * Auth state is detected client-side via auth_hint cookie to swap CTAs.
+ * Rendered through middleware so APP_MODE can redirect at runtime.
  */
-
-export const prerender = true;
 
 import PublicLayout from '@/layouts/PublicLayout.astro';
 import HeroSection from '@/components/molecules/landing/HeroSection.astro';
 import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
 import FeaturesGrid from '@/components/molecules/landing/FeaturesGrid.astro';
+import FaqSection from '@/components/molecules/landing/FaqSection.astro';
+
+export const prerender = false;
 ---
 
-<PublicLayout title="allowealth - Track Your Wealth">
+<PublicLayout title="allowealth - Manage Money Together">
   <HeroSection />
   <ShowcaseSection />
   <FeaturesGrid />
+  <FaqSection />
 </PublicLayout>
