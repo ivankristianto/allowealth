@@ -111,7 +111,9 @@ const typeOptions = [
   <div class="mx-auto max-w-7xl space-y-5 px-1 pb-10 sm:space-y-6 sm:px-2 lg:px-6">
     <Breadcrumb items={[{ label: 'Recurring', href: '/recurring' }, { label: 'Forecast' }]} />
 
-    <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+    <section
+      class="sticky top-0 z-30 rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5"
+    >
       <form
         id="forecast-filters"
         method="get"

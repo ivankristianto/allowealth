@@ -74,4 +74,10 @@ describe('recurring forecast page', () => {
       '{chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
     );
   });
+
+  it('makes the filter bar sticky so it stays visible while scrolling', () => {
+    const page = readForecastPage();
+
+    expect(page).toMatch(/class="[^"]*sticky[^"]*top-0[^"]*z-\d+[^"]*rounded-3xl[^"]*border[^"]*"/);
+  });
 });
