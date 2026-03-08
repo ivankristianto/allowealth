@@ -15,6 +15,9 @@ export const categories = pgTable(
       .references(() => users.id),
     name: text('name').notNull(),
     type: text('type', { enum: ['expense', 'income'] }).notNull(),
+    income_source_type: text('income_source_type', { enum: ['active', 'passive', 'other'] })
+      .default('other')
+      .notNull(),
     description: text('description'), // Optional description, max 200 chars (validated at API layer)
     icon: text('icon').default('tag').notNull(), // Lucide icon name
     color: text('color').default('bg-neutral').notNull(), // DaisyUI semantic color class
