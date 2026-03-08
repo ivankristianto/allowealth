@@ -1,53 +1,37 @@
 ---
 /**
- * Reports Page
+ * Reports Overview Page
  *
- * Interactive reports page with monthly and yearly views.
- * Financial analysis with:
- * - Summary metrics (income, expenses, savings, budget health)
- * - Expense breakdown donut chart
- * - Income vs. expenses bar chart
- * - Category spending table with drill-down
- *
- * Features:
- * - Interactive range toggle (monthly/yearly)
- * - Period selector dropdown
- * - Dynamic data loading without page reload
- * - Server-rendered HTML fragments for consistency
- * - Real-time data from backend via ReportService
+ * Lightweight overview showing:
+ * - Summary metrics (income, expenses, savings, savings rate)
+ * - Income vs. Expenses trend chart
+ * - Preview cards linking to detailed expense and income reports
  *
  * @see docs/architecture/002-interactive-pages.md
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
+import ReportsSectionNav from '@/components/molecules/ReportsSectionNav.astro';
 
-// Import partials for SSR
-import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
-import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
-import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+import OverviewSummaryCardsPartial from '@/components/partials/OverviewSummaryCardsPartial.astro';
+import OverviewChartsPartial from '@/components/partials/OverviewChartsPartial.astro';
+import OverviewPreviewCardsPartial from '@/components/partials/OverviewPreviewCardsPartial.astro';
 
-import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
-
-// Import report service and types
-import { reportService, accountService } from '@/services';
-import type { ReportData, MemberSummaryRow, RecurringBreakdown } from '@/services/report.service';
+import { reportService } from '@/services';
+import type { OverviewReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
-import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import { workspaceMetaService } from '@/services';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 const currentPath = '/reports';
 
-// Ensure user is authenticated
 const user = Astro.locals.user;
 if (!user?.id) {
   return Astro.redirect('/login');
 }
 
-// Read from URL query params or use defaults
 const url = Astro.url;
 const urlRange = url.searchParams.get('range');
 const urlPeriod = url.searchParams.get('period');
@@ -64,184 +48,76 @@ const selectedCurrency =
     ? activeCurrencyCookie
     : workspaceCurrencyConfig.primary;
 
-// Default view configuration
 const defaultRange: 'monthly' | 'yearly' =
   urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
 
-// P2: TODO - Generate available periods dynamically based on user's transaction history
-// For now, generate periods based on current date and last 12 months/3 years
 const now = new Date();
 const currentYear = now.getFullYear();
-const currentMonth = now.getMonth() + 1; // 0-indexed to 1-indexed
+const currentMonth = now.getMonth() + 1;
 
-// Generate monthly periods (last 12 months)
 const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
-  const monthsBack = i;
-  const date = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
+  const date = new Date(currentYear, currentMonth - 1 - i, 1);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const monthStr = month.toString().padStart(2, '0');
-
-  const label = formatMonthYear(date);
-
-  return {
-    key: `${year}-${monthStr}`,
-    label,
-  };
+  return { key: `${year}-${monthStr}`, label: formatMonthYear(date) };
 });
 
-// Generate yearly periods (last 3 years + current year)
 const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
   const year = currentYear - i;
-  return {
-    key: year.toString(),
-    label: year.toString(),
-  };
+  return { key: year.toString(), label: year.toString() };
 });
 
-// Set default period based on range and URL
-// Validate that period format matches the range (prevent format mismatches)
 let defaultPeriod: string;
 if (urlPeriod) {
-  const isMonthlyFormat = /^\d{4}-\d{2}$/.test(urlPeriod); // YYYY-MM
-  const isYearlyFormat = /^\d{4}$/.test(urlPeriod); // YYYY
-
-  // Use urlPeriod only if format matches the range
+  const isMonthlyFormat = /^\d{4}-\d{2}$/.test(urlPeriod);
+  const isYearlyFormat = /^\d{4}$/.test(urlPeriod);
   if (defaultRange === 'monthly' && isMonthlyFormat) {
     defaultPeriod = urlPeriod;
   } else if (defaultRange === 'yearly' && isYearlyFormat) {
     defaultPeriod = urlPeriod;
   } else {
-    // Format mismatch - fall back to default for current range
     defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
   }
 } else {
-  // No URL period - use default for current range
   defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
 }
 
-// Fetch report data from backend service
 const currency: Currency = selectedCurrency;
-let reportData: ReportData;
-let recurringBreakdown: RecurringBreakdown | null = null;
 
+let overviewData: OverviewReportData;
 try {
-  if (defaultRange === 'monthly') {
-    reportData = await reportService.getMonthlyReport(user.workspaceId, defaultPeriod, currency);
-    const [year, month] = defaultPeriod.split('-').map(Number);
-    recurringBreakdown = await reportService.getRecurringBreakdown(
-      user.workspaceId,
-      year,
-      month,
-      currency
-    );
-  } else {
-    const year = parseInt(defaultPeriod, 10);
-    reportData = await reportService.getYearlyReport(user.workspaceId, year, currency);
-  }
-} catch (error) {
-  console.error('Error fetching report data:', error);
-  // P2: TODO - Show error page instead of redirecting (Issue #6 from code review)
-  return Astro.redirect('/reports?error=failed-to-load');
-}
-
-// Fetch account totals by class for summary cards (selected report currency only)
-let totalAccounts = 0;
-let totalDebt = 0;
-
-try {
-  const classTotals = await accountService.getTotalByClass(user.workspaceId);
-  for (const row of classTotals) {
-    const total = parseFloat(row.total || '0');
-    if (isNaN(total)) continue;
-    if (row.currency !== currency) continue;
-    if (row.account_class === 'debt') {
-      totalDebt += Math.abs(total);
-    } else {
-      totalAccounts += total;
-    }
-  }
-} catch (error) {
-  console.error('Error fetching account totals:', error);
-  // Non-critical: continue with zeros
-}
-
-// Fetch member spending summary for the member table
-let memberSummary: MemberSummaryRow[] = [];
-let memberTotals = { income: 0, expenses: 0, count: 0 };
-
-try {
-  memberSummary = await reportService.getMemberSummary(
+  overviewData = await reportService.getOverviewReport(
     user.workspaceId,
     defaultPeriod,
     defaultRange,
     currency
   );
-  memberTotals = memberSummary.reduce(
-    (acc, row) => ({
-      income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
-      expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
-      count: acc.count + row.transactionCount,
-    }),
-    { income: 0, expenses: 0, count: 0 }
-  );
 } catch (error) {
-  console.error('Error fetching member summary:', error);
-  // Non-critical: continue with empty list
+  console.error('Error fetching overview data:', error);
+  overviewData = {
+    totalIncome: '0',
+    totalExpenses: '0',
+    netSavings: '0',
+    savingsRate: '0',
+    trendData: [],
+    incomePreview: { topCategories: [], total: '0' },
+    expensePreview: { topCategories: [], total: '0' },
+  };
 }
 
-// Keep data as strings for formatCurrency utility
-// Only convert to numbers for chart rendering (handled by chart components)
-const reportDataForPartials = {
-  // Summary cards - keep as strings for formatCurrency
-  totalIncome: reportData.totalIncome,
-  totalExpenses: reportData.totalExpenses,
-  netSavings: reportData.netSavings,
-  budgetHealth: reportData.budgetHealth,
-  expenseCategories: reportData.expenseCategories,
-  currency: currency, // Pass currency for formatting
-  // Charts - convert to numbers for Chart.js
-  expenseByCategory: reportData.expenseByCategory.map((cat: { name: string; value: string }) => ({
-    name: cat.name,
-    value: safeParseDecimal(cat.value),
-  })),
-  trendData: reportData.trendData.map(
-    (trend: { name: string; income: string; expenses: string }) => ({
-      name: trend.name,
-      income: safeParseDecimal(trend.income),
-      expenses: safeParseDecimal(trend.expenses),
-    })
-  ),
-  recurringBreakdown: recurringBreakdown
-    ? {
-        recurringTotal: safeParseDecimal(recurringBreakdown.recurringTotal),
-        oneTimeTotal: safeParseDecimal(recurringBreakdown.oneTimeTotal),
-      }
-    : null,
-  // Category intelligence - convert to numbers for table display
-  categoryIntelligence: reportData.categoryIntelligence.map(
-    (cat: {
-      id: string;
-      name: string;
-      spent: string;
-      budgetLimit: string | null;
-      icon: string;
-      color: string;
-    }) => ({
-      id: cat.id,
-      name: cat.name,
-      spent: safeParseDecimal(cat.spent),
-      budgetLimit: cat.budgetLimit ? safeParseDecimal(cat.budgetLimit) : null,
-      icon: cat.icon,
-      color: cat.color,
-    })
-  ),
-};
+const trendDataForCharts = overviewData.trendData.map((trend) => ({
+  name: trend.name,
+  income: safeParseDecimal(trend.income),
+  expenses: safeParseDecimal(trend.expenses),
+}));
 
 const selectedPeriodLabel =
   defaultRange === 'monthly'
     ? monthlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod
     : yearlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod;
+
+const reportState = { range: defaultRange, period: defaultPeriod, currency };
 ---
 
 <ProtectedLayout title="Reports" currentPath={currentPath} subtitle={selectedPeriodLabel}>
@@ -258,64 +134,40 @@ const selectedPeriodLabel =
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
     data-current-currency={currency}
   >
-    <Breadcrumb
-      items={[{ label: 'Overview' }, { label: 'Member Spending', href: '/reports/members' }]}
-    />
+    <ReportsSectionNav activeSection="overview" state={reportState} />
 
-    {/* Summary Metric Cards Container */}
+    {/* Summary Metric Cards */}
     <div data-summary-container>
-      <ReportSummaryCardsPartial
-        totalIncome={reportDataForPartials.totalIncome}
-        totalExpenses={reportDataForPartials.totalExpenses}
-        netSavings={reportDataForPartials.netSavings}
-        budgetHealth={reportDataForPartials.budgetHealth}
-        expenseCategories={reportDataForPartials.expenseCategories}
-        currency={reportDataForPartials.currency}
-        totalAccounts={totalAccounts}
-        totalDebt={totalDebt}
+      <OverviewSummaryCardsPartial
+        totalIncome={overviewData.totalIncome}
+        totalExpenses={overviewData.totalExpenses}
+        netSavings={overviewData.netSavings}
+        savingsRate={overviewData.savingsRate}
+        currency={currency}
       />
     </div>
 
-    {/* Charts Container */}
+    {/* Charts */}
     <div data-charts-container>
-      <ReportChartsPartial
-        expenseByCategory={reportDataForPartials.expenseByCategory}
-        trendData={reportDataForPartials.trendData}
-        recurringBreakdown={reportDataForPartials.recurringBreakdown ?? undefined}
+      <OverviewChartsPartial
+        trendData={trendDataForCharts}
         currency={currency}
-        resourceAllocationSubtitle={defaultRange === 'monthly'
-          ? 'EXPENSE MIX'
-          : 'YEARLY EXPENSE MIX'}
-        financialVelocitySubtitle={defaultRange === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
+        subtitle={defaultRange === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
       />
     </div>
 
-    {/* Spending per Category Table Container */}
-    <div data-table-container>
-      <CategoryTablePartial
-        categories={reportDataForPartials.categoryIntelligence}
-        subtitle="SORTED BY AMOUNT SPENT"
-        range={defaultRange}
-      />
-    </div>
-
-    {/* Spending by Member Table */}
-    <div data-member-table-container>
-      <MemberSpendingTablePartial
-        members={memberSummary}
-        totals={memberTotals}
+    {/* Preview Cards */}
+    <div data-previews-container>
+      <OverviewPreviewCardsPartial
+        incomePreview={overviewData.incomePreview}
+        expensePreview={overviewData.expensePreview}
         currency={currency}
-        range={defaultRange}
-        period={defaultPeriod}
+        state={reportState}
       />
     </div>
-
-    {/* Category Drill-Down Modal */}
-    <CategoryDrillDownModal id="category-drilldown-modal" />
   </div>
 </ProtectedLayout>
 
 <script>
-  // Import and initialize reports page orchestrator
-  import '@/components/organisms/ReportsPage.client.ts';
+  import '@/components/organisms/OverviewReportsPage.client.ts';
 </script>

@@ -1,0 +1,67 @@
+---
+import StatCard from '@/components/atoms/StatCard.astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  totalIncome: string;
+  totalExpenses: string;
+  netSavings: string;
+  savingsRate: string;
+  currency: Currency;
+}
+
+const { totalIncome, totalExpenses, netSavings, savingsRate, currency } = Astro.props;
+
+const badge =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
+const currencyBadge = (c: Currency) =>
+  c === 'USD' ? `${badge} bg-info/10 text-info` : `${badge} bg-success/10 text-success`;
+
+const rateNum = parseFloat(savingsRate) || 0;
+---
+
+<div class="@container" data-summary-cards>
+  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-4 gap-4 @2xl:gap-6">
+    <StatCard title="TOTAL INCOME">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+            {formatCurrency(totalIncome, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard title="TOTAL EXPENSES">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+            {formatCurrency(totalExpenses, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard title="NET SAVINGS">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-accent tracking-tight leading-none truncate">
+            {formatCurrency(netSavings, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard
+      title="SAVINGS RATE"
+      value={`${rateNum.toFixed(1)}%`}
+      valueColor={rateNum >= 0 ? 'text-success' : 'text-error'}
+      progress={Math.min(Math.abs(rateNum), 100)}
+      progressColor={rateNum >= 0 ? 'bg-success' : 'bg-error'}
+    />
+  </div>
+</div>
