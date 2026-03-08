@@ -20,6 +20,7 @@ export function parseHtmlPartials(html: string): {
   table?: string;
   members?: string;
   selector?: string;
+  previews?: string;
 } {
   const partials: {
     summary?: string;
@@ -27,6 +28,7 @@ export function parseHtmlPartials(html: string): {
     table?: string;
     members?: string;
     selector?: string;
+    previews?: string;
   } = {};
 
   // Extract summary partial
@@ -48,6 +50,10 @@ export function parseHtmlPartials(html: string): {
   // Extract selector partial
   const selectorMatch = html.match(/<!-- PARTIAL:selector -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   if (selectorMatch) partials.selector = selectorMatch[1].trim();
+
+  // Extract previews partial
+  const previewsMatch = html.match(/<!-- PARTIAL:previews -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (previewsMatch) partials.previews = previewsMatch[1].trim();
 
   return partials;
 }
@@ -207,6 +213,30 @@ export function renderSelectorHtml(html: string): void {
       // Re-initialize ReportSelector script
       document.dispatchEvent(new CustomEvent('astro:page-load'));
     });
+  });
+}
+
+/**
+ * Render previews section with fade-in animation
+ */
+export function renderPreviewsHtml(html: string): void {
+  const container = document.querySelector('[data-previews-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
   });
 }
 

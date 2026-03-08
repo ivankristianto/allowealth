@@ -18,6 +18,7 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from './ReportsRenderer.client';
+import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
 import { navigate } from 'astro:transitions/client';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -86,11 +87,11 @@ function getActiveCurrencyFromCookie(): Currency | null {
  * Update URL query params without page reload
  */
 function updateUrl(range: 'monthly' | 'yearly', period: string): void {
-  const url = new URL(window.location.href);
-  url.searchParams.set('range', range);
-  url.searchParams.set('period', period);
-  url.searchParams.delete('currency');
-  window.history.replaceState({}, '', url.toString());
+  const url = buildReportUrl(window.location.pathname, {
+    range,
+    period,
+  });
+  window.history.replaceState({}, '', url);
 }
 
 /**
