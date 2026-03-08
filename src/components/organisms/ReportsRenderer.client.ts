@@ -21,6 +21,8 @@ export function parseHtmlPartials(html: string): {
   members?: string;
   selector?: string;
   previews?: string;
+  sources?: string;
+  history?: string;
 } {
   const partials: {
     summary?: string;
@@ -29,6 +31,8 @@ export function parseHtmlPartials(html: string): {
     members?: string;
     selector?: string;
     previews?: string;
+    sources?: string;
+    history?: string;
   } = {};
 
   // Extract summary partial
@@ -54,6 +58,14 @@ export function parseHtmlPartials(html: string): {
   // Extract previews partial
   const previewsMatch = html.match(/<!-- PARTIAL:previews -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   if (previewsMatch) partials.previews = previewsMatch[1].trim();
+
+  // Extract sources partial
+  const sourcesMatch = html.match(/<!-- PARTIAL:sources -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (sourcesMatch) partials.sources = sourcesMatch[1].trim();
+
+  // Extract history partial
+  const historyMatch = html.match(/<!-- PARTIAL:history -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (historyMatch) partials.history = historyMatch[1].trim();
 
   return partials;
 }
@@ -221,6 +233,54 @@ export function renderSelectorHtml(html: string): void {
  */
 export function renderPreviewsHtml(html: string): void {
   const container = document.querySelector('[data-previews-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
+}
+
+/**
+ * Render income sources table with fade-in animation
+ */
+export function renderSourcesHtml(html: string): void {
+  const container = document.querySelector('[data-sources-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
+}
+
+/**
+ * Render income history table with fade-in animation
+ */
+export function renderHistoryHtml(html: string): void {
+  const container = document.querySelector('[data-history-container]') as HTMLElement;
   if (!container) return;
 
   // Fade out existing content

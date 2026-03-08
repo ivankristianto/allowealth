@@ -1,0 +1,374 @@
+---
+/**
+ * IncomeSourceTrendChart Component
+ *
+ * Stacked bar chart showing active/passive/other income trends over time.
+ * Uses Chart.js with stacked bars following the FinancialVelocityChart pattern.
+ *
+ * @param {Array} data - Array of period data with active/passive/other breakdowns
+ * @param {Currency} currency - Currency code for formatting
+ * @param {string} subtitle - Subtitle text (e.g., "SOURCE GROUP TREND")
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} error - Error message to display
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface SourceTrendDataPoint {
+  name: string;
+  active: number;
+  passive: number;
+  other: number;
+}
+
+export interface Props {
+  data: SourceTrendDataPoint[];
+  currency?: Currency;
+  subtitle?: string;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  data = [],
+  currency = 'IDR',
+  subtitle = 'SOURCE GROUP TREND',
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+const serializedData = JSON.stringify(data)
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+
+const chartId = `income-source-trend-chart-${Math.random().toString(36).slice(2, 11)}`;
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Income source group trend over time"
+>
+  <div class="flex flex-col gap-6 md:gap-8">
+    {/* Header */}
+    <div class="flex justify-between items-center">
+      <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
+        Income Source Trend
+      </h4>
+      <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
+    </div>
+
+    {/* Loading State */}
+    {
+      loading ? (
+        <div class="py-6 min-h-[300px]">
+          <Skeleton variant="rectangular" width="100%" height="300px" className="rounded-2xl" />
+        </div>
+      ) : error ? (
+        /* Error State */
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : data.length === 0 ? (
+        /* Empty State */
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No income trend data available.</p>
+        </div>
+      ) : (
+        /* Chart Container */
+        <div
+          class="h-[300px] w-full min-h-[300px]"
+          data-chart-data={serializedData}
+          data-currency={currency}
+          id={`${chartId}-container`}
+        >
+          <canvas
+            id={chartId}
+            aria-label={`Income source trend chart for ${data.length} periods`}
+            role="img"
+          />
+        </div>
+      )
+    }
+
+    {/* Screen Reader Data Table */}
+    {
+      !loading && !error && data.length > 0 && (
+        <table class="sr-only" aria-label="Income source trend data table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Active</th>
+              <th>Passive</th>
+              <th>Other</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item) => (
+              <tr>
+                <td>{item.name}</td>
+                <td>{item.active}</td>
+                <td>{item.passive}</td>
+                <td>{item.other}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+</Card>
+
+<script>
+  import { Chart } from '@/lib/chart-setup';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import { isValidCurrency } from '@/lib/constants/currency';
+  import type { Currency } from '@/lib/constants/currency';
+
+  interface SourceTrendDataPoint {
+    name: string;
+    active: number;
+    passive: number;
+    other: number;
+  }
+
+  interface ChartData {
+    chart: Chart<'bar', number[], string>;
+    data: SourceTrendDataPoint[];
+  }
+
+  const charts: Record<string, ChartData> = {};
+
+  const COLORS = {
+    active: '#15803d', // green-700
+    passive: '#3b82f6', // blue-500
+    other: '#f59e0b', // amber-500
+  };
+
+  function updateChartThemeColors(): void {
+    const dark = isDarkTheme();
+
+    Object.values(charts).forEach(({ chart }) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+      }
+
+      if (chart.options.plugins?.legend?.labels) {
+        chart.options.plugins.legend.labels.color = dark ? '#94a3b8' : '#64748b';
+      }
+
+      if (chart.options.scales?.x?.ticks) {
+        chart.options.scales.x.ticks.color = dark ? '#94a3b8' : '#64748b';
+      }
+      if (chart.options.scales?.y?.ticks) {
+        chart.options.scales.y.ticks.color = dark ? '#94a3b8' : '#64748b';
+      }
+      if (chart.options.scales?.y?.grid) {
+        chart.options.scales.y.grid.color = dark
+          ? 'rgba(148, 163, 184, 0.1)'
+          : 'rgba(148, 163, 184, 0.15)';
+      }
+
+      chart.update('none');
+    });
+  }
+
+  function initIncomeSourceTrendChart(
+    chartId: string,
+    data: SourceTrendDataPoint[],
+    currency: Currency
+  ): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+    if (!canvas) return;
+
+    if (charts[chartId]?.chart) {
+      charts[chartId].chart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const labels = data.map((d) => d.name);
+    const activeData = data.map((d) => d.active);
+    const passiveData = data.map((d) => d.passive);
+    const otherData = data.map((d) => d.other);
+
+    const dark = isDarkTheme();
+    const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
+    const textColor = dark ? '#94a3b8' : '#64748b';
+
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Active',
+            data: activeData,
+            backgroundColor: COLORS.active,
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+          {
+            label: 'Passive',
+            data: passiveData,
+            backgroundColor: COLORS.passive,
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+          {
+            label: 'Other',
+            data: otherData,
+            backgroundColor: COLORS.other,
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 700,
+              },
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 20,
+            },
+          },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
+            padding: 12,
+            cornerRadius: 12,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+                return `${label}: ${formatCurrency(value, currency)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: {
+              display: false,
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 700,
+              },
+            },
+            border: {
+              display: false,
+            },
+          },
+          y: {
+            stacked: true,
+            display: false,
+            grid: {
+              color: gridColor,
+            },
+            border: {
+              display: false,
+            },
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+
+    charts[chartId] = { chart, data };
+  }
+
+  function parseChartData(raw: unknown): SourceTrendDataPoint[] | null {
+    if (!Array.isArray(raw)) return null;
+    const validData = raw.filter(
+      (item) =>
+        typeof item?.active === 'number' &&
+        isFinite(item.active) &&
+        item.active >= 0 &&
+        typeof item?.passive === 'number' &&
+        isFinite(item.passive) &&
+        item.passive >= 0 &&
+        typeof item?.other === 'number' &&
+        isFinite(item.other) &&
+        item.other >= 0 &&
+        typeof item?.name === 'string' &&
+        item.name.length > 0 &&
+        item.name.length <= 100
+    ) as SourceTrendDataPoint[];
+    return validData.length > 0 ? validData : null;
+  }
+
+  const lifecycle = createChartLifecycle<SourceTrendDataPoint[]>({
+    containerSelector: '[id^="income-source-trend-chart-"][id$="-container"]',
+    parseData: parseChartData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      const currencyAttr = container.getAttribute('data-currency');
+      const currency: Currency =
+        currencyAttr && isValidCurrency(currencyAttr) ? currencyAttr : 'IDR';
+      initIncomeSourceTrendChart(chartId, data, currency);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((chartId) => {
+        const entry = charts[chartId];
+        if (entry?.chart) {
+          try {
+            entry.chart.destroy();
+          } catch (e) {
+            console.warn('Failed to destroy chart:', chartId, e);
+          }
+        }
+        delete charts[chartId];
+      });
+    },
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
+  } else {
+    lifecycle.init();
+  }
+
+  window.addEventListener('beforeunload', lifecycle.cleanup);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
+  document.addEventListener('charts:reinit', lifecycle.init);
+</script>

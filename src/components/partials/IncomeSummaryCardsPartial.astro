@@ -1,0 +1,87 @@
+---
+/**
+ * Income Summary Cards Partial
+ *
+ * Server-rendered partial for income summary stat cards.
+ * Shows Total Income, Active Income, Passive Income, Other Income, and Growth.
+ */
+
+import StatCard from '@/components/atoms/StatCard.astro';
+import { formatCurrency } from '@/lib/formatting';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  totalIncome: string;
+  activeIncome: string;
+  passiveIncome: string;
+  otherIncome: string;
+  growthVsPreviousPeriod: string;
+  currency: Currency;
+}
+
+const { totalIncome, activeIncome, passiveIncome, otherIncome, growthVsPreviousPeriod, currency } =
+  Astro.props;
+
+const badge =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
+const currencyBadge = (c: Currency) =>
+  c === 'USD' ? `${badge} bg-info/10 text-info` : `${badge} bg-success/10 text-success`;
+
+const growthNum = parseFloat(growthVsPreviousPeriod) || 0;
+---
+
+<div class="@container" data-summary-cards>
+  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-5 gap-4 @2xl:gap-6">
+    <StatCard title="TOTAL INCOME">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+            {formatCurrency(totalIncome, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard title="ACTIVE INCOME">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+            {formatCurrency(activeIncome, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard title="PASSIVE INCOME">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
+            {formatCurrency(passiveIncome, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard title="OTHER INCOME">
+      <Fragment slot="details">
+        <div class="flex items-center gap-2">
+          <span class={currencyBadge(currency)}>{currency}</span>
+          <p class="text-lg font-bold text-warning tracking-tight leading-none truncate">
+            {formatCurrency(otherIncome, currency)}
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard
+      title="GROWTH VS PREV. PERIOD"
+      value={`${growthNum >= 0 ? '+' : ''}${growthNum.toFixed(1)}%`}
+      valueColor={growthNum >= 0 ? 'text-success' : 'text-error'}
+      progress={Math.min(Math.abs(growthNum), 100)}
+      progressColor={growthNum >= 0 ? 'bg-success' : 'bg-error'}
+    />
+  </div>
+</div>

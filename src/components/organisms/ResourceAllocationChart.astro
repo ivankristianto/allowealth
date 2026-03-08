@@ -26,12 +26,24 @@ export interface ExpenseCategory {
 export interface Props {
   data: ExpenseCategory[];
   subtitle?: string;
+  title?: string;
+  emptyText?: string;
+  ariaLabel?: string;
   loading?: boolean;
   error?: string;
   className?: string;
 }
 
-const { data = [], subtitle = 'EXPENSE MIX', loading = false, error, className = '' } = Astro.props;
+const {
+  data = [],
+  subtitle = 'EXPENSE MIX',
+  title = 'Expense Breakdown',
+  emptyText = 'No expense data available.',
+  ariaLabel = 'Expense breakdown by category',
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
 
 // @TODO: P1 - Move chart colors to design tokens (@/lib/tokens)
 // Chart colors from design system (v1.1.0 - Forest Green)
@@ -70,18 +82,12 @@ const serializedColors = JSON.stringify(DEFAULT_COLORS)
 const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2, 11)}`;
 ---
 
-<Card
-  padding="lg"
-  rounded="card-lg"
-  className={className}
-  role="region"
-  aria-label="Expense breakdown by category"
->
+<Card padding="lg" rounded="card-lg" className={className} role="region" aria-label={ariaLabel}>
   <div class="flex flex-col gap-6 md:gap-8">
     {/* Header */}
     <div class="flex justify-between items-center">
       <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
-        Expense Breakdown
+        {title}
       </h4>
       <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
     </div>
@@ -115,7 +121,7 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
       ) : data.length === 0 ? (
         /* Empty State */
         <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No expense data available.</p>
+          <p class="text-base-content/60 font-medium">{emptyText}</p>
         </div>
       ) : (
         /* Chart and Legend */
