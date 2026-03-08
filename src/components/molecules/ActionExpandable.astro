@@ -36,7 +36,7 @@ const hasAlwaysVisible = Astro.slots.has('always-visible');
 const hasExpandable = Astro.slots.has('expandable');
 
 // Generate unique ID for accessibility
-const expandId = `expandable-${Math.random().toString(36).slice(2, 8)}`;
+const expandId = `expandable-${crypto.randomUUID()}`;
 ---
 
 {
