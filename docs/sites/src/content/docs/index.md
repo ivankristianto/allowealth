@@ -12,7 +12,7 @@ hero:
       icon: right-arrow
       variant: primary
     - text: Developer Setup
-      link: /developers/local-development/
+      link: /developers/setup-and-deployment/
       variant: secondary
 sidebar:
   label: Home
@@ -51,7 +51,7 @@ Choose your path:
     <h2>Deploy</h2>
     <p>Use the pre-deploy, rollout, and verification checklist.</p>
   </a>
-  <a class="aw-doc-card" href="/developers/local-development/">
+  <a class="aw-doc-card" href="/developers/setup-and-deployment/">
     <span class="aw-doc-card__kicker">Developer</span>
     <h2>Develop</h2>
     <p>Set up Bun, run migrations, and verify quality gates.</p>

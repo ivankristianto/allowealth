@@ -132,4 +132,4 @@ Important:
 
 - Local `drizzle-kit migrate` is for developer validation.
 - For PostgreSQL production index rollout, use lock-safe concurrent DDL. See:
-  - `docs/deployment/2026-03-01-db-index-rollout-runbook.md`
+  - `docs/sites/src/content/docs/developers/setup-and-deployment.md`
