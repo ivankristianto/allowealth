@@ -11,7 +11,8 @@ import ForecastAssumptions from '@/components/organisms/ForecastAssumptions.astr
 import ForecastMonthlyGains from '@/components/organisms/ForecastMonthlyGains.astro';
 import WealthTrajectory from '@/components/organisms/WealthTrajectory.astro';
 import LedgerProjections from '@/components/organisms/LedgerProjections.astro';
-import type { ForecastRealityCheckResult, ForecastRealityCheckSummary } from '@/lib/forecast';
+import type { ForecastRealityCheckData, ForecastRealityCheckSummary } from '@/lib/forecast';
+import { getForecastRealityCheckData } from '@/lib/forecast/server';
 import { workspaceMetaService } from '@/services';
 
 const currentPath = '/forecast';
@@ -23,35 +24,11 @@ if (!user?.id) {
 const settings = await workspaceMetaService.getSettings(user.workspaceId);
 const primaryCurrency = settings.currency;
 
-interface ForecastPageData extends ForecastRealityCheckResult {
-  assumptions: {
-    monthlyTopup: number;
-    annualRate: number;
-  };
-}
-
-// Fetch initial forecast data from API
-let forecastData: ForecastPageData | null = null;
+let forecastData: ForecastRealityCheckData | null = null;
 let error: string | null = null;
 
 try {
-  const response = await fetch(`${Astro.url.origin}/api/forecast`, {
-    headers: {
-      cookie: Astro.request.headers.get('cookie') || '',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch forecast data: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error('Invalid API response format');
-  }
-
-  forecastData = result.data;
+  forecastData = await getForecastRealityCheckData(user.workspaceId);
 } catch (err) {
   console.error('Error fetching forecast data:', err);
   error = err instanceof Error ? err.message : 'Failed to load forecast data';

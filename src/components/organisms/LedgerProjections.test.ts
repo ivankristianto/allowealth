@@ -17,7 +17,7 @@ describe('LedgerProjections yearly breakdown', () => {
   });
 
   it('explains that historical balances are required for forecast details', () => {
-    expect(source).toContain('historical balances');
+    expect(source).toContain('Add account balance history to see your plan versus reality.');
   });
 
   it('renders a screen-reader-only table for yearly and monthly projection rows', () => {

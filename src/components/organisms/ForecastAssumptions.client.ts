@@ -1,5 +1,6 @@
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+import { validateForecastAssumptions } from '@/lib/forecast/assumptions';
 import {
   attachAmountFormatter,
   stripAmountFormatting,
@@ -61,18 +62,6 @@ function setInputInvalid(container: HTMLElement, isInvalid: boolean): void {
   });
 }
 
-function validateAssumptions(monthlyTopup: number, annualRate: number): string | null {
-  if (!Number.isFinite(monthlyTopup) || monthlyTopup < 0) {
-    return 'Monthly Top-Up must be 0 or more.';
-  }
-
-  if (!Number.isFinite(annualRate) || annualRate < 0 || annualRate > 100) {
-    return 'Expected APY must be between 0 and 100.';
-  }
-
-  return null;
-}
-
 async function saveForecastAssumptions(
   container: HTMLElement,
   currency: Currency,
@@ -88,7 +77,7 @@ async function saveForecastAssumptions(
   const annualRateValue = apyInput.value.trim();
   const monthlyTopup = monthlyTopupValue === '' ? 0 : Number(monthlyTopupValue);
   const annualRate = annualRateValue === '' ? 0 : Number(annualRateValue);
-  const validationError = validateAssumptions(monthlyTopup, annualRate);
+  const validationError = validateForecastAssumptions(monthlyTopup, annualRate);
   if (validationError) {
     setInputInvalid(container, true);
     setStatus(container, 'error');

@@ -16,11 +16,11 @@ describe('ForecastAssumptions component', () => {
   it('shows the saved assumptions labels and helper copy', () => {
     expect(componentSource).toContain('Monthly Top-Up');
     expect(componentSource).toContain('Expected APY');
-    expect(componentSource).toContain('saved to workspace settings');
+    expect(componentSource).toContain('save automatically to workspace settings');
   });
 
   it('renders a save-status surface', () => {
-    expect(componentSource).toContain('Saving...');
+    expect(componentSource).toContain('Saving…');
     expect(componentSource).toContain('Saved');
   });
 
@@ -38,6 +38,11 @@ describe('ForecastAssumptions component', () => {
     expect(clientSource).toContain('setTimeout');
   });
 
+  it('reuses shared assumption validation so client and server limits stay aligned', () => {
+    expect(clientSource).toContain("from '@/lib/forecast/assumptions'");
+    expect(clientSource).toContain('validateForecastAssumptions');
+  });
+
   it('wires the forecast page to the assumptions card before the charts', () => {
     expect(pageSource).toContain('ForecastAssumptions');
     expect(pageSource).toContain('Reality-check forecast');
@@ -50,10 +55,20 @@ describe('ForecastAssumptions component', () => {
     );
   });
 
+  it('loads forecast data without building an internal fetch URL from request headers', () => {
+    expect(pageSource).toContain('getForecastRealityCheckData');
+    expect(pageSource).not.toContain('Astro.url.origin');
+    expect(pageSource).not.toContain("Astro.request.headers.get('cookie')");
+  });
+
   it('uses the approved reality-check chart copy and missing-history guidance', () => {
     expect(wealthTrajectorySource).toContain('Wealth Growth');
-    expect(wealthTrajectorySource).toContain('Compare planned growth against actual balances');
-    expect(wealthTrajectorySource).toContain('Forecast needs historical balances');
+    expect(wealthTrajectorySource).toContain(
+      'Planned growth, actual balances, and current trajectory'
+    );
+    expect(wealthTrajectorySource).toContain(
+      'Add account balance history to see your plan versus reality.'
+    );
     expect(wealthTrajectorySource).not.toContain(
       'Predicting global account growth over the next decade.'
     );

@@ -46,8 +46,8 @@ describe('WealthTrajectory reality-check chart', () => {
   });
 
   it('keeps the chart copy aligned with the reality-check spec', () => {
-    expect(source).toContain('Compare planned growth against actual balances');
-    expect(source).toContain('historical balances');
+    expect(source).toContain('Planned growth, actual balances, and current trajectory');
+    expect(source).toContain('Add account balance history to see your plan versus reality.');
     expect(source).not.toContain('next decade');
   });
 

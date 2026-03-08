@@ -25,7 +25,7 @@ describe('ForecastMonthlyGains component', () => {
   });
 
   it('explains that forecast needs historical balance snapshots when empty', () => {
-    expect(source).toContain('historical balances');
+    expect(source).toContain('Add account balance history to see your plan versus reality.');
   });
 
   it('serializes only the focused chart window to the client payload', () => {

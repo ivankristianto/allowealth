@@ -12,10 +12,9 @@ import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/ser
 import { z } from 'zod';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 import { getCacheManager, CacheTags } from '@/lib/cache';
+import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
 
 const currencySchema = z.enum(AVAILABLE_CURRENCIES);
-const MAX_FORECAST_MONTHLY_TOPUP = 1_000_000_000_000;
-const MAX_FORECAST_ANNUAL_RATE = 100;
 
 function parseMonthlyIncome(value: string): Record<string, string> {
   if (!value) {

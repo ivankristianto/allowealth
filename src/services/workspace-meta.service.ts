@@ -32,6 +32,7 @@ import {
   DEFAULT_WORKSPACE_SETTINGS,
   isValidWorkspaceMetaKey,
 } from '@/lib/constants/workspace-meta-keys';
+import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
 import { WorkspaceMetaServiceError, ServiceErrorCode } from './service-errors';
 
 /**
@@ -40,8 +41,6 @@ import { WorkspaceMetaServiceError, ServiceErrorCode } from './service-errors';
 const META_VALUE_MAX_SIZE = 4096;
 const CURRENCY_LOCKED_MESSAGE =
   'Currency settings cannot be changed after creating accounts, budgets, or transactions';
-const MAX_FORECAST_MONTHLY_TOPUP = 1_000_000_000_000;
-const MAX_FORECAST_ANNUAL_RATE = 100;
 
 /**
  * Convert string to boolean for meta values

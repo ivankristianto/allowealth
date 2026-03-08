@@ -161,6 +161,11 @@ export interface ForecastRealityCheckSummary {
   trailingAverageNetSavings: number;
 }
 
+export interface ForecastAssumptions {
+  monthlyTopup: number;
+  annualRate: number;
+}
+
 export interface ForecastRealityCheckInput {
   accounts: AccountWithHistory[];
   actualBalanceTimeline?: MonthlyHistoricalData[];
@@ -181,4 +186,8 @@ export interface ForecastRealityCheckResult {
   chartWindow: ForecastChartWindow;
   yearlyBreakdown: ForecastYearBreakdownRow[];
   summary: ForecastRealityCheckSummary;
+}
+
+export interface ForecastRealityCheckData extends ForecastRealityCheckResult {
+  assumptions: ForecastAssumptions;
 }

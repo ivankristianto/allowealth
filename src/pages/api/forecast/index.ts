@@ -1,20 +1,7 @@
 import type { APIRoute } from 'astro';
-import { accountService, reportService, workspaceMetaService } from '@/services';
+import { getForecastRealityCheckData } from '@/lib/forecast/server';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
-import {
-  aggregateAccountHistory,
-  buildForecastRealityCheck,
-  type AccountWithHistory,
-} from '@/lib/forecast';
-
-function monthKeyToDateRange(monthKey: string): { startDate: Date; endDate: Date } {
-  const [year, month] = monthKey.split('-').map(Number);
-  return {
-    startDate: new Date(year, month - 1, 1),
-    endDate: new Date(year, month, 0, 23, 59, 59),
-  };
-}
 
 /**
  * GET /api/forecast
@@ -23,68 +10,7 @@ function monthKeyToDateRange(monthKey: string): { startDate: Date; endDate: Date
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
-    const settings = await workspaceMetaService.getSettings(auth.workspaceId);
-    const assumptions = {
-      monthlyTopup: settings.forecastMonthlyTopup,
-      annualRate: settings.forecastAnnualRate,
-    };
-
-    const accountsWithHistory = await accountService.findAllWithHistoryForForecast(
-      auth.workspaceId,
-      settings.currency
-    );
-
-    const forecastAccounts: AccountWithHistory[] = accountsWithHistory.map((account) => ({
-      balance: parseFloat(account.balance),
-      currency: settings.currency,
-      accountClass: account.account_class,
-      history: account.history,
-    }));
-
-    const actualBalanceTimeline = aggregateAccountHistory(forecastAccounts);
-
-    if (actualBalanceTimeline.length === 0) {
-      return successResponse({
-        assumptions,
-        ...buildForecastRealityCheck({
-          accounts: [],
-          actualBalanceTimeline: [],
-          actualNetSavings: [],
-          monthlyTopup: assumptions.monthlyTopup,
-          annualRate: assumptions.annualRate,
-        }),
-      });
-    }
-
-    const firstHistoricalMonth = actualBalanceTimeline[0].key;
-    const latestHistoricalMonth = actualBalanceTimeline[actualBalanceTimeline.length - 1].key;
-    const { startDate } = monthKeyToDateRange(firstHistoricalMonth);
-    const { endDate } = monthKeyToDateRange(latestHistoricalMonth);
-    const actualNetSavingsByMonth = await reportService.getMonthlyNetSavingsByMonth(
-      auth.workspaceId,
-      startDate,
-      endDate,
-      settings.currency
-    );
-
-    const actualNetSavings = Array.from(actualNetSavingsByMonth.entries()).map(([key, row]) => ({
-      key,
-      income: Number(row.income),
-      expenses: Number(row.expenses),
-      netSavings: Number(row.netSavings),
-    }));
-
-    const result = {
-      assumptions,
-      ...buildForecastRealityCheck({
-        accounts: forecastAccounts,
-        actualBalanceTimeline,
-        actualNetSavings,
-        monthlyTopup: assumptions.monthlyTopup,
-        annualRate: assumptions.annualRate,
-      }),
-    };
-
+    const result = await getForecastRealityCheckData(auth.workspaceId);
     return successResponse(result);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
