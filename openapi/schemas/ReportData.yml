@@ -1,4 +1,4 @@
-# Monthly or yearly report data
+# Expense report data (used by /api/reports/expenses)
 ReportData:
   type: object
   properties:

@@ -6,9 +6,14 @@ paths:
   /api/reports:
     get:
       tags: [Reports]
-      summary: Get financial intelligence report
+      summary: Overview report
       description: |
-        Retrieve monthly or yearly financial intelligence report with aggregated data.
+        Retrieve a lightweight financial overview for the given period.
+
+        Returns high-level totals (income, expenses, savings), budget health,
+        trend data, and preview snippets for expenses and income. Use the
+        dedicated `/api/reports/expenses` or `/api/reports/income` endpoints
+        for full drill-down data.
 
         Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
         When requesting HTML (`_render=html`), the response contains server-rendered HTML fragments
@@ -76,12 +81,12 @@ paths:
             Only applicable when _render=html.
             - summary: Summary metrics cards (income, expenses, savings, budget health)
             - charts: Resource allocation donut chart and financial velocity bar chart
-            - table: Category intelligence table with spending details
+            - previews: Expense and income preview snippets
             - selector: Report selector controls
             - all: All partials (default)
           schema:
             type: string
-            enum: [summary, charts, table, selector, all]
+            enum: [summary, charts, previews, selector, all]
             default: all
       responses:
         '200':
@@ -89,7 +94,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '../schemas/ReportResponse.yml#/ReportResponse'
+                $ref: '../schemas/OverviewReportResponse.yml#/OverviewReportResponse'
               example:
                 success: true
                 data:
@@ -113,12 +118,18 @@ paths:
                     - name: "Feb"
                       income: "9750000"
                       expenses: "4735000"
-                  categoryIntelligence:
-                    - id: "cat_123"
-                      name: "Utilities"
-                      spent: "1850000"
-                      budgetLimit: "4000000"
-                      icon: "zap"
+                  expensePreview:
+                    topCategories:
+                      - name: "Utilities"
+                        spent: "1850000"
+                      - name: "Dining"
+                        spent: "905000"
+                  incomePreview:
+                    sourceGroups:
+                      - type: "active"
+                        total: "7500000"
+                      - type: "passive"
+                        total: "2250000"
             text/html:
               schema:
                 type: string
@@ -132,8 +143,8 @@ paths:
                 <!-- PARTIAL:charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">...</div>
 
-                <!-- PARTIAL:table -->
-                <div class="card bg-base-100 shadow border">...</div>
+                <!-- PARTIAL:previews -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">...</div>
         '400':
           description: Bad request - invalid parameters
           content:
@@ -181,12 +192,237 @@ paths:
                   value:
                     success: false
                     error:
-                      message: "Invalid _partial parameter. Must be one of: summary, charts, table, selector, all."
+                      message: "Invalid _partial parameter. Must be one of: summary, charts, previews, selector, all."
                       code: "INVALID_PARTIAL"
             text/html:
               schema:
                 type: string
                 description: Error message rendered as HTML
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/reports/expenses:
+    get:
+      tags: [Reports]
+      summary: Get expense detail report
+      description: |
+        Retrieve detailed expense report with category intelligence, spending
+        breakdown, and member data for the given period.
+
+        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: range
+          in: query
+          required: true
+          description: Report range type
+          schema:
+            type: string
+            enum: [monthly, yearly]
+          example: monthly
+        - name: period
+          in: query
+          required: true
+          description: |
+            Period to report on.
+            - For monthly: YYYY-MM format (e.g., "2024-02")
+            - For yearly: YYYY format (e.g., "2024")
+          schema:
+            type: string
+            pattern: '^\d{4}(-\d{2})?$'
+          example: "2024-02"
+        - name: currency
+          in: query
+          description: |
+            Currency for report aggregation.
+            Defaults to workspace primary currency when omitted.
+          schema:
+            type: string
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+            default: IDR
+        - name: user_id
+          in: query
+          description: Optional workspace member ID to scope report data to a single user
+          schema:
+            type: string
+        - name: _render
+          in: query
+          description: Response format (json or html)
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+        - name: _partial
+          in: query
+          description: |
+            Which partial(s) to render when using HTML format.
+            Only applicable when _render=html.
+            - summary: Summary metrics cards
+            - charts: Expense donut chart and trend bar chart
+            - table: Category intelligence table with spending details
+            - members: Per-member spending breakdown
+            - selector: Report selector controls
+            - all: All partials (default)
+          schema:
+            type: string
+            enum: [summary, charts, table, members, selector, all]
+            default: all
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ReportResponse.yml#/ReportResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/reports/income:
+    get:
+      tags: [Reports]
+      summary: Get income detail report
+      description: |
+        Retrieve detailed income report with source breakdown, source group
+        analysis, trend data, transaction history, and member breakdown
+        for the given period.
+
+        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: range
+          in: query
+          required: true
+          description: Report range type
+          schema:
+            type: string
+            enum: [monthly, yearly]
+          example: monthly
+        - name: period
+          in: query
+          required: true
+          description: |
+            Period to report on.
+            - For monthly: YYYY-MM format (e.g., "2024-02")
+            - For yearly: YYYY format (e.g., "2024")
+          schema:
+            type: string
+            pattern: '^\d{4}(-\d{2})?$'
+          example: "2024-02"
+        - name: currency
+          in: query
+          description: |
+            Currency for report aggregation.
+            Defaults to workspace primary currency when omitted.
+          schema:
+            type: string
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+            default: IDR
+        - name: user_id
+          in: query
+          description: Optional workspace member ID to scope report data to a single user
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number for income transaction history pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Number of transactions per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: category_id
+          in: query
+          description: Optional category ID to filter income by a specific category
+          schema:
+            type: string
+        - name: _render
+          in: query
+          description: Response format (json or html)
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+        - name: _partial
+          in: query
+          description: |
+            Which partial(s) to render when using HTML format.
+            Only applicable when _render=html.
+            - summary: Income summary metrics cards
+            - charts: Income donut chart and source trend bar chart
+            - sources: Source group breakdown table
+            - history: Paginated income transaction history
+            - members: Per-member income breakdown
+            - selector: Report selector controls
+            - all: All partials (default)
+          schema:
+            type: string
+            enum: [summary, charts, sources, history, members, selector, all]
+            default: all
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/IncomeReportResponse.yml#/IncomeReportResponse'
+              example:
+                success: true
+                data:
+                  totalIncome: "9750000"
+                  incomeBySource:
+                    - name: "Salary"
+                      value: "7500000"
+                    - name: "Dividends"
+                      value: "1500000"
+                    - name: "Freelance"
+                      value: "750000"
+                  sourceGroups:
+                    - type: "active"
+                      total: "8250000"
+                      percentage: 84.6
+                      categories:
+                        - id: "cat_salary"
+                          name: "Salary"
+                          total: "7500000"
+                          transactionCount: 1
+                    - type: "passive"
+                      total: "1500000"
+                      percentage: 15.4
+                      categories:
+                        - id: "cat_dividends"
+                          name: "Dividends"
+                          total: "1500000"
+                          transactionCount: 2
+                  trendData:
+                    - name: "Dec"
+                      active: "7500000"
+                      passive: "1200000"
+                      other: "0"
+                    - name: "Jan"
+                      active: "7500000"
+                      passive: "1500000"
+                      other: "250000"
+                    - name: "Feb"
+                      active: "8250000"
+                      passive: "1500000"
+                      other: "0"
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '500':

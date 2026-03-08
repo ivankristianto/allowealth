@@ -228,11 +228,11 @@ export class ReportsPage extends BasePage {
   async expectReportsPageVisible(): Promise<void> {
     await expect(this.page).toHaveURL(/\/reports(?:[/?#]|$)/);
 
-    // Reports page does not expose a dedicated root test id in production markup.
-    // Verify at least one core reports content container is visible.
+    // Reports page: verify at least one core content container is visible.
+    // Overview has summary + charts + previews; Expense/Income have summary + charts + table/sources
     const reportsContent = this.page
       .locator(
-        '[data-summary-container]:visible, [data-charts-container]:visible, [data-table-container]:visible'
+        '[data-summary-container]:visible, [data-charts-container]:visible, [data-table-container]:visible, [data-previews-container]:visible'
       )
       .first();
     await expect(reportsContent).toBeVisible();
@@ -302,5 +302,49 @@ export class ReportsPage extends BasePage {
     // Look for category intelligence table rows
     const categoryRows = this.page.locator('[data-table-container] tr, [data-category-row]');
     return categoryRows.count();
+  }
+
+  // --- Section navigation ---
+
+  /** Navigate to the Overview section tab. */
+  async openOverviewSection(): Promise<void> {
+    const tab = this.page.locator('[data-section-nav] a[href*="/reports"]').first();
+    await tab.click();
+    await this.waitForPageLoad();
+  }
+
+  /** Navigate to the Expenses section tab. */
+  async openExpenseSection(): Promise<void> {
+    const tab = this.page.locator('[data-section-nav] a[href*="/reports/expenses"]');
+    await tab.click();
+    await this.waitForPageLoad();
+  }
+
+  /** Navigate to the Income section tab. */
+  async openIncomeSection(): Promise<void> {
+    const tab = this.page.locator('[data-section-nav] a[href*="/reports/income"]');
+    await tab.click();
+    await this.waitForPageLoad();
+  }
+
+  /** Click a source group row in the income source table to drill down. */
+  async openIncomeSourceDrilldown(sourceType: 'active' | 'passive' | 'other'): Promise<void> {
+    const row = this.page.locator(
+      `[data-source-type="${sourceType}"] a, [data-source-group="${sourceType}"]`
+    );
+    await row.first().click();
+    await this.waitForPageLoad();
+  }
+
+  /** Verify income summary cards are visible. */
+  async expectIncomeSummaryVisible(): Promise<void> {
+    const summaryCards = this.page.locator('[data-summary-cards]').first();
+    await expect(summaryCards).toBeVisible();
+  }
+
+  /** Verify income empty state is shown. */
+  async expectIncomeEmptyState(): Promise<void> {
+    const emptyState = this.page.locator('[data-empty-state], .text-base-content\\/50').first();
+    await expect(emptyState).toBeVisible();
   }
 }
