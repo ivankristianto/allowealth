@@ -2,7 +2,7 @@
  * Overview Reports Page Orchestrator
  *
  * Lighter version of ReportsPage.client.ts for the overview page.
- * Only manages summary, charts, and previews containers.
+ * Manages summary, charts, wealth, and previews containers.
  */
 
 import {

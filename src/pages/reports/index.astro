@@ -2,9 +2,10 @@
 /**
  * Reports Overview Page
  *
- * Lightweight overview showing:
- * - Summary metrics (income, expenses, savings, savings rate)
+ * One-stop financial dashboard showing:
+ * - Cash flow row (income, spending, net)
  * - Income vs. Expenses trend chart
+ * - Wealth section (account totals, debt, net worth, allocation)
  * - Preview cards linking to detailed expense and income reports
  *
  * @see docs/architecture/002-interactive-pages.md
@@ -110,8 +111,13 @@ try {
   };
 }
 
-// Fetch account data for wealth section
-const accounts = await accountService.findAll(user.workspaceId);
+// Fetch account data for wealth section (non-blocking for overview page)
+let accounts: Awaited<ReturnType<typeof accountService.findAll>> = [];
+try {
+  accounts = await accountService.findAll(user.workspaceId);
+} catch (error) {
+  console.error('Error fetching account data for reports overview:', error);
+}
 const orderedCurrencies = workspaceCurrencies;
 const accountTotals = calculateAccountTotalsByCurrency(accounts, orderedCurrencies);
 const debtTotals = calculateDebtTotalsByCurrency(accounts, orderedCurrencies);

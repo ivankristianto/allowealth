@@ -30,7 +30,7 @@ import {
  *   - currency: Currency (optional, defaults to workspace primary)
  *   - user_id: string (optional) — filter by workspace member
  *   - _render: 'html' | 'json' (optional, defaults to 'json')
- *   - _partial: 'summary' | 'charts' | 'previews' | 'selector' | 'all' (optional, defaults to 'all')
+ *   - _partial: 'summary' | 'charts' | 'previews' | 'wealth' | 'selector' | 'all' (optional, defaults to 'all')
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
@@ -128,22 +128,36 @@ export const GET: APIRoute = async (context) => {
       userId
     );
 
-    // Fetch account data for wealth partial
-    const accounts = await accountService.findAll(auth.workspaceId);
-    const workspaceCurrenciesList = allowedCurrencies;
-    const accountTotals = calculateAccountTotalsByCurrency(accounts, workspaceCurrenciesList);
-    const debtTotals = calculateDebtTotalsByCurrency(accounts, workspaceCurrenciesList);
-    const allocationCurrency =
-      workspaceCurrenciesList.find((c) =>
-        accounts.some(
-          (a) => a.account_class !== 'debt' && a.currency === c && parseFloat(a.balance || '0') > 0
-        )
-      ) ?? workspaceCurrenciesList[0];
-    const accountAllocation = calculateAccountAllocation(accounts, allocationCurrency);
-    const latestAccountUpdate = accounts.reduce<Date | null>((latest, a) => {
-      const d = new Date(a.last_updated);
-      return !latest || d > latest ? d : latest;
-    }, null);
+    // Fetch account data for wealth partial (non-blocking for other overview partials)
+    let accountTotals: ReturnType<typeof calculateAccountTotalsByCurrency> = [];
+    let debtTotals: ReturnType<typeof calculateDebtTotalsByCurrency> = [];
+    let accountAllocation: ReturnType<typeof calculateAccountAllocation> = [];
+    let latestAccountUpdate: Date | null = null;
+    let wealthUnavailable = false;
+
+    if (partial === 'all' || partial === 'wealth') {
+      try {
+        const accounts = await accountService.findAll(auth.workspaceId);
+        const workspaceCurrenciesList = allowedCurrencies;
+        accountTotals = calculateAccountTotalsByCurrency(accounts, workspaceCurrenciesList);
+        debtTotals = calculateDebtTotalsByCurrency(accounts, workspaceCurrenciesList);
+        const allocationCurrency =
+          workspaceCurrenciesList.find((c) =>
+            accounts.some(
+              (a) =>
+                a.account_class !== 'debt' && a.currency === c && parseFloat(a.balance || '0') > 0
+            )
+          ) ?? workspaceCurrenciesList[0];
+        accountAllocation = calculateAccountAllocation(accounts, allocationCurrency);
+        latestAccountUpdate = accounts.reduce<Date | null>((latest, a) => {
+          const d = new Date(a.last_updated);
+          return !latest || d > latest ? d : latest;
+        }, null);
+      } catch (error) {
+        wealthUnavailable = true;
+        logError('Error fetching wealth data for reports overview', error);
+      }
+    }
 
     // Return HTML partials
     if (render.wantsHtml()) {
@@ -191,7 +205,7 @@ export const GET: APIRoute = async (context) => {
         htmlParts.push(`<!-- PARTIAL:previews -->\n${previewsHtml}`);
       }
 
-      if (partial === 'all' || partial === 'wealth') {
+      if ((partial === 'all' || partial === 'wealth') && !wealthUnavailable) {
         const wealthHtml = await container.renderToString(OverviewWealthPartial, {
           props: {
             accountTotals,
