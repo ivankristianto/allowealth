@@ -12,269 +12,74 @@ audience:
 
 Recurring transactions handle predictable money movement. Set up subscriptions, bills, and income once. Allowealth keeps upcoming occurrences visible and ready to review.
 
-## Understanding Recurring
-
-Recurring has two concepts:
-
-- **Templates** - The master schedule (for example, "Netflix subscription, $15 monthly")
-- **Occurrences** - Individual pending or confirmed instances (for example, "Netflix on March 15")
+![Recurring Overview](https://images.allowealth.io/recurring-overview.png)
+_The Recurring page displays pending items and your full template list._
 
 ## Pending Occurrences
 
-The top section shows upcoming transactions requiring action.
-
-### What You See
-
-Each pending item displays:
-
-- **Name** - Template name
-- **Amount** - Transaction value
-- **Due Date** - When it should occur
-- **Account** - Where money moves
-- **Actions** - Confirm or Skip
+The top section shows upcoming transactions requiring your attention. You can filter this queue using the **Income** and **Expenses** buttons to focus on specific item types. The heading automatically reflects the month you select, such as "Due This Month" or "Due in APRIL".
 
 ### Confirm an Occurrence
 
 When an expense is due or an income arrives:
 
-1. Find the pending occurrence
-2. Review the details
-3. Click **Confirm** (checkmark icon)
-4. The transaction records to your ledger
-5. The occurrence disappears from pending
+1. Locate the pending occurrence.
+2. Review the details.
+3. Click **Confirm** (checkmark icon).
+4. Allowealth records the transaction to your ledger.
+5. The occurrence disappears from pending.
 
 ### Skip an Occurrence
 
 When a scheduled transaction does not happen:
 
-1. Find the pending occurrence
-2. Click **Skip** (X icon)
-3. Optionally add a reason
-4. The occurrence removes from pending
-5. The template continues generating future occurrences
+1. Locate the pending occurrence.
+2. Click **Skip** (X icon).
+3. The occurrence disappears from pending.
+4. The template continues generating future occurrences.
 
 **Example:** Skip a gym membership charge for a month you paused service.
 
 ## Recurring Templates
 
-The bottom section shows all active and paused recurring schedules.
+The bottom section lists all your active and paused recurring schedules.
 
-### Template List View
+### Create a New Template
 
-Displays templates in a table:
+![Recurring Form](https://images.allowealth.io/recurring-form.png)
+_The New Recurring form simplifies scheduling regular payments and income._
 
-- **Name** - Template description
-- **Amount** - Fixed or variable amount
-- **Frequency** - How often it repeats
-- **Next Due** - Upcoming occurrence date
-- **Status** - Active or Paused
+1. Click **New Recurring** in the action bar.
+2. Complete the form:
+   - **Name** - Use a specific label (e.g., "Rent - Apartment 4B").
+   - **Type** - Choose Expense or Income.
+   - **Amount** - Enter the fixed amount or expected average.
+   - **Category** - Select the appropriate reporting category.
+   - **Account** - Choose where the money moves.
+   - **Schedule** - Select how often it repeats (e.g., Weekly, Monthly).
+   - **Start Month** - Pick when the schedule begins.
+   - **End** - Select **No end** for ongoing bills, subscriptions, or salary. Choose **End by count** or **End by date** for temporary schedules.
+   - **Installment** - Enable this only for fixed-count schedules, like loans or device plans.
+3. Click **Save recurring**.
 
-### Calendar View
+### Manage Existing Templates
 
-Switch to calendar view to see occurrences visually:
+Find any template in the list and click the **Actions** button (three dots) to manage it:
 
-1. Click the **Calendar** button in the view toggle
-2. Navigate months with the arrow buttons
-3. See occurrences on their scheduled dates
-4. Click any date to view details
-
-Toggle back to list view with the **List** button.
-
-## Creating Templates
-
-### Add a New Recurring Transaction
-
-1. Click **New Recurring** in the action bar
-2. Fill in the form:
-   - **Name** - Descriptive label (for example, "Rent Payment")
-   - **Type** - Expense or Income
-   - **Amount** - Fixed amount or range
-   - **Category** - For reporting
-   - **Account** - Where money moves
-   - **Schedule** - Set how often it repeats with presets such as Weekly, Monthly, Quarterly, Semi-annual, or Annual
-   - **Start** - Weekly schedules use a start date. Monthly schedules use a day of month and start month
-   - **End** - Leave it on No end for ongoing bills, subscriptions, or salary
-   - **Installment** - Use this only for fixed-count schedules such as loans or device plans
-3. Click **Save**
-
-### Convert a Regular Transaction
-
-Turn an existing transaction into a recurring template:
-
-1. Navigate to **Transactions**
-2. Find the transaction to repeat
-3. Click the transaction menu (three dots)
-4. Select **Make Recurring**
-5. Adjust the schedule, start timing, and end mode
-6. Click **Save**
-
-## Managing Templates
-
-### Edit a Template
-
-1. Find the template in the list
-2. Click **Edit** (pencil icon)
-3. Modify fields as needed
-4. Click **Save**
-
-Changes apply to future occurrences. Confirmed past transactions remain unchanged.
-
-### Pause a Template
-
-1. Find the active template
-2. Click **Pause** (pause icon)
-3. The template stops generating occurrences
-
-Paused templates remain in the list with "Paused" status. Resume anytime.
-
-### Resume a Template
-
-1. Find the paused template
-2. Click **Resume** (play icon)
-3. Occurrences resume generating
-
-### Delete a Template
-
-1. Find the template
-2. Click **Delete** (trash icon)
-3. Confirm the deletion
-
-Deleting a template:
-
-- Removes it from the template list
-- Cancels all pending occurrences
-- Keeps already confirmed transactions
-
-## Frequency Options
-
-Choose how often the transaction repeats:
-
-| Frequency   | Description                | Example              |
-| ----------- | -------------------------- | -------------------- |
-| Weekly      | Every 7 days               | Weekly allowance     |
-| Biweekly    | Every 14 days              | Biweekly payroll     |
-| Monthly     | Same date monthly          | Rent, subscriptions  |
-| Quarterly   | Every 3 months             | Insurance premiums   |
-| Semi-annual | Every 6 months             | Bond coupon payments |
-| Annual      | Same date annually         | Membership renewals  |
-| Custom      | Any interval you configure | Every 2 weeks, etc.  |
-
-### Monthly Scheduling
-
-Monthly templates generate occurrences on the same day each month:
-
-- Started on the 15th → repeats on the 15th
-- Started on the 31st → adjusts to month-end for shorter months
+- **Edit** - Modify the schedule, amount, or details. Changes apply to future occurrences.
+- **Pause** - Stop generating occurrences temporarily. Resume anytime.
+- **Delete** - Remove the template and cancel its pending occurrences. Confirmed past transactions remain intact.
 
 ## Forecast
 
+![Recurring Forecast](https://images.allowealth.io/recurring-forecast.png)
+_The Forecast view projects your recurring cash flow for the next 12 months._
+
 View projected recurring cash flow for the next 12 months:
 
-1. Click **Forecast** on the recurring page header
-2. The table shows each template with monthly columns
-3. Filter by account, type, or status
-4. Review income and expense totals by currency
+1. Click **Forecast** on the recurring page header.
+2. Review the table showing each template with monthly columns.
+3. Filter by account, type, or status.
+4. Review income and expense totals by currency.
 
-See [Recurring Forecast](/end-users/recurring-forecast) for details.
-
-## Variable Amounts
-
-Some recurring transactions vary (utility bills, credit card balances, or variable income):
-
-1. Create the template with an estimated amount
-2. When confirming each occurrence, adjust the actual amount
-3. Save the confirmed transaction with the correct value
-
-## Month Navigation
-
-Use the month selector to view pending occurrences for different months:
-
-- Select past months to see confirmed occurrences
-- Select future months to plan ahead
-- Use **Today** to return to the current month
-
-## Statistics
-
-The stats bar shows:
-
-- **Total Active** - Number of recurring templates
-- **Monthly Total** - Sum of monthly recurring amounts
-- **Pending Count** - Occurrences awaiting confirmation
-
-## Best Practices
-
-### Set Up Immediately
-
-Create recurring templates soon after onboarding:
-
-- Rent or mortgage
-- Utilities (electricity, water, internet)
-- Subscriptions (streaming, software)
-- Salary or regular income
-- Loan installments
-
-### Review Weekly
-
-Check pending occurrences weekly:
-
-1. Confirm completed or received occurrences
-2. Skip items that did not occur
-3. Adjust variable amounts before confirming
-
-### Use Clear Names
-
-Name templates so you recognize them immediately:
-
-- "Rent - Apartment 4B" not "Housing"
-- "Netflix - Family Plan" not "Subscription"
-- "Electric - ConEd" not "Utilities"
-
-### Match Real Timing
-
-Set frequencies to match actual billing:
-
-- Most subscriptions bill monthly
-- Some insurance bills quarterly
-- Annual memberships renew yearly
-
-## Troubleshooting
-
-### Occurrence Not Generated
-
-If a template should have created an occurrence but did not:
-
-1. Check the template status is "Active"
-2. Verify the current date is past the start date
-3. Confirm the template has not reached its end date
-4. Check you are viewing the correct month
-
-### Cannot Confirm Occurrence
-
-Confirmation requires:
-
-- Valid account (not closed)
-- Valid category
-- Correct permissions (admins or template owner)
-
-### Duplicate Occurrences
-
-If the same occurrence appears twice:
-
-1. Skip the duplicate
-2. Check if two similar templates exist
-3. Delete the duplicate template
-
-### Wrong Amount Recorded
-
-For variable recurring amounts:
-
-1. Confirm the occurrence
-2. Edit the resulting transaction in **Transactions**
-3. Adjust to the correct amount
-4. Save changes
-
-## Related Features
-
-- **Transactions** - View confirmed recurring transactions
-- **Budget** - See how recurring expenses affect category budgets
-- **Dashboard** - Upcoming recurring activity appears in the Cash Flow widget
+See [Recurring Forecast](/end-users/recurring-forecast) for more details.
