@@ -12,12 +12,12 @@ const source = readSourceIfExists('./ForecastTable.astro');
 describe('ForecastTable component', () => {
   it('keeps the sticky recurring column clipped above horizontally scrolled values', () => {
     expect(source).toMatch(
-      /class="sticky left-0 z-30 [^"]*w-80[^"]*min-w-80[^"]*max-w-80[^"]*overflow-hidden/
+      /class="sticky left-0 z-30 [^"]*w-72[^"]*min-w-72[^"]*max-w-72[^"]*overflow-hidden/
     );
     expect(source).toMatch(
-      /class="sticky left-0 z-10 [^"]*w-80[^"]*min-w-80[^"]*max-w-80[^"]*overflow-hidden/
+      /class="sticky left-0 z-10 [^"]*w-72[^"]*min-w-72[^"]*max-w-72[^"]*overflow-hidden/
     );
-    expect(source).toContain('class="flex min-w-0 items-center gap-2"');
+    expect(source).toContain('class="flex min-w-0 items-start gap-2.5"');
     expect(source).toContain(
       'class="block min-w-0 flex-1 truncate text-sm font-bold text-base-content"'
     );
@@ -42,8 +42,9 @@ describe('ForecastTable component', () => {
     expect(source).toContain('border-r border-base-300 bg-base-200');
   });
 
-  it('uses Schedule as the frequency column header', () => {
+  it('shows schedule frequency as meta information in the recurring column', () => {
     expect(source).not.toMatch(/>Freq\.<\/th>/);
-    expect(source).toMatch(/>\s*Schedule\s*<\/th>/);
+    expect(source).toMatch(/>\s*Recurring\s*<\/th>/);
+    expect(source).toContain('{row.frequencyLabel}');
   });
 });

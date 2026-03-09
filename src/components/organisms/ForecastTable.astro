@@ -33,7 +33,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
 {
   rows.length === 0 ? (
     <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-base-200">
+      <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-box bg-base-200">
         <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
       </div>
       <h3 class="mb-2 text-lg font-bold text-base-content">No recurring items found</h3>
@@ -43,11 +43,11 @@ function formatNegativeAmount(amount: string, currency: string): string {
       </p>
     </div>
   ) : (
-    <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm">
-      <div class="overflow-hidden rounded-3xl">
+    <div class="bg-base-100 rounded-box border border-base-300 shadow-sm">
+      <div class="overflow-hidden rounded-box">
         <div class="relative isolate" data-scroll-container>
           <div
-            class="pointer-events-none absolute bottom-0 right-0 top-0 z-20 w-12 rounded-r-3xl bg-gradient-to-l from-base-100 via-base-100/80 to-transparent transition-opacity duration-200"
+            class="pointer-events-none absolute bottom-0 right-0 top-0 z-20 w-12 rounded-r-box bg-gradient-to-l from-base-100 via-base-100/80 to-transparent transition-opacity duration-200"
             data-scroll-fade
             aria-hidden="true"
           />
@@ -56,11 +56,8 @@ function formatNegativeAmount(amount: string, currency: string): string {
               <caption class="sr-only">Recurring forecast by month</caption>
               <thead>
                 <tr class="border-b border-base-300 bg-base-200">
-                  <th class="sticky left-0 z-30 w-80 min-w-80 max-w-80 overflow-hidden border-r border-base-300 bg-base-200 px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 shadow-[8px_0_24px_-24px_rgba(15,23,42,0.45)]">
+                  <th class="sticky left-0 z-30 w-72 min-w-72 max-w-72 overflow-hidden border-r border-base-300 bg-base-200 px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 shadow-lg">
                     Recurring
-                  </th>
-                  <th class="min-w-28 px-4 py-4 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 whitespace-nowrap">
-                    Schedule
                   </th>
                   {monthKeys.map((key) => (
                     <th class="min-w-40 px-4 py-4 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 whitespace-nowrap">
@@ -79,12 +76,12 @@ function formatNegativeAmount(amount: string, currency: string): string {
                   >
                     <th
                       scope="row"
-                      class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-5 text-left shadow-[8px_0_24px_-24px_rgba(15,23,42,0.45)] transition-colors group-hover:bg-base-200"
+                      class="sticky left-0 z-10 w-72 min-w-72 max-w-72 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-5 text-left shadow-lg transition-colors group-hover:bg-base-200"
                     >
-                      <div class="flex min-w-0 items-center gap-2.5">
+                      <div class="flex min-w-0 items-start gap-2.5">
                         <span
                           class:list={[
-                            'inline-block h-2 w-2 shrink-0 rounded-full',
+                            'mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full',
                             row.templateType === 'income' ? 'bg-success' : 'bg-error',
                           ]}
                           aria-hidden="true"
@@ -103,7 +100,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                               </span>
                             )}
                           </div>
-                          <div class="truncate text-xs text-base-content/50">
+                          <div class="mt-1 truncate text-xs text-base-content/50">
                             <span>{row.account.name}</span>
                             <span class="mx-1 text-base-content/30">&bull;</span>
                             <span
@@ -115,12 +112,12 @@ function formatNegativeAmount(amount: string, currency: string): string {
                               {row.templateType === 'income' ? 'Income' : 'Expense'}
                             </span>
                           </div>
+                          <div class="mt-1 truncate text-xs text-base-content/40">
+                            <span class="text-base-content/50">{row.frequencyLabel}</span>
+                          </div>
                         </div>
                       </div>
                     </th>
-                    <td class="min-w-28 px-4 py-5 text-center text-xs text-base-content/50">
-                      {row.frequencyLabel}
-                    </td>
                     {monthKeys.map((key) => (
                       <td class="min-w-40 px-4 py-5 text-right text-sm font-medium tabular-nums whitespace-nowrap">
                         {row.months[key] != null ? (
@@ -136,62 +133,56 @@ function formatNegativeAmount(amount: string, currency: string): string {
                 ))}
               </tbody>
 
-              <tfoot>
+              <tfoot class="sticky bottom-0 z-20">
                 {totals.map((total) => (
                   <>
-                    <tr class="border-t-2 border-base-300">
-                      <th
-                        class="sticky left-0 z-10 overflow-hidden border-r border-base-300 bg-base-100 px-6 pt-5 pb-2 text-left text-xs font-bold uppercase tracking-widest text-base-content/40 shadow-[8px_0_24px_-24px_rgba(15,23,42,0.45)]"
-                        colspan={2}
-                      >
+                    <tr class="border-t-2 border-base-300 bg-base-100">
+                      <th class="sticky left-0 z-30 w-72 min-w-72 max-w-72 overflow-hidden border-r border-base-300 bg-base-100 px-6 pt-5 pb-2 text-left text-xs font-bold uppercase tracking-widest text-base-content/40 shadow-lg">
                         Totals ({total.currency})
                       </th>
                       {monthKeys.map(() => (
-                        <td />
+                        <td class="bg-base-100" />
                       ))}
                     </tr>
-                    <tr class="group transition-colors hover:bg-base-200/30">
+                    <tr class="group bg-base-100 transition-colors hover:bg-base-200/30">
                       <th
                         scope="row"
-                        class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-3 text-left text-sm font-bold text-success shadow-[8px_0_24px_-24px_rgba(15,23,42,0.45)] transition-colors group-hover:bg-base-200"
+                        class="sticky left-0 z-30 w-72 min-w-72 max-w-72 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-3 text-left text-sm font-bold text-success shadow-lg transition-colors group-hover:bg-base-200"
                       >
                         Income
                       </th>
-                      <td />
                       {monthKeys.map((key) => (
-                        <td class="min-w-40 px-4 py-3 text-right text-sm font-medium tabular-nums text-success whitespace-nowrap">
+                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-medium tabular-nums text-success whitespace-nowrap">
                           {total.months[key]
                             ? formatCurrency(total.months[key].income, total.currency)
                             : '—'}
                         </td>
                       ))}
                     </tr>
-                    <tr class="group transition-colors hover:bg-base-200/30">
+                    <tr class="group bg-base-100 transition-colors hover:bg-base-200/30">
                       <th
                         scope="row"
-                        class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-3 text-left text-sm font-bold text-error shadow-[8px_0_24px_-24px_rgba(15,23,42,0.45)] transition-colors group-hover:bg-base-200"
+                        class="sticky left-0 z-30 w-72 min-w-72 max-w-72 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-3 text-left text-sm font-bold text-error shadow-lg transition-colors group-hover:bg-base-200"
                       >
                         Expense
                       </th>
-                      <td />
                       {monthKeys.map((key) => (
-                        <td class="min-w-40 px-4 py-3 text-right text-sm font-medium tabular-nums text-error whitespace-nowrap">
+                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-medium tabular-nums text-error whitespace-nowrap">
                           {total.months[key]
                             ? formatNegativeAmount(total.months[key].expense, total.currency)
                             : '—'}
                         </td>
                       ))}
                     </tr>
-                    <tr class="group font-bold transition-colors hover:bg-base-200/30">
+                    <tr class="group bg-base-100 font-bold transition-colors hover:bg-base-200/30">
                       <th
                         scope="row"
-                        class="sticky left-0 z-10 w-80 min-w-80 max-w-80 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-3 text-left text-sm text-info shadow-[8px_0_24px_-24px_rgba(15,23,42,0.45)] transition-colors group-hover:bg-base-200"
+                        class="sticky left-0 z-30 w-72 min-w-72 max-w-72 overflow-hidden border-r border-base-300 bg-base-100 px-6 py-3 text-left text-sm text-info shadow-lg transition-colors group-hover:bg-base-200"
                       >
                         Net
                       </th>
-                      <td />
                       {monthKeys.map((key) => (
-                        <td class="min-w-40 px-4 py-3 text-right text-sm font-bold tabular-nums text-info whitespace-nowrap">
+                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-bold tabular-nums text-info whitespace-nowrap">
                           {total.months[key]
                             ? formatCurrency(total.months[key].net, total.currency)
                             : '—'}
