@@ -1,0 +1,77 @@
+---
+import { Palette } from '@lucide/astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+
+export interface Props {
+  currentTheme?: string;
+}
+
+const { currentTheme = 'system' } = Astro.props;
+
+const themes = [
+  {
+    value: 'system',
+    label: 'System',
+    description: 'Follow OS preference',
+  },
+  {
+    value: 'light',
+    label: 'Light',
+    description: 'Always light',
+  },
+  {
+    value: 'dark',
+    label: 'Dark',
+    description: 'Always dark',
+  },
+  {
+    value: 'monochrome',
+    label: 'Monochrome',
+    description: 'Grayscale, no colors',
+  },
+] as const;
+---
+
+<section
+  class="card border border-base-300 bg-base-100 shadow"
+  data-testid="profile-appearances-card"
+>
+  <div class="card-body space-y-6 p-6">
+    <div class="flex items-center gap-4">
+      <IconBadge variant="accent" size="sm">
+        <Palette size={20} class="stroke-current" aria-hidden="true" />
+      </IconBadge>
+      <div>
+        <h3 class="text-lg font-bold">Appearances</h3>
+        <p class="text-xs uppercase tracking-widest text-base-content/50">Theme preference</p>
+      </div>
+    </div>
+
+    <fieldset id="appearances-form" class="space-y-3" data-current-theme={currentTheme}>
+      <legend class="text-sm font-semibold text-base-content">Choose your theme</legend>
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {
+          themes.map((theme) => (
+            <label class="cursor-pointer">
+              <input
+                type="radio"
+                name="theme"
+                value={theme.value}
+                class="peer sr-only"
+                checked={currentTheme === theme.value}
+              />
+              <span class="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-base-300 px-3 py-4 text-center transition-colors duration-150 hover:border-accent/50 peer-checked:border-accent peer-checked:bg-accent/10">
+                <span class="text-sm font-semibold text-base-content">{theme.label}</span>
+                <span class="text-xs leading-relaxed text-base-content/60">
+                  {theme.description}
+                </span>
+              </span>
+            </label>
+          ))
+        }
+      </div>
+    </fieldset>
+  </div>
+</section>
+
+<script src="./ManageAppearancesForm.client.ts"></script>
