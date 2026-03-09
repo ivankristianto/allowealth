@@ -178,7 +178,7 @@ export const GET: APIRoute = async (context) => {
             recurringBreakdown: recurringBreakdownData,
             currency,
             resourceAllocationSubtitle: range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX',
-            financialVelocitySubtitle: range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW',
+            financialVelocitySubtitle: range === 'monthly' ? 'LAST 3 MONTHS' : 'LAST 3 YEARS',
           },
         });
         htmlParts.push(`<!-- PARTIAL:charts -->\n${chartsHtml}`);

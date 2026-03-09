@@ -150,7 +150,7 @@ export const GET: APIRoute = async (context) => {
           props: {
             trendData,
             currency,
-            subtitle: range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW',
+            subtitle: range === 'monthly' ? 'LAST 3 MONTHS' : 'LAST 3 YEARS',
           },
         });
         htmlParts.push(`<!-- PARTIAL:charts -->\n${chartsHtml}`);

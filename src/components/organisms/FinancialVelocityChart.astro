@@ -7,7 +7,7 @@
  * Follows Oasis Finance v1.0.0 design system specifications.
  *
  * @param {TrendDataPoint[]} data - Array of monthly trend data (income and expenses)
- * @param {string} subtitle - Subtitle text (e.g., "TRAILING 3 MONTHS")
+ * @param {string} subtitle - Subtitle text (e.g., "LAST 3 MONTHS")
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
@@ -37,7 +37,7 @@ export interface Props {
 const {
   data = [],
   currency = 'IDR',
-  subtitle = 'TRAILING 3 MONTHS',
+  subtitle = 'LAST 3 MONTHS',
   description,
   loading = false,
   error,
