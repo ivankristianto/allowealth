@@ -104,8 +104,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         >
       </div>
       <div class="grid grid-cols-[1fr_auto_auto] items-end gap-2">
-        <label class="form-control gap-1">
-          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Repeat</span>
+        <div class="form-control">
           <select
             name="frequency"
             class="select select-bordered select-sm h-9 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
@@ -113,7 +112,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
             <option value="monthly" selected>Monthly</option>
             <option value="weekly">Weekly</option>
           </select>
-        </label>
+        </div>
         <label class="form-control gap-1">
           <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Every</span>
           <input
