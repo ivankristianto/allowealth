@@ -32,6 +32,11 @@ interface ReportState {
 
 // Track if listeners are already attached to prevent duplicates
 let listenersAttached = false;
+const EXPENSES_PAGE_SELECTOR = '[data-report-page="expenses"]';
+
+function getExpensesPageRoot(): HTMLElement | null {
+  return document.querySelector(EXPENSES_PAGE_SELECTOR) as HTMLElement | null;
+}
 
 // Configurable API endpoint (read from data-api-endpoint attribute)
 let apiEndpoint = '/api/reports';
@@ -326,6 +331,8 @@ function handleDrillDownClick(event: MouseEvent): void {
  * Initialize reports page interactivity
  */
 export function initReportsPage(): void {
+  if (!getExpensesPageRoot()) return;
+
   // First, read state from URL params (takes precedence)
   const urlState = readStateFromUrl();
 

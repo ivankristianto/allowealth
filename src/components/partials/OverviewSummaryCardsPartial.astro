@@ -2,6 +2,11 @@
 import { formatCurrency } from '@/lib/formatting';
 import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 import type { Currency } from '@/lib/constants/currency';
+import {
+  buildReportUrl,
+  REPORT_SECTION_PATHS,
+  type ReportState,
+} from '@/lib/reporting/report-state';
 import { TrendingUp, TrendingDown } from '@lucide/astro';
 
 export interface Props {
@@ -10,12 +15,15 @@ export interface Props {
   netSavings: string;
   savingsRate: string;
   currency: Currency;
+  state: ReportState;
 }
 
-const { totalIncome, totalExpenses, netSavings, currency } = Astro.props;
+const { totalIncome, totalExpenses, netSavings, currency, state } = Astro.props;
 
 const netSavingsNum = parseFloat(netSavings) || 0;
 const isNetPositive = netSavingsNum >= 0;
+const incomeHref = buildReportUrl(REPORT_SECTION_PATHS.income, state);
+const expensesHref = buildReportUrl(REPORT_SECTION_PATHS.expenses, state);
 ---
 
 <div data-summary-cards>
@@ -61,12 +69,12 @@ const isNetPositive = netSavingsNum >= 0;
       </div>
 
       <div class="flex items-center gap-2 pt-3 sm:pt-0 sm:ml-auto">
-        <a href="/reports/income" class={accentGhostBtn}>
+        <a href={incomeHref} class={accentGhostBtn}>
           <TrendingUp size={16} class="stroke-current md:hidden" aria-hidden="true" />
           <TrendingUp size={18} class="stroke-current hidden md:block" aria-hidden="true" />
           <span class="text-xs md:text-sm">Income Report</span>
         </a>
-        <a href="/reports/expenses" class={accentGhostBtn}>
+        <a href={expensesHref} class={accentGhostBtn}>
           <TrendingDown size={16} class="stroke-current md:hidden" aria-hidden="true" />
           <TrendingDown size={18} class="stroke-current hidden md:block" aria-hidden="true" />
           <span class="text-xs md:text-sm">Expense Report</span>

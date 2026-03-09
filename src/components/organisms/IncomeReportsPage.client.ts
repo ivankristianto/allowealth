@@ -36,6 +36,11 @@ interface HistoryState {
 
 let listenersAttached = false;
 let apiEndpoint = '/api/reports/income';
+const INCOME_PAGE_SELECTOR = '[data-report-page="income"]';
+
+function getIncomePageRoot(): HTMLElement | null {
+  return document.querySelector(INCOME_PAGE_SELECTOR) as HTMLElement | null;
+}
 
 function getDefaultPeriod(range: 'monthly' | 'yearly'): string {
   const now = new Date();
@@ -271,6 +276,8 @@ function handleDrillDownClick(event: MouseEvent): void {
 }
 
 export function initIncomeReportsPage(): void {
+  if (!getIncomePageRoot()) return;
+
   const urlState = readStateFromUrl();
 
   if (urlState.range) {

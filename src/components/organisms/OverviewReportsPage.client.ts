@@ -27,6 +27,11 @@ interface ReportState {
 }
 
 let listenersAttached = false;
+const OVERVIEW_PAGE_SELECTOR = '[data-report-page="overview"]';
+
+function getOverviewPageRoot(): HTMLElement | null {
+  return document.querySelector(OVERVIEW_PAGE_SELECTOR) as HTMLElement | null;
+}
 
 function getDefaultPeriod(range: 'monthly' | 'yearly'): string {
   const now = new Date();
@@ -189,6 +194,8 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
 }
 
 export function initOverviewReportsPage(): void {
+  if (!getOverviewPageRoot()) return;
+
   const urlState = readStateFromUrl();
 
   if (urlState.range) {

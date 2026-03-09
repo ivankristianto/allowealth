@@ -172,6 +172,7 @@ export const GET: APIRoute = async (context) => {
             netSavings: overviewData.netSavings,
             savingsRate: overviewData.savingsRate,
             currency,
+            state: { range, period, currency },
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);

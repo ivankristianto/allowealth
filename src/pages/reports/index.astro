@@ -160,6 +160,7 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
     data-current-currency={currency}
+    data-report-page="overview"
   >
     {/* Summary Metric Cards */}
     <div data-summary-container>
@@ -169,6 +170,7 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
         netSavings={overviewData.netSavings}
         savingsRate={overviewData.savingsRate}
         currency={currency}
+        state={reportState}
       />
     </div>
 

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { reportService, accountService, workspaceMetaService, workspaceService } from '@/services';
+import { reportService, budgetService, workspaceMetaService, workspaceService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
@@ -8,8 +8,9 @@ import { safeParseDecimal } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { formatMonthYear } from '@/lib/utils/date';
 import { isValidCurrency } from '@/lib/constants/currency';
+import { calculateAllocationDistribution } from '@/lib/utils/budget';
 
-import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
+import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
@@ -115,21 +116,39 @@ export const GET: APIRoute = async (context) => {
       userId
     );
 
-    // Fetch account totals for summary cards
-    let totalAccounts = 0;
-    let totalDebt = 0;
+    let totalAllocated = 0;
+    let totalSpent = 0;
+    let budgetDistribution: ReturnType<typeof calculateAllocationDistribution> = [];
+    let totalCategories = 0;
+    let overBudgetCount = 0;
+    let criticalCount = 0;
+
     try {
-      const classTotals = await accountService.getTotalByClass(auth.workspaceId);
-      for (const row of classTotals) {
-        const total = parseFloat(row.total || '0');
-        if (isNaN(total)) continue;
-        if (row.currency !== currency) continue;
-        if (row.account_class === 'debt') {
-          totalDebt += Math.abs(total);
-        } else {
-          totalAccounts += total;
-        }
-      }
+      const [yearPart, monthPart] = period.split('-');
+      const year = parseInt(yearPart, 10);
+      const month = range === 'monthly' ? parseInt(monthPart, 10) : new Date().getMonth() + 1;
+      const budgetData = await budgetService.getMonthlyOverview(
+        auth.workspaceId,
+        year,
+        month,
+        currency
+      );
+      totalAllocated = parseFloat(budgetData.total_budget || '0');
+      totalSpent = parseFloat(budgetData.total_spent || '0');
+      totalCategories = budgetData.categories.length;
+      overBudgetCount = budgetData.categories.filter(
+        (category) => category.status === 'exceeded'
+      ).length;
+      criticalCount = budgetData.categories.filter(
+        (category) => category.percentage_used >= 150
+      ).length;
+      budgetDistribution = calculateAllocationDistribution(
+        budgetData.categories.map((category) => ({
+          name: category.category_name,
+          budget_amount: category.budget_amount,
+          spent_amount: category.spent_amount,
+        }))
+      );
     } catch {
       // Non-critical
     }
@@ -139,16 +158,15 @@ export const GET: APIRoute = async (context) => {
       const htmlParts: string[] = [];
 
       if (partial === 'all' || partial === 'summary') {
-        const summaryHtml = await container.renderToString(ReportSummaryCardsPartial, {
+        const summaryHtml = await container.renderToString(BudgetSummaryPartial, {
           props: {
-            totalIncome: expenseData.totalIncome,
-            totalExpenses: expenseData.totalExpenses,
-            netSavings: expenseData.netSavings,
-            budgetHealth: expenseData.budgetHealth,
-            expenseCategories: expenseData.expenseCategories,
+            totalAllocated,
+            totalSpent,
+            distribution: budgetDistribution,
             currency,
-            totalAccounts,
-            totalDebt,
+            totalCategories,
+            overBudgetCount,
+            criticalCount,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);
