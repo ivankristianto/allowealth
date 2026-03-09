@@ -17,6 +17,7 @@ export interface Props {
   loading?: boolean;
   className?: string;
   typeFilter?: '' | 'income' | 'expense';
+  showPaused?: boolean;
 }
 
 const {
@@ -25,14 +26,16 @@ const {
   loading = false,
   className = '',
   typeFilter = '',
+  showPaused = false,
 } = Astro.props;
 
+const qualifier = showPaused ? 'recurring' : 'active recurring';
 const chartSubtitle =
   typeFilter === 'income'
-    ? 'Projected monthly income from your active recurring transactions'
+    ? `Projected monthly income from your ${qualifier} transactions`
     : typeFilter === 'expense'
-      ? 'Projected monthly expenses from your active recurring transactions'
-      : 'Projected monthly income and expenses from your active recurring transactions';
+      ? `Projected monthly expenses from your ${qualifier} transactions`
+      : `Projected monthly income and expenses from your ${qualifier} transactions`;
 
 const serializedData = JSON.stringify(data)
   .replace(/</g, '\\u003c')

@@ -37,13 +37,20 @@ describe('ForecastCashflowChart component', () => {
 });
 
 describe('ForecastCashflowChart context-aware subtitle', () => {
-  it('exports a typeFilter prop and uses it in the subtitle text', () => {
+  it('exports paused-state context props for the subtitle copy', () => {
     expect(source).toContain("typeFilter?: '' | 'income' | 'expense'");
+    expect(source).toContain('showPaused?: boolean');
+    expect(source).toContain('const qualifier = showPaused ? ');
   });
 
-  it('shows income-only subtitle when typeFilter is income', () => {
+  it('shows type-aware subtitle variants', () => {
     expect(source).toMatch(/typeFilter === 'income'/);
     expect(source).toMatch(/typeFilter === 'expense'/);
+    expect(source).toContain('Projected monthly income from your ${qualifier} transactions');
+    expect(source).toContain('Projected monthly expenses from your ${qualifier} transactions');
+    expect(source).toContain(
+      'Projected monthly income and expenses from your ${qualifier} transactions'
+    );
   });
 
   it('caps bar width to prevent oversized bars at low month counts', () => {

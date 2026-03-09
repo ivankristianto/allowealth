@@ -68,7 +68,7 @@ describe('recurring forecast page', () => {
     );
     expect(page).toContain('const chartData: ForecastChartDataPoint[] = activeTotals');
     expect(page).toMatch(
-      /\{\s*forecast\.rows\.length > 0 && \(\s*<ForecastCashflowChart data=\{chartData\} currency=\{activeCurrency\} typeFilter=\{typeFilter\} \/>\s*\)\s*\}/
+      /\{\s*forecast\.rows\.length > 0 && \(\s*<ForecastCashflowChart[\s\S]*data=\{chartData\}[\s\S]*currency=\{activeCurrency\}[\s\S]*typeFilter=\{typeFilter\}[\s\S]*showPaused=\{showPaused\}[\s\S]*\/>\s*\)\s*\}/
     );
     expect(page).not.toContain(
       '{chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
@@ -78,7 +78,9 @@ describe('recurring forecast page', () => {
   it('makes the filter bar sticky so it stays visible while scrolling', () => {
     const page = readForecastPage();
 
-    expect(page).toMatch(/class="[^"]*sticky[^"]*top-0[^"]*z-\d+[^"]*rounded-3xl[^"]*border[^"]*"/);
+    expect(page).toMatch(
+      /class="[^"]*sticky[^"]*top-0[^"]*z-sticky[^"]*rounded-box[^"]*border[^"]*"/
+    );
   });
 
   it('imports ForecastSummary and renders it when activeTotals is present', () => {
