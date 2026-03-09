@@ -364,6 +364,7 @@ describe('Income Report Integration', () => {
 
       // Jan: 24.5M, Dec: 10M => growth = (24.5M - 10M) / 10M * 100 = 145
       expect(parseFloat(result.summary.growthVsPreviousPeriod)).toBe(145);
+      expect(result.summary.previousPeriodLabel).toBe('Dec 2024');
     });
 
     it('returns source mix by category', async () => {

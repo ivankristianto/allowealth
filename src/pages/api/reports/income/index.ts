@@ -156,6 +156,7 @@ export const GET: APIRoute = async (context) => {
             passiveIncome: incomeData.summary.passiveIncome,
             otherIncome: incomeData.summary.otherIncome,
             growthVsPreviousPeriod: incomeData.summary.growthVsPreviousPeriod,
+            previousPeriodLabel: incomeData.summary.previousPeriodLabel,
             currency,
           },
         });

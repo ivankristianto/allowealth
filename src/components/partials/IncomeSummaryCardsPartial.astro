@@ -16,11 +16,19 @@ export interface Props {
   passiveIncome: string;
   otherIncome: string;
   growthVsPreviousPeriod: string;
+  previousPeriodLabel: string;
   currency: Currency;
 }
 
-const { totalIncome, activeIncome, passiveIncome, otherIncome, growthVsPreviousPeriod, currency } =
-  Astro.props;
+const {
+  totalIncome,
+  activeIncome,
+  passiveIncome,
+  otherIncome,
+  growthVsPreviousPeriod,
+  previousPeriodLabel,
+  currency,
+} = Astro.props;
 
 const total = parseFloat(totalIncome) || 0;
 const active = parseFloat(activeIncome) || 0;
@@ -60,9 +68,16 @@ const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-e
       >
       {
         growthNum !== 0 && (
-          <span class={`text-xs font-bold px-2 py-1 rounded-lg ${growthColorClass}`}>
-            {growthIcon} {Math.abs(growthNum).toFixed(1)}%
-          </span>
+          <div class="flex flex-col items-end gap-1">
+            <span class={`text-xs font-bold px-2 py-1 rounded-lg ${growthColorClass}`}>
+              {growthIcon} {Math.abs(growthNum).toFixed(1)}%
+            </span>
+            {previousPeriodLabel && (
+              <span class="text-xs text-base-content/40 font-medium">
+                vs. {previousPeriodLabel}
+              </span>
+            )}
+          </div>
         )
       }
     </div>

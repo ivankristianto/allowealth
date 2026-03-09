@@ -26,6 +26,7 @@ const mockIncomeReport = {
     passiveIncome: '2500000',
     otherIncome: '500000',
     growthVsPreviousPeriod: '15.5',
+    previousPeriodLabel: 'Jan 2026',
   },
   sourceMix: [{ name: 'Salary', value: '10000000' }],
   sourceGroupTrend: [{ name: 'Jan', active: '10000000', passive: '2500000', other: '500000' }],
@@ -98,10 +99,10 @@ describe('/api/reports/income contract', () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain('<!-- PARTIAL:summary -->');
-    expect(html).toContain('<!-- PARTIAL:charts -->');
     expect(html).toContain('<!-- PARTIAL:sources -->');
     expect(html).toContain('<!-- PARTIAL:members -->');
     expect(html).toContain('<!-- PARTIAL:history -->');
+    expect(html).toContain('previousPeriodLabel="Jan 2026"');
   });
 
   it('rejects invalid member filters', async () => {

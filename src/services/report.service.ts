@@ -201,6 +201,7 @@ export interface IncomeReportData {
     passiveIncome: string;
     otherIncome: string;
     growthVsPreviousPeriod: string;
+    previousPeriodLabel: string;
   };
   sourceMix: IncomeCategoryExpense[];
   sourceGroupTrend: Array<{ name: string; active: string; passive: string; other: string }>;
@@ -963,6 +964,10 @@ export class ReportService {
             decimalMultiply(decimalSubtract(totalIncome, prevTotalIncome), '100'),
             prevTotalIncome
           );
+      const previousPeriodLabel =
+        range === 'monthly'
+          ? prevStartDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : String(prevStartDate.getFullYear());
 
       return {
         summary: {
@@ -971,6 +976,7 @@ export class ReportService {
           passiveIncome: sourceGroup.passive,
           otherIncome: sourceGroup.other,
           growthVsPreviousPeriod,
+          previousPeriodLabel,
         },
         sourceMix,
         sourceGroupTrend,
@@ -986,6 +992,7 @@ export class ReportService {
           passiveIncome: '0',
           otherIncome: '0',
           growthVsPreviousPeriod: '0',
+          previousPeriodLabel: '',
         },
         sourceMix: [],
         sourceGroupTrend: [],
