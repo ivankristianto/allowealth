@@ -14,6 +14,8 @@ const { title = 'allowealth', ssrTheme } = Astro.props;
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
 const hasServerTheme = Boolean(ssrTheme && ssrTheme !== 'system');
 const themePreference = ssrTheme || undefined;
+const resolvedTheme = ssrTheme === 'monochrome' ? 'light' : ssrTheme;
+const ssrFilterStyle = ssrTheme === 'monochrome' ? 'filter: grayscale(100%)' : undefined;
 
 // Get perf collector for debug output (only when PERF_DEBUG=true)
 const perf = Astro.locals.perf;
@@ -23,9 +25,10 @@ const perfDebugComment = perf ? perf.toHtmlComment() : '';
 <!doctype html>
 <html
   lang="en"
-  data-theme={hasServerTheme ? ssrTheme : 'light'}
+  data-theme={hasServerTheme ? resolvedTheme : 'light'}
   data-theme-preference={themePreference}
   data-theme-server={hasServerTheme ? 'true' : undefined}
+  style={ssrFilterStyle}
 >
   <head>
     <meta charset="UTF-8" />

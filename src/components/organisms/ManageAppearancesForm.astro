@@ -1,5 +1,5 @@
 ---
-import { Palette } from '@lucide/astro';
+import { Palette, Check } from '@lucide/astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 
 export interface Props {
@@ -42,17 +42,16 @@ const themes = [
         <Palette size={20} class="stroke-current" aria-hidden="true" />
       </IconBadge>
       <div>
-        <h3 class="text-lg font-bold">Appearances</h3>
-        <p class="text-xs uppercase tracking-widest text-base-content/50">Theme preference</p>
+        <h3 class="text-lg font-bold">Theme</h3>
+        <p class="text-xs uppercase tracking-widest text-base-content/50">Display preference</p>
       </div>
     </div>
 
     <fieldset id="appearances-form" class="space-y-3" data-current-theme={currentTheme}>
-      <legend class="text-sm font-semibold text-base-content">Choose your theme</legend>
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {
           themes.map((theme) => (
-            <label class="cursor-pointer">
+            <label class="relative cursor-pointer">
               <input
                 type="radio"
                 name="theme"
@@ -60,6 +59,12 @@ const themes = [
                 class="peer sr-only"
                 checked={currentTheme === theme.value}
               />
+              <span
+                class="absolute -top-1.5 -right-1.5 z-10 hidden h-5 w-5 items-center justify-center rounded-full bg-accent peer-checked:flex"
+                aria-hidden="true"
+              >
+                <Check size={10} class="stroke-[3] text-accent-content" />
+              </span>
               <span class="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-base-300 px-3 py-4 text-center transition-colors duration-150 hover:border-accent/50 peer-checked:border-accent peer-checked:bg-accent/10">
                 <span class="text-sm font-semibold text-base-content">{theme.label}</span>
                 <span class="text-xs leading-relaxed text-base-content/60">

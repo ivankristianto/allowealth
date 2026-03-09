@@ -1,11 +1,9 @@
 import { addToast } from '@/lib/stores/toastStore';
-import { getCsrfHeaders } from '@/lib/csrf-client';
+import { type Theme, applyThemeToDom, saveTheme } from '@/lib/utils/theme-client';
 
-const API_THEME_URL = '/api/user/theme';
 const FORM_ID = 'appearances-form';
 const CONTROLLER_KEY = '__appearancesFormController';
 
-type Theme = 'system' | 'light' | 'dark' | 'monochrome';
 let saveController: AbortController | null = null;
 let saveRequestVersion = 0;
 
@@ -13,31 +11,6 @@ declare global {
   interface Window {
     __appearancesFormController?: AbortController;
   }
-}
-
-export function applyThemeToDom(theme: Theme): void {
-  const html = document.documentElement;
-  html.setAttribute('data-theme-preference', theme);
-
-  if (theme === 'monochrome') {
-    html.setAttribute('data-theme', 'light');
-    html.setAttribute('data-theme-server', 'true');
-    html.style.filter = 'grayscale(100%)';
-    return;
-  }
-
-  if (theme === 'system') {
-    html.removeAttribute('data-theme-server');
-    html.style.filter = '';
-
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    return;
-  }
-
-  html.setAttribute('data-theme', theme);
-  html.setAttribute('data-theme-server', 'true');
-  html.style.filter = '';
 }
 
 export function initAppearancesForm(): void {
@@ -69,23 +42,8 @@ export function initAppearancesForm(): void {
         form.dataset.currentTheme = theme;
 
         try {
-          const response = await fetch(API_THEME_URL, {
-            method: 'PUT',
-            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-            credentials: 'include',
-            body: JSON.stringify({ theme }),
-            signal: saveController.signal,
-          });
-          const result = (await response.json()) as { success?: boolean };
-
-          if (requestVersion !== saveRequestVersion) {
-            return;
-          }
-
-          if (!response.ok || !result.success) {
-            throw new Error('Failed to save theme preference');
-          }
-
+          await saveTheme(theme, saveController.signal);
+          if (requestVersion !== saveRequestVersion) return;
           addToast('Theme updated', 'success');
         } catch (error) {
           if (error instanceof Error && error.name === 'AbortError') return;

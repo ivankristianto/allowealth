@@ -56,9 +56,9 @@ _The New Recurring form simplifies scheduling regular payments and income._
    - **Amount** - Enter the fixed amount or expected average.
    - **Category** - Select the appropriate reporting category.
    - **Account** - Choose where the money moves.
-   - **Schedule** - Select how often it repeats (e.g., Weekly, Monthly).
+   - **Schedule** - Set how often it repeats with presets such as Weekly, Monthly, Quarterly, Semi-annual, or Annual.
    - **Start Month** - Pick when the schedule begins.
-   - **End** - Select **No end** for ongoing bills, subscriptions, or salary. Choose **End by count** or **End by date** for temporary schedules.
+   - **End** - Leave it on No end for ongoing bills, subscriptions, or salary. Choose **End by count** or **End by date** for temporary schedules.
    - **Installment** - Enable this only for fixed-count schedules, like loans or device plans.
 3. Click **Save recurring**.
 
@@ -69,6 +69,22 @@ Find any template in the list and click the **Actions** button (three dots) to m
 - **Edit** - Modify the schedule, amount, or details. Changes apply to future occurrences.
 - **Pause** - Stop generating occurrences temporarily. Resume anytime.
 - **Delete** - Remove the template and cancel its pending occurrences. Confirmed past transactions remain intact.
+
+### Recurring Workflow Tips
+
+1. Confirm completed or received occurrences before creating replacements by hand.
+
+If the same occurrence appears twice:
+
+- Keep the confirmed entry and delete the duplicate only if you created a manual replacement.
+- Check the template before confirming again so future occurrences stay accurate.
+
+For variable recurring amounts:
+
+- Edit the occurrence at confirmation time if the latest bill or income differs from the usual estimate.
+- Update the template amount when the new value becomes the ongoing default.
+
+- **Dashboard** - Upcoming recurring activity appears in the Cash Flow widget.
 
 ## Forecast
 

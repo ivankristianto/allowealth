@@ -9,12 +9,17 @@ describe('profile appearances section', () => {
       "import ManageAppearancesForm from '@/components/organisms/ManageAppearancesForm.astro'"
     );
     expect(profilePageSource).toContain(
-      "import type { UserSettings } from '@/lib/constants/user-meta-keys'"
+      "import DangerZone from '@/components/organisms/DangerZone.astro'"
     );
     expect(profilePageSource).toContain(
-      'const userSettings = Astro.locals.userSettings as UserSettings;'
+      "import { emailVerificationService, userMetaService } from '@/services';"
     );
-    expect(profilePageSource).toContain("const currentTheme = userSettings?.theme || 'system';");
+    expect(profilePageSource).toContain(
+      'const freshSettings = await userMetaService.getUserSettings(user.id);'
+    );
+    expect(profilePageSource).toContain("const currentTheme = freshSettings.theme || 'system';");
     expect(profilePageSource).toContain('<ManageAppearancesForm currentTheme={currentTheme} />');
+    expect(profilePageSource).toContain('<DangerZone />');
+    expect(profilePageSource).not.toContain('const userSettings = Astro.locals.userSettings');
   });
 });
