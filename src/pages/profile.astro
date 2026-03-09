@@ -7,7 +7,9 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ManageAccountForms from '@/components/organisms/ManageAccountForms.astro';
+import ManageAppearancesForm from '@/components/organisms/ManageAppearancesForm.astro';
 import type { User } from '@/lib/auth/lucia';
+import type { UserSettings } from '@/lib/constants/user-meta-keys';
 import { emailVerificationService } from '@/services';
 import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
@@ -15,6 +17,8 @@ const currentPath = '/profile';
 
 // User is authenticated (enforced by ProtectedLayout)
 const user = Astro.locals.user! as User;
+const userSettings = Astro.locals.userSettings as UserSettings;
+const currentTheme = userSettings?.theme || 'system';
 const pendingEmail = await emailVerificationService.getPendingEmailChange(user.id);
 const oauthAccounts = await getLinkedOAuthAccounts(user.id);
 const hasLinkedOAuth = oauthAccounts.length > 0;
@@ -23,6 +27,7 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
 <ProtectedLayout title="Profile" currentPath={currentPath} subtitle="Manage your account details">
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
     <ManageAccountForms user={user} pendingEmail={pendingEmail} hasLinkedOAuth={hasLinkedOAuth} />
+    <ManageAppearancesForm currentTheme={currentTheme} />
   </div>
 </ProtectedLayout>
 
