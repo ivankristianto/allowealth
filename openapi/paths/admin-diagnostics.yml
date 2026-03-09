@@ -50,10 +50,10 @@ paths:
                       value: '(not set)'
                       isSet: false
                       isSensitive: true
-                    - name: AUTH_SECRET
-                      value: abcd...xyz
+                    - name: EMAIL_MODE
+                      value: real
                       isSet: true
-                      isSensitive: true
+                      isSensitive: false
                   configuration:
                     isValid: true
                     missingRequired: []

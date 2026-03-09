@@ -174,7 +174,7 @@ const SENSITIVE_PATTERNS = [
   // Stack trace line numbers and file references
   /\s+at\s+[\w\.<>]+(\/[\w\/\-\.]+)?:\d+:\d+/g,
   // Database connection strings and credentials
-  /(mysql|sqlite):\/\/[^:]+:[^@]+@[^/]+\/\w+/gi,
+  /(mysql|postgres(?:ql)?|sqlite):\/\/[^:]+:[^@]+@[^/]+\/\w+/gi,
   // SQL error details
   /SQL(Error|ITE)?[_ ]?(ERROR)?[:\s]?.{1,100}?(?=[\s\n]|$)/gi,
   // Drizzle/Database error codes

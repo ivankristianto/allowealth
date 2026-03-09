@@ -128,7 +128,7 @@ describe('sanitizeError', () => {
 
   test('redacts database connection strings', async () => {
     const { sanitizeError } = await import('./logger');
-    const result = sanitizeError('sqlite://user:pass@host/db connection failed');
+    const result = sanitizeError('postgresql://user:pass@host/db connection failed');
     expect(result.message).not.toContain('user:pass');
     expect(result.message).toContain('[REDACTED]');
   });

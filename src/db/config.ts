@@ -34,7 +34,7 @@ function getDatabaseUrl(): string {
     log.warn(
       'DATABASE_URL not found in runtime env or import.meta.env. ' +
         'Falling back to SQLite which will fail in Cloudflare Workers. ' +
-        'Ensure DATABASE_URL secret is set via: wrangler secret put DATABASE_URL'
+        'Ensure the Cloudflare D1 binding is configured in wrangler.toml with binding "DB".'
     );
   }
 
