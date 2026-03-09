@@ -136,6 +136,7 @@ const chartId = `income-source-trend-chart-${Math.random().toString(36).slice(2,
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import { isValidCurrency } from '@/lib/constants/currency';
   import type { Currency } from '@/lib/constants/currency';
+  import { colors } from '@/lib/tokens';
 
   interface SourceTrendDataPoint {
     name: string;
@@ -149,18 +150,30 @@ const chartId = `income-source-trend-chart-${Math.random().toString(36).slice(2,
     data: SourceTrendDataPoint[];
   }
 
+  // Store chart instances globally for cleanup
   const charts: Record<string, ChartData> = {};
 
-  const COLORS = {
-    active: '#15803d', // green-700
-    passive: '#3b82f6', // blue-500
-    other: '#f59e0b', // amber-500
-  };
+  function readThemeColor(variableName: string, fallback: string): string {
+    if (typeof window === 'undefined') return fallback;
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+  }
 
   function updateChartThemeColors(): void {
     const dark = isDarkTheme();
+    const activeColor = readThemeColor('--color-accent', colors.accent);
+    const passiveColor = readThemeColor('--color-info', colors.info);
+    const otherColor = readThemeColor('--color-warning', colors.warning);
 
     Object.values(charts).forEach(({ chart }) => {
+      const activeDataset = chart.data.datasets[0];
+      const passiveDataset = chart.data.datasets[1];
+      const otherDataset = chart.data.datasets[2];
+
+      if (activeDataset) activeDataset.backgroundColor = activeColor;
+      if (passiveDataset) passiveDataset.backgroundColor = passiveColor;
+      if (otherDataset) otherDataset.backgroundColor = otherColor;
+
       if (chart.options.plugins?.tooltip) {
         chart.options.plugins.tooltip.backgroundColor = dark
           ? 'rgba(248, 250, 252, 0.95)'
@@ -210,6 +223,9 @@ const chartId = `income-source-trend-chart-${Math.random().toString(36).slice(2,
     const otherData = data.map((d) => d.other);
 
     const dark = isDarkTheme();
+    const activeColor = readThemeColor('--color-accent', colors.accent);
+    const passiveColor = readThemeColor('--color-info', colors.info);
+    const otherColor = readThemeColor('--color-warning', colors.warning);
     const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
     const textColor = dark ? '#94a3b8' : '#64748b';
 
@@ -221,21 +237,21 @@ const chartId = `income-source-trend-chart-${Math.random().toString(36).slice(2,
           {
             label: 'Active',
             data: activeData,
-            backgroundColor: COLORS.active,
+            backgroundColor: activeColor,
             borderRadius: 6,
             borderSkipped: false,
           },
           {
             label: 'Passive',
             data: passiveData,
-            backgroundColor: COLORS.passive,
+            backgroundColor: passiveColor,
             borderRadius: 6,
             borderSkipped: false,
           },
           {
             label: 'Other',
             data: otherData,
-            backgroundColor: COLORS.other,
+            backgroundColor: otherColor,
             borderRadius: 6,
             borderSkipped: false,
           },
