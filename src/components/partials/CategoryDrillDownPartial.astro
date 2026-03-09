@@ -91,6 +91,15 @@ if (!hasBudget) {
 
 // Progress bar
 const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok';
+const remainingColorClass = !hasBudget
+  ? 'text-base-content/60'
+  : remaining < 0
+    ? 'text-error'
+    : progressStatus === 'danger'
+      ? 'text-error'
+      : progressStatus === 'warning'
+        ? 'text-warning'
+        : 'text-success';
 ---
 
 <div
@@ -155,9 +164,7 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
       </div>
       <div class="flex justify-between items-center text-sm">
         <span class="text-base-content/60">Remaining</span>
-        <span
-          class={`font-bold ${hasBudget ? (remaining >= 0 ? 'text-success' : 'text-error') : 'text-base-content/60'}`}
-        >
+        <span class={`font-bold ${remainingColorClass}`}>
           {hasBudget ? formatCurrency(Math.abs(remaining), currency) : '-'}
         </span>
       </div>
