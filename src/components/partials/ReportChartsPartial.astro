@@ -36,6 +36,8 @@ export interface Props {
     recurringTotal: number;
     oneTimeTotal: number;
   };
+  /** Hide Income vs Expenses chart and promote Recurring vs One-Time into its slot */
+  hideFinancialVelocity?: boolean;
 }
 
 const {
@@ -45,6 +47,7 @@ const {
   resourceAllocationSubtitle = 'EXPENSE MIX',
   financialVelocitySubtitle = 'LAST 3 MONTHS',
   recurringBreakdown,
+  hideFinancialVelocity = false,
 } = Astro.props;
 ---
 
@@ -54,22 +57,33 @@ const {
     <!-- Expense Breakdown Chart -->
     <ResourceAllocationChart data={expenseByCategory} subtitle={resourceAllocationSubtitle} />
 
-    <!-- Income vs. Expenses Chart -->
-    <FinancialVelocityChart
-      data={trendData}
-      currency={currency}
-      subtitle={financialVelocitySubtitle}
-    />
-
     {
-      recurringBreakdown && (
-        <RecurringVsOneTimeChart
-          recurringTotal={recurringBreakdown.recurringTotal}
-          oneTimeTotal={recurringBreakdown.oneTimeTotal}
-          currency={currency}
-          subtitle="RECURRING SPLIT"
-          className="@3xl:col-span-2"
-        />
+      hideFinancialVelocity ? (
+        recurringBreakdown && (
+          <RecurringVsOneTimeChart
+            recurringTotal={recurringBreakdown.recurringTotal}
+            oneTimeTotal={recurringBreakdown.oneTimeTotal}
+            currency={currency}
+            subtitle="RECURRING SPLIT"
+          />
+        )
+      ) : (
+        <>
+          <FinancialVelocityChart
+            data={trendData}
+            currency={currency}
+            subtitle={financialVelocitySubtitle}
+          />
+          {recurringBreakdown && (
+            <RecurringVsOneTimeChart
+              recurringTotal={recurringBreakdown.recurringTotal}
+              oneTimeTotal={recurringBreakdown.oneTimeTotal}
+              currency={currency}
+              subtitle="RECURRING SPLIT"
+              className="@3xl:col-span-2"
+            />
+          )}
+        </>
       )
     }
   </div>

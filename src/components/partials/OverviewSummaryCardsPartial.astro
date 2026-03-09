@@ -1,6 +1,8 @@
 ---
 import { formatCurrency } from '@/lib/formatting';
+import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 import type { Currency } from '@/lib/constants/currency';
+import { TrendingUp, TrendingDown } from '@lucide/astro';
 
 export interface Props {
   totalIncome: string;
@@ -56,6 +58,19 @@ const isNetPositive = netSavingsNum >= 0;
         >
           {isNetPositive ? '+' : ''}{formatCurrency(netSavings, currency)}
         </p>
+      </div>
+
+      <div class="flex items-center gap-2 pt-3 sm:pt-0 sm:ml-auto">
+        <a href="/reports/income" class={accentGhostBtn}>
+          <TrendingUp size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <TrendingUp size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Income Report</span>
+        </a>
+        <a href="/reports/expenses" class={accentGhostBtn}>
+          <TrendingDown size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <TrendingDown size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Expense Report</span>
+        </a>
       </div>
     </div>
   </div>

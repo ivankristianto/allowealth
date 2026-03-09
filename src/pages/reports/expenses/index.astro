@@ -15,15 +15,16 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 
-import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
+import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 import MemberSpendingTablePartial from '@/components/partials/MemberSpendingTablePartial.astro';
 
-import { reportService, accountService, workspaceMetaService } from '@/services';
+import { reportService, workspaceMetaService, budgetService } from '@/services';
 import type { ExpenseReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
+import { calculateAllocationDistribution } from '@/lib/utils/budget';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
@@ -100,23 +101,38 @@ try {
   return Astro.redirect('/reports?error=failed-to-load');
 }
 
-// Fetch account totals
-let totalAccounts = 0;
-let totalDebt = 0;
+// Fetch budget data for summary
+let totalAllocated = 0;
+let totalSpent = 0;
+let budgetDistribution: ReturnType<typeof calculateAllocationDistribution> = [];
+let totalCategories = 0;
+let overBudgetCount = 0;
+let criticalCount = 0;
+
 try {
-  const classTotals = await accountService.getTotalByClass(user.workspaceId);
-  for (const row of classTotals) {
-    const total = parseFloat(row.total || '0');
-    if (isNaN(total)) continue;
-    if (row.currency !== currency) continue;
-    if (row.account_class === 'debt') {
-      totalDebt += Math.abs(total);
-    } else {
-      totalAccounts += total;
-    }
-  }
+  const period = defaultPeriod.split('-');
+  const year = parseInt(period[0], 10);
+  const month = defaultRange === 'monthly' ? parseInt(period[1], 10) : currentMonth;
+  const budgetData = await budgetService.getMonthlyOverview(
+    user.workspaceId,
+    year,
+    month,
+    currency
+  );
+  totalAllocated = parseFloat(budgetData.total_budget || '0');
+  totalSpent = parseFloat(budgetData.total_spent || '0');
+  totalCategories = budgetData.categories.length;
+  overBudgetCount = budgetData.categories.filter((cat) => cat.status === 'exceeded').length;
+  criticalCount = budgetData.categories.filter((cat) => cat.percentage_used >= 150).length;
+  budgetDistribution = calculateAllocationDistribution(
+    budgetData.categories.map((cat) => ({
+      name: cat.category_name,
+      budget_amount: cat.budget_amount,
+      spent_amount: cat.spent_amount,
+    }))
+  );
 } catch {
-  // Non-critical
+  // Non-critical — summary will show zeroes
 }
 
 const memberTotals = expenseData.memberSummary.reduce(
@@ -129,11 +145,6 @@ const memberTotals = expenseData.memberSummary.reduce(
 );
 
 const reportDataForPartials = {
-  totalIncome: expenseData.totalIncome,
-  totalExpenses: expenseData.totalExpenses,
-  netSavings: expenseData.netSavings,
-  budgetHealth: expenseData.budgetHealth,
-  expenseCategories: expenseData.expenseCategories,
   currency,
   expenseByCategory: expenseData.expenseByCategory.map((cat) => ({
     name: cat.name,
@@ -184,15 +195,14 @@ const selectedPeriodLabel =
     <Breadcrumb items={[{ label: 'Overview', href: '/reports' }, { label: 'Expenses' }]} />
 
     <div data-summary-container>
-      <ReportSummaryCardsPartial
-        totalIncome={reportDataForPartials.totalIncome}
-        totalExpenses={reportDataForPartials.totalExpenses}
-        netSavings={reportDataForPartials.netSavings}
-        budgetHealth={reportDataForPartials.budgetHealth}
-        expenseCategories={reportDataForPartials.expenseCategories}
-        currency={reportDataForPartials.currency}
-        totalAccounts={totalAccounts}
-        totalDebt={totalDebt}
+      <BudgetSummaryPartial
+        totalAllocated={totalAllocated}
+        totalSpent={totalSpent}
+        distribution={budgetDistribution}
+        currency={currency}
+        totalCategories={totalCategories}
+        overBudgetCount={overBudgetCount}
+        criticalCount={criticalCount}
       />
     </div>
 
@@ -202,12 +212,10 @@ const selectedPeriodLabel =
         trendData={reportDataForPartials.trendData}
         recurringBreakdown={reportDataForPartials.recurringBreakdown ?? undefined}
         currency={currency}
+        hideFinancialVelocity
         resourceAllocationSubtitle={defaultRange === 'monthly'
           ? 'EXPENSE MIX'
           : 'YEARLY EXPENSE MIX'}
-        financialVelocitySubtitle={defaultRange === 'monthly'
-          ? 'LAST 3 MONTHS'
-          : 'MONTHLY BREAKDOWN'}
       />
     </div>
 
