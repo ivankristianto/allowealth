@@ -4,7 +4,6 @@
  *
  * Detailed income analysis with:
  * - Summary metrics (total, active, passive, other income, growth)
- * - Income source mix donut chart + source group trend stacked bar
  * - Income source table with source-type badges
  * - Member income breakdown table
  * - Paginated transaction history
@@ -18,14 +17,12 @@ import ReportSelector from '@/components/molecules/ReportSelector.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 
 import IncomeSummaryCardsPartial from '@/components/partials/IncomeSummaryCardsPartial.astro';
-import IncomeChartsPartial from '@/components/partials/IncomeChartsPartial.astro';
 import IncomeSourceTablePartial from '@/components/partials/IncomeSourceTablePartial.astro';
 import IncomeMemberTablePartial from '@/components/partials/IncomeMemberTablePartial.astro';
 import IncomeHistoryTablePartial from '@/components/partials/IncomeHistoryTablePartial.astro';
 
 import { reportService, workspaceMetaService } from '@/services';
 import type { IncomeReportData } from '@/services/report.service';
-import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
@@ -103,18 +100,6 @@ try {
   return Astro.redirect('/reports?error=failed-to-load');
 }
 
-const sourceMix = incomeData.sourceMix.map((s) => ({
-  name: s.name,
-  value: safeParseDecimal(s.value),
-}));
-
-const sourceGroupTrend = incomeData.sourceGroupTrend.map((t) => ({
-  name: t.name,
-  active: safeParseDecimal(t.active),
-  passive: safeParseDecimal(t.passive),
-  other: safeParseDecimal(t.other),
-}));
-
 const sourceCategories = incomeData.sourceMix.map((s) => ({
   name: s.name,
   value: s.value,
@@ -152,16 +137,6 @@ const selectedPeriodLabel =
         otherIncome={incomeData.summary.otherIncome}
         growthVsPreviousPeriod={incomeData.summary.growthVsPreviousPeriod}
         currency={currency}
-      />
-    </div>
-
-    <div data-charts-container>
-      <IncomeChartsPartial
-        sourceMix={sourceMix}
-        sourceGroupTrend={sourceGroupTrend}
-        currency={currency}
-        sourceMixSubtitle={defaultRange === 'monthly' ? 'INCOME SOURCE MIX' : 'YEARLY SOURCE MIX'}
-        trendSubtitle={defaultRange === 'monthly' ? 'SOURCE GROUP TREND' : 'YEARLY TREND'}
       />
     </div>
 

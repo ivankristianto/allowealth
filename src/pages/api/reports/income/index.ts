@@ -4,7 +4,6 @@ import { reportService, workspaceMetaService, workspaceService } from '@/service
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
-import { safeParseDecimal } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { formatMonthYear } from '@/lib/utils/date';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -12,7 +11,6 @@ import { isValidNanoid } from '@/lib/validation/nanoid';
 import { PAGINATION } from '@/lib/constants/pagination';
 
 import IncomeSummaryCardsPartial from '@/components/partials/IncomeSummaryCardsPartial.astro';
-import IncomeChartsPartial from '@/components/partials/IncomeChartsPartial.astro';
 import IncomeSourceTablePartial from '@/components/partials/IncomeSourceTablePartial.astro';
 import IncomeMemberTablePartial from '@/components/partials/IncomeMemberTablePartial.astro';
 import IncomeHistoryTablePartial from '@/components/partials/IncomeHistoryTablePartial.astro';
@@ -20,7 +18,7 @@ import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.a
 
 /**
  * GET /api/reports/income
- * Income detail report — summary, charts, source table, member breakdown, history.
+ * Income detail report — summary, source table, member breakdown, history.
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
@@ -45,15 +43,7 @@ export const GET: APIRoute = async (context) => {
         : workspaceCurrencyConfig.primary;
 
     // Validate _partial
-    const VALID_PARTIALS = [
-      'summary',
-      'charts',
-      'sources',
-      'members',
-      'history',
-      'selector',
-      'all',
-    ] as const;
+    const VALID_PARTIALS = ['summary', 'sources', 'members', 'history', 'selector', 'all'] as const;
     type PartialType = (typeof VALID_PARTIALS)[number];
     const partialParam = url.searchParams.get('_partial') || 'all';
     if (!VALID_PARTIALS.includes(partialParam as PartialType)) {
@@ -170,30 +160,6 @@ export const GET: APIRoute = async (context) => {
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);
-      }
-
-      if (partial === 'all' || partial === 'charts') {
-        const sourceMix = incomeData.sourceMix.map((s) => ({
-          name: s.name,
-          value: safeParseDecimal(s.value),
-        }));
-        const sourceGroupTrend = incomeData.sourceGroupTrend.map((t) => ({
-          name: t.name,
-          active: safeParseDecimal(t.active),
-          passive: safeParseDecimal(t.passive),
-          other: safeParseDecimal(t.other),
-        }));
-
-        const chartsHtml = await container.renderToString(IncomeChartsPartial, {
-          props: {
-            sourceMix,
-            sourceGroupTrend,
-            currency,
-            sourceMixSubtitle: range === 'monthly' ? 'INCOME SOURCE MIX' : 'YEARLY SOURCE MIX',
-            trendSubtitle: range === 'monthly' ? 'SOURCE GROUP TREND' : 'YEARLY TREND',
-          },
-        });
-        htmlParts.push(`<!-- PARTIAL:charts -->\n${chartsHtml}`);
       }
 
       if (partial === 'all' || partial === 'sources') {

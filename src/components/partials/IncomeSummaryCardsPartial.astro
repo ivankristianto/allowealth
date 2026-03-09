@@ -1,12 +1,12 @@
 ---
 /**
- * Income Summary Cards Partial
+ * Income Summary Hero Card Partial
  *
- * Server-rendered partial for income summary stat cards.
- * Shows Total Income, Active Income, Passive Income, Other Income, and Growth.
+ * Server-rendered partial showing total income as a hero number,
+ * growth badge, and allocation bar with legend.
  */
 
-import StatCard from '@/components/atoms/StatCard.astro';
+import AllocationBar from '@/components/molecules/AllocationBar.astro';
 import { formatCurrency } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
 
@@ -22,66 +22,78 @@ export interface Props {
 const { totalIncome, activeIncome, passiveIncome, otherIncome, growthVsPreviousPeriod, currency } =
   Astro.props;
 
-const badge =
-  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
-const currencyBadge = (c: Currency) =>
-  c === 'USD' ? `${badge} bg-info/10 text-info` : `${badge} bg-success/10 text-success`;
+const total = parseFloat(totalIncome) || 0;
+const active = parseFloat(activeIncome) || 0;
+const passive = parseFloat(passiveIncome) || 0;
+const other = parseFloat(otherIncome) || 0;
 
 const growthNum = parseFloat(growthVsPreviousPeriod) || 0;
+
+const segments = [
+  {
+    label: 'Active',
+    percentage: total > 0 ? Math.round((active / total) * 1000) / 10 : 0,
+    color: '#22c55e',
+  },
+  {
+    label: 'Passive',
+    percentage: total > 0 ? Math.round((passive / total) * 1000) / 10 : 0,
+    color: '#3b82f6',
+  },
+  {
+    label: 'Other',
+    percentage: total > 0 ? Math.round((other / total) * 1000) / 10 : 0,
+    color: '#f59e0b',
+  },
+].filter((s) => s.percentage > 0);
+
+const growthIcon = growthNum >= 0 ? '▲' : '▼';
+const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-error bg-error/10';
 ---
 
-<div class="@container" data-summary-cards>
-  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-5 gap-4 @2xl:gap-6">
-    <StatCard title="TOTAL INCOME">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-            {formatCurrency(totalIncome, currency)}
-          </p>
-        </div>
-      </Fragment>
-    </StatCard>
+<div data-summary-cards>
+  <div class="bg-base-100 border border-base-300 rounded-2xl md:rounded-3xl shadow-sm p-5 lg:p-6">
+    <!-- Header: label + growth badge -->
+    <div class="flex justify-between items-start">
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
+        >Total Income</span
+      >
+      {
+        growthNum !== 0 && (
+          <span class={`text-xs font-bold px-2 py-1 rounded-lg ${growthColorClass}`}>
+            {growthIcon} {Math.abs(growthNum).toFixed(1)}%
+          </span>
+        )
+      }
+    </div>
 
-    <StatCard title="ACTIVE INCOME">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-            {formatCurrency(activeIncome, currency)}
-          </p>
-        </div>
-      </Fragment>
-    </StatCard>
+    <!-- Hero value -->
+    <p class="text-2xl sm:text-3xl font-bold text-success tabular-nums mt-1">
+      {formatCurrency(totalIncome, currency)}
+    </p>
 
-    <StatCard title="PASSIVE INCOME">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
-            {formatCurrency(passiveIncome, currency)}
-          </p>
-        </div>
-      </Fragment>
-    </StatCard>
+    <!-- Allocation bar -->
+    {
+      segments.length > 0 && (
+        <div class="mt-5">
+          <AllocationBar segments={segments} height="md" ariaLabel="Income allocation breakdown" />
 
-    <StatCard title="OTHER INCOME">
-      <Fragment slot="details">
-        <div class="flex items-center gap-2">
-          <span class={currencyBadge(currency)}>{currency}</span>
-          <p class="text-lg font-bold text-warning tracking-tight leading-none truncate">
-            {formatCurrency(otherIncome, currency)}
-          </p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-3">
+            {segments.map((s) => (
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={`background-color: ${s.color}`}
+                />
+                <span class="text-xs text-base-content/60 font-medium">{s.label}</span>
+                <span class="text-xs font-bold text-base-content tabular-nums ml-auto">
+                  {s.percentage.toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </Fragment>
-    </StatCard>
-
-    <StatCard
-      title="GROWTH VS PREV. PERIOD"
-      value={`${growthNum >= 0 ? '+' : ''}${growthNum.toFixed(1)}%`}
-      valueColor={growthNum >= 0 ? 'text-success' : 'text-error'}
-      progress={Math.min(Math.abs(growthNum), 100)}
-      progressColor={growthNum >= 0 ? 'bg-success' : 'bg-error'}
-    />
+      )
+    }
   </div>
 </div>

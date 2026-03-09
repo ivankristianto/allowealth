@@ -2,14 +2,13 @@
  * Income Reports Page Orchestrator
  *
  * Client-side orchestration for the income report page.
- * Manages summary, charts, sources, members, and history containers.
+ * Manages summary, sources, members, and history containers.
  * Handles history pagination and drill-down clicks.
  */
 
 import {
   parseHtmlPartials,
   renderSummaryHtml,
-  renderChartsHtml,
   renderSourcesHtml,
   renderHistoryHtml,
   renderMembersHtml,
@@ -124,7 +123,6 @@ async function fetchIncomeHtml(
 
 async function fetchAndRenderAll(): Promise<void> {
   showLoadingState('[data-summary-container]');
-  showLoadingState('[data-charts-container]');
   showLoadingState('[data-sources-container]');
   showLoadingState('[data-member-table-container]');
   showLoadingState('[data-history-container]');
@@ -136,11 +134,6 @@ async function fetchAndRenderAll(): Promise<void> {
       renderSummaryHtml(partials.summary);
     } else {
       hideLoadingState('[data-summary-container]');
-    }
-    if (partials.charts) {
-      renderChartsHtml(partials.charts);
-    } else {
-      hideLoadingState('[data-charts-container]');
     }
     if (partials.sources) {
       renderSourcesHtml(partials.sources);
@@ -163,7 +156,6 @@ async function fetchAndRenderAll(): Promise<void> {
   } catch (error) {
     console.error('Error fetching income data:', error);
     hideLoadingState('[data-summary-container]');
-    hideLoadingState('[data-charts-container]');
     hideLoadingState('[data-sources-container]');
     hideLoadingState('[data-member-table-container]');
     hideLoadingState('[data-history-container]');
