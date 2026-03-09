@@ -36,7 +36,7 @@ async function getAdapter(): Promise<AstroIntegration> {
           enabled: true,
         },
         // Externalize Bun-specific modules that don't exist in Workers runtime
-        // Workers only support PostgreSQL - SQLite drivers are for local dev only
+        // Workers use D1 in production; Bun SQLite drivers are for local development only
         wasmModuleImports: true,
       });
     }

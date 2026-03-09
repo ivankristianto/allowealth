@@ -203,11 +203,9 @@ const connStatus = data.database.isConnected
       <div class="flex items-center justify-between py-2 border-b border-base-300">
         <dt class="text-sm font-medium text-base-content/70">Dialect</dt>
         <dd>
-          <span
-            class={`badge ${data.database.dialect === 'postgresql' ? 'badge-info' : 'badge-neutral'}`}
+          <span class="badge badge-neutral"
+            >{data.database.isD1 ? 'D1' : data.database.dialect}</span
           >
-            {data.database.dialect}
-          </span>
         </dd>
       </div>
 
@@ -238,32 +236,6 @@ const connStatus = data.database.isConnected
           </code>
         </dd>
       </div>
-
-      {
-        data.database.isSupabase && (
-          <div class="py-2 border-b border-base-300">
-            <dt class="text-sm font-medium text-base-content/70 mb-2">Supabase Features</dt>
-            <dd class="flex flex-wrap gap-2">
-              {data.database.isTransactionPooler && (
-                <span class="badge badge-warning">Transaction Pooler</span>
-              )}
-              {data.database.isHyperdrive && <span class="badge badge-info">Hyperdrive</span>}
-            </dd>
-          </div>
-        )
-      }
-
-      {
-        data.database.connectionPoolConfig && (
-          <div class="py-2">
-            <dt class="text-sm font-medium text-base-content/70 mb-1">Connection Pool</dt>
-            <dd class="text-sm text-base-content/80">
-              Max: <span class="font-mono">{data.database.connectionPoolConfig.max}</span>, Idle:{' '}
-              <span class="font-mono">{data.database.connectionPoolConfig.idleTimeout}s</span>
-            </dd>
-          </div>
-        )
-      }
     </dl>
   </Card>
 

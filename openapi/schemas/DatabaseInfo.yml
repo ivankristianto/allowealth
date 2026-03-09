@@ -4,41 +4,21 @@ DatabaseInfo:
   properties:
     dialect:
       type: string
-      enum: [sqlite, postgresql]
+      enum: [sqlite]
       description: Database dialect
-      example: postgresql
+      example: sqlite
     url:
       type: string
       description: Database connection URL (sanitized, password masked)
-      example: postgresql://db.xxx.supabase.co:5432/postgres?password=***
+      example: db/.dev.db
     isConnected:
       type: boolean
       description: Whether database connection is healthy
       example: true
-    isSupabase:
+    isD1:
       type: boolean
-      description: Whether database is Supabase-hosted
-      example: true
-    isTransactionPooler:
-      type: boolean
-      description: Whether using Supabase transaction pooler
+      description: Whether using Cloudflare D1
       example: false
-    isHyperdrive:
-      type: boolean
-      description: Whether using Cloudflare Hyperdrive
-      example: true
-    connectionPoolConfig:
-      type: object
-      description: Connection pool configuration
-      properties:
-        max:
-          type: integer
-          description: Maximum pool size
-          example: 10
-        idleTimeout:
-          type: integer
-          description: Idle timeout in seconds
-          example: 30
     queryMetrics:
       type: object
       description: Query performance metrics
@@ -55,4 +35,4 @@ DatabaseInfo:
           type: integer
           description: Number of slow queries (>100ms)
           example: 3
-  required: [dialect, url, isConnected, isSupabase, isTransactionPooler, isHyperdrive]
+  required: [dialect, url, isConnected, isD1]

@@ -4,19 +4,13 @@
 # SETUP: Copy this file to wrangler.toml and fill in your own values.
 #   cp wrangler.toml.example wrangler.toml
 #
-# wrangler.toml is gitignored — never commit it with real IDs or secrets.
+# wrangler.toml is gitignored -- never commit it with real IDs or secrets.
 #
-# DEPLOYMENT OPTIONS — choose one database backend:
-#
-# A. PostgreSQL + Hyperdrive (default, active below)
-#    - Uses Supabase PostgreSQL with Hyperdrive connection pooling
-#    - Set DATABASE_URL secret to Supabase connection string
-#    - Deploy: bun run deploy:cloudflare
-#
-# B. Cloudflare D1 (disabled — see commented section at the bottom)
-#    - Uses D1 SQLite-compatible database at the edge, no external DB needed
-#    - To activate: uncomment [[d1_databases]], comment out [[hyperdrive]]
-#    - Deploy: bun run deploy:cloudflare
+# DATABASE: Cloudflare D1 (SQLite-compatible database at the edge)
+#   1. Create DB:   wrangler d1 create allowealth-db
+#   2. Set ID:      replace YOUR_D1_DATABASE_ID with the returned ID
+#   3. Migrations:  for f in drizzle/sqlite/*.sql; do wrangler d1 execute allowealth-db --remote --file="$f"; done
+#   4. Deploy:      bun run deploy:cloudflare
 
 account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
 name = "allowealth"
@@ -50,49 +44,18 @@ EMAIL_PROVIDER = "resend"
 EMAIL_SENDER_NAME = "Allowealth"
 EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 
-# Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
-# bun:sqlite is for local development only — Workers use Hyperdrive or D1
-
 # Secrets (set via CLI, not committed):
-# wrangler secret put DATABASE_URL        # Required for Hyperdrive + PostgreSQL
 # wrangler secret put EMAIL_API_KEY
 # wrangler secret put GOOGLE_CLIENT_ID
 # wrangler secret put GOOGLE_CLIENT_SECRET
-#
-# To deploy:
-# 1. bun add -d @astrojs/cloudflare wrangler
-# 2. wrangler login
-# 3. wrangler secret put DATABASE_URL
-# 4. bun run deploy:cloudflare
-#
-# IMPORTANT: Workers only support PostgreSQL via Hyperdrive. Set DATABASE_URL to a PostgreSQL connection string.
 
-# ── Option A: Hyperdrive (PostgreSQL) ─────────────────────────────────────────
-# Eliminates per-request TCP/TLS overhead (fixes "Too many subrequests")
-# Create config: wrangler hyperdrive create allowealth-db --connection-string="<direct-supabase-url>"
-# [[hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = "YOUR_HYPERDRIVE_ID"  # wrangler hyperdrive create allowealth-db --connection-string="..."
-# For local dev: point to a local PostgreSQL instance
-# Or set env var CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
-# localConnectionString = "postgresql://user:pass@localhost:5432/expenses"
-
-# ── Option B: Cloudflare D1 (SQLite at the edge) ──────────────────────────────
-# To activate D1:
-#   1. Comment out [[hyperdrive]] above
-#   2. Uncomment [[d1_databases]] below
-#   3. Create DB:   wrangler d1 create allowealth-db
-#   4. Set ID:      replace YOUR_D1_DATABASE_ID with the returned ID
-#   5. Migrations:  for f in drizzle/sqlite/*.sql; do wrangler d1 execute allowealth-db --remote --file="$f"; done
-#   6. Secrets:     wrangler secret put EMAIL_API_KEY  (DATABASE_URL is not needed for D1)
-#   7. Deploy:      bun run deploy:cloudflare
-#
+# -- Cloudflare D1 (SQLite at the edge) --
 [[d1_databases]]
 binding = "DB"
 database_name = "allowealth-db"
 database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create allowealth-db
 
-# Workers Logs — captures all console.* output, auto-indexes JSON fields
+# Workers Logs -- captures all console.* output, auto-indexes JSON fields
 # https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 [observability]
 enabled = true

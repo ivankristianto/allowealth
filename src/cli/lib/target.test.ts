@@ -8,7 +8,6 @@ describe('validateTarget', () => {
     expect(validateTarget('sqlite')).toBe('sqlite');
     expect(validateTarget('d1')).toBe('d1');
     expect(validateTarget('d1-local')).toBe('d1-local');
-    expect(validateTarget('postgres')).toBe('postgres');
   });
 });
 
@@ -57,11 +56,6 @@ describe('isD1', () => {
 
   it('returns false for sqlite target', () => {
     delete process.env.AW_TARGET;
-    expect(isD1()).toBe(false);
-  });
-
-  it('returns false for postgres target', () => {
-    process.env.AW_TARGET = 'postgres';
     expect(isD1()).toBe(false);
   });
 });
@@ -144,17 +138,6 @@ describe('resolveTarget D1 env setup', () => {
     const { resolveTarget } = await import('./target');
     await resolveTarget({ target: 'sqlite' });
 
-    expect(process.env.D1_ENABLED).toBeUndefined();
-  });
-
-  it('does not set D1_ENABLED for postgres target', async () => {
-    const { resolveTarget } = await import('./target');
-    // resolveTarget for postgres tries to load .env.production which may not exist in test
-    // Just verify env state by checking what resolveTarget does before the loadEnvFile call
-    process.env.AW_TARGET = 'postgres';
-    // With AW_TARGET already set, resolveTarget defers to it
-    const result = await resolveTarget({ target: 'postgres' });
-    expect(result).toBe('postgres');
     expect(process.env.D1_ENABLED).toBeUndefined();
   });
 

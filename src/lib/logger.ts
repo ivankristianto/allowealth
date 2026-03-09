@@ -146,7 +146,7 @@ const baseLogger = createConsola({
  *
  * @example
  * const log = createLogger('database');
- * log.info('dialect=postgresql hyperdrive=true');
+ * log.info('dialect=sqlite d1=true');
  * log.error('connection failed', error);
  */
 export function createLogger(tag: string) {
@@ -174,7 +174,7 @@ const SENSITIVE_PATTERNS = [
   // Stack trace line numbers and file references
   /\s+at\s+[\w\.<>]+(\/[\w\/\-\.]+)?:\d+:\d+/g,
   // Database connection strings and credentials
-  /(mysql|postgres|sqlite):\/\/[^:]+:[^@]+@[^/]+\/\w+/gi,
+  /(mysql|sqlite):\/\/[^:]+:[^@]+@[^/]+\/\w+/gi,
   // SQL error details
   /SQL(Error|ITE)?[_ ]?(ERROR)?[:\s]?.{1,100}?(?=[\s\n]|$)/gi,
   // Drizzle/Database error codes
