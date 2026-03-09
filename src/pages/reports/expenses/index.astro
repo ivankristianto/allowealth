@@ -13,7 +13,6 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
-import ReportsSectionNav from '@/components/molecules/ReportsSectionNav.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
@@ -165,8 +164,6 @@ const selectedPeriodLabel =
   defaultRange === 'monthly'
     ? monthlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod
     : yearlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod;
-
-const reportState = { range: defaultRange, period: defaultPeriod, currency };
 ---
 
 <ProtectedLayout title="Expense Report" currentPath={currentPath} subtitle={selectedPeriodLabel}>
@@ -184,8 +181,6 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
     data-current-currency={currency}
     data-api-endpoint="/api/reports/expenses"
   >
-    <ReportsSectionNav activeSection="expenses" state={reportState} />
-
     <Breadcrumb
       items={[
         { label: 'Overview', href: '/reports' },

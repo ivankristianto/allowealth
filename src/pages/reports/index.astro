@@ -12,8 +12,6 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
-import ReportsSectionNav from '@/components/molecules/ReportsSectionNav.astro';
-
 import OverviewSummaryCardsPartial from '@/components/partials/OverviewSummaryCardsPartial.astro';
 import OverviewChartsPartial from '@/components/partials/OverviewChartsPartial.astro';
 import OverviewPreviewCardsPartial from '@/components/partials/OverviewPreviewCardsPartial.astro';
@@ -134,8 +132,6 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
     data-current-currency={currency}
   >
-    <ReportsSectionNav activeSection="overview" state={reportState} />
-
     {/* Summary Metric Cards */}
     <div data-summary-container>
       <OverviewSummaryCardsPartial
