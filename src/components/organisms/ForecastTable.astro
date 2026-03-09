@@ -95,9 +95,14 @@ function formatNegativeAmount(amount: string, currency: string): string {
                               {row.templateName}
                             </span>
                             {row.status === 'paused' && (
-                              <span class="badge badge-ghost badge-xs whitespace-nowrap">
-                                Paused
-                              </span>
+                              <div
+                                class="tooltip tooltip-right"
+                                data-tip="Excluded from totals while paused"
+                              >
+                                <span class="badge badge-ghost badge-xs whitespace-nowrap cursor-help">
+                                  Paused
+                                </span>
+                              </div>
                             )}
                           </div>
                           <div class="mt-1 truncate text-xs text-base-content/50">

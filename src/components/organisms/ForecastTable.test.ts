@@ -47,4 +47,10 @@ describe('ForecastTable component', () => {
     expect(source).toMatch(/>\s*Recurring\s*<\/th>/);
     expect(source).toContain('{row.frequencyLabel}');
   });
+
+  it('explains paused rows are excluded from totals with a tooltip badge', () => {
+    expect(source).toContain('data-tip="Excluded from totals while paused"');
+    expect(source).toContain('class="tooltip tooltip-right"');
+    expect(source).toContain('badge badge-ghost badge-xs whitespace-nowrap cursor-help');
+  });
 });
