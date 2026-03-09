@@ -1,8 +1,6 @@
 ---
-import StatCard from '@/components/atoms/StatCard.astro';
-import { formatCurrency, formatPercentage } from '@/lib/formatting';
+import { formatCurrency } from '@/lib/formatting';
 import type { Currency } from '@/lib/constants/currency';
-import { TrendingDown, TrendingUp } from '@lucide/astro';
 
 export interface Props {
   totalIncome: string;
@@ -12,74 +10,53 @@ export interface Props {
   currency: Currency;
 }
 
-const { totalIncome, totalExpenses, netSavings, savingsRate, currency } = Astro.props;
+const { totalIncome, totalExpenses, netSavings, currency } = Astro.props;
 
-const rateNum = parseFloat(savingsRate) || 0;
 const netSavingsNum = parseFloat(netSavings) || 0;
 const isNetPositive = netSavingsNum >= 0;
-const savingsRateSummary =
-  rateNum < 0
-    ? 'Spending exceeded income'
-    : rateNum >= 20
-      ? 'Strong savings rate'
-      : rateNum > 0
-        ? 'Building a buffer'
-        : 'No savings recorded';
 ---
 
-<div class="@container" data-summary-cards>
-  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-4 gap-4 @2xl:gap-6">
-    <StatCard
-      title="Income"
-      value={formatCurrency(totalIncome, currency)}
-      valueColor="text-success"
-      subtitle="Received this period"
-      iconVariant="success"
-      data-testid="reports-overview-income-card"
+<div data-summary-cards>
+  <div
+    class="bg-base-100 border border-base-300 rounded-2xl md:rounded-3xl shadow-sm px-5 py-4 lg:px-6 lg:py-5"
+  >
+    <div
+      class="flex flex-col divide-y divide-base-300 sm:flex-row sm:divide-y-0 sm:items-center sm:gap-6"
     >
-      <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-    </StatCard>
+      <div class="py-3 sm:py-0" data-testid="reports-overview-income-card">
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50"
+          >Income</span
+        >
+        <p class="text-lg font-bold text-success tabular-nums">
+          {formatCurrency(totalIncome, currency)}
+        </p>
+      </div>
 
-    <StatCard
-      title="Spending"
-      value={formatCurrency(totalExpenses, currency)}
-      valueColor="text-error"
-      subtitle="Spent this period"
-      iconVariant="error"
-      data-testid="reports-overview-expense-card"
-    >
-      <TrendingDown slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-    </StatCard>
+      <span class="hidden text-base-content/20 sm:block" aria-hidden="true">&rarr;</span>
 
-    <StatCard
-      title="Net savings"
-      value={formatCurrency(netSavings, currency)}
-      valueColor={isNetPositive ? 'text-accent' : 'text-error'}
-      subtitle={isNetPositive ? 'Income exceeds spending' : 'Spending exceeds income'}
-      iconVariant={isNetPositive ? 'accent' : 'error'}
-      data-testid="reports-overview-savings-card"
-    >
-      {
-        (
-          <Fragment slot="icon">
-            {isNetPositive ? (
-              <TrendingUp size={48} class="stroke-current" aria-hidden="true" />
-            ) : (
-              <TrendingDown size={48} class="stroke-current" aria-hidden="true" />
-            )}
-          </Fragment>
-        )
-      }
-    </StatCard>
+      <div class="py-3 sm:py-0" data-testid="reports-overview-expense-card">
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50"
+          >Spending</span
+        >
+        <p class="text-lg font-bold text-error tabular-nums">
+          {formatCurrency(totalExpenses, currency)}
+        </p>
+      </div>
 
-    <StatCard
-      title="Savings rate"
-      value={formatPercentage(rateNum, 1)}
-      valueColor={rateNum >= 0 ? 'text-success' : 'text-error'}
-      subtitle={savingsRateSummary}
-      progress={Math.min(Math.abs(rateNum), 100)}
-      progressColor={rateNum >= 0 ? 'bg-success' : 'bg-error'}
-      data-testid="reports-overview-savings-rate-card"
-    />
+      <span class="hidden text-base-content/20 sm:block" aria-hidden="true">=</span>
+
+      <div class="py-3 sm:py-0" data-testid="reports-overview-savings-card">
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Net</span
+        >
+        <p
+          class:list={[
+            'text-lg font-bold tabular-nums',
+            isNetPositive ? 'text-accent' : 'text-error',
+          ]}
+        >
+          {isNetPositive ? '+' : ''}{formatCurrency(netSavings, currency)}
+        </p>
+      </div>
+    </div>
   </div>
 </div>
