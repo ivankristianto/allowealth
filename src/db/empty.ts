@@ -3,16 +3,16 @@
  * Database Empty Script
  *
  * Empties all data from the database while preserving the schema.
- * Works for both SQLite and PostgreSQL.
+ * Works for SQLite and D1.
  *
  * Usage:
- *   bun run db:empty                          # Uses default .env (SQLite)
- *   bun run aw --target postgres db empty     # Uses .env.production (PostgreSQL)
+ *   bun run db:empty                        # Uses default .env (SQLite)
+ *   bun run aw --target d1 db empty         # Uses D1
  */
 
-import { db, getActiveSchema } from './index';
-import { getDatabaseConfig } from './config';
 import { sql } from 'drizzle-orm';
+import { getDatabaseConfig } from './config';
+import { db, getActiveSchema } from './index';
 
 const schema = getActiveSchema();
 const config = getDatabaseConfig();
@@ -55,55 +55,28 @@ async function emptyDatabase() {
   }
 
   try {
-    if (config.dialect === 'postgresql') {
-      // PostgreSQL: Use TRUNCATE with CASCADE for efficiency
-      console.log('Using TRUNCATE CASCADE for PostgreSQL...\n');
+    // SQLite / D1: Delete from each table individually
+    console.log('Using DELETE for SQLite...\n');
 
-      // Get all table names
-      const tableNames = tablesToEmpty.map((table) => {
-        // Extract table name from the schema object
+    // Disable foreign key checks temporarily (not supported on D1)
+    if (!config.isD1) {
+      await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
+    }
+
+    for (const table of tablesToEmpty) {
+      try {
+        await db.delete(table);
         const tableName = (table as any)[Symbol.for('drizzle:Name')] || (table as any)._.name;
-        return tableName;
-      });
-
-      // Truncate all tables in one statement with CASCADE
-      for (const tableName of tableNames) {
-        try {
-          await (db as any).execute(sql.raw(`TRUNCATE TABLE "${tableName}" CASCADE`));
-          console.log(`  ✓ Truncated: ${tableName}`);
-        } catch (error: any) {
-          // Table might not exist, skip
-          if (error.message?.includes('does not exist')) {
-            console.log(`  ⊘ Skipped (not exists): ${tableName}`);
-          } else {
-            throw error;
-          }
-        }
+        console.log(`  ✓ Emptied: ${tableName}`);
+      } catch (error: any) {
+        const tableName = (table as any)[Symbol.for('drizzle:Name')] || (table as any)._.name;
+        console.log(`  ⊘ Skipped: ${tableName} - ${error.message}`);
       }
-    } else {
-      // SQLite / D1: Delete from each table individually
-      console.log('Using DELETE for SQLite...\n');
+    }
 
-      // Disable foreign key checks temporarily (not supported on D1)
-      if (!config.isD1) {
-        await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
-      }
-
-      for (const table of tablesToEmpty) {
-        try {
-          await db.delete(table);
-          const tableName = (table as any)[Symbol.for('drizzle:Name')] || (table as any)._.name;
-          console.log(`  ✓ Emptied: ${tableName}`);
-        } catch (error: any) {
-          const tableName = (table as any)[Symbol.for('drizzle:Name')] || (table as any)._.name;
-          console.log(`  ⊘ Skipped: ${tableName} - ${error.message}`);
-        }
-      }
-
-      // Re-enable foreign key checks
-      if (!config.isD1) {
-        await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
-      }
+    // Re-enable foreign key checks
+    if (!config.isD1) {
+      await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
     }
 
     console.log('\n✅ Database emptied successfully!\n');

@@ -81,7 +81,7 @@ bun run aw bdg set|show|ls|edit|rm
 
 ```bash
 # Target environment
-bun run aw db migrate --target sqlite|d1|postgres
+bun run aw db migrate --target sqlite|d1|d1-local
 
 # JSON output
 bun run aw transactions list --workspace-id <id> --json

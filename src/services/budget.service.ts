@@ -744,7 +744,7 @@ export class BudgetService {
       });
     }
 
-    // Execute updates in a transaction (PostgreSQL) or sequentially (SQLite)
+    // Execute updates through the shared transaction helper
     let updated = 0;
     if (validUpdates.length > 0) {
       await runTransaction(this.db, async (tx) => {

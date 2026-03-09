@@ -35,7 +35,7 @@ body:
       description: Which database are you using?
       options:
         - SQLite (dev)
-        - PostgreSQL/Supabase (prod)
+        - Cloudflare D1 (prod)
         - Not sure
     validations:
       required: false

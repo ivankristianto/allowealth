@@ -19,7 +19,7 @@ import type { DatabaseDriver, PreparedStatement, RunResult } from '../driver';
  * bun:sqlite is loaded via createRequire() inside createBunDriver() to avoid
  * loading it at module evaluation time. This file is statically imported by
  * db/index.ts, but bun:sqlite must only load when actually creating a SQLite
- * driver (not in Workers/PostgreSQL contexts).
+ * driver (not in Workers/D1 contexts).
  */
 type BunDatabase = any;
 

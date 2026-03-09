@@ -68,6 +68,8 @@ export interface RecurringOccurrenceOutput extends RecurringOccurrence {
   templateName: string;
   templateType: Exclude<TransactionType, 'transfer'>;
   templateAmount: string;
+  templateFrequency?: 'weekly' | 'monthly';
+  templateIntervalCount?: number;
   currency: Currency;
   category: {
     id: string;

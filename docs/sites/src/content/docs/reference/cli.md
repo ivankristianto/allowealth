@@ -28,7 +28,6 @@ Many commands accept `--target` (alias: `-t`):
 - `sqlite` (default local)
 - `d1` (remote Cloudflare D1)
 - `d1-local` (local D1 emulation)
-- `postgres` (PostgreSQL)
 
 Examples:
 
@@ -36,7 +35,7 @@ Examples:
 bun run aw db migrate --target sqlite
 bun run aw db migrate --target d1
 bun run aw db migrate -t d1-local
-bun run aw workspace create --target postgres --name "Ops" --email admin@example.com
+bun run aw workspace create --target d1 --name "Ops" --email admin@example.com
 ```
 
 ## Common command groups
@@ -44,13 +43,13 @@ bun run aw workspace create --target postgres --name "Ops" --email admin@example
 - `workspace`: create, list, delete
 - `db`: migrate, generate, push, seed, reset, empty
 - `recurring`: recurring templates and occurrence operations
-- `admin`: super-admin + API key + credential operations
+- `admin`: super-admin and API key operations
 - `mcp`: start MCP server
 - `deploy`: cloudflare/vercel/netlify deployment helpers
 
 ## Global options expectations
 
-- Keep `--target` / `-t` available on leaf subcommands to select `sqlite`, `d1`, `d1-local`, or `postgres`.
+- Keep `--target` / `-t` available on leaf subcommands to select `sqlite`, `d1`, or `d1-local`.
 - Support `--json` on leaf subcommands for script/agent-friendly output.
 - Require `--yes` (or interactive confirmation) for destructive CRUD/alias operations like `delete` / `rm`.
 - Some destructive commands use command-specific confirmations instead (for example `workspace delete --force` or typed confirmation in `aw db drop`).

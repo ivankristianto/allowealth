@@ -114,8 +114,8 @@ const db = createConnection(process.env.DATABASE_URL); // Doesn't work in Worker
 **Rules:**
 
 - ✅ **Create fresh DB connections per request in Workers** - no singletons in edge runtime
-- ✅ **Use Hyperdrive for Workers database connections** - provides local proxy with 0 overhead
-- ❌ **Use Supabase transaction pooler with Hyperdrive** - use direct connection (port 5432)
+- ✅ **Use D1 for Workers database access** - native binding, no external TCP layer
+- ❌ **Add external PostgreSQL connection layers to Workers** - production uses D1
 
 ## Serialization
 
@@ -128,13 +128,13 @@ return {
   },
 };
 
-// ❌ Wrong: Return raw PostgreSQL Date objects
+// ❌ Wrong: Return raw Date objects without serialization
 return { budget }; // Date objects can't JSON-serialize in Workers
 ```
 
 **Rules:**
 
-- ✅ **Serialize Date objects explicitly when returning from services** - PostgreSQL Date objects can't JSON-serialize in Workers
+- ✅ **Serialize Date objects explicitly when returning from services** - keep cross-runtime responses stable
 
 ## Caching
 
@@ -338,5 +338,5 @@ Before deploying to Workers:
 - [ ] Test with `wrangler dev` locally
 - [ ] Verify environment variables are set in Workers dashboard
 - [ ] Check CSP headers are correct
-- [ ] Verify Hyperdrive connection works
+- [ ] Verify D1 binding works
 - [ ] Test cache fallback behavior

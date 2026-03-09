@@ -1,6 +1,6 @@
-export type CliTarget = 'sqlite' | 'd1' | 'd1-local' | 'postgres';
+export type CliTarget = 'sqlite' | 'd1' | 'd1-local';
 
-const VALID_TARGETS: CliTarget[] = ['sqlite', 'd1', 'd1-local', 'postgres'];
+const VALID_TARGETS: CliTarget[] = ['sqlite', 'd1', 'd1-local'];
 
 export function getTarget(): CliTarget {
   return (process.env.AW_TARGET as CliTarget) || 'sqlite';
@@ -29,12 +29,12 @@ export function validateTarget(value: string): CliTarget {
 export const targetArg = {
   type: 'string' as const,
   alias: 't' as const,
-  description: 'Database target: sqlite (default), d1, d1-local, postgres',
+  description: 'Database target: sqlite (default), d1, d1-local',
   default: 'sqlite',
 };
 
 /**
- * Validate target from args, set AW_TARGET env, load .env.production for postgres.
+ * Validate target from args, set AW_TARGET env, load .env.production for d1.
  * If AW_TARGET was already set by the parent command's setup(), defers to it.
  */
 export async function resolveTarget(args: Record<string, unknown>): Promise<CliTarget> {
@@ -53,7 +53,7 @@ export async function resolveTarget(args: Record<string, unknown>): Promise<CliT
   const target = validateTarget(args.target as string);
   process.env.AW_TARGET = target;
 
-  if (target === 'postgres' || target === 'd1') {
+  if (target === 'd1') {
     const { loadEnvFile } = await import('./env-loader');
     loadEnvFile('.env.production');
   }

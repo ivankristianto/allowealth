@@ -55,10 +55,6 @@ function refineRecurringTemplate<T extends z.ZodTypeAny>(schema: T): T {
         path: ['day_of_month'],
       }
     )
-    .refine((data: any) => Boolean(data.total_occurrences || data.end_date), {
-      message: 'At least one end condition is required',
-      path: ['total_occurrences'],
-    })
     .refine((data: any) => !data.is_installment || Boolean(data.total_occurrences), {
       message: 'Installments require total occurrences',
       path: ['total_occurrences'],

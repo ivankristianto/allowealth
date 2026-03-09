@@ -35,7 +35,7 @@
 - [ ] **Quality gates passed** (`lint`, `stylelint`, `format`, `typecheck`)
 - [ ] **Tests added/updated** (unit, E2E, or integration tests)
 - [ ] **Design system compliance** (uses tokens, DaisyUI classes, accessibility)
-- [ ] **Both databases tested** (SQLite dev + PostgreSQL prod if schema changes)
+- [ ] **SQLite + D1 flow tested** (local SQLite and relevant D1 path if schema changes)
 - [ ] **No `bun:` imports in shared code** (check middleware-imported files)
 
 ## Additional Notes

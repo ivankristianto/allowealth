@@ -7,39 +7,38 @@ paths:
 
 # Database Patterns
 
-## Dual-Dialect Architecture
+## SQLite/D1 Architecture
 
-The project uses **SQLite** (local dev) and **PostgreSQL/Supabase** (production) with Drizzle ORM.
+The project uses **SQLite** for local development and **Cloudflare D1** in production with the same Drizzle schema.
 
 ### Schema Maintenance
 
-**CRITICAL:** All schema changes MUST generate migrations for **both** dialects.
+**CRITICAL:** All schema changes MUST update the shared SQLite schema and SQLite migration history.
 
 ```bash
-# 1. Edit both schema files
+# 1. Edit shared schema files
 # - src/db/schema/sqlite/<table>.ts
-# - src/db/schema/postgresql/<table>.ts
 
-# 2. Generate migrations for BOTH dialects
-bun run db:generate        # SQLite
-bun run db:generate:prod   # PostgreSQL
+# 2. Generate the migration
+bun run db:generate
 
 # 3. Apply locally
 bun run db:migrate
 
-# 4. Commit both drizzle/sqlite/ and drizzle/postgresql/ directories
+# 4. Commit schema changes and drizzle/sqlite/
 
-# 5. Deploy production
-bun run db:migrate:prod
+# 5. Deploy production D1
+for f in drizzle/sqlite/*.sql; do
+  wrangler d1 execute allowealth-db --remote --file="$f"
+done
 ```
 
 ### Migration Rules
 
 - ✅ **Use `db:generate` + `db:migrate`** for tracked, incremental changes
 - ✅ **Use `db:push`** only for local SQLite rapid iteration (never for production)
-- ✅ **Handle timestamps correctly** - SQLite uses integers, PostgreSQL uses native timestamps
-- ❌ **Use `db:push` for PostgreSQL/Supabase** - known drizzle-kit bug crashes it
-- ❌ **Generate migrations for only one dialect** - always do both
+- ✅ **Treat the SQLite schema as canonical** - D1 uses the same SQLite-compatible structure
+- ❌ **Create parallel PostgreSQL migration flows** - the codebase no longer supports them
 - ❌ **Manually edit migration SQL files** - regenerate instead
 - ❌ **Check for double-prefix bugs** during mass replace (`this.schema.this.schema`)
 - ✅ **Always add `.default()` when adding NOT NULL columns** - `ALTER TABLE ADD COLUMN ... NOT NULL` without `DEFAULT` fails on non-empty tables in SQLite
@@ -48,10 +47,10 @@ bun run db:migrate:prod
 
 ## Service Pattern
 
-Use `getActiveSchema()` to get the correct dialect-specific schema.
+Use `getActiveSchema()` to get the shared SQLite-compatible schema.
 
 ```typescript
-import { getActiveSchema } from '@/db/connection';
+import { getActiveSchema } from '@/db';
 
 class BudgetService {
   private schema = getActiveSchema();
@@ -67,7 +66,7 @@ class BudgetService {
 **Rules:**
 
 - ✅ **Use `getActiveSchema()` and `this.schema.tableName`** pattern in services
-- ❌ **Import tables directly** - breaks dual-dialect support
+- ❌ **Import tables directly** - breaks the shared schema pattern
 
 ## Transaction Patterns
 
@@ -87,7 +86,7 @@ await runTransaction(db, async (tx) => {
 
 **Rules:**
 
-- ✅ **Use `runTransaction()` for transactions** - handles SQLite/PostgreSQL/D1 differences
+- ✅ **Use `runTransaction()` for transactions** - handles SQLite/D1 differences
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
 
 ### Cloudflare D1
@@ -97,18 +96,8 @@ D1 does **not** support `BEGIN`/`COMMIT`/`ROLLBACK` SQL statements. Drizzle ORM'
 `runTransaction()` handles this by treating D1 the same as local SQLite — running the callback directly without a transaction wrapper. D1's single-writer model provides sequential consistency.
 
 - ✅ **Use `runTransaction()` — never call `db.transaction()` directly** — D1 will crash on raw `BEGIN`
-- ❌ **Add `config.isD1` to PostgreSQL transaction branches** — D1 is SQLite-compatible, not PostgreSQL-compatible
-- ❌ **Assume D1 supports the same Drizzle APIs as PostgreSQL** — D1 uses a batch API, not SQL transactions
-
-### PostgreSQL (Production)
-
-```typescript
-// ✅ Correct: async/await
-await db.transaction(async (tx) => {
-  await tx.insert(budgets).values({ ... });
-  await tx.update(categories).set({ ... });
-});
-```
+- ❌ **Add fake PostgreSQL branches for D1** — D1 follows the SQLite-compatible path in this codebase
+- ❌ **Assume D1 supports raw SQL transaction statements** — D1 uses a different execution model
 
 ## Query Patterns
 
@@ -270,7 +259,7 @@ const history = await db.select().from(budgetHistory); // Shows initial creation
 ### Service with Schema
 
 ```typescript
-import { getActiveSchema } from '@/db/connection';
+import { getActiveSchema } from '@/db';
 import { eq } from 'drizzle-orm';
 
 export class BudgetService {

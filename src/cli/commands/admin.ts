@@ -96,23 +96,6 @@ export default defineCommand({
       },
     }),
 
-    'rotate-db-password': defineCommand({
-      meta: {
-        name: 'rotate-db-password',
-        description: 'Update Supabase DB password and test connection',
-      },
-      args: {
-        ask: { type: 'boolean', description: 'Prompt for new password interactively' },
-        hyperdrive: { type: 'boolean', description: 'Also update Cloudflare Hyperdrive config' },
-      },
-      run({ args }) {
-        const extraArgs: string[] = [];
-        if (args.ask) extraArgs.push('--ask');
-        if (args.hyperdrive) extraArgs.push('--hyperdrive');
-        exec('bun', ['run', 'src/cli/rotate-db-password.ts', ...extraArgs]);
-      },
-    }),
-
     'generate-email-key': defineCommand({
       meta: {
         name: 'generate-email-key',

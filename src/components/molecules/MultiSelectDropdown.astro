@@ -129,7 +129,7 @@ const groupedItems = items.reduce<
         groupedItems.map((group) => (
           <div class="space-y-1" data-ms-group={group.key}>
             {group.label && (
-              <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
+              <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 tracking-wider">
                 {group.label}
               </div>
             )}
@@ -176,230 +176,240 @@ const groupedItems = items.reduce<
     selectedIds?: string[];
   };
 
-  const containers = document.querySelectorAll<HTMLElement>('[data-multiselect-id]');
+  function initMultiSelectDropdowns(): void {
+    const containers = document.querySelectorAll<HTMLElement>('[data-multiselect-id]');
 
-  containers.forEach((container) => {
-    if (container.dataset.msInitialized === 'true') return;
-    container.dataset.msInitialized = 'true';
+    containers.forEach((container) => {
+      if (container.dataset.msInitialized === 'true') return;
+      container.dataset.msInitialized = 'true';
 
-    const multiselectId = container.dataset.multiselectId || '';
-    const hiddenInput = container.querySelector('[data-ms-hidden]') as HTMLInputElement | null;
-    const labelEl = container.querySelector('[data-ms-label]') as HTMLElement | null;
-    const countEl = container.querySelector('[data-ms-count]') as HTMLElement | null;
-    const clearAllBtn = container.querySelector('[data-ms-clear-all]') as HTMLButtonElement | null;
-    const searchInput = container.querySelector('[data-ms-search]') as HTMLInputElement | null;
+      const multiselectId = container.dataset.multiselectId || '';
+      const hiddenInput = container.querySelector('[data-ms-hidden]') as HTMLInputElement | null;
+      const labelEl = container.querySelector('[data-ms-label]') as HTMLElement | null;
+      const countEl = container.querySelector('[data-ms-count]') as HTMLElement | null;
+      const clearAllBtn = container.querySelector(
+        '[data-ms-clear-all]'
+      ) as HTMLButtonElement | null;
+      const searchInput = container.querySelector('[data-ms-search]') as HTMLInputElement | null;
 
-    if (!hiddenInput || !labelEl || !countEl) return;
+      if (!hiddenInput || !labelEl || !countEl) return;
 
-    const triggerBtn = container.querySelector('[data-ms-trigger]') as HTMLButtonElement | null;
-    const dropdownPanel = container.querySelector('.dropdown-content') as HTMLElement | null;
+      const triggerBtn = container.querySelector('[data-ms-trigger]') as HTMLButtonElement | null;
+      const dropdownPanel = container.querySelector('.dropdown-content') as HTMLElement | null;
 
-    // TODO: Replace with CSS Anchor Positioning API by 2027.
-    // https://developer.chrome.com/docs/css-ui/anchor-positioning-api
-    // As of Feb 2026, browser support is ~77% (no iOS Safari <26).
-    // Once support reaches ~95%, use anchor-name + position-area +
-    // position-try-fallbacks for pure-CSS auto-positioning.
-    function autoPositionDropdown(): void {
-      if (!triggerBtn || !dropdownPanel) return;
-      const rect = triggerBtn.getBoundingClientRect();
-      const panelWidth = dropdownPanel.offsetWidth || 288;
-      const overflowsRight = rect.left + panelWidth > window.innerWidth;
-      container.classList.toggle('dropdown-end', overflowsRight);
-    }
+      // TODO: Replace with CSS Anchor Positioning API by 2027.
+      // https://developer.chrome.com/docs/css-ui/anchor-positioning-api
+      // As of Feb 2026, browser support is ~77% (no iOS Safari <26).
+      // Once support reaches ~95%, use anchor-name + position-area +
+      // position-try-fallbacks for pure-CSS auto-positioning.
+      function autoPositionDropdown(): void {
+        if (!triggerBtn || !dropdownPanel) return;
+        const rect = triggerBtn.getBoundingClientRect();
+        const panelWidth = dropdownPanel.offsetWidth || 288;
+        const overflowsRight = rect.left + panelWidth > window.innerWidth;
+        container.classList.toggle('dropdown-end', overflowsRight);
+      }
 
-    if (triggerBtn) {
-      triggerBtn.addEventListener('click', autoPositionDropdown);
-    }
+      if (triggerBtn) {
+        triggerBtn.addEventListener('click', autoPositionDropdown);
+      }
 
-    const defaultLabel = hiddenInput.dataset.msDefaultLabel || 'All';
-    const filterEventType = hiddenInput.dataset.msFilterEventType || '';
-    const itemEls = Array.from(container.querySelectorAll<HTMLElement>('[data-ms-item]'));
-    const groupEls = Array.from(container.querySelectorAll<HTMLElement>('[data-ms-group]'));
+      const defaultLabel = hiddenInput.dataset.msDefaultLabel || 'All';
+      const filterEventType = hiddenInput.dataset.msFilterEventType || '';
+      const itemEls = Array.from(container.querySelectorAll<HTMLElement>('[data-ms-item]'));
+      const groupEls = Array.from(container.querySelectorAll<HTMLElement>('[data-ms-group]'));
 
-    let selectedIds = hiddenInput.value ? hiddenInput.value.split(',').filter(Boolean) : [];
-    let searchQuery = '';
-    let activeFilterType: string | null = null;
+      let selectedIds = hiddenInput.value ? hiddenInput.value.split(',').filter(Boolean) : [];
+      let searchQuery = '';
+      let activeFilterType: string | null = null;
 
-    function dispatchChangeEvent(): void {
-      if (!filterEventType) return;
-      window.dispatchEvent(
-        new CustomEvent('filterChange', {
-          detail: { type: filterEventType, value: [...selectedIds] },
-        })
-      );
-    }
-
-    function updateGroupVisibility(): void {
-      groupEls.forEach((groupEl) => {
-        const visibleItems = Array.from(
-          groupEl.querySelectorAll<HTMLElement>('[data-ms-item]')
-        ).filter((item) => item.style.display !== 'none');
-        groupEl.style.display = visibleItems.length > 0 ? '' : 'none';
-      });
-    }
-
-    function applyVisibilityFilters(): void {
-      itemEls.forEach((itemEl) => {
-        const itemFilterType = itemEl.dataset.msFilterType || '';
-        const itemName = itemEl.dataset.msName || '';
-        const matchesType =
-          !activeFilterType || !itemFilterType || itemFilterType === activeFilterType;
-        const matchesSearch = searchQuery === '' || itemName.includes(searchQuery);
-        itemEl.style.display = matchesType && matchesSearch ? '' : 'none';
-      });
-      updateGroupVisibility();
-    }
-
-    function pruneSelectionsOutsideTypeFilter(): boolean {
-      if (!activeFilterType) return false;
-
-      const typeVisibleIds = new Set(
-        itemEls
-          .filter((itemEl) => {
-            const itemFilterType = itemEl.dataset.msFilterType || '';
-            return itemFilterType === '' || itemFilterType === activeFilterType;
+      function dispatchChangeEvent(): void {
+        if (!filterEventType) return;
+        window.dispatchEvent(
+          new CustomEvent('filterChange', {
+            detail: { type: filterEventType, value: [...selectedIds] },
           })
-          .map((itemEl) => itemEl.dataset.msItem || '')
-          .filter(Boolean)
-      );
-
-      const nextSelectedIds = selectedIds.filter((selectedId) => typeVisibleIds.has(selectedId));
-      if (nextSelectedIds.length === selectedIds.length) return false;
-
-      selectedIds = nextSelectedIds;
-      return true;
-    }
-
-    function updateUI(emitChange = false): void {
-      hiddenInput.value = selectedIds.join(',');
-
-      if (selectedIds.length === 0) {
-        labelEl.textContent = defaultLabel;
-      } else if (selectedIds.length === 1) {
-        const selectedItem = itemEls.find((itemEl) => itemEl.dataset.msItem === selectedIds[0]);
-        labelEl.textContent =
-          selectedItem?.querySelector('span')?.textContent?.trim() || defaultLabel;
-      } else {
-        labelEl.textContent = `${selectedIds.length} selected`;
+        );
       }
 
-      countEl.textContent = `${selectedIds.length} selected`;
+      function updateGroupVisibility(): void {
+        groupEls.forEach((groupEl) => {
+          const visibleItems = Array.from(
+            groupEl.querySelectorAll<HTMLElement>('[data-ms-item]')
+          ).filter((item) => item.style.display !== 'none');
+          groupEl.style.display = visibleItems.length > 0 ? '' : 'none';
+        });
+      }
+
+      function applyVisibilityFilters(): void {
+        itemEls.forEach((itemEl) => {
+          const itemFilterType = itemEl.dataset.msFilterType || '';
+          const itemName = itemEl.dataset.msName || '';
+          const matchesType =
+            !activeFilterType || !itemFilterType || itemFilterType === activeFilterType;
+          const matchesSearch = searchQuery === '' || itemName.includes(searchQuery);
+          itemEl.style.display = matchesType && matchesSearch ? '' : 'none';
+        });
+        updateGroupVisibility();
+      }
+
+      function pruneSelectionsOutsideTypeFilter(): boolean {
+        if (!activeFilterType) return false;
+
+        const typeVisibleIds = new Set(
+          itemEls
+            .filter((itemEl) => {
+              const itemFilterType = itemEl.dataset.msFilterType || '';
+              return itemFilterType === '' || itemFilterType === activeFilterType;
+            })
+            .map((itemEl) => itemEl.dataset.msItem || '')
+            .filter(Boolean)
+        );
+
+        const nextSelectedIds = selectedIds.filter((selectedId) => typeVisibleIds.has(selectedId));
+        if (nextSelectedIds.length === selectedIds.length) return false;
+
+        selectedIds = nextSelectedIds;
+        return true;
+      }
+
+      function updateUI(emitChange = false): void {
+        hiddenInput.value = selectedIds.join(',');
+
+        if (selectedIds.length === 0) {
+          labelEl.textContent = defaultLabel;
+        } else if (selectedIds.length === 1) {
+          const selectedItem = itemEls.find((itemEl) => itemEl.dataset.msItem === selectedIds[0]);
+          labelEl.textContent =
+            selectedItem?.querySelector('span')?.textContent?.trim() || defaultLabel;
+        } else {
+          labelEl.textContent = `${selectedIds.length} selected`;
+        }
+
+        countEl.textContent = `${selectedIds.length} selected`;
+
+        itemEls.forEach((itemEl) => {
+          const itemId = itemEl.dataset.msItem || '';
+          const isSelected = selectedIds.includes(itemId);
+          itemEl.classList.toggle('bg-accent/10', isSelected);
+
+          const checkbox = itemEl.querySelector(`[data-ms-checkbox="${itemId}"]`);
+          const checkIcon = checkbox?.querySelector('svg');
+          checkbox?.classList.toggle('bg-accent', isSelected);
+          checkbox?.classList.toggle('border-accent', isSelected);
+          checkbox?.classList.toggle('border-base-300', !isSelected);
+          checkIcon?.classList.toggle('hidden', !isSelected);
+        });
+
+        if (emitChange) {
+          dispatchChangeEvent();
+        }
+      }
+
+      function toggleSelection(itemId: string): void {
+        if (!itemId) return;
+
+        if (selectedIds.includes(itemId)) {
+          selectedIds = selectedIds.filter((selectedId) => selectedId !== itemId);
+        } else {
+          selectedIds = [...selectedIds, itemId];
+        }
+
+        updateUI(true);
+      }
+
+      function clearAllSelections(emitChange = true): void {
+        if (selectedIds.length === 0) return;
+        selectedIds = [];
+        updateUI(emitChange);
+      }
+
+      function filterBySearch(query: string): void {
+        searchQuery = query.trim().toLowerCase();
+        applyVisibilityFilters();
+      }
+
+      function filterByType(filterType?: string): void {
+        activeFilterType = filterType || null;
+        applyVisibilityFilters();
+        const didPrune = pruneSelectionsOutsideTypeFilter();
+        updateUI(didPrune);
+      }
 
       itemEls.forEach((itemEl) => {
-        const itemId = itemEl.dataset.msItem || '';
-        const isSelected = selectedIds.includes(itemId);
-        itemEl.classList.toggle('bg-accent/10', isSelected);
-
-        const checkbox = itemEl.querySelector(`[data-ms-checkbox="${itemId}"]`);
-        const checkIcon = checkbox?.querySelector('svg');
-        checkbox?.classList.toggle('bg-accent', isSelected);
-        checkbox?.classList.toggle('border-accent', isSelected);
-        checkbox?.classList.toggle('border-base-300', !isSelected);
-        checkIcon?.classList.toggle('hidden', !isSelected);
+        itemEl.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleSelection(itemEl.dataset.msItem || '');
+        });
       });
 
-      if (emitChange) {
-        dispatchChangeEvent();
-      }
-    }
-
-    function toggleSelection(itemId: string): void {
-      if (!itemId) return;
-
-      if (selectedIds.includes(itemId)) {
-        selectedIds = selectedIds.filter((selectedId) => selectedId !== itemId);
-      } else {
-        selectedIds = [...selectedIds, itemId];
+      if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          clearAllSelections(true);
+        });
       }
 
-      updateUI(true);
-    }
+      if (searchInput) {
+        searchInput.addEventListener('input', () => {
+          filterBySearch(searchInput.value);
+        });
 
-    function clearAllSelections(emitChange = true): void {
-      if (selectedIds.length === 0) return;
-      selectedIds = [];
-      updateUI(emitChange);
-    }
+        searchInput.addEventListener('click', (event) => {
+          event.stopPropagation();
+        });
+      }
 
-    function filterBySearch(query: string): void {
-      searchQuery = query.trim().toLowerCase();
-      applyVisibilityFilters();
-    }
-
-    function filterByType(filterType?: string): void {
-      activeFilterType = filterType || null;
-      applyVisibilityFilters();
-      const didPrune = pruneSelectionsOutsideTypeFilter();
-      updateUI(didPrune);
-    }
-
-    itemEls.forEach((itemEl) => {
-      itemEl.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleSelection(itemEl.dataset.msItem || '');
-      });
-    });
-
-    if (clearAllBtn) {
-      clearAllBtn.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+      window.addEventListener(FILTERS_RESET_EVENT, () => {
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        searchQuery = '';
         clearAllSelections(true);
-      });
-    }
-
-    if (searchInput) {
-      searchInput.addEventListener('input', () => {
-        filterBySearch(searchInput.value);
+        applyVisibilityFilters();
       });
 
-      searchInput.addEventListener('click', (event) => {
-        event.stopPropagation();
+      window.addEventListener('multiselect:filter', (event: Event) => {
+        const customEvent = event as CustomEvent<MultiSelectFilterEvent>;
+        if (customEvent.detail?.id !== multiselectId) return;
+        filterByType(customEvent.detail?.filterType);
       });
-    }
 
-    window.addEventListener(FILTERS_RESET_EVENT, () => {
-      if (searchInput) {
-        searchInput.value = '';
+      window.addEventListener('multiselect:sync', (event: Event) => {
+        const customEvent = event as CustomEvent<MultiSelectSyncEvent>;
+        if (customEvent.detail?.id !== multiselectId) return;
+
+        selectedIds = Array.isArray(customEvent.detail?.selectedIds)
+          ? customEvent.detail.selectedIds.filter(Boolean)
+          : [];
+        searchQuery = '';
+        if (searchInput) {
+          searchInput.value = '';
+        }
+
+        applyVisibilityFilters();
+        updateUI(false);
+      });
+
+      const hasFilterTypedItems = itemEls.some((itemEl) => Boolean(itemEl.dataset.msFilterType));
+      if (hasFilterTypedItems) {
+        const activeTypeButton = document.querySelector<HTMLElement>(
+          '[data-filter-type][aria-pressed="true"]'
+        );
+        const currentType = activeTypeButton?.dataset.filterType || '';
+        filterByType(currentType);
+      } else {
+        applyVisibilityFilters();
+        updateUI(false);
       }
-      searchQuery = '';
-      clearAllSelections(true);
-      applyVisibilityFilters();
     });
+  }
 
-    window.addEventListener('multiselect:filter', (event: Event) => {
-      const customEvent = event as CustomEvent<MultiSelectFilterEvent>;
-      if (customEvent.detail?.id !== multiselectId) return;
-      filterByType(customEvent.detail?.filterType);
-    });
+  // Initialize on first load
+  initMultiSelectDropdowns();
 
-    window.addEventListener('multiselect:sync', (event: Event) => {
-      const customEvent = event as CustomEvent<MultiSelectSyncEvent>;
-      if (customEvent.detail?.id !== multiselectId) return;
-
-      selectedIds = Array.isArray(customEvent.detail?.selectedIds)
-        ? customEvent.detail.selectedIds.filter(Boolean)
-        : [];
-      searchQuery = '';
-      if (searchInput) {
-        searchInput.value = '';
-      }
-
-      applyVisibilityFilters();
-      updateUI(false);
-    });
-
-    const hasFilterTypedItems = itemEls.some((itemEl) => Boolean(itemEl.dataset.msFilterType));
-    if (hasFilterTypedItems) {
-      const activeTypeButton = document.querySelector<HTMLElement>(
-        '[data-filter-type][aria-pressed="true"]'
-      );
-      const currentType = activeTypeButton?.dataset.filterType || '';
-      filterByType(currentType);
-    } else {
-      applyVisibilityFilters();
-      updateUI(false);
-    }
-  });
+  // Re-initialize after Astro view transitions swap the DOM
+  document.addEventListener('astro:page-load', initMultiSelectDropdowns);
 </script>
