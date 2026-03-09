@@ -123,9 +123,9 @@ describe('PerfCollector', () => {
     });
 
     test('includes dialect in output', () => {
-      perf.setDialect('postgresql');
+      perf.setDialect('sqlite');
       const output = perf.toHtmlComment();
-      expect(output).toContain('Dialect: postgresql');
+      expect(output).toContain('Dialect: sqlite');
     });
 
     test('excludes dialect when not set', () => {

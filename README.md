@@ -453,103 +453,39 @@ See `.github/workflows/e2e-tests.yml` for the full CI configuration.
 
 ## Deployment
 
-The application supports deployment to multiple platforms without vendor lock-in. Local development uses SQLite, while production deployments use Supabase PostgreSQL.
+Allowealth now uses SQLite for local development and Cloudflare D1 for production. Cloudflare Workers is the supported production deployment target.
 
-### Supported Platforms
+### Supported targets
 
-| Platform   | Use Case                  | Adapter               |
-| ---------- | ------------------------- | --------------------- |
-| Node       | Traditional hosting (VPS) | `@astrojs/node`       |
-| Cloudflare | Workers/Pages (Edge)      | `@astrojs/cloudflare` |
-| Vercel     | Serverless                | `@astrojs/vercel`     |
-| Netlify    | Functions                 | `@astrojs/netlify`    |
+| Platform   | Use Case                          | Adapter               |
+| ---------- | --------------------------------- | --------------------- |
+| Cloudflare | Supported production deployment   | `@astrojs/cloudflare` |
+| Node       | Build target for custom workflows | `@astrojs/node`       |
+| Vercel     | Build target for custom workflows | `@astrojs/vercel`     |
+| Netlify    | Build target for custom workflows | `@astrojs/netlify`    |
 
-### Prerequisites
+### Production prerequisites
 
-Before deploying to any platform, you need:
+Before deploying to production, create:
 
-1. **Supabase Project** with PostgreSQL database
-2. **Database URL** (use the pooler connection string for serverless platforms)
-3. **Platform adapter** installed: `bun add -d @astrojs/[platform]`
+1. a Cloudflare account
+2. a D1 database
+3. a local `wrangler.toml` copied from `wrangler.toml.example`
+4. Cloudflare secrets for app integrations
 
-### Environment Variables
+### Production environment
 
-All platforms require these environment variables:
+Use production values such as:
 
 ```bash
-DATABASE_URL=postgresql://postgres.xxx:password@aws-0-region.pooler.supabase.com:6543/postgres
 NODE_ENV=production
 PUBLIC_URL=https://your-app.example.com
 SIGNUP_MODE=invite_only
 ```
 
-**Important:** For serverless platforms (Cloudflare, Vercel, Netlify), always use the Supabase **pooler URL** (port 6543), not the direct connection.
-`SIGNUP_MODE=invite_only` enforces invitation-only registration. Set `SIGNUP_MODE=public` when you're ready to open public signup.
+`SIGNUP_MODE=invite_only` enforces invitation-only registration. Set `SIGNUP_MODE=public` when you are ready to open signup.
 
-### Supabase PostgreSQL Setup
-
-When using Supabase as your production database:
-
-1. **Create a Supabase project** at [supabase.com](https://supabase.com)
-
-2. **Get the connection string** from Settings → Database → Connection string → URI
-   - Use the **Transaction pooler** connection (port 6543) for serverless deployments
-   - Use the **Session pooler** connection for long-running servers
-
-3. **Create `.env.production`** with your database URL:
-
-   ```bash
-   DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-   ```
-
-4. **Push the schema** to your production database:
-
-   ```bash
-   bun run db:push
-   ```
-
-5. **Use production CLI commands** to manage data:
-
-   ```bash
-   # Create workspace in production
-   bun run cli:create-workspace:prod -- --name "My Family"
-
-   # List production workspaces
-   bun run cli:list-workspaces:prod
-
-   # Empty production database (use with caution!)
-   bun run db:empty:prod
-   ```
-
-**Note:** The codebase uses `import.meta.env` (not `process.env`) for Bun compatibility. The `:prod` script variants automatically load `.env.production` using `--env-file`.
-
-### Platform-Specific Deployment
-
-#### 1. Node (Traditional Hosting)
-
-Deploy to any VPS or cloud provider that supports Node.js.
-
-```bash
-# Install adapter
-bun add -d @astrojs/node
-
-# Build for Node
-bun run build:node
-
-# Start server
-node dist/server/entry.mjs
-```
-
-**Production server:**
-
-```bash
-# Using PM2 or similar process manager
-pm2 start dist/server/entry.mjs --name allowealth
-```
-
-#### 2. Cloudflare Workers/Pages
-
-Deploy to Cloudflare's edge network.
+### Cloudflare Workers deployment
 
 ```bash
 # Install adapter and Wrangler CLI
@@ -558,88 +494,49 @@ bun add -d wrangler
 
 # Copy and configure wrangler.toml
 cp wrangler.toml.example wrangler.toml
-# Edit wrangler.toml: set your D1 database_id or Hyperdrive id
 
-# Set database URL secret
-wrangler secret put DATABASE_URL
+# Create D1
+wrangler d1 create allowealth-db
+
+# Apply migrations
+for file in drizzle/sqlite/*.sql; do
+  wrangler d1 execute allowealth-db --remote --file="$file"
+done
+
+# Set application secrets
+wrangler secret put EMAIL_API_KEY
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
 
 # Build and deploy
 bun run deploy:cloudflare
 ```
 
-**Configuration:** `wrangler.toml` is gitignored and must be created locally from `wrangler.toml.example`. This keeps your Cloudflare resource IDs out of version control. The example file contains placeholder values — replace `YOUR_D1_DATABASE_ID` / `YOUR_HYPERDRIVE_ID` with IDs from your Cloudflare account.
+`wrangler.toml` is gitignored and must be created locally from `wrangler.toml.example`. Replace placeholder values with your real Cloudflare IDs.
 
-#### 3. Vercel
+### First deployment checklist
 
-Deploy to Vercel's serverless platform.
-
-```bash
-# Install adapter and Vercel CLI
-bun add -d @astrojs/vercel
-npm install -g vercel
-
-# Add environment variables in Vercel dashboard
-# or via CLI: vercel env add DATABASE_URL
-
-# Build and deploy
-bun run deploy:vercel
-```
-
-**Configuration:** `vercel.json` is already included in the project.
-
-#### 4. Netlify
-
-Deploy to Netlify Functions.
+After deploying, complete these steps:
 
 ```bash
-# Install adapter and Netlify CLI
-bun add -d @astrojs/netlify
-npm install -g netlify-cli
+# 1. Create the first workspace against remote D1
+bun run aw workspace create --target d1 --name "My Family" --email admin@example.com
 
-# Add environment variables in Netlify dashboard
-# or via CLI: netlify env:set DATABASE_URL "postgresql://..."
+# 2. Follow the CLI output to access the workspace
 
-# Build and deploy
-bun run deploy:netlify
+# 3. Log in and finish setup in the app
 ```
 
-**Configuration:** `netlify.toml` is already included in the project.
+### Local D1 testing
 
-### First Deployment Checklist
-
-After deploying to your chosen platform, complete these steps:
+If you want a production-like database flow without touching remote D1, use the local D1 target:
 
 ```bash
-# 1. Create .env.production with your Supabase DATABASE_URL
-echo 'DATABASE_URL=postgresql://...' > .env.production
-
-# 2. Run database migrations
-bun --env-file=.env.production run db:push
-
-# 3. Create workspace and admin user
-bun run cli:create-workspace:prod -- \
-  --name "My Family" \
-  --currency IDR \
-  --week-start monday
-
-# 4. Follow the CLI output to get admin credentials
-
-# 5. Log in and start using the application
+bun run aw db migrate --target d1-local
 ```
 
-**Important Notes:**
+### Important notes
 
-- The seeder is **disabled in production** by default (safe by default)
-- Use the CLI to create your first workspace and admin user
-- Invite additional family members through the application after logging in
-- Never commit `.env` files with production credentials
-
-### Testing Production Database Locally
-
-You can test with the production database locally:
-
-```bash
-DATABASE_URL="postgresql://..." bun run dev
-```
-
-This is useful for debugging production-specific issues without deploying.
+- The seeder is disabled in production by default.
+- Use the CLI to create the first workspace and admin access path.
+- Never commit `.env` files or `wrangler.toml` with real credentials or IDs.

@@ -3,6 +3,7 @@ import EmptyState from '@/components/atoms/EmptyState.astro';
 import RecurringPendingCard from '@/components/molecules/RecurringPendingCard.astro';
 import { CircleAlert, CircleCheckBig, CircleMinus } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 
@@ -37,6 +38,10 @@ const queueRows = occurrences.map((occurrence) => {
     occurrence.isInstallment && occurrence.totalOccurrences
       ? `${String(occurrence.occurrence_number).padStart(2, '0')}/${String(occurrence.totalOccurrences).padStart(2, '0')}`
       : null;
+  const cadenceLabel = formatRecurringFrequencyLabel(
+    occurrence.templateFrequency || 'monthly',
+    occurrence.templateIntervalCount || 1
+  );
 
   return {
     occurrence,
@@ -44,6 +49,7 @@ const queueRows = occurrences.map((occurrence) => {
     isOverdue,
     canAct,
     dueLabel,
+    cadenceLabel,
     installmentLabel,
     payload: JSON.stringify(occurrence),
   };
@@ -53,12 +59,22 @@ const queueRows = occurrences.map((occurrence) => {
 <section class="space-y-3" data-testid="recurring-pending-section">
   <div class="flex flex-wrap items-center gap-2">
     <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/70">Upcoming Queue</h3>
-    <span class="badge badge-sm badge-success badge-outline font-semibold"
-      >Income {incomeCount}</span
+    <button
+      type="button"
+      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-success/40 text-success"
+      data-pending-filter="income"
+      aria-pressed="false"
     >
-    <span class="badge badge-sm badge-error badge-outline font-semibold"
-      >Expenses {expenseCount}</span
+      Income {incomeCount}
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-error/40 text-error"
+      data-pending-filter="expense"
+      aria-pressed="false"
     >
+      Expenses {expenseCount}
+    </button>
   </div>
 
   {
@@ -121,11 +137,22 @@ const queueRows = occurrences.map((occurrence) => {
             </thead>
             <tbody>
               {queueRows.map((row) => {
-                const { occurrence, isExpense, isOverdue, canAct, dueLabel, installmentLabel } =
-                  row;
+                const {
+                  occurrence,
+                  isExpense,
+                  isOverdue,
+                  canAct,
+                  dueLabel,
+                  cadenceLabel,
+                  installmentLabel,
+                } = row;
 
                 return (
-                  <tr data-testid="recurring-pending-card" data-occurrence-id={occurrence.id}>
+                  <tr
+                    data-testid="recurring-pending-card"
+                    data-occurrence-id={occurrence.id}
+                    data-occurrence-type={occurrence.templateType}
+                  >
                     <td>
                       <span
                         class:list={[
@@ -174,11 +201,7 @@ const queueRows = occurrences.map((occurrence) => {
                     <td>
                       <div class="space-y-1 text-xs text-base-content/70">
                         <p>Occurrence #{occurrence.occurrence_number}</p>
-                        <p>
-                          {installmentLabel
-                            ? `Installment ${installmentLabel}`
-                            : 'Recurring monthly'}
-                        </p>
+                        <p>{installmentLabel ? `Installment ${installmentLabel}` : cadenceLabel}</p>
                       </div>
                     </td>
                     <td>
@@ -208,7 +231,7 @@ const queueRows = occurrences.map((occurrence) => {
                       ) : (
                         <div class="inline-flex items-center gap-1.5 text-xs text-base-content/70">
                           <CircleAlert size={14} aria-hidden="true" />
-                          Available on {dueLabel}
+                          {isExpense ? 'Due' : 'Expected'} {dueLabel}
                         </div>
                       )}
                     </td>

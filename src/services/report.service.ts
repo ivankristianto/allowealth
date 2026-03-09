@@ -25,7 +25,6 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
-import { getDatabaseConfig } from '@/db/config';
 import { createLogger } from '@/lib/logger';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
@@ -1394,10 +1393,7 @@ export class ReportService {
   }
 
   private monthBucket(column: any) {
-    const { dialect } = getDatabaseConfig();
-    return dialect === 'postgresql'
-      ? sql<string>`to_char(${column}, 'YYYY-MM')`
-      : sql<string>`strftime('%Y-%m', ${column}, 'unixepoch')`;
+    return sql<string>`strftime('%Y-%m', ${column}, 'unixepoch')`;
   }
 
   private toMonthKey(date: Date): string {

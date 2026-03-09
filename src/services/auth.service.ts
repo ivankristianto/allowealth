@@ -448,7 +448,7 @@ export async function login(
     if (error instanceof AuthError) {
       throw error;
     }
-    // Log full error details for diagnosis (postgres.js errors have code, severity, detail)
+    // Log full error details for diagnosis
     const errObj = error as Record<string, unknown>;
     const details = [
       errObj.message,

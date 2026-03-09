@@ -8,9 +8,14 @@ export const GET: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const perf = context.locals.perf;
 
-    const filters = buildForecastFilters(context.url.searchParams);
+    const { monthCount, ...filters } = buildForecastFilters(context.url.searchParams);
 
-    const result = await recurringForecastService.getForecast(auth.workspaceId, filters, 12, perf);
+    const result = await recurringForecastService.getForecast(
+      auth.workspaceId,
+      filters,
+      monthCount,
+      perf
+    );
 
     return successResponse(result);
   } catch (error) {

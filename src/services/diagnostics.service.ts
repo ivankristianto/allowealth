@@ -63,14 +63,8 @@ export class DiagnosticsService {
       dialect: config.dialect,
       url: sanitizedUrl,
       isConnected: false,
-      isSupabase: config.isSupabase,
-      isTransactionPooler: config.isTransactionPooler,
-      isHyperdrive: config.isHyperdrive,
+      isD1: config.isD1,
     };
-
-    if (config.poolConfig) {
-      info.connectionPoolConfig = config.poolConfig;
-    }
 
     // Test database connectivity
     try {

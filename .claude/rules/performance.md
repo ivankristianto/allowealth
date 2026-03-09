@@ -123,7 +123,7 @@ export async function onRequest(context) {
   await db.close();
 }
 
-// ✅ Correct: Use Hyperdrive for Workers
+// ✅ Correct: Use D1 for Workers
 // - Local proxy with 0 overhead
 // - Connection pooling
 // - Direct connection (port 5432), not transaction pooler
@@ -131,9 +131,9 @@ export async function onRequest(context) {
 
 **Rules:**
 
-- ✅ **Use Hyperdrive for Workers database connections** - local proxy, 0 overhead
+- ✅ **Use D1 for Workers database access** - native edge database, no external connection overhead
 - ✅ **Fresh connections per request in Workers** - no singletons
-- ❌ **Use Supabase transaction pooler with Hyperdrive** - use direct connection
+- ❌ **Reintroduce external PostgreSQL connection layers for Workers** - use the D1 binding path
 - ❌ **Singleton connections in Workers** - edge runtime doesn't support
 
 ## Cache Strategy
@@ -506,5 +506,5 @@ npm run lighthouse
 **Monitor in production:**
 
 - Cloudflare Workers Analytics - request duration, cache hit rate
-- Supabase Dashboard - query performance, connection pool
+- Cloudflare Workers Logs - request and runtime diagnostics
 - Upstash Console - cache operations, hit rate

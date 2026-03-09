@@ -1,0 +1,67 @@
+---
+import type { Currency } from '@/lib/constants/currency';
+import { formatCurrency } from '@/lib/formatting';
+import { Minus, TrendingDown, TrendingUp } from '@lucide/astro';
+
+export interface Props {
+  income: string;
+  expense: string;
+  net: string;
+  currency: Currency;
+  monthCount: number;
+}
+
+const { income, expense, net, currency, monthCount } = Astro.props;
+
+const incomeNum = Number.parseFloat(income);
+const expenseNum = Number.parseFloat(expense);
+const netNum = Number.parseFloat(net);
+const isNetPositive = netNum >= 0;
+---
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <div class="rounded-3xl border border-base-300 bg-base-100 p-5 shadow-sm">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+        {monthCount}-Month Projected Income
+      </p>
+      <TrendingUp size={16} class="shrink-0 stroke-success" aria-hidden="true" />
+    </div>
+    <p class="mt-2 text-xl font-bold tabular-nums text-success">
+      {formatCurrency(incomeNum.toFixed(2), currency)}
+    </p>
+  </div>
+
+  <div class="rounded-3xl border border-base-300 bg-base-100 p-5 shadow-sm">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+        {monthCount}-Month Projected Expenses
+      </p>
+      <TrendingDown size={16} class="shrink-0 stroke-error" aria-hidden="true" />
+    </div>
+    <p class="mt-2 text-xl font-bold tabular-nums text-error">
+      {formatCurrency((-Math.abs(expenseNum)).toFixed(2), currency)}
+    </p>
+  </div>
+
+  <div class="rounded-3xl border border-base-300 bg-base-100 p-5 shadow-sm">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-xs font-bold uppercase tracking-widest text-base-content/40">
+        {monthCount}-Month Net Cash Flow
+      </p>
+      <Minus
+        size={16}
+        class:list={['shrink-0', isNetPositive ? 'stroke-info' : 'stroke-error']}
+        aria-hidden="true"
+      />
+    </div>
+    <p
+      class:list={[
+        'mt-2 text-xl font-bold tabular-nums',
+        isNetPositive ? 'text-info' : 'text-error',
+      ]}
+    >
+      {formatCurrency(netNum.toFixed(2), currency)}
+    </p>
+  </div>
+</div>

@@ -28,7 +28,7 @@ Comprehensive performance rules extracted from:
 - **N+1 Prevention**: Subqueries/JOINs instead of loops
 - **Bulk Operations**: CSV import optimization (3000 → 5 queries)
 - **Query Complexity**: Indexes, LIMIT, WHERE clauses
-- **Connection Optimization**: Hyperdrive, fresh connections per request
+- **Connection Optimization**: D1 bindings in Workers, fresh request-scoped setup
 
 **Real-world example:**
 
@@ -155,7 +155,7 @@ npm run lighthouse
 Performance rules are ready to use. Consider:
 
 1. **Add performance tests** - E2E tests for page load times
-2. **Set up monitoring** - Cloudflare Analytics, Supabase dashboard
+2. **Set up monitoring** - Cloudflare Analytics and Workers logs
 3. **Create performance dashboard** - Track metrics over time
 4. **Regular audits** - Monthly performance reviews
 

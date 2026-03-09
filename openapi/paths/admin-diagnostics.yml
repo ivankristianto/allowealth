@@ -28,12 +28,10 @@ paths:
                     region: us-east-1
                     workersCf: ORD
                   database:
-                    dialect: postgresql
-                    url: 'postgresql://db.xxx.supabase.co:5432/postgres?password=***'
+                    dialect: sqlite
+                    url: ''
                     isConnected: true
-                    isSupabase: true
-                    isTransactionPooler: false
-                    isHyperdrive: true
+                    isD1: true
                   cache:
                     driver: upstash
                     isEnabled: true
@@ -49,13 +47,13 @@ paths:
                       isSet: true
                       isSensitive: false
                     - name: DATABASE_URL
-                      value: 'postgresql://db.xxx.supabase.co:5432/postgres?password=***'
-                      isSet: true
+                      value: '(not set)'
+                      isSet: false
                       isSensitive: true
-                    - name: AUTH_SECRET
-                      value: abcd...xyz
+                    - name: EMAIL_MODE
+                      value: real
                       isSet: true
-                      isSensitive: true
+                      isSensitive: false
                   configuration:
                     isValid: true
                     missingRequired: []

@@ -8,7 +8,8 @@
  */
 export function createMockCrypto() {
   let counter = 0;
-  let originalRandomUUID: typeof globalThis.crypto.randomUUID | undefined;
+  let originalCrypto: Crypto | undefined;
+  let originalRandomUUIDDescriptor: PropertyDescriptor | undefined;
 
   const mockRandomUUID = (): `${string}-${string}-${string}-${string}-${string}` => {
     const id = String(counter++).padStart(12, '0');
@@ -17,23 +18,28 @@ export function createMockCrypto() {
 
   return {
     install: () => {
-      originalRandomUUID = globalThis.crypto?.randomUUID;
-      Object.defineProperty(globalThis.crypto, 'randomUUID', {
+      originalCrypto = globalThis.crypto;
+      if (!originalCrypto) return;
+
+      originalRandomUUIDDescriptor = Object.getOwnPropertyDescriptor(originalCrypto, 'randomUUID');
+      Object.defineProperty(originalCrypto, 'randomUUID', {
         value: mockRandomUUID,
-        writable: true,
         configurable: true,
+        writable: true,
       });
     },
     reset: () => {
       counter = 0;
     },
     uninstall: () => {
-      if (originalRandomUUID) {
-        Object.defineProperty(globalThis.crypto, 'randomUUID', {
-          value: originalRandomUUID,
-          writable: true,
-          configurable: true,
-        });
+      if (originalCrypto) {
+        if (originalRandomUUIDDescriptor) {
+          Object.defineProperty(originalCrypto, 'randomUUID', originalRandomUUIDDescriptor);
+        } else {
+          delete (originalCrypto as Crypto & { randomUUID?: unknown }).randomUUID;
+        }
+        originalCrypto = undefined;
+        originalRandomUUIDDescriptor = undefined;
       }
     },
   };

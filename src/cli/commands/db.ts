@@ -19,7 +19,7 @@ const D1_DATABASE_NAME = 'allowealth-db';
 const DEFAULT_BACKUP_DIR = 'backups';
 const SCHEMA_DETECTION_BUFFER_SIZE = 256 * 1024;
 
-type BackupFormat = 'sql' | 'gzip-sql' | 'pg-custom' | 'sqlite-db';
+type BackupFormat = 'sql' | 'gzip-sql' | 'sqlite-db';
 
 function timestampForFile(date = new Date()): string {
   return date.toISOString().replace(/[:]/g, '-').replace(/\..+$/, '');
@@ -62,10 +62,6 @@ function detectBackupFormat(filePath: string): BackupFormat {
     closeSync(fd);
   }
 
-  if (header[0] === 0x50 && header[1] === 0x47 && header[2] === 0x44 && header[3] === 0x4d) {
-    return 'pg-custom';
-  }
-
   if (header[0] === 0x1f && header[1] === 0x8b) {
     return 'gzip-sql';
   }
@@ -85,11 +81,6 @@ function validateBackupFile(filePath: string, format: BackupFormat): void {
 
   if (format === 'gzip-sql') {
     execFileSync('gzip', ['-t', filePath], { stdio: 'pipe' });
-    return;
-  }
-
-  if (format === 'pg-custom') {
-    execFileSync('pg_restore', ['-l', filePath], { stdio: 'pipe' });
     return;
   }
 
@@ -166,25 +157,8 @@ async function requireRestoreConfirmation(force?: boolean): Promise<void> {
   }
 }
 
-function getDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error('DATABASE_URL is required for postgres backup/restore.');
-  }
-  return url;
-}
-
-function backupToPath(target: string, outputPath: string, _format?: string): void {
+function backupToPath(target: string, outputPath: string): void {
   mkdirSync(dirname(outputPath), { recursive: true });
-
-  if (target === 'postgres') {
-    const isCustom = outputPath.endsWith('.dump');
-    const args = isCustom
-      ? ['--format=custom', '--file', outputPath, getDatabaseUrl()]
-      : ['--clean', '--if-exists', '--file', outputPath, getDatabaseUrl()];
-    exec('pg_dump', args);
-    return;
-  }
 
   if (target === 'sqlite') {
     const dbPath = resolve('db/.dev.db');
@@ -375,8 +349,6 @@ export default defineCommand({
         } else if (target === 'sqlite') {
           exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
           console.log('✅ SQLite database file deleted.');
-        } else if (target === 'postgres') {
-          exec('bun', ['run', 'src/db/drop-postgres.ts']);
         }
 
         console.log('\n✅ Database dropped. Run "aw db migrate" to recreate schema.\n');
@@ -388,35 +360,20 @@ export default defineCommand({
         target: targetArg,
         output: {
           type: 'string',
-          description: 'Output backup path. Defaults to backups/<target>-<timestamp>.{sql|dump|db}',
-        },
-        format: {
-          type: 'string',
-          description: 'Backup format for postgres (sql or custom)',
-          default: 'sql',
+          description: 'Output backup path. Defaults to backups/<target>-<timestamp>.{sql|db}',
         },
       },
       async run({ args }) {
-        const formatArg = (args.format as string).toLowerCase();
-        if (formatArg !== 'sql' && formatArg !== 'custom') {
-          throw new Error(`Invalid --format "${formatArg}". Allowed values: sql, custom`);
-        }
-
         const { resolveTarget, getTarget } = await import('../lib/target');
         await resolveTarget(args);
         const target = getTarget();
 
-        const defaultExt =
-          target === 'postgres' && formatArg === 'custom'
-            ? 'dump'
-            : target === 'sqlite'
-              ? 'db'
-              : 'sql';
+        const defaultExt = target === 'sqlite' ? 'db' : 'sql';
         const outputPath =
           (args.output as string | undefined) ??
           resolve(DEFAULT_BACKUP_DIR, `${target}-${timestampForFile()}.${defaultExt}`);
 
-        backupToPath(target, outputPath, formatArg);
+        backupToPath(target, outputPath);
         console.log(`✅ Backup created: ${outputPath}`);
       },
     }),
@@ -496,7 +453,6 @@ export default defineCommand({
 
         // Validate target/format compatibility
         const validFormatsForTarget: Record<string, BackupFormat[]> = {
-          postgres: ['sql', 'gzip-sql', 'pg-custom'],
           sqlite: ['sql', 'sqlite-db'],
           d1: ['sql'],
           'd1-local': ['sql'],
@@ -535,24 +491,7 @@ export default defineCommand({
           console.log(`✅ Pre-restore backup created: ${preRestorePath}`);
         }
 
-        if (target === 'postgres') {
-          if (format === 'pg-custom') {
-            exec('pg_restore', [
-              '--clean',
-              '--if-exists',
-              '--no-owner',
-              '--no-privileges',
-              '--dbname',
-              getDatabaseUrl(),
-              selectedFile,
-            ]);
-          } else if (format === 'gzip-sql') {
-            const sql = execFileSync('gzip', ['-cd', selectedFile], { encoding: 'utf8' });
-            execFileSync('psql', [getDatabaseUrl()], { input: sql });
-          } else {
-            exec('psql', [getDatabaseUrl(), '-f', selectedFile]);
-          }
-        } else if (target === 'sqlite') {
+        if (target === 'sqlite') {
           if (format === 'sqlite-db') {
             copyFileSync(selectedFile, resolve('db/.dev.db'));
           } else if (format === 'sql') {

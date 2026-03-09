@@ -9,7 +9,7 @@ EnvironmentVariable:
     value:
       type: string
       description: Variable value (masked if sensitive)
-      example: postgresql://db.xxx.supabase.co:5432/postgres?password=***
+      example: db/.dev.db
     isSet:
       type: boolean
       description: Whether the variable is set

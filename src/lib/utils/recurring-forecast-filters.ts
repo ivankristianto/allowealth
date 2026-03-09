@@ -3,6 +3,9 @@ import type { ForecastFilters } from '@/lib/types/recurring';
 const ACCOUNT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const MAX_ACCOUNT_ID_LENGTH = 64;
 export const MAX_FORECAST_ACCOUNT_IDS = 50;
+const VALID_MONTH_COUNTS = [3, 6, 12, 24] as const;
+
+export type ForecastMonthCount = (typeof VALID_MONTH_COUNTS)[number];
 
 export function parseForecastType(value: string | null | undefined): ForecastFilters['type'] {
   if (value === 'income' || value === 'expense') return value;
@@ -42,15 +45,25 @@ export function parseForecastAccountIds(params: URLSearchParams): string[] | und
   return normalizeForecastAccountIds(parsed);
 }
 
-export function buildForecastFilters(params: URLSearchParams): ForecastFilters {
+export function parseForecastMonthCount(value: string | null | undefined): ForecastMonthCount {
+  const num = Number(value);
+  const validMonthCount = VALID_MONTH_COUNTS.find((monthCount) => monthCount === num);
+  return validMonthCount ?? 12;
+}
+
+export function buildForecastFilters(
+  params: URLSearchParams
+): ForecastFilters & { monthCount: ForecastMonthCount } {
   const type = parseForecastType(params.get('type'));
   const status = parseForecastStatus(params.get('status'));
   const accountIds = parseForecastAccountIds(params);
+  const monthCount = parseForecastMonthCount(params.get('monthCount'));
 
   return {
     ...(type && { type }),
     ...(status && { status }),
     ...(accountIds && { accountIds }),
+    monthCount,
   };
 }
 

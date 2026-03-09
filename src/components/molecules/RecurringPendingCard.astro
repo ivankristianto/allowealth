@@ -25,7 +25,11 @@ const dueDateLabel = dueDate.toLocaleDateString('en-US', {
   day: 'numeric',
 });
 const dueBadgeClass = isOverdue ? 'badge-error' : canAct ? 'badge-warning' : 'badge-ghost';
-const dueBadgeLabel = isOverdue ? `Overdue · ${dueDateLabel}` : `Due ${dueDateLabel}`;
+const dueBadgeLabel = isOverdue
+  ? `Overdue · ${dueDateLabel}`
+  : isExpense
+    ? `Due ${dueDateLabel}`
+    : `Expected ${dueDateLabel}`;
 
 const occurrencePayload = JSON.stringify(occurrence);
 const amountLabel = formatCurrency(occurrence.templateAmount, occurrence.currency);
@@ -43,6 +47,7 @@ const installmentLabel =
   ]}
   data-testid="recurring-pending-card"
   data-occurrence-id={occurrence.id}
+  data-occurrence-type={occurrence.templateType}
 >
   <div class="space-y-3">
     <div class="flex min-w-0 items-start gap-3">
@@ -105,7 +110,9 @@ const installmentLabel =
           </button>
         </div>
       ) : (
-        <p class="text-xs text-base-content/70">Available on {dueDateLabel}</p>
+        <p class="text-xs text-base-content/70">
+          {isExpense ? 'Due' : 'Expected'} {dueDateLabel}
+        </p>
       )
     }
   </div>

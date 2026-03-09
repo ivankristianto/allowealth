@@ -1,2 +1,0 @@
-CREATE INDEX "recurring_templates_workspace_id_account_id_idx" ON "recurring_templates" USING btree ("workspace_id","account_id");--> statement-breakpoint
-CREATE INDEX "recurring_templates_workspace_id_type_idx" ON "recurring_templates" USING btree ("workspace_id","type");
