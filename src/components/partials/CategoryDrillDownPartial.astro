@@ -16,6 +16,7 @@ import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { getBudgetStatus } from '@/lib/utils/budget';
+import { formatMonthYear } from '@/lib/utils/date';
 import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 
 import type { TransactionOutput } from '@/lib/types/transaction';
@@ -51,6 +52,9 @@ const {
   offset,
   hasMore,
 } = Astro.props;
+
+const isMonthlyPeriod = /^\d{4}-\d{2}$/.test(period);
+const displayPeriod = isMonthlyPeriod ? formatMonthYear(new Date(`${period}-01`)) : period;
 
 const dateGroups = groupTransactionsByDate(transactions);
 
@@ -106,7 +110,7 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
           {categoryName}
         </h2>
         <p class="text-neutral text-sm mt-2 font-medium uppercase tracking-widest">
-          {period.toUpperCase()}
+          {displayPeriod.toUpperCase()}
         </p>
       </div>
     </div>
