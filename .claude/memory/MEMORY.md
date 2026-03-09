@@ -22,7 +22,7 @@ This file is managed by Claude Code's auto-memory system.
 
 - Local: SQLite via `bun:sqlite`
 - Production: Cloudflare D1
-- Migrations: Always generate for **both** dialects (`db:generate` + `db:generate:prod`)
+- Migrations: Single SQLite flow; generate `drizzle/sqlite/*.sql` once and use for both local SQLite and Cloudflare D1
 
 ## Key Architecture Patterns
 

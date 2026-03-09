@@ -850,9 +850,7 @@ const totalsByCurrency = txns.reduce(
 
 ```
 drizzle/
-├── sqlite/
-│   ├── 0000_*.sql   # Current baseline migration (history reset)
-│   └── meta/        # Drizzle migration metadata
+
 └── sqlite/
     ├── 0000_*.sql   # Current baseline migration (history reset)
     └── meta/        # Drizzle migration metadata

@@ -88,7 +88,7 @@ Full specification: `design-system/START.md`
 The project uses SQLite (local dev) and Cloudflare D1 (production) with Drizzle ORM.
 
 - Maintain the shared schema in `src/db/schema/sqlite/`
-- Generate migrations for **both** dialects on every schema change
+- Generate SQLite migrations (drizzle/sqlite), apply them locally, and deploy the same SQL to D1 on every schema change
 - Use `getActiveSchema()` in services — never import tables directly
 - See `docs/architecture/007-database-migrations.md`
 
