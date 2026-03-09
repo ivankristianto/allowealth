@@ -6,6 +6,7 @@ import {
   formatAmountForDisplay,
 } from '@/lib/formatting/amount-input';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
+import { normalizeInstallmentState, type EndMode } from '@/components/organisms/recurring-ui';
 
 interface RecurringTemplateLike {
   id: string;
@@ -87,8 +88,9 @@ function initRecurringTemplateForm(): void {
   const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
   const currencySelect = form.querySelector('select[name="currency"]') as HTMLSelectElement | null;
 
-  const useCount = form.querySelector('input[name="use_count"]') as HTMLInputElement | null;
-  const useDate = form.querySelector('input[name="use_date"]') as HTMLInputElement | null;
+  const endModeInputs = Array.from(
+    form.querySelectorAll<HTMLInputElement>('input[name="end_mode"]')
+  );
   const totalOccurrencesInput = form.querySelector(
     'input[name="total_occurrences"]'
   ) as HTMLInputElement | null;
@@ -100,6 +102,12 @@ function initRecurringTemplateForm(): void {
     'input[name="is_installment"]'
   ) as HTMLInputElement | null;
   const installmentFields = form.querySelector('[data-installment-fields]') as HTMLElement | null;
+  const startingOccurrenceInput = form.querySelector(
+    'input[name="starting_occurrence_number"]'
+  ) as HTMLInputElement | null;
+  const installmentLabelInput = form.querySelector(
+    'input[name="installment_label"]'
+  ) as HTMLInputElement | null;
   const installmentDisabledHint = form.querySelector(
     '[data-installment-disabled-hint]'
   ) as HTMLElement | null;
@@ -197,6 +205,15 @@ function initRecurringTemplateForm(): void {
     return selected?.value === 'income' ? 'income' : 'expense';
   };
 
+  const getSelectedEndMode = (): EndMode => {
+    const selectedMode = endModeInputs.find((input) => input.checked)?.value;
+    if (selectedMode === 'count' || selectedMode === 'date') {
+      return selectedMode;
+    }
+
+    return 'none';
+  };
+
   const filterCategoryOptions = (): void => {
     if (!categorySelect) return;
 
@@ -217,34 +234,46 @@ function initRecurringTemplateForm(): void {
   };
 
   const syncEndConditionUI = (): void => {
-    if (countContainer && useCount) {
-      countContainer.classList.toggle('hidden', !useCount.checked);
-      if (!useCount.checked && totalOccurrencesInput) totalOccurrencesInput.value = '';
+    const selectedEndMode = getSelectedEndMode();
+
+    if (countContainer) {
+      const showCountInput = selectedEndMode === 'count';
+      countContainer.classList.toggle('hidden', !showCountInput);
+      if (!showCountInput && totalOccurrencesInput) totalOccurrencesInput.value = '';
     }
 
-    if (dateContainer && useDate) {
-      dateContainer.classList.toggle('hidden', !useDate.checked);
-      if (!useDate.checked && endDateInput) endDateInput.value = '';
+    if (dateContainer) {
+      const showDateInput = selectedEndMode === 'date';
+      dateContainer.classList.toggle('hidden', !showDateInput);
+      if (!showDateInput && endDateInput) endDateInput.value = '';
     }
   };
 
   const syncInstallmentState = (): void => {
     if (!installmentToggle || !totalOccurrencesInput) return;
 
-    const hasCount = Boolean(useCount?.checked);
-    const countValue = Number.parseInt(totalOccurrencesInput.value || '0', 10);
-    const enableInstallment = hasCount && countValue > 0;
+    const nextState = normalizeInstallmentState({
+      selectedEndMode: getSelectedEndMode(),
+      totalOccurrencesValue: totalOccurrencesInput.value,
+      isInstallmentChecked: installmentToggle.checked,
+      startingOccurrenceNumber: startingOccurrenceInput?.value || '1',
+      installmentLabel: installmentLabelInput?.value || 'Installment',
+    });
 
-    installmentToggle.disabled = !enableInstallment;
-    if (!enableInstallment) {
-      installmentToggle.checked = false;
+    installmentToggle.disabled = !nextState.enabled;
+    installmentToggle.checked = nextState.checked;
+    if (startingOccurrenceInput) {
+      startingOccurrenceInput.value = nextState.startingOccurrenceNumber;
+    }
+    if (installmentLabelInput) {
+      installmentLabelInput.value = nextState.installmentLabel;
     }
 
     if (installmentFields) {
-      installmentFields.classList.toggle('hidden', !installmentToggle.checked);
+      installmentFields.classList.toggle('hidden', !nextState.showFields);
     }
     if (installmentDisabledHint) {
-      installmentDisabledHint.classList.toggle('hidden', enableInstallment);
+      installmentDisabledHint.classList.toggle('hidden', nextState.enabled);
     }
   };
 
@@ -289,6 +318,14 @@ function initRecurringTemplateForm(): void {
     });
   };
 
+  const setEndMode = (mode: EndMode): void => {
+    endModeInputs.forEach((input) => {
+      input.checked = input.value === mode;
+    });
+    syncEndConditionUI();
+    syncInstallmentState();
+  };
+
   const setType = (type: 'expense' | 'income'): void => {
     typeInputs.forEach((input) => {
       input.checked = input.value === type;
@@ -328,9 +365,8 @@ function initRecurringTemplateForm(): void {
     if (startMonthInput) startMonthInput.value = getCurrentMonthValue();
     if (startDateInput) startDateInput.value = getCurrentDateValue();
 
-    if (useCount) useCount.checked = true;
-    if (useDate) useDate.checked = false;
-    if (totalOccurrencesInput) totalOccurrencesInput.value = '12';
+    if (totalOccurrencesInput) totalOccurrencesInput.value = '';
+    if (endDateInput) endDateInput.value = '';
     if (descriptionDetails) descriptionDetails.open = false;
     if (frequencySelect) frequencySelect.value = 'monthly';
     if (intervalCountInput) intervalCountInput.value = '1';
@@ -343,8 +379,7 @@ function initRecurringTemplateForm(): void {
     }
 
     setType('expense');
-    syncEndConditionUI();
-    syncInstallmentState();
+    setEndMode('none');
     syncFrequencyUI();
     form.dataset.mode = 'create';
 
@@ -384,19 +419,17 @@ function initRecurringTemplateForm(): void {
 
     setType(template.type);
 
-    if (template.total_occurrences && useCount) {
-      useCount.checked = true;
+    if (template.total_occurrences) {
+      setEndMode('count');
       setFieldValue('total_occurrences', String(template.total_occurrences));
-    } else if (useCount) {
-      useCount.checked = false;
+      setFieldValue('end_date', '');
+    } else if (template.end_date) {
+      setEndMode('date');
       setFieldValue('total_occurrences', '');
-    }
-
-    if (template.end_date && useDate) {
-      useDate.checked = true;
       setFieldValue('end_date', template.end_date);
-    } else if (useDate) {
-      useDate.checked = false;
+    } else {
+      setEndMode('none');
+      setFieldValue('total_occurrences', '');
       setFieldValue('end_date', '');
     }
 
@@ -407,7 +440,6 @@ function initRecurringTemplateForm(): void {
     setFieldValue('starting_occurrence_number', String(template.starting_occurrence_number || 1));
     setFieldValue('installment_label', template.installment_label || 'Installment');
 
-    syncEndConditionUI();
     syncInstallmentState();
     syncFrequencyUI();
   };
@@ -499,10 +531,13 @@ function initRecurringTemplateForm(): void {
       return null;
     }
 
-    const byCount = Boolean(useCount?.checked);
-    const byDate = Boolean(useDate?.checked);
-    if (!byCount && !byDate) {
-      showError('At least one end condition is required.');
+    const selectedEndMode = getSelectedEndMode();
+    if (selectedEndMode === 'count' && !totalOccurrencesInput?.value) {
+      showError('Please complete all required fields.');
+      return null;
+    }
+    if (selectedEndMode === 'date' && !endDateInput?.value) {
+      showError('Please complete all required fields.');
       return null;
     }
 
@@ -531,13 +566,13 @@ function initRecurringTemplateForm(): void {
       payload.description = null;
     }
 
-    if (byCount && totalOccurrencesInput?.value) {
+    if (selectedEndMode === 'count' && totalOccurrencesInput?.value) {
       payload.total_occurrences = Number(totalOccurrencesInput.value);
     } else if (isEditMode) {
       payload.total_occurrences = null;
     }
 
-    if (byDate && endDateInput?.value) {
+    if (selectedEndMode === 'date' && endDateInput?.value) {
       payload.end_date = endDateInput.value;
     } else if (isEditMode) {
       payload.end_date = null;
@@ -597,22 +632,16 @@ function initRecurringTemplateForm(): void {
     { signal }
   );
 
-  useCount?.addEventListener(
-    'change',
-    () => {
-      syncEndConditionUI();
-      syncInstallmentState();
-    },
-    { signal }
-  );
-
-  useDate?.addEventListener(
-    'change',
-    () => {
-      syncEndConditionUI();
-    },
-    { signal }
-  );
+  endModeInputs.forEach((input) => {
+    input.addEventListener(
+      'change',
+      () => {
+        syncEndConditionUI();
+        syncInstallmentState();
+      },
+      { signal }
+    );
+  });
 
   totalOccurrencesInput?.addEventListener(
     'input',

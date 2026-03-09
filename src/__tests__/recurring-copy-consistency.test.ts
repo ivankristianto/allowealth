@@ -15,13 +15,24 @@ describe('recurring copy consistency', () => {
 
     expect(page).toContain('Schedule summary of recurring income and expenses with quick actions.');
     expect(page).toContain('Review and manage your recurring transactions across any schedule.');
+    expect(page).toContain('Upcoming recurring income and expenses, sorted by scheduled date.');
+    expect(page).toContain('Confirm occurrences or view them on calendar.');
   });
 
-  it('documents the same preset options shown in the recurring template form', () => {
+  it('documents schedule presets and the no-end default', () => {
     const docs = readRecurringDocs();
 
     expect(docs).toContain(
-      '- **Frequency** - How often it repeats. Choose a preset (Weekly, Monthly, Quarterly, Semi-annual, Annual) or set a custom interval such as biweekly'
+      '- **Schedule** - Set how often it repeats with presets such as Weekly, Monthly, Quarterly, Semi-annual, or Annual'
+    );
+    expect(docs).toContain(
+      '- **End** - Leave it on No end for ongoing bills, subscriptions, or salary'
+    );
+    expect(docs).toContain('1. Confirm completed or received occurrences');
+    expect(docs).toContain('If the same occurrence appears twice:');
+    expect(docs).toContain('For variable recurring amounts:');
+    expect(docs).toContain(
+      '- **Dashboard** - Upcoming recurring activity appears in the Cash Flow widget'
     );
   });
 });

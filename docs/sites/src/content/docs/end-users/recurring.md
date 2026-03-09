@@ -1,6 +1,6 @@
 ---
 title: Recurring Transactions
-description: Manage repeating transactions like subscriptions, bills, and salary. Track upcoming payments and automate your financial record-keeping.
+description: Manage repeating transactions like subscriptions, bills, and salary. Track upcoming activity and automate your financial record-keeping.
 draft: false
 head: []
 sidebar:
@@ -10,14 +10,14 @@ audience:
   - user
 ---
 
-Recurring transactions handle predictable money movement. Set up subscriptions, bills, and income once. Allowealth reminds you when they are due.
+Recurring transactions handle predictable money movement. Set up subscriptions, bills, and income once. Allowealth keeps upcoming occurrences visible and ready to review.
 
 ## Understanding Recurring
 
 Recurring has two concepts:
 
 - **Templates** - The master schedule (for example, "Netflix subscription, $15 monthly")
-- **Occurrences** - Individual pending or confirmed instances (for example, "Netflix payment due March 15")
+- **Occurrences** - Individual pending or confirmed instances (for example, "Netflix on March 15")
 
 ## Pending Occurrences
 
@@ -35,7 +35,7 @@ Each pending item displays:
 
 ### Confirm an Occurrence
 
-When a bill arrives or payment processes:
+When an expense is due or an income arrives:
 
 1. Find the pending occurrence
 2. Review the details
@@ -75,7 +75,7 @@ Switch to calendar view to see occurrences visually:
 
 1. Click the **Calendar** button in the view toggle
 2. Navigate months with the arrow buttons
-3. See occurrences on their due dates
+3. See occurrences on their scheduled dates
 4. Click any date to view details
 
 Toggle back to list view with the **List** button.
@@ -91,9 +91,10 @@ Toggle back to list view with the **List** button.
    - **Amount** - Fixed amount or range
    - **Category** - For reporting
    - **Account** - Where money moves
-   - **Frequency** - How often it repeats. Choose a preset (Weekly, Monthly, Quarterly, Semi-annual, Annual) or set a custom interval such as biweekly
-   - **Start Date** - When the schedule begins
-   - **End Date** - Optional expiration
+   - **Schedule** - Set how often it repeats with presets such as Weekly, Monthly, Quarterly, Semi-annual, or Annual
+   - **Start** - Weekly schedules use a start date. Monthly schedules use a day of month and start month
+   - **End** - Leave it on No end for ongoing bills, subscriptions, or salary
+   - **Installment** - Use this only for fixed-count schedules such as loans or device plans
 3. Click **Save**
 
 ### Convert a Regular Transaction
@@ -104,7 +105,7 @@ Turn an existing transaction into a recurring template:
 2. Find the transaction to repeat
 3. Click the transaction menu (three dots)
 4. Select **Make Recurring**
-5. Adjust frequency and dates
+5. Adjust the schedule, start timing, and end mode
 6. Click **Save**
 
 ## Managing Templates
@@ -178,7 +179,7 @@ See [Recurring Forecast](/end-users/recurring-forecast) for details.
 
 ## Variable Amounts
 
-Some recurring transactions vary (utility bills, credit card payments):
+Some recurring transactions vary (utility bills, credit card balances, or variable income):
 
 1. Create the template with an estimated amount
 2. When confirming each occurrence, adjust the actual amount
@@ -210,13 +211,13 @@ Create recurring templates soon after onboarding:
 - Utilities (electricity, water, internet)
 - Subscriptions (streaming, software)
 - Salary or regular income
-- Loan payments
+- Loan installments
 
 ### Review Weekly
 
 Check pending occurrences weekly:
 
-1. Confirm bills you paid
+1. Confirm completed or received occurrences
 2. Skip items that did not occur
 3. Adjust variable amounts before confirming
 
@@ -257,7 +258,7 @@ Confirmation requires:
 
 ### Duplicate Occurrences
 
-If the same bill appears twice:
+If the same occurrence appears twice:
 
 1. Skip the duplicate
 2. Check if two similar templates exist
@@ -265,7 +266,7 @@ If the same bill appears twice:
 
 ### Wrong Amount Recorded
 
-For variable bills:
+For variable recurring amounts:
 
 1. Confirm the occurrence
 2. Edit the resulting transaction in **Transactions**
@@ -276,4 +277,4 @@ For variable bills:
 
 - **Transactions** - View confirmed recurring transactions
 - **Budget** - See how recurring expenses affect category budgets
-- **Dashboard** - Upcoming bills appear in the Cash Flow widget
+- **Dashboard** - Upcoming recurring activity appears in the Cash Flow widget

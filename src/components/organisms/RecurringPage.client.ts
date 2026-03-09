@@ -14,11 +14,18 @@ import {
   setConfirmLoading,
   showConfirmError,
 } from '@/components/molecules/ConfirmationModal.client';
+import {
+  getActionInboxTitle,
+  getOccurrenceActionWarning,
+  getOccurrenceDateLabel,
+  type RecurringOccurrenceType,
+} from '@/components/organisms/recurring-ui';
 
 interface RecurringOccurrenceLike {
   id: string;
   due_date: string;
   templateName: string;
+  templateType: RecurringOccurrenceType;
   templateAmount: string;
   currency: string;
   category: { id: string; name: string };
@@ -50,6 +57,7 @@ let currentView: 'list' | 'calendar' = 'list';
 let currentMonth = '';
 let loadedCalendarMonth: string | null = null;
 let lastFocusedElement: HTMLElement | null = null;
+let pendingTypeFilter: 'all' | 'income' | 'expense' = 'all';
 
 let pendingSkipOccurrence: RecurringOccurrenceLike | null = null;
 let pendingCancelTemplateId: string | null = null;
@@ -86,6 +94,31 @@ function monthToYearMonthParts(month: string): { year: number; month: number } {
   const year = Number.isFinite(yearRaw) ? yearRaw : now.getFullYear();
   const monthNum = Number.isFinite(monthRaw) ? monthRaw : now.getMonth() + 1;
   return { year, month: monthNum };
+}
+
+function getCurrentMonthHeadingLabel(): string {
+  return new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function formatMonthLabelFromPeriod(period: string): string {
+  const match = period.match(/^(\d{4})-(\d{2})$/);
+  if (!match) {
+    return getCurrentMonthHeadingLabel();
+  }
+
+  return new Date(Number(match[1]), Number(match[2]) - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function updateActionInboxTitle(monthLabel: string): void {
+  const heading = document.querySelector<HTMLElement>('[data-action-inbox-title]');
+  if (!heading) return;
+  heading.textContent = getActionInboxTitle(monthLabel, getCurrentMonthHeadingLabel());
 }
 
 function updateUrl(): void {
@@ -139,6 +172,8 @@ async function refreshPendingList(signal: AbortSignal): Promise<void> {
     signal
   );
   container.innerHTML = html;
+  bindPendingFilterButtons(signal);
+  applyPendingQueueFilter();
 }
 
 async function refreshStats(signal: AbortSignal): Promise<void> {
@@ -179,6 +214,48 @@ async function refreshAfterMutation(signal: AbortSignal): Promise<void> {
   if (currentView === 'calendar') {
     await refreshCalendar(signal);
   }
+}
+
+function syncPendingFilterButtons(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-pending-filter]').forEach((button) => {
+    const filter = button.dataset.pendingFilter === 'income' ? 'income' : 'expense';
+    const isActive = pendingTypeFilter === filter;
+
+    button.setAttribute('aria-pressed', String(isActive));
+    button.classList.toggle('btn-active', isActive);
+    button.classList.toggle('btn-outline', !isActive);
+  });
+}
+
+function applyPendingQueueFilter(): void {
+  document.querySelectorAll<HTMLElement>('[data-occurrence-type]').forEach((item) => {
+    const itemType = item.dataset.occurrenceType;
+    const matchesFilter =
+      pendingTypeFilter === 'all' ||
+      (pendingTypeFilter === 'income' && itemType === 'income') ||
+      (pendingTypeFilter === 'expense' && itemType === 'expense');
+
+    item.classList.toggle('hidden', !matchesFilter);
+    item.setAttribute('aria-hidden', String(!matchesFilter));
+  });
+
+  syncPendingFilterButtons();
+}
+
+function bindPendingFilterButtons(signal: AbortSignal): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-pending-filter]').forEach((button) => {
+    button.addEventListener(
+      'click',
+      () => {
+        const requestedFilter = button.dataset.pendingFilter;
+        if (requestedFilter !== 'income' && requestedFilter !== 'expense') return;
+
+        pendingTypeFilter = pendingTypeFilter === requestedFilter ? 'all' : requestedFilter;
+        applyPendingQueueFilter();
+      },
+      { signal }
+    );
+  });
 }
 
 function setView(view: 'list' | 'calendar', signal: AbortSignal): void {
@@ -309,7 +386,12 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   const originalAmount = form.querySelector('[data-original-amount]') as HTMLElement | null;
 
   if (title) title.textContent = `Confirm ${occurrence.templateName}`;
-  if (subtitle) subtitle.textContent = `Due on ${formatDueDateLabel(occurrence.due_date)}`;
+  if (subtitle) {
+    subtitle.textContent = getOccurrenceDateLabel(
+      occurrence.templateType,
+      formatDueDateLabel(occurrence.due_date)
+    );
+  }
   if (idInput) idInput.value = occurrence.id;
   if (dateInput) dateInput.value = occurrence.due_date;
   if (dateInput) dateInput.max = currentDateIso();
@@ -437,6 +519,9 @@ function initRecurringPage(): void {
   currentView = pageRoot.dataset.initialView === 'calendar' ? 'calendar' : 'list';
   currentMonth = pageRoot.dataset.initialMonth || new Date().toISOString().slice(0, 7);
   loadedCalendarMonth = null;
+  updateActionInboxTitle(
+    pageRoot.dataset.initialMonthLabel || formatMonthLabelFromPeriod(currentMonth)
+  );
 
   const confirmModal = document.getElementById(
     'recurring-confirm-modal'
@@ -446,6 +531,8 @@ function initRecurringPage(): void {
   const cancelModal = document.getElementById('recurring-cancel-modal') as HTMLDialogElement | null;
 
   setView(currentView, signal);
+  bindPendingFilterButtons(signal);
+  applyPendingQueueFilter();
 
   const templatePrefill = parseTemplatePrefill(pageRoot);
   if (templatePrefill) {
@@ -489,7 +576,7 @@ function initRecurringPage(): void {
   window.addEventListener(
     PERIOD_CHANGE_EVENT,
     ((event: Event) => {
-      const detail = (event as CustomEvent<{ period: string }>).detail;
+      const detail = (event as CustomEvent<{ period: string; label?: string }>).detail;
       if (!detail?.period) return;
 
       const nextMonth = parseMonthToYearMonth(detail.period);
@@ -497,6 +584,8 @@ function initRecurringPage(): void {
 
       currentMonth = nextMonth;
       loadedCalendarMonth = null;
+      const nextLabel = detail.label || formatMonthLabelFromPeriod(nextMonth);
+      updateActionInboxTitle(nextLabel);
       updateUrl();
 
       void refreshPendingList(signal).catch((error) => {
@@ -535,7 +624,7 @@ function initRecurringPage(): void {
         try {
           const occurrence = JSON.parse(raw) as RecurringOccurrenceLike;
           if (!isOccurrenceActionable(occurrence)) {
-            addToast('You can only confirm occurrences on or after the due date', 'warning');
+            addToast(getOccurrenceActionWarning('confirm', occurrence.templateType), 'warning');
             return;
           }
           openConfirmModal(occurrence, confirmTrigger);
@@ -553,7 +642,7 @@ function initRecurringPage(): void {
         try {
           const occurrence = JSON.parse(raw) as RecurringOccurrenceLike;
           if (!isOccurrenceActionable(occurrence)) {
-            addToast('You can only skip occurrences on or after the due date', 'warning');
+            addToast(getOccurrenceActionWarning('skip', occurrence.templateType), 'warning');
             return;
           }
           openSkipModal(occurrence, skipTrigger);

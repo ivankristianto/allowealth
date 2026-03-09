@@ -74,8 +74,8 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </label>
     </div>
 
-    <div class="space-y-3" data-recurring-frequency-block>
-      <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Frequency</span>
+    <div class="space-y-3" data-recurring-schedule-block>
+      <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Schedule</span>
       <div class="flex flex-wrap gap-1.5" data-frequency-presets>
         <button
           type="button"
@@ -105,7 +105,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </div>
       <div class="grid grid-cols-[1fr_auto_auto] items-end gap-2">
         <label class="form-control gap-1">
-          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Cycle</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Repeat</span>
           <select
             name="frequency"
             class="select select-bordered select-sm h-9 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
@@ -274,21 +274,27 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3"
         data-recurring-end-group
       >
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">
-            End condition
-          </p>
-          <span class="badge badge-ghost badge-sm text-[10px] font-semibold uppercase"
-            >Required</span
-          >
-        </div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">End</p>
 
         <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
           <input
-            type="checkbox"
-            class="checkbox checkbox-sm checkbox-accent rounded-lg"
-            name="use_count"
-            data-end-condition="count"
+            type="radio"
+            class="radio radio-sm radio-accent"
+            name="end_mode"
+            value="none"
+            data-end-mode="none"
+            checked
+          />
+          <span class="label-text font-semibold">No end</span>
+        </label>
+
+        <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
+          <input
+            type="radio"
+            class="radio radio-sm radio-accent"
+            name="end_mode"
+            value="count"
+            data-end-mode="count"
           />
           <span class="label-text font-semibold">End by count</span>
         </label>
@@ -305,10 +311,11 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
 
         <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
           <input
-            type="checkbox"
-            class="checkbox checkbox-sm checkbox-accent rounded-lg"
-            name="use_date"
-            data-end-condition="date"
+            type="radio"
+            class="radio radio-sm radio-accent"
+            name="end_mode"
+            value="date"
+            data-end-mode="date"
           />
           <span class="label-text font-semibold">End by date</span>
         </label>
@@ -318,7 +325,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         </div>
 
         <p class="text-xs font-medium text-base-content/60" data-end-validation-hint>
-          Select at least one end condition.
+          Leave this on No end for ongoing bills, subscriptions, or salary.
         </p>
       </div>
 
@@ -326,12 +333,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3"
         data-recurring-installment-group
       >
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Installment</p>
-          <span class="badge badge-ghost badge-sm text-[10px] font-semibold uppercase"
-            >Optional</span
-          >
-        </div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Installment</p>
 
         <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
           <input
@@ -348,7 +350,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
           Best for loans or device payments with a known total number of cycles.
         </p>
         <p class="pl-8 text-xs text-base-content/55" data-installment-disabled-hint>
-          Enable "End by count" and set occurrences to unlock installment mode.
+          Choose End by count and set occurrences to unlock installment mode.
         </p>
 
         <div class="hidden space-y-3 pl-8 pt-1" data-installment-fields>
