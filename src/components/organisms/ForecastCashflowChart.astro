@@ -30,6 +30,7 @@ const {
 } = Astro.props;
 
 const qualifier = showPaused ? 'recurring' : 'active recurring';
+const tooltipQualifier = showPaused ? 'recurring' : 'active recurring';
 const chartSubtitle =
   typeFilter === 'income'
     ? `Projected monthly income from your ${qualifier} transactions`
@@ -58,7 +59,7 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
         <h4 class="font-bold text-base text-base-content tracking-tight">Cashflow Forecast</h4>
         <div
           class="tooltip tooltip-right"
-          data-tip="Shows your projected monthly income (green bars), expenses (red bars), and net cashflow (blue line) based on your active recurring transactions."
+          data-tip={`Shows your projected monthly income (green bars), expenses (red bars), and net cashflow (blue line) based on your ${tooltipQualifier} transactions.`}
         >
           <button
             type="button"
@@ -147,18 +148,27 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
     const meta = CURRENCY_META[currency] ?? CURRENCY_META['IDR'];
     const abs = Math.abs(value);
     const sign = value < 0 ? '-' : '';
+    const numberFormatter = new Intl.NumberFormat(meta.locale, {
+      minimumFractionDigits: meta.decimals,
+      maximumFractionDigits: meta.decimals,
+    });
+
+    const formatWithSymbol = (formattedNumber: string): string =>
+      meta.symbolPosition === 'after'
+        ? `${sign}${formattedNumber}${meta.symbol}`
+        : `${sign}${meta.symbol}${formattedNumber}`;
 
     if (abs >= 1_000_000_000) {
-      return `${sign}${meta.symbol}${(abs / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+      return formatWithSymbol(`${(abs / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`);
     }
     if (abs >= 1_000_000) {
-      return `${sign}${meta.symbol}${(abs / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+      return formatWithSymbol(`${(abs / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`);
     }
     if (abs >= 1_000) {
-      return `${sign}${meta.symbol}${(abs / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+      return formatWithSymbol(`${(abs / 1_000).toFixed(1).replace(/\.0$/, '')}K`);
     }
 
-    return formatCurrency(value, currency);
+    return formatWithSymbol(numberFormatter.format(abs));
   }
 
   const charts: Record<string, ChartEntry> = {};

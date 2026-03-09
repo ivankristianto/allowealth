@@ -62,8 +62,15 @@ describe('ForecastCashflowChart context-aware subtitle', () => {
     expect(source).toContain(
       'function formatCurrencyAbbreviated(value: number, currency: Currency)'
     );
+    expect(source).toContain('meta.symbolPosition === ');
     expect(source).toContain('display: true');
     expect(source).toContain('maxTicksLimit: 4');
     expect(source).toContain('formatCurrencyAbbreviated(Number(value), currency)');
+    expect(source).not.toContain('return formatCurrency(value, currency);');
+  });
+
+  it('keeps help tooltip copy aligned with paused-state subtitle wording', () => {
+    expect(source).toContain('const tooltipQualifier = showPaused ? ');
+    expect(source).toContain('based on your ${tooltipQualifier} transactions.');
   });
 });

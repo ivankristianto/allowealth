@@ -59,6 +59,7 @@ describe('RecurringTemplateForm drawer UX structure', () => {
     expect(source).not.toContain('>Repeat<');
     expect(source).toContain('name="frequency"');
     expect(source).toContain('name="interval_count"');
+    expect(source).toContain('aria-label="Frequency"');
   });
 
   it('uses a no-end default end mode without required or optional badges', () => {
