@@ -5,12 +5,14 @@ import ToastContainer from '@/components/molecules/ToastContainer.astro';
 
 interface Props {
   title?: string;
+  ssrTheme?: string;
 }
 
-const { title = 'allowealth' } = Astro.props;
+const { title = 'allowealth', ssrTheme } = Astro.props;
 
 // Construct browser title: "Page Title | allowealth" or just "allowealth" for home
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
+const hasServerTheme = Boolean(ssrTheme && ssrTheme !== 'system');
 
 // Get perf collector for debug output (only when PERF_DEBUG=true)
 const perf = Astro.locals.perf;
@@ -18,7 +20,11 @@ const perfDebugComment = perf ? perf.toHtmlComment() : '';
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html
+  lang="en"
+  data-theme={hasServerTheme ? ssrTheme : 'light'}
+  data-theme-server={hasServerTheme ? 'true' : undefined}
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
