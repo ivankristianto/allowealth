@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema, runTransaction, getDatabaseConfig } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { decimalAdd } from '@/lib/utils/decimal';
 import { createLogger } from '@/lib/logger';
 
@@ -504,17 +504,9 @@ export class TransactionService {
       conditions.push(eq(tx.currency, filters.currency));
     }
 
-    const { dialect } = getDatabaseConfig();
-    const isPostgres = dialect === 'postgresql';
-
-    // Use dialect-appropriate date extraction
-    // SQLite: transaction_date is stored as Unix epoch seconds, so 'unixepoch' modifier is required
-    const monthExpr = isPostgres
-      ? sql<number>`EXTRACT(MONTH FROM ${tx.transaction_date})::INTEGER`
-      : sql<number>`CAST(strftime('%m', ${tx.transaction_date}, 'unixepoch') AS INTEGER)`;
-    const yearExpr = isPostgres
-      ? sql<number>`EXTRACT(YEAR FROM ${tx.transaction_date})::INTEGER`
-      : sql<number>`CAST(strftime('%Y', ${tx.transaction_date}, 'unixepoch') AS INTEGER)`;
+    // transaction_date is stored as Unix epoch seconds, so 'unixepoch' modifier is required
+    const monthExpr = sql<number>`CAST(strftime('%m', ${tx.transaction_date}, 'unixepoch') AS INTEGER)`;
+    const yearExpr = sql<number>`CAST(strftime('%Y', ${tx.transaction_date}, 'unixepoch') AS INTEGER)`;
 
     const rows = await trackQuery('TransactionService.getAvailableMonths', perf, () =>
       (this.db as any)

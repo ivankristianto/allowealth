@@ -69,68 +69,7 @@ Allowealth supports multiple deployment targets. Use the `DEPLOY_TARGET` environ
 
 Allowealth runs on Cloudflare Workers at the edge using the `@astrojs/cloudflare` adapter.
 
-Choose a database option for Cloudflare:
-
-| Option                      | Database               | Best For                                                |
-| --------------------------- | ---------------------- | ------------------------------------------------------- |
-| **Hyperdrive + PostgreSQL** | Supabase PostgreSQL    | Full SQL, existing PostgreSQL data (production default) |
-| **D1**                      | Cloudflare D1 (SQLite) | Zero-config, edge-native SQLite                         |
-
-#### Option A: Hyperdrive + PostgreSQL
-
-Use Supabase PostgreSQL with Cloudflare Hyperdrive to pool connections at the edge.
-
-##### 1. Configure Supabase and Hyperdrive
-
-1. Create a [Supabase](https://supabase.com) project.
-2. Copy the **direct connection** string (port 5432) from **Settings > Database > Connection string > URI**.
-3. Create a Hyperdrive configuration:
-
-```bash
-wrangler hyperdrive create allowealth-db \
-  --connection-string="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"
-```
-
-4. Add the returned configuration ID to `wrangler.toml`:
-
-```toml
-[[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "<your-config-id>"
-```
-
-##### 2. Set Secrets
-
-Store encrypted secrets in Cloudflare:
-
-```bash
-wrangler secret put DATABASE_URL          # Supabase direct connection string
-wrangler secret put EMAIL_API_KEY         # Resend API key
-wrangler secret put GOOGLE_CLIENT_ID      # Optional: OAuth client ID
-wrangler secret put GOOGLE_CLIENT_SECRET  # Optional: OAuth client secret
-```
-
-##### 3. Migrate and Deploy
-
-Generate and apply PostgreSQL migrations, then deploy:
-
-```bash
-bun run db:generate:prod
-bun run db:migrate:prod
-bun run deploy:cloudflare
-```
-
-##### 4. Create First Workspace
-
-Use the CLI to create your initial workspace and get an invitation link:
-
-```bash
-bun run cli:create-workspace:prod -- --name "My Family" --email admin@example.com --currency IDR
-```
-
-#### Option B: Cloudflare D1
-
-Use Cloudflare D1 for a serverless SQLite database running entirely at the edge.
+Use Cloudflare D1 for the production database. It runs SQLite-compatible storage at the edge and matches the local schema.
 
 ##### 1. Configure D1
 
@@ -140,7 +79,7 @@ Use Cloudflare D1 for a serverless SQLite database running entirely at the edge.
 wrangler d1 create allowealth-db
 ```
 
-2. Uncomment the `[[d1_databases]]` section in `wrangler.toml` and add your database ID. Comment out the `[[hyperdrive]]` section.
+2. Copy `wrangler.toml.example` to `wrangler.toml` and add your database ID:
 
 ```toml
 [[d1_databases]]
@@ -149,7 +88,7 @@ database_name = "allowealth-db"
 database_id = "<your-database-id>"
 ```
 
-##### 2. Set Secrets
+##### 2. Set secrets
 
 D1 does not use `DATABASE_URL`. Set only the application secrets:
 
@@ -159,7 +98,7 @@ wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
 ```
 
-##### 3. Migrate and Deploy
+##### 3. Migrate and deploy
 
 Apply SQLite migrations to the remote D1 database, then deploy:
 
@@ -171,7 +110,15 @@ done
 bun run deploy:cloudflare
 ```
 
-### Other Targets (Coming Soon)
+##### 4. Create the first workspace
+
+Use the CLI against remote D1:
+
+```bash
+bun run aw workspace create --target d1 --name "My Family" --email admin@example.com
+```
+
+### Other Targets (Build Adapters)
 
 - **Vercel:** Support for Vercel Serverless Functions.
 - **Netlify:** Support for Netlify Functions.
@@ -191,7 +138,6 @@ routes = [
 
 ## Troubleshooting
 
-- **"Too many subrequests":** Direct PostgreSQL connections consume TCP subrequests. Enable Hyperdrive to fix this.
 - **"Cannot perform I/O on behalf of a different request":** The `database` middleware must call `prepareForRequest()` to reset connections per request.
 - **"D1_ENABLED is set but D1 binding is not available":** Uncomment the `[[d1_databases]]` section in `wrangler.toml` and verify the database ID.
 - **`import.meta.env.DATABASE_URL` is undefined:** Use `getEnv('DATABASE_URL')` to read from the runtime environment instead of the build-time environment.

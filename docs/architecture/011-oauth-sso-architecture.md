@@ -114,6 +114,6 @@ Before unlinking an OAuth provider, the service verifies the user has a password
 
 - Implementation: `src/lib/auth/oauth.ts`, `src/services/auth.service.ts`, `src/pages/api/auth/google/`
 - Cookie signing: `src/lib/crypto/cookie-signature.ts`
-- DB schema: `src/db/schema/sqlite/oauth-accounts.ts`, `src/db/schema/postgresql/oauth-accounts.ts`
+- DB schema: `src/db/schema/sqlite/oauth-accounts.ts`
 - Design doc: `docs/plans/2026-02-11-google-sso-design.md`
 - Arctic docs: https://arcticjs.dev/

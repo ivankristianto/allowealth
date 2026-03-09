@@ -35,7 +35,7 @@ bun run docs:build
 
 ## Database preparation
 
-1. Confirm target environment: `sqlite`, `d1`, or `postgres`
+1. Confirm target environment: `sqlite`, `d1`, or `d1-local`
 2. Apply migrations before deploying code:
    ```bash
    bun run aw db migrate --target <environment>

@@ -1,208 +1,178 @@
 # Database Connection Architecture
 
-> **ADR-006** | Created: 2026-02-04
+> **ADR-006** | Created: 2026-02-04 | Updated: 2026-03-09
 
 ## Overview
 
-This document describes how the application connects to databases across different runtimes, how Cloudflare Hyperdrive eliminates subrequest overhead in Workers, and how the middleware chain manages per-request connection lifecycles.
+This document describes how Allowealth connects to the database across local development, Cloudflare Workers, and CLI workflows after removing PostgreSQL, Supabase, and Hyperdrive support.
 
-## Problem
+## Decision
 
-The application runs on multiple runtimes with different database requirements:
+Allowealth now uses a single SQLite-compatible schema everywhere:
 
-- **Local development (Bun):** SQLite via `bun:sqlite`
-- **Production (Cloudflare Workers):** PostgreSQL via `postgres.js` to Supabase
+- **Local development:** Bun SQLite via `bun:sqlite`
+- **Production on Cloudflare Workers:** Cloudflare D1 via the `DB` binding
+- **CLI access to D1:** Wrangler-backed local D1 or remote D1 HTTP access
 
-In Cloudflare Workers, connecting to PostgreSQL directly caused **"Too many subrequests"** errors because each TCP socket operation (connect, TLS handshake, protocol messages) counts as a subrequest. A single database query could consume 10-50+ subrequests, exceeding Workers' limit.
+This removes dialect switching, connection pooling, and PostgreSQL-specific runtime branches.
 
-Additionally, Workers bind I/O objects (TCP sockets) to the request context that created them. Reusing a connection from a previous request throws: _"Cannot perform I/O on behalf of a different request"_.
+## Why
 
-## Solution
+The application runs in environments with different database access mechanisms:
 
-### Dual-Dialect Driver Selection
+- Bun can open a local SQLite file directly.
+- Cloudflare Workers access D1 through a binding on each request.
+- CLI commands sometimes need local D1 state and sometimes need remote D1 access.
 
-The database dialect is detected from `DATABASE_URL` format:
+Using one SQLite-compatible schema across all of them keeps runtime behavior consistent and cuts maintenance overhead.
 
-```
-postgres:// or postgresql://  →  PostgreSQL (postgres.js + Drizzle)
-anything else (file path)     →  SQLite (bun:sqlite + Drizzle)
-```
+## Runtime Model
 
-**Key files:**
+### Local development
 
-- `src/db/config.ts` — Dialect detection, Supabase/Hyperdrive flags
-- `src/db/index.ts` — Singleton management, lazy initialization via Proxy
-- `src/db/drivers/postgres.ts` — postgres.js client with SSL/prepare settings
-- `src/db/drivers/bun.ts` — bun:sqlite driver (local dev)
+Local development uses `bun:sqlite` with Drizzle ORM.
 
-### Cloudflare Hyperdrive Integration
+- Database file: `db/.dev.db`
+- SQLite WAL mode enabled
+- SQLite PRAGMA tuning applied at startup
+- No external database service required
 
-Hyperdrive is Cloudflare's edge connection pooling service that maintains persistent TCP+TLS connections to the database at the Cloudflare edge. Workers connect to a local proxy instead of opening remote TCP sockets.
+### Cloudflare Workers production
 
-```
-Before (broken):
-  Worker → TCP connect → TLS handshake → PgBouncer → Supabase
-           ↑ Many subrequests (TCP + SSL round-trips)
+Production uses Cloudflare D1.
 
-After (Hyperdrive):
-  Worker → local proxy (0 subrequests) → Hyperdrive edge pool → Supabase
-           ↑ No subrequests               ↑ Persistent connections
-```
+- The `runtimeEnv` middleware reads the `DB` binding from the Worker request context.
+- The middleware sets `D1_ENABLED=true` and stores the D1 binding for the current request.
+- The database layer creates a D1-backed Drizzle instance when the binding is present.
 
-**Configuration:**
+### CLI access
 
-```toml
-# wrangler.toml
-[[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "<config-id>"
-```
+The CLI supports three database targets:
 
-**How Hyperdrive is detected at runtime:**
+- `sqlite` for the local Bun SQLite file
+- `d1` for remote Cloudflare D1 access
+- `d1-local` for Wrangler-managed local D1 state
 
-1. `runtimeEnv` middleware reads `runtime.env.HYPERDRIVE` binding
-2. If present, injects `hyperdrive.connectionString` as `DATABASE_URL`
-3. Sets `HYPERDRIVE_ENABLED=true` in runtime env
-4. `getDatabaseConfig()` reads the flag and sets `isHyperdrive: true`
+## Key Files
 
-**What changes with Hyperdrive active:**
+- `src/db/config.ts` — returns SQLite/D1-only database config
+- `src/db/index.ts` — lazy database creation and shared schema access
+- `src/db/drivers/bun.ts` — Bun SQLite driver
+- `src/db/drivers/d1.ts` — Cloudflare D1 binding support
+- `src/db/drivers/d1-http.ts` — remote D1 CLI access
+- `src/db/drivers/d1-local.ts` — local D1 CLI access
+- `src/middleware/runtime-env.ts` — injects runtime env and D1 binding
+- `src/middleware/database.ts` — resets per-request DB state
 
-| Setting               | Direct Connection    | Hyperdrive                      |
-| --------------------- | -------------------- | ------------------------------- |
-| SSL                   | `'require'`          | `false` (Hyperdrive handles it) |
-| Prepared statements   | `false` (PgBouncer)  | `true` (direct connection)      |
-| Connection target     | Supabase pooler:6543 | Local Hyperdrive proxy          |
-| Subrequests per query | 10-50+ (TCP/TLS)     | 0 (local)                       |
+## Configuration
 
-### DatabaseConfig Interface
+### DatabaseConfig
 
-```typescript
+```ts
 interface DatabaseConfig {
-  dialect: 'sqlite' | 'postgresql';
+  dialect: 'sqlite';
   url: string;
-  isSupabase: boolean; // Supabase domain detected
-  isTransactionPooler: boolean; // Port 6543 (PgBouncer)
-  isHyperdrive: boolean; // Hyperdrive binding active
-  poolConfig?: { max: number; idleTimeout: number };
+  isD1: boolean;
 }
 ```
 
-When `isHyperdrive` is true, `isSupabase` and `isTransactionPooler` are forced to `false` because Hyperdrive handles those concerns transparently.
+Rules:
+
+- `D1_ENABLED=true` means D1 is active.
+- D1 does not use a URL, so `url` is an empty string in D1 mode.
+- Otherwise the app uses `DATABASE_URL` or falls back to `db/.dev.db`.
 
 ## Request Lifecycle
 
-### Middleware Chain
+### Middleware order
 
-```typescript
-// src/middleware/index.ts
+```ts
 export const onRequest = sequence(
-  runtimeEnv, // 1. Inject Workers secrets + Hyperdrive URL
-  database, // 2. Reset connection, manage lifecycle
-  perfDebug, // 3. Performance instrumentation
-  securityHeaders, // 4. CSP, HSTS, etc.
-  authentication, // 5. Session validation
-  csrf, // 6. CSRF token verification
-  routeGuard // 7. Route access control
+  runtimeEnv,
+  database,
+  perfDebug,
+  securityHeaders,
+  authentication,
+  csrf,
+  routeGuard
 );
 ```
 
-### Database Middleware Detail
+### Per-request behavior
 
-The `database` middleware (`src/middleware/database.ts`) manages the per-request connection lifecycle:
+In Workers, runtime bindings are request-scoped. The database layer must reset cached state before request work begins.
 
-```
-Request Start
-  │
-  ├─ getDatabaseConfig()          → Read dialect, flags
-  ├─ Log diagnostic info          → dialect, URL (masked), hyperdrive status
-  ├─ Wrap globalThis.fetch        → Count subrequests for debugging
-  │
-  ├─ If SQLite: skip lifecycle management (file-based, safe to reuse)
-  │
-  ├─ If PostgreSQL:
-  │   ├─ prepareForRequest()      → Reset postgres client singleton
-  │   │                             (discards stale I/O context reference)
-  │   ├─ await next()             → Route handler runs, DB accessed lazily
-  │   └─ finally:
-  │       ├─ Log subrequest count
-  │       ├─ Restore original fetch
-  │       └─ closeDatabase()      → End postgres connection
-  │
-  └─ Response sent
-```
+Flow:
 
-### Lazy Initialization
+1. `runtimeEnv` reads the Worker runtime env.
+2. If `runtime.env.DB` exists, it stores the D1 binding and sets `D1_ENABLED=true`.
+3. `database` calls `prepareForRequest()`.
+4. The first DB access lazily creates the correct Drizzle instance for the active environment.
+5. The request finishes and middleware clears the stored D1 binding.
 
-The database instance is not created at module import time. Instead, `src/db/index.ts` exports a Proxy that calls `getDb()` on first property access:
+## Lazy Initialization
 
-```typescript
-export const db = new Proxy({} as Database, {
-  get(_target, prop) {
-    return getDb()[prop as keyof Database];
-  },
-});
-```
+The database instance is created on first use through the exported proxy from `src/db/index.ts`.
 
-This ensures the connection is created in the correct Workers request context, not at module load time when secrets are unavailable.
+This keeps module load safe in Workers and ensures the correct per-request binding is used.
 
-## Environment Variable Resolution
+## Transactions
 
-Database URL is resolved with this priority chain (via `src/lib/env.ts`):
+`runTransaction()` now runs the callback directly for both SQLite and D1.
 
-1. **Test overrides** — `setTestEnv()` for unit tests
-2. **Runtime env** — `setRuntimeEnv()` from Workers middleware (secrets + Hyperdrive)
-3. **process.env** — Standard environment variables
-4. **import.meta.env** — Astro/Vite build-time variables
-5. **Fallback** — `db/.dev.db` (SQLite for local development)
+Why:
 
-## Rollback
+- SQLite local development is single-writer and file-based.
+- D1 does not support raw `BEGIN`/`COMMIT`/`ROLLBACK` SQL in the same way as PostgreSQL adapters.
 
-If Hyperdrive causes issues in production:
+The helper preserves one API across both environments without dialect branching.
 
-1. Remove the `[[hyperdrive]]` section from `wrangler.toml`
-2. Ensure `DATABASE_URL` secret is set: `wrangler secret put DATABASE_URL`
-3. Deploy: `bun run deploy:cloudflare`
+## Environment Resolution
 
-The code is backward-compatible — without the HYPERDRIVE binding, the middleware skips injection and falls back to direct postgres.js TCP connection.
+Database configuration is resolved in this order:
 
-### Cloudflare D1 Integration
+1. test overrides via `setTestEnv()`
+2. runtime env via `setRuntimeEnv()`
+3. process env
+4. import-time env
+5. fallback to `db/.dev.db`
 
-D1 is Cloudflare's SQLite-compatible serverless database. Unlike PostgreSQL with Hyperdrive, D1:
+## Operational Notes
 
-- Runs SQLite natively at the edge
-- Uses the existing SQLite schema without modification
-- Has no TCP connections (eliminates subrequest overhead entirely)
-- Is selected via D1 binding in wrangler.toml
+### Local development
 
-**Configuration:**
-
-```toml
-# wrangler.toml (uncomment to activate D1)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "allowealth-db"
-# database_id = "<database-id>"
+```bash
+bun run db:generate
+bun run db:migrate
+bun run db:push
 ```
 
-**How D1 is detected at runtime:**
+### Cloudflare D1 deployment
 
-1. `runtimeEnv` middleware reads `runtime.env.DB` binding
-2. If present, sets `D1_ENABLED=true`
-3. `getDatabaseConfig()` reads the flag and sets `isD1: true`
-4. `createDatabase()` uses D1 driver with SQLite schema
+```bash
+wrangler d1 create allowealth-db
+for f in drizzle/sqlite/*.sql; do
+  wrangler d1 execute allowealth-db --remote --file="$f"
+done
+bun run deploy:cloudflare
+```
 
-**Comparison:**
+## Consequences
 
-| Feature               | Hyperdrive (PostgreSQL)  | D1 (SQLite)            |
-| --------------------- | ------------------------ | ---------------------- |
-| Schema                | PostgreSQL               | SQLite (same as local) |
-| SSL                   | Hyperdrive handles       | N/A (no TCP)           |
-| Subrequests per query | 0 (local proxy)          | 0 (no connections)     |
-| Connection pooling    | Hyperdrive edge pool     | N/A (serverless)       |
-| Migrations            | drizzle-kit + PostgreSQL | wrangler d1 execute    |
+Benefits:
+
+- one schema directory
+- one migration directory
+- fewer runtime branches
+- less auth, service, and CLI complexity
+
+Trade-offs:
+
+- PostgreSQL-only features are no longer available
+- production and local environments now share SQLite-compatible constraints
 
 ## Related
 
-- **ADR-004** (`004-database-schema.md`) — Schema design and table definitions
-- **ADR-003** (`003-api-authentication.md`) — How middleware sets `context.locals.user`
-- **Plan** (`docs/plans/2026-02-04-hyperdrive-fix-subrequests.md`) — Original implementation plan
+- `004-database-schema.md` — schema structure
+- `007-database-migrations.md` — migration workflow
+- `src/db/index.ts` — runtime database entry point

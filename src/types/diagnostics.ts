@@ -12,16 +12,10 @@ export interface RuntimeInfo {
 }
 
 export interface DatabaseInfo {
-  dialect: 'sqlite' | 'postgresql';
+  dialect: 'sqlite';
   url: string; // Sanitized (passwords removed)
   isConnected: boolean;
-  isSupabase: boolean;
-  isTransactionPooler: boolean;
-  isHyperdrive: boolean;
-  connectionPoolConfig?: {
-    max: number;
-    idleTimeout: number;
-  };
+  isD1: boolean;
   queryMetrics?: {
     totalQueries: number;
     avgLatency: number;
@@ -77,4 +71,4 @@ export const SENSITIVE_PATTERNS = [
   /private/i,
 ];
 
-export const REQUIRED_ENV_VARS = ['DATABASE_URL'];
+export const REQUIRED_ENV_VARS: string[] = [];

@@ -10,7 +10,7 @@ Personal and family financial application for expense tracking, budgeting, accou
 - **Components:** Astro components (server-side)
 - **State Management:** Nano Stores (client-side reactive state)
 - **Animations:** Motion/mini (client-side animations)
-- **Database:** Drizzle ORM + SQLite (dev) / PostgreSQL+Hyperdrive or Cloudflare D1 (prod)
+- **Database:** Drizzle ORM + SQLite (dev) / Cloudflare D1 (prod)
 - **Auth:** Lucia Auth
 - **Cache:** CacheManager + Upstash Redis (prod) / Memory (dev)
 - **Logging:** Structured consola loggers
@@ -30,8 +30,8 @@ Personal and family financial application for expense tracking, budgeting, accou
 | **Feedback**            | Toast notifications                      | `alert()`, `confirm()`                         | N/A                                       |
 | **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags                       | N/A                                       |
 | **Database**            | `bun:sqlite` (local dev)                 | Direct SQLite in middleware                    | `rules/workflow.md`                       |
-| **Database (Workers)**  | D1 or Hyperdrive (deploy-time choice)    | Both via wrangler.toml                         | `006-database-connection-architecture.md` |
-| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports                           | Dual SQLite/PostgreSQL support            |
+| **Database (Workers)**  | Cloudflare D1 via `DB` binding           | Worker-specific external databases             | `006-database-connection-architecture.md` |
+| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports                           | Shared SQLite-compatible schema           |
 | **Environment Vars**    | `getEnv()` for runtime secrets           | `import.meta.env` (build-time only on Workers) | Cross-runtime compat                      |
 | **Testing**             | `bun:test`                               | `vitest`                                       | `rules/testing.md`                        |
 | **API Docs**            | Update OpenAPI files                     | Comments only                                  | `openapi/README.md`                       |
@@ -61,11 +61,9 @@ bun run typecheck            # TypeScript (blocking)
 bun run test                 # Unit tests
 bun run test:e2e             # E2E tests
 
-# Database (Dual-Dialect)
+# Database
 bun run db:generate          # Generate SQLite migration
-bun run db:generate:prod     # Generate PostgreSQL migration
 bun run db:migrate           # Apply SQLite migrations
-bun run db:migrate:prod      # Apply PostgreSQL migrations
 bun run db:push              # Push schema (SQLite dev only)
 
 ```
@@ -81,9 +79,8 @@ src/
 ├── services/                # Business logic (framework-agnostic)
 ├── db/                      # Database schemas and connection
 │   ├── schema/
-│   │   ├── sqlite/          # SQLite schemas
-│   │   └── postgresql/      # PostgreSQL schemas
-│   └── connection.ts        # getActiveSchema()
+│   │   └── sqlite/          # Shared SQLite-compatible schemas
+│   └── index.ts             # getActiveSchema()
 ├── lib/                     # Utilities, tokens, auth, cache, logging
 ├── middleware/              # Request middleware (Workers-compatible only)
 └── styles/                  # Global styles, tokens
@@ -99,7 +96,7 @@ All project rules are in `.claude/rules/`:
 - **`frontend/design-system.md`** - Design tokens, DaisyUI, accessibility
 - **`frontend/astro.md`** - Astro patterns, client scripts
 - **`frontend/bundle.md`** - Bundle performance rules
-- **`backend/database.md`** - DB patterns, migrations, dual-dialect
+- **`backend/database.md`** - DB patterns and migrations
 - **`backend/deployment.md`** - Workers deployment patterns
 - **`backend/api.md`** - API patterns, OpenAPI
 - **`testing.md`** - Testing patterns (E2E, Playwright, unit)

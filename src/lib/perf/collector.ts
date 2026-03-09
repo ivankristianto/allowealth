@@ -156,7 +156,7 @@ export class PerfCollector {
   }
 
   /**
-   * Set the database dialect (e.g., 'sqlite', 'postgresql')
+   * Set the database dialect label (for example, 'sqlite')
    */
   setDialect(dialect: string): void {
     this.dialect = dialect;

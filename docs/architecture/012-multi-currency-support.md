@@ -18,7 +18,7 @@ IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR (12 currencies). Exte
 
 ### 2. Data Model
 
-**Schema changes (both SQLite + PostgreSQL):**
+**Schema changes (shared SQLite-compatible schema):**
 
 - Change `currency: text('currency', { enum: ['IDR', 'USD'] })` to `currency: text('currency').notNull()` on accounts, transactions, budgets
 - App-level validation via `isValidCurrency()` against `AVAILABLE_CURRENCIES`

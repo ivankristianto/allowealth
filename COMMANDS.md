@@ -134,7 +134,6 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                                |
 | `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` in `.env.production` (maps to `CLOUDFLARE_API_TOKEN` for wrangler; requires D1 Edit permission) |
 | `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite                                                                                        |
-| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env                                                                                         |
 
 ### Quick Reference
 
@@ -147,7 +146,7 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Global CLI Options
 
-- `--target`, `-t`: Select backend target (`sqlite`, `d1`, `d1-local`, `postgres`) on leaf subcommands.
+- `--target`, `-t`: Select backend target (`sqlite`, `d1`, `d1-local`) on leaf subcommands.
 - `--json`: Return machine-readable JSON output instead of formatted text.
 - `--yes`, `-y`: Skip confirmation prompts for destructive CRUD and alias operations (`delete`, `rm`).
   - Some destructive commands use command-specific confirmations instead. Examples: `workspace delete --force` or the typed confirmation in `aw db drop`.
@@ -157,7 +156,6 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | Command                                                                                 | Description                          |
 | --------------------------------------------------------------------------------------- | ------------------------------------ |
 | `bun run aw workspace create --name "Name" --email admin@example.com`                   | Create workspace (SQLite)            |
-| `bun run aw workspace create --target postgres --name "Name" --email admin@example.com` | Create workspace (PostgreSQL)        |
 | `bun run aw workspace create --target d1 --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)      |
 | `bun run aw workspace create --target d1-local --name "Name" --email admin@example.com` | Create workspace on D1 (local)       |
 | `bun run aw workspace list`                                                             | List all workspaces with user counts |
@@ -237,7 +235,6 @@ Aliases provide shorter commands that map to resource operations.
 | Command                                   | Description                                 |
 | ----------------------------------------- | ------------------------------------------- |
 | `bun run aw db migrate`                   | Apply pending migrations (SQLite)           |
-| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)       |
 | `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1       |
 | `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1        |
 | `bun run aw db generate`                  | Generate migration from schema changes      |
@@ -268,26 +265,19 @@ bun run aw db drop -t d1
 # Drop local D1 database
 bun run aw db drop -t d1-local
 
-# Drop PostgreSQL database
-bun run aw db drop -t postgres
 ```
 
 **What it does:**
 
 - **D1**: Drops all user tables (excludes reserved system tables like `_cf_*` and `__drizzle_migrations`), then truncates the migrations table
 - **SQLite**: Deletes the `.dev.db` file
-- **PostgreSQL**: Drops all tables with CASCADE
-
-After running, use `aw db migrate` to recreate the schema from the first migration.
+  After running, use `aw db migrate` to recreate the schema from the first migration.
 
 #### Database Backup & Restore
 
 ```bash
 # SQLite backup
 bun run aw db backup --target sqlite
-
-# PostgreSQL backup (custom format)
-bun run aw db backup --target postgres --format custom
 
 # D1 remote backup
 bun run aw db backup --target d1
@@ -296,7 +286,7 @@ bun run aw db backup --target d1
 bun run aw db backup --target d1-local
 
 # Validate latest cloud backup without restoring
-bun run aw db restore --target postgres --source cloud --dry-run
+bun run aw db restore --target d1 --source cloud --dry-run
 
 # Restore SQLite from file
 bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04T16-30-00.db --force --no-backup
@@ -307,21 +297,19 @@ bun run aw db restore --target d1 --file backups/d1-2026-03-04T16-30-00.sql --fo
 
 **Backup format by target:**
 
-| Target     | Default Format | Valid Formats                   |
-| ---------- | -------------- | ------------------------------- |
-| `sqlite`   | `.db`          | `.db`, `.sql`                   |
-| `postgres` | `.sql`         | `.sql`, `.dump` (custom format) |
-| `d1`       | `.sql`         | `.sql`                          |
-| `d1-local` | `.sql`         | `.sql`                          |
+| Target     | Default Format | Valid Formats |
+| ---------- | -------------- | ------------- |
+| `sqlite`   | `.db`          | `.db`, `.sql` |
+| `d1`       | `.sql`         | `.sql`        |
+| `d1-local` | `.sql`         | `.sql`        |
 
 ### Admin & Security
 
-| Command                                                                            | Description                                                                                                            |
-| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin                                                                                            |
-| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key                                                                                                       |
-| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate Supabase DB password; use `--ask` to prompt for password, `--hyperdrive` to update Cloudflare Hyperdrive config |
-| `bun run aw admin generate-email-key`                                              | Generate encryption key for email functionality                                                                        |
+| Command                                                                            | Description                                     |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin                     |
+| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key                                |
+| `bun run aw admin generate-email-key`                                              | Generate encryption key for email functionality |
 
 ### Deploy
 

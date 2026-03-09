@@ -22,7 +22,7 @@ const main = defineCommand({
     if (target !== 'sqlite') {
       process.env.AW_TARGET = target;
 
-      if (target === 'postgres' || target === 'd1') {
+      if (target === 'd1') {
         const { loadEnvFile } = await import('./lib/env-loader');
         loadEnvFile('.env.production');
       }

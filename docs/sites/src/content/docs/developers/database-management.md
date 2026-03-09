@@ -1,6 +1,6 @@
 ---
 title: Database Management
-description: Backup, restore, migrate, and maintain Allowealth databases across SQLite, PostgreSQL, and Cloudflare D1.
+description: Backup, restore, migrate, and maintain Allowealth databases across SQLite and Cloudflare D1.
 draft: false
 head: []
 sidebar:
@@ -10,20 +10,23 @@ audience:
   - developer
 ---
 
-The `aw db` CLI commands manage all database backends: SQLite (local development), PostgreSQL (production), and Cloudflare D1 (production).
+The `aw db` CLI commands manage the supported Allowealth database targets:
+
+- `sqlite` for local development
+- `d1` for remote Cloudflare D1
+- `d1-local` for Wrangler-managed local D1 state
 
 ## Supported Targets
 
-| Target     | Use Case                 | Configuration                       |
-| ---------- | ------------------------ | ----------------------------------- |
-| `sqlite`   | Local development        | `db/.dev.db`                        |
-| `postgres` | Production PostgreSQL    | `DATABASE_URL` in `.env.production` |
-| `d1`       | Production Cloudflare D1 | Auto-loads `.env.production`        |
-| `d1-local` | Local D1 development     | Wrangler local emulation            |
+| Target     | Use Case             | Configuration                |
+| ---------- | -------------------- | ---------------------------- |
+| `sqlite`   | Local development    | `db/.dev.db`                 |
+| `d1`       | Remote Cloudflare D1 | `.env.production` + Wrangler |
+| `d1-local` | Local D1 emulation   | Wrangler local state         |
 
 ## Migrations
 
-### Generate Migration
+### Generate a migration
 
 Create a migration from schema changes:
 
@@ -31,16 +34,13 @@ Create a migration from schema changes:
 bun run aw db generate
 ```
 
-### Apply Migration
+### Apply migrations
 
 Apply pending migrations to the selected target:
 
 ```bash
 # SQLite (default)
 bun run aw db migrate
-
-# PostgreSQL
-bun run aw db migrate --target postgres
 
 # Remote D1
 bun run aw db migrate --target d1
@@ -49,9 +49,9 @@ bun run aw db migrate --target d1
 bun run aw db migrate --target d1-local
 ```
 
-## Schema Changes
+## Schema changes
 
-### Quick Development (No Migration)
+### Quick development workflow
 
 Push schema changes directly to SQLite:
 
@@ -61,29 +61,23 @@ bun run aw db push
 
 Use this only in development. It bypasses migration tracking.
 
-### Reset Database
+### Reset local SQLite
 
-Delete SQLite database, recreate schema, and seed data:
+Delete the local SQLite database, recreate the schema, and seed demo data:
 
 ```bash
 bun run aw db reset
 ```
 
-This command works only with SQLite.
+This command works only with the `sqlite` target.
 
 ## Backup
 
-Create timestamped backups for any target:
+Create timestamped backups for any supported target:
 
 ```bash
 # SQLite
 bun run aw db backup --target sqlite
-
-# PostgreSQL (plain SQL)
-bun run aw db backup --target postgres
-
-# PostgreSQL (custom format for faster restores)
-bun run aw db backup --target postgres --format custom
 
 # Remote D1
 bun run aw db backup --target d1
@@ -92,9 +86,9 @@ bun run aw db backup --target d1
 bun run aw db backup --target d1-local
 ```
 
-**Output:** By default, backups save to `backups/<target>-<timestamp>.<ext>`.
+By default, backups save to `backups/<target>-<timestamp>.<ext>`.
 
-**Custom path:**
+Use a custom path when needed:
 
 ```bash
 bun run aw db backup --target sqlite --output /path/to/backup.db
@@ -102,113 +96,79 @@ bun run aw db backup --target sqlite --output /path/to/backup.db
 
 ## Restore
 
-Restore validates backups and creates automatic pre-restore snapshots.
+Restore validates backups before applying changes and creates a safety backup unless you opt out.
 
-### Dry Run
+### Dry run
 
-Validate a backup without restoring:
+Validate a backup without restoring it:
 
 ```bash
-bun run aw db restore --target postgres --source cloud --dry-run
+bun run aw db restore --target d1 --source cloud --dry-run
 ```
 
-This displays:
-
-- Source and file path
-- Size and timestamp
-- Detected format
-- Schema version (when available)
-
-### Restore from Local Backup
+### Restore from local backup
 
 ```bash
 # Interactive (requires confirmation)
 bun run aw db restore --target sqlite
 
-# Non-interactive (skips prompt)
+# Non-interactive
 bun run aw db restore --target sqlite --force
 
 # Skip pre-restore backup
 bun run aw db restore --target sqlite --force --no-backup
 
-# Specific file
+# Restore a specific file
 bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04.sql
 ```
 
-### Restore from Cloud Backup
+### Restore from cloud backup
 
 ```bash
-bun run aw db restore --target postgres --source cloud
+bun run aw db restore --target d1 --source cloud
 ```
 
-Cloud backups read from `backups/cloud/` by default. Change this:
+Cloud backups read from `backups/cloud/` by default. Override the location if needed:
 
 ```bash
-bun run aw db restore --target postgres --source cloud --cloud-dir /path/to/cloud/backups
+bun run aw db restore --target d1 --source cloud --cloud-dir /path/to/cloud/backups
 ```
 
-### Pre-Restore Backup
+## Data seeding
 
-By default, restore creates a backup before applying changes. The automatic backup saves to `backups/pre-restore-<timestamp>.<ext>`.
-
-Skip this safety measure:
-
-```bash
-bun run aw db restore --target sqlite --no-backup
-```
-
-## Data Seeding
-
-### Seed with Demo Data
-
-Seed with default 3 months of transaction data:
+### Seed demo data
 
 ```bash
 bun run aw db seed --target sqlite
 ```
 
-### Custom Data Volume
-
-Control the amount of seed data with `--months` and `--transactions`:
+### Control data volume
 
 ```bash
-# Seed 6 months of transaction history
+# Seed 6 months of history
 bun run aw db seed --target sqlite --months=6
 
 # Seed 12 months + 5,000 extra transactions
 bun run aw db seed --target sqlite --months=12 --transactions=5000
 ```
 
-### Add Benchmark Data
-
-Add ~10,000 transactions for performance testing (equivalent to `--months=12 --benchmark`):
+### Add benchmark data
 
 ```bash
 bun run aw db seed --target sqlite --benchmark
 ```
 
-### Add Stress Test Data
-
-Add 5 years of realistic family activity with multiple family members:
+### Add stress-test data
 
 ```bash
 bun run aw db seed --target sqlite --stress
 ```
 
-### Seed Options Summary
+## Dangerous operations
 
-| Flag               | Description                             | Default |
-| ------------------ | --------------------------------------- | ------- |
-| `--months=N`       | Number of months to seed                | 3       |
-| `--transactions=N` | Extra transactions to add               | 0       |
-| `--benchmark`      | Legacy: 12 months + ~10k transactions   | -       |
-| `--stress`         | Legacy: 60 months (5 years) family data | -       |
+### Drop all tables
 
-## Dangerous Operations
-
-### Drop All Tables
-
-Delete all tables and reset the database:
+Delete all tables and reset the selected database:
 
 ```bash
 # SQLite
@@ -217,69 +177,39 @@ bun run aw db drop
 # Remote D1
 bun run aw db drop --target d1
 
-# PostgreSQL
-bun run aw db drop --target postgres
+# Local D1
+bun run aw db drop --target d1-local
 ```
 
-This command requires typing "yes" to confirm.
+This command requires typed confirmation.
 
-### Truncate Data
-
-Delete all data while preserving the schema:
+### Empty data but keep schema
 
 ```bash
 bun run aw db empty
 ```
 
-## D1-Specific Operations
+## D1-specific operations
 
-### Export D1 Database
+### Export a D1 database
 
-The `backup` command uses `wrangler d1 export`:
+The backup command uses `wrangler d1 export` for D1 targets:
 
 ```bash
 bun run aw db backup --target d1
 ```
 
-### Restore D1 Database
+### Restore a D1 database
 
-The `restore` command uses `wrangler d1 execute`:
+The restore command uses `wrangler d1 execute`:
 
 ```bash
 bun run aw db restore --target d1 --file backups/d1-2026-03-04.sql
 ```
 
-## PostgreSQL-Specific Operations
+## Quality checks
 
-### Backup Format Options
-
-**Plain SQL:**
-
-```bash
-bun run aw db backup --target postgres --format sql
-```
-
-Use this for smaller databases or when you need to edit the backup.
-
-**Custom Format:**
-
-```bash
-bun run aw db backup --target postgres --format custom
-```
-
-Use this for faster restores and better compression.
-
-### Restore Compressed Backups
-
-The restore command detects gzip compression automatically:
-
-```bash
-bun run aw db restore --target postgres --file backups/postgres-2026-03-04.sql.gz
-```
-
-## Quality Checks
-
-Before committing database changes, run these checks:
+Before committing database changes, run:
 
 ```bash
 bun run lint:fix
@@ -288,7 +218,7 @@ bun run format:fix
 bun run typecheck
 ```
 
-## See Also
+## See also
 
 - [COMMANDS.md](https://github.com/ivankristianto/allowealth/blob/main/COMMANDS.md) - Complete CLI reference
 - [Database Migrations](/architecture/database-migrations/) - Migration workflow and patterns

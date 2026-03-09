@@ -21,8 +21,8 @@ This file is managed by Claude Code's auto-memory system.
 ## Database
 
 - Local: SQLite via `bun:sqlite`
-- Production: PostgreSQL via Hyperdrive
-- Migrations: Always generate for **both** dialects (`db:generate` + `db:generate:prod`)
+- Production: Cloudflare D1
+- Migrations: Single SQLite flow; generate `drizzle/sqlite/*.sql` once and use for both local SQLite and Cloudflare D1
 
 ## Key Architecture Patterns
 

@@ -85,17 +85,17 @@ Full specification: `design-system/START.md`
 
 ### Dual-Dialect Database
 
-The project uses SQLite (local dev) and PostgreSQL/Supabase (production) with Drizzle ORM.
+The project uses SQLite (local dev) and Cloudflare D1 (production) with Drizzle ORM.
 
-- Maintain schemas in both `src/db/schema/sqlite/` and `src/db/schema/postgresql/`
-- Generate migrations for **both** dialects on every schema change
+- Maintain the shared schema in `src/db/schema/sqlite/`
+- Generate SQLite migrations (drizzle/sqlite), apply them locally, and deploy the same SQL to D1 on every schema change
 - Use `getActiveSchema()` in services — never import tables directly
 - See `docs/architecture/007-database-migrations.md`
 
 ### Deployment (Cloudflare Workers)
 
 - **Runtime**: Workers with `nodejs_compat` flag
-- **Database**: PostgreSQL via Hyperdrive (connection pooling with 0 overhead)
+- **Database**: Cloudflare D1 in production, SQLite locally
 - **Cache**: CacheManager with tag-based invalidation (Upstash prod, Memory dev)
 - **Logging**: Structured consola loggers (JSON on Workers, pretty in dev)
 - **Secrets**: `getEnv()` helper — Workers secrets aren't available at module load
