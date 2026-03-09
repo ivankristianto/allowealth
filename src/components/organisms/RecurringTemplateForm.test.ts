@@ -49,4 +49,24 @@ describe('RecurringTemplateForm drawer UX structure', () => {
     const source = readRecurringTemplateForm();
     expect(source).toContain('data-recurring-actions');
   });
+
+  it('uses a merged schedule control', () => {
+    const source = readRecurringTemplateForm();
+    expect(source).toContain('data-recurring-schedule-block');
+    expect(source).toContain('>Schedule<');
+    expect(source).not.toContain('>Frequency<');
+    expect(source).not.toContain('>Cycle<');
+    expect(source).not.toContain('>Repeat<');
+    expect(source).toContain('name="frequency"');
+    expect(source).toContain('name="interval_count"');
+    expect(source).toContain('aria-label="Frequency"');
+  });
+
+  it('uses a no-end default end mode without required or optional badges', () => {
+    const source = readRecurringTemplateForm();
+    expect(source).toContain('data-end-mode="none"');
+    expect(source).toContain('No end');
+    expect(source).not.toContain('>Required<');
+    expect(source).not.toContain('>Optional<');
+  });
 });

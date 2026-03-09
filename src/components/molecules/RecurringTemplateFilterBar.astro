@@ -20,12 +20,12 @@ const searchInputClass = [
 <div
   class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
   role="search"
-  aria-label="Filter recurring templates"
+  aria-label="Filter recurring transactions"
 >
   <div
     class="inline-flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1"
     role="group"
-    aria-label="Filter by recurring template type"
+    aria-label="Filter by recurring type"
   >
     <button
       data-filter-type="all"
@@ -55,8 +55,8 @@ const searchInputClass = [
 
   <SearchInput
     id="recurring-template-search"
-    label="Search recurring templates"
-    placeholder="Search templates..."
+    label="Search recurring transactions"
+    placeholder="Search recurring..."
     value={search}
     inputClass={searchInputClass}
     class="w-full sm:w-60 lg:w-72"

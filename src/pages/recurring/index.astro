@@ -52,6 +52,17 @@ const selectedMonthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-U
   month: 'long',
   year: 'numeric',
 });
+const currentMonthHeadingLabel = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString(
+  'en-US',
+  {
+    month: 'long',
+    year: 'numeric',
+  }
+);
+const actionInboxTitle =
+  selectedMonthLabel === currentMonthHeadingLabel
+    ? 'Due This Month'
+    : `Due in ${selectedMonthLabel.split(' ')[0].toUpperCase()}`;
 
 interface RecurringTemplatePrefill {
   name: string;
@@ -150,6 +161,7 @@ const templatesHelpId = 'recurring-templates-help';
     class="mx-auto max-w-7xl space-y-5 px-1 pb-10 sm:px-2 sm:space-y-6 lg:px-6"
     data-initial-view={view}
     data-initial-month={safeMonth}
+    data-initial-month-label={selectedMonthLabel}
     data-convert-prefill={convertPrefill ? JSON.stringify(convertPrefill) : undefined}
   >
     <section class="rounded-3xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
@@ -200,8 +212,11 @@ const templatesHelpId = 'recurring-templates-help';
         >
           <div>
             <div class="flex items-center gap-1.5">
-              <h2 class="text-sm font-bold uppercase tracking-wide text-base-content/70">
-                Due This Month
+              <h2
+                class="text-sm font-bold uppercase tracking-wide text-base-content/70"
+                data-action-inbox-title
+              >
+                {actionInboxTitle}
               </h2>
               <div class="dropdown">
                 <button
@@ -220,11 +235,13 @@ const templatesHelpId = 'recurring-templates-help';
                     tokenClasses.textXs,
                   ]}
                 >
-                  Upcoming income and expenses, sorted by due date.
+                  Upcoming recurring income and expenses, sorted by scheduled date.
                 </div>
               </div>
             </div>
-            <p class="mt-1 text-sm text-base-content/60">Confirm due items or view on calendar.</p>
+            <p class="mt-1 text-sm text-base-content/60">
+              Confirm occurrences or view them on calendar.
+            </p>
           </div>
           <div
             class="inline-flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1"

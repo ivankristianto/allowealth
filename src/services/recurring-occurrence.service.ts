@@ -102,6 +102,8 @@ export class RecurringOccurrenceService {
       templateName: occurrence.template.name,
       templateType: occurrence.template.type,
       templateAmount: occurrence.template.amount,
+      templateFrequency: occurrence.template.frequency,
+      templateIntervalCount: occurrence.template.interval_count,
       currency: occurrence.template.currency,
       category: {
         id: occurrence.template.category.id,

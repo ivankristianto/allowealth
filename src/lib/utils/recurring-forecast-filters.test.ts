@@ -4,6 +4,7 @@ import {
   buildForecastFilters,
   normalizeForecastAccountIds,
   normalizeForecastFilters,
+  parseForecastMonthCount,
 } from './recurring-forecast-filters';
 
 describe('normalizeForecastAccountIds', () => {
@@ -38,7 +39,35 @@ describe('buildForecastFilters', () => {
       type: 'expense',
       status: 'all',
       accountIds: ['acc_1', 'acc_2'],
+      monthCount: 12,
     });
+  });
+
+  test('parses monthCount from params', () => {
+    const params = new URLSearchParams();
+    params.set('monthCount', '6');
+
+    expect(buildForecastFilters(params)).toEqual({
+      status: 'active',
+      monthCount: 6,
+    });
+  });
+});
+
+describe('parseForecastMonthCount', () => {
+  test('returns valid month counts', () => {
+    expect(parseForecastMonthCount('3')).toBe(3);
+    expect(parseForecastMonthCount('6')).toBe(6);
+    expect(parseForecastMonthCount('12')).toBe(12);
+    expect(parseForecastMonthCount('24')).toBe(24);
+  });
+
+  test('defaults to 12 for invalid values', () => {
+    expect(parseForecastMonthCount(null)).toBe(12);
+    expect(parseForecastMonthCount(undefined)).toBe(12);
+    expect(parseForecastMonthCount('')).toBe(12);
+    expect(parseForecastMonthCount('7')).toBe(12);
+    expect(parseForecastMonthCount('abc')).toBe(12);
   });
 });
 

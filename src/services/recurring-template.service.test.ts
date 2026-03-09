@@ -19,23 +19,51 @@ describe('RecurringTemplateService', () => {
     resetMockDatabase(mockDb);
   });
 
-  it('rejects create when neither end_date nor total_occurrences is provided', async () => {
-    await expect(
-      recurringTemplateService.create({
-        workspace_id: 'workspace-1',
-        created_by_user_id: 'user-1',
-        name: 'Rent',
-        type: 'expense',
-        amount: '5000000',
-        currency: 'IDR',
-        category_id: 'cat-1',
-        account_id: 'account-1',
-        day_of_month: 1,
-        start_date: '2026-01-01',
-        is_installment: false,
-        starting_occurrence_number: 1,
-      })
-    ).rejects.toThrow('At least one end condition is required');
+  it('creates open-ended recurring templates', async () => {
+    const template = createMockRecurringTemplate({ total_occurrences: null, end_date: null });
+    const category = createMockCategory();
+    const account = createMockAccount();
+
+    (mockDb.query.categories.findFirst as any).mockResolvedValueOnce(category);
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(account);
+    (mockDb.query.recurringTemplates.findFirst as any)
+      .mockResolvedValueOnce(template)
+      .mockResolvedValueOnce({ ...template, category, account });
+    (mockDb.query.recurringOccurrences.findFirst as any).mockResolvedValueOnce(undefined);
+    (mockDb.select as any).mockImplementation(() => ({
+      from: mock(() => ({
+        where: mock(() => ({
+          groupBy: mock(() =>
+            Promise.resolve([
+              {
+                template_id: template.id,
+                pending_count: 1,
+                confirmed_count: 0,
+                skipped_count: 0,
+                next_due_date: '2026-01-25',
+              },
+            ])
+          ),
+        })),
+      })),
+    }));
+
+    const result = await recurringTemplateService.create({
+      workspace_id: 'workspace-1',
+      created_by_user_id: 'user-1',
+      name: 'Salary',
+      type: 'income',
+      amount: '15000000',
+      currency: 'IDR',
+      category_id: 'cat-1',
+      account_id: 'account-1',
+      day_of_month: 25,
+      start_date: '2026-01-25',
+      is_installment: false,
+      starting_occurrence_number: 1,
+    });
+
+    expect(result.id).toBeDefined();
   });
 
   it('creates template and generates initial occurrences', async () => {
@@ -249,21 +277,45 @@ describe('RecurringTemplateService', () => {
     ).rejects.toThrow('unrecognized_keys');
   });
 
-  it('rejects clearing total_occurrences when no end_date remains', async () => {
-    (mockDb.query.recurringTemplates.findFirst as any).mockResolvedValueOnce(
-      createMockRecurringTemplate({
-        total_occurrences: 6,
-        end_date: null,
-        is_installment: false,
-      })
-    );
+  it('allows clearing total_occurrences when the merged template is not an installment', async () => {
+    const category = createMockCategory();
+    const account = createMockAccount();
 
-    await expect(
-      recurringTemplateService.update('rt-1', 'workspace-1', {
-        workspace_id: 'workspace-1',
-        total_occurrences: null,
+    (mockDb.query.recurringTemplates.findFirst as any)
+      .mockResolvedValueOnce({
+        ...createMockRecurringTemplate({
+          total_occurrences: 6,
+          end_date: null,
+          is_installment: false,
+        }),
+        category,
+        account,
       })
-    ).rejects.toThrow('At least one end condition is required');
+      .mockResolvedValueOnce({
+        ...createMockRecurringTemplate({
+          total_occurrences: null,
+          end_date: null,
+          is_installment: false,
+        }),
+        category,
+        account,
+      })
+      .mockResolvedValueOnce({
+        ...createMockRecurringTemplate({
+          total_occurrences: null,
+          end_date: null,
+          is_installment: false,
+        }),
+        category,
+        account,
+      });
+
+    const result = await recurringTemplateService.update('rt-1', 'workspace-1', {
+      workspace_id: 'workspace-1',
+      total_occurrences: null,
+    });
+
+    expect(result.total_occurrences).toBeNull();
   });
 
   it('rejects clearing total_occurrences when merged template is installment', async () => {
