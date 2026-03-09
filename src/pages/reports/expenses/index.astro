@@ -181,16 +181,7 @@ const selectedPeriodLabel =
     data-current-currency={currency}
     data-api-endpoint="/api/reports/expenses"
   >
-    <Breadcrumb
-      items={[
-        { label: 'Overview', href: '/reports' },
-        { label: 'Expenses' },
-        {
-          label: 'Member Spending',
-          href: `/reports/members?range=${defaultRange}&period=${defaultPeriod}`,
-        },
-      ]}
-    />
+    <Breadcrumb items={[{ label: 'Overview', href: '/reports' }, { label: 'Expenses' }]} />
 
     <div data-summary-container>
       <ReportSummaryCardsPartial
