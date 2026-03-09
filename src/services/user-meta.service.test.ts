@@ -363,6 +363,11 @@ describe('UserMetaService', () => {
                   meta_key: USER_META_KEYS.PHONE,
                   meta_value: '+1234567890',
                 },
+                {
+                  ...mockMeta,
+                  meta_key: USER_META_KEYS.THEME,
+                  meta_value: 'dark',
+                },
               ])
             ),
           },
@@ -375,6 +380,7 @@ describe('UserMetaService', () => {
           showConvertedTotals: false,
           showIndividualCurrencies: true,
           phone: '+1234567890',
+          theme: 'dark',
         });
       });
 
@@ -388,6 +394,7 @@ describe('UserMetaService', () => {
           showConvertedTotals: true,
           showIndividualCurrencies: true,
           phone: '',
+          theme: 'system',
         });
       });
     });
