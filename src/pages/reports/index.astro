@@ -136,17 +136,6 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
   >
     <ReportsSectionNav activeSection="overview" state={reportState} />
 
-    <section
-      class="card border border-base-300 bg-base-100 shadow-sm"
-      data-testid="reports-overview-guide"
-    >
-      <div class="card-body p-4 sm:p-5">
-        <p class="text-sm leading-6 text-base-content/70 sm:text-base">
-          Review this period at a glance, then open Income or Expenses for the full breakdown.
-        </p>
-      </div>
-    </section>
-
     {/* Summary Metric Cards */}
     <div data-summary-container>
       <OverviewSummaryCardsPartial

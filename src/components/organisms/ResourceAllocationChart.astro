@@ -95,9 +95,9 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
     {/* Loading State */}
     {
       loading ? (
-        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-[300px]">
-          <div class="h-[250px] w-full sm:w-[250px] shrink-0">
-            <Skeleton variant="circular" width="250" height="250" />
+        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-80">
+          <div class="h-64 w-full sm:w-64 shrink-0">
+            <Skeleton variant="circular" className="h-64 w-full sm:w-64" />
           </div>
           <div class="flex-1 w-full space-y-3">
             {Array.from({ length: 6 }).map(() => (
@@ -126,13 +126,13 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
       ) : (
         /* Chart and Legend */
         <div
-          class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-[300px]"
+          class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-80"
           data-chart-data={serializedData}
           data-chart-colors={serializedColors}
         >
           {/* Chart Container */}
           <div
-            class="h-[250px] w-full max-w-[250px] mx-auto sm:mx-0 shrink-0 relative"
+            class="h-64 w-full max-w-64 mx-auto sm:mx-0 shrink-0 relative"
             id={`${chartId}-container`}
           >
             <canvas

@@ -265,13 +265,17 @@ const iconColorClass = 'text-accent';
         <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
 
         <!-- Actions -->
-        <div class="flex gap-4 pt-4">
-          <button type="button" class="flex-1 btn btn-ghost h-14 rounded-2xl font-bold" data-cancel>
+        <div class="grid grid-cols-3 gap-4 pt-4">
+          <button
+            type="button"
+            class="col-span-1 btn btn-ghost h-14 rounded-2xl font-bold"
+            data-cancel
+          >
             Cancel
           </button>
           <button
             type="submit"
-            class="flex-[2] btn btn-accent h-14 rounded-2xl font-bold"
+            class="col-span-2 btn btn-accent h-14 rounded-2xl font-bold"
             data-testid="category-submit-btn"
           >
             <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>

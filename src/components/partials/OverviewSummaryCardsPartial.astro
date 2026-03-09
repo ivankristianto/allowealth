@@ -19,21 +19,21 @@ const netSavingsNum = parseFloat(netSavings) || 0;
 const isNetPositive = netSavingsNum >= 0;
 const savingsRateSummary =
   rateNum < 0
-    ? 'Spending is above income for this period'
+    ? 'Spending exceeded income'
     : rateNum >= 20
-      ? 'A healthy share of income is being kept'
+      ? 'Strong savings rate'
       : rateNum > 0
-        ? 'Income is ahead, but with a smaller buffer'
-        : 'No savings were recorded for this period';
+        ? 'Building a buffer'
+        : 'No savings recorded';
 ---
 
 <div class="@container" data-summary-cards>
   <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-4 gap-4 @2xl:gap-6">
     <StatCard
-      title="Total income"
+      title="Income"
       value={formatCurrency(totalIncome, currency)}
       valueColor="text-success"
-      subtitle="Money received during this period"
+      subtitle="Received this period"
       iconVariant="success"
       data-testid="reports-overview-income-card"
     >
@@ -41,10 +41,10 @@ const savingsRateSummary =
     </StatCard>
 
     <StatCard
-      title="Total expenses"
+      title="Spending"
       value={formatCurrency(totalExpenses, currency)}
       valueColor="text-error"
-      subtitle="Money spent during this period"
+      subtitle="Spent this period"
       iconVariant="error"
       data-testid="reports-overview-expense-card"
     >
@@ -55,7 +55,7 @@ const savingsRateSummary =
       title="Net savings"
       value={formatCurrency(netSavings, currency)}
       valueColor={isNetPositive ? 'text-accent' : 'text-error'}
-      subtitle={isNetPositive ? 'Income is covering expenses' : 'Expenses are higher than income'}
+      subtitle={isNetPositive ? 'Income exceeds spending' : 'Spending exceeds income'}
       iconVariant={isNetPositive ? 'accent' : 'error'}
       data-testid="reports-overview-savings-card"
     >

@@ -204,7 +204,7 @@ if (searchQuery) {
                           <button
                             type="button"
                             title="Edit category"
-                            class="min-h-[44px] min-w-[44px] p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            class="min-h-11 min-w-11 p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             data-action="edit"
                             data-category-id={category.id}
                             aria-label={`Edit ${category.name} category`}
@@ -215,7 +215,7 @@ if (searchQuery) {
                           <button
                             type="button"
                             title="Delete category"
-                            class="min-h-[44px] min-w-[44px] p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2"
+                            class="min-h-11 min-w-11 p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2"
                             data-action="delete"
                             data-category-id={category.id}
                             data-category-name={category.name}
@@ -314,17 +314,17 @@ if (searchQuery) {
         <div id="bulk-error" class="hidden alert alert-error text-sm rounded-xl" role="alert"></div>
 
         <!-- Actions -->
-        <div class="flex gap-4 pt-2">
+        <div class="grid grid-cols-3 gap-4 pt-2">
           <button
             type="button"
-            class="flex-1 btn btn-ghost h-14 rounded-2xl font-bold"
+            class="col-span-1 btn btn-ghost h-14 rounded-2xl font-bold"
             data-bulk-cancel
           >
             Cancel
           </button>
           <button
             type="button"
-            class="flex-[2] btn btn-accent h-14 rounded-2xl font-bold"
+            class="col-span-2 btn btn-accent h-14 rounded-2xl font-bold"
             data-bulk-submit
             data-testid="bulk-submit-btn"
           >

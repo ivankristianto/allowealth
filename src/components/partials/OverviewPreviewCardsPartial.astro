@@ -7,6 +7,7 @@ import {
   type ReportState,
 } from '@/lib/reporting/report-state';
 import { TrendingUp, TrendingDown, ArrowRight } from '@lucide/astro';
+import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 
 interface PreviewCategory {
   name: string;
@@ -53,29 +54,29 @@ const getShare = (value: string, total: number) =>
 
 const previewCards: PreviewCard[] = [
   {
-    title: 'Income sources',
-    description: 'See the largest income sources for the selected period.',
+    title: 'Income',
+    description: 'Where your money came from this period.',
     totalLabel: 'Total income',
-    cta: 'View income breakdown',
+    cta: 'View breakdown',
     href: incomeHref,
     categories: incomeCategories,
     total: incomePreview.total,
     totalValue: incomeTotal,
-    emptyState: 'No income sources were recorded for this period yet.',
+    emptyState: 'No income recorded this period.',
     testId: 'reports-overview-income-sources',
     icon: TrendingUp,
     iconClass: 'text-success',
   },
   {
-    title: 'Expense categories',
-    description: 'See the spending categories with the biggest impact.',
-    totalLabel: 'Total expenses',
-    cta: 'View expense breakdown',
+    title: 'Spending',
+    description: 'Where your money went this period.',
+    totalLabel: 'Total spent',
+    cta: 'View breakdown',
     href: expensesHref,
     categories: expenseCategories,
     total: expensePreview.total,
     totalValue: expenseTotal,
-    emptyState: 'No expense categories were recorded for this period yet.',
+    emptyState: 'No spending recorded this period.',
     testId: 'reports-overview-expense-categories',
     icon: TrendingDown,
     iconClass: 'text-error',
@@ -90,18 +91,18 @@ const previewCards: PreviewCard[] = [
         const Icon = card.icon;
 
         return (
-          <div class="card border border-base-300 bg-base-100 shadow-sm" data-testid={card.testId}>
-            <div class="card-body gap-5 p-5 sm:p-6">
+          <div class="card card-bordered bg-base-100" data-testid={card.testId}>
+            <div class="card-body flex flex-col gap-5 p-5 sm:p-6">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="space-y-2">
                   <div class="flex items-center gap-2">
                     <Icon size={18} class={card.iconClass} aria-hidden="true" />
-                    <h3 class="text-lg font-semibold tracking-tight text-primary">{card.title}</h3>
+                    <h3 class="text-lg font-semibold text-primary">{card.title}</h3>
                   </div>
-                  <p class="max-w-xl text-sm leading-6 text-base-content/70">{card.description}</p>
+                  <p class="max-w-xl text-sm text-base-content/70">{card.description}</p>
                 </div>
-                <div class="rounded-2xl border border-base-200 bg-base-200/60 px-4 py-3 sm:min-w-48 sm:text-right">
-                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-base-content/60">
+                <div class="rounded-xl border border-base-300 bg-base-200 px-4 py-3 sm:min-w-44 sm:text-right">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
                     {card.totalLabel}
                   </p>
                   <p class="mt-1 text-base font-semibold tabular-nums text-base-content">
@@ -110,37 +111,46 @@ const previewCards: PreviewCard[] = [
                 </div>
               </div>
 
-              {card.categories.length > 0 ? (
-                <ol class="overflow-hidden rounded-2xl border border-base-200 bg-base-100 divide-y divide-base-200">
-                  {card.categories.map((category, index) => (
-                    <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3 sm:items-center">
-                      <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-base-200 bg-base-200/60 text-sm font-semibold text-base-content/70">
-                        {index + 1}
-                      </span>
-                      <div class="min-w-0">
-                        <p class="truncate font-medium text-base-content">{category.name}</p>
-                        <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
-                          {getShare(category.value, card.totalValue)}
+              <div class="flex-1">
+                {card.categories.length > 0 ? (
+                  <ol class="overflow-hidden rounded-xl border border-base-300 bg-base-100 divide-y divide-base-300">
+                    {card.categories.map((category, index) => (
+                      <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3 sm:items-center">
+                        <span
+                          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-sm font-semibold text-base-content/70"
+                          aria-hidden="true"
+                        >
+                          {index + 1}
+                        </span>
+                        <div class="min-w-0">
+                          <p class="truncate font-medium text-base-content">{category.name}</p>
+                          <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
+                            {getShare(category.value, card.totalValue)}
+                          </p>
+                        </div>
+                        <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
+                          {formatCurrency(category.value, currency)}
                         </p>
-                      </div>
-                      <p class="whitespace-nowrap text-right font-semibold tabular-nums text-base-content">
-                        {formatCurrency(category.value, currency)}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p class="rounded-2xl border border-base-200 bg-base-200/60 px-4 py-4 text-sm text-base-content/60">
-                  {card.emptyState}
-                </p>
-              )}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p class="rounded-xl border border-base-300 bg-base-200 px-4 py-4 text-sm text-base-content/60">
+                    {card.emptyState}
+                  </p>
+                )}
+              </div>
 
-              <a
-                href={card.href}
-                class="btn btn-outline btn-sm gap-2 rounded-lg sm:rounded-xl self-start"
-              >
-                {card.cta} <ArrowRight size={14} aria-hidden="true" />
-              </a>
+              <div class="flex justify-end">
+                <a
+                  href={card.href}
+                  class={accentGhostBtn}
+                  aria-label={`${card.cta} for ${card.title}`}
+                >
+                  <span>{card.cta}</span>
+                  <ArrowRight size={16} aria-hidden="true" />
+                </a>
+              </div>
             </div>
           </div>
         );

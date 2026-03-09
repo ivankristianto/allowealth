@@ -116,7 +116,7 @@ if (appliedFilters.categoryId) activeFilterLabels.push('Filtered by category');
                     <div
                       class={`w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 ${txn.category_color || 'bg-base-200'}`}
                     >
-                      <span class="text-[10px]">{txn.category_icon?.charAt(0) || '•'}</span>
+                      <span class="text-xs">{txn.category_icon?.charAt(0) || '•'}</span>
                     </div>
                     <span class="text-sm">{txn.category_name}</span>
                   </div>
