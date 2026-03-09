@@ -126,7 +126,7 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
 
 <script>
   import { Chart } from '@/lib/chart-setup';
-  import { isValidCurrency } from '@/lib/constants/currency';
+  import { isValidCurrency, CURRENCY_META } from '@/lib/constants/currency';
   import type { Currency } from '@/lib/constants/currency';
   import { formatCurrency } from '@/lib/formatting/currency-client';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
@@ -141,6 +141,24 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
   interface ChartEntry {
     chart: Chart;
     data: ForecastChartDataPoint[];
+  }
+
+  function formatCurrencyAbbreviated(value: number, currency: Currency): string {
+    const meta = CURRENCY_META[currency] ?? CURRENCY_META['IDR'];
+    const abs = Math.abs(value);
+    const sign = value < 0 ? '-' : '';
+
+    if (abs >= 1_000_000_000) {
+      return `${sign}${meta.symbol}${(abs / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}B`;
+    }
+    if (abs >= 1_000_000) {
+      return `${sign}${meta.symbol}${(abs / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    }
+    if (abs >= 1_000) {
+      return `${sign}${meta.symbol}${(abs / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    }
+
+    return formatCurrency(value, currency);
   }
 
   const charts: Record<string, ChartEntry> = {};
@@ -286,10 +304,17 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
             border: { display: false },
           },
           y: {
-            display: false,
+            display: true,
             grid: { color: gridColor },
             border: { display: false },
             beginAtZero: true,
+            ticks: {
+              color: textColor,
+              font: { size: 10 },
+              maxTicksLimit: 4,
+              callback: (value: number | string) =>
+                formatCurrencyAbbreviated(Number(value), currency),
+            },
           },
         },
       },

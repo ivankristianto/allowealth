@@ -56,4 +56,14 @@ describe('ForecastCashflowChart context-aware subtitle', () => {
   it('caps bar width to prevent oversized bars at low month counts', () => {
     expect(source).toContain('maxBarThickness');
   });
+
+  it('shows a visible y-axis with abbreviated currency ticks', () => {
+    expect(source).toContain('import { isValidCurrency, CURRENCY_META } from');
+    expect(source).toContain(
+      'function formatCurrencyAbbreviated(value: number, currency: Currency)'
+    );
+    expect(source).toContain('display: true');
+    expect(source).toContain('maxTicksLimit: 4');
+    expect(source).toContain('formatCurrencyAbbreviated(Number(value), currency)');
+  });
 });
