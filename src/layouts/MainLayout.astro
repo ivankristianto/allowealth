@@ -26,6 +26,7 @@ interface Props {
   currentPath?: string;
   user?: User | null;
   subtitle?: string;
+  ssrTheme?: string;
   primaryCurrency?: Currency;
   secondaryCurrency?: Currency | null;
   userName?: string;
@@ -37,6 +38,7 @@ const {
   currentPath = '/',
   user,
   subtitle,
+  ssrTheme,
   primaryCurrency,
   secondaryCurrency,
   userName,
@@ -45,7 +47,7 @@ const {
 const hasHeaderSlot = Astro.slots.has('header');
 ---
 
-<BaseLayout title={title}>
+<BaseLayout title={title} ssrTheme={ssrTheme}>
   <div
     class="drawer lg:drawer-open group overflow-x-hidden lg:overflow-y-hidden lg:h-screen"
     data-sidebar-root
