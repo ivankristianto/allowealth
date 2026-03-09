@@ -14,7 +14,6 @@
 import { Menu, Plus } from '@lucide/astro';
 // TODO: Re-enable when notification system is implemented
 // import NotificationDropdown from '../molecules/NotificationDropdown.astro';
-import ThemeToggle from '../atoms/ThemeToggle.astro';
 import Button from '../atoms/Button.astro';
 import CurrencySwitcher from '../atoms/CurrencySwitcher.astro';
 import GreetingHeader from '../molecules/GreetingHeader.astro';
@@ -125,9 +124,6 @@ const showNewTransactionButton = user != null && user.role !== 'super_admin';
           />
         )
       }
-
-      <!-- Theme Toggle (mobile/tablet only - desktop has floating toggle) -->
-      <ThemeToggle size="sm" className="lg:hidden" />
 
       {/* TODO: Re-enable when notification system is implemented */}
       {/* <NotificationDropdown /> */}
