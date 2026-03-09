@@ -99,13 +99,18 @@ const currencyBadge = (c: Currency) =>
       </Fragment>
     </StatCard>
 
-    <StatCard
-      title="BUDGET HEALTH"
-      value={`${budgetHealth}%`}
-      valueColor={budgetHealth > 100 ? 'text-error' : 'text-success'}
-      progress={budgetHealth}
-      progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
-    />
+    <div
+      class="tooltip tooltip-bottom w-full"
+      data-tip="Total budget used vs. allocated this period. Under 100% means within budget."
+    >
+      <StatCard
+        title="BUDGET HEALTH"
+        value={`${budgetHealth}%`}
+        valueColor={budgetHealth > 100 ? 'text-error' : 'text-success'}
+        progress={budgetHealth}
+        progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
+      />
+    </div>
 
     {
       showWealthCards && (
