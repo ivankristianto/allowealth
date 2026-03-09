@@ -16,12 +16,18 @@ import OverviewSummaryCardsPartial from '@/components/partials/OverviewSummaryCa
 import OverviewChartsPartial from '@/components/partials/OverviewChartsPartial.astro';
 import OverviewPreviewCardsPartial from '@/components/partials/OverviewPreviewCardsPartial.astro';
 
-import { reportService } from '@/services';
+import { reportService, accountService } from '@/services';
 import type { OverviewReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
 import { workspaceMetaService } from '@/services';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+import {
+  calculateAccountTotalsByCurrency,
+  calculateDebtTotalsByCurrency,
+  calculateAccountAllocation,
+} from '@/lib/utils/account';
+import OverviewWealthPartial from '@/components/partials/OverviewWealthPartial.astro';
 
 const currentPath = '/reports';
 
@@ -104,6 +110,23 @@ try {
   };
 }
 
+// Fetch account data for wealth section
+const accounts = await accountService.findAll(user.workspaceId);
+const orderedCurrencies = workspaceCurrencies;
+const accountTotals = calculateAccountTotalsByCurrency(accounts, orderedCurrencies);
+const debtTotals = calculateDebtTotalsByCurrency(accounts, orderedCurrencies);
+const allocationCurrency =
+  orderedCurrencies.find((c) =>
+    accounts.some(
+      (a) => a.account_class !== 'debt' && a.currency === c && parseFloat(a.balance || '0') > 0
+    )
+  ) ?? orderedCurrencies[0];
+const accountAllocation = calculateAccountAllocation(accounts, allocationCurrency);
+const latestAccountUpdate = accounts.reduce<Date | null>((latest, a) => {
+  const d = new Date(a.last_updated);
+  return !latest || d > latest ? d : latest;
+}, null);
+
 const trendDataForCharts = overviewData.trendData.map((trend) => ({
   name: trend.name,
   income: safeParseDecimal(trend.income),
@@ -149,6 +172,16 @@ const reportState = { range: defaultRange, period: defaultPeriod, currency };
         trendData={trendDataForCharts}
         currency={currency}
         subtitle={defaultRange === 'monthly' ? 'LAST 3 MONTHS' : 'LAST 3 YEARS'}
+      />
+    </div>
+
+    {/* Wealth */}
+    <div data-wealth-container>
+      <OverviewWealthPartial
+        accountTotals={accountTotals}
+        debtTotals={debtTotals}
+        distribution={accountAllocation}
+        latestUpdate={latestAccountUpdate}
       />
     </div>
 

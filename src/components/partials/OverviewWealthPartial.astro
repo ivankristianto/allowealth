@@ -1,0 +1,30 @@
+---
+/**
+ * Overview Wealth Partial
+ *
+ * Server-rendered partial showing account wealth summary on the reports overview.
+ * Wraps AccountPortfolioSummary for reuse.
+ */
+
+import AccountPortfolioSummary from '@/components/organisms/AccountPortfolioSummary.astro';
+import type { AllocationItem } from '@/components/organisms/AccountPortfolioSummary.astro';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  accountTotals: Array<{ currency: Currency; amount: number }>;
+  debtTotals: Array<{ currency: Currency; amount: number }>;
+  distribution: AllocationItem[];
+  latestUpdate?: Date | string | null;
+}
+
+const { accountTotals, debtTotals, distribution, latestUpdate } = Astro.props;
+---
+
+<div data-wealth-cards>
+  <AccountPortfolioSummary
+    accountTotals={accountTotals}
+    debtTotals={debtTotals}
+    distribution={distribution}
+    latestUpdate={latestUpdate}
+  />
+</div>

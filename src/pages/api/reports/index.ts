@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { reportService, workspaceMetaService, workspaceService } from '@/services';
+import { reportService, workspaceMetaService, workspaceService, accountService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
@@ -12,7 +12,13 @@ import { isValidCurrency } from '@/lib/constants/currency';
 import OverviewSummaryCardsPartial from '@/components/partials/OverviewSummaryCardsPartial.astro';
 import OverviewChartsPartial from '@/components/partials/OverviewChartsPartial.astro';
 import OverviewPreviewCardsPartial from '@/components/partials/OverviewPreviewCardsPartial.astro';
+import OverviewWealthPartial from '@/components/partials/OverviewWealthPartial.astro';
 import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.astro';
+import {
+  calculateAccountTotalsByCurrency,
+  calculateDebtTotalsByCurrency,
+  calculateAccountAllocation,
+} from '@/lib/utils/account';
 
 /**
  * GET /api/reports
@@ -49,7 +55,7 @@ export const GET: APIRoute = async (context) => {
         : workspaceCurrencyConfig.primary;
 
     // Validate _partial
-    const VALID_PARTIALS = ['summary', 'charts', 'previews', 'selector', 'all'] as const;
+    const VALID_PARTIALS = ['summary', 'charts', 'previews', 'wealth', 'selector', 'all'] as const;
     type PartialType = (typeof VALID_PARTIALS)[number];
     const partialParam = url.searchParams.get('_partial') || 'all';
     if (!VALID_PARTIALS.includes(partialParam as PartialType)) {
@@ -122,6 +128,23 @@ export const GET: APIRoute = async (context) => {
       userId
     );
 
+    // Fetch account data for wealth partial
+    const accounts = await accountService.findAll(auth.workspaceId);
+    const workspaceCurrenciesList = allowedCurrencies;
+    const accountTotals = calculateAccountTotalsByCurrency(accounts, workspaceCurrenciesList);
+    const debtTotals = calculateDebtTotalsByCurrency(accounts, workspaceCurrenciesList);
+    const allocationCurrency =
+      workspaceCurrenciesList.find((c) =>
+        accounts.some(
+          (a) => a.account_class !== 'debt' && a.currency === c && parseFloat(a.balance || '0') > 0
+        )
+      ) ?? workspaceCurrenciesList[0];
+    const accountAllocation = calculateAccountAllocation(accounts, allocationCurrency);
+    const latestAccountUpdate = accounts.reduce<Date | null>((latest, a) => {
+      const d = new Date(a.last_updated);
+      return !latest || d > latest ? d : latest;
+    }, null);
+
     // Return HTML partials
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();
@@ -166,6 +189,18 @@ export const GET: APIRoute = async (context) => {
           },
         });
         htmlParts.push(`<!-- PARTIAL:previews -->\n${previewsHtml}`);
+      }
+
+      if (partial === 'all' || partial === 'wealth') {
+        const wealthHtml = await container.renderToString(OverviewWealthPartial, {
+          props: {
+            accountTotals,
+            debtTotals,
+            distribution: accountAllocation,
+            latestUpdate: latestAccountUpdate,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:wealth -->\n${wealthHtml}`);
       }
 
       if (partial === 'selector') {

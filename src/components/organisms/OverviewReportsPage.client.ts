@@ -10,6 +10,7 @@ import {
   renderSummaryHtml,
   renderChartsHtml,
   renderPreviewsHtml,
+  renderWealthHtml,
   renderSelectorHtml,
   showLoadingState,
   hideLoadingState,
@@ -84,7 +85,7 @@ async function fetchOverviewHtml(
   range: 'monthly' | 'yearly',
   period: string,
   currency: Currency
-): Promise<{ summary?: string; charts?: string; previews?: string }> {
+): Promise<{ summary?: string; charts?: string; previews?: string; wealth?: string }> {
   const params = new URLSearchParams();
   params.set('_render', 'html');
   params.set('_partial', 'all');
@@ -103,6 +104,7 @@ async function fetchOverviewHtml(
 async function fetchAndRenderOverview(): Promise<void> {
   showLoadingState('[data-summary-container]');
   showLoadingState('[data-charts-container]');
+  showLoadingState('[data-wealth-container]');
   showLoadingState('[data-previews-container]');
 
   try {
@@ -122,6 +124,11 @@ async function fetchAndRenderOverview(): Promise<void> {
     } else {
       hideLoadingState('[data-charts-container]');
     }
+    if (partials.wealth) {
+      renderWealthHtml(partials.wealth);
+    } else {
+      hideLoadingState('[data-wealth-container]');
+    }
     if (partials.previews) {
       renderPreviewsHtml(partials.previews);
     } else {
@@ -134,6 +141,7 @@ async function fetchAndRenderOverview(): Promise<void> {
     console.error('Error fetching overview data:', error);
     hideLoadingState('[data-summary-container]');
     hideLoadingState('[data-charts-container]');
+    hideLoadingState('[data-wealth-container]');
     hideLoadingState('[data-previews-container]');
     addToast('Failed to load overview data. Please try again.', 'error');
   }
