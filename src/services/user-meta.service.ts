@@ -282,6 +282,7 @@ export class UserMetaService {
         DEFAULT_USER_SETTINGS.showIndividualCurrencies
       ),
       phone: metaAll[USER_META_KEYS.PHONE] || DEFAULT_USER_SETTINGS.phone,
+      theme: metaAll[USER_META_KEYS.THEME] || DEFAULT_USER_SETTINGS.theme,
     };
 
     // Cache the result
