@@ -1,6 +1,6 @@
 # Database Schema Architecture
 
-This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with **SQLite** (development) and **PostgreSQL/Supabase** (production) with a focus on data integrity, precision, and multi-tenancy.
+This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with a single **SQLite-compatible schema** shared by local SQLite development and Cloudflare D1 production, with a focus on data integrity, precision, and multi-tenancy.
 
 ## Core Principles
 
@@ -853,7 +853,7 @@ drizzle/
 ├── sqlite/
 │   ├── 0000_*.sql   # Current baseline migration (history reset)
 │   └── meta/        # Drizzle migration metadata
-└── postgresql/
+└── sqlite/
     ├── 0000_*.sql   # Current baseline migration (history reset)
     └── meta/        # Drizzle migration metadata
 ```
@@ -873,9 +873,10 @@ bun run db:migrate
 # Push schema directly (dev only)
 bun run db:push
 
-# For PostgreSQL (production):
-DATABASE_URL=postgresql://... bun run db:generate
-DATABASE_URL=postgresql://... bun run db:migrate
+# Deploy to D1 (production):
+for f in drizzle/sqlite/*.sql; do
+  wrangler d1 execute allowealth-db --remote --file="$f"
+done
 ```
 
 ### Best Practices
@@ -967,12 +968,12 @@ const myTxns = await db.query.transactions.findMany({
 
 ## Schema Location
 
-The schema is organized by database type (SQLite for development, PostgreSQL for production):
+The schema is organized as a single SQLite-compatible schema used by both local development and D1 production:
 
 ```
 src/db/schema/
-├── index.ts                      # Export all schemas (auto-selects based on env)
-├── sqlite/                       # SQLite schema (development)
+├── index.ts                      # Export shared SQLite-compatible schema
+├── sqlite/                       # Shared schema for SQLite and D1
 │   ├── index.ts                  # Export all SQLite tables
 │   ├── base.ts                   # Common utilities (timestamps)
 │   ├── relations.ts              # Drizzle ORM relations
@@ -996,8 +997,6 @@ src/db/schema/
 │   ├── account-snapshot-items.ts   # Snapshot details
 │   ├── audit-logs.ts             # Audit trail
 │   ├── api-keys.ts               # API key management
-└── postgresql/                   # PostgreSQL schema (production)
-    └── ... (mirrors sqlite structure)
 ```
 
 ## Key Takeaways

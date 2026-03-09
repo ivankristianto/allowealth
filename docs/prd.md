@@ -1163,7 +1163,7 @@ Errors: 1 (invalid category)
 **Backend:**
 
 - Runtime: Bun 1.x
-- Database: SQLite (development) / PostgreSQL/Supabase (production)
+- Database: SQLite (development) / Cloudflare D1 (production)
 - ORM: Drizzle ORM
 - Authentication: Lucia Auth
 - Password Hashing: Argon2id
@@ -1181,7 +1181,7 @@ Errors: 1 (invalid category)
 **Deployment:**
 
 - Hosting: Self-hosted (VPS/Docker)
-- Database: PostgreSQL (self-hosted) or Supabase (managed)
+- Database: Cloudflare D1
 - Reverse Proxy: Nginx or Caddy
 - SSL: Let's Encrypt
 
@@ -1223,9 +1223,9 @@ Errors: 1 (invalid category)
 **Database Strategy:**
 
 - Development: SQLite (single file, no setup)
-- Production: PostgreSQL/Supabase (better performance, scalability)
-- Use Drizzle ORM for database-agnostic queries
-- Environment variable switches between databases
+- Production: Cloudflare D1
+- Use Drizzle ORM with a shared SQLite-compatible schema
+- Environment configuration switches between local SQLite and D1
 
 **Schema Design:**
 
