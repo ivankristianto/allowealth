@@ -178,7 +178,7 @@ export const GET: APIRoute = async (context) => {
             recurringBreakdown: recurringBreakdownData,
             currency,
             resourceAllocationSubtitle: range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX',
-            financialVelocitySubtitle: range === 'monthly' ? 'LAST 3 MONTHS' : 'LAST 3 YEARS',
+            financialVelocitySubtitle: range === 'monthly' ? 'LAST 3 MONTHS' : 'MONTHLY BREAKDOWN',
           },
         });
         htmlParts.push(`<!-- PARTIAL:charts -->\n${chartsHtml}`);
@@ -196,7 +196,7 @@ export const GET: APIRoute = async (context) => {
         const tableHtml = await container.renderToString(CategoryTablePartial, {
           props: {
             categories,
-            subtitle: 'SORTED BY FUNCTIONAL VOLUME',
+            subtitle: 'SORTED BY AMOUNT SPENT',
             range,
           },
         });

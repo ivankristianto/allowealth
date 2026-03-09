@@ -35,6 +35,7 @@ export {
 export {
   formatDate,
   formatMonthYear,
+  formatPeriodLabel,
   formatDateTime,
   formatRelativeDate,
   isFutureDate,

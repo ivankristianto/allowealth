@@ -77,7 +77,7 @@ describe('/api/reports/expenses contract', () => {
 
     const response = await GET(
       createApiContext(
-        'http://localhost/api/reports/expenses?range=monthly&period=2026-02&_render=html&_partial=all'
+        'http://localhost/api/reports/expenses?range=yearly&period=2026&_render=html&_partial=all'
       )
     );
 
@@ -87,6 +87,8 @@ describe('/api/reports/expenses contract', () => {
     expect(html).toContain('<!-- PARTIAL:charts -->');
     expect(html).toContain('<!-- PARTIAL:table -->');
     expect(html).toContain('<!-- PARTIAL:members -->');
+    expect(html).toContain('financialVelocitySubtitle="MONTHLY BREAKDOWN"');
+    expect(html).toContain('subtitle="SORTED BY AMOUNT SPENT"');
   });
 
   it('returns expense JSON data', async () => {

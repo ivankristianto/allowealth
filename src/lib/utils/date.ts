@@ -117,6 +117,26 @@ export function formatMonthYear(date: Date | string, locale: string = 'en-US'): 
 }
 
 /**
+ * Format a report period string for display.
+ * Monthly periods like "2026-03" are formatted as "March 2026".
+ * Yearly periods like "2026" are returned unchanged.
+ */
+export function formatPeriodLabel(period: string, locale: string = 'en-US'): string {
+  const monthlyPeriodMatch = period.match(/^(\d{4})-(\d{2})$/);
+  if (!monthlyPeriodMatch) {
+    return period;
+  }
+
+  const year = Number(monthlyPeriodMatch[1]);
+  const month = Number(monthlyPeriodMatch[2]);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return period;
+  }
+
+  return formatMonthYear(new Date(year, month - 1, 1), locale);
+}
+
+/**
  * Format a date and time for display
  * @param date - Date to format
  * @param locale - Locale for formatting
