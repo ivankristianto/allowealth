@@ -86,6 +86,20 @@ describe('theme-init bootstrap script', () => {
     expect(html.style.filter).toBe('grayscale(100%)');
   });
 
+  it('preserves the SSR monochrome contract emitted by BaseLayout', () => {
+    const { html } = setupDom({
+      serverTheme: 'light',
+      themePreference: 'monochrome',
+      prefersDark: false,
+    });
+    html.style.filter = 'grayscale(100%)';
+
+    runThemeInit();
+
+    expect(html.getAttribute('data-theme')).toBe('light');
+    expect(html.style.filter).toBe('grayscale(100%)');
+  });
+
   it('falls back to the OS theme when no saved preference exists', () => {
     const { html } = setupDom({ prefersDark: true });
 

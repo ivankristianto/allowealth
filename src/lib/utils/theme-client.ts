@@ -9,6 +9,7 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
 export type Theme = 'system' | 'light' | 'dark' | 'monochrome';
 
 const API_THEME_URL = '/api/user/theme';
+export const THEME_CHANGE_EVENT = 'allowealth:theme-change';
 
 /**
  * Apply a theme to the document immediately without a page reload.

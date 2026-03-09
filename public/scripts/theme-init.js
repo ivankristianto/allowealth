@@ -5,7 +5,7 @@
 
     if (html.getAttribute('data-theme-server') === 'true') {
       var serverTheme = html.getAttribute('data-theme');
-      if (serverTheme === 'monochrome') {
+      if (themePreference === 'monochrome' || serverTheme === 'monochrome') {
         html.setAttribute('data-theme', 'light');
         html.style.filter = 'grayscale(100%)';
       } else {

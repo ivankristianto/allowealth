@@ -1,5 +1,10 @@
 import { addToast } from '@/lib/stores/toastStore';
-import { type Theme, applyThemeToDom, saveTheme } from '@/lib/utils/theme-client';
+import {
+  THEME_CHANGE_EVENT,
+  type Theme,
+  applyThemeToDom,
+  saveTheme,
+} from '@/lib/utils/theme-client';
 
 const FORM_ID = 'appearances-form';
 const CONTROLLER_KEY = '__appearancesFormController';
@@ -40,6 +45,7 @@ export function initAppearancesForm(): void {
 
         applyThemeToDom(theme);
         form.dataset.currentTheme = theme;
+        document.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { theme } }));
 
         try {
           await saveTheme(theme, saveController.signal);
@@ -51,6 +57,9 @@ export function initAppearancesForm(): void {
 
           applyThemeToDom(previousTheme);
           form.dataset.currentTheme = previousTheme;
+          document.dispatchEvent(
+            new CustomEvent(THEME_CHANGE_EVENT, { detail: { theme: previousTheme } })
+          );
           radios.forEach((candidate) => {
             candidate.checked = candidate.value === previousTheme;
           });

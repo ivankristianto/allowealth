@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Window } from 'happy-dom';
 import { clearAllToasts, toasts } from '@/lib/stores/toastStore';
+import { THEME_CHANGE_EVENT } from '@/lib/utils/theme-client';
 
 describe('ManageAppearancesForm client behavior', () => {
   let originalWindow: typeof globalThis.window | undefined;
@@ -140,6 +141,27 @@ describe('ManageAppearancesForm client behavior', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.documentElement.style.filter).toBe('grayscale(100%)');
     expect(document.documentElement.getAttribute('data-theme-server')).toBe('true');
+  });
+
+  it('broadcasts theme changes so other controls can stay synchronized', async () => {
+    (globalThis as Record<string, unknown>).fetch = async () =>
+      new Response(JSON.stringify({ success: true }));
+    const seenThemes: string[] = [];
+    document.addEventListener(THEME_CHANGE_EVENT, (event: Event) => {
+      seenThemes.push((event as CustomEvent<{ theme: string }>).detail.theme);
+    });
+    const { initAppearancesForm } = await loadModule();
+
+    initAppearancesForm();
+
+    const radio = document.querySelector<HTMLInputElement>('input[value="dark"]');
+    if (!radio) throw new Error('Expected dark radio');
+
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    await flush();
+
+    expect(seenThemes).toEqual(['dark']);
   });
 
   it('reverts the previous theme when saving fails', async () => {

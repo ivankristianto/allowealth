@@ -299,6 +299,7 @@ const getUserInitials = () => {
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import {
+    THEME_CHANGE_EVENT,
     type Theme,
     applyThemeToDom,
     getCurrentTheme,
@@ -322,50 +323,68 @@ const getUserInitials = () => {
       if (switcher.dataset.themeSwitcherBound === 'true') return;
       switcher.dataset.themeSwitcherBound = 'true';
 
-      highlightActiveTheme(switcher, getCurrentTheme());
+      const controller = new AbortController();
+      const { signal } = controller;
+      const form = document.getElementById('appearances-form');
+
+      const syncThemeControls = (activeTheme: Theme) => {
+        highlightActiveTheme(switcher, activeTheme);
+
+        if (form instanceof HTMLElement) {
+          form.dataset.currentTheme = activeTheme;
+          form.querySelectorAll<HTMLInputElement>('input[name="theme"]').forEach((radio) => {
+            radio.checked = radio.value === activeTheme;
+          });
+        }
+      };
+
+      syncThemeControls(getCurrentTheme());
+
+      document.addEventListener(
+        THEME_CHANGE_EVENT,
+        (event: Event) => {
+          const activeTheme = (event as CustomEvent<{ theme: Theme }>).detail.theme;
+          syncThemeControls(activeTheme);
+        },
+        { signal }
+      );
+
+      document.addEventListener('astro:before-swap', () => controller.abort(), {
+        once: true,
+      });
 
       switcher.querySelectorAll<HTMLButtonElement>('[data-theme-option]').forEach((btn) => {
-        btn.addEventListener('click', async (event) => {
-          event.stopPropagation();
-          const theme = btn.dataset.themeOption as Theme;
-          if (!theme) return;
+        btn.addEventListener(
+          'click',
+          async (event) => {
+            event.stopPropagation();
+            const theme = btn.dataset.themeOption as Theme;
+            if (!theme) return;
 
-          const previousTheme = getCurrentTheme();
-          const form = document.getElementById('appearances-form');
-          themeSaveController?.abort();
-          themeSaveController = new AbortController();
-          const requestVersion = ++themeSaveRequestVersion;
+            const previousTheme = getCurrentTheme();
+            themeSaveController?.abort();
+            themeSaveController = new AbortController();
+            const requestVersion = ++themeSaveRequestVersion;
 
-          applyThemeToDom(theme);
-          highlightActiveTheme(switcher, theme);
+            applyThemeToDom(theme);
+            document.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { theme } }));
 
-          if (form instanceof HTMLElement) {
-            form.dataset.currentTheme = theme;
-            form.querySelectorAll<HTMLInputElement>('input[name="theme"]').forEach((radio) => {
-              radio.checked = radio.value === theme;
-            });
-          }
-
-          try {
-            await saveTheme(theme, themeSaveController.signal);
-            if (requestVersion !== themeSaveRequestVersion) return;
-            addToast('Theme updated', 'success');
-          } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') return;
-            if (requestVersion !== themeSaveRequestVersion) return;
-            applyThemeToDom(previousTheme);
-            highlightActiveTheme(switcher, previousTheme);
-
-            if (form instanceof HTMLElement) {
-              form.dataset.currentTheme = previousTheme;
-              form.querySelectorAll<HTMLInputElement>('input[name="theme"]').forEach((radio) => {
-                radio.checked = radio.value === previousTheme;
-              });
+            try {
+              await saveTheme(theme, themeSaveController.signal);
+              if (requestVersion !== themeSaveRequestVersion) return;
+              addToast('Theme updated', 'success');
+            } catch (error) {
+              if (error instanceof Error && error.name === 'AbortError') return;
+              if (requestVersion !== themeSaveRequestVersion) return;
+              applyThemeToDom(previousTheme);
+              document.dispatchEvent(
+                new CustomEvent(THEME_CHANGE_EVENT, { detail: { theme: previousTheme } })
+              );
+              addToast('Failed to save theme preference', 'error');
             }
-
-            addToast('Failed to save theme preference', 'error');
-          }
-        });
+          },
+          { signal }
+        );
       });
     });
   }
