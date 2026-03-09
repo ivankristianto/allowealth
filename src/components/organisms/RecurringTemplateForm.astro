@@ -31,7 +31,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
   <form id="recurring-template-form" class="flex flex-col gap-4 pb-20 sm:pb-4" novalidate>
     <input type="hidden" name="template_id" />
 
-    <p class="text-sm font-medium text-neutral/60" data-drawer-subtitle>
+    <p class="text-sm font-medium text-base-content/60" data-drawer-subtitle>
       Set up an automatic bill or income.
     </p>
 
@@ -39,7 +39,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
     </div>
 
     <label class="form-control gap-1.5">
-      <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Name</span>
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Name</span>
       <input
         name="name"
         class="input input-bordered h-11 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
@@ -65,7 +65,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </label>
 
       <label
-        class="btn btn-sm h-9 cursor-pointer rounded-md border-none bg-transparent text-neutral font-medium transition-all hover:bg-base-300"
+        class="btn btn-sm h-9 cursor-pointer rounded-md border-none bg-transparent text-base-content/70 font-medium transition-all hover:bg-base-300"
         data-type-option="income"
       >
         <input type="radio" class="sr-only" name="type" value="income" />
@@ -75,7 +75,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
     </div>
 
     <div class="space-y-3" data-recurring-schedule-block>
-      <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Schedule</span>
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
+        >Schedule</span
+      >
       <div class="flex flex-wrap gap-1.5" data-frequency-presets>
         <button
           type="button"
@@ -115,7 +117,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
           </select>
         </div>
         <label class="form-control gap-1">
-          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/40">Every</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40"
+            >Every</span
+          >
           <input
             type="number"
             name="interval_count"
@@ -135,7 +139,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
     <div class="rounded-lg border border-base-300 bg-base-100 p-3" data-recurring-amount-field>
       <div class="grid grid-cols-[1fr_auto] items-end gap-3">
         <label class="form-control gap-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Amount</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
+            >Amount</span
+          >
           <AmountInput
             id="recurring-template-amount"
             name="amount"
@@ -147,7 +153,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         </label>
 
         <label class="form-control min-w-[7.5rem] gap-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
             >Currency</span
           >
           <select
@@ -164,7 +170,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
     <div class="form-control" data-recurring-category-block>
       <label
         for="recurring-template-category"
-        class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral/50"
+        class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/50"
       >
         Category
       </label>
@@ -188,7 +194,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
     <div class="form-control" data-recurring-account-block>
       <label
         for="recurring-template-account"
-        class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral/50"
+        class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-base-content/50"
       >
         Account
       </label>
@@ -205,7 +211,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label class="form-control gap-1.5" data-recurring-day-of-month-block>
-        <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
           >Day of month</span
         >
         <select
@@ -222,7 +228,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </label>
 
       <label class="form-control gap-1.5" data-recurring-start-month-block>
-        <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
           >Start month</span
         >
         <div class="relative">
@@ -241,7 +247,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </label>
 
       <label class="form-control hidden gap-1.5" data-recurring-start-date-block>
-        <span class="text-xs font-semibold uppercase tracking-wider text-neutral/50"
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
           >Start date</span
         >
         <div class="relative">
@@ -264,7 +270,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       data-recurring-rules-card
     >
       <div>
-        <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Schedule rules</p>
+        <p class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Schedule rules
+        </p>
         <p class="mt-1 text-xs text-base-content/60">
           Set when this recurring ends and whether it should be tracked as an installment.
         </p>
@@ -274,7 +282,7 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3"
         data-recurring-end-group
       >
-        <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">End</p>
+        <p class="text-xs font-semibold uppercase tracking-wider text-base-content/50">End</p>
 
         <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
           <input
@@ -333,7 +341,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         class="space-y-3 rounded-lg border border-base-300 bg-base-100 p-3"
         data-recurring-installment-group
       >
-        <p class="text-xs font-semibold uppercase tracking-wider text-neutral/50">Installment</p>
+        <p class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Installment
+        </p>
 
         <label class="label cursor-pointer justify-start gap-2.5 rounded-lg px-2 py-1.5">
           <input
