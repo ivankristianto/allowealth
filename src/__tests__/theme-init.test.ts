@@ -23,6 +23,7 @@ describe('theme-init bootstrap script', () => {
 
   function setupDom(options: {
     serverTheme?: string;
+    themePreference?: string;
     savedTheme?: string | null;
     prefersDark?: boolean;
   }) {
@@ -33,6 +34,10 @@ describe('theme-init bootstrap script', () => {
     if (options.serverTheme) {
       html.setAttribute('data-theme', options.serverTheme);
       html.setAttribute('data-theme-server', 'true');
+    }
+
+    if (options.themePreference) {
+      html.setAttribute('data-theme-preference', options.themePreference);
     }
 
     if (options.savedTheme) {
@@ -87,6 +92,19 @@ describe('theme-init bootstrap script', () => {
     runThemeInit();
 
     expect(html.getAttribute('data-theme')).toBe('dark');
+    expect(html.style.filter).toBe('');
+  });
+
+  it('ignores public localStorage when authenticated users prefer system theme', () => {
+    const { html } = setupDom({
+      themePreference: 'system',
+      savedTheme: 'dark',
+      prefersDark: false,
+    });
+
+    runThemeInit();
+
+    expect(html.getAttribute('data-theme')).toBe('light');
     expect(html.style.filter).toBe('');
   });
 });

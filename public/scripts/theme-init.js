@@ -1,6 +1,7 @@
 (function () {
   function applyTheme() {
     var html = document.documentElement;
+    var themePreference = html.getAttribute('data-theme-preference');
 
     if (html.getAttribute('data-theme-server') === 'true') {
       var serverTheme = html.getAttribute('data-theme');
@@ -10,6 +11,29 @@
       } else {
         html.style.filter = '';
       }
+      return;
+    }
+
+    if (themePreference === 'system') {
+      html.style.filter = '';
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        html.setAttribute('data-theme', 'dark');
+        return;
+      }
+
+      html.setAttribute('data-theme', 'light');
+      return;
+    }
+
+    if (themePreference === 'light' || themePreference === 'dark') {
+      html.style.filter = '';
+      html.setAttribute('data-theme', themePreference);
+      return;
+    }
+
+    if (themePreference === 'monochrome') {
+      html.setAttribute('data-theme', 'light');
+      html.style.filter = 'grayscale(100%)';
       return;
     }
 

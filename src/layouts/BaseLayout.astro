@@ -13,6 +13,7 @@ const { title = 'allowealth', ssrTheme } = Astro.props;
 // Construct browser title: "Page Title | allowealth" or just "allowealth" for home
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
 const hasServerTheme = Boolean(ssrTheme && ssrTheme !== 'system');
+const themePreference = ssrTheme || undefined;
 
 // Get perf collector for debug output (only when PERF_DEBUG=true)
 const perf = Astro.locals.perf;
@@ -23,6 +24,7 @@ const perfDebugComment = perf ? perf.toHtmlComment() : '';
 <html
   lang="en"
   data-theme={hasServerTheme ? ssrTheme : 'light'}
+  data-theme-preference={themePreference}
   data-theme-server={hasServerTheme ? 'true' : undefined}
 >
   <head>

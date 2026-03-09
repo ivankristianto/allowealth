@@ -80,6 +80,17 @@ describe('ManageAppearancesForm client behavior', () => {
     await Promise.resolve();
   }
 
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+
+    return { promise, resolve, reject };
+  }
+
   it('applies the selected dark theme and saves it', async () => {
     let request: [RequestInfo | URL, RequestInit | undefined] | undefined;
     (globalThis as Record<string, unknown>).fetch = async (
@@ -160,5 +171,47 @@ describe('ManageAppearancesForm client behavior', () => {
     expect(darkRadio.checked).toBe(true);
     expect(lightRadio.checked).toBe(false);
     expect(toasts.get().at(-1)?.message).toBe('Failed to save theme preference');
+  });
+
+  it('keeps the latest selection when earlier saves finish later', async () => {
+    const firstResponse = deferred<Response>();
+    const secondResponse = deferred<Response>();
+    let requestCount = 0;
+
+    (globalThis as Record<string, unknown>).fetch = async () => {
+      requestCount += 1;
+      return requestCount === 1 ? firstResponse.promise : secondResponse.promise;
+    };
+
+    const { initAppearancesForm } = await loadModule();
+    initAppearancesForm();
+
+    const darkRadio = document.querySelector<HTMLInputElement>('input[value="dark"]');
+    const lightRadio = document.querySelector<HTMLInputElement>('input[value="light"]');
+    const form = document.getElementById('appearances-form');
+    if (!darkRadio || !lightRadio || !form) throw new Error('Expected theme form and radios');
+
+    darkRadio.checked = true;
+    darkRadio.dispatchEvent(new Event('change', { bubbles: true }));
+    await flush();
+
+    lightRadio.checked = true;
+    lightRadio.dispatchEvent(new Event('change', { bubbles: true }));
+    await flush();
+
+    secondResponse.resolve(new Response(JSON.stringify({ success: true })));
+    await flush();
+
+    firstResponse.resolve(
+      new Response(JSON.stringify({ success: false }), {
+        status: 500,
+      })
+    );
+    await flush();
+
+    expect(form.getAttribute('data-current-theme')).toBe('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(lightRadio.checked).toBe(true);
+    expect(toasts.get().at(-1)?.message).toBe('Theme updated');
   });
 });

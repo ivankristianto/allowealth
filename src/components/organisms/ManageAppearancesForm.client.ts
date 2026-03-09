@@ -6,6 +6,8 @@ const FORM_ID = 'appearances-form';
 const CONTROLLER_KEY = '__appearancesFormController';
 
 type Theme = 'system' | 'light' | 'dark' | 'monochrome';
+let saveController: AbortController | null = null;
+let saveRequestVersion = 0;
 
 declare global {
   interface Window {
@@ -15,6 +17,7 @@ declare global {
 
 export function applyThemeToDom(theme: Theme): void {
   const html = document.documentElement;
+  html.setAttribute('data-theme-preference', theme);
 
   if (theme === 'monochrome') {
     html.setAttribute('data-theme', 'light');
@@ -39,6 +42,7 @@ export function applyThemeToDom(theme: Theme): void {
 
 export function initAppearancesForm(): void {
   window[CONTROLLER_KEY]?.abort();
+  saveController?.abort();
 
   const controller = new AbortController();
   window[CONTROLLER_KEY] = controller;
@@ -57,6 +61,9 @@ export function initAppearancesForm(): void {
 
         const theme = radio.value as Theme;
         const previousTheme = (form.dataset.currentTheme as Theme | undefined) ?? 'system';
+        saveController?.abort();
+        saveController = new AbortController();
+        const requestVersion = ++saveRequestVersion;
 
         applyThemeToDom(theme);
         form.dataset.currentTheme = theme;
@@ -67,9 +74,13 @@ export function initAppearancesForm(): void {
             headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
             credentials: 'include',
             body: JSON.stringify({ theme }),
-            signal,
+            signal: saveController.signal,
           });
           const result = (await response.json()) as { success?: boolean };
+
+          if (requestVersion !== saveRequestVersion) {
+            return;
+          }
 
           if (!response.ok || !result.success) {
             throw new Error('Failed to save theme preference');
@@ -78,6 +89,7 @@ export function initAppearancesForm(): void {
           addToast('Theme updated', 'success');
         } catch (error) {
           if (error instanceof Error && error.name === 'AbortError') return;
+          if (requestVersion !== saveRequestVersion) return;
 
           applyThemeToDom(previousTheme);
           form.dataset.currentTheme = previousTheme;
