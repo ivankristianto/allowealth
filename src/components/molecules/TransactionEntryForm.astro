@@ -197,7 +197,7 @@ const defaultDatePick =
       />
       <!-- Currency badge (read-only, derived from selected account) -->
       <span
-        class="absolute top-1/2 -translate-y-1/2 right-3 text-xs font-bold text-neutral/60"
+        class="absolute top-1/2 -translate-y-1/2 right-3 text-xs font-bold text-base-content/60"
         data-currency-badge
         aria-label={`Currency: ${defaultCurrency}`}
       >
@@ -247,7 +247,7 @@ const defaultDatePick =
 
   <!-- Category Chips -->
   <div class="form-control">
-    <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5"
+    <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5"
       >Category</span
     >
     <div
@@ -352,7 +352,9 @@ const defaultDatePick =
 
   <!-- Date Quick-Picks -->
   <div class="form-control">
-    <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5">Date</span>
+    <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5"
+      >Date</span
+    >
     <div class="grid grid-cols-3 gap-1" data-date-picks>
       <button
         type="button"
@@ -422,7 +424,7 @@ const defaultDatePick =
   {
     filteredAccounts.length > 1 ? (
       <div class="form-control">
-        <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5">
+        <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5">
           Account
         </span>
         <select

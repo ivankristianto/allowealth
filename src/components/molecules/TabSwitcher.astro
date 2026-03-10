@@ -58,7 +58,7 @@ function getIcon(iconName: keyof typeof iconMap) {
             'tab flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl transition-all',
             activeTab === tab.id
               ? 'bg-base-100 shadow-md text-primary tab-active'
-              : 'text-neutral hover:text-primary',
+              : 'text-base-content/60 hover:text-primary',
           ].join(' ')}
           data-tab-id={tab.id}
         >
@@ -86,10 +86,10 @@ function getIcon(iconName: keyof typeof iconMap) {
         t.setAttribute('aria-selected', isActive ? 'true' : 'false');
         if (isActive) {
           t.classList.add('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
-          t.classList.remove('text-neutral', 'hover:text-primary');
+          t.classList.remove('text-base-content/60', 'hover:text-primary');
         } else {
           t.classList.remove('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
-          t.classList.add('text-neutral', 'hover:text-primary');
+          t.classList.add('text-base-content/60', 'hover:text-primary');
         }
       });
 

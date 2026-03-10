@@ -26,7 +26,7 @@ import { Plus } from '@lucide/astro';
     <!-- Section Header -->
     <header class="text-center mb-16 sm:mb-24 faq-header opacity-0 translate-y-8">
       <div
-        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 border border-base-300 text-sm font-medium text-neutral mb-6"
+        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 border border-base-300 text-sm font-medium text-base-content/60 mb-6"
       >
         <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
         Got questions?
@@ -40,7 +40,7 @@ import { Plus } from '@lucide/astro';
           >shared money.</span
         >
       </h2>
-      <p class="text-neutral text-lg sm:text-xl font-medium max-w-2xl mx-auto">
+      <p class="text-base-content/60 text-lg sm:text-xl font-medium max-w-2xl mx-auto">
         Everything you need to know about managing your household finances with Allowealth.
       </p>
     </header>
@@ -59,7 +59,7 @@ import { Plus } from '@lucide/astro';
               <h3 class="text-xl sm:text-2xl font-bold text-base-content tracking-tight pr-8">
                 {item.question}
               </h3>
-              <div class="faq-icon-wrapper flex-shrink-0 w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-neutral group-hover:text-accent group-hover:border-accent/30 transition-all duration-300">
+              <div class="faq-icon-wrapper flex-shrink-0 w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-base-content/60 group-hover:text-accent group-hover:border-accent/30 transition-all duration-300">
                 <Plus
                   size={20}
                   class="faq-icon transition-transform duration-500"
@@ -73,7 +73,7 @@ import { Plus } from '@lucide/astro';
               aria-labelledby={`faq-question-${index}`}
               class="faq-content hidden"
             >
-              <div class="p-6 sm:p-8 pt-0 text-neutral sm:text-lg leading-relaxed border-t border-base-300/30">
+              <div class="p-6 sm:p-8 pt-0 text-base-content/60 sm:text-lg leading-relaxed border-t border-base-300/30">
                 <p>{item.answer}</p>
               </div>
             </div>
@@ -182,7 +182,7 @@ import { Plus } from '@lucide/astro';
             otherButton.setAttribute('aria-expanded', 'false');
             otherIcon.style.transform = 'rotate(0deg)';
             otherIconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
-            otherIconWrapper.classList.add('bg-base-100', 'text-neutral');
+            otherIconWrapper.classList.add('bg-base-100', 'text-base-content/60');
 
             animate(
               otherContent,
@@ -202,7 +202,7 @@ import { Plus } from '@lucide/astro';
 
           // Animate icon
           icon.style.transform = 'rotate(45deg)';
-          iconWrapper.classList.remove('bg-base-100', 'text-neutral');
+          iconWrapper.classList.remove('bg-base-100', 'text-base-content/60');
           iconWrapper.classList.add('bg-accent', 'text-white', 'border-accent');
 
           // Animate content height
@@ -221,7 +221,7 @@ import { Plus } from '@lucide/astro';
           // Animate icon
           icon.style.transform = 'rotate(0deg)';
           iconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
-          iconWrapper.classList.add('bg-base-100', 'text-neutral');
+          iconWrapper.classList.add('bg-base-100', 'text-base-content/60');
 
           // Animate content height
           const height = content.scrollHeight;
