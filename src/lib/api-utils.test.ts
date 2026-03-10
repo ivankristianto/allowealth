@@ -7,7 +7,8 @@
 
 import { describe, test, expect } from 'bun:test';
 import type { APIContext } from 'astro';
-import { getAuthenticatedUser } from './api-utils';
+import { minLength, object, pipe, string } from 'valibot';
+import { getAuthenticatedUser, isValidationError, validateBody } from './api-utils';
 
 /**
  * Create a mock APIContext for testing
@@ -161,5 +162,82 @@ describe('getAuthenticatedUser', () => {
 
       expect(caught).toBe(true);
     });
+  });
+});
+
+describe('validateBody', () => {
+  const schema = object({
+    name: pipe(string(), minLength(1, 'Name is required')),
+  });
+
+  test('returns normalized issue details when request JSON is invalid', async () => {
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: '{',
+    });
+
+    const validation = await validateBody(request, schema);
+
+    expect(isValidationError(validation)).toBe(true);
+
+    if (!isValidationError(validation)) {
+      throw new Error('Expected validation failure');
+    }
+
+    expect(validation.error.issues).toEqual([
+      {
+        path: [],
+        message: 'Invalid JSON in request body',
+        code: 'custom',
+      },
+    ]);
+  });
+
+  test('returns repo-owned validation issue details for schema failures', async () => {
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: '' }),
+    });
+
+    const validation = await validateBody(request, schema);
+
+    expect(isValidationError(validation)).toBe(true);
+
+    if (!isValidationError(validation)) {
+      throw new Error('Expected validation failure');
+    }
+
+    expect(validation.error.issues).toHaveLength(1);
+    expect(validation.error.issues[0]?.path).toEqual(['name']);
+    expect(validation.error.issues[0]?.message).toBe('Name is required');
+    expect(validation.error.issues[0]?.code).toBeString();
+  });
+
+  test('returns parsed typed data for valid input', async () => {
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'Alice' }),
+    });
+
+    const validation = await validateBody(request, schema);
+
+    expect(validation.success).toBe(true);
+
+    if (isValidationError(validation)) {
+      throw new Error('Expected validation success');
+    }
+
+    const parsedName: string = validation.data.name;
+    expect(parsedName).toBe('Alice');
+    expect(validation.data).toEqual({ name: 'Alice' });
   });
 });
