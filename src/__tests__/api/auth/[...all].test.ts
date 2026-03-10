@@ -12,17 +12,26 @@ const verifyTurnstileTokenMock = mock(async () => ({ success: true }));
   auth: {
     handler: authHandlerMock,
   },
+  AUTH_PATH_PREFIX: '/api/auth',
+  AUTH_SESSION_COOKIE_NAME: 'better-auth.session_token',
+  getAuthBaseURL: () =>
+    process.env.PUBLIC_URL ??
+    `http://${process.env.DEV_HOST ?? 'localhost'}:${process.env.PORT ?? '4321'}`,
+  getTrustedOrigins: () => [
+    process.env.PUBLIC_URL ??
+      `http://${process.env.DEV_HOST ?? 'localhost'}:${process.env.PORT ?? '4321'}`,
+  ],
 }));
 
 (mock as any).module('@/lib/turnstile', () => ({
   verifyTurnstileToken: verifyTurnstileTokenMock,
 }));
 
-let POST: typeof import('./[...all]').POST;
+let POST: typeof import('@/pages/api/auth/[...all]').POST;
 
 describe('Better Auth catch-all route', () => {
   beforeAll(async () => {
-    ({ POST } = await import('./[...all]'));
+    ({ POST } = await import('@/pages/api/auth/[...all]'));
   });
 
   beforeEach(() => {
