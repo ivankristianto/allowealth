@@ -39,7 +39,7 @@ const { id } = Astro.props;
               Account Name
             </h2>
             <p
-              class="text-neutral text-sm mt-2 font-medium uppercase tracking-widest"
+              class="text-base-content/60 text-sm mt-2 font-medium uppercase tracking-widest"
               data-account-meta
             >
               TYPE • CURRENCY Accounts
@@ -189,13 +189,13 @@ const { id } = Astro.props;
 
           {/* Tooltip (absolute within chart container) */}
           <div
-            class="absolute z-10 px-3 py-2 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
+            class="absolute z-10 px-3 py-2 bg-neutral text-base-content/60-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
             style="transform: translate(-50%, -100%); margin-top: -8px;"
             data-chart-tooltip
           >
             <div
               data-tooltip-date
-              class="text-xs text-neutral-content/60 uppercase tracking-wider mb-1"
+              class="text-xs text-base-content/60-content/60 uppercase tracking-wider mb-1"
             >
             </div>
             <div data-tooltip-value class="font-bold"></div>

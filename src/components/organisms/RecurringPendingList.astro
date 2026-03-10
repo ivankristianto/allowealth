@@ -61,7 +61,7 @@ const queueRows = occurrences.map((occurrence) => {
     <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/70">Upcoming Queue</h3>
     <button
       type="button"
-      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-success/40 text-success"
+      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-success/40 text-success rounded-xl"
       data-pending-filter="income"
       aria-pressed="false"
     >
@@ -69,7 +69,7 @@ const queueRows = occurrences.map((occurrence) => {
     </button>
     <button
       type="button"
-      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-error/40 text-error"
+      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-error/40 text-error rounded-xl"
       data-pending-filter="expense"
       aria-pressed="false"
     >
@@ -209,7 +209,7 @@ const queueRows = occurrences.map((occurrence) => {
                         <div class="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            class="btn btn-sm h-11 min-h-11 rounded-lg sm:rounded-xl btn-accent"
+                            class="btn btn-sm h-11 min-h-11 rounded-lg sm:rounded-xl btn-accent rounded-xl"
                             data-open-confirm-modal
                             data-occurrence={row.payload}
                             aria-label={`Confirm ${occurrence.templateName}`}
@@ -219,7 +219,7 @@ const queueRows = occurrences.map((occurrence) => {
                           </button>
                           <button
                             type="button"
-                            class="btn btn-sm h-11 min-h-11 rounded-lg sm:rounded-xl btn-outline btn-warning"
+                            class="btn btn-sm h-11 min-h-11 rounded-lg sm:rounded-xl btn-outline btn-warning rounded-xl"
                             data-open-skip-modal
                             data-occurrence={row.payload}
                             aria-label={`Skip ${occurrence.templateName}`}

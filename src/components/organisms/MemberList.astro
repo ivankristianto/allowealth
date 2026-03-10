@@ -105,7 +105,7 @@ function getInitials(name: string): string {
               {isAdmin && member.id !== currentUserId && member.role !== 'super_admin' && (
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                  class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10 rounded-xl"
                   aria-label={`Remove ${member.name} from workspace`}
                   data-remove-member
                   data-member-id={member.id}

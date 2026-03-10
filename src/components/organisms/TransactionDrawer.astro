@@ -44,7 +44,7 @@ const { categories, accounts, categoryUsageCounts = [], activeCurrency } = Astro
     <button
       id="drawer-tab-income"
       type="button"
-      class="btn btn-sm h-9 rounded-md border-none bg-transparent text-neutral font-medium hover:bg-base-300 transition-all flex gap-1.5 text-xs"
+      class="btn btn-sm h-9 rounded-md border-none bg-transparent text-base-content/60 font-medium hover:bg-base-300 transition-all flex gap-1.5 text-xs"
       data-tab="income"
       role="tab"
       aria-selected="false"
@@ -102,15 +102,17 @@ const { categories, accounts, categoryUsageCounts = [], activeCurrency } = Astro
   <!-- Recently Added Section -->
   <div class="mt-5 pt-4 border-t border-base-200" data-recent-section>
     <div class="flex items-center justify-between mb-2">
-      <h3 class="font-semibold text-xs uppercase tracking-wider text-neutral/50">Just Added</h3>
-      <span class="text-xs text-neutral/40 font-medium tabular-nums" id="session-summary">
+      <h3 class="font-semibold text-xs uppercase tracking-wider text-base-content/50">
+        Just Added
+      </h3>
+      <span class="text-xs text-base-content/40 font-medium tabular-nums" id="session-summary">
         <span id="session-count">0</span> items
       </span>
     </div>
 
     <div
       id="empty-state-message"
-      class="flex flex-col items-center justify-center py-4 text-neutral/30 gap-1.5 border border-dashed border-base-300/60 rounded-lg"
+      class="flex flex-col items-center justify-center py-4 text-base-content/30 gap-1.5 border border-dashed border-base-300/60 rounded-lg"
     >
       <Inbox size={22} class="stroke-current" />
       <span class="text-xs font-medium">No items yet</span>
