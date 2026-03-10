@@ -1,0 +1,46 @@
+---
+import { LayoutDashboard, TrendingDown, TrendingUp } from '@lucide/astro';
+import {
+  buildReportUrl,
+  REPORT_SECTION_PATHS,
+  type ReportSection,
+  type ReportState,
+} from '@/lib/reporting/report-state';
+
+interface Props {
+  activeSection: ReportSection;
+  state: ReportState;
+}
+
+const { activeSection, state } = Astro.props;
+
+const sections = [
+  { id: 'overview' as const, label: 'Overview', Icon: LayoutDashboard },
+  { id: 'expenses' as const, label: 'Expenses', Icon: TrendingDown },
+  { id: 'income' as const, label: 'Income', Icon: TrendingUp },
+];
+---
+
+<nav aria-label="Report sections" class="mb-6">
+  <div role="tablist" class="tabs tabs-bordered tabs-sm sm:tabs-md">
+    {
+      sections.map(({ id, label, Icon }) => {
+        const isActive = activeSection === id;
+        const href = buildReportUrl(REPORT_SECTION_PATHS[id], state);
+        return (
+          <a
+            role="tab"
+            href={href}
+            class:list={['tab gap-1.5', isActive && 'tab-active font-semibold']}
+            aria-selected={isActive}
+            aria-current={isActive ? 'page' : undefined}
+            data-report-section={id}
+          >
+            <Icon size={16} class="stroke-current" aria-hidden="true" />
+            <span>{label}</span>
+          </a>
+        );
+      })
+    }
+  </div>
+</nav>

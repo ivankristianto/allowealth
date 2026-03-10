@@ -1,0 +1,164 @@
+# Income report data - detailed income analysis
+IncomeReportData:
+  type: object
+  properties:
+    summary:
+      type: object
+      properties:
+        totalIncome:
+          type: string
+          description: Total income for the period (decimal string)
+          example: "13000000"
+        activeIncome:
+          type: string
+          description: Total active income for the period
+          example: "10000000"
+        passiveIncome:
+          type: string
+          description: Total passive income for the period
+          example: "2500000"
+        otherIncome:
+          type: string
+          description: Total income classified as other for the period
+          example: "500000"
+        growthVsPreviousPeriod:
+          type: string
+          description: Percentage growth compared with the previous period (decimal string)
+          example: "15.5"
+      required:
+        - totalIncome
+        - activeIncome
+        - passiveIncome
+        - otherIncome
+        - growthVsPreviousPeriod
+    sourceMix:
+      type: array
+      description: Income mix by category, sorted descending by value
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Income category name
+          value:
+            type: string
+            description: Income amount for the category (decimal string)
+          sourceType:
+            type: string
+            enum: [active, passive, other]
+            description: Income source classification
+        required:
+          - name
+          - value
+          - sourceType
+    sourceGroupTrend:
+      type: array
+      description: Income trend by source classification over time
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Period label
+          active:
+            type: string
+            description: Active income total for the period
+          passive:
+            type: string
+            description: Passive income total for the period
+          other:
+            type: string
+            description: Other income total for the period
+        required:
+          - name
+          - active
+          - passive
+          - other
+    members:
+      type: array
+      description: Per-member income totals for the selected period
+      items:
+        type: object
+        properties:
+          userId:
+            type: string
+          userName:
+            type: string
+          totalIncome:
+            type: string
+          transactionCount:
+            type: integer
+        required:
+          - userId
+          - userName
+          - totalIncome
+          - transactionCount
+    history:
+      type: object
+      description: Paginated income transaction history
+      properties:
+        transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              description:
+                type: string
+              amount:
+                type: string
+              currency:
+                type: string
+              transaction_date:
+                type: string
+              category_name:
+                type: string
+              category_icon:
+                type: string
+              category_color:
+                type: string
+              income_source_type:
+                type: string
+                enum: [active, passive, other]
+              created_by_name:
+                type: string
+            required:
+              - id
+              - description
+              - amount
+              - currency
+              - transaction_date
+              - category_name
+              - category_icon
+              - category_color
+              - income_source_type
+              - created_by_name
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        appliedFilters:
+          type: object
+          properties:
+            userId:
+              type: string
+            sourceType:
+              type: string
+              enum: [active, passive, other]
+            categoryId:
+              type: string
+      required:
+        - transactions
+        - total
+        - page
+        - pageSize
+        - appliedFilters
+  required:
+    - summary
+    - sourceMix
+    - sourceGroupTrend
+    - members
+    - history

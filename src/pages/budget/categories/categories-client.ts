@@ -150,6 +150,16 @@ function initCategories() {
         }
       }
 
+      // Show/hide income source field for create mode
+      const incomeSourceField = document.querySelector('[data-income-source-field]') as HTMLElement;
+      if (incomeSourceField) {
+        if (defaultType === 'income') {
+          incomeSourceField.classList.remove('hidden');
+        } else {
+          incomeSourceField.classList.add('hidden');
+        }
+      }
+
       // Update icon to Plus
       if (modalIconContainer) {
         modalIconContainer.innerHTML = `
@@ -171,6 +181,22 @@ function initCategories() {
         values.description || '';
       (categoryForm.querySelector('[name="type"]') as HTMLSelectElement).value =
         values.type || 'expense';
+
+      const incomeSourceSelect = categoryForm.querySelector(
+        '[name="income_source_type"]'
+      ) as HTMLSelectElement;
+      if (incomeSourceSelect) {
+        incomeSourceSelect.value = values.income_source_type || 'other';
+      }
+
+      const incomeSourceField = document.querySelector('[data-income-source-field]') as HTMLElement;
+      if (incomeSourceField) {
+        if (values.type === 'income') {
+          incomeSourceField.classList.remove('hidden');
+        } else {
+          incomeSourceField.classList.add('hidden');
+        }
+      }
 
       const iconSelect = categoryForm.querySelector('[name="icon"]') as HTMLSelectElement;
       const colorSelect = categoryForm.querySelector('[name="color"]') as HTMLSelectElement;
@@ -217,6 +243,7 @@ function initCategories() {
           id: id,
           name: category.name,
           type: category.type,
+          income_source_type: category.income_source_type,
           description: category.description,
           icon: category.icon,
           color: category.color,

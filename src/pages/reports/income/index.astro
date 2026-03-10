@@ -1,0 +1,178 @@
+---
+/**
+ * Income Report Page
+ *
+ * Detailed income analysis with:
+ * - Hero summary card (total income, allocation bar, growth badge)
+ * - Income source table with source-type badges
+ * - Member income breakdown table
+ * - Paginated transaction history
+ * - Category drill-down modal support
+ *
+ * @see docs/architecture/002-interactive-pages.md
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import ReportSelector from '@/components/molecules/ReportSelector.astro';
+import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
+
+import IncomeSummaryCardsPartial from '@/components/partials/IncomeSummaryCardsPartial.astro';
+import IncomeSourceTablePartial from '@/components/partials/IncomeSourceTablePartial.astro';
+import IncomeMemberTablePartial from '@/components/partials/IncomeMemberTablePartial.astro';
+import IncomeHistoryTablePartial from '@/components/partials/IncomeHistoryTablePartial.astro';
+
+import { reportService, workspaceMetaService } from '@/services';
+import type { IncomeReportData } from '@/services/report.service';
+import { formatMonthYear } from '@/lib/utils/date';
+import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
+import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+
+const currentPath = '/reports/income';
+
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+
+const url = Astro.url;
+const urlRange = url.searchParams.get('range');
+const urlPeriod = url.searchParams.get('period');
+const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
+const workspaceCurrencies = [
+  workspaceCurrencyConfig.primary,
+  ...(workspaceCurrencyConfig.secondary ? [workspaceCurrencyConfig.secondary] : []),
+];
+const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value || '';
+const selectedCurrency =
+  activeCurrencyCookie &&
+  isValidCurrency(activeCurrencyCookie) &&
+  workspaceCurrencies.includes(activeCurrencyCookie)
+    ? activeCurrencyCookie
+    : workspaceCurrencyConfig.primary;
+
+const defaultRange: 'monthly' | 'yearly' =
+  urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
+
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
+  const date = new Date(currentYear, currentMonth - 1 - i, 1);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const monthStr = month.toString().padStart(2, '0');
+  return { key: `${year}-${monthStr}`, label: formatMonthYear(date) };
+});
+
+const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
+  const year = currentYear - i;
+  return { key: year.toString(), label: year.toString() };
+});
+
+let defaultPeriod: string;
+if (urlPeriod) {
+  const isMonthlyFormat = /^\d{4}-\d{2}$/.test(urlPeriod);
+  const isYearlyFormat = /^\d{4}$/.test(urlPeriod);
+  if (defaultRange === 'monthly' && isMonthlyFormat) {
+    defaultPeriod = urlPeriod;
+  } else if (defaultRange === 'yearly' && isYearlyFormat) {
+    defaultPeriod = urlPeriod;
+  } else {
+    defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
+  }
+} else {
+  defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
+}
+
+const currency: Currency = selectedCurrency;
+
+let incomeData: IncomeReportData;
+try {
+  incomeData = await reportService.getIncomeReport(
+    user.workspaceId,
+    defaultPeriod,
+    defaultRange,
+    currency
+  );
+} catch (error) {
+  console.error('Error fetching income report:', error);
+  return Astro.redirect('/reports?error=failed-to-load');
+}
+
+const sourceCategories = incomeData.sourceMix.map((s) => ({
+  name: s.name,
+  value: s.value,
+  sourceType: s.sourceType,
+}));
+
+const selectedPeriodLabel =
+  defaultRange === 'monthly'
+    ? monthlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod
+    : yearlyPeriods.find((period) => period.key === defaultPeriod)?.label || defaultPeriod;
+---
+
+<ProtectedLayout title="Income Report" currentPath={currentPath} subtitle={selectedPeriodLabel}>
+  <div slot="header" data-selector-container>
+    <ReportSelector
+      selectedRange={defaultRange}
+      selectedPeriod={defaultPeriod}
+      monthlyPeriods={monthlyPeriods}
+      yearlyPeriods={yearlyPeriods}
+    />
+  </div>
+
+  <div
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+    data-current-currency={currency}
+    data-api-endpoint="/api/reports/income"
+    data-report-page="income"
+  >
+    <Breadcrumb items={[{ label: 'Overview', href: '/reports' }, { label: 'Income' }]} />
+
+    <div data-summary-container>
+      <IncomeSummaryCardsPartial
+        totalIncome={incomeData.summary.totalIncome}
+        activeIncome={incomeData.summary.activeIncome}
+        passiveIncome={incomeData.summary.passiveIncome}
+        otherIncome={incomeData.summary.otherIncome}
+        growthVsPreviousPeriod={incomeData.summary.growthVsPreviousPeriod}
+        previousPeriodLabel={incomeData.summary.previousPeriodLabel}
+        currency={currency}
+      />
+    </div>
+
+    <div data-sources-container>
+      <IncomeSourceTablePartial
+        categories={sourceCategories}
+        currency={currency}
+        subtitle="SORTED BY AMOUNT"
+      />
+    </div>
+
+    <div data-member-table-container>
+      <IncomeMemberTablePartial
+        members={incomeData.members}
+        currency={currency}
+        totalIncome={incomeData.summary.totalIncome}
+      />
+    </div>
+
+    <div data-history-container>
+      <IncomeHistoryTablePartial
+        transactions={incomeData.history.transactions}
+        total={incomeData.history.total}
+        page={incomeData.history.page}
+        pageSize={incomeData.history.pageSize}
+        currency={currency}
+        appliedFilters={incomeData.history.appliedFilters}
+      />
+    </div>
+
+    <CategoryDrillDownModal id="category-drilldown-modal" />
+  </div>
+</ProtectedLayout>
+
+<script>
+  import '@/components/organisms/IncomeReportsPage.client.ts';
+</script>

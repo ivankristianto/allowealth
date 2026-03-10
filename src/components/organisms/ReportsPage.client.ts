@@ -18,6 +18,7 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from './ReportsRenderer.client';
+import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
 import { navigate } from 'astro:transitions/client';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -31,6 +32,14 @@ interface ReportState {
 
 // Track if listeners are already attached to prevent duplicates
 let listenersAttached = false;
+const EXPENSES_PAGE_SELECTOR = '[data-report-page="expenses"]';
+
+function getExpensesPageRoot(): HTMLElement | null {
+  return document.querySelector(EXPENSES_PAGE_SELECTOR) as HTMLElement | null;
+}
+
+// Configurable API endpoint (read from data-api-endpoint attribute)
+let apiEndpoint = '/api/reports';
 
 /**
  * Generate default period based on current date
@@ -86,11 +95,11 @@ function getActiveCurrencyFromCookie(): Currency | null {
  * Update URL query params without page reload
  */
 function updateUrl(range: 'monthly' | 'yearly', period: string): void {
-  const url = new URL(window.location.href);
-  url.searchParams.set('range', range);
-  url.searchParams.set('period', period);
-  url.searchParams.delete('currency');
-  window.history.replaceState({}, '', url.toString());
+  const url = buildReportUrl(window.location.pathname, {
+    range,
+    period,
+  });
+  window.history.replaceState({}, '', url);
 }
 
 /**
@@ -129,7 +138,7 @@ async function fetchReportHtml(
   params.set('period', period);
   params.set('currency', currency);
 
-  const response = await fetch(`/api/reports?${params.toString()}`);
+  const response = await fetch(`${apiEndpoint}?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch report data: ${response.statusText}`);
@@ -210,7 +219,7 @@ async function fetchAndRenderSelector(): Promise<void> {
     params.set('period', currentState.period);
     params.set('currency', currentState.currency);
 
-    const response = await fetch(`/api/reports?${params.toString()}`);
+    const response = await fetch(`${apiEndpoint}?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch selector: ${response.statusText}`);
@@ -322,6 +331,8 @@ function handleDrillDownClick(event: MouseEvent): void {
  * Initialize reports page interactivity
  */
 export function initReportsPage(): void {
+  if (!getExpensesPageRoot()) return;
+
   // First, read state from URL params (takes precedence)
   const urlState = readStateFromUrl();
 
@@ -347,6 +358,11 @@ export function initReportsPage(): void {
       currentState.period = periodInput.value;
     }
   }
+
+  // Read configurable API endpoint from DOM
+  apiEndpoint =
+    document.querySelector('[data-api-endpoint]')?.getAttribute('data-api-endpoint') ||
+    '/api/reports';
 
   // Read currency from cookie (header-level switcher manages this)
   const cookieCurrency = getActiveCurrencyFromCookie();

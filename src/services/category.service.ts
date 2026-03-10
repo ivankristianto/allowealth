@@ -57,6 +57,8 @@ export class CategoryService {
           created_by_user_id: validated.created_by_user_id,
           name: validated.name,
           type: validated.type,
+          income_source_type:
+            validated.type === 'income' ? (validated.income_source_type ?? 'other') : 'other',
           description: validated.description,
           icon: validated.icon,
           color: validated.color,
@@ -137,6 +139,8 @@ export class CategoryService {
   async update(id: string, workspaceId: string, input: UpdateCategoryInput, perf?: PerfCollector) {
     // Validate input using Zod schema
     const validated = updateCategorySchema.parse(input);
+    const existingCategory = await this.findById(id, workspaceId, perf);
+    const resolvedCategoryType = validated.type ?? existingCategory?.type;
 
     const updateData: Record<string, any> = {
       updated_at: new Date(),
@@ -148,6 +152,12 @@ export class CategoryService {
     if (validated.icon !== undefined) updateData.icon = validated.icon;
     if (validated.color !== undefined) updateData.color = validated.color;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
+    if (resolvedCategoryType === 'expense') {
+      updateData.income_source_type = 'other';
+    } else if (validated.income_source_type !== undefined) {
+      updateData.income_source_type =
+        resolvedCategoryType === 'income' ? validated.income_source_type : 'other';
+    }
 
     await trackQuery('CategoryService.update', perf, async () => {
       return this.db

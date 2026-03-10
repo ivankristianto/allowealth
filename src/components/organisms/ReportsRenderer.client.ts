@@ -8,6 +8,7 @@
  */
 
 import { animate } from 'motion/mini';
+import { dispatchReinitEvent } from '@/lib/utils/dom';
 import { initPeriodNavigator } from '@/components/molecules/PeriodNavigator.client';
 
 /**
@@ -20,6 +21,10 @@ export function parseHtmlPartials(html: string): {
   table?: string;
   members?: string;
   selector?: string;
+  previews?: string;
+  wealth?: string;
+  sources?: string;
+  history?: string;
 } {
   const partials: {
     summary?: string;
@@ -27,6 +32,10 @@ export function parseHtmlPartials(html: string): {
     table?: string;
     members?: string;
     selector?: string;
+    previews?: string;
+    wealth?: string;
+    sources?: string;
+    history?: string;
   } = {};
 
   // Extract summary partial
@@ -48,6 +57,22 @@ export function parseHtmlPartials(html: string): {
   // Extract selector partial
   const selectorMatch = html.match(/<!-- PARTIAL:selector -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   if (selectorMatch) partials.selector = selectorMatch[1].trim();
+
+  // Extract previews partial
+  const previewsMatch = html.match(/<!-- PARTIAL:previews -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (previewsMatch) partials.previews = previewsMatch[1].trim();
+
+  // Extract wealth partial
+  const wealthMatch = html.match(/<!-- PARTIAL:wealth -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (wealthMatch) partials.wealth = wealthMatch[1].trim();
+
+  // Extract sources partial
+  const sourcesMatch = html.match(/<!-- PARTIAL:sources -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (sourcesMatch) partials.sources = sourcesMatch[1].trim();
+
+  // Extract history partial
+  const historyMatch = html.match(/<!-- PARTIAL:history -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (historyMatch) partials.history = historyMatch[1].trim();
 
   return partials;
 }
@@ -93,6 +118,9 @@ export function renderSummaryHtml(html: string): void {
         { delay: i * 0.1, duration: 0.4, easing: [0.22, 1, 0.36, 1] } as any
       );
     });
+
+    // Re-initialize BudgetSummary interactivity after HTML injection
+    dispatchReinitEvent('budget-summary:reinit');
   });
 }
 
@@ -207,6 +235,102 @@ export function renderSelectorHtml(html: string): void {
       // Re-initialize ReportSelector script
       document.dispatchEvent(new CustomEvent('astro:page-load'));
     });
+  });
+}
+
+/**
+ * Render previews section with fade-in animation
+ */
+export function renderPreviewsHtml(html: string): void {
+  const container = document.querySelector('[data-previews-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
+}
+
+/**
+ * Render wealth section with fade-in animation
+ */
+export function renderWealthHtml(html: string): void {
+  const container = document.querySelector('[data-wealth-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML (server-rendered trusted content from our API)
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
+}
+
+/**
+ * Render income sources table with fade-in animation
+ */
+export function renderSourcesHtml(html: string): void {
+  const container = document.querySelector('[data-sources-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
+}
+
+/**
+ * Render income history table with fade-in animation
+ */
+export function renderHistoryHtml(html: string): void {
+  const container = document.querySelector('[data-history-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
+
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
   });
 }
 

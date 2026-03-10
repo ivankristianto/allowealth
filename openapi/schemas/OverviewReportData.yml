@@ -1,0 +1,63 @@
+# Overview report data - lightweight summary across expense and income
+OverviewReportData:
+  type: object
+  properties:
+    totalIncome:
+      type: string
+      description: Total income for the selected period (decimal string)
+      example: "9750000"
+    totalExpenses:
+      type: string
+      description: Total expenses for the selected period (decimal string)
+      example: "4735000"
+    netSavings:
+      type: string
+      description: Net savings for the selected period (income - expenses, decimal string)
+      example: "5015000"
+    savingsRate:
+      type: string
+      description: Savings rate as a decimal string percentage
+      example: "51.4"
+    trendData:
+      type: array
+      description: Income versus expense trend for recent periods
+      items:
+        $ref: "./TrendDataPoint.yml#/TrendDataPoint"
+    incomePreview:
+      type: object
+      description: Ranked income sources preview for the overview page
+      properties:
+        topCategories:
+          type: array
+          items:
+            $ref: "./CategoryExpense.yml#/CategoryExpense"
+        total:
+          type: string
+          description: Total income for the selected period
+          example: "9750000"
+      required:
+        - topCategories
+        - total
+    expensePreview:
+      type: object
+      description: Ranked expense categories preview for the overview page
+      properties:
+        topCategories:
+          type: array
+          items:
+            $ref: "./CategoryExpense.yml#/CategoryExpense"
+        total:
+          type: string
+          description: Total expenses for the selected period
+          example: "4735000"
+      required:
+        - topCategories
+        - total
+  required:
+    - totalIncome
+    - totalExpenses
+    - netSavings
+    - savingsRate
+    - trendData
+    - incomePreview
+    - expensePreview

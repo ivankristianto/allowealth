@@ -39,6 +39,7 @@ import {
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { isValidCurrency } from '@/lib/constants/currency';
+import { PAGINATION } from '@/lib/constants/pagination';
 
 /**
  * Summary metric for expense/income categories
@@ -46,6 +47,13 @@ import { isValidCurrency } from '@/lib/constants/currency';
 export interface CategoryExpense {
   name: string;
   value: string; // Decimal string for precision
+}
+
+/**
+ * Income category with source type classification
+ */
+export interface IncomeCategoryExpense extends CategoryExpense {
+  sourceType: 'active' | 'passive' | 'other';
 }
 
 /**
@@ -110,6 +118,7 @@ export interface CategoryTransactionsData {
   transactions: CategoryTransaction[];
   total: string; // Sum of transactions
   categoryName: string;
+  categoryType: 'expense' | 'income';
   totalCount: number;
   limit: number;
   offset: number;
@@ -136,6 +145,72 @@ export interface RecurringBreakdown {
     category_name: string;
     amount: string;
   }>;
+}
+
+export interface OverviewReportData {
+  totalIncome: string;
+  totalExpenses: string;
+  netSavings: string;
+  savingsRate: string;
+  trendData: TrendDataPoint[];
+  incomePreview: { topCategories: CategoryExpense[]; total: string };
+  expensePreview: { topCategories: CategoryExpense[]; total: string };
+}
+
+export interface ExpenseReportData extends ReportData {
+  recurringBreakdown: RecurringBreakdown | null;
+  memberSummary: MemberSummaryRow[];
+}
+
+export interface IncomeHistoryData {
+  transactions: Array<{
+    id: string;
+    description: string;
+    amount: string;
+    currency: string;
+    transaction_date: string;
+    category_name: string;
+    category_icon: string;
+    category_color: string;
+    income_source_type: string;
+    created_by_name: string;
+  }>;
+  total: number;
+  page: number;
+  pageSize: number;
+  appliedFilters: {
+    userId?: string;
+    sourceType?: 'active' | 'passive' | 'other';
+    categoryId?: string;
+  };
+}
+
+export interface IncomeReportFilters {
+  userId?: string;
+  sourceType?: 'active' | 'passive' | 'other';
+  categoryId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface IncomeReportData {
+  summary: {
+    totalIncome: string;
+    activeIncome: string;
+    passiveIncome: string;
+    otherIncome: string;
+    growthVsPreviousPeriod: string;
+    previousPeriodLabel: string;
+  };
+  sourceMix: IncomeCategoryExpense[];
+  sourceGroupTrend: Array<{ name: string; active: string; passive: string; other: string }>;
+  members: Array<{
+    userId: string;
+    userName: string;
+    totalIncome: string;
+    transactionCount: number;
+  }>;
+  history: IncomeHistoryData;
 }
 
 /**
@@ -424,6 +499,7 @@ export class ReportService {
     options: {
       limit?: number;
       offset?: number;
+      type?: 'expense' | 'income';
     } = {}
   ): Promise<CategoryTransactionsData> {
     // Validate inputs
@@ -467,10 +543,11 @@ export class ReportService {
       const requestedOffset = Number.isFinite(options.offset) ? Number(options.offset) : 0;
       const limit = Math.min(500, Math.max(1, Math.floor(requestedLimit)));
       const offset = Math.max(0, Math.floor(requestedOffset));
+      const transactionType = options.type || (category.type === 'income' ? 'income' : 'expense');
       const whereClause = and(
         eq(this.schema.transactions.workspace_id, workspaceId),
         eq(this.schema.transactions.category_id, categoryId),
-        eq(this.schema.transactions.type, 'expense'),
+        eq(this.schema.transactions.type, transactionType),
         eq(this.schema.transactions.currency, currency),
         gte(this.schema.transactions.transaction_date, startDate),
         lte(this.schema.transactions.transaction_date, endDate),
@@ -521,6 +598,7 @@ export class ReportService {
         transactions: transactionsData,
         total,
         categoryName: category.name,
+        categoryType: category.type === 'income' ? 'income' : 'expense',
         totalCount,
         limit,
         offset,
@@ -694,6 +772,239 @@ export class ReportService {
     }
 
     return result;
+  }
+
+  /**
+   * Get overview report — lightweight cross-ledger summary
+   */
+  async getOverviewReport(
+    workspaceId: string,
+    period: string,
+    range: 'monthly' | 'yearly',
+    currency: Currency = 'IDR',
+    userId?: string
+  ): Promise<OverviewReportData> {
+    try {
+      this.validateWorkspaceId(workspaceId);
+      this.validateCurrency(currency);
+
+      let startDate: Date;
+      let endDate: Date;
+
+      if (range === 'monthly') {
+        const { year, month } = validatePeriod(period, 'monthly');
+        if (!month) throw new Error(`Invalid monthly period: ${period}`);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+      } else {
+        const { year } = validatePeriod(period, 'yearly');
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31, 23, 59, 59);
+      }
+
+      const [totalIncome, totalExpenses, trendData, incomeCategories, expenseCategories] =
+        await Promise.all([
+          this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+          this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
+          this.getOverviewTrendData(workspaceId, startDate, endDate, range, currency, userId),
+          this.getIncomeByCategory(workspaceId, startDate, endDate, currency, userId),
+          this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
+        ]);
+
+      const netSavings = decimalSubtract(totalIncome, totalExpenses);
+      const savingsRate = decimalIsZero(totalIncome)
+        ? '0'
+        : decimalDivide(decimalMultiply(netSavings, '100'), totalIncome);
+
+      return {
+        totalIncome,
+        totalExpenses,
+        netSavings,
+        savingsRate,
+        trendData,
+        incomePreview: {
+          topCategories: incomeCategories,
+          total: totalIncome,
+        },
+        expensePreview: {
+          topCategories: expenseCategories,
+          total: totalExpenses,
+        },
+      };
+    } catch (error) {
+      log.error('error getting overview report:', error);
+      return {
+        totalIncome: '0',
+        totalExpenses: '0',
+        netSavings: '0',
+        savingsRate: '0',
+        trendData: [],
+        incomePreview: { topCategories: [], total: '0' },
+        expensePreview: { topCategories: [], total: '0' },
+      };
+    }
+  }
+
+  /**
+   * Get expense report — wraps existing expense detail with recurring + member data
+   */
+  async getExpenseReport(
+    workspaceId: string,
+    period: string,
+    range: 'monthly' | 'yearly',
+    currency: Currency = 'IDR',
+    userId?: string
+  ): Promise<ExpenseReportData> {
+    try {
+      this.validateWorkspaceId(workspaceId);
+      this.validateCurrency(currency);
+
+      const baseReport =
+        range === 'monthly'
+          ? await this.getMonthlyReport(workspaceId, period, currency, userId)
+          : await this.getYearlyReport(
+              workspaceId,
+              validatePeriod(period, 'yearly').year,
+              currency,
+              userId
+            );
+
+      let recurringBreakdown: RecurringBreakdown | null = null;
+      if (range === 'monthly') {
+        try {
+          const { year, month } = validatePeriod(period, 'monthly');
+          if (month) {
+            recurringBreakdown = await this.getRecurringBreakdown(
+              workspaceId,
+              year,
+              month,
+              currency
+            );
+          }
+        } catch {
+          // recurring breakdown is optional
+        }
+      }
+
+      const memberSummary = await this.getMemberSummary(workspaceId, period, range, currency);
+
+      return {
+        ...baseReport,
+        recurringBreakdown,
+        memberSummary,
+      };
+    } catch (error) {
+      log.error('error getting expense report:', error);
+      return {
+        ...this.getEmptyReport(),
+        recurringBreakdown: null,
+        memberSummary: [],
+      };
+    }
+  }
+
+  /**
+   * Get income report — aggregated income analysis with source grouping
+   */
+  async getIncomeReport(
+    workspaceId: string,
+    period: string,
+    range: 'monthly' | 'yearly',
+    currency: Currency = 'IDR',
+    filters: IncomeReportFilters = {}
+  ): Promise<IncomeReportData> {
+    try {
+      this.validateWorkspaceId(workspaceId);
+      this.validateCurrency(currency);
+
+      let startDate: Date;
+      let endDate: Date;
+      let prevStartDate: Date;
+      let prevEndDate: Date;
+
+      if (range === 'monthly') {
+        const { year, month } = validatePeriod(period, 'monthly');
+        if (!month) throw new Error(`Invalid monthly period: ${period}`);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+        prevStartDate = new Date(year, month - 2, 1);
+        prevEndDate = new Date(year, month - 1, 0, 23, 59, 59);
+      } else {
+        const { year } = validatePeriod(period, 'yearly');
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31, 23, 59, 59);
+        prevStartDate = new Date(year - 1, 0, 1);
+        prevEndDate = new Date(year - 1, 11, 31, 23, 59, 59);
+      }
+
+      const [
+        totalIncome,
+        prevTotalIncome,
+        sourceGroup,
+        sourceMix,
+        sourceGroupTrend,
+        members,
+        history,
+      ] = await Promise.all([
+        this.getTotalIncome(workspaceId, startDate, endDate, currency, filters.userId),
+        this.getTotalIncome(workspaceId, prevStartDate, prevEndDate, currency, filters.userId),
+        this.getIncomeBySourceGroup(workspaceId, startDate, endDate, currency, filters.userId),
+        this.getIncomeByCategory(workspaceId, startDate, endDate, currency, filters.userId),
+        this.getIncomeSourceTrendData(workspaceId, startDate, endDate, currency, filters.userId),
+        this.getMemberIncomeSummary(workspaceId, startDate, endDate, currency),
+        this.getIncomeHistory(workspaceId, startDate, endDate, currency, filters),
+      ]);
+
+      const growthVsPreviousPeriod = decimalIsZero(prevTotalIncome)
+        ? decimalIsZero(totalIncome)
+          ? '0'
+          : '100'
+        : decimalDivide(
+            decimalMultiply(decimalSubtract(totalIncome, prevTotalIncome), '100'),
+            prevTotalIncome
+          );
+      const previousPeriodLabel =
+        range === 'monthly'
+          ? prevStartDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : String(prevStartDate.getFullYear());
+
+      return {
+        summary: {
+          totalIncome,
+          activeIncome: sourceGroup.active,
+          passiveIncome: sourceGroup.passive,
+          otherIncome: sourceGroup.other,
+          growthVsPreviousPeriod,
+          previousPeriodLabel,
+        },
+        sourceMix,
+        sourceGroupTrend,
+        members,
+        history,
+      };
+    } catch (error) {
+      log.error('error getting income report:', error);
+      return {
+        summary: {
+          totalIncome: '0',
+          activeIncome: '0',
+          passiveIncome: '0',
+          otherIncome: '0',
+          growthVsPreviousPeriod: '0',
+          previousPeriodLabel: '',
+        },
+        sourceMix: [],
+        sourceGroupTrend: [],
+        members: [],
+        history: {
+          transactions: [],
+          total: 0,
+          page: 1,
+          pageSize: PAGINATION.DEFAULT_PAGE_SIZE,
+          appliedFilters: {},
+        },
+      };
+    }
   }
 
   // ============================================
@@ -1222,6 +1533,323 @@ export class ReportService {
     }
 
     return trendData;
+  }
+
+  private async getOverviewTrendData(
+    workspaceId: string,
+    startDate: Date,
+    _endDate: Date,
+    range: 'monthly' | 'yearly',
+    currency: Currency,
+    userId?: string
+  ): Promise<TrendDataPoint[]> {
+    if (range === 'monthly') {
+      const { year, month } = { year: startDate.getFullYear(), month: startDate.getMonth() + 1 };
+      return this.getTrendData(workspaceId, year, month, currency, 3, userId);
+    }
+    const year = startDate.getFullYear();
+    return this.getYearlyTrendData(workspaceId, year, currency, userId);
+  }
+
+  private async getIncomeBySourceGroup(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency,
+    userId?: string
+  ): Promise<{ active: string; passive: string; other: string }> {
+    const rows = await (this.db as any)
+      .select({
+        source_type: sql<string>`COALESCE(${this.schema.categories.income_source_type}, 'other')`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+      })
+      .from(this.schema.transactions)
+      .innerJoin(
+        this.schema.categories,
+        eq(this.schema.transactions.category_id, this.schema.categories.id)
+      )
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'income'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
+        )
+      )
+      .groupBy(this.schema.categories.income_source_type);
+
+    const result = { active: '0', passive: '0', other: '0' };
+    for (const row of rows as Array<{ source_type: string; total: string }>) {
+      const key = row.source_type as keyof typeof result;
+      if (key in result) {
+        result[key] = row.total?.toString() || '0';
+      }
+    }
+    return result;
+  }
+
+  private async getIncomeByCategory(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency,
+    userId?: string
+  ): Promise<IncomeCategoryExpense[]> {
+    const categoryIncome = await (this.db as any)
+      .select({
+        category_name: this.schema.categories.name,
+        source_type: sql<string>`COALESCE(${this.schema.categories.income_source_type}, 'other')`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+      })
+      .from(this.schema.transactions)
+      .innerJoin(
+        this.schema.categories,
+        eq(this.schema.transactions.category_id, this.schema.categories.id)
+      )
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'income'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
+        )
+      )
+      .groupBy(this.schema.categories.name, this.schema.categories.income_source_type)
+      .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`);
+
+    if (categoryIncome.length === 0) {
+      return [];
+    }
+
+    return categoryIncome.map((cat: any) => ({
+      name: cat.category_name,
+      value: cat.total?.toString() || '0',
+      sourceType: (['active', 'passive', 'other'].includes(cat.source_type)
+        ? cat.source_type
+        : 'other') as 'active' | 'passive' | 'other',
+    }));
+  }
+
+  private async getIncomeSourceTrendData(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency,
+    userId?: string
+  ): Promise<Array<{ name: string; active: string; passive: string; other: string }>> {
+    const monthBucketExpr = this.monthBucket(this.schema.transactions.transaction_date);
+
+    const rows = await (this.db as any)
+      .select({
+        month_bucket: monthBucketExpr.as('month_bucket'),
+        active: sql<string>`COALESCE(SUM(CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'active' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        passive: sql<string>`COALESCE(SUM(CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'passive' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        other: sql<string>`COALESCE(SUM(CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'other' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+      })
+      .from(this.schema.transactions)
+      .innerJoin(
+        this.schema.categories,
+        eq(this.schema.transactions.category_id, this.schema.categories.id)
+      )
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'income'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          ...(userId ? [eq(this.schema.transactions.created_by_user_id, userId)] : [])
+        )
+      )
+      .groupBy(monthBucketExpr);
+
+    const dataMap = new Map<string, { active: string; passive: string; other: string }>();
+    for (const row of rows as Array<{
+      month_bucket: string;
+      active: string;
+      passive: string;
+      other: string;
+    }>) {
+      dataMap.set(row.month_bucket, {
+        active: row.active?.toString() || '0',
+        passive: row.passive?.toString() || '0',
+        other: row.other?.toString() || '0',
+      });
+    }
+
+    // Build full month range
+    const result: Array<{ name: string; active: string; passive: string; other: string }> = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const monthKey = this.toMonthKey(current);
+      const data = dataMap.get(monthKey);
+      result.push({
+        name: MONTH_NAMES_SHORT[current.getMonth()],
+        active: data?.active || '0',
+        passive: data?.passive || '0',
+        other: data?.other || '0',
+      });
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    return result;
+  }
+
+  private async getIncomeHistory(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency,
+    filters: IncomeReportFilters
+  ): Promise<IncomeHistoryData> {
+    const page = Math.max(1, filters.page || 1);
+    const pageSize = Math.min(
+      PAGINATION.MAX_PAGE_SIZE,
+      Math.max(1, filters.pageSize || PAGINATION.DEFAULT_PAGE_SIZE)
+    );
+    const offset = (page - 1) * pageSize;
+
+    const conditions = [
+      eq(this.schema.transactions.workspace_id, workspaceId),
+      eq(this.schema.transactions.type, 'income'),
+      eq(this.schema.transactions.currency, currency),
+      gte(this.schema.transactions.transaction_date, startDate),
+      lte(this.schema.transactions.transaction_date, endDate),
+      sql`${this.schema.transactions.deleted_at} IS NULL`,
+    ];
+
+    if (filters.userId) {
+      conditions.push(eq(this.schema.transactions.created_by_user_id, filters.userId));
+    }
+    if (filters.sourceType) {
+      conditions.push(eq(this.schema.categories.income_source_type, filters.sourceType));
+    }
+    if (filters.categoryId) {
+      conditions.push(eq(this.schema.transactions.category_id, filters.categoryId));
+    }
+
+    const [countResult, rows] = await Promise.all([
+      (this.db as any)
+        .select({ count: sql<number>`count(*)` })
+        .from(this.schema.transactions)
+        .innerJoin(
+          this.schema.categories,
+          eq(this.schema.transactions.category_id, this.schema.categories.id)
+        )
+        .where(and(...conditions)),
+      (this.db as any)
+        .select({
+          id: this.schema.transactions.id,
+          description: this.schema.transactions.description,
+          amount: this.schema.transactions.amount,
+          currency: this.schema.transactions.currency,
+          transaction_date: this.schema.transactions.transaction_date,
+          category_name: this.schema.categories.name,
+          category_icon: this.schema.categories.icon,
+          category_color: this.schema.categories.color,
+          income_source_type: sql<string>`COALESCE(${this.schema.categories.income_source_type}, 'other')`,
+          created_by_name: sql<string>`COALESCE(${this.schema.users.name}, ${this.schema.users.email})`,
+        })
+        .from(this.schema.transactions)
+        .innerJoin(
+          this.schema.categories,
+          eq(this.schema.transactions.category_id, this.schema.categories.id)
+        )
+        .innerJoin(
+          this.schema.users,
+          eq(this.schema.transactions.created_by_user_id, this.schema.users.id)
+        )
+        .where(and(...conditions))
+        .orderBy(sql`${this.schema.transactions.transaction_date} DESC`)
+        .limit(pageSize)
+        .offset(offset),
+    ]);
+
+    const total = Number(countResult[0]?.count ?? 0);
+
+    const appliedFilters: IncomeHistoryData['appliedFilters'] = {};
+    if (filters.userId) appliedFilters.userId = filters.userId;
+    if (filters.sourceType) appliedFilters.sourceType = filters.sourceType;
+    if (filters.categoryId) appliedFilters.categoryId = filters.categoryId;
+
+    return {
+      transactions: (rows as any[]).map((row) => ({
+        id: row.id,
+        description: row.description || '',
+        amount: row.amount?.toString() || '0',
+        currency: row.currency,
+        transaction_date:
+          row.transaction_date instanceof Date
+            ? row.transaction_date.toISOString()
+            : String(row.transaction_date),
+        category_name: row.category_name || 'Unknown',
+        category_icon: row.category_icon || 'tag',
+        category_color: row.category_color || 'bg-neutral',
+        income_source_type: row.income_source_type || 'other',
+        created_by_name: row.created_by_name || 'Unknown',
+      })),
+      total,
+      page,
+      pageSize,
+      appliedFilters,
+    };
+  }
+
+  private async getMemberIncomeSummary(
+    workspaceId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: Currency
+  ): Promise<
+    Array<{ userId: string; userName: string; totalIncome: string; transactionCount: number }>
+  > {
+    const incomeByUser = await (this.db as any)
+      .select({
+        user_id: this.schema.transactions.created_by_user_id,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'income'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.transactions.created_by_user_id);
+
+    if (incomeByUser.length === 0) return [];
+
+    const members = await this.db.query.users.findMany({
+      where: and(
+        eq(this.schema.users.workspace_id, workspaceId),
+        sql`${this.schema.users.deleted_at} IS NULL`
+      ),
+    });
+
+    const memberMap = new Map(
+      members.map((member: any) => [member.id, member.name || member.email])
+    );
+
+    return (incomeByUser as any[])
+      .map((row) => ({
+        userId: row.user_id,
+        userName: memberMap.get(row.user_id) || 'Unknown',
+        totalIncome: row.total?.toString() || '0',
+        transactionCount: Number(row.count) || 0,
+      }))
+      .sort((a, b) => parseFloat(b.totalIncome) - parseFloat(a.totalIncome));
   }
 
   /**

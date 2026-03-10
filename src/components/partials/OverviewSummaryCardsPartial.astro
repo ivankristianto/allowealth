@@ -1,0 +1,85 @@
+---
+import { formatCurrency } from '@/lib/formatting';
+import { accentGhostBtn } from '@/lib/ui/action-button-classes';
+import type { Currency } from '@/lib/constants/currency';
+import {
+  buildReportUrl,
+  REPORT_SECTION_PATHS,
+  type ReportState,
+} from '@/lib/reporting/report-state';
+import { TrendingUp, TrendingDown } from '@lucide/astro';
+
+export interface Props {
+  totalIncome: string;
+  totalExpenses: string;
+  netSavings: string;
+  savingsRate: string;
+  currency: Currency;
+  state: ReportState;
+}
+
+const { totalIncome, totalExpenses, netSavings, currency, state } = Astro.props;
+
+const netSavingsNum = parseFloat(netSavings) || 0;
+const isNetPositive = netSavingsNum >= 0;
+const incomeHref = buildReportUrl(REPORT_SECTION_PATHS.income, state);
+const expensesHref = buildReportUrl(REPORT_SECTION_PATHS.expenses, state);
+---
+
+<div data-summary-cards>
+  <div
+    class="bg-base-100 border border-base-300 rounded-2xl md:rounded-3xl shadow-sm px-5 py-4 lg:px-6 lg:py-5"
+  >
+    <div
+      class="flex flex-col divide-y divide-base-300 sm:flex-row sm:divide-y-0 sm:items-center sm:gap-6"
+    >
+      <div class="py-3 sm:py-0" data-testid="reports-overview-income-card">
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50"
+          >Income</span
+        >
+        <p class="text-lg font-bold text-success tabular-nums">
+          {formatCurrency(totalIncome, currency)}
+        </p>
+      </div>
+
+      <span class="hidden text-base-content/20 sm:block" aria-hidden="true">&rarr;</span>
+
+      <div class="py-3 sm:py-0" data-testid="reports-overview-expense-card">
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50"
+          >Spending</span
+        >
+        <p class="text-lg font-bold text-error tabular-nums">
+          {formatCurrency(totalExpenses, currency)}
+        </p>
+      </div>
+
+      <span class="hidden text-base-content/20 sm:block" aria-hidden="true">=</span>
+
+      <div class="py-3 sm:py-0" data-testid="reports-overview-savings-card">
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Net</span
+        >
+        <p
+          class:list={[
+            'text-lg font-bold tabular-nums',
+            isNetPositive ? 'text-accent' : 'text-error',
+          ]}
+        >
+          {isNetPositive ? '+' : ''}{formatCurrency(netSavings, currency)}
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2 pt-3 sm:pt-0 sm:ml-auto">
+        <a href={incomeHref} class={accentGhostBtn}>
+          <TrendingUp size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <TrendingUp size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Income Report</span>
+        </a>
+        <a href={expensesHref} class={accentGhostBtn}>
+          <TrendingDown size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <TrendingDown size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Expense Report</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

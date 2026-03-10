@@ -12,6 +12,8 @@ import { SUPPORTED_CATEGORY_ICONS } from '@/lib/utils/supportedCategoryIcons';
 // Re-export enums from shared location for convenience
 export { categoryTypeEnum };
 
+export const incomeSourceTypeEnum = z.enum(['active', 'passive', 'other']);
+
 // Common validation for category fields
 const nameValidation = z
   .string()
@@ -51,6 +53,7 @@ export const createCategorySchema = z.object({
   created_by_user_id: z.string().min(1, 'Created by user ID is required'),
   name: nameValidation,
   type: categoryTypeEnum,
+  income_source_type: incomeSourceTypeEnum.optional(),
   description: descriptionValidation,
   icon: iconValidation,
   color: colorValidation,
@@ -62,6 +65,7 @@ export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export const updateCategorySchema = z.object({
   name: nameValidation.optional(),
   type: categoryTypeEnum.optional(),
+  income_source_type: incomeSourceTypeEnum.optional(),
   description: descriptionValidation,
   icon: z.string().optional(),
   color: z.string().optional(),
@@ -74,6 +78,7 @@ export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 export const createCategoryAPISchema = z.object({
   name: nameValidation,
   type: categoryTypeEnum,
+  income_source_type: incomeSourceTypeEnum.optional().default('other'),
   description: descriptionValidation,
   icon: iconValidation,
   color: colorValidation,

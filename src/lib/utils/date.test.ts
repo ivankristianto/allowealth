@@ -10,6 +10,7 @@ import {
   getMonthName,
   formatDate,
   formatMonthYear,
+  formatPeriodLabel,
   isFutureDate,
   isPastDate,
   isToday,
@@ -166,6 +167,20 @@ describe('date utilities', () => {
       const result = formatMonthYear(date);
       expect(result).toContain('January');
       expect(result).toContain('2026');
+    });
+  });
+
+  describe('formatPeriodLabel', () => {
+    test('formats monthly periods as Month Year without timezone drift', () => {
+      expect(formatPeriodLabel('2026-03')).toBe('March 2026');
+    });
+
+    test('returns yearly periods unchanged', () => {
+      expect(formatPeriodLabel('2026')).toBe('2026');
+    });
+
+    test('returns invalid monthly periods unchanged', () => {
+      expect(formatPeriodLabel('2026-13')).toBe('2026-13');
     });
   });
 

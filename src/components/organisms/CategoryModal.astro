@@ -30,6 +30,7 @@ export interface Props {
     id?: string;
     name?: string;
     type?: 'expense' | 'income';
+    income_source_type?: 'active' | 'passive' | 'other';
     description?: string;
     icon?: string;
     color?: string;
@@ -152,6 +153,28 @@ const iconColorClass = 'text-accent';
             </select>
           </FormField>
 
+          <div data-income-source-field class:list={[values.type !== 'income' && 'hidden']}>
+            <FormField label="Income Source" htmlFor="category-income-source">
+              <select
+                name="income_source_type"
+                id="category-income-source"
+                class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              >
+                <option value="active" selected={values.income_source_type === 'active'}
+                  >Active income</option
+                >
+                <option value="passive" selected={values.income_source_type === 'passive'}
+                  >Passive income</option
+                >
+                <option
+                  value="other"
+                  selected={values.income_source_type === 'other' || !values.income_source_type}
+                  >Other income</option
+                >
+              </select>
+            </FormField>
+          </div>
+
           <FormField
             label="Icon"
             htmlFor="category-icon"
@@ -242,13 +265,17 @@ const iconColorClass = 'text-accent';
         <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
 
         <!-- Actions -->
-        <div class="flex gap-4 pt-4">
-          <button type="button" class="flex-1 btn btn-ghost h-14 rounded-2xl font-bold" data-cancel>
+        <div class="grid grid-cols-3 gap-4 pt-4">
+          <button
+            type="button"
+            class="col-span-1 btn btn-ghost h-14 rounded-2xl font-bold"
+            data-cancel
+          >
             Cancel
           </button>
           <button
             type="submit"
-            class="flex-[2] btn btn-accent h-14 rounded-2xl font-bold"
+            class="col-span-2 btn btn-accent h-14 rounded-2xl font-bold"
             data-testid="category-submit-btn"
           >
             <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
@@ -314,6 +341,7 @@ const iconColorClass = 'text-accent';
           const data = {
             name: formData.get('name'),
             type: formData.get('type'),
+            income_source_type: formData.get('income_source_type') || 'other',
             description: description || null, // Send null if empty
             icon: formData.get('icon'),
             color: formData.get('color'),
@@ -420,6 +448,23 @@ const iconColorClass = 'text-accent';
       }
       // Apply initial filtering
       filterIconsByType();
+
+      // Show/hide income source field based on type
+      const incomeSourceField = container.querySelector(
+        '[data-income-source-field]'
+      ) as HTMLElement;
+      function toggleIncomeSourceField() {
+        if (!incomeSourceField || !typeSelect) return;
+        if (typeSelect.value === 'income') {
+          incomeSourceField.classList.remove('hidden');
+        } else {
+          incomeSourceField.classList.add('hidden');
+          const sourceSelect = incomeSourceField.querySelector('select') as HTMLSelectElement;
+          if (sourceSelect) sourceSelect.value = 'other';
+        }
+      }
+      typeSelect?.addEventListener('change', toggleIncomeSourceField);
+      toggleIncomeSourceField();
 
       function updateIconPreview() {
         if (!iconPreview || !iconSelect || !colorSelect) return;

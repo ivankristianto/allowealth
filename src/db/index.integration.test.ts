@@ -158,6 +158,11 @@ async function cleanupTestData() {
     // Table might not exist or data already deleted
   }
   try {
+    await testDb.delete(categories).where(eq(categories.id, 'test-income-category-source'));
+  } catch {
+    // Table might not exist or data already deleted
+  }
+  try {
     await testDb.delete(users).where(eq(users.id, 'test-user-runtime'));
   } catch {
     // Table might not exist or data already deleted
@@ -476,6 +481,42 @@ describe('Database Integration Tests', () => {
       }
 
       expect(errorOccurred).toBe(true);
+    });
+  });
+
+  describe('Income Source Classification', () => {
+    it('persists income_source_type on budget categories', async () => {
+      await createTestDatabase();
+      const testDb = getDb();
+
+      // Clean up any stale data from previous runs
+      await testDb
+        .delete(categories)
+        .where(eq(categories.id, 'test-income-category-source'))
+        .catch(() => {});
+
+      await testDb.insert(categories).values({
+        id: 'test-income-category-source',
+        workspace_id: TEST_WORKSPACE_ID,
+        created_by_user_id: 'test-user-runtime-agnostic',
+        name: 'Salary',
+        type: 'income',
+        income_source_type: 'active',
+        icon: 'banknote',
+        color: 'bg-success',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const saved = await testDb.query.categories.findFirst({
+        where: eq(categories.id, 'test-income-category-source'),
+      });
+
+      expect(saved?.income_source_type).toBe('active');
+
+      // Cleanup
+      await testDb.delete(categories).where(eq(categories.id, 'test-income-category-source'));
     });
   });
 

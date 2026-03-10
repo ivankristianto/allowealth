@@ -26,12 +26,24 @@ export interface ExpenseCategory {
 export interface Props {
   data: ExpenseCategory[];
   subtitle?: string;
+  title?: string;
+  emptyText?: string;
+  ariaLabel?: string;
   loading?: boolean;
   error?: string;
   className?: string;
 }
 
-const { data = [], subtitle = 'EXPENSE MIX', loading = false, error, className = '' } = Astro.props;
+const {
+  data = [],
+  subtitle = 'EXPENSE MIX',
+  title = 'Expense Breakdown',
+  emptyText = 'No expense data available.',
+  ariaLabel = 'Expense breakdown by category',
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
 
 // @TODO: P1 - Move chart colors to design tokens (@/lib/tokens)
 // Chart colors from design system (v1.1.0 - Forest Green)
@@ -70,18 +82,12 @@ const serializedColors = JSON.stringify(DEFAULT_COLORS)
 const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2, 11)}`;
 ---
 
-<Card
-  padding="lg"
-  rounded="card-lg"
-  className={className}
-  role="region"
-  aria-label="Expense breakdown by category"
->
+<Card padding="lg" rounded="card-lg" className={className} role="region" aria-label={ariaLabel}>
   <div class="flex flex-col gap-6 md:gap-8">
     {/* Header */}
     <div class="flex justify-between items-center">
       <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
-        Expense Breakdown
+        {title}
       </h4>
       <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
     </div>
@@ -89,9 +95,9 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
     {/* Loading State */}
     {
       loading ? (
-        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-[300px]">
-          <div class="h-[250px] w-full sm:w-[250px] shrink-0">
-            <Skeleton variant="circular" width="250" height="250" />
+        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-80">
+          <div class="h-64 w-full sm:w-64 shrink-0">
+            <Skeleton variant="circular" className="h-64 w-full sm:w-64" />
           </div>
           <div class="flex-1 w-full space-y-3">
             {Array.from({ length: 6 }).map(() => (
@@ -115,18 +121,18 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
       ) : data.length === 0 ? (
         /* Empty State */
         <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No expense data available.</p>
+          <p class="text-base-content/60 font-medium">{emptyText}</p>
         </div>
       ) : (
         /* Chart and Legend */
         <div
-          class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-[300px]"
+          class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-80"
           data-chart-data={serializedData}
           data-chart-colors={serializedColors}
         >
           {/* Chart Container */}
           <div
-            class="h-[250px] w-full max-w-[250px] mx-auto sm:mx-0 shrink-0 relative"
+            class="h-64 w-full max-w-64 mx-auto sm:mx-0 shrink-0 relative"
             id={`${chartId}-container`}
           >
             <canvas

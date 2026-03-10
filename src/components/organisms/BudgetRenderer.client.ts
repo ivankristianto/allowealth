@@ -13,6 +13,7 @@
 
 import { animate } from 'motion/mini';
 import { animationDuration } from '@/lib/tokens';
+import { dispatchReinitEvent } from '@/lib/utils/dom';
 import type { FetchBudgetOverviewHtmlResponse } from '@/lib/api/budgetApiClient';
 
 // Check if user prefers reduced motion
@@ -112,6 +113,9 @@ export function renderSummaryHtml(html: string): void {
   if (!prefersReducedMotion()) {
     animate(container, { opacity: [0.5, 1] }, { duration: ANIMATION_DURATION });
   }
+
+  // Re-initialize BudgetSummary interactivity after HTML injection
+  dispatchReinitEvent('budget-summary:reinit');
 
   announceToScreenReader('Budget summary updated');
 }

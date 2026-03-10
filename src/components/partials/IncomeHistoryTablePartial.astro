@@ -1,0 +1,173 @@
+---
+/**
+ * Income History Table Partial
+ *
+ * Paginated transaction history for income report.
+ * Each row: date, description, category (with icon), source type, amount, member.
+ */
+
+import { formatCurrency } from '@/lib/formatting';
+import type { Currency } from '@/lib/constants/currency';
+import type { IncomeHistoryData } from '@/services/report.service';
+import { ChevronLeft, ChevronRight, Receipt } from '@lucide/astro';
+
+export interface Props {
+  transactions: IncomeHistoryData['transactions'];
+  total: number;
+  page: number;
+  pageSize: number;
+  currency: Currency;
+  appliedFilters: IncomeHistoryData['appliedFilters'];
+}
+
+const { transactions, total, page, pageSize, currency, appliedFilters } = Astro.props;
+
+const totalPages = Math.ceil(total / pageSize);
+const hasPrev = page > 1;
+const hasNext = page < totalPages;
+
+const sourceTypeBadge = (type: string) => {
+  const base =
+    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider';
+  switch (type) {
+    case 'active':
+      return `${base} bg-success/10 text-success`;
+    case 'passive':
+      return `${base} bg-info/10 text-info`;
+    case 'other':
+      return `${base} bg-warning/10 text-warning`;
+    default:
+      return `${base} bg-base-200 text-base-content/60`;
+  }
+};
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const activeFilterLabels: string[] = [];
+if (appliedFilters.sourceType) activeFilterLabels.push(`Source: ${appliedFilters.sourceType}`);
+if (appliedFilters.userId) activeFilterLabels.push('Filtered by member');
+if (appliedFilters.categoryId) activeFilterLabels.push('Filtered by category');
+---
+
+<div
+  data-history-table
+  class="bg-base-100 rounded-2xl md:rounded-3xl border border-base-300 shadow-sm overflow-hidden"
+>
+  <div class="px-5 md:px-6 pt-5 md:pt-6 pb-3 flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold">Transaction History</h2>
+      <p class="text-xs font-bold uppercase text-base-content/40 tracking-widest mt-1">
+        {total} TRANSACTIONS • PAGE {page} OF {totalPages || 1}
+      </p>
+    </div>
+    {
+      activeFilterLabels.length > 0 && (
+        <div class="flex gap-2">
+          {activeFilterLabels.map((label) => (
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-accent/10 text-accent">
+              {label}
+            </span>
+          ))}
+        </div>
+      )
+    }
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th class="text-center hidden sm:table-cell">Source</th>
+          <th class="text-right">Amount</th>
+          <th class="hidden sm:table-cell">Member</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          transactions.length === 0 ? (
+            <tr>
+              <td colspan="6" class="text-center py-12 text-base-content/50">
+                <div class="flex flex-col items-center gap-2">
+                  <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center">
+                    <Receipt class="w-6 h-6 opacity-40" />
+                  </div>
+                  <p class="font-medium">No transactions found</p>
+                  <p class="text-sm">Try selecting a different period or filter</p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            transactions.map((txn) => (
+              <tr class="hover:bg-base-200/50 transition-colors">
+                <td class="text-base-content/60 text-sm tabular-nums whitespace-nowrap">
+                  {formatDate(txn.transaction_date)}
+                </td>
+                <td>
+                  <span class="font-medium">{txn.description || '—'}</span>
+                </td>
+                <td>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class={`w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 ${txn.category_color || 'bg-base-200'}`}
+                    >
+                      <span class="text-xs">{txn.category_icon?.charAt(0) || '•'}</span>
+                    </div>
+                    <span class="text-sm">{txn.category_name}</span>
+                  </div>
+                </td>
+                <td class="text-center hidden sm:table-cell">
+                  <span class={sourceTypeBadge(txn.income_source_type)}>
+                    {txn.income_source_type}
+                  </span>
+                </td>
+                <td class="text-right font-medium text-success tabular-nums">
+                  {formatCurrency(txn.amount, currency)}
+                </td>
+                <td class="hidden sm:table-cell text-base-content/60 text-sm">
+                  {txn.created_by_name}
+                </td>
+              </tr>
+            ))
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+
+  {/* Pagination Controls */}
+  {
+    totalPages > 1 && (
+      <div class="px-5 md:px-6 py-4 border-t border-base-300 flex items-center justify-between">
+        <p class="text-sm text-base-content/60">
+          Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+        </p>
+        <div class="flex gap-2">
+          <button
+            class="btn btn-sm btn-ghost rounded-lg"
+            data-history-page="prev"
+            disabled={!hasPrev}
+            aria-label="Previous page"
+          >
+            <ChevronLeft class="w-4 h-4" />
+            Prev
+          </button>
+          <button
+            class="btn btn-sm btn-ghost rounded-lg"
+            data-history-page="next"
+            disabled={!hasNext}
+            aria-label="Next page"
+          >
+            Next
+            <ChevronRight class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+</div>

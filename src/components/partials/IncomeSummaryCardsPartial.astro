@@ -1,0 +1,115 @@
+---
+/**
+ * Income Summary Hero Card Partial
+ *
+ * Server-rendered partial showing total income as a hero number,
+ * growth badge, and allocation bar with legend.
+ */
+
+import AllocationBar from '@/components/molecules/AllocationBar.astro';
+import { formatCurrency } from '@/lib/formatting';
+import { colors } from '@/lib/tokens';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  totalIncome: string;
+  activeIncome: string;
+  passiveIncome: string;
+  otherIncome: string;
+  growthVsPreviousPeriod: string;
+  previousPeriodLabel: string;
+  currency: Currency;
+}
+
+const {
+  totalIncome,
+  activeIncome,
+  passiveIncome,
+  otherIncome,
+  growthVsPreviousPeriod,
+  previousPeriodLabel,
+  currency,
+} = Astro.props;
+
+const total = parseFloat(totalIncome) || 0;
+const active = parseFloat(activeIncome) || 0;
+const passive = parseFloat(passiveIncome) || 0;
+const other = parseFloat(otherIncome) || 0;
+
+const growthNum = parseFloat(growthVsPreviousPeriod) || 0;
+
+const segments = [
+  {
+    label: 'Active',
+    percentage: total > 0 ? Math.round((active / total) * 1000) / 10 : 0,
+    color: colors.accent,
+    bgClass: 'bg-accent',
+  },
+  {
+    label: 'Passive',
+    percentage: total > 0 ? Math.round((passive / total) * 1000) / 10 : 0,
+    color: colors.info,
+    bgClass: 'bg-info',
+  },
+  {
+    label: 'Other',
+    percentage: total > 0 ? Math.round((other / total) * 1000) / 10 : 0,
+    color: colors.warning,
+    bgClass: 'bg-warning',
+  },
+].filter((s) => s.percentage > 0);
+
+const growthIcon = growthNum >= 0 ? '▲' : '▼';
+const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-error bg-error/10';
+---
+
+<div data-summary-cards>
+  <div class="bg-base-100 border border-base-300 rounded-2xl md:rounded-3xl shadow-sm p-5 lg:p-6">
+    <!-- Header: label + growth badge -->
+    <div class="flex justify-between items-start">
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
+        >Total Income</span
+      >
+      {
+        growthNum !== 0 && (
+          <div class="flex flex-col items-end gap-1">
+            <span class={`text-xs font-bold px-2 py-1 rounded-lg ${growthColorClass}`}>
+              {growthIcon} {Math.abs(growthNum).toFixed(1)}%
+            </span>
+            {previousPeriodLabel && (
+              <span class="text-xs text-base-content/40 font-medium">
+                vs. {previousPeriodLabel}
+              </span>
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Hero value -->
+    <p class="text-2xl sm:text-3xl font-bold text-success tabular-nums mt-1">
+      {formatCurrency(totalIncome, currency)}
+    </p>
+
+    <!-- Allocation bar -->
+    {
+      segments.length > 0 && (
+        <div class="mt-5">
+          <AllocationBar segments={segments} height="md" ariaLabel="Income allocation breakdown" />
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-3">
+            {segments.map((s) => (
+              <div class="flex items-center gap-2">
+                <div class:list={['w-2.5 h-2.5 rounded-full shrink-0', s.bgClass]} />
+                <span class="text-xs text-base-content/60 font-medium">{s.label}</span>
+                <span class="text-xs font-bold text-base-content tabular-nums ml-auto">
+                  {s.percentage.toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</div>

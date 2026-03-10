@@ -423,6 +423,52 @@ describe('CategoryService', () => {
 
       if (result) expect(result.icon).toBe('shopping-cart');
     });
+
+    it('keeps expense categories on other income source type when type is omitted', async () => {
+      const mockUpdatedCategory: Category = {
+        id: 'cat-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
+        name: 'Food & Groceries',
+        type: 'expense',
+        description: 'Daily food and grocery purchases',
+        icon: 'shopping-cart',
+        color: 'bg-primary',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const mockSet = mock(() => ({
+        where: mock(() => Promise.resolve({})),
+      }));
+
+      const mockDb: any = {
+        insert: mock(() => ({
+          values: mock(() => ({
+            returning: mock(() => Promise.resolve([])),
+          })),
+        })),
+        query: {
+          categories: {
+            findFirst: mock(() => Promise.resolve(mockUpdatedCategory)),
+            findMany: mock(() => Promise.resolve([])),
+          },
+        },
+        update: mock(() => ({
+          set: mockSet,
+        })),
+      };
+
+      const categoryService = new CategoryService(mockDb);
+
+      await categoryService.update('cat-1', 'user-1', {
+        income_source_type: 'passive',
+      });
+
+      const [updatePayload] = (mockSet as any).mock.calls[0] as [Record<string, unknown>];
+      expect(updatePayload?.income_source_type).toBe('other');
+    });
   });
 
   describe('delete', () => {

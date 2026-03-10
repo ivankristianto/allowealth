@@ -30,6 +30,7 @@ export interface Props {
   currency: Currency;
   totalAccounts?: number;
   totalDebt?: number;
+  showWealthCards?: boolean;
 }
 
 const {
@@ -41,6 +42,7 @@ const {
   currency,
   totalAccounts = 0,
   totalDebt = 0,
+  showWealthCards = true,
 } = Astro.props;
 
 // Currency badge classes — matches AccountAccountsSummary pattern
@@ -97,38 +99,49 @@ const currencyBadge = (c: Currency) =>
       </Fragment>
     </StatCard>
 
-    <StatCard
-      title="BUDGET HEALTH"
-      value={`${budgetHealth}%`}
-      valueColor={budgetHealth > 100 ? 'text-error' : 'text-success'}
-      progress={budgetHealth}
-      progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
-    />
+    <div
+      class="tooltip tooltip-bottom w-full"
+      data-tip="Total budget used vs. allocated this period. Under 100% means within budget."
+    >
+      <StatCard
+        title="BUDGET HEALTH"
+        value={`${budgetHealth}%`}
+        valueColor={budgetHealth > 100 ? 'text-error' : 'text-success'}
+        progress={budgetHealth}
+        progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
+      />
+    </div>
 
-    <StatCard title="TOTAL ACCOUNTS">
-      <Fragment slot="details">
-        <div class="space-y-1.5">
-          <div class="flex items-center gap-2">
-            <span class={currencyBadge(currency)}>{currency}</span>
-            <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-              {formatCurrency(totalAccounts, currency)}
-            </p>
-          </div>
-        </div>
-      </Fragment>
-    </StatCard>
+    {
+      showWealthCards && (
+        <>
+          <StatCard title="TOTAL ACCOUNTS">
+            <Fragment slot="details">
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class={currencyBadge(currency)}>{currency}</span>
+                  <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                    {formatCurrency(totalAccounts, currency)}
+                  </p>
+                </div>
+              </div>
+            </Fragment>
+          </StatCard>
 
-    <StatCard title="TOTAL DEBT">
-      <Fragment slot="details">
-        <div class="space-y-1.5">
-          <div class="flex items-center gap-2">
-            <span class={currencyBadge(currency)}>{currency}</span>
-            <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-              {formatCurrency(totalDebt, currency)}
-            </p>
-          </div>
-        </div>
-      </Fragment>
-    </StatCard>
+          <StatCard title="TOTAL DEBT">
+            <Fragment slot="details">
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class={currencyBadge(currency)}>{currency}</span>
+                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                    {formatCurrency(totalDebt, currency)}
+                  </p>
+                </div>
+              </div>
+            </Fragment>
+          </StatCard>
+        </>
+      )
+    }
   </div>
 </div>

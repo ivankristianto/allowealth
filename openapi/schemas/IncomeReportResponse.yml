@@ -1,0 +1,12 @@
+# Income report API success response
+IncomeReportResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      $ref: "./IncomeReportData.yml#/IncomeReportData"
+  required:
+    - success
+    - data

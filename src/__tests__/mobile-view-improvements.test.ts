@@ -60,11 +60,11 @@ describe('mobile view improvements', () => {
     const reportsApi = read('src/pages/api/reports/index.ts');
 
     expect(reportsPage).toContain('Array.from({ length: 12 }');
-    expect(reportsPage).toContain('const monthsBack = i;');
+    expect(reportsPage).toContain('currentMonth - 1 - i');
     expect(reportsPage).toContain('? monthlyPeriods[0].key');
 
     expect(reportsApi).toContain('Array.from({ length: 12 }');
-    expect(reportsApi).toContain('const monthsBack = i;');
+    expect(reportsApi).toContain('currentMonth - 1 - i');
   });
 
   it('deprecates AccountPageHeader component file', () => {

@@ -7,7 +7,7 @@
  * Follows Oasis Finance v1.0.0 design system specifications.
  *
  * @param {TrendDataPoint[]} data - Array of monthly trend data (income and expenses)
- * @param {string} subtitle - Subtitle text (e.g., "TRAILING 3 MONTHS")
+ * @param {string} subtitle - Subtitle text (e.g., "LAST 3 MONTHS")
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
@@ -28,6 +28,7 @@ export interface Props {
   data: TrendDataPoint[];
   currency?: Currency;
   subtitle?: string;
+  description?: string;
   loading?: boolean;
   error?: string;
   className?: string;
@@ -36,7 +37,8 @@ export interface Props {
 const {
   data = [],
   currency = 'IDR',
-  subtitle = 'TRAILING 3 MONTHS',
+  subtitle = 'LAST 3 MONTHS',
+  description,
   loading = false,
   error,
   className = '',
@@ -61,18 +63,25 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 >
   <div class="flex flex-col gap-6 md:gap-8">
     {/* Header */}
-    <div class="flex justify-between items-center">
-      <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
-        Income vs. Expenses
-      </h4>
+    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div class="space-y-2">
+        <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
+          Income vs. Expenses
+        </h4>
+        {
+          description && (
+            <p class="max-w-2xl text-sm leading-6 text-base-content/70">{description}</p>
+          )
+        }
+      </div>
       <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
     </div>
 
     {/* Loading State */}
     {
       loading ? (
-        <div class="py-6 min-h-[300px]">
-          <Skeleton variant="rectangular" width="100%" height="300px" className="rounded-2xl" />
+        <div class="py-6 min-h-80">
+          <Skeleton variant="rectangular" className="h-80 w-full rounded-2xl" />
         </div>
       ) : error ? (
         /* Error State */
@@ -89,7 +98,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
       ) : (
         /* Chart Container */
         <div
-          class="h-[300px] w-full min-h-[300px]"
+          class="h-80 w-full min-h-80"
           data-chart-data={serializedData}
           data-currency={currency}
           id={`${chartId}-container`}
@@ -135,6 +144,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import { isValidCurrency } from '@/lib/constants/currency';
   import type { Currency } from '@/lib/constants/currency';
+  import { colors } from '@/lib/tokens';
 
   interface TrendDataPoint {
     name: string;
@@ -150,13 +160,27 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   // Store chart instances globally for cleanup
   const charts: Record<string, ChartData> = {};
 
+  function readThemeColor(variableName: string, fallback: string): string {
+    if (typeof window === 'undefined') return fallback;
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+  }
+
   /**
    * Update chart colors based on current theme
    */
   function updateChartThemeColors(): void {
     const dark = isDarkTheme();
+    const incomeColor = readThemeColor('--color-success', colors.success);
+    const expenseColor = readThemeColor('--color-error', colors.error);
+    const textColor = dark ? colors.slate[400] : colors.slate[500];
 
     Object.values(charts).forEach(({ chart }) => {
+      const incomeDataset = chart.data.datasets[0];
+      const expenseDataset = chart.data.datasets[1];
+      if (incomeDataset) incomeDataset.backgroundColor = incomeColor;
+      if (expenseDataset) expenseDataset.backgroundColor = expenseColor;
+
       // Update tooltip colors
       if (chart.options.plugins?.tooltip) {
         chart.options.plugins.tooltip.backgroundColor = dark
@@ -168,15 +192,15 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 
       // Update legend colors
       if (chart.options.plugins?.legend?.labels) {
-        chart.options.plugins.legend.labels.color = dark ? '#94a3b8' : '#64748b';
+        chart.options.plugins.legend.labels.color = textColor;
       }
 
       // Update axis colors
       if (chart.options.scales?.x?.ticks) {
-        chart.options.scales.x.ticks.color = dark ? '#94a3b8' : '#64748b';
+        chart.options.scales.x.ticks.color = textColor;
       }
       if (chart.options.scales?.y?.ticks) {
-        chart.options.scales.y.ticks.color = dark ? '#94a3b8' : '#64748b';
+        chart.options.scales.y.ticks.color = textColor;
       }
       if (chart.options.scales?.y?.grid) {
         chart.options.scales.y.grid.color = dark
@@ -212,8 +236,10 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
     const expensesData = data.map((d) => d.expenses);
 
     const dark = isDarkTheme();
+    const incomeColor = readThemeColor('--color-success', colors.success);
+    const expenseColor = readThemeColor('--color-error', colors.error);
     const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
-    const textColor = dark ? '#94a3b8' : '#64748b';
+    const textColor = dark ? colors.slate[400] : colors.slate[500];
 
     const chart = new Chart(ctx, {
       type: 'bar',
@@ -223,14 +249,14 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
           {
             label: 'Income',
             data: incomeData,
-            backgroundColor: '#10b981', // emerald-500 (success)
+            backgroundColor: incomeColor,
             borderRadius: 6,
             borderSkipped: false,
           },
           {
             label: 'Expenses',
             data: expensesData,
-            backgroundColor: '#ef4444', // red-500 (error)
+            backgroundColor: expenseColor,
             borderRadius: 6,
             borderSkipped: false,
           },
@@ -250,7 +276,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
             labels: {
               color: textColor,
               font: {
-                size: 10,
+                size: 13,
                 weight: 700,
               },
               usePointStyle: true,
@@ -282,7 +308,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
             ticks: {
               color: textColor,
               font: {
-                size: 10,
+                size: 13,
                 weight: 700,
               },
             },

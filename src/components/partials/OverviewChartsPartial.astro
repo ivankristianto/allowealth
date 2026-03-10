@@ -1,0 +1,33 @@
+---
+import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface TrendData {
+  name: string;
+  income: number;
+  expenses: number;
+}
+
+export interface Props {
+  trendData: TrendData[];
+  currency: Currency;
+  subtitle?: string;
+  description?: string;
+}
+
+const {
+  trendData,
+  currency,
+  subtitle = 'INCOME VS. EXPENSES',
+  description = 'Compare income and expenses to spot trends.',
+} = Astro.props;
+---
+
+<div class="@container" data-report-charts>
+  <FinancialVelocityChart
+    data={trendData}
+    currency={currency}
+    subtitle={subtitle}
+    description={description}
+  />
+</div>
