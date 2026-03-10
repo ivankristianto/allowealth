@@ -12,31 +12,36 @@
 import { workspaces, users, type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
+import { maxLength, minLength, object, pipe, string, type InferInput } from 'valibot';
+import { withSchemaCompat } from '@/lib/validation/compat';
 import { WorkspaceServiceError, ServiceErrorCode } from './service-errors';
 
 /**
- * Zod schemas for workspace service validation
+ * Validation schemas for workspace service input
  */
-export const createWorkspaceSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Workspace name is required')
-    .max(255, 'Workspace name must be less than 255 characters'),
-});
+const workspaceNameValidation = pipe(
+  string(),
+  minLength(1, 'Workspace name is required'),
+  maxLength(255, 'Workspace name must be less than 255 characters')
+);
 
-export const updateWorkspaceNameSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Workspace name is required')
-    .max(255, 'Workspace name must be less than 255 characters'),
-});
+export const createWorkspaceSchema = withSchemaCompat(
+  object({
+    name: workspaceNameValidation,
+  })
+);
+
+export const updateWorkspaceNameSchema = withSchemaCompat(
+  object({
+    name: workspaceNameValidation,
+  })
+);
 
 /**
- * Input types inferred from Zod schemas
+ * Input types inferred from validation schemas
  */
-export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
-export type UpdateWorkspaceNameInput = z.infer<typeof updateWorkspaceNameSchema>;
+export type CreateWorkspaceInput = InferInput<typeof createWorkspaceSchema>;
+export type UpdateWorkspaceNameInput = InferInput<typeof updateWorkspaceNameSchema>;
 
 /**
  * Workspace type inferred from schema
@@ -83,7 +88,7 @@ export class WorkspaceService {
    * @throws {WorkspaceServiceError} If validation fails
    */
   async create(input: CreateWorkspaceInput): Promise<Workspace> {
-    // Validate input using Zod schema
+    // Validate input using the service schema
     const validated = createWorkspaceSchema.parse(input);
 
     const id = nanoid();

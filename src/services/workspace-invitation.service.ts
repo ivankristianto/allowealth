@@ -25,7 +25,17 @@ import { EmailService } from '@/services/email';
 
 const log = createLogger('workspace-invitation');
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
+import {
+  minLength,
+  object,
+  optional,
+  picklist,
+  pipe,
+  regex,
+  string,
+  type InferInput,
+} from 'valibot';
+import { withSchemaCompat } from '@/lib/validation/compat';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
 
 const workspaceInvitationEmailService = new EmailService();
@@ -53,19 +63,23 @@ function getBaseUrl(): string {
 }
 
 /**
- * Zod schemas for invitation service validation
+ * Validation schema for invitation service input
  */
-export const createInvitationSchema = z.object({
-  workspaceId: z.string().min(1, 'Workspace ID is required'),
-  email: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
-  invitedByUserId: z.string().min(1, 'Invited by user ID is required').optional(),
-  role: z.enum(['admin', 'member']),
-});
+const requiredId = (message: string) => pipe(string(), minLength(1, message));
+
+export const createInvitationSchema = withSchemaCompat(
+  object({
+    workspaceId: requiredId('Workspace ID is required'),
+    email: pipe(string(), regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format')),
+    invitedByUserId: optional(requiredId('Invited by user ID is required')),
+    role: picklist(['admin', 'member']),
+  })
+);
 
 /**
- * Input types inferred from Zod schemas
+ * Input types inferred from validation schema
  */
-export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
+export type CreateInvitationInput = InferInput<typeof createInvitationSchema>;
 
 /**
  * Invitation type inferred from schema
@@ -96,7 +110,7 @@ export class WorkspaceInvitationService {
    * @throws {WorkspaceInvitationServiceError} If workspace not found or validation fails
    */
   async create(input: CreateInvitationInput): Promise<WorkspaceInvitation> {
-    // Validate input using Zod schema
+    // Validate input using the service schema
     const validated = createInvitationSchema.parse(input);
 
     // Check if workspace exists
