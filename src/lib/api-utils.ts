@@ -1,18 +1,19 @@
 import type { APIContext } from 'astro';
-import { z } from 'zod';
+import type { BaseIssue, BaseSchema, BaseSchemaAsync } from 'valibot';
+import { safeParseAsync } from 'valibot';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { requireTenantContext } from '@/lib/tenant/context';
 
 /**
  * Standard API response format
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
     message: string;
     code?: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -26,12 +27,17 @@ export interface ValidationResultSuccess<T> {
 
 /**
  * Result of validateBody - error case
- * Using z.ZodError['issues'] type for Zod v4 compatibility
  */
+export interface ApiValidationIssue {
+  path: string[];
+  message: string;
+  code: string;
+}
+
 export interface ValidationError {
   success: false;
   error: {
-    issues: z.ZodError['issues'];
+    issues: ApiValidationIssue[];
   };
 }
 
@@ -82,7 +88,7 @@ export function errorResponse(
   message: string,
   status = 400,
   code?: string,
-  details?: any
+  details?: unknown
 ): Response {
   return new Response(
     JSON.stringify({
@@ -103,11 +109,11 @@ export function errorResponse(
 }
 
 /**
- * Validate request body with Zod schema
+ * Validate request body with a schema
  *
  * @param request - The HTTP request object
- * @param schema - Zod schema to validate against
- * @returns ValidationResult with either data (success) or ZodIssue[] (failure)
+ * @param schema - Validation schema to validate against
+ * @returns ValidationResult with either parsed data (success) or normalized issues (failure)
  *
  * @example
  * ```typescript
@@ -120,16 +126,26 @@ export function errorResponse(
  */
 export async function validateBody<T>(
   request: Request,
-  schema: z.ZodSchema<T>
+  schema:
+    | BaseSchema<unknown, T, BaseIssue<unknown>>
+    | BaseSchemaAsync<unknown, T, BaseIssue<unknown>>
 ): Promise<ValidationResult<T>> {
   try {
     const body = await request.json();
-    const data = schema.parse(body);
-    return { success: true, data };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: { issues: error.issues } };
+
+    const result = await safeParseAsync(schema, body);
+
+    if (result.success) {
+      return { success: true, data: result.output };
     }
+
+    return {
+      success: false,
+      error: {
+        issues: result.issues.map(normalizeApiValidationIssue),
+      },
+    };
+  } catch (error) {
     if (error instanceof SyntaxError) {
       return {
         success: false,
@@ -158,6 +174,14 @@ export async function validateBody<T>(
       },
     };
   }
+}
+
+function normalizeApiValidationIssue(issue: BaseIssue<unknown>): ApiValidationIssue {
+  return {
+    path: issue.path?.flatMap((item) => (item.key === null ? [] : [String(item.key)])) ?? [],
+    message: issue.message,
+    code: issue.type,
+  };
 }
 
 /**

@@ -1,4 +1,17 @@
-import { z } from 'zod';
+import {
+  boolean,
+  check,
+  maxLength,
+  minLength,
+  nullable,
+  object,
+  optional,
+  picklist,
+  pipe,
+  string,
+  transform,
+  type InferOutput,
+} from 'valibot';
 import { categoryTypeEnum } from '@/lib/enums';
 import { SUPPORTED_CATEGORY_ICONS } from '@/lib/utils/supportedCategoryIcons';
 
@@ -12,73 +25,83 @@ import { SUPPORTED_CATEGORY_ICONS } from '@/lib/utils/supportedCategoryIcons';
 // Re-export enums from shared location for convenience
 export { categoryTypeEnum };
 
-export const incomeSourceTypeEnum = z.enum(['active', 'passive', 'other']);
+export const incomeSourceTypeEnum = picklist(['active', 'passive', 'other']);
 
 // Common validation for category fields
-const nameValidation = z
-  .string()
-  .min(3, 'Category name must be at least 3 characters')
-  .max(100, 'Category name must not exceed 100 characters');
+const requiredId = (message: string) => pipe(string(), minLength(1, message));
+
+const nameValidation = pipe(
+  string(),
+  minLength(3, 'Category name must be at least 3 characters'),
+  maxLength(100, 'Category name must not exceed 100 characters')
+);
 
 // Derive allowed icons from the single source of truth
 const ALLOWED_ICONS = SUPPORTED_CATEGORY_ICONS.map((icon) => icon.value);
 
-const iconValidation = z
-  .string()
-  .min(1, 'Icon is required')
-  .refine((val) => ALLOWED_ICONS.includes(val), {
-    message: `Icon must be one of: ${ALLOWED_ICONS.join(', ')}`,
-  })
-  .optional()
-  .default('tag')
-  .transform((val) => val || 'tag');
+const iconValidation = optional(
+  pipe(
+    string(),
+    minLength(1, 'Icon is required'),
+    check(
+      (value) => ALLOWED_ICONS.includes(value),
+      `Icon must be one of: ${ALLOWED_ICONS.join(', ')}`
+    )
+  ),
+  'tag'
+);
 
-const colorValidation = z
-  .string()
-  .min(1, 'Color is required')
-  .optional()
-  .default('bg-neutral')
-  .transform((val) => val || 'bg-neutral');
+const colorValidation = optional(pipe(string(), minLength(1, 'Color is required')), 'bg-neutral');
 
-const descriptionValidation = z
-  .string()
-  .max(200, 'Description must not exceed 200 characters')
-  .nullable()
-  .optional()
-  .transform((val) => val || null); // Normalize empty string to null
+const descriptionValidation = pipe(
+  optional(
+    nullable(pipe(string(), maxLength(200, 'Description must not exceed 200 characters'))),
+    null
+  ),
+  transform((value) => value || null)
+);
+
+// Update variant: preserves undefined when field is absent so the service's
+// `!== undefined` guard correctly skips unset fields
+const descriptionUpdateValidation = optional(
+  pipe(
+    nullable(pipe(string(), maxLength(200, 'Description must not exceed 200 characters'))),
+    transform((value) => value || null)
+  )
+);
 
 // Schema for creating a category (for service layer)
-export const createCategorySchema = z.object({
-  workspace_id: z.string().min(1, 'Workspace ID is required'),
-  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
+export const createCategorySchema = object({
+  workspace_id: requiredId('Workspace ID is required'),
+  created_by_user_id: requiredId('Created by user ID is required'),
   name: nameValidation,
   type: categoryTypeEnum,
-  income_source_type: incomeSourceTypeEnum.optional(),
+  income_source_type: optional(incomeSourceTypeEnum),
   description: descriptionValidation,
   icon: iconValidation,
   color: colorValidation,
 });
 
-export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
+export type CreateCategoryInput = InferOutput<typeof createCategorySchema>;
 
 // Schema for updating a category (for service layer)
-export const updateCategorySchema = z.object({
-  name: nameValidation.optional(),
-  type: categoryTypeEnum.optional(),
-  income_source_type: incomeSourceTypeEnum.optional(),
-  description: descriptionValidation,
-  icon: z.string().optional(),
-  color: z.string().optional(),
-  is_active: z.boolean().optional(),
+export const updateCategorySchema = object({
+  name: optional(nameValidation),
+  type: optional(categoryTypeEnum),
+  income_source_type: optional(incomeSourceTypeEnum),
+  description: descriptionUpdateValidation,
+  icon: optional(string()),
+  color: optional(string()),
+  is_active: optional(boolean()),
 });
 
-export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
+export type UpdateCategoryInput = InferOutput<typeof updateCategorySchema>;
 
 // API-specific schemas that don't include user_id (comes from auth)
-export const createCategoryAPISchema = z.object({
+export const createCategoryAPISchema = object({
   name: nameValidation,
   type: categoryTypeEnum,
-  income_source_type: incomeSourceTypeEnum.optional().default('other'),
+  income_source_type: optional(incomeSourceTypeEnum, 'other'),
   description: descriptionValidation,
   icon: iconValidation,
   color: colorValidation,
@@ -87,9 +110,9 @@ export const createCategoryAPISchema = z.object({
 export const updateCategoryAPISchema = updateCategorySchema; // No user_id in update
 
 // Schema for category filters
-export const categoryFilterSchema = z.object({
-  type: categoryTypeEnum.optional(),
-  is_active: z.boolean().optional(),
+export const categoryFilterSchema = object({
+  type: optional(categoryTypeEnum),
+  is_active: optional(boolean()),
 });
 
-export type CategoryFilter = z.infer<typeof categoryFilterSchema>;
+export type CategoryFilter = InferOutput<typeof categoryFilterSchema>;

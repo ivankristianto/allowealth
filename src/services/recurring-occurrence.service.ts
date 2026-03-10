@@ -4,6 +4,7 @@ import { logAuditEvent } from '@/lib/audit-log';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { parse } from 'valibot';
 import type { Currency } from '@/lib/enums';
 import type {
   RecurringCalendarDay,
@@ -256,7 +257,7 @@ export class RecurringOccurrenceService {
       userId: string;
     }
   ) {
-    const validated = confirmOccurrenceSchema.parse({
+    const validated = parse(confirmOccurrenceSchema, {
       amount: input.amount,
       transaction_date: input.transaction_date,
       category_id: input.category_id,
@@ -421,7 +422,7 @@ export class RecurringOccurrenceService {
     reason?: string,
     performedByUserId?: string
   ): Promise<RecurringOccurrenceOutput> {
-    const validated = skipOccurrenceSchema.parse({ skip_reason: reason });
+    const validated = parse(skipOccurrenceSchema, { skip_reason: reason });
 
     const occurrence = await this.db.query.recurringOccurrences.findFirst({
       where: and(

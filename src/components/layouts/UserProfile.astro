@@ -5,7 +5,7 @@
  * User profile section for the navigation sidebar.
  * Displays user avatar, name, account type, and a dropdown menu.
  *
- * @design-system Oasis Finance v1.0.0
+ * @design-system Allowealth v1.0.0
  */
 
 import { User, Shield, LogOut, ChevronDown, Sun, Moon, Monitor, Contrast } from '@lucide/astro';
@@ -92,27 +92,29 @@ const getUserInitials = () => {
         <p class="px-2 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/40">
           Theme
         </p>
-        <div class="grid grid-cols-4 gap-1">
+        <div class="grid grid-cols-2 gap-1.5">
           {
             (
               [
+                // Row 1: System, Mono
                 { value: 'system', Icon: Monitor, label: 'System' },
+                { value: 'monochrome', Icon: Contrast, label: 'Mono' },
+                // Row 2: Light, Dark
                 { value: 'light', Icon: Sun, label: 'Light' },
                 { value: 'dark', Icon: Moon, label: 'Dark' },
-                { value: 'monochrome', Icon: Contrast, label: 'Mono' },
               ] as const
             ).map(({ value, Icon, label }) => (
               <button
                 type="button"
-                class="flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-base-content/50 transition-colors hover:bg-base-200 hover:text-base-content"
+                class="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-base-content/50 transition-all hover:bg-base-200 hover:text-base-content hover:scale-[1.02] active:scale-[0.98]"
                 data-theme-option={value}
                 aria-label={`Switch to ${label} theme`}
                 title={label}
                 role="menuitem"
                 tabindex="-1"
               >
-                <Icon size={16} aria-hidden="true" />
-                <span class="text-xs font-semibold leading-none">{label}</span>
+                <Icon size={18} aria-hidden="true" />
+                <span class="text-sm font-medium">{label}</span>
               </button>
             ))
           }
@@ -349,9 +351,15 @@ const getUserInitials = () => {
         { signal }
       );
 
-      document.addEventListener('astro:before-swap', () => controller.abort(), {
-        once: true,
-      });
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          controller.abort();
+          // Reset binding flag so theme switcher re-initializes after view transitions
+          switcher.removeAttribute('data-theme-switcher-bound');
+        },
+        { once: true }
+      );
 
       switcher.querySelectorAll<HTMLButtonElement>('[data-theme-option]').forEach((btn) => {
         btn.addEventListener(

@@ -49,7 +49,7 @@ import Button from '@/components/atoms/Button.astro';
               {/* Tier Name */}
               <h3
                 class={`text-lg sm:text-xl font-bold uppercase tracking-widest mb-3 ${
-                  isFeatured ? 'text-primary-content/60' : 'text-neutral'
+                  isFeatured ? 'text-primary-content/60' : 'text-base-content/60'
                 }`}
               >
                 {tier.name}
@@ -66,7 +66,7 @@ import Button from '@/components/atoms/Button.astro';
                 </span>
                 <span
                   class={`text-sm font-bold ${
-                    isFeatured ? 'text-primary-content/60' : 'text-neutral'
+                    isFeatured ? 'text-primary-content/60' : 'text-base-content/60'
                   }`}
                 >
                   /month
@@ -76,7 +76,7 @@ import Button from '@/components/atoms/Button.astro';
               {/* Description */}
               <p
                 class={`text-sm font-medium mb-8 sm:mb-12 ${
-                  isFeatured ? 'text-primary-content/60' : 'text-neutral'
+                  isFeatured ? 'text-primary-content/60' : 'text-base-content/60'
                 }`}
               >
                 {tier.description}

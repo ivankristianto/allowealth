@@ -5,6 +5,12 @@ let PUT: any;
 
 const originalSetUserMeta = userMetaService.setUserMeta;
 
+function expectNormalizedIssue(issue: any, path: string[]) {
+  expect(issue.path).toEqual(path);
+  expect(typeof issue.message).toBe('string');
+  expect(typeof issue.code).toBe('string');
+}
+
 function createApiContext(options: {
   body?: Record<string, unknown>;
   user?: { id: string; workspaceId: string; role: 'admin' | 'member' } | null;
@@ -41,14 +47,22 @@ describe('PUT /api/user/theme', () => {
 
   it('returns 400 for invalid theme value', async () => {
     const response = await PUT(createApiContext({ body: { theme: 'rainbow' } }));
+    const payload = await response.json();
 
     expect(response.status).toBe(400);
+    expect(payload.error.code).toBe('VALIDATION_ERROR');
+    expect(payload.error.details).toHaveLength(1);
+    expectNormalizedIssue(payload.error.details[0], ['theme']);
   });
 
   it('returns 400 when theme is missing', async () => {
     const response = await PUT(createApiContext({ body: {} }));
+    const payload = await response.json();
 
     expect(response.status).toBe(400);
+    expect(payload.error.code).toBe('VALIDATION_ERROR');
+    expect(payload.error.details).toHaveLength(1);
+    expectNormalizedIssue(payload.error.details[0], ['theme']);
   });
 
   for (const theme of ['system', 'light', 'dark', 'monochrome'] as const) {

@@ -36,7 +36,7 @@ import { FileText, MessageCircle } from '@lucide/astro';
         </a>
 
         <!-- Tagline -->
-        <p class="text-base text-neutral leading-relaxed max-w-sm">
+        <p class="text-base text-base-content/60 leading-relaxed max-w-sm">
           {brandContent.tagline}
         </p>
       </div>
@@ -46,7 +46,7 @@ import { FileText, MessageCircle } from '@lucide/astro';
         {
           footerLinks.map((section) => (
             <nav aria-label={`${section.title} links`} class="lg:text-right">
-              <h5 class="text-xs font-semibold uppercase tracking-wider text-neutral/80 mb-4">
+              <h5 class="text-xs font-semibold uppercase tracking-wider text-base-content/80 mb-4">
                 {section.title}
               </h5>
               <ul class="space-y-3">
@@ -87,7 +87,7 @@ import { FileText, MessageCircle } from '@lucide/astro';
 
         <!-- Support Column -->
         <nav aria-label="Support links" class="lg:text-right">
-          <h5 class="text-xs font-semibold uppercase tracking-wider text-neutral/80 mb-4">
+          <h5 class="text-xs font-semibold uppercase tracking-wider text-base-content/80 mb-4">
             Support
           </h5>
           <ul class="space-y-3">
@@ -122,7 +122,7 @@ import { FileText, MessageCircle } from '@lucide/astro';
     <div class="mt-16 pt-8 border-t border-base-300/30">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
         <!-- Copyright -->
-        <p class="text-sm text-neutral/70">
+        <p class="text-sm text-base-content/70">
           {brandContent.copyright}
         </p>
 
@@ -134,7 +134,7 @@ import { FileText, MessageCircle } from '@lucide/astro';
                 <li>
                   <a
                     href={link.href}
-                    class="text-sm text-neutral/70 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
+                    class="text-sm text-base-content/70 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
                   >
                     {link.label}
                   </a>

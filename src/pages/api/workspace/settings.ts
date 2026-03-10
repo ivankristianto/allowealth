@@ -9,7 +9,23 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/service-errors';
-import { z } from 'zod';
+import {
+  literal,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  null_,
+  number,
+  object,
+  optional,
+  picklist,
+  pipe,
+  record,
+  regex,
+  string,
+  union,
+} from 'valibot';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 import {
   MONTHLY_INCOME_AMOUNT_PATTERN,
@@ -18,26 +34,24 @@ import {
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
 
-const currencySchema = z.enum(AVAILABLE_CURRENCIES);
+const currencySchema = picklist(AVAILABLE_CURRENCIES);
 
 /**
  * Schema for PUT request body - workspace settings update
  */
-const updateWorkspaceSettingsSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  currency: currencySchema.optional(),
-  secondaryCurrency: z.union([currencySchema, z.literal(''), z.null()]).optional(),
-  weekStart: z.enum(['monday', 'sunday']).optional(),
-  monthlyIncome: z
-    .record(z.string(), z.string().regex(MONTHLY_INCOME_AMOUNT_PATTERN))
-    .refine(
-      (obj) =>
-        Object.keys(obj).every((k) => (AVAILABLE_CURRENCIES as readonly string[]).includes(k)),
-      { message: 'Invalid currency code' }
+const updateWorkspaceSettingsSchema = object({
+  name: optional(pipe(string(), minLength(1), maxLength(255))),
+  currency: optional(currencySchema),
+  secondaryCurrency: optional(union([currencySchema, literal(''), null_()])),
+  weekStart: optional(picklist(['monday', 'sunday'])),
+  monthlyIncome: optional(
+    record(
+      picklist(AVAILABLE_CURRENCIES, 'Invalid currency code'),
+      pipe(string(), regex(MONTHLY_INCOME_AMOUNT_PATTERN))
     )
-    .optional(),
-  forecastMonthlyTopup: z.number().min(0).max(MAX_FORECAST_MONTHLY_TOPUP).optional(),
-  forecastAnnualRate: z.number().min(0).max(MAX_FORECAST_ANNUAL_RATE).optional(),
+  ),
+  forecastMonthlyTopup: optional(pipe(number(), minValue(0), maxValue(MAX_FORECAST_MONTHLY_TOPUP))),
+  forecastAnnualRate: optional(pipe(number(), minValue(0), maxValue(MAX_FORECAST_ANNUAL_RATE))),
 });
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "allowealth",
-  "version": "0.20.2",
+  "version": "0.21.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -72,7 +72,7 @@
     "nanostores": "^1.1.0",
     "simple-icons": "^16.6.1",
     "tailwindcss": "^4.1.18",
-    "zod": "^4.3.6"
+    "valibot": "^1.1.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",

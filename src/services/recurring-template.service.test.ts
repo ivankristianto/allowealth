@@ -274,7 +274,7 @@ describe('RecurringTemplateService', () => {
         workspace_id: 'workspace-1',
         status: 'paused',
       } as any)
-    ).rejects.toThrow('unrecognized_keys');
+    ).rejects.toThrow('Invalid key');
   });
 
   it('allows clearing total_occurrences when the merged template is not an installment', async () => {

@@ -12,15 +12,19 @@ import { logError } from '@/lib/utils';
 import { UserServiceError, UserMetaServiceError } from '@/services/service-errors';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { and, eq } from 'drizzle-orm';
-import { z } from 'zod';
+import { email, maxLength, minLength, object, optional, pipe, string } from 'valibot';
 
 /**
  * Schema for PUT request body - all profile fields in one request
  */
-const updateFullProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
-  email: z.email({ message: 'Invalid email format' }),
-  phone: z.string().max(50, 'Phone must be at most 50 characters').optional().default(''),
+const updateFullProfileSchema = object({
+  name: pipe(
+    string(),
+    minLength(1, 'Name is required'),
+    maxLength(100, 'Name must be at most 100 characters')
+  ),
+  email: pipe(string(), email('Invalid email format')),
+  phone: optional(pipe(string(), maxLength(50, 'Phone must be at most 50 characters')), ''),
 });
 
 /**

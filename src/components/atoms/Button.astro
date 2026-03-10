@@ -3,7 +3,7 @@
  * Button Component
  *
  * A versatile button component with multiple variants, sizes, and states.
- * Follows Oasis Finance v1.0.0 design system with slate-primary/indigo-accent color model.
+ * Follows Allowealth v1.0.0 design system with slate-primary/indigo-accent color model.
  *
  * @param {string} variant - Button style variant: primary (accent/indigo CTAs), secondary, outline, ghost, danger, warning, success
  * @param {string} size - Button size: sm, md, lg, xl (DaisyUI btn sizes)
@@ -73,7 +73,7 @@ const isDisabled = disabled || loading;
 const baseClasses =
   'btn inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
-// Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
+// Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Allowealth v1.0.0
 const variantClasses: Record<string, string> = {
   primary: 'btn-accent shadow-accent-glow',
   accent: 'btn-accent shadow-accent-glow',

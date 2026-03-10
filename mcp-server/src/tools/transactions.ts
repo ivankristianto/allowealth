@@ -1,4 +1,17 @@
-import { z } from 'zod';
+import {
+  check,
+  forward,
+  maxLength,
+  maxValue,
+  minValue,
+  number,
+  object,
+  optional,
+  parse,
+  picklist,
+  pipe,
+  string,
+} from 'valibot';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 import { fuzzyMatch } from '../utils/fuzzy-match.js';
@@ -18,34 +31,39 @@ const SUPPORTED_CURRENCIES = [
   'INR',
 ] as const;
 
-const isoDateString = z.string().refine((val) => !isNaN(new Date(val).getTime()), {
-  message: 'Invalid date format. Use YYYY-MM-DD.',
-});
+const isoDateString = pipe(
+  string(),
+  check((value) => !Number.isNaN(new Date(value).getTime()), 'Invalid date format. Use YYYY-MM-DD.')
+);
 
-export const listTransactionsSchema = z
-  .object({
-    type: z.enum(['expense', 'income', 'transfer']).optional(),
-    start_date: isoDateString.optional(),
-    end_date: isoDateString.optional(),
-    limit: z.number().min(1).max(50).default(20),
-  })
-  .refine(
-    (data) => {
+export const listTransactionsSchema = pipe(
+  object({
+    type: optional(picklist(['expense', 'income', 'transfer'])),
+    start_date: optional(isoDateString),
+    end_date: optional(isoDateString),
+    limit: optional(pipe(number(), minValue(1), maxValue(50)), 20),
+  }),
+  forward(
+    check((data) => {
       if (data.start_date && data.end_date) {
         return new Date(data.start_date) <= new Date(data.end_date);
       }
       return true;
-    },
-    { message: 'start_date must be before or equal to end_date' }
-  );
+    }, 'start_date must be before or equal to end_date'),
+    ['end_date'] as const
+  )
+);
 
-export const addTransactionSchema = z.object({
-  amount: z.number().positive(),
-  currency: z.enum(SUPPORTED_CURRENCIES),
-  category_name: z.string(),
-  account_name: z.string(),
-  date: isoDateString.optional(),
-  description: z.string().max(500).optional(),
+export const addTransactionSchema = object({
+  amount: pipe(
+    number(),
+    check((value) => value > 0, 'Amount must be greater than 0')
+  ),
+  currency: picklist(SUPPORTED_CURRENCIES),
+  category_name: string(),
+  account_name: string(),
+  date: optional(isoDateString),
+  description: optional(pipe(string(), maxLength(500))),
 });
 
 export const listTransactionsTool: Tool = {
@@ -113,7 +131,7 @@ export const addIncomeTool: Tool = {
 
 export async function handleListTransactions(args: Record<string, unknown>, ctx: ToolContext) {
   const { workspaceId } = ctx.auth;
-  const input = listTransactionsSchema.parse(args);
+  const input = parse(listTransactionsSchema, args);
 
   const filters: any = {
     workspace_id: workspaceId,
@@ -191,7 +209,7 @@ export async function handleAddTransaction(
   ctx: ToolContext
 ) {
   const { workspaceId, userId } = ctx.auth;
-  const input = addTransactionSchema.parse(args);
+  const input = parse(addTransactionSchema, args);
 
   // Resolve category
   const categoryResult = await resolveCategory(input.category_name, type, workspaceId, ctx);

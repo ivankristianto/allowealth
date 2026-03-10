@@ -3,7 +3,7 @@
  * ==========================================
  * Use these values in component logic for consistency
  *
- * Version: 1.1.0 - Oasis Finance Design System (Forest Green)
+ * Version: 1.1.0 - Allowealth Design System (Forest Green)
  * Color semantic model:
  * - primary = slate-900 → headings, primary text, secondary buttons
  * - accent = forest-700 (#15803d) → CTAs, interactive elements, active states

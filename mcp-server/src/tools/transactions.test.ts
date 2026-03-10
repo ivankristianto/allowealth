@@ -1,33 +1,34 @@
 import { describe, it, expect } from 'bun:test';
+import { parse } from 'valibot';
 import { listTransactionsSchema, addTransactionSchema } from './transactions';
 
 describe('transaction tool schemas', () => {
   it('should validate list_transactions input', () => {
-    expect(() => listTransactionsSchema.parse({})).not.toThrow();
-    expect(() => listTransactionsSchema.parse({ type: 'expense', limit: 10 })).not.toThrow();
-    expect(() => listTransactionsSchema.parse({ limit: 0 })).toThrow();
-    expect(() => listTransactionsSchema.parse({ limit: 51 })).toThrow();
+    expect(() => parse(listTransactionsSchema, {})).not.toThrow();
+    expect(() => parse(listTransactionsSchema, { type: 'expense', limit: 10 })).not.toThrow();
+    expect(() => parse(listTransactionsSchema, { limit: 0 })).toThrow();
+    expect(() => parse(listTransactionsSchema, { limit: 51 })).toThrow();
   });
 
   it('should accept valid date strings', () => {
     expect(() =>
-      listTransactionsSchema.parse({ start_date: '2024-01-01', end_date: '2024-12-31' })
+      parse(listTransactionsSchema, { start_date: '2024-01-01', end_date: '2024-12-31' })
     ).not.toThrow();
   });
 
   it('should reject invalid date strings', () => {
-    expect(() => listTransactionsSchema.parse({ start_date: 'not-a-date' })).toThrow();
+    expect(() => parse(listTransactionsSchema, { start_date: 'not-a-date' })).toThrow();
   });
 
   it('should reject start_date after end_date', () => {
     expect(() =>
-      listTransactionsSchema.parse({ start_date: '2024-12-31', end_date: '2024-01-01' })
+      parse(listTransactionsSchema, { start_date: '2024-12-31', end_date: '2024-01-01' })
     ).toThrow();
   });
 
   it('should validate add_transaction input', () => {
     expect(() =>
-      addTransactionSchema.parse({
+      parse(addTransactionSchema, {
         amount: 50000,
         currency: 'IDR',
         category_name: 'Food',
@@ -38,7 +39,7 @@ describe('transaction tool schemas', () => {
 
   it('should accept valid date in add_transaction', () => {
     expect(() =>
-      addTransactionSchema.parse({
+      parse(addTransactionSchema, {
         amount: 50000,
         currency: 'IDR',
         category_name: 'Food',
@@ -50,7 +51,7 @@ describe('transaction tool schemas', () => {
 
   it('should reject invalid date in add_transaction', () => {
     expect(() =>
-      addTransactionSchema.parse({
+      parse(addTransactionSchema, {
         amount: 50000,
         currency: 'IDR',
         category_name: 'Food',
@@ -62,7 +63,7 @@ describe('transaction tool schemas', () => {
 
   it('should reject invalid add_transaction input', () => {
     expect(() =>
-      addTransactionSchema.parse({
+      parse(addTransactionSchema, {
         amount: -100,
         currency: 'IDR',
         category_name: 'Food',
@@ -71,9 +72,9 @@ describe('transaction tool schemas', () => {
     ).toThrow();
 
     expect(() =>
-      addTransactionSchema.parse({
+      parse(addTransactionSchema, {
         amount: 100,
-        currency: 'EUR',
+        currency: 'CAD',
         category_name: 'Food',
         account_name: 'Cash',
       })

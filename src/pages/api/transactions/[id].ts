@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { safeParse } from 'valibot';
 import { transactionService } from '@/services';
 import {
   successResponse,
@@ -22,14 +23,14 @@ export const GET: APIRoute = async (context) => {
     const { id } = context.params;
 
     // Validate transaction ID format
-    const idValidation = transactionIdSchema.safeParse(id);
+    const idValidation = safeParse(transactionIdSchema, id);
     if (!idValidation.success) {
       return errorResponse('Invalid transaction ID format', 400);
     }
 
     // Now we know id is a valid string
     const rawTransaction = await transactionService.findById(
-      idValidation.data,
+      idValidation.output,
       auth.workspaceId,
       perf
     );
@@ -62,7 +63,7 @@ export const PUT: APIRoute = async (context) => {
     const { request } = context;
 
     // Validate transaction ID format
-    const idValidation = transactionIdSchema.safeParse(id);
+    const idValidation = safeParse(transactionIdSchema, id);
     if (!idValidation.success) {
       return errorResponse('Invalid transaction ID format', 400);
     }
@@ -98,7 +99,7 @@ export const PUT: APIRoute = async (context) => {
       updateData.description = validation.data.description;
 
     const rawTransaction = await transactionService.update(
-      idValidation.data,
+      idValidation.output,
       auth.workspaceId,
       updateData,
       auth.userId
@@ -131,12 +132,12 @@ export const DELETE: APIRoute = async (context) => {
     const { id } = context.params;
 
     // Validate transaction ID format
-    const idValidation = transactionIdSchema.safeParse(id);
+    const idValidation = safeParse(transactionIdSchema, id);
     if (!idValidation.success) {
       return errorResponse('Invalid transaction ID format', 400);
     }
 
-    await transactionService.delete(idValidation.data, auth.workspaceId, auth.userId);
+    await transactionService.delete(idValidation.output, auth.workspaceId, auth.userId);
 
     return successResponse({ message: 'Transaction deleted successfully' });
   } catch (error) {

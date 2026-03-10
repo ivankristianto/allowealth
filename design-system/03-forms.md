@@ -103,19 +103,19 @@ function validateForm(data) {
 }
 ```
 
-### Server-Side (Zod)
+### Server-Side Validation
 
 ```typescript
-import { z } from 'zod';
+import { email, minValue, number, object, pipe, safeParse, string } from 'valibot';
 
-const schema = z.object({
-  email: z.string().email('Invalid email'),
-  amount: z.number().positive('Must be positive'),
+const schema = object({
+  email: pipe(string(), email('Invalid email')),
+  amount: pipe(number(), minValue(0.01, 'Must be positive')),
 });
 
-const result = schema.safeParse(data);
+const result = safeParse(schema, data);
 if (!result.success) {
-  return { success: false, error: result.error };
+  return { success: false, error: result.issues };
 }
 ```
 

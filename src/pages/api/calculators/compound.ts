@@ -6,19 +6,35 @@
  */
 
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { integer, maxValue, minValue, object, pipe, number } from 'valibot';
+import {
+  successResponse,
+  errorResponse,
+  getAuthenticatedUser,
+  isValidationError,
+  validateBody,
+} from '@/lib/api-utils';
 import { workspaceMetaService } from '@/services';
 import type { YearlyData } from '@/components/molecules/GrowthScheduleTable.astro';
 
 // Validation schema for request body
-const compoundInputSchema = z.object({
-  principal: z
-    .number()
-    .min(0, 'Principal must be positive')
-    .max(1000000000000, 'Principal must be less than 1 trillion'),
-  rate: z.number().min(0, 'Rate must be positive').max(100, 'Rate must be less than 100'),
-  years: z.number().int().min(1, 'Years must be at least 1').max(50, 'Years must be at most 50'),
+const compoundInputSchema = object({
+  principal: pipe(
+    number(),
+    minValue(0, 'Principal must be positive'),
+    maxValue(1000000000000, 'Principal must be less than 1 trillion')
+  ),
+  rate: pipe(
+    number(),
+    minValue(0, 'Rate must be positive'),
+    maxValue(100, 'Rate must be less than 100')
+  ),
+  years: pipe(
+    number(),
+    integer('Years must be an integer'),
+    minValue(1, 'Years must be at least 1'),
+    maxValue(50, 'Years must be at most 50')
+  ),
 });
 
 export const POST: APIRoute = async (context) => {
@@ -27,17 +43,10 @@ export const POST: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const currency = await workspaceMetaService.getCurrency(auth.workspaceId);
 
-    // Parse and validate request body
-    const body = await context.request.json();
-    const validation = compoundInputSchema.safeParse(body);
+    const validation = await validateBody(context.request, compoundInputSchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Invalid input: ' + validation.error.issues[0].message,
-        400,
-        'VALIDATION_ERROR',
-        validation.error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     const { principal, rate, years } = validation.data;

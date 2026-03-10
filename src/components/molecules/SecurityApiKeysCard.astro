@@ -29,7 +29,7 @@ const { keys } = Astro.props;
   <button
     slot="title-extra"
     type="button"
-    class="btn btn-ghost btn-sm gap-1"
+    class="btn btn-ghost btn-sm rounded-xl gap-1"
     data-open-mcp-instructions
   >
     <CircleQuestionMark size={16} class="stroke-current" aria-hidden="true" />
@@ -61,11 +61,11 @@ const { keys } = Astro.props;
       </p>
       <div class="modal-action">
         <form method="dialog">
-          <button class="btn btn-ghost btn-sm">Cancel</button>
+          <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
         </form>
         <button
           type="button"
-          class="btn btn-error btn-sm"
+          class="btn btn-error btn-sm rounded-xl"
           data-confirm-revoke
           data-revoking-key-id=""
         >

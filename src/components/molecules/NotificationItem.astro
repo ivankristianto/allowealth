@@ -46,10 +46,12 @@ const iconBgClass = bgMap[notification.type];
   <div class="flex-1 min-w-0">
     <div class="flex justify-between items-start mb-1.5 leading-none">
       <p class="text-base font-bold text-base-content tracking-tight">{notification.title}</p>
-      <span class="text-xs font-bold text-neutral uppercase tracking-widest"
+      <span class="text-xs font-bold text-base-content/60 uppercase tracking-widest"
         >{notification.time}</span
       >
     </div>
-    <p class="text-sm text-neutral leading-relaxed line-clamp-2">{notification.description}</p>
+    <p class="text-sm text-base-content/60 leading-relaxed line-clamp-2">
+      {notification.description}
+    </p>
   </div>
 </div>

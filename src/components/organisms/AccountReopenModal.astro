@@ -182,7 +182,6 @@ const { id } = Astro.props;
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Failed to reopen account';
           showConfirmError(errorElement, message);
-          addToast(message, 'error');
         } finally {
           setConfirmLoading(confirmButton, false);
         }

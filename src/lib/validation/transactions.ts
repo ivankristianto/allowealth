@@ -1,4 +1,27 @@
-import { z } from 'zod';
+import {
+  check,
+  date,
+  forward,
+  integer,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  nullable,
+  number,
+  object,
+  optional,
+  pipe,
+  regex,
+  strictObject,
+  string,
+  transform,
+  union,
+  type BaseIssue,
+  type BaseSchema,
+  type InferInput,
+  type InferOutput,
+} from 'valibot';
 import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
 
 /**
@@ -8,67 +31,124 @@ import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
 // Re-export enums from shared location for convenience
 export { currencyEnum, transactionTypeEnum };
 
-// Validation for transaction ID (nanoid format)
-export const transactionIdSchema = z
-  .string()
-  .min(1, 'Transaction ID is required')
-  .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid transaction ID format');
+const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
-// Common validation for amount
-const amountValidation = z
-  .string()
-  .min(1, 'Amount is required')
-  .refine(
-    (val) => {
-      const num = parseFloat(val);
-      return !isNaN(num) && num > 0;
-    },
-    { message: 'Amount must be greater than 0' }
-  );
+const positiveAmountValidation = pipe(
+  string(),
+  minLength(1, 'Amount is required'),
+  check((value) => {
+    const parsedAmount = Number.parseFloat(value);
+    return !Number.isNaN(parsedAmount) && parsedAmount > 0;
+  }, 'Amount must be greater than 0')
+);
 
-// Common validation for transaction date (from Date object)
-const transactionDateValidation = z.date().refine((date) => date <= new Date(), {
-  message: 'Transaction date cannot be in the future',
-});
+const futureTransactionCheck = check(
+  (value: Date) => value <= new Date(),
+  'Transaction date cannot be in the future'
+);
 
-const transactionDateWithoutFutureValidation = z.date();
+const transactionDateValidation = pipe(date(), futureTransactionCheck);
+const transactionDateWithoutFutureValidation = date();
 
-function buildCreateTransactionSchema(transactionDateSchema: z.ZodType<Date>) {
-  return z
-    .object({
-      workspace_id: z.string().min(1, 'Workspace ID is required'),
-      created_by_user_id: z.string().min(1, 'Created by user ID is required'),
-      type: transactionTypeEnum,
-      amount: amountValidation,
-      currency: currencyEnum,
-      category_id: z.string().min(1, 'Category ID is required').optional(), // Optional for transfers
-      account_id: z.string().min(1, 'Account ID is required'),
-      to_account_id: z.string().min(1, 'Destination account ID is required').optional(), // For transfers
-      transaction_date: transactionDateSchema.default(() => new Date()),
-      description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
-    })
-    .strict()
-    .refine(
-      (data) => {
-        // For transfers, to_account_id is required
-        if (data.type === 'transfer') {
-          return !!data.to_account_id;
-        }
-        return true;
-      },
-      { message: 'Destination account is required for transfers', path: ['to_account_id'] }
+const dateStringValidation = pipe(
+  string(),
+  minLength(1, 'Transaction date is required'),
+  regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  check((value) => {
+    const parsedDate = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsedDate.getTime()) && parsedDate <= new Date();
+  }, 'Invalid date or date cannot be in the future')
+);
+
+const limitValidation = optional(
+  pipe(
+    union([
+      number(),
+      pipe(
+        string(),
+        regex(/^-?\d+$/, 'Limit must be an integer'),
+        transform((value) => Number(value))
+      ),
+    ]),
+    integer('Limit must be an integer'),
+    minValue(1, 'Limit must be at least 1'),
+    maxValue(100, 'Limit cannot exceed 100')
+  )
+);
+
+const offsetValidation = optional(
+  pipe(
+    union([
+      number(),
+      pipe(
+        string(),
+        regex(/^-?\d+$/, 'Offset must be an integer'),
+        transform((value) => Number(value))
+      ),
+    ]),
+    integer('Offset must be an integer'),
+    minValue(0, 'Offset must be non-negative')
+  )
+);
+
+const filterDateValidation = optional(
+  pipe(
+    union([
+      date(),
+      pipe(
+        string(),
+        transform((value) => new Date(value))
+      ),
+    ]),
+    check((value) => !Number.isNaN(value.getTime()), 'Invalid date')
+  )
+);
+
+function buildCreateTransactionSchema<TSchema extends BaseSchema<Date, Date, BaseIssue<unknown>>>(
+  transactionDateSchema: TSchema
+) {
+  const baseSchema = strictObject({
+    workspace_id: requiredId('Workspace ID is required'),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    type: transactionTypeEnum,
+    amount: positiveAmountValidation,
+    currency: currencyEnum,
+    category_id: optional(requiredId('Category ID is required')),
+    account_id: requiredId('Account ID is required'),
+    to_account_id: optional(requiredId('Destination account ID is required')),
+    transaction_date: optional(transactionDateSchema, () => new Date()),
+    description: optional(
+      pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+    ),
+  });
+
+  return pipe(
+    baseSchema,
+    forward(
+      check(
+        (data: InferOutput<typeof baseSchema>) =>
+          data.type !== 'transfer' || Boolean(data.to_account_id),
+        'Destination account is required for transfers'
+      ),
+      ['to_account_id'] as any // eslint type resolution fails for generic schema paths
+    ),
+    forward(
+      check(
+        (data: InferOutput<typeof baseSchema>) =>
+          data.type === 'transfer' || Boolean(data.category_id),
+        'Category is required for expense/income transactions'
+      ),
+      ['category_id'] as any // eslint type resolution fails for generic schema paths
     )
-    .refine(
-      (data) => {
-        // For expense/income, category_id is required
-        if (data.type !== 'transfer') {
-          return !!data.category_id;
-        }
-        return true;
-      },
-      { message: 'Category is required for expense/income transactions', path: ['category_id'] }
-    );
+  );
 }
+
+// Validation for transaction ID (nanoid format)
+export const transactionIdSchema = pipe(
+  string(),
+  minLength(1, 'Transaction ID is required'),
+  regex(/^[a-zA-Z0-9_-]+$/, 'Invalid transaction ID format')
+);
 
 // Schema for creating a transaction (for service layer)
 export const createTransactionSchema = buildCreateTransactionSchema(transactionDateValidation);
@@ -76,111 +156,90 @@ export const createTransactionSchemaNoFutureDate = buildCreateTransactionSchema(
   transactionDateWithoutFutureValidation
 );
 
-export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
+export type CreateTransactionInput = InferInput<typeof createTransactionSchema>;
 
 // Schema for updating a transaction (for service layer)
-export const updateTransactionSchema = z
-  .object({
-    type: transactionTypeEnum.optional(),
-    amount: amountValidation.optional(),
-    currency: currencyEnum.optional(),
-    category_id: z.string().min(1, 'Category ID is required').optional(),
-    account_id: z.string().min(1, 'Account ID is required').optional(),
-    to_account_id: z.string().min(1, 'Destination account ID is required').optional().nullable(),
-    transaction_date: transactionDateValidation.optional(),
-    description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
-  })
-  .strict();
+export const updateTransactionSchema = strictObject({
+  type: optional(transactionTypeEnum),
+  amount: optional(positiveAmountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category ID is required')),
+  account_id: optional(requiredId('Account ID is required')),
+  to_account_id: optional(nullable(requiredId('Destination account ID is required'))),
+  transaction_date: optional(transactionDateValidation),
+  description: optional(
+    pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+  ),
+});
 
-export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
+export type UpdateTransactionInput = InferInput<typeof updateTransactionSchema>;
 
 // API-specific schemas that accept date strings (YYYY-MM-DD format)
 // The form sends date-only strings, which are then converted to Date objects in the API handler
-const dateStringValidation = z
-  .string()
-  .min(1, 'Transaction date is required')
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-  .refine(
-    (dateStr) => {
-      const date = new Date(dateStr);
-      return !isNaN(date.getTime()) && date <= new Date();
-    },
-    { message: 'Invalid date or date cannot be in the future' }
-  );
-
-export const createTransactionAPISchema = z
-  .object({
+export const createTransactionAPISchema = pipe(
+  strictObject({
     type: transactionTypeEnum,
-    amount: amountValidation,
+    amount: positiveAmountValidation,
     currency: currencyEnum,
-    category_id: z.string().min(1, 'Category ID is required').optional(),
-    account_id: z.string().min(1, 'Account ID is required'),
-    to_account_id: z.string().min(1, 'Destination account ID is required').optional(),
+    category_id: optional(requiredId('Category ID is required')),
+    account_id: requiredId('Account ID is required'),
+    to_account_id: optional(requiredId('Destination account ID is required')),
     transaction_date: dateStringValidation,
-    description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
-  })
-  .strict()
-  .refine(
-    (data) => {
-      if (data.type === 'transfer') {
-        return !!data.to_account_id;
-      }
-      return true;
-    },
-    { message: 'Destination account is required for transfers', path: ['to_account_id'] }
+    description: optional(
+      pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+    ),
+  }),
+  forward(
+    check(
+      (data) => data.type !== 'transfer' || Boolean(data.to_account_id),
+      'Destination account is required for transfers'
+    ),
+    ['to_account_id'] as const
+  ),
+  forward(
+    check(
+      (data) => data.type === 'transfer' || Boolean(data.category_id),
+      'Category is required for expense/income transactions'
+    ),
+    ['category_id'] as const
   )
-  .refine(
-    (data) => {
-      if (data.type !== 'transfer') {
-        return !!data.category_id;
-      }
-      return true;
-    },
-    { message: 'Category is required for expense/income transactions', path: ['category_id'] }
-  );
+);
 
-export const updateTransactionAPISchema = z
-  .object({
-    type: transactionTypeEnum.optional(),
-    amount: amountValidation.optional(),
-    currency: currencyEnum.optional(),
-    category_id: z.string().min(1, 'Category ID is required').optional(),
-    account_id: z.string().min(1, 'Account ID is required').optional(),
-    to_account_id: z.string().min(1, 'Destination account ID is required').optional().nullable(),
-    transaction_date: dateStringValidation.optional(),
-    description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
-  })
-  .strict();
+export const updateTransactionAPISchema = strictObject({
+  type: optional(transactionTypeEnum),
+  amount: optional(positiveAmountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category ID is required')),
+  account_id: optional(requiredId('Account ID is required')),
+  to_account_id: optional(nullable(requiredId('Destination account ID is required'))),
+  transaction_date: optional(dateStringValidation),
+  description: optional(
+    pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+  ),
+});
 
 // Schema for transaction filters
-export const transactionFilterSchema = z
-  .object({
-    type: transactionTypeEnum.optional(),
-    category_id: z.string().optional(),
-    account_id: z.string().optional(),
-    currency: currencyEnum.optional(),
-    start_date: z.coerce.date().optional(),
-    end_date: z.coerce.date().optional(),
-    limit: z.coerce
-      .number()
-      .int()
-      .min(1, 'Limit must be at least 1')
-      .max(100, 'Limit cannot exceed 100')
-      .optional(),
-    offset: z.coerce.number().int().min(0, 'Offset must be non-negative').optional(),
-  })
-  .refine(
-    (data) => {
-      // If both dates are provided, ensure end_date is after start_date
-      if (data.start_date && data.end_date) {
-        return data.end_date >= data.start_date;
-      }
-      return true;
-    },
-    {
-      message: 'End date must be after start date',
-      path: ['end_date'],
-    }
-  );
+export const transactionFilterSchema = pipe(
+  object({
+    type: optional(transactionTypeEnum),
+    category_id: optional(string()),
+    account_id: optional(string()),
+    currency: optional(currencyEnum),
+    start_date: filterDateValidation,
+    end_date: filterDateValidation,
+    limit: limitValidation,
+    offset: offsetValidation,
+  }),
+  forward(
+    check(
+      (data) =>
+        data.start_date === undefined ||
+        data.end_date === undefined ||
+        data.end_date >= data.start_date,
+      'End date must be after start date'
+    ),
+    ['end_date'] as const
+  )
+);
 
-export type TransactionFilter = z.infer<typeof transactionFilterSchema>;
+export type TransactionFilter = InferOutput<typeof transactionFilterSchema>;

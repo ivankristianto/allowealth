@@ -151,6 +151,28 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
 - ✅ **Check dev server port when using worktrees** - multiple worktrees run dev servers on different ports (4321, 4322, 4323...); use `lsof -i -P | grep LISTEN | grep 432` to find the correct port for your worktree before browser testing
 
+## Library Migration Documentation Checklist
+
+When migrating a library (e.g., Zod → Valibot), update ALL of these — in order:
+
+1. `.claude/rules/backend/api.md` or relevant rule file — update code examples and rules
+2. `.claude/CLAUDE.md` ADR quick reference table — add/update the library row
+3. `docs/prd.md` — update tech stack and any security/validation sections
+4. `.claude/memory/MEMORY.md` — add a note so future sessions know the decision
+
+- ✅ **Leave historical plan files unchanged** — `docs/plans/YYYY-MM-DD-*.md` are artifacts of what was used at the time; rewriting them is misleading
+- ❌ **Claim the migration is done without updating all four locations above**
+
+## PR Claims for Refactoring PRs
+
+Before writing migration notes in a PR description, verify claims empirically:
+
+- ✅ **Check if the library appears in the client bundle** — `grep -r "library-name" dist/client/` before claiming client bundle savings
+- ✅ **Verify tree-shaking claims** — check `"sideEffects"` in both packages' `package.json`; `"sideEffects": false` is now standard and not a differentiator
+- ✅ **Distinguish server vs. client bundle improvements** — validation libraries are server-side only in this app; neither ships to the browser
+- ❌ **Copy marketing claims from library websites without measurement** — "50% smaller" requires a pre- and post-migration build to verify
+- ❌ **Claim "better tree-shaking" without checking** — both Zod v4 and Valibot declare `"sideEffects": false`
+
 ## Component Refactoring Pattern
 
 When redesigning or refactoring components, follow systematic exploration before implementation.
