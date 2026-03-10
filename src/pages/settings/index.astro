@@ -451,7 +451,7 @@ const dataActions = [
                     isAdmin && (
                       <button
                         type="button"
-                        class="btn btn-ghost btn-sm gap-2"
+                        class="btn btn-ghost btn-sm rounded-xl gap-2"
                         onclick="openInviteMemberModal()"
                       >
                         <UserPlus size={16} class="stroke-current" aria-hidden="true" />
@@ -507,7 +507,7 @@ const dataActions = [
                               </span>
                               <button
                                 type="button"
-                                class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                                class="btn btn-ghost btn-sm btn-square rounded-xl text-error hover:bg-error/10"
                                 aria-label={`Cancel invitation to ${invitation.email}`}
                                 data-cancel-invitation
                                 data-invitation-id={invitation.id}
