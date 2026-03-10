@@ -12,6 +12,15 @@ const originalSetUserMeta = userMetaService.setUserMeta;
 const originalGetPendingEmailChange = emailVerificationService.getPendingEmailChange;
 const originalRequestEmailChange = emailVerificationService.requestEmailChange;
 
+function hasNormalizedIssue(details: any[], path: string[]) {
+  return details.some(
+    (issue) =>
+      JSON.stringify(issue.path) === JSON.stringify(path) &&
+      typeof issue.message === 'string' &&
+      typeof issue.code === 'string'
+  );
+}
+
 function createApiContext(options: {
   method: 'GET' | 'PUT';
   body?: Record<string, unknown>;
@@ -97,6 +106,26 @@ describe('/api/user/profile email change flow', () => {
     expect(payload.success).toBe(true);
     expect(payload.data.pendingEmail).toBe('new@example.com');
     expect(payload.data.message).toBe('Verification email sent to new@example.com');
+  });
+
+  it('PUT returns normalized validation details for invalid profile input', async () => {
+    const response = await PUT(
+      createApiContext({
+        method: 'PUT',
+        body: {
+          name: '',
+          email: 'not-an-email',
+          phone: '987',
+        },
+      })
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload.success).toBe(false);
+    expect(payload.error.code).toBe('VALIDATION_ERROR');
+    expect(hasNormalizedIssue(payload.error.details, ['name'])).toBe(true);
+    expect(hasNormalizedIssue(payload.error.details, ['email'])).toBe(true);
   });
 
   it('PUT fails fast on EMAIL_ALREADY_EXISTS and skips profile/meta updates', async () => {

@@ -8,6 +8,15 @@ interface TestLocalsUser {
   role: 'admin' | 'member';
 }
 
+function hasNormalizedIssue(details: any[], path: string[]) {
+  return details.some(
+    (issue) =>
+      JSON.stringify(issue.path) === JSON.stringify(path) &&
+      typeof issue.message === 'string' &&
+      typeof issue.code === 'string'
+  );
+}
+
 function createApiContext(method: 'GET' | 'PUT', user?: TestLocalsUser, body?: unknown) {
   return {
     request: new Request('http://localhost/api/workspace/settings', {
@@ -115,5 +124,7 @@ describe('workspace settings forecast API', () => {
     const payload = await response.json();
     expect(payload.success).toBe(false);
     expect(payload.error.code).toBe('VALIDATION_ERROR');
+    expect(hasNormalizedIssue(payload.error.details, ['forecastMonthlyTopup'])).toBe(true);
+    expect(hasNormalizedIssue(payload.error.details, ['forecastAnnualRate'])).toBe(true);
   });
 });

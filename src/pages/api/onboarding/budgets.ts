@@ -1,5 +1,17 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import {
+  array,
+  integer,
+  maxValue,
+  minLength,
+  minValue,
+  number,
+  object,
+  pipe,
+  picklist,
+  regex,
+  string,
+} from 'valibot';
 import { budgetService, BudgetServiceError, ServiceErrorCode } from '@/services';
 import {
   successResponse,
@@ -11,16 +23,16 @@ import {
 import { logError } from '@/lib/utils';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 
-const batchBudgetSchema = z.object({
-  budgets: z.array(
-    z.object({
-      categoryId: z.string().min(1),
-      amount: z.string().regex(/^\d+(\.\d{1,2})?$/),
-      currency: z.enum(AVAILABLE_CURRENCIES),
+const batchBudgetSchema = object({
+  budgets: array(
+    object({
+      categoryId: pipe(string(), minLength(1)),
+      amount: pipe(string(), regex(/^\d+(\.\d{1,2})?$/)),
+      currency: picklist(AVAILABLE_CURRENCIES),
     })
   ),
-  month: z.number().int().min(1).max(12),
-  year: z.number().int().min(2000).max(2100),
+  month: pipe(number(), integer(), minValue(1), maxValue(12)),
+  year: pipe(number(), integer(), minValue(2000), maxValue(2100)),
 });
 
 export const POST: APIRoute = async (context) => {

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { check, maxLength, minLength, object, optional, pipe, regex, string } from 'valibot';
 import { accountService } from '@/services';
 import {
   successResponse,
@@ -11,10 +11,16 @@ import {
 import { logError } from '@/lib/utils';
 
 // Validation schema
-const updateBalanceSchema = z.object({
-  balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
-  notes: z.string().optional(),
-  recorded_at: z.iso.datetime().optional(),
+const updateBalanceSchema = object({
+  balance: pipe(string(), regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number')),
+  notes: optional(pipe(string(), maxLength(500, 'Notes must be at most 500 characters'))),
+  recorded_at: optional(
+    pipe(
+      string(),
+      minLength(1, 'Recorded at is required'),
+      check((value) => !Number.isNaN(new Date(value).getTime()), 'Invalid datetime format')
+    )
+  ),
 });
 
 /**

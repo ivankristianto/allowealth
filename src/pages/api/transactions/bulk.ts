@@ -1,5 +1,16 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import {
+  array,
+  forward,
+  maxLength,
+  minLength,
+  object,
+  optional,
+  picklist,
+  pipe,
+  string,
+  check,
+} from 'valibot';
 import { transactionService } from '@/services';
 import {
   successResponse,
@@ -11,16 +22,36 @@ import {
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
 
-const bulkActionSchema = z.object({
-  action: z.enum(['update_category', 'update_account', 'delete']),
-  ids: z.array(z.string().min(1)).min(1).max(100),
-  payload: z
-    .object({
-      category_id: z.string().min(1).optional(),
-      account_id: z.string().min(1).optional(),
-    })
-    .optional(),
-});
+const bulkActionSchema = pipe(
+  object({
+    action: picklist(['update_category', 'update_account', 'delete']),
+    ids: pipe(
+      array(pipe(string(), minLength(1, 'Transaction ID is required'))),
+      minLength(1, 'Select at least one transaction'),
+      maxLength(100, 'You can update at most 100 transactions at once')
+    ),
+    payload: optional(
+      object({
+        category_id: optional(pipe(string(), minLength(1))),
+        account_id: optional(pipe(string(), minLength(1))),
+      })
+    ),
+  }),
+  forward(
+    check(
+      (data) => data.action !== 'update_category' || Boolean(data.payload?.category_id),
+      'category_id is required for update_category action'
+    ),
+    ['payload', 'category_id'] as const
+  ),
+  forward(
+    check(
+      (data) => data.action !== 'update_account' || Boolean(data.payload?.account_id),
+      'account_id is required for update_account action'
+    ),
+    ['payload', 'account_id'] as const
+  )
+);
 
 /**
  * POST /api/transactions/bulk
@@ -49,13 +80,9 @@ export const POST: APIRoute = async (context) => {
 
     switch (action) {
       case 'update_category': {
-        if (!payload?.category_id) {
-          return errorResponse('category_id is required for update_category action', 400);
-        }
-
         const result = await transactionService.bulkUpdateCategory(
           ids,
-          payload.category_id,
+          payload!.category_id!,
           auth.workspaceId,
           auth.userId
         );
@@ -63,13 +90,9 @@ export const POST: APIRoute = async (context) => {
       }
 
       case 'update_account': {
-        if (!payload?.account_id) {
-          return errorResponse('account_id is required for update_account action', 400);
-        }
-
         const result = await transactionService.bulkUpdateAccount(
           ids,
-          payload.account_id,
+          payload!.account_id!,
           auth.workspaceId,
           auth.userId
         );
