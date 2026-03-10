@@ -13,6 +13,7 @@ export const USER_META_KEYS = {
   SHOW_CONVERTED_TOTALS: 'show_converted_totals',
   SHOW_INDIVIDUAL_CURRENCIES: 'show_individual_currencies',
   PHONE: 'phone',
+  THEME: 'theme',
   PENDING_EMAIL: 'pending_email',
 } as const;
 
@@ -33,6 +34,7 @@ export const META_DEFAULTS: Record<UserMetaKey, string> = {
   [USER_META_KEYS.SHOW_CONVERTED_TOTALS]: 'true',
   [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: 'true',
   [USER_META_KEYS.PHONE]: '',
+  [USER_META_KEYS.THEME]: 'system',
   [USER_META_KEYS.PENDING_EMAIL]: '',
 };
 
@@ -55,6 +57,9 @@ export const META_VALUE_SCHEMAS: Record<UserMetaKey, z.ZodType<string>> = {
     message: 'Value must be "true" or "false"',
   }),
   [USER_META_KEYS.PHONE]: z.string().max(50, 'Phone number must be at most 50 characters'),
+  [USER_META_KEYS.THEME]: z.enum(['system', 'light', 'dark', 'monochrome'], {
+    message: 'Value must be "system", "light", "dark", or "monochrome"',
+  }),
   [USER_META_KEYS.PENDING_EMAIL]: z
     .email({ message: 'Invalid email format' })
     .max(255, 'Email must be at most 255 characters'),
@@ -68,6 +73,7 @@ export const metaKeySchema = z.enum(
     USER_META_KEYS.SHOW_CONVERTED_TOTALS,
     USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
     USER_META_KEYS.PHONE,
+    USER_META_KEYS.THEME,
     USER_META_KEYS.PENDING_EMAIL,
   ],
   {
@@ -106,6 +112,7 @@ export interface UserSettings {
   showConvertedTotals: boolean;
   showIndividualCurrencies: boolean;
   phone: string;
+  theme: string;
 }
 
 /**
@@ -115,6 +122,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   showConvertedTotals: true,
   showIndividualCurrencies: true,
   phone: '',
+  theme: 'system',
 };
 
 /**

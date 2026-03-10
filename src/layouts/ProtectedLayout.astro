@@ -169,6 +169,7 @@ Astro.locals.layoutAccounts = Object.freeze(
 // Determine active currency from cookie (for transaction drawer default account selection)
 let activeCurrency: Currency = workspaceCurrencies.primary;
 const currencyCookieValue = Astro.cookies.get('activeCurrency')?.value;
+const ssrTheme = userSettings.theme || 'system';
 if (
   currencyCookieValue &&
   isValidCurrency(currencyCookieValue) &&
@@ -186,6 +187,7 @@ if (
   subtitle={subtitle}
   userName={userName}
   currentDate={currentDate}
+  ssrTheme={ssrTheme}
   primaryCurrency={workspaceCurrencies.primary}
   secondaryCurrency={workspaceCurrencies.secondary}
 >
