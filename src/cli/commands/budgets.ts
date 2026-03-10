@@ -1,4 +1,6 @@
 import { defineCommand } from 'citty';
+import { safeParse } from 'valibot';
+import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 import {
   currencyEnum,
   type CreateBudgetInput,
@@ -95,9 +97,9 @@ function optionalCurrency(
 ): CreateBudgetInput['currency'] | undefined {
   const value = optionalString(args, key);
   if (value === undefined) return undefined;
-  const parsed = currencyEnum.safeParse(value);
-  if (parsed.success) return parsed.data;
-  throw new Error(`Invalid currency: expected one of ${currencyEnum.options.join(', ')}`);
+  const parsed = safeParse(currencyEnum, value);
+  if (parsed.success) return parsed.output;
+  throw new Error(`Invalid currency: expected one of ${AVAILABLE_CURRENCIES.join(', ')}`);
 }
 
 function requiredCurrency(
@@ -105,9 +107,9 @@ function requiredCurrency(
   key: string
 ): CreateBudgetInput['currency'] {
   const value = requiredString(args, key);
-  const parsed = currencyEnum.safeParse(value);
-  if (parsed.success) return parsed.data;
-  throw new Error(`Invalid currency: expected one of ${currencyEnum.options.join(', ')}`);
+  const parsed = safeParse(currencyEnum, value);
+  if (parsed.success) return parsed.output;
+  throw new Error(`Invalid currency: expected one of ${AVAILABLE_CURRENCIES.join(', ')}`);
 }
 
 function mapCreatePayload(args: Record<string, unknown>): CreateBudgetInput {

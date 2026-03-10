@@ -23,7 +23,6 @@ import {
   type InferOutput,
 } from 'valibot';
 import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
-import { withSchemaCompat } from './compat';
 
 /**
  * Validation schemas for Transaction operations
@@ -123,30 +122,26 @@ function buildCreateTransactionSchema<TSchema extends BaseSchema<Date, Date, Bas
     ),
   });
 
-  return withSchemaCompat(
-    pipe(
-      baseSchema,
-      check(
-        (data: InferOutput<typeof baseSchema>) =>
-          data.type !== 'transfer' || Boolean(data.to_account_id),
-        'Destination account is required for transfers'
-      ),
-      check(
-        (data: InferOutput<typeof baseSchema>) =>
-          data.type === 'transfer' || Boolean(data.category_id),
-        'Category is required for expense/income transactions'
-      )
+  return pipe(
+    baseSchema,
+    check(
+      (data: InferOutput<typeof baseSchema>) =>
+        data.type !== 'transfer' || Boolean(data.to_account_id),
+      'Destination account is required for transfers'
+    ),
+    check(
+      (data: InferOutput<typeof baseSchema>) =>
+        data.type === 'transfer' || Boolean(data.category_id),
+      'Category is required for expense/income transactions'
     )
   );
 }
 
 // Validation for transaction ID (nanoid format)
-export const transactionIdSchema = withSchemaCompat(
-  pipe(
-    string(),
-    minLength(1, 'Transaction ID is required'),
-    regex(/^[a-zA-Z0-9_-]+$/, 'Invalid transaction ID format')
-  )
+export const transactionIdSchema = pipe(
+  string(),
+  minLength(1, 'Transaction ID is required'),
+  regex(/^[a-zA-Z0-9_-]+$/, 'Invalid transaction ID format')
 );
 
 // Schema for creating a transaction (for service layer)
@@ -158,88 +153,80 @@ export const createTransactionSchemaNoFutureDate = buildCreateTransactionSchema(
 export type CreateTransactionInput = InferInput<typeof createTransactionSchema>;
 
 // Schema for updating a transaction (for service layer)
-export const updateTransactionSchema = withSchemaCompat(
-  strictObject({
-    type: optional(transactionTypeEnum),
-    amount: optional(positiveAmountValidation),
-    currency: optional(currencyEnum),
-    category_id: optional(requiredId('Category ID is required')),
-    account_id: optional(requiredId('Account ID is required')),
-    to_account_id: optional(nullable(requiredId('Destination account ID is required'))),
-    transaction_date: optional(transactionDateValidation),
-    description: optional(
-      pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
-    ),
-  })
-);
+export const updateTransactionSchema = strictObject({
+  type: optional(transactionTypeEnum),
+  amount: optional(positiveAmountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category ID is required')),
+  account_id: optional(requiredId('Account ID is required')),
+  to_account_id: optional(nullable(requiredId('Destination account ID is required'))),
+  transaction_date: optional(transactionDateValidation),
+  description: optional(
+    pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+  ),
+});
 
 export type UpdateTransactionInput = InferInput<typeof updateTransactionSchema>;
 
 // API-specific schemas that accept date strings (YYYY-MM-DD format)
 // The form sends date-only strings, which are then converted to Date objects in the API handler
-export const createTransactionAPISchema = withSchemaCompat(
-  pipe(
-    strictObject({
-      type: transactionTypeEnum,
-      amount: positiveAmountValidation,
-      currency: currencyEnum,
-      category_id: optional(requiredId('Category ID is required')),
-      account_id: requiredId('Account ID is required'),
-      to_account_id: optional(requiredId('Destination account ID is required')),
-      transaction_date: dateStringValidation,
-      description: optional(
-        pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
-      ),
-    }),
-    check(
-      (data) => data.type !== 'transfer' || Boolean(data.to_account_id),
-      'Destination account is required for transfers'
-    ),
-    check(
-      (data) => data.type === 'transfer' || Boolean(data.category_id),
-      'Category is required for expense/income transactions'
-    )
-  )
-);
-
-export const updateTransactionAPISchema = withSchemaCompat(
+export const createTransactionAPISchema = pipe(
   strictObject({
-    type: optional(transactionTypeEnum),
-    amount: optional(positiveAmountValidation),
-    currency: optional(currencyEnum),
+    type: transactionTypeEnum,
+    amount: positiveAmountValidation,
+    currency: currencyEnum,
     category_id: optional(requiredId('Category ID is required')),
-    account_id: optional(requiredId('Account ID is required')),
-    to_account_id: optional(nullable(requiredId('Destination account ID is required'))),
-    transaction_date: optional(dateStringValidation),
+    account_id: requiredId('Account ID is required'),
+    to_account_id: optional(requiredId('Destination account ID is required')),
+    transaction_date: dateStringValidation,
     description: optional(
       pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
     ),
-  })
+  }),
+  check(
+    (data) => data.type !== 'transfer' || Boolean(data.to_account_id),
+    'Destination account is required for transfers'
+  ),
+  check(
+    (data) => data.type === 'transfer' || Boolean(data.category_id),
+    'Category is required for expense/income transactions'
+  )
 );
 
+export const updateTransactionAPISchema = strictObject({
+  type: optional(transactionTypeEnum),
+  amount: optional(positiveAmountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category ID is required')),
+  account_id: optional(requiredId('Account ID is required')),
+  to_account_id: optional(nullable(requiredId('Destination account ID is required'))),
+  transaction_date: optional(dateStringValidation),
+  description: optional(
+    pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+  ),
+});
+
 // Schema for transaction filters
-export const transactionFilterSchema = withSchemaCompat(
-  pipe(
-    object({
-      type: optional(transactionTypeEnum),
-      category_id: optional(string()),
-      account_id: optional(string()),
-      currency: optional(currencyEnum),
-      start_date: filterDateValidation,
-      end_date: filterDateValidation,
-      limit: limitValidation,
-      offset: offsetValidation,
-    }),
-    forward(
-      check(
-        (data) =>
-          data.start_date === undefined ||
-          data.end_date === undefined ||
-          data.end_date >= data.start_date,
-        'End date must be after start date'
-      ),
-      ['end_date'] as const
-    )
+export const transactionFilterSchema = pipe(
+  object({
+    type: optional(transactionTypeEnum),
+    category_id: optional(string()),
+    account_id: optional(string()),
+    currency: optional(currencyEnum),
+    start_date: filterDateValidation,
+    end_date: filterDateValidation,
+    limit: limitValidation,
+    offset: offsetValidation,
+  }),
+  forward(
+    check(
+      (data) =>
+        data.start_date === undefined ||
+        data.end_date === undefined ||
+        data.end_date >= data.start_date,
+      'End date must be after start date'
+    ),
+    ['end_date'] as const
   )
 );
 

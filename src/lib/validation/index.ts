@@ -1,7 +1,7 @@
 /**
  * Validation schemas for all transaction models
  *
- * Export all Zod schemas for use in services and API endpoints
+ * Export all validation schemas for use in services and API endpoints
  */
 
 // HTML validation patterns for form input validation

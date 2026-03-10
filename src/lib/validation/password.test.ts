@@ -235,7 +235,7 @@ describe('Password Validation Consistency', () => {
     const invalidNoLetter = '123456789012';
     const invalidNoNumberOrSpecial = 'longenoughpassword';
 
-    // Test with regex patterns directly (same as Zod schema)
+    // Test with regex patterns directly (same validation rules as the shared schema)
     const hasLetterRegex = /[a-zA-Z]/;
     const hasNumberOrSpecialRegex = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
 

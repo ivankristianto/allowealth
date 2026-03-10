@@ -18,7 +18,7 @@ export const PASSWORD_MIN_LENGTH = 12;
  * Password requirement regex patterns
  *
  * These patterns define the character class requirements for passwords.
- * All patterns are compatible with both JavaScript RegExp and Zod schemas.
+ * All patterns are compatible with both JavaScript RegExp usage and shared validation schemas.
  */
 export const PASSWORD_REQUIREMENTS = {
   /**

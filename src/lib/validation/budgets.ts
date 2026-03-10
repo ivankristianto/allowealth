@@ -18,7 +18,6 @@ import {
   type InferOutput,
 } from 'valibot';
 import { currencyEnum } from '@/lib/enums';
-import { withSchemaCompat } from './compat';
 
 /**
  * Validation schemas for Budget operations
@@ -104,63 +103,55 @@ const notesValidation = pipe(
 );
 
 // Schema for creating a budget (for service layer)
-export const createBudgetSchema = withSchemaCompat(
-  object({
-    workspace_id: requiredId('Workspace ID is required'),
-    created_by_user_id: requiredId('Created by user ID is required'),
-    category_id: requiredId('Category ID is required'),
-    month: monthValidation,
-    year: yearValidation,
-    budget_amount: budgetAmountValidation,
-    currency: currencyEnum,
-    notes: notesValidation,
-  })
-);
+export const createBudgetSchema = object({
+  workspace_id: requiredId('Workspace ID is required'),
+  created_by_user_id: requiredId('Created by user ID is required'),
+  category_id: requiredId('Category ID is required'),
+  month: monthValidation,
+  year: yearValidation,
+  budget_amount: budgetAmountValidation,
+  currency: currencyEnum,
+  notes: notesValidation,
+});
 
 export type CreateBudgetInput = InferOutput<typeof createBudgetSchema>;
 
 // Schema for updating a budget (for service layer)
-export const updateBudgetSchema = withSchemaCompat(
-  object({
-    budget_amount: budgetAmountUpdateValidation,
-    notes: notesValidation,
-    is_closed: optional(boolean()),
-  })
-);
+export const updateBudgetSchema = object({
+  budget_amount: budgetAmountUpdateValidation,
+  notes: notesValidation,
+  is_closed: optional(boolean()),
+});
 
 export type UpdateBudgetInput = InferOutput<typeof updateBudgetSchema>;
 
 // Schema for copying budgets to another month (for service layer)
-export const copyBudgetsSchema = withSchemaCompat(
-  pipe(
-    object({
-      workspace_id: requiredId('Workspace ID is required'),
-      created_by_user_id: requiredId('Created by user ID is required'),
-      source_month: monthValidation,
-      source_year: yearValidation,
-      target_month: monthValidation,
-      target_year: yearValidation,
-    }),
-    check(
-      (data) => data.source_month !== data.target_month || data.source_year !== data.target_year,
-      'Target month/year must be different from source'
-    )
+export const copyBudgetsSchema = pipe(
+  object({
+    workspace_id: requiredId('Workspace ID is required'),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    source_month: monthValidation,
+    source_year: yearValidation,
+    target_month: monthValidation,
+    target_year: yearValidation,
+  }),
+  check(
+    (data) => data.source_month !== data.target_month || data.source_year !== data.target_year,
+    'Target month/year must be different from source'
   )
 );
 
 export type CopyBudgetsInput = InferOutput<typeof copyBudgetsSchema>;
 
 // API-specific schemas that don't include user_id (comes from auth)
-export const createBudgetAPISchema = withSchemaCompat(
-  object({
-    category_id: requiredId('Category ID is required'),
-    month: monthApiValidation,
-    year: yearApiValidation,
-    budget_amount: budgetAmountValidation,
-    currency: currencyEnum,
-    notes: notesValidation,
-  })
-);
+export const createBudgetAPISchema = object({
+  category_id: requiredId('Category ID is required'),
+  month: monthApiValidation,
+  year: yearApiValidation,
+  budget_amount: budgetAmountValidation,
+  currency: currencyEnum,
+  notes: notesValidation,
+});
 
 export type CreateBudgetAPIInput = InferOutput<typeof createBudgetAPISchema>;
 
@@ -168,55 +159,47 @@ export const updateBudgetAPISchema = updateBudgetSchema;
 
 export type UpdateBudgetAPIInput = InferOutput<typeof updateBudgetAPISchema>;
 
-export const copyBudgetsAPISchema = withSchemaCompat(
-  pipe(
-    object({
-      source_month: monthApiValidation,
-      source_year: yearApiValidation,
-      target_month: monthApiValidation,
-      target_year: yearApiValidation,
-    }),
-    check(
-      (data) => data.source_month !== data.target_month || data.source_year !== data.target_year,
-      'Target month/year must be different from source'
-    )
+export const copyBudgetsAPISchema = pipe(
+  object({
+    source_month: monthApiValidation,
+    source_year: yearApiValidation,
+    target_month: monthApiValidation,
+    target_year: yearApiValidation,
+  }),
+  check(
+    (data) => data.source_month !== data.target_month || data.source_year !== data.target_year,
+    'Target month/year must be different from source'
   )
 );
 
 export type CopyBudgetsAPIInput = InferOutput<typeof copyBudgetsAPISchema>;
 
 // Schema for budget filters (query parameters)
-export const budgetFilterSchema = withSchemaCompat(
-  object({
-    month: monthApiValidation,
-    year: yearApiValidation,
-    currency: optional(currencyEnum),
-    category_id: optional(string()),
-  })
-);
+export const budgetFilterSchema = object({
+  month: monthApiValidation,
+  year: yearApiValidation,
+  currency: optional(currencyEnum),
+  category_id: optional(string()),
+});
 
 export type BudgetFilter = InferOutput<typeof budgetFilterSchema>;
 
 // Schema for initializing all budgets (for service layer)
-export const initializeBudgetsSchema = withSchemaCompat(
-  object({
-    workspace_id: requiredId('Workspace ID is required'),
-    created_by_user_id: requiredId('Created by user ID is required'),
-    month: monthValidation,
-    year: yearValidation,
-    currency: currencyEnum,
-  })
-);
+export const initializeBudgetsSchema = object({
+  workspace_id: requiredId('Workspace ID is required'),
+  created_by_user_id: requiredId('Created by user ID is required'),
+  month: monthValidation,
+  year: yearValidation,
+  currency: currencyEnum,
+});
 
 export type InitializeBudgetsInput = InferOutput<typeof initializeBudgetsSchema>;
 
 // API-specific schema (workspace_id and user_id come from auth context)
-export const initializeBudgetsAPISchema = withSchemaCompat(
-  object({
-    month: monthApiValidation,
-    year: yearApiValidation,
-    currency: currencyEnum,
-  })
-);
+export const initializeBudgetsAPISchema = object({
+  month: monthApiValidation,
+  year: yearApiValidation,
+  currency: currencyEnum,
+});
 
 export type InitializeBudgetsAPIInput = InferOutput<typeof initializeBudgetsAPISchema>;

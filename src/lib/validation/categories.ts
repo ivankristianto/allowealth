@@ -14,7 +14,6 @@ import {
 } from 'valibot';
 import { categoryTypeEnum } from '@/lib/enums';
 import { SUPPORTED_CATEGORY_ICONS } from '@/lib/utils/supportedCategoryIcons';
-import { withSchemaCompat } from './compat';
 
 /**
  * Validation schemas for Category operations
@@ -26,7 +25,7 @@ import { withSchemaCompat } from './compat';
 // Re-export enums from shared location for convenience
 export { categoryTypeEnum };
 
-export const incomeSourceTypeEnum = withSchemaCompat(picklist(['active', 'passive', 'other']));
+export const incomeSourceTypeEnum = picklist(['active', 'passive', 'other']);
 
 // Common validation for category fields
 const requiredId = (message: string) => pipe(string(), minLength(1, message));
@@ -63,56 +62,48 @@ const descriptionValidation = pipe(
 );
 
 // Schema for creating a category (for service layer)
-export const createCategorySchema = withSchemaCompat(
-  object({
-    workspace_id: requiredId('Workspace ID is required'),
-    created_by_user_id: requiredId('Created by user ID is required'),
-    name: nameValidation,
-    type: categoryTypeEnum,
-    income_source_type: optional(incomeSourceTypeEnum),
-    description: descriptionValidation,
-    icon: iconValidation,
-    color: colorValidation,
-  })
-);
+export const createCategorySchema = object({
+  workspace_id: requiredId('Workspace ID is required'),
+  created_by_user_id: requiredId('Created by user ID is required'),
+  name: nameValidation,
+  type: categoryTypeEnum,
+  income_source_type: optional(incomeSourceTypeEnum),
+  description: descriptionValidation,
+  icon: iconValidation,
+  color: colorValidation,
+});
 
 export type CreateCategoryInput = InferOutput<typeof createCategorySchema>;
 
 // Schema for updating a category (for service layer)
-export const updateCategorySchema = withSchemaCompat(
-  object({
-    name: optional(nameValidation),
-    type: optional(categoryTypeEnum),
-    income_source_type: optional(incomeSourceTypeEnum),
-    description: descriptionValidation,
-    icon: optional(string()),
-    color: optional(string()),
-    is_active: optional(boolean()),
-  })
-);
+export const updateCategorySchema = object({
+  name: optional(nameValidation),
+  type: optional(categoryTypeEnum),
+  income_source_type: optional(incomeSourceTypeEnum),
+  description: descriptionValidation,
+  icon: optional(string()),
+  color: optional(string()),
+  is_active: optional(boolean()),
+});
 
 export type UpdateCategoryInput = InferOutput<typeof updateCategorySchema>;
 
 // API-specific schemas that don't include user_id (comes from auth)
-export const createCategoryAPISchema = withSchemaCompat(
-  object({
-    name: nameValidation,
-    type: categoryTypeEnum,
-    income_source_type: optional(incomeSourceTypeEnum, 'other'),
-    description: descriptionValidation,
-    icon: iconValidation,
-    color: colorValidation,
-  })
-);
+export const createCategoryAPISchema = object({
+  name: nameValidation,
+  type: categoryTypeEnum,
+  income_source_type: optional(incomeSourceTypeEnum, 'other'),
+  description: descriptionValidation,
+  icon: iconValidation,
+  color: colorValidation,
+});
 
 export const updateCategoryAPISchema = updateCategorySchema; // No user_id in update
 
 // Schema for category filters
-export const categoryFilterSchema = withSchemaCompat(
-  object({
-    type: optional(categoryTypeEnum),
-    is_active: optional(boolean()),
-  })
-);
+export const categoryFilterSchema = object({
+  type: optional(categoryTypeEnum),
+  is_active: optional(boolean()),
+});
 
 export type CategoryFilter = InferOutput<typeof categoryFilterSchema>;

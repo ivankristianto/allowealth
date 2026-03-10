@@ -1,7 +1,6 @@
 import type { APIContext } from 'astro';
 import type { BaseIssue, BaseSchema, BaseSchemaAsync } from 'valibot';
 import { safeParseAsync } from 'valibot';
-import type { ZodIssue, ZodType } from 'zod';
 import { auth } from '@/lib/auth/lucia';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { requireTenantContext } from '@/lib/tenant/context';
@@ -134,32 +133,12 @@ export async function validateBody<T>(
 ): Promise<ValidationResult<T>>;
 export async function validateBody<T>(
   request: Request,
-  schema: ZodType<T>
-): Promise<ValidationResult<T>>;
-export async function validateBody<T>(
-  request: Request,
   schema:
     | BaseSchema<unknown, T, BaseIssue<unknown>>
     | BaseSchemaAsync<unknown, T, BaseIssue<unknown>>
-    | ZodType<T>
 ): Promise<ValidationResult<T>> {
   try {
     const body = await request.json();
-
-    if (isZodSchema(schema)) {
-      const result = schema.safeParse(body);
-
-      if (result.success) {
-        return { success: true, data: result.data };
-      }
-
-      return {
-        success: false,
-        error: {
-          issues: result.error.issues.map(normalizeZodValidationIssue),
-        },
-      };
-    }
 
     const result = await safeParseAsync(schema, body);
 
@@ -204,23 +183,11 @@ export async function validateBody<T>(
   }
 }
 
-function isZodSchema<T>(schema: unknown): schema is ZodType<T> {
-  return typeof schema === 'object' && schema !== null && 'safeParse' in schema;
-}
-
 function normalizeApiValidationIssue(issue: BaseIssue<unknown>): ApiValidationIssue {
   return {
     path: issue.path?.flatMap((item) => (item.key === null ? [] : [String(item.key)])) ?? [],
     message: issue.message,
     code: issue.type,
-  };
-}
-
-function normalizeZodValidationIssue(issue: ZodIssue): ApiValidationIssue {
-  return {
-    path: issue.path.map(String),
-    message: issue.message,
-    code: issue.code,
   };
 }
 

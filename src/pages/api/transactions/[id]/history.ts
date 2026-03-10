@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import { safeParse } from 'valibot';
 import { transactionService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { transactionIdSchema } from '@/lib/validation/transactions';
@@ -18,7 +19,7 @@ export const GET: APIRoute = async (context) => {
     const { id } = context.params;
     const { url } = context;
 
-    const idValidation = transactionIdSchema.safeParse(id);
+    const idValidation = safeParse(transactionIdSchema, id);
     if (!idValidation.success) {
       return errorResponse('Invalid transaction ID format', 400);
     }
@@ -26,7 +27,7 @@ export const GET: APIRoute = async (context) => {
     const showAll = url.searchParams.get('all') === 'true';
 
     const result = await transactionService.getHistory(
-      idValidation.data,
+      idValidation.output,
       auth.workspaceId,
       showAll
     );
@@ -40,7 +41,7 @@ export const GET: APIRoute = async (context) => {
           history: result.history,
           totalEdits: result.totalEdits,
           showingEdits: result.showingEdits,
-          transactionId: idValidation.data,
+          transactionId: idValidation.output,
         },
       });
       return render.html(html);

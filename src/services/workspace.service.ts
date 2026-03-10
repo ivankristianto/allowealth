@@ -12,8 +12,7 @@
 import { workspaces, users, type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { maxLength, minLength, object, pipe, string, type InferInput } from 'valibot';
-import { withSchemaCompat } from '@/lib/validation/compat';
+import { maxLength, minLength, object, parse, pipe, string, type InferInput } from 'valibot';
 import { WorkspaceServiceError, ServiceErrorCode } from './service-errors';
 
 /**
@@ -25,17 +24,13 @@ const workspaceNameValidation = pipe(
   maxLength(255, 'Workspace name must be less than 255 characters')
 );
 
-export const createWorkspaceSchema = withSchemaCompat(
-  object({
-    name: workspaceNameValidation,
-  })
-);
+export const createWorkspaceSchema = object({
+  name: workspaceNameValidation,
+});
 
-export const updateWorkspaceNameSchema = withSchemaCompat(
-  object({
-    name: workspaceNameValidation,
-  })
-);
+export const updateWorkspaceNameSchema = object({
+  name: workspaceNameValidation,
+});
 
 /**
  * Input types inferred from validation schemas
@@ -89,7 +84,7 @@ export class WorkspaceService {
    */
   async create(input: CreateWorkspaceInput): Promise<Workspace> {
     // Validate input using the service schema
-    const validated = createWorkspaceSchema.parse(input);
+    const validated = parse(createWorkspaceSchema, input);
 
     const id = nanoid();
     const now = new Date();
@@ -227,7 +222,7 @@ export class WorkspaceService {
    */
   async updateName(id: string, name: string): Promise<Workspace> {
     // Validate input
-    const validated = updateWorkspaceNameSchema.parse({ name });
+    const validated = parse(updateWorkspaceNameSchema, { name });
 
     // Check if workspace exists
     const workspace = await this.findById(id);

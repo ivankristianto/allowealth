@@ -5,6 +5,7 @@ import { createLogger } from '@/lib/logger';
 const log = createLogger('transaction');
 import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { parse } from 'valibot';
 import { CategoryService } from './category.service';
 import { AccountService } from './account.service';
 import {
@@ -152,11 +153,11 @@ export class TransactionService {
    * Create a new transaction
    */
   async create(input: CreateTransactionInput, options: { skipDateValidation?: boolean } = {}) {
-    // Validate input using Zod schema
+    // Validate input using the transaction schema
     const createSchema = options.skipDateValidation
       ? createTransactionSchemaNoFutureDate
       : createTransactionSchema;
-    const validated = createSchema.parse(input);
+    const validated = parse(createSchema, input);
 
     // For non-transfer transactions, verify category exists and belongs to workspace
     if (validated.type !== 'transfer' && validated.category_id) {
@@ -586,8 +587,8 @@ export class TransactionService {
     userId?: string,
     options: { skipInvalidate?: boolean } = {}
   ): ReturnType<typeof this.findById> {
-    // Validate input using Zod schema
-    const validated = updateTransactionSchema.parse(input);
+    // Validate input using the transaction schema
+    const validated = parse(updateTransactionSchema, input);
 
     // Fetch current transaction for diff computation
     const existing = await this.findById(id, workspaceId);

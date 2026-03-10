@@ -14,7 +14,6 @@ import {
   trim,
   type InferOutput,
 } from 'valibot';
-import { withSchemaCompat } from './compat';
 
 const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
@@ -39,52 +38,42 @@ const sortOrderValidation = pipe(
   minValue(0, 'Sort order must be 0 or greater')
 );
 
-export const createAccountCategorySchema = withSchemaCompat(
-  object({
-    workspace_id: requiredId('Workspace ID is required'),
-    created_by_user_id: requiredId('Created by user ID is required'),
-    name: nameValidation,
-    description: descriptionValidation,
-    is_liability: boolean(),
-    is_system: optional(boolean(), false),
-    sort_order: optional(sortOrderValidation, 0),
-  })
-);
+export const createAccountCategorySchema = object({
+  workspace_id: requiredId('Workspace ID is required'),
+  created_by_user_id: requiredId('Created by user ID is required'),
+  name: nameValidation,
+  description: descriptionValidation,
+  is_liability: boolean(),
+  is_system: optional(boolean(), false),
+  sort_order: optional(sortOrderValidation, 0),
+});
 
 export type CreateAccountCategoryInput = InferOutput<typeof createAccountCategorySchema>;
 
-export const updateAccountCategorySchema = withSchemaCompat(
-  object({
-    name: optional(nameValidation),
-    description: descriptionValidation,
-    is_liability: optional(boolean()),
-    sort_order: optional(sortOrderValidation),
-  })
-);
+export const updateAccountCategorySchema = object({
+  name: optional(nameValidation),
+  description: descriptionValidation,
+  is_liability: optional(boolean()),
+  sort_order: optional(sortOrderValidation),
+});
 
 export type UpdateAccountCategoryInput = InferOutput<typeof updateAccountCategorySchema>;
 
-export const createAccountCategoryAPISchema = withSchemaCompat(
-  object({
-    name: nameValidation,
-    description: descriptionValidation,
-    isLiability: boolean(),
-  })
-);
+export const createAccountCategoryAPISchema = object({
+  name: nameValidation,
+  description: descriptionValidation,
+  isLiability: boolean(),
+});
 
-export const updateAccountCategoryAPISchema = withSchemaCompat(
-  object({
-    name: optional(nameValidation),
-    description: descriptionValidation,
-    isLiability: optional(boolean()),
-  })
-);
+export const updateAccountCategoryAPISchema = object({
+  name: optional(nameValidation),
+  description: descriptionValidation,
+  isLiability: optional(boolean()),
+});
 
-export const accountCategoryFilterSchema = withSchemaCompat(
-  object({
-    isLiability: optional(boolean()),
-    isSystem: optional(boolean()),
-  })
-);
+export const accountCategoryFilterSchema = object({
+  isLiability: optional(boolean()),
+  isSystem: optional(boolean()),
+});
 
 export type AccountCategoryFilter = InferOutput<typeof accountCategoryFilterSchema>;

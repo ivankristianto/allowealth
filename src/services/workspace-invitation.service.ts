@@ -29,13 +29,13 @@ import {
   minLength,
   object,
   optional,
+  parse,
   picklist,
   pipe,
   regex,
   string,
   type InferInput,
 } from 'valibot';
-import { withSchemaCompat } from '@/lib/validation/compat';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
 
 const workspaceInvitationEmailService = new EmailService();
@@ -67,14 +67,12 @@ function getBaseUrl(): string {
  */
 const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
-export const createInvitationSchema = withSchemaCompat(
-  object({
-    workspaceId: requiredId('Workspace ID is required'),
-    email: pipe(string(), regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format')),
-    invitedByUserId: optional(requiredId('Invited by user ID is required')),
-    role: picklist(['admin', 'member']),
-  })
-);
+export const createInvitationSchema = object({
+  workspaceId: requiredId('Workspace ID is required'),
+  email: pipe(string(), regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format')),
+  invitedByUserId: optional(requiredId('Invited by user ID is required')),
+  role: picklist(['admin', 'member']),
+});
 
 /**
  * Input types inferred from validation schema
@@ -111,7 +109,7 @@ export class WorkspaceInvitationService {
    */
   async create(input: CreateInvitationInput): Promise<WorkspaceInvitation> {
     // Validate input using the service schema
-    const validated = createInvitationSchema.parse(input);
+    const validated = parse(createInvitationSchema, input);
 
     // Check if workspace exists
     await this.ensureWorkspaceExists(validated.workspaceId);

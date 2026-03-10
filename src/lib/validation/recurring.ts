@@ -29,7 +29,6 @@ import {
   recurringOccurrenceStatusEnum,
   categoryTypeEnum,
 } from '@/lib/enums';
-import { withSchemaCompat } from './compat';
 
 const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
@@ -48,7 +47,7 @@ const amountValidation = pipe(
   }, 'Amount must be greater than 0')
 );
 
-const frequencyEnum = withSchemaCompat(picklist(['weekly', 'monthly']));
+const frequencyEnum = picklist(['weekly', 'monthly']);
 
 const dayOfMonthValidation = pipe(
   number(),
@@ -165,128 +164,114 @@ const recurringTemplateBaseEntries = {
 } as const;
 
 // Service layer schemas
-export const createRecurringTemplateSchema = withSchemaCompat(
-  refineRecurringTemplate(
-    strictObject({
-      workspace_id: requiredId('Workspace ID is required'),
-      created_by_user_id: requiredId('Created by user ID is required'),
-      ...recurringTemplateBaseEntries,
-    })
-  )
-);
-
-export const updateRecurringTemplateSchema = withSchemaCompat(
+export const createRecurringTemplateSchema = refineRecurringTemplate(
   strictObject({
     workspace_id: requiredId('Workspace ID is required'),
-    name: optional(pipe(string(), minLength(1), maxLength(200))),
-    type: optional(categoryTypeEnum),
-    amount: optional(amountValidation),
-    currency: optional(currencyEnum),
-    category_id: optional(requiredId('Category is required')),
-    account_id: optional(requiredId('Account is required')),
-    day_of_month: optional(dayOfMonthValidation),
-    frequency: optional(frequencyEnum),
-    interval_count: optional(intervalCountValidation),
-    start_date: optional(dateStringValidation),
-    end_date: optional(nullable(dateStringValidation)),
-    total_occurrences: optional(nullable(totalOccurrencesValidation)),
-    is_installment: optional(boolean()),
-    installment_label: optional(nullable(pipe(string(), maxLength(100)))),
-    starting_occurrence_number: optional(startingOccurrenceValidation),
-    description: optional(nullable(pipe(string(), maxLength(500)))),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    ...recurringTemplateBaseEntries,
   })
 );
 
-export const confirmOccurrenceSchema = withSchemaCompat(
-  strictObject({
-    amount: amountValidation,
-    transaction_date: date(),
-    category_id: requiredId('Category ID is required'),
-    account_id: requiredId('Account ID is required'),
-    workspace_id: requiredId('Workspace ID is required'),
-    user_id: requiredId('User ID is required'),
-  })
-);
+export const updateRecurringTemplateSchema = strictObject({
+  workspace_id: requiredId('Workspace ID is required'),
+  name: optional(pipe(string(), minLength(1), maxLength(200))),
+  type: optional(categoryTypeEnum),
+  amount: optional(amountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category is required')),
+  account_id: optional(requiredId('Account is required')),
+  day_of_month: optional(dayOfMonthValidation),
+  frequency: optional(frequencyEnum),
+  interval_count: optional(intervalCountValidation),
+  start_date: optional(dateStringValidation),
+  end_date: optional(nullable(dateStringValidation)),
+  total_occurrences: optional(nullable(totalOccurrencesValidation)),
+  is_installment: optional(boolean()),
+  installment_label: optional(nullable(pipe(string(), maxLength(100)))),
+  starting_occurrence_number: optional(startingOccurrenceValidation),
+  description: optional(nullable(pipe(string(), maxLength(500)))),
+});
 
-export const skipOccurrenceSchema = withSchemaCompat(
-  strictObject({
-    skip_reason: optional(
-      pipe(string(), maxLength(200, 'Skip reason must not exceed 200 characters'))
-    ),
-  })
-);
+export const confirmOccurrenceSchema = strictObject({
+  amount: amountValidation,
+  transaction_date: date(),
+  category_id: requiredId('Category ID is required'),
+  account_id: requiredId('Account ID is required'),
+  workspace_id: requiredId('Workspace ID is required'),
+  user_id: requiredId('User ID is required'),
+});
+
+export const skipOccurrenceSchema = strictObject({
+  skip_reason: optional(
+    pipe(string(), maxLength(200, 'Skip reason must not exceed 200 characters'))
+  ),
+});
 
 // API layer schemas
-export const createRecurringTemplateAPISchema = withSchemaCompat(
-  refineRecurringTemplate(
-    strictObject({
-      name: pipe(
-        string(),
-        minLength(1, 'Name is required'),
-        maxLength(200, 'Name must not exceed 200 characters')
-      ),
-      type: categoryTypeEnum,
-      amount: amountValidation,
-      currency: currencyEnum,
-      category_id: requiredId('Category is required'),
-      account_id: requiredId('Account is required'),
-      day_of_month: optional(coercedInteger('Day of month', 1, 31)),
-      frequency: optional(frequencyEnum, 'monthly'),
-      interval_count: optional(coercedInteger('Interval count', 1, 52), 1),
-      start_date: dateStringValidation,
-      end_date: optional(dateStringValidation),
-      total_occurrences: optional(coercedInteger('Total occurrences', 1)),
-      is_installment: optional(
-        union([
-          boolean(),
-          pipe(
-            picklist(['true', 'false']),
-            transform((value) => value === 'true')
-          ),
-        ]),
-        false
-      ),
-      installment_label: optional(
-        pipe(string(), maxLength(100, 'Installment label must not exceed 100 characters'))
-      ),
-      starting_occurrence_number: optional(coercedInteger('Starting occurrence number', 1), 1),
-      description: optional(
-        pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
-      ),
-      status: optional(recurringTemplateStatusEnum, 'active'),
-    })
-  )
-);
-
-export const updateRecurringTemplateAPISchema = withSchemaCompat(
+export const createRecurringTemplateAPISchema = refineRecurringTemplate(
   strictObject({
-    name: optional(pipe(string(), minLength(1), maxLength(200))),
-    type: optional(categoryTypeEnum),
-    amount: optional(amountValidation),
-    currency: optional(currencyEnum),
-    category_id: optional(requiredId('Category is required')),
-    account_id: optional(requiredId('Account is required')),
-    day_of_month: optional(coercedInteger('Day of month', 1, 31)),
-    frequency: optional(frequencyEnum),
-    interval_count: optional(coercedInteger('Interval count', 1, 52)),
-    start_date: optional(dateStringValidation),
-    end_date: optional(nullable(dateStringValidation)),
-    total_occurrences: optional(nullable(coercedInteger('Total occurrences', 1))),
-    is_installment: coercedBoolean,
-    installment_label: optional(nullable(pipe(string(), maxLength(100)))),
-    starting_occurrence_number: optional(coercedInteger('Starting occurrence number', 1)),
-    description: optional(nullable(pipe(string(), maxLength(500)))),
-  })
-);
-
-export const confirmOccurrenceAPISchema = withSchemaCompat(
-  strictObject({
+    name: pipe(
+      string(),
+      minLength(1, 'Name is required'),
+      maxLength(200, 'Name must not exceed 200 characters')
+    ),
+    type: categoryTypeEnum,
     amount: amountValidation,
-    transaction_date: dateStringValidation,
-    category_id: requiredId('Category ID is required'),
-    account_id: requiredId('Account ID is required'),
+    currency: currencyEnum,
+    category_id: requiredId('Category is required'),
+    account_id: requiredId('Account is required'),
+    day_of_month: optional(coercedInteger('Day of month', 1, 31)),
+    frequency: optional(frequencyEnum, 'monthly'),
+    interval_count: optional(coercedInteger('Interval count', 1, 52), 1),
+    start_date: dateStringValidation,
+    end_date: optional(dateStringValidation),
+    total_occurrences: optional(coercedInteger('Total occurrences', 1)),
+    is_installment: optional(
+      union([
+        boolean(),
+        pipe(
+          picklist(['true', 'false']),
+          transform((value) => value === 'true')
+        ),
+      ]),
+      false
+    ),
+    installment_label: optional(
+      pipe(string(), maxLength(100, 'Installment label must not exceed 100 characters'))
+    ),
+    starting_occurrence_number: optional(coercedInteger('Starting occurrence number', 1), 1),
+    description: optional(
+      pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+    ),
+    status: optional(recurringTemplateStatusEnum, 'active'),
   })
 );
+
+export const updateRecurringTemplateAPISchema = strictObject({
+  name: optional(pipe(string(), minLength(1), maxLength(200))),
+  type: optional(categoryTypeEnum),
+  amount: optional(amountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category is required')),
+  account_id: optional(requiredId('Account is required')),
+  day_of_month: optional(coercedInteger('Day of month', 1, 31)),
+  frequency: optional(frequencyEnum),
+  interval_count: optional(coercedInteger('Interval count', 1, 52)),
+  start_date: optional(dateStringValidation),
+  end_date: optional(nullable(dateStringValidation)),
+  total_occurrences: optional(nullable(coercedInteger('Total occurrences', 1))),
+  is_installment: coercedBoolean,
+  installment_label: optional(nullable(pipe(string(), maxLength(100)))),
+  starting_occurrence_number: optional(coercedInteger('Starting occurrence number', 1)),
+  description: optional(nullable(pipe(string(), maxLength(500)))),
+});
+
+export const confirmOccurrenceAPISchema = strictObject({
+  amount: amountValidation,
+  transaction_date: dateStringValidation,
+  category_id: requiredId('Category ID is required'),
+  account_id: requiredId('Account ID is required'),
+});
 
 export const occurrenceStatusSchema = recurringOccurrenceStatusEnum;
 

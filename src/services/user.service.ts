@@ -17,8 +17,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
-import { maxLength, minLength, object, pipe, regex, string, type InferInput } from 'valibot';
-import { withSchemaCompat } from '@/lib/validation/compat';
+import { maxLength, minLength, object, parse, pipe, regex, string, type InferInput } from 'valibot';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
 import {
   PASSWORD_MIN_LENGTH,
@@ -29,27 +28,23 @@ import {
 /**
  * Validation schemas for user service input
  */
-const updateProfileSchema = withSchemaCompat(
-  object({
-    name: pipe(
-      string(),
-      minLength(1, 'Name is required'),
-      maxLength(255, 'Name must be less than 255 characters')
-    ),
-  })
-);
+const updateProfileSchema = object({
+  name: pipe(
+    string(),
+    minLength(1, 'Name is required'),
+    maxLength(255, 'Name must be less than 255 characters')
+  ),
+});
 
-export const updatePasswordSchema = withSchemaCompat(
-  object({
-    oldPassword: pipe(string(), minLength(1, 'Old password is required')),
-    newPassword: pipe(
-      string(),
-      minLength(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGES.minLength),
-      regex(PASSWORD_REQUIREMENTS.hasLetter, PASSWORD_ERROR_MESSAGES.hasLetter),
-      regex(PASSWORD_REQUIREMENTS.hasNumberOrSpecial, PASSWORD_ERROR_MESSAGES.hasNumberOrSpecial)
-    ),
-  })
-);
+export const updatePasswordSchema = object({
+  oldPassword: pipe(string(), minLength(1, 'Old password is required')),
+  newPassword: pipe(
+    string(),
+    minLength(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGES.minLength),
+    regex(PASSWORD_REQUIREMENTS.hasLetter, PASSWORD_ERROR_MESSAGES.hasLetter),
+    regex(PASSWORD_REQUIREMENTS.hasNumberOrSpecial, PASSWORD_ERROR_MESSAGES.hasNumberOrSpecial)
+  ),
+});
 
 /**
  * Input type inferred from validation schema
@@ -102,7 +97,7 @@ export class UserService {
    */
   async updateProfile(userId: string, input: { name: string }) {
     // Validate input using the service schema
-    const validated = updateProfileSchema.parse(input);
+    const validated = parse(updateProfileSchema, input);
 
     // Check if user exists
     const user = await this.db.query.users.findFirst({
@@ -140,7 +135,7 @@ export class UserService {
    */
   async updatePassword(userId: string, input: UpdatePasswordInput) {
     // Validate input using the service schema (includes password strength validation)
-    const validated = updatePasswordSchema.parse(input);
+    const validated = parse(updatePasswordSchema, input);
 
     // Check if user exists
     const user = await this.db.query.users.findFirst({

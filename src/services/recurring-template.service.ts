@@ -5,6 +5,7 @@ import { logAuditEvent } from '@/lib/audit-log';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { parse } from 'valibot';
 import type { RecurringTemplate, RecurringTemplateOutput } from '@/lib/types/recurring';
 import {
   createRecurringTemplateSchema,
@@ -181,7 +182,7 @@ export class RecurringTemplateService {
   }
 
   async create(input: CreateRecurringTemplateInput): Promise<RecurringTemplateOutput> {
-    const validated = createRecurringTemplateSchema.parse(input);
+    const validated = parse(createRecurringTemplateSchema, input);
     await this.validateTemplateReferences(validated.workspace_id, {
       categoryId: validated.category_id,
       accountId: validated.account_id,
@@ -387,7 +388,7 @@ export class RecurringTemplateService {
     data: UpdateRecurringTemplateInput,
     performedByUserId?: string
   ): Promise<RecurringTemplateOutput> {
-    const validated = updateRecurringTemplateSchema.parse(data);
+    const validated = parse(updateRecurringTemplateSchema, data);
 
     if (validated.workspace_id !== workspaceId) {
       throw new RecurringServiceError(
@@ -462,7 +463,7 @@ export class RecurringTemplateService {
 
     // Validate final state after merge so partial updates (including explicit null clears)
     // cannot violate recurring template invariants.
-    createRecurringTemplateSchema.parse({
+    parse(createRecurringTemplateSchema, {
       workspace_id: existing.workspace_id,
       created_by_user_id: existing.created_by_user_id,
       name: updatePayload.name ?? existing.name,
