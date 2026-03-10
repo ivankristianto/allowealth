@@ -63,4 +63,21 @@ This file is managed by Claude Code's auto-memory system.
 
 ---
 
+## Library Migration Checklist (Learned from Zod → Valibot)
+
+When migrating any library, update ALL four locations or the migration is incomplete:
+
+1. `.claude/rules/` relevant file (code examples + rules)
+2. `.claude/CLAUDE.md` ADR table (library row)
+3. `docs/prd.md` (tech stack + security sections)
+4. `.claude/memory/MEMORY.md` (this file)
+
+Historical plan files (`docs/plans/YYYY-MM-DD-*.md`) are immutable — leave as-is.
+
+## PR Claims — What to Verify Before Writing
+
+- Validation libraries (Valibot, Zod) are **server-side only** — neither ships to the client bundle
+- `"sideEffects": false` is standard in modern libraries — not a tree-shaking differentiator
+- Bundle size claims require pre- and post-migration builds to quantify — don't estimate
+
 _Note: Detailed patterns and rules are in `.claude/rules/`. This file contains quick reference only._
