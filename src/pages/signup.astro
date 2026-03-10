@@ -435,6 +435,7 @@ const invitationErrorMessage =
             password: String(data.password || ''),
             callbackURL: '/dashboard',
             invitationToken,
+            workspaceName: data.workspaceName ? String(data.workspaceName) : undefined,
             turnstileToken: data.turnstileToken,
           }),
         });

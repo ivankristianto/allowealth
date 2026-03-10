@@ -15,8 +15,9 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
+import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { z } from 'zod';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
 import {
@@ -152,10 +153,13 @@ export class UserService {
       throw new UserServiceError(ServiceErrorCode.INVALID_PASSWORD, 'Invalid old password', 400);
     }
 
-    // Hash new password
-    const newPasswordHash = await hashPassword(validated.newPassword);
+    // Hash new password for both legacy domain table and better-auth account table
+    const [newPasswordHash, betterAuthHash] = await Promise.all([
+      hashPassword(validated.newPassword),
+      hashBetterAuthPassword(validated.newPassword),
+    ]);
 
-    // Update password
+    // Update legacy domain password hash
     await this.db
       .update(this.schema.users)
       .set({
@@ -163,6 +167,18 @@ export class UserService {
         updated_at: new Date(),
       })
       .where(eq(this.schema.users.id, userId));
+
+    // Update better-auth credential account password (used for sign-in)
+    const authSchema = getActiveSchema();
+    await this.db
+      .update(authSchema.account)
+      .set({
+        password: betterAuthHash,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(authSchema.account.userId, userId), eq(authSchema.account.providerId, 'credential'))
+      );
 
     return { success: true };
   }

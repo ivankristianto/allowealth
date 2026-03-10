@@ -91,14 +91,19 @@ async function ensureSignupAllowed(
 
 async function createWorkspaceOwner(
   authUser: BetterAuthUser,
+  context: AuthHookContext,
   database: IDatabase
 ): Promise<AuthUser> {
   const workspaceId = nanoid();
+  const customName =
+    typeof context?.body?.workspaceName === 'string' && context.body.workspaceName.trim().length > 0
+      ? context.body.workspaceName.trim()
+      : null;
   try {
     await runTransaction(database, async (tx) => {
       await tx.insert(schema.workspaces).values({
         id: workspaceId,
-        name: `${authUser.name.trim()}'s Workspace`,
+        name: customName ?? `${authUser.name.trim()}'s Workspace`,
         status: 'active',
         created_at: new Date(),
         updated_at: new Date(),
@@ -244,7 +249,7 @@ export async function bootstrapAuthUser(
       return invitedUser;
     }
 
-    const workspaceOwner = await createWorkspaceOwner(authUser, database);
+    const workspaceOwner = await createWorkspaceOwner(authUser, context, database);
     log.info('Bootstrapped auth user workspace', {
       userId: workspaceOwner.id,
       provider,

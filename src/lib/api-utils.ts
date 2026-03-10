@@ -214,15 +214,11 @@ export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
 }
 
 /**
- * Get user ID from Lucia session cookie
+ * Get user ID from session
  *
- * @deprecated Use `getAuthenticatedUser(context)` instead. This function makes
- * a redundant database call since the middleware already validates the session
- * and sets `context.locals.user`.
- *
- * Extracts the session ID from the request cookies and validates it
- * using Lucia's validateSession method. Returns the user ID if the
- * session is valid, null otherwise.
+ * @deprecated Use `getAuthenticatedUser(context)` instead. This function is
+ * redundant since the middleware already validates the session and sets
+ * `context.locals.user`.
  *
  * @param context - Astro API context containing request cookies
  * @returns User ID string if session is valid, null otherwise

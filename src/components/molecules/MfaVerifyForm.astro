@@ -32,13 +32,7 @@ const { redirectTo = '' } = Astro.props;
 
     <div id="mfa-messages" aria-live="polite" aria-atomic="true"></div>
 
-    <form
-      id="mfa-form"
-      data-redirect={redirectTo}
-      data-api-verify="/api/auth/login/verify-mfa"
-      class="space-y-5"
-      novalidate
-    >
+    <form id="mfa-form" data-redirect={redirectTo} class="space-y-5" novalidate>
       <div id="totp-section">
         <FormField label="Verification Code" htmlFor="mfa-code" required>
           <input
