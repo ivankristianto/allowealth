@@ -78,7 +78,7 @@ const getBudgetStatusColor = (status: string): string => {
     case 'exceeded':
       return 'text-error';
     default:
-      return 'text-neutral';
+      return 'text-base-content/60';
   }
 };
 
@@ -187,13 +187,13 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
           <DollarSign slot="icon" size={48} class="stroke-current" aria-hidden="true" />
           <div slot="details" class="space-y-2">
             <div class="flex justify-between items-baseline">
-              <span class="text-sm text-neutral">IDR:</span>
+              <span class="text-sm text-base-content/60">IDR:</span>
               <span class="font-semibold text-lg text-success">
                 {formatCurrency(data!.totalAccounts.idr, 'IDR')}
               </span>
             </div>
             <div class="flex justify-between items-baseline">
-              <span class="text-sm text-neutral">USD:</span>
+              <span class="text-sm text-base-content/60">USD:</span>
               <span class="font-semibold text-lg text-info">
                 {formatCurrency(data!.totalAccounts.usd, 'USD')}
               </span>
@@ -231,7 +231,7 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
               size="sm"
               ariaLabel={`Budget progress: ${formatPercentage(data!.monthlySpent.percentage)} used`}
             />
-            <p class="text-xs text-neutral text-center">
+            <p class="text-xs text-base-content/60 text-center">
               {data!.monthlySpent.percentage >= 100
                 ? `Over budget by ${formatPercentage(data!.monthlySpent.percentage - 100)}`
                 : `${formatCurrency(monthlySpentRemaining, data!.monthlySpent.currency)} remaining`}

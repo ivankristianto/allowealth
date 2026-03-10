@@ -89,19 +89,19 @@ const dateGroups = groupTransactionsByDate(transactions);
   <div class="flex justify-between items-center">
     <h2 class="text-2xl font-bold text-base-content">Transactions</h2>
     <div class="flex gap-2">
-      <a href="/transactions/import" class="btn btn-outline btn-sm gap-2">
+      <a href="/transactions/import" class="btn btn-outline btn-sm gap-2 rounded-xl">
         <ArrowLeft size={22} class="stroke-current" aria-hidden="true" />
         Import CSV
       </a>
-      <a href={buildDirectExportUrl()} class="btn btn-success btn-sm gap-2" download>
+      <a href={buildDirectExportUrl()} class="btn btn-success btn-sm gap-2 rounded-2xl" download>
         <Download size={22} class="stroke-current" aria-hidden="true" />
         Download CSV
       </a>
-      <a href={buildExportUrl()} class="btn btn-outline btn-sm gap-2">
+      <a href={buildExportUrl()} class="btn btn-outline btn-sm gap-2 rounded-xl">
         <ArrowRight size={22} class="stroke-current" aria-hidden="true" />
         Export Options
       </a>
-      <a href="/transactions/add" class="btn btn-accent gap-2">
+      <a href="/transactions/add" class="btn btn-accent gap-2 rounded-2xl">
         <Plus size={22} class="stroke-current" aria-hidden="true" />
         Add Transaction
       </a>
@@ -184,7 +184,7 @@ const dateGroups = groupTransactionsByDate(transactions);
                   {hasPrev ? (
                     <a
                       href={buildUrl(page - 1)}
-                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0 rounded-xl"
                       aria-label="Previous page"
                     >
                       <ChevronLeft size={20} class="stroke-current" aria-hidden="true" />
@@ -192,7 +192,7 @@ const dateGroups = groupTransactionsByDate(transactions);
                     </a>
                   ) : (
                     <button
-                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0 rounded-xl"
                       disabled
                       aria-label="Previous page"
                     >
@@ -210,7 +210,7 @@ const dateGroups = groupTransactionsByDate(transactions);
                   {hasNext ? (
                     <a
                       href={buildUrl(page + 1)}
-                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0 rounded-xl"
                       aria-label="Next page"
                     >
                       <span class="hidden sm:inline">Next</span>
@@ -218,7 +218,7 @@ const dateGroups = groupTransactionsByDate(transactions);
                     </a>
                   ) : (
                     <button
-                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0 rounded-xl"
                       disabled
                       aria-label="Next page"
                     >

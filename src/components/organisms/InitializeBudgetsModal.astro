@@ -270,7 +270,6 @@ const categoriesWithColors = categories.map((cat) => ({
             errorDiv.textContent = message;
             errorDiv.classList.remove('hidden');
           }
-          addToast(message, 'error');
         } finally {
           // Reset button state
           confirmBtn.disabled = false;

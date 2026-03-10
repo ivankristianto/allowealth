@@ -84,19 +84,19 @@ const IconComponent = iconName ? iconMap[iconName] : null;
   {
     IconComponent && (
       <div class="mb-4" aria-hidden="true">
-        <IconComponent size={32} class="text-neutral" />
+        <IconComponent size={32} class="text-base-content/40" />
       </div>
     )
   }
   <h3 class="text-lg font-semibold mb-2 text-base-content">{title}</h3>
-  <p class="text-neutral mb-4 max-w-md">{message}</p>
+  <p class="text-base-content/60 mb-4 max-w-md">{message}</p>
   {
     actionLabel && (
       <div>
         {actionHref ? (
           <a
             href={actionHref}
-            class={['btn btn-accent btn-sm', actionClassName].filter(Boolean).join(' ')}
+            class={['btn btn-accent btn-sm rounded-xl', actionClassName].filter(Boolean).join(' ')}
             {...actionAttributes}
           >
             {actionLabel}
@@ -104,7 +104,7 @@ const IconComponent = iconName ? iconMap[iconName] : null;
         ) : (
           <button
             type="button"
-            class={['btn btn-accent btn-sm', actionClassName].filter(Boolean).join(' ')}
+            class={['btn btn-accent btn-sm rounded-xl', actionClassName].filter(Boolean).join(' ')}
             {...actionAttributes}
           >
             {actionLabel}

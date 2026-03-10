@@ -55,7 +55,9 @@ const subtitle = isEditMode
           <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
             {title}
           </h2>
-          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>{subtitle}</p>
+          <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
+            {subtitle}
+          </p>
         </div>
       </div>
 
@@ -292,7 +294,6 @@ const subtitle = isEditMode
             errorDiv.textContent = message;
             errorDiv.classList.remove('hidden');
           }
-          addToast(message, 'error');
         } finally {
           // Reset button state
           if (submitBtn) {

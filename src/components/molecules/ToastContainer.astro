@@ -137,12 +137,24 @@
     const closeButton = document.createElement('button');
     closeButton.className = 'btn btn-ghost btn-xs';
     closeButton.setAttribute('aria-label', 'Dismiss notification');
-    closeButton.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M18 6 6 18"></path>
-        <path d="m6 6 12 12"></path>
-      </svg>
-    `;
+    // Create Lucide X icon using DOM methods
+    const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    xIcon.setAttribute('width', '16');
+    xIcon.setAttribute('height', '16');
+    xIcon.setAttribute('viewBox', '0 0 24 24');
+    xIcon.setAttribute('fill', 'none');
+    xIcon.setAttribute('stroke', 'currentColor');
+    xIcon.setAttribute('stroke-width', '2');
+    xIcon.setAttribute('stroke-linecap', 'round');
+    xIcon.setAttribute('stroke-linejoin', 'round');
+    xIcon.setAttribute('aria-hidden', 'true');
+    const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path1.setAttribute('d', 'M18 6 6 18');
+    const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path2.setAttribute('d', 'm6 6 12 12');
+    xIcon.appendChild(path1);
+    xIcon.appendChild(path2);
+    closeButton.appendChild(xIcon);
 
     // Handle dismiss click with exit animation and focus restoration (manual)
     closeButton.addEventListener('click', () => {

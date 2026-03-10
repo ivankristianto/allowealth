@@ -8,7 +8,7 @@
 
 ### ⚠️ Design System Migration
 
-This guide reflects the **Oasis Finance** design system (v1.0.0).
+This guide reflects the **Allowealth** design system (v1.0.0).
 
 **Source of truth:** `design-system/styles.json`
 

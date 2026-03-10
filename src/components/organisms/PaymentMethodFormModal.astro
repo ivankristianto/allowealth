@@ -39,7 +39,7 @@ const { id } = Astro.props;
           >
             Add Payment Method
           </h2>
-          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+          <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
             Create a new payment method for transactions.
           </p>
         </div>
@@ -192,7 +192,6 @@ const { id } = Astro.props;
             errorEl.textContent = message;
             errorEl.classList.remove('hidden');
           }
-          addToast(message, 'error');
         } finally {
           if (submitBtn) {
             submitBtn.disabled = false;

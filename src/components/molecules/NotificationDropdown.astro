@@ -17,7 +17,7 @@ import { Bell, Plus } from '@lucide/astro';
   <button
     type="button"
     data-notification-button
-    class="p-3 rounded-full transition-all relative text-neutral hover:bg-base-100 shadow-sm border border-base-300"
+    class="p-3 rounded-full transition-all relative text-base-content/60 hover:bg-base-100 shadow-sm border border-base-300"
     aria-label="Notifications"
     aria-expanded="false"
     aria-haspopup="true"
@@ -35,7 +35,7 @@ import { Bell, Plus } from '@lucide/astro';
     aria-label="Notifications menu"
   >
     <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
-      <span class="font-bold text-base text-neutral">Notifications</span>
+      <span class="font-bold text-base text-base-content/60">Notifications</span>
       <button
         type="button"
         data-close-notifications
@@ -57,9 +57,11 @@ import { Bell, Plus } from '@lucide/astro';
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-start mb-1.5 leading-none">
             <p class="text-base font-bold text-base-content tracking-tight">Budget Alert</p>
-            <span class="text-xs font-bold text-neutral uppercase tracking-widest"> 2m ago </span>
+            <span class="text-xs font-bold text-base-content/60 uppercase tracking-widest">
+              2m ago
+            </span>
           </div>
-          <p class="text-sm text-neutral leading-relaxed">
+          <p class="text-sm text-base-content/60 leading-relaxed">
             Dining has reached 95% of its monthly limit.
           </p>
         </div>
@@ -75,16 +77,20 @@ import { Bell, Plus } from '@lucide/astro';
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-start mb-1.5 leading-none">
             <p class="text-base font-bold text-base-content tracking-tight">Salary Received</p>
-            <span class="text-xs font-bold text-neutral uppercase tracking-widest"> 4h ago </span>
+            <span class="text-xs font-bold text-base-content/60 uppercase tracking-widest">
+              4h ago
+            </span>
           </div>
-          <p class="text-sm text-neutral leading-relaxed">Acme Corp deposited Rp51.025.000.</p>
+          <p class="text-sm text-base-content/60 leading-relaxed">
+            Acme Corp deposited Rp51.025.000.
+          </p>
         </div>
       </div>
     </div>
 
     <button
       type="button"
-      class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+      class="w-full py-4 text-sm font-bold text-base-content/60 hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
       aria-label="View all notification history"
     >
       View all history
