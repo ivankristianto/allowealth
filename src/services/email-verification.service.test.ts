@@ -10,6 +10,7 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import { account as authAccounts, user as authUsers } from '@/db/schema/sqlite/better-auth';
 
 describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
@@ -18,6 +19,8 @@ describe('EmailVerificationService', () => {
 
   async function cleanupTestData() {
     if (testUserId) {
+      await db.delete(authAccounts).where(eq(authAccounts.userId, testUserId));
+      await db.delete(authUsers).where(eq(authUsers.id, testUserId));
       await db.delete(oauthAccounts).where(eq(oauthAccounts.user_id, testUserId));
       await db.delete(userMeta).where(eq(userMeta.user_id, testUserId));
       await db
@@ -52,6 +55,21 @@ describe('EmailVerificationService', () => {
       name: 'Test User',
       workspace_id: testWorkspaceId,
       role: 'admin',
+    });
+
+    const domainUser = await db.query.users.findFirst({
+      where: eq(users.id, testUserId),
+    });
+
+    await db.insert(authUsers).values({
+      id: testUserId,
+      email: domainUser!.email,
+      name: domainUser!.name,
+      emailVerified: true,
+      image: null,
+      twoFactorEnabled: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   });
 
@@ -160,8 +178,35 @@ describe('EmailVerificationService', () => {
       expect(tokens.length).toBe(1);
     });
 
-    it('should unlink all OAuth accounts when requesting email change', async () => {
+    it('should unlink Better Auth social accounts when requesting email change', async () => {
       await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await db.insert(authAccounts).values([
+        {
+          id: nanoid(),
+          accountId: `credential-${nanoid(8)}`,
+          providerId: 'credential',
+          userId: testUserId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: nanoid(),
+          accountId: `google-${nanoid(8)}`,
+          providerId: 'google',
+          userId: testUserId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: nanoid(),
+          accountId: `github-${nanoid(8)}`,
+          providerId: 'github',
+          userId: testUserId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
 
       await db.insert(oauthAccounts).values([
         {
@@ -184,10 +229,16 @@ describe('EmailVerificationService', () => {
 
       await service.requestEmailChange(testUserId, 'oauth-unlink@example.com');
 
+      const remainingAuthAccounts = await db
+        .select()
+        .from(authAccounts)
+        .where(eq(authAccounts.userId, testUserId));
       const remainingOauthAccounts = await db
         .select()
         .from(oauthAccounts)
         .where(eq(oauthAccounts.user_id, testUserId));
+      expect(remainingAuthAccounts).toHaveLength(1);
+      expect(remainingAuthAccounts[0].providerId).toBe('credential');
       expect(remainingOauthAccounts.length).toBe(0);
     });
   });
@@ -310,7 +361,11 @@ describe('EmailVerificationService', () => {
       }
 
       const updatedUser = await db.query.users.findFirst({ where: eq(users.id, testUserId) });
+      const updatedAuthUser = await db.query.user.findFirst({
+        where: eq(authUsers.id, testUserId),
+      });
       expect(updatedUser?.email).toBe('changed@example.com');
+      expect(updatedAuthUser?.email).toBe('changed@example.com');
 
       const meta = await db.query.userMeta.findFirst({
         where: and(

@@ -17,10 +17,10 @@ const registered = url.searchParams.get('registered');
 const verified = url.searchParams.get('verified');
 const passwordReset = url.searchParams.get('password-reset');
 const emailChanged = url.searchParams.get('email-changed');
-const emailParam = url.searchParams.get('email') || '';
-
-const oauthErrorMessage = getGoogleAuthErrorMessage(error);
-const oauthError = Astro.url.searchParams.get('oauth_error') || '';
+const oauthErrorCodes = new Set(['oauth_error', 'link_expired', 'link_failed', 'rate_limited']);
+const oauthError =
+  Astro.url.searchParams.get('oauth_error') || (error && oauthErrorCodes.has(error) ? error : '');
+const oauthErrorMessage = getGoogleAuthErrorMessage(oauthError);
 
 const errorMessages: Record<string, string> = {
   invalid_credentials: 'Invalid email or password. Please try again.',
@@ -36,7 +36,7 @@ const errorMessages: Record<string, string> = {
 // expired_token uses banner (with resend button), not inline error
 const errorMessage = oauthErrorMessage
   ? oauthErrorMessage
-  : error && error !== 'expired_token' && errorMessages[error]
+  : error && !oauthErrorCodes.has(error) && error !== 'expired_token' && errorMessages[error]
     ? errorMessages[error]
     : '';
 
@@ -54,7 +54,8 @@ if (registered === 'true') {
   bannerMessage = 'Password updated. You can now sign in.';
   bannerType = 'success';
 } else if (error === 'expired_token') {
-  bannerMessage = 'Verification link has expired.';
+  bannerMessage =
+    'This verification link has expired. Sign in with your current email and request a new change from Profile.';
   bannerType = 'error';
 } else if (emailChanged === 'true') {
   bannerMessage = 'Email changed successfully! Please sign in with your new email.';
@@ -68,7 +69,6 @@ if (registered === 'true') {
     redirectTo={redirect}
     bannerMessage={bannerMessage}
     bannerType={bannerType}
-    resendEmail={error === 'expired_token' ? emailParam : ''}
-    oauthError={oauthError}
+    oauthError={oauthErrorMessage ? '' : oauthError}
   />
 </AuthLayout>

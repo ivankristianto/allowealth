@@ -125,6 +125,18 @@ export class EmailVerificationService {
       );
     }
 
+    const existingAuthUser = await this.db.query.user.findFirst({
+      where: eq(this.schema.user.email, normalizedEmail),
+    });
+
+    if (existingAuthUser && existingAuthUser.id !== userId) {
+      throw new UserServiceError(
+        ServiceErrorCode.EMAIL_ALREADY_EXISTS,
+        'Email already exists',
+        409
+      );
+    }
+
     if (this.userMetaSvc) {
       await this.userMetaSvc.setUserMeta(userId, USER_META_KEYS.PENDING_EMAIL, normalizedEmail);
     } else {
@@ -161,27 +173,7 @@ export class EmailVerificationService {
       });
     }
 
-    try {
-      const oauthAccounts = await this.db.query.oauthAccounts.findMany({
-        where: eq(this.schema.oauthAccounts.user_id, userId),
-      });
-
-      for (const account of oauthAccounts) {
-        await this.db
-          .delete(this.schema.oauthAccounts)
-          .where(eq(this.schema.oauthAccounts.id, account.id));
-      }
-
-      if (oauthAccounts.length > 0) {
-        log.info('Unlinked OAuth accounts for email change', {
-          userId,
-          count: oauthAccounts.length,
-        });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      log.warn('Failed to unlink OAuth accounts', { userId, error: message });
-    }
+    await this.unlinkOAuthAccountsForEmailChange(userId);
 
     log.info('Email change requested', { userId, newEmail: normalizedEmail });
   }
@@ -354,19 +346,44 @@ export class EmailVerificationService {
     const pendingEmail = await this.getPendingEmailChange(userId);
 
     if (pendingEmail) {
-      const emailTaken = await this.db.query.users.findFirst({
-        where: eq(this.schema.users.email, pendingEmail),
-      });
+      const [emailTaken, authEmailTaken, authUserRecord] = await Promise.all([
+        this.db.query.users.findFirst({
+          where: eq(this.schema.users.email, pendingEmail),
+        }),
+        this.db.query.user.findFirst({
+          where: eq(this.schema.user.email, pendingEmail),
+        }),
+        this.db.query.user.findFirst({
+          where: eq(this.schema.user.id, userId),
+        }),
+      ]);
 
-      if (emailTaken && emailTaken.id !== userId) {
+      if (
+        (emailTaken && emailTaken.id !== userId) ||
+        (authEmailTaken && authEmailTaken.id !== userId)
+      ) {
         log.warn('Pending email claimed by another user', { userId, pendingEmail });
         await this.clearPendingEmailAndTokens(userId);
         return { success: false, error: 'EMAIL_ALREADY_EXISTS' };
       }
 
+      if (!authUserRecord) {
+        log.error('Better Auth user not found for email change verification', { userId });
+        return { success: false, error: 'USER_NOT_FOUND' };
+      }
+
       const verifiedAt = new Date();
       const updatedAt = new Date();
       try {
+        await this.db
+          .update(this.schema.user)
+          .set({
+            email: pendingEmail,
+            emailVerified: true,
+            updatedAt,
+          })
+          .where(eq(this.schema.user.id, userId));
+
         await this.db
           .update(this.schema.users)
           .set({
@@ -433,5 +450,41 @@ export class EmailVerificationService {
 
     const verifiedUser = { ...user, email_verified_at: verifiedAt };
     return { success: true, user: verifiedUser };
+  }
+
+  private async unlinkOAuthAccountsForEmailChange(userId: string): Promise<void> {
+    try {
+      const [legacyOauthAccounts, authAccounts] = await Promise.all([
+        this.db.query.oauthAccounts.findMany({
+          where: eq(this.schema.oauthAccounts.user_id, userId),
+        }),
+        this.db.query.account.findMany({
+          where: eq(this.schema.account.userId, userId),
+        }),
+      ]);
+
+      const socialAccounts = authAccounts.filter((account) => account.providerId !== 'credential');
+
+      for (const account of socialAccounts) {
+        await this.db.delete(this.schema.account).where(eq(this.schema.account.id, account.id));
+      }
+
+      for (const account of legacyOauthAccounts) {
+        await this.db
+          .delete(this.schema.oauthAccounts)
+          .where(eq(this.schema.oauthAccounts.id, account.id));
+      }
+
+      const unlinkedCount = socialAccounts.length + legacyOauthAccounts.length;
+      if (unlinkedCount > 0) {
+        log.info('Unlinked OAuth accounts for email change', {
+          userId,
+          count: unlinkedCount,
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      log.warn('Failed to unlink OAuth accounts', { userId, error: message });
+    }
   }
 }

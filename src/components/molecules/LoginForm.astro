@@ -25,7 +25,6 @@ export interface Props {
   redirectTo?: string;
   bannerMessage?: string;
   bannerType?: 'info' | 'success' | 'error';
-  resendEmail?: string;
   oauthError?: string;
 }
 
@@ -35,7 +34,6 @@ const {
   redirectTo = '',
   bannerMessage = '',
   bannerType = 'info',
-  resendEmail = '',
   oauthError = '',
 } = Astro.props;
 
@@ -61,14 +59,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
           {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
           {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
           {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
-          <div class="flex flex-wrap items-center gap-2">
-            <span>{bannerMessage}</span>
-            {resendEmail && (
-              <button type="button" class="underline font-bold" data-resend-email={resendEmail}>
-                Resend verification email
-              </button>
-            )}
-          </div>
+          <span>{bannerMessage}</span>
         </div>
       )
     }
@@ -91,7 +82,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       data-testid="login-form"
       data-redirect={redirectTo}
       data-api-login="/api/auth/login"
-      data-resend-api="/api/auth/resend-verification"
       class="space-y-5"
       novalidate
     >
@@ -179,12 +169,9 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 </div>
 
 <script>
-  import { authClient } from '@/lib/auth/client';
-
   // Read server values from data attributes
   const loginForm = document.getElementById('login-form');
   const redirectTo = loginForm?.dataset.redirect || '';
-  const resendApiUrl = loginForm?.dataset.resendApi || '/api/auth/resend-verification';
 
   // Helper function to clone icon from template
   const getErrorIcon = () => {
@@ -220,38 +207,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 
     messagesContainer.appendChild(alertDiv);
   };
-
-  // Handle resend verification email clicks (event delegation)
-  document.addEventListener('click', async (e) => {
-    const target = e.target as HTMLButtonElement | null;
-    if (!target?.dataset?.resendEmail) return;
-
-    const resendEmail = target.dataset.resendEmail;
-    if (!resendEmail) return;
-
-    target.disabled = true;
-    target.textContent = 'Sending...';
-
-    try {
-      const res = await fetch(resendApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resendEmail }),
-      });
-
-      if (res.ok) {
-        target.textContent = 'Sent! Check your inbox';
-        target.className = 'font-bold opacity-70 cursor-default';
-      } else {
-        const data = await res.json();
-        target.textContent = data.error?.message || 'Failed to send';
-        target.disabled = false;
-      }
-    } catch {
-      target.textContent = 'Failed to send. Try again.';
-      target.disabled = false;
-    }
-  });
 
   const form = loginForm as HTMLFormElement | null;
   const messagesContainer = document.getElementById('login-messages');
@@ -321,26 +276,41 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       if (submitButton) submitButton.disabled = true;
 
       try {
-        const result = await authClient.signIn.email({
-          email: emailInput.value.trim(),
-          password: passwordInput.value,
-          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)?.checked,
-          callbackURL: redirectTo || '/dashboard',
+        const response = await fetch('/api/auth/sign-in/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+            rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)
+              ?.checked,
+            turnstileToken:
+              (form.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | null)
+                ?.value || '',
+            callbackURL: redirectTo || '/dashboard',
+          }),
         });
 
-        if (result.error) {
-          showErrorAlert(result.error.message || 'Login failed. Please try again.');
+        const result = await response.json();
+
+        if (!response.ok || result.error) {
+          showErrorAlert(
+            result.error?.message || result.message || 'Login failed. Please try again.'
+          );
           return;
         }
 
-        if (result.data && 'twoFactorRedirect' in result.data) {
+        if (result.twoFactorRedirect === true) {
           const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
           window.location.href = mfaUrl;
           return;
         }
 
-        if (result.data?.url) {
-          window.location.href = result.data.url;
+        if (typeof result.url === 'string' && result.url.length > 0) {
+          window.location.href = result.url;
           return;
         }
 

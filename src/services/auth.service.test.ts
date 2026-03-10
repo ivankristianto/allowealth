@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { account, accountCategories, user as authUsers, users, workspaces } from '@/db/schema';
 import { bootstrapAuthUser, getGoogleSignInStatus, getLinkedOAuthAccounts } from './auth.service';
+import { AccountCategoryService } from './account-category.service';
 
 const EMAIL_SIGNUP_USER = {
   id: 'auth-email-user',
@@ -17,6 +18,8 @@ const GOOGLE_SIGNUP_USER = {
   name: 'Google Signup User',
   image: 'https://example.com/avatar.png',
 };
+
+const originalSeedDefaultCategories = AccountCategoryService.prototype.seedDefaultCategories;
 
 async function cleanupUser(userId: string, email: string) {
   await db.delete(account).where(eq(account.userId, userId));
@@ -52,6 +55,7 @@ describe('AuthService', () => {
   });
 
   afterEach(async () => {
+    AccountCategoryService.prototype.seedDefaultCategories = originalSeedDefaultCategories;
     await cleanupTestData();
   });
 
@@ -132,5 +136,56 @@ describe('AuthService', () => {
 
     expect(status.status).toBe('linked');
     expect(linkedAccounts.some((linkedAccount) => linkedAccount.provider === 'google')).toBe(true);
+  });
+
+  it('cleans up auth and domain records when bootstrap fails', async () => {
+    AccountCategoryService.prototype.seedDefaultCategories = mock(async () => {
+      throw new Error('category seeding failed');
+    }) as any;
+
+    await db.insert(authUsers).values({
+      id: EMAIL_SIGNUP_USER.id,
+      email: EMAIL_SIGNUP_USER.email,
+      name: EMAIL_SIGNUP_USER.name,
+      emailVerified: true,
+      image: EMAIL_SIGNUP_USER.image,
+      twoFactorEnabled: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.insert(account).values({
+      id: 'credential-account-cleanup',
+      accountId: 'credential-account-cleanup',
+      providerId: 'credential',
+      userId: EMAIL_SIGNUP_USER.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await expect(bootstrapAuthUser(EMAIL_SIGNUP_USER, { body: {} }, 'credential')).rejects.toThrow(
+      'category seeding failed'
+    );
+
+    expect(
+      await db.query.users.findFirst({
+        where: eq(users.id, EMAIL_SIGNUP_USER.id),
+      })
+    ).toBeUndefined();
+    expect(
+      await db.query.user.findFirst({
+        where: eq(authUsers.id, EMAIL_SIGNUP_USER.id),
+      })
+    ).toBeUndefined();
+    expect(
+      await db.query.account.findMany({
+        where: eq(account.userId, EMAIL_SIGNUP_USER.id),
+      })
+    ).toHaveLength(0);
+    expect(
+      await db.query.workspaces.findMany({
+        where: eq(workspaces.name, `${EMAIL_SIGNUP_USER.name}'s Workspace`),
+      })
+    ).toHaveLength(0);
   });
 });

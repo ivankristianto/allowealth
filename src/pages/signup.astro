@@ -18,6 +18,7 @@ import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astr
 import { workspaceInvitationService, workspaceService } from '@/services';
 import Turnstile from '../components/atoms/Turnstile.astro';
 import { getSignupMode } from '@/lib/auth/signup-mode';
+import { getGoogleAuthErrorMessage } from '@/services/auth.service';
 
 // Get query params
 const url = new URL(Astro.request.url);
@@ -28,6 +29,8 @@ const isPublicSignupEnabled = signupMode === 'public';
 
 // Error messages mapping
 const errorMessages: Record<string, string> = {
+  account_not_linked:
+    'Sign in with your existing method first, then connect Google from Settings > Security.',
   email_exists: 'An account with this email already exists.',
   weak_password: 'Password must be at least 12 characters long.',
   invalid_email: 'Please enter a valid email address.',
@@ -39,8 +42,14 @@ const errorMessages: Record<string, string> = {
   token_used: 'This invitation has already been used.',
 };
 
+const oauthErrorMessage = getGoogleAuthErrorMessage(error);
+
 // Only use whitelisted error codes to prevent XSS
-const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
+const errorMessage = oauthErrorMessage
+  ? oauthErrorMessage
+  : error
+    ? errorMessages[error] || 'An error occurred. Please try again.'
+    : '';
 
 // Invitation data (if token is present)
 let invitation: {

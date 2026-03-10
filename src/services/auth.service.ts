@@ -94,43 +94,47 @@ async function createWorkspaceOwner(
   database: IDatabase
 ): Promise<AuthUser> {
   const workspaceId = nanoid();
+  try {
+    await runTransaction(database, async (tx) => {
+      await tx.insert(schema.workspaces).values({
+        id: workspaceId,
+        name: `${authUser.name.trim()}'s Workspace`,
+        status: 'active',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
 
-  await runTransaction(database, async (tx) => {
-    await tx.insert(schema.workspaces).values({
-      id: workspaceId,
-      name: `${authUser.name.trim()}'s Workspace`,
-      status: 'active',
-      created_at: new Date(),
-      updated_at: new Date(),
+      await tx.insert(schema.users).values({
+        id: authUser.id,
+        workspace_id: workspaceId,
+        email: requireEmail(authUser),
+        password_hash: null,
+        name: authUser.name.trim(),
+        role: 'admin',
+        avatar_url: authUser.image ?? null,
+        email_verified_at: authUser.emailVerified === true ? new Date() : null,
+        deleted_at: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
     });
 
-    await tx.insert(schema.users).values({
-      id: authUser.id,
-      workspace_id: workspaceId,
-      email: requireEmail(authUser),
-      password_hash: null,
-      name: authUser.name.trim(),
-      role: 'admin',
-      avatar_url: authUser.image ?? null,
-      email_verified_at: authUser.emailVerified === true ? new Date() : null,
-      deleted_at: null,
-      created_at: new Date(),
-      updated_at: new Date(),
+    const accountCategoryService = new AccountCategoryService(database);
+    await accountCategoryService.seedDefaultCategories(workspaceId, authUser.id);
+
+    const domainUser = await database.query.users.findFirst({
+      where: eq(schema.users.id, authUser.id),
     });
-  });
 
-  const accountCategoryService = new AccountCategoryService(database);
-  await accountCategoryService.seedDefaultCategories(workspaceId, authUser.id);
+    if (!domainUser) {
+      throw new Error('Failed to load bootstrapped workspace owner');
+    }
 
-  const domainUser = await database.query.users.findFirst({
-    where: eq(schema.users.id, authUser.id),
-  });
-
-  if (!domainUser) {
-    throw new Error('Failed to load bootstrapped workspace owner');
+    return mapDomainUser(domainUser);
+  } catch (error) {
+    await cleanupFailedDomainBootstrap(authUser.id, workspaceId, database);
+    throw error;
   }
-
-  return mapDomainUser(domainUser);
 }
 
 async function createInvitedUser(
@@ -145,31 +149,68 @@ async function createInvitedUser(
     throw new Error('Invitation email does not match the authenticated user');
   }
 
-  await database.insert(schema.users).values({
-    id: authUser.id,
-    workspace_id: invitation.workspace_id,
-    email: requireEmail(authUser),
-    password_hash: null,
-    name: authUser.name.trim(),
-    role: invitation.role,
-    avatar_url: authUser.image ?? null,
-    email_verified_at: authUser.emailVerified === true ? new Date() : null,
-    deleted_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
-  });
+  try {
+    await database.insert(schema.users).values({
+      id: authUser.id,
+      workspace_id: invitation.workspace_id,
+      email: requireEmail(authUser),
+      password_hash: null,
+      name: authUser.name.trim(),
+      role: invitation.role,
+      avatar_url: authUser.image ?? null,
+      email_verified_at: authUser.emailVerified === true ? new Date() : null,
+      deleted_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
 
-  await invitationService.accept(invitationToken);
+    const domainUser = await database.query.users.findFirst({
+      where: eq(schema.users.id, authUser.id),
+    });
 
+    if (!domainUser) {
+      throw new Error('Failed to load invited workspace member');
+    }
+
+    await invitationService.accept(invitationToken);
+
+    return mapDomainUser(domainUser);
+  } catch (error) {
+    await cleanupFailedDomainBootstrap(authUser.id, null, database);
+    throw error;
+  }
+}
+
+async function cleanupFailedDomainBootstrap(
+  userId: string,
+  workspaceId: string | null,
+  database: IDatabase
+): Promise<void> {
   const domainUser = await database.query.users.findFirst({
-    where: eq(schema.users.id, authUser.id),
+    where: eq(schema.users.id, userId),
   });
 
-  if (!domainUser) {
-    throw new Error('Failed to load invited workspace member');
+  const workspaceIdToDelete = workspaceId ?? domainUser?.workspace_id ?? null;
+
+  await database.delete(schema.users).where(eq(schema.users.id, userId));
+
+  if (!workspaceIdToDelete) {
+    return;
   }
 
-  return mapDomainUser(domainUser);
+  const remainingWorkspaceUsers = await database.query.users.findMany({
+    where: eq(schema.users.workspace_id, workspaceIdToDelete),
+  });
+
+  if (remainingWorkspaceUsers.length === 0) {
+    await database.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceIdToDelete));
+  }
+}
+
+async function cleanupFailedAuthBootstrap(userId: string, database: IDatabase): Promise<void> {
+  await database.delete(schema.account).where(eq(schema.account.userId, userId));
+  await database.delete(schema.session).where(eq(schema.session.userId, userId));
+  await database.delete(schema.user).where(eq(schema.user.id, userId));
 }
 
 export async function beforeAuthUserCreate(
@@ -216,6 +257,8 @@ export async function bootstrapAuthUser(
       provider,
       error,
     });
+
+    await cleanupFailedAuthBootstrap(authUser.id, database);
 
     throw error instanceof Error ? error : new Error('Failed to bootstrap auth user domain data');
   }

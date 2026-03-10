@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
+import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 
@@ -12,8 +13,14 @@ export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
 const baseURL = process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? '4321'}`;
 const secret =
   process.env.BETTER_AUTH_SECRET ??
-  process.env.SESSION_SECRET ??
-  'better-auth-dev-secret-change-me';
+  (process.env.NODE_ENV === 'production'
+    ? undefined
+    : 'better-auth-dev-secret-for-local-development-only-0123456789');
+const logger = createLogger('better-auth');
+
+if (!secret) {
+  throw new Error('BETTER_AUTH_SECRET must be set in production');
+}
 const emailService = new EmailService();
 
 export const auth = betterAuth({
@@ -57,7 +64,7 @@ export const auth = betterAuth({
         return;
       }
 
-      console.info(`[better-auth] password reset URL for ${user.email}: ${url}`);
+      logger.info(`password reset URL for ${user.email}: ${url}`);
     },
   },
   socialProviders: {

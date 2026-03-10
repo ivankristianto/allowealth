@@ -233,8 +233,11 @@ function generateCurrentMfaCode(email: string): string {
     const email = ${JSON.stringify(email.toLowerCase())};
     const secretKey =
       process.env.BETTER_AUTH_SECRET ??
-      process.env.SESSION_SECRET ??
-      'better-auth-dev-secret-change-me';
+      (process.env.NODE_ENV === 'production'
+        ? (() => {
+            throw new Error('BETTER_AUTH_SECRET must be set in production');
+          })()
+        : 'better-auth-dev-secret-for-local-development-only-0123456789');
 
     const row = db
       .prepare(
