@@ -229,16 +229,42 @@ const cspNonce = Astro.locals.cspNonce || '';
 
     // Display initial server error if provided
     if (initialServerError && messagesContainer) {
-      messagesContainer.innerHTML = `
-        <div role="alert" class="alert alert-error">
-          <svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="m15 9-6 6"></path>
-            <path d="m9 9 6 6"></path>
-          </svg>
-          <span>${window.RegistrationValidation.escapeHtml(initialServerError)}</span>
-        </div>
-      `;
+      const errorAlert = document.createElement('div');
+      errorAlert.setAttribute('role', 'alert');
+      errorAlert.className = 'alert alert-error';
+
+      // Create Lucide CircleX icon using DOM methods
+      const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      xIcon.setAttribute('width', '24');
+      xIcon.setAttribute('height', '24');
+      xIcon.setAttribute('viewBox', '0 0 24 24');
+      xIcon.setAttribute('fill', 'none');
+      xIcon.setAttribute('stroke', 'currentColor');
+      xIcon.setAttribute('stroke-width', '2');
+      xIcon.setAttribute('stroke-linecap', 'round');
+      xIcon.setAttribute('stroke-linejoin', 'round');
+      xIcon.classList.add('shrink-0', 'h-6', 'w-6');
+      xIcon.setAttribute('aria-hidden', 'true');
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '12');
+      circle.setAttribute('cy', '12');
+      circle.setAttribute('r', '10');
+      const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path1.setAttribute('d', 'm15 9-6 6');
+      const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path2.setAttribute('d', 'm9 9 6 6');
+      xIcon.appendChild(circle);
+      xIcon.appendChild(path1);
+      xIcon.appendChild(path2);
+
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = initialServerError;
+
+      errorAlert.appendChild(xIcon);
+      errorAlert.appendChild(messageSpan);
+      messagesContainer.textContent = '';
+      messagesContainer.appendChild(errorAlert);
       // Associate inputs with error messages for screen readers
       addFormMessagesAssociation();
     }
@@ -326,15 +352,39 @@ const cspNonce = Astro.locals.cspNonce || '';
 
         // Show success message
         if (messagesContainer) {
-          messagesContainer.innerHTML = `
-						<div role="alert" class="alert alert-success">
-							<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-								<circle cx="12" cy="12" r="10"></circle>
-								<path d="m9 12 2 2 4-4"></path>
-							</svg>
-							<span>Account created successfully! Redirecting to login...</span>
-						</div>
-					`;
+          const successAlert = document.createElement('div');
+          successAlert.setAttribute('role', 'alert');
+          successAlert.className = 'alert alert-success';
+
+          // Create Lucide CircleCheck icon using DOM methods
+          const checkIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          checkIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          checkIcon.setAttribute('width', '24');
+          checkIcon.setAttribute('height', '24');
+          checkIcon.setAttribute('viewBox', '0 0 24 24');
+          checkIcon.setAttribute('fill', 'none');
+          checkIcon.setAttribute('stroke', 'currentColor');
+          checkIcon.setAttribute('stroke-width', '2');
+          checkIcon.setAttribute('stroke-linecap', 'round');
+          checkIcon.setAttribute('stroke-linejoin', 'round');
+          checkIcon.classList.add('shrink-0', 'h-6', 'w-6');
+          checkIcon.setAttribute('aria-hidden', 'true');
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', '12');
+          circle.setAttribute('cy', '12');
+          circle.setAttribute('r', '10');
+          const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path1.setAttribute('d', 'm9 12 2 2 4-4');
+          checkIcon.appendChild(circle);
+          checkIcon.appendChild(path1);
+
+          const messageSpan = document.createElement('span');
+          messageSpan.textContent = 'Account created successfully! Redirecting to login...';
+
+          successAlert.appendChild(checkIcon);
+          successAlert.appendChild(messageSpan);
+          messagesContainer.textContent = '';
+          messagesContainer.appendChild(successAlert);
           // Associate inputs with success message for screen readers
           addFormMessagesAssociation();
           // Move focus to message container for accessibility
@@ -351,16 +401,42 @@ const cspNonce = Astro.locals.cspNonce || '';
       } catch (error) {
         // Show error message
         if (messagesContainer) {
-          messagesContainer.innerHTML = `
-						<div role="alert" class="alert alert-error">
-							<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-								<circle cx="12" cy="12" r="10"></circle>
-								<path d="m15 9-6 6"></path>
-								<path d="m9 9 6 6"></path>
-							</svg>
-							<span>An error occurred. Please try again.</span>
-						</div>
-					`;
+          const errorAlert = document.createElement('div');
+          errorAlert.setAttribute('role', 'alert');
+          errorAlert.className = 'alert alert-error';
+
+          // Create Lucide CircleX icon using DOM methods
+          const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          xIcon.setAttribute('width', '24');
+          xIcon.setAttribute('height', '24');
+          xIcon.setAttribute('viewBox', '0 0 24 24');
+          xIcon.setAttribute('fill', 'none');
+          xIcon.setAttribute('stroke', 'currentColor');
+          xIcon.setAttribute('stroke-width', '2');
+          xIcon.setAttribute('stroke-linecap', 'round');
+          xIcon.setAttribute('stroke-linejoin', 'round');
+          xIcon.classList.add('shrink-0', 'h-6', 'w-6');
+          xIcon.setAttribute('aria-hidden', 'true');
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', '12');
+          circle.setAttribute('cy', '12');
+          circle.setAttribute('r', '10');
+          const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path1.setAttribute('d', 'm15 9-6 6');
+          const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path2.setAttribute('d', 'm9 9 6 6');
+          xIcon.appendChild(circle);
+          xIcon.appendChild(path1);
+          xIcon.appendChild(path2);
+
+          const messageSpan = document.createElement('span');
+          messageSpan.textContent = 'An error occurred. Please try again.';
+
+          errorAlert.appendChild(xIcon);
+          errorAlert.appendChild(messageSpan);
+          messagesContainer.textContent = '';
+          messagesContainer.appendChild(errorAlert);
           // Associate inputs with error message for screen readers
           addFormMessagesAssociation();
           // Move focus to message container for accessibility

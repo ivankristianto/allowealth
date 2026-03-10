@@ -243,7 +243,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       {
         ownerName && (
           <span
-            class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+            class="inline-flex items-center gap-1 text-xs font-medium text-base-content/40"
             data-testid="account-owner"
           >
             <User size={10} class="stroke-current shrink-0" aria-hidden="true" />
@@ -253,13 +253,13 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       }
       {
         ownerName && (
-          <span class="text-base-content/20 text-[11px]" aria-hidden="true">
+          <span class="text-base-content/20 text-xs" aria-hidden="true">
             &middot;
           </span>
         )
       }
       <span
-        class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+        class="inline-flex items-center gap-1 text-xs font-medium text-base-content/40"
         title={`Last balance input: ${formattedDate}`}
       >
         Updated {relativeTime.toLowerCase()}
@@ -314,7 +314,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         {
           ownerName && (
             <span
-              class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+              class="inline-flex items-center gap-1 text-xs font-medium text-base-content/40"
               data-testid="account-owner"
             >
               <User size={10} class="stroke-current shrink-0" aria-hidden="true" />
@@ -324,13 +324,13 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         }
         {
           ownerName && (
-            <span class="text-base-content/20 text-[11px]" aria-hidden="true">
+            <span class="text-base-content/20 text-xs" aria-hidden="true">
               &middot;
             </span>
           )
         }
         <span
-          class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
+          class="inline-flex items-center gap-1 text-xs font-medium text-base-content/40"
           title={`Last balance input: ${formattedDate}`}
         >
           Updated {relativeTime.toLowerCase()}
