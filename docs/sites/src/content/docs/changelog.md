@@ -14,6 +14,18 @@ audience:
 
 All notable changes to Allowealth are documented here.
 
+## [Unreleased] - 2026-03-10
+
+### Changed
+
+- **Authentication rewrite:** Replaced the legacy Lucia, Arctic, and custom MFA stack with Better Auth and Astro middleware-backed session hydration.
+- **Google linking flow:** Existing accounts now link Google only from the authenticated Security page. Pre-auth callback linking has been removed.
+- **Security settings:** Two-factor setup, verification, backup codes, and account linking now use Better Auth-owned flows.
+
+### Notes
+
+- The Better Auth cutover invalidates legacy sessions, so users are signed out once after deployment.
+
 ## [Unreleased] - 2026-03-08
 
 ### Added

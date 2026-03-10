@@ -6,114 +6,93 @@ Accepted
 
 ## Context
 
-Users need authentication options beyond email/password. Social sign-in reduces friction (no password to remember, single-click login) and leverages identity providers' existing email verification.
+Allowealth needs Google sign-in without preserving the old custom OAuth callback flow, pending-link cookies, or Arctic-specific wiring.
 
-Key requirements:
+Key product requirements:
 
-- **Provider-agnostic design**: Google first, but GitHub/Apple may follow.
-- **Account linking**: Existing email/password users must be able to add Google sign-in without losing data.
-- **Cross-runtime compatibility**: Must work in Bun, Node.js, and Cloudflare Workers (no native addons).
-- **Security**: PKCE, CSRF protection, and tamper-proof state for the linking flow.
+- Google is the first social sign-in provider.
+- Existing email/password users must not be silently merged into Google sign-in.
+- Linking must remain explicit and authenticated.
+- OAuth behavior should follow Better Auth ownership instead of app-specific callback internals.
 
 ## Decision
 
-### 1. Provider-Agnostic Schema
+### 1. Better Auth Owns OAuth
 
-A separate `oauth_accounts` table rather than adding provider columns to `users`:
+Google OAuth now runs through the shared Better Auth server in `src/lib/auth/server.ts` and the Astro catch-all auth route at `src/pages/api/auth/[...all].ts`.
 
-```sql
-oauth_accounts (
-  id              TEXT PRIMARY KEY,
-  user_id         TEXT REFERENCES users(id) ON DELETE CASCADE,
-  provider        TEXT,          -- 'google', 'github', etc.
-  provider_account_id TEXT,      -- provider's unique user ID
-  email           TEXT,
-  created_at      TIMESTAMP
-)
-UNIQUE (provider, provider_account_id)
-INDEX (user_id)
+The application no longer maintains:
+
+- custom Google callback handlers
+- pending-link cookies
+- custom OAuth state storage
+- Arctic client setup
+
+### 2. Explicit Linking Only From Security Settings
+
+Implicit linking is disabled:
+
+```ts
+account: {
+  accountLinking: {
+    disableImplicitLinking: true,
+  },
+}
 ```
 
-This supports multiple providers per user and adding new providers without schema migrations. The `users.password_hash` column was made nullable to support OAuth-only accounts, and `users.avatar_url` was added for provider-sourced profile images.
+That gives the product these outcomes:
 
-### 2. Arctic Library
+| Scenario                                          | Behavior                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| New Google user                                   | Better Auth creates the auth account, then app bootstrap creates the workspace              |
+| Existing user with linked Google account          | Sign-in succeeds normally                                                                   |
+| Existing local-account user without linked Google | Sign-in is blocked and the user is told to sign in first, then connect Google from Security |
 
-[Arctic](https://arcticjs.dev/) was chosen over alternatives (passport.js, next-auth, oslo/oauth2) because:
+The old `/auth/link-account` page and pre-auth consent step were intentionally removed.
 
-- Built on **Web Crypto API** — no native addons, works in Workers.
-- Built-in **PKCE** support (code verifier/challenge generation).
-- Minimal API surface — one client class per provider.
-- Lazy initialization avoids errors when env vars are absent (tests, CI).
+### 3. Better Auth Tables Are Canonical For Sign-In
 
-### 3. Three-Outcome Callback Pattern
+Better Auth now owns the auth user, session, account, verification, and 2FA tables used for authentication.
 
-`loginOrRegisterWithOAuth(profile)` produces exactly one of three outcomes:
+App-owned domain data remains separate:
 
-| Outcome                   | Condition                                                         | Action                                                                                            |
-| ------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Direct login**          | `oauth_accounts` row exists for `(provider, provider_account_id)` | Create session, redirect to `/dashboard`                                                          |
-| **Consent-based linking** | User with matching email exists but no OAuth link                 | Store pending link in signed cookie, redirect to `/auth/link-account`                             |
-| **Auto-register**         | No matching email or OAuth link                                   | Create user + workspace + oauth_account in a transaction, seed defaults, redirect to `/dashboard` |
+- `users`
+- `workspaces`
+- financial records
+- invitations
 
-The linking flow requires explicit user consent on a dedicated page — no silent merging of accounts.
+The app still owns one thin integration point: post-signup bootstrap that creates domain records exactly once for new auth users.
 
-### 4. HMAC-Signed Cookies for Linking State
+### 4. Linked Account Management Is Product UI, Not Callback Logic
 
-Pending link data is stored in a signed HttpOnly cookie rather than a database table:
+Users start Google linking from the authenticated Security page. The UI calls Better Auth client methods to link or unlink Google, and the app surfaces the product-specific guidance around safe linking and unlinking.
 
-- **Payload**: JSON with `userId`, `provider`, `providerAccountId`, `email`, `name`, `avatarUrl`, `expiresAt`.
-- **Signing**: HMAC-SHA256 via Web Crypto API. Format: `base64(json).hmac_hex`.
-- **Verification**: Constant-time comparison prevents timing oracle attacks.
-- **Expiry**: 10 minutes. Cookie is deleted after use (one-time).
-- **Signing key**: `GOOGLE_CLIENT_SECRET` (sufficient for single-provider; see Future Considerations).
+## Security Properties
 
-This avoids an extra DB table for ephemeral state and keeps the linking flow stateless on the server side.
-
-### 5. Unlink Safety Gate
-
-Before unlinking an OAuth provider, the service verifies the user has a password set. This prevents lockout for users who signed up via OAuth and never set a password. The check is simple: if `password_hash` is null, unlinking is denied with `OAUTH_UNLINK_DENIED`.
-
-## Security Measures
-
-| Layer             | Mechanism                                                                                   |
-| ----------------- | ------------------------------------------------------------------------------------------- |
-| CSRF              | Random `state` parameter in HttpOnly cookie, validated with constant-time comparison        |
-| Code interception | PKCE flow (code verifier + SHA-256 challenge)                                               |
-| Cookie tampering  | HMAC-SHA256 signature on pending link cookie                                                |
-| Timing attacks    | Constant-time comparison for state, HMAC, and cookie signatures                             |
-| Rate limiting     | 10 requests / 15 minutes per IP on callback endpoint                                        |
-| Email trust       | `email_verified` claim enforced — unverified Google emails rejected                         |
-| Session safety    | Workspace `status = 'active'` and `user.deleted_at IS NULL` checked before session creation |
-| Cookie hardening  | `HttpOnly`, `SameSite=Lax`, `Secure` (production), `Max-Age=600`                            |
+- Better Auth handles the provider flow and session lifecycle.
+- Implicit account linking is disabled.
+- Existing local accounts are protected from accidental merge during Google sign-in.
+- Linking requires an authenticated session in Settings > Security.
+- Unlinking follows Better Auth safety rules so users are not allowed to remove their last usable sign-in method.
 
 ## Consequences
 
 ### Positive
 
-- **Provider-agnostic**: Adding a new provider requires only a new Arctic client and route files; the service layer is reused as-is.
-- **No native dependencies**: Entire flow uses Web Crypto API, compatible with Cloudflare Workers.
-- **Data preservation**: Account linking preserves existing transactions, budgets, and settings.
-- **Auto-verified email**: OAuth users inherit Google's email verification, skipping the verification email flow.
-- **Stateless linking**: No extra DB table for temporary linking state.
+- One auth system owns Google sign-in and linked-account state.
+- The app no longer carries custom OAuth callback code or pending-link cookies.
+- The authenticated settings flow is easier to reason about than a pre-auth branching callback.
+- Adding future providers can reuse the same Better Auth integration pattern.
 
 ### Negative
 
-- **10-minute linking window**: Cookie-based state expires; users who delay consent must restart the flow.
-- **Single signing key**: `GOOGLE_CLIENT_SECRET` is reused for cookie signing; multi-provider setups should use a dedicated secret.
-- **Password-gated unlink**: OAuth-only users must set a password before unlinking, which adds a step.
-
-## Future Considerations
-
-- **Additional providers** (GitHub, Apple): Create new Arctic client + route files in `src/pages/api/auth/{provider}/`. The service layer (`loginOrRegisterWithOAuth`, `confirmAccountLink`, `unlinkOAuthProvider`) works without changes.
-- **Dedicated `COOKIE_SIGNING_SECRET`**: Decouple cookie signing from any provider secret to support multi-provider setups cleanly.
-- **Multi-provider avatar tracking**: Currently `avatar_url` is a single field on `users`. Multiple providers could source different avatars — may need a preference column.
-- **Passwordless accounts**: OAuth-only users can't unlink without setting a password first. A future "set password" flow or alternative lockout check (e.g., requiring at least one other linked provider) would improve UX.
-- **SSO enforcement per workspace**: Admin setting to require OAuth sign-in for all workspace members.
+- Users with old sessions must sign in again after the Better Auth cutover.
+- Existing local-account users cannot start linking from the Google login callback anymore; they must sign in first and link from Security.
 
 ## References
 
-- Implementation: `src/lib/auth/oauth.ts`, `src/services/auth.service.ts`, `src/pages/api/auth/google/`
-- Cookie signing: `src/lib/crypto/cookie-signature.ts`
-- DB schema: `src/db/schema/sqlite/oauth-accounts.ts`
-- Design doc: `docs/plans/2026-02-11-google-sso-design.md`
-- Arctic docs: https://arcticjs.dev/
+- `src/lib/auth/server.ts`
+- `src/services/auth.service.ts`
+- `src/components/molecules/SecurityConnectedAccountsCard.astro`
+- `src/pages/security.astro`
+- `docs/plans/2026-03-10-better-auth-migration-design.md`

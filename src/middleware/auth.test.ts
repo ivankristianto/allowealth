@@ -1,7 +1,9 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db';
+import { users, workspaces } from '@/db/schema';
 
 const getSessionMock = mock(async () => null);
-const findDomainUserMock = mock(async () => null);
 
 (mock as any).module('@/lib/auth/server', () => ({
   auth: {
@@ -13,23 +15,9 @@ const findDomainUserMock = mock(async () => null);
   AUTH_SESSION_COOKIE_NAME: 'better-auth.session_token',
 }));
 
-(mock as any).module('@/db', () => ({
-  db: {
-    query: {
-      users: {
-        findFirst: findDomainUserMock,
-      },
-    },
-  },
-}));
-
-(mock as any).module('@/db/schema', () => ({
-  users: {
-    id: 'id',
-  },
-}));
-
 let authentication: typeof import('./auth').authentication;
+const TEST_USER_ID = 'middleware-auth-user';
+const TEST_WORKSPACE_ID = 'middleware-auth-workspace';
 
 type MockContext = {
   locals: App.Locals;
@@ -90,9 +78,15 @@ describe('authentication middleware', () => {
     ({ authentication } = await import('./auth'));
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     getSessionMock.mockReset();
-    findDomainUserMock.mockReset();
+    await db.delete(users).where(eq(users.id, TEST_USER_ID));
+    await db.delete(workspaces).where(eq(workspaces.id, TEST_WORKSPACE_ID));
+  });
+
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.id, TEST_USER_ID));
+    await db.delete(workspaces).where(eq(workspaces.id, TEST_WORKSPACE_ID));
   });
 
   test('sets locals.user to null for unauthenticated requests', async () => {
@@ -112,36 +106,49 @@ describe('authentication middleware', () => {
     getSessionMock.mockResolvedValue({
       session: {
         id: 'session-1',
-        userId: 'user-1',
+        userId: TEST_USER_ID,
         token: 'token-1',
         expiresAt: new Date('2030-01-01T00:00:00.000Z'),
         createdAt: new Date('2030-01-01T00:00:00.000Z'),
         updatedAt: new Date('2030-01-01T00:00:00.000Z'),
       },
       user: {
-        id: 'user-1',
+        id: TEST_USER_ID,
         email: 'user@example.com',
         name: 'Example User',
       },
     });
-    findDomainUserMock.mockResolvedValue({
-      id: 'user-1',
+
+    await db.insert(workspaces).values({
+      id: TEST_WORKSPACE_ID,
+      name: 'Middleware Test Workspace',
+      status: 'active',
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    await db.insert(users).values({
+      id: TEST_USER_ID,
+      workspace_id: TEST_WORKSPACE_ID,
       email: 'user@example.com',
       name: 'Example User',
       role: 'member',
-      workspace_id: 'workspace-1',
       avatar_url: null,
       deleted_at: null,
+      password_hash: null,
+      email_verified_at: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     });
+
     const context = createContext('/dashboard', 'signed-cookie');
 
     await authentication(context as never, async () => new Response('ok'));
 
     expect(getSessionMock).toHaveBeenCalled();
-    expect(findDomainUserMock).toHaveBeenCalled();
     expect(context.locals.session?.id).toBe('session-1');
-    expect(context.locals.user?.id).toBe('user-1');
-    expect(context.locals.user?.workspaceId).toBe('workspace-1');
+    expect(context.locals.user?.id).toBe(TEST_USER_ID);
+    expect(context.locals.user?.workspaceId).toBe(TEST_WORKSPACE_ID);
   });
 
   test('clears stale auth state instead of throwing', async () => {

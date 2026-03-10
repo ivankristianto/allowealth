@@ -14,7 +14,7 @@ API endpoints live in `src/pages/api/` and follow file-based routing.
 
 ## Route groups
 
-- `/api/auth/*`: login/signup/session verification flows
+- `/api/auth/*`: Better Auth catch-all routes for sign-in, sign-out, session, password reset, OAuth, plus the remaining app-owned email verification endpoint
 - `/api/transactions/*`: CRUD, bulk actions, template helpers
 - `/api/budgets/*` and `/api/budget/*`: budget management and analytics
 - `/api/accounts/*`: account CRUD, transfer, close/reopen
@@ -27,10 +27,12 @@ API endpoints live in `src/pages/api/` and follow file-based routing.
 
 Most route handlers follow this sequence:
 
-1. Validate authentication/session.
+1. Read authenticated state from middleware-backed `Astro.locals`.
 2. Parse and validate request input.
 3. Call service-layer method in `src/services`.
 4. Return JSON or HTML fragment response.
+
+For auth routes, Better Auth owns the primary endpoint surface through `src/pages/api/auth/[...all].ts`.
 
 ## Contract source of truth
 

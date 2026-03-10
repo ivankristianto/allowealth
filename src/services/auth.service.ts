@@ -217,9 +217,7 @@ export async function bootstrapAuthUser(
       error,
     });
 
-    throw error instanceof Error
-      ? error
-      : new Error('Failed to bootstrap auth user domain data');
+    throw error instanceof Error ? error : new Error('Failed to bootstrap auth user domain data');
   }
 }
 

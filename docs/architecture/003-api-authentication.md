@@ -1,70 +1,51 @@
 # API Authentication Architecture
 
-> **ADR-003** | Created: 2026-01-26
+> **ADR-003** | Updated: 2026-03-10
 
 ## Overview
 
-This document describes the authentication architecture for API routes, explaining how middleware-based session validation works and how to use the `getAuthenticatedUser` helper function.
+This document describes how authenticated API requests work after the Better Auth rewrite.
 
 ## Problem
 
-Previously, API routes used `requireAuth(context)` which made a redundant database call to `auth.validateSession()` even though the middleware had already validated the session and set `context.locals.user`.
+The old auth stack mixed Lucia session validation, custom session-cache behavior, and route-level auth helpers. That led to duplicate session checks, extra moving parts, and API handlers that did not share one clear pattern.
 
-This caused:
+## Decision
 
-- **Unnecessary database calls**: Every authenticated API request triggered two session validations
-- **Performance overhead**: Extra latency on each request
-- **Inconsistent patterns**: Some code used the async `requireAuth`, others accessed `locals` directly
+Allowealth now uses Better Auth as the single auth system.
 
-## Solution
+- `src/pages/api/auth/[...all].ts` is the main auth entrypoint.
+- `src/middleware/auth.ts` resolves the current session through `auth.api.getSession(...)`.
+- Middleware hydrates `Astro.locals.user` and `Astro.locals.session` before page and API code runs.
+- API handlers should read authenticated state from `context.locals`, not revalidate auth themselves.
 
-### How Middleware Authentication Works
+The only remaining app-owned auth-adjacent API route is `src/pages/api/auth/verify-email.ts`, which is still used for profile email-change verification.
 
-The Astro middleware (`src/middleware.ts`) runs on **every request** and:
+## Request Flow
 
-1. Extracts the session ID from the `sid` cookie
-2. Validates the session using `auth.validateSession(sessionId)`
-3. Sets `context.locals.user` and `context.locals.session` if valid
-4. Sets them to `null` if invalid or missing
+### Middleware Authentication
 
-By the time an API route handler runs, authentication has already been validated.
+For non-prerendered app requests, the authentication middleware:
 
-### Using `getAuthenticatedUser`
+1. Reads the Better Auth session cookie: `better-auth.session_token`
+2. Calls the shared Better Auth server instance
+3. Loads the domain user record from `users`
+4. Stores hydrated auth state on `context.locals`
+5. Clears auth state when the session is missing, stale, or belongs to a deleted user
 
-The `getAuthenticatedUser(context)` helper is a **synchronous** function that:
+This keeps auth resolution in one place and gives API routes a stable user/session shape.
 
-- Uses `context.locals.user` directly (set by middleware)
-- Returns the user ID as a string
-- Throws `Error('Unauthorized')` if not authenticated
-- **Does NOT make any database calls**
+### API Handler Pattern
 
-```typescript
-// src/lib/api-utils.ts
-import type { APIContext } from 'astro';
+Use `getAuthenticatedUser(context)` when a route only needs the current user ID:
 
-export function getAuthenticatedUser(context: APIContext): string {
-  const user = context.locals.user;
-
-  if (!user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  return user.id;
-}
-```
-
-### Example Usage in API Routes
-
-```typescript
+```ts
 import type { APIRoute } from 'astro';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { errorResponse, getAuthenticatedUser, successResponse } from '@/lib/api-utils';
 
 export const GET: APIRoute = async (context) => {
   try {
-    // Get user ID - no database call, uses middleware-validated session
     const userId = getAuthenticatedUser(context);
-
-    // Proceed with business logic...
     const data = await someService.getData(userId);
 
     return successResponse(data);
@@ -72,96 +53,48 @@ export const GET: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
+
     return errorResponse('Internal server error', 500);
   }
 };
 ```
 
-## Migration Guide
+If the route needs more than the user ID, read `context.locals.user` or `context.locals.session` directly.
 
-### Before (Deprecated)
+## Migration Guidance
 
-```typescript
-import { requireAuth } from '@/lib/api-utils';
+### Deprecated Pattern
 
-export const GET: APIRoute = async (context) => {
-  try {
-    // ❌ Makes unnecessary database call
-    const userId = await requireAuth(context);
-    // ...
-  } catch (error) {
-    // ...
-  }
-};
+Older route code sometimes revalidated auth inside the handler.
+
+```ts
+const userId = await requireAuth(context);
 ```
 
-### After (Recommended)
+That page-level helper still exists for redirect-based page protection, but API routes should not use it.
 
-```typescript
-import { getAuthenticatedUser } from '@/lib/api-utils';
+### Current Pattern
 
-export const GET: APIRoute = async (context) => {
-  try {
-    // ✅ Uses middleware-validated session (no DB call)
-    const userId = getAuthenticatedUser(context);
-    // ...
-  } catch (error) {
-    // ...
-  }
-};
-```
+API routes should rely on the middleware-owned locals shape:
 
-### Key Differences
-
-| Aspect         | `requireAuth` (deprecated) | `getAuthenticatedUser` |
-| -------------- | -------------------------- | ---------------------- |
-| Database calls | Yes (redundant)            | No                     |
-| Async          | Yes (`await` required)     | No (synchronous)       |
-| Source         | Re-validates session       | Uses `locals.user`     |
-| Performance    | Slower                     | Faster                 |
-
-## Access Full User Object
-
-If you need more than just the user ID:
-
-```typescript
-export const GET: APIRoute = async (context) => {
-  const user = context.locals.user;
-
-  if (!user) {
-    return errorResponse('Unauthorized', 401);
-  }
-
-  // Access full user object
-  console.log(user.id); // string
-  console.log(user.email); // string
-  console.log(user.name); // string
-
-  return successResponse({ name: user.name });
-};
-```
+| Need             | Recommended source              |
+| ---------------- | ------------------------------- |
+| Current user ID  | `getAuthenticatedUser(context)` |
+| Full user object | `context.locals.user`           |
+| Session metadata | `context.locals.session`        |
 
 ## Security Notes
 
-1. **Middleware runs first**: The session is always validated before API routes execute
-2. **CSRF protection**: POST/PUT/DELETE/PATCH requests require CSRF tokens (handled by middleware)
-3. **Rate limiting**: Auth endpoints have rate limits applied (see `src/lib/rate-limit.ts`)
-
-## Note on `requireAuth` Functions
-
-There are two `requireAuth` functions in this codebase with different purposes:
-
-| Location                    | Status         | Purpose                                           |
-| --------------------------- | -------------- | ------------------------------------------------- |
-| `@/lib/api-utils.ts`        | **DEPRECATED** | Was used in API routes, makes redundant DB call   |
-| `@/lib/auth/requireAuth.ts` | **ACTIVE**     | Used in Astro pages for redirect-based protection |
-
-The new `getAuthenticatedUser` replaces only the first one (API route authentication). The page-level `requireAuth` in `auth/requireAuth.ts` remains active for protecting Astro pages with redirects to login.
+1. Middleware is the single place where request auth is resolved.
+2. Better Auth owns credential login, Google OAuth, password reset, email verification, linked accounts, and 2FA auth state.
+3. CSRF exemptions now target the Better Auth catch-all route plus the remaining app-owned endpoints.
+4. The Better Auth cutover invalidates old sessions, so users are forced to sign in again after deployment.
 
 ## Related Files
 
-- `src/middleware.ts` - Session validation and security headers
-- `src/lib/api-utils.ts` - API helper functions including `getAuthenticatedUser`
-- `src/lib/auth/lucia.ts` - Lucia auth configuration
-- `src/lib/auth/requireAuth.ts` - Page-level authentication helper (redirects to login)
-- `src/env.d.ts` - TypeScript types for `Astro.locals`
+- `src/lib/auth/server.ts`
+- `src/pages/api/auth/[...all].ts`
+- `src/middleware/auth.ts`
+- `src/lib/api-utils.ts`
+- `src/lib/auth/requireAuth.ts`
+- `src/pages/api/auth/verify-email.ts`

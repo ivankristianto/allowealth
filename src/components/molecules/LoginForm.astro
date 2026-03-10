@@ -324,8 +324,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         const result = await authClient.signIn.email({
           email: emailInput.value.trim(),
           password: passwordInput.value,
-          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)
-            ?.checked,
+          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)?.checked,
           callbackURL: redirectTo || '/dashboard',
         });
 

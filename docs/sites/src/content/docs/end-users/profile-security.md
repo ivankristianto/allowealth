@@ -51,15 +51,6 @@ If the verification email does not arrive:
 3. Check spam/junk folders
 4. Verify the email address has no typos
 
-### Linked OAuth Accounts
-
-View connected third-party accounts:
-
-- **Google** - Shows if you log in with Google
-- Email address from the provider displays
-
-To disconnect an OAuth account, contact your workspace administrator.
-
 ## Security
 
 Protect your account with multiple security layers.
@@ -74,7 +65,7 @@ MFA requires a second verification step when logging in. Even if someone obtains
 2. Find the **Multi-Factor Authentication** section
 3. Click **Enable MFA**
 4. Enter your password to confirm
-5. Scan the QR code with an authenticator app (Google Authenticator, Authy, or similar)
+5. Add the setup key to your authenticator app
 6. Enter the 6-digit code from the app
 7. Click **Verify**
 
@@ -86,7 +77,7 @@ After enabling MFA, you receive backup codes:
 2. Store in a secure location (password manager or physical safe)
 3. Each code works once if you lose access to your authenticator app
 
-**Warning:** Without backup codes, losing your authenticator app requires administrator intervention to restore access.
+**Warning:** Without backup codes, losing your authenticator app can lock you out until you disable and reconfigure MFA from a verified session.
 
 #### Disable MFA
 
@@ -119,7 +110,20 @@ View accounts linked to your Allowealth login:
 - **Connected** - Indicates active link
 - **Not Connected** - Available to link
 
-Contact support to connect or disconnect OAuth providers.
+To connect Google:
+
+1. Sign in with your current account method
+2. Open **Security**
+3. In **Connected Accounts**, click **Connect Account**
+4. Complete the Google confirmation flow
+
+To disconnect Google:
+
+1. Open **Security**
+2. In **Connected Accounts**, click **Disconnect**
+3. Confirm the change
+
+If Google is your only usable sign-in method, Allowealth blocks unlinking to prevent lockout.
 
 ### Passkeys
 
@@ -218,7 +222,7 @@ Review this log periodically for unauthorized activity.
 4. Re-enable MFA with your new device
 5. Generate new backup codes
 
-If you have no backup codes, contact your workspace administrator.
+If you have no backup codes and no verified session, you may need help from your workspace administrator.
 
 ### API Key Not Working
 

@@ -37,7 +37,11 @@ async function registerUser(
   return { email, password, name };
 }
 
-async function loginViaPage(page: import('@playwright/test').Page, email: string, password: string) {
+async function loginViaPage(
+  page: import('@playwright/test').Page,
+  email: string,
+  password: string
+) {
   await page.goto('/login');
   await submitLoginForm(page, email, password);
 }
