@@ -19,7 +19,9 @@ import Button from '@/components/atoms/Button.astro';
 import { History } from '@lucide/astro';
 import { apiKeyService } from '@/services';
 import { auth } from '@/lib/auth/server';
-import { getLinkedOAuthAccounts } from '@/services/auth.service';
+import { db } from '@/db';
+import { account as authAccount, twoFactor } from '@/db/schema/sqlite';
+import { eq } from 'drizzle-orm';
 
 const currentPath = '/security';
 
@@ -41,29 +43,55 @@ let connectedAccounts: Array<{
   id: string;
   provider: string;
   email?: string;
+  accountId?: string;
   connected: boolean;
+  canUnlink: boolean;
 }> = [];
+let mfaStatus = { enabled: false, hasBackupCodes: false, backupCodesRemaining: 0 };
+
+function getBackupCodeCount(serializedBackupCodes: string | null | undefined): number {
+  if (!serializedBackupCodes) {
+    return 0;
+  }
+
+  try {
+    const parsed = JSON.parse(serializedBackupCodes);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
 
 if (user?.id) {
-  const linkedAccounts = await getLinkedOAuthAccounts(user.id);
-  const googleAccount = linkedAccounts.find((a) => a.provider === 'google');
+  const [authAccounts, authSession, twoFactorState] = await Promise.all([
+    db.query.account.findMany({
+      where: eq(authAccount.userId, user.id),
+    }),
+    auth.api.getSession({ headers: Astro.request.headers }).catch(() => null),
+    db.query.twoFactor.findFirst({
+      where: eq(twoFactor.userId, user.id),
+    }),
+  ]);
+
+  const googleAccount = authAccounts.find((authProvider) => authProvider.providerId === 'google');
+  const canUnlinkGoogleAccount = Boolean(googleAccount) && authAccounts.length > 1;
+
   connectedAccounts = [
     {
       id: 'google',
       provider: 'Google',
-      email: googleAccount?.email,
+      email: user.email,
+      accountId: googleAccount?.accountId,
       connected: !!googleAccount,
+      canUnlink: canUnlinkGoogleAccount,
     },
   ];
-}
 
-// Fetch MFA status
-let mfaStatus = { enabled: false, hasBackupCodes: false, backupCodesRemaining: 0 };
-if (user?.id) {
-  const authSession = await auth.api.getSession({ headers: Astro.request.headers }).catch(
-    () => null
-  );
   mfaStatus.enabled = Boolean(authSession?.user?.twoFactorEnabled);
+  mfaStatus.backupCodesRemaining = mfaStatus.enabled
+    ? getBackupCodeCount(twoFactorState?.backupCodes)
+    : 0;
+  mfaStatus.hasBackupCodes = mfaStatus.backupCodesRemaining > 0;
 }
 
 // @TODO: Wire with backend for passkeys.

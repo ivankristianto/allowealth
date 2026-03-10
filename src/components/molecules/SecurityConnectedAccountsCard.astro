@@ -12,7 +12,9 @@ interface ConnectedAccount {
   id: string;
   provider: string;
   email?: string;
+  accountId?: string;
   connected: boolean;
+  canUnlink: boolean;
 }
 
 export interface Props {
@@ -43,13 +45,31 @@ const { accounts } = Astro.props;
             </div>
           </div>
           {account.connected ? (
-            <form method="POST" data-unlink-form data-provider={account.id} data-astro-reload>
-              <Button type="submit" variant="outline" size="sm" data-unlink-btn>
+            account.canUnlink ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-provider-id={account.id}
+                data-account-id={account.accountId}
+                data-unlink-provider
+                data-testid="disconnect-google-btn"
+              >
                 Disconnect
               </Button>
-            </form>
+            ) : (
+              <div class="text-right text-xs text-base-content/60">
+                Google is currently your only linked sign-in method.
+              </div>
+            )
           ) : (
-            <Button href="/api/auth/google" variant="primary" size="sm">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              data-link-provider={account.id}
+              data-testid="connect-google-btn"
+            >
               Connect Account
             </Button>
           )}
@@ -60,5 +80,90 @@ const { accounts } = Astro.props;
 </SecurityCard>
 
 <script>
-  import '@/components/molecules/SecurityConnectedAccountsCard.client';
+  import { authClient } from '@/lib/auth/client';
+  import { addToast } from '@/lib/stores/toastStore';
+
+  const initializedCards = new WeakSet<Element>();
+
+  function getAuthErrorMessage(error: unknown, fallbackMessage: string): string {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
+      return error.message;
+    }
+
+    return fallbackMessage;
+  }
+
+  function setPendingState(button: HTMLButtonElement, isPending: boolean) {
+    button.disabled = isPending;
+    button.setAttribute('aria-busy', isPending ? 'true' : 'false');
+  }
+
+  function initConnectedAccountCards() {
+    document
+      .querySelectorAll<HTMLElement>('[data-link-provider], [data-unlink-provider]')
+      .forEach((control) => {
+        if (initializedCards.has(control)) {
+          return;
+        }
+
+        initializedCards.add(control);
+
+        control.addEventListener('click', async (event) => {
+          const button = event.currentTarget;
+          if (!(button instanceof HTMLButtonElement)) {
+            return;
+          }
+
+          const providerId = button.dataset.linkProvider ?? button.dataset.providerId;
+          if (!providerId) {
+            return;
+          }
+
+          try {
+            setPendingState(button, true);
+
+            if (button.dataset.linkProvider) {
+              const result = await authClient.linkSocial({
+                provider: providerId,
+                callbackURL: '/security',
+              });
+
+              if (result.error) {
+                throw result.error;
+              }
+
+              return;
+            }
+
+            const result = await authClient.unlinkAccount({
+              providerId,
+              accountId: button.dataset.accountId || undefined,
+            });
+
+            if (result.error) {
+              throw result.error;
+            }
+
+            addToast(`${providerId} disconnected successfully.`, 'success');
+            window.location.reload();
+          } catch (error) {
+            addToast(getAuthErrorMessage(error, 'Unable to update linked accounts.'), 'error');
+            setPendingState(button, false);
+          }
+        });
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initConnectedAccountCards);
+  } else {
+    initConnectedAccountCards();
+  }
+
+  document.addEventListener('astro:page-load', initConnectedAccountCards);
 </script>

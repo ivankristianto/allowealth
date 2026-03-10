@@ -127,19 +127,13 @@ export function requiresCsrfProtection(method: string): boolean {
 }
 
 /**
- * API endpoints that are exempt from CSRF protection
- * These include:
- * - Public endpoints that don't require authentication (login, signup, forgot-password)
- * - Logout, which only affects the caller's own session and should work even with stale cookies
+ * API endpoints that are exempt from CSRF protection.
+ *
+ * Better Auth owns the full `/api/auth/*` surface, including authenticated session,
+ * recovery, linking, and two-factor endpoints. Those routes already validate session
+ * cookies and provider state internally, so this middleware should not block them.
  */
-export const CSRF_EXEMPT_ENDPOINTS = [
-  '/api/auth/login',
-  '/api/auth/login/verify-mfa',
-  '/api/auth/signup',
-  '/api/auth/forgot-password',
-  '/api/auth/logout',
-  '/api/auth/google/link',
-] as const;
+export const CSRF_EXEMPT_ENDPOINTS = ['/api/auth'] as const;
 
 /**
  * Check if an endpoint is exempt from CSRF protection
@@ -147,5 +141,7 @@ export const CSRF_EXEMPT_ENDPOINTS = [
  * @returns true if endpoint is exempt
  */
 export function isCsrfExempt(pathname: string): boolean {
-  return CSRF_EXEMPT_ENDPOINTS.some((endpoint) => pathname === endpoint);
+  return CSRF_EXEMPT_ENDPOINTS.some(
+    (endpoint) => pathname === endpoint || pathname.startsWith(`${endpoint}/`)
+  );
 }

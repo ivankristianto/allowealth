@@ -2,7 +2,7 @@
 /**
  * MfaConfirmModal
  *
- * Reusable modal for confirming MFA actions that require a TOTP or backup code.
+ * Reusable modal for confirming MFA actions that require the user's password.
  * Used by disable-MFA and regenerate-backup-codes flows.
  *
  * Opens via: document.dispatchEvent(new CustomEvent('mfa:open-confirm', { detail }))
@@ -41,16 +41,16 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
       <form data-confirm-form class="space-y-4">
         <div class="form-control">
           <label for={`${id}-code`} class="label">
-            <span class="label-text font-semibold">Verification code</span>
+            <span class="label-text font-semibold">Account password</span>
           </label>
           <input
             id={`${id}-code`}
-            name="code"
-            type="text"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            placeholder="000000"
-            class="input input-bordered w-full text-center text-2xl tracking-[0.5em] font-bold"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            class="input input-bordered w-full"
+            data-testid="mfa-password-confirm-input"
           />
         </div>
 
@@ -64,7 +64,12 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
           >
             Cancel
           </button>
-          <button type="submit" class="flex-[2] btn btn-accent rounded-2xl" data-confirm-submit>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent rounded-2xl"
+            data-confirm-submit
+            data-testid="mfa-confirm-submit"
+          >
             Confirm
           </button>
         </div>
@@ -90,12 +95,12 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
         const titleEl = container.querySelector<HTMLElement>('[data-confirm-title]');
         const descEl = container.querySelector<HTMLElement>('[data-confirm-description]');
         const form = container.querySelector<HTMLFormElement>('[data-confirm-form]');
-        const codeInput = container.querySelector<HTMLInputElement>('input[name="code"]');
+        const passwordInput = container.querySelector<HTMLInputElement>('input[name="password"]');
         const errorEl = container.querySelector<HTMLElement>('[data-confirm-error]');
         const cancelBtn = container.querySelector<HTMLButtonElement>('[data-confirm-cancel]');
         const submitBtn = container.querySelector<HTMLButtonElement>('[data-confirm-submit]');
 
-        if (!modal || !titleEl || !descEl || !form || !codeInput || !errorEl) return;
+        if (!modal || !titleEl || !descEl || !form || !passwordInput || !errorEl) return;
 
         const clearError = () => {
           errorEl.textContent = '';
@@ -109,13 +114,13 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
 
         const reset = () => {
           clearError();
-          codeInput.value = '';
+          passwordInput.value = '';
           if (submitBtn) submitBtn.disabled = false;
         };
 
-        const close = (code: string | null) => {
+        const close = (password: string | null) => {
           modal.close();
-          document.dispatchEvent(new CustomEvent('mfa:confirm-result', { detail: { code } }));
+          document.dispatchEvent(new CustomEvent('mfa:confirm-result', { detail: { password } }));
         };
 
         document.addEventListener('mfa:open-confirm', (event: Event) => {
@@ -127,7 +132,7 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
             submitBtn.textContent = detail.confirmLabel;
           }
           modal.showModal();
-          requestAnimationFrame(() => codeInput.focus());
+          requestAnimationFrame(() => passwordInput.focus());
         });
 
         cancelBtn?.addEventListener('click', () => close(null));
@@ -136,13 +141,13 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
           event.preventDefault();
           clearError();
 
-          const code = codeInput.value.trim();
-          if (!code) {
-            showError('Please enter a verification code.');
+          const password = passwordInput.value;
+          if (!password) {
+            showError('Please enter your password.');
             return;
           }
 
-          close(code);
+          close(password);
         });
       });
   }
