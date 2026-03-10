@@ -1,57 +1,90 @@
-import { z } from 'zod';
+import {
+  boolean,
+  integer,
+  maxLength,
+  minLength,
+  minValue,
+  nullable,
+  number,
+  object,
+  optional,
+  pipe,
+  string,
+  transform,
+  trim,
+  type InferOutput,
+} from 'valibot';
+import { withSchemaCompat } from './compat';
 
-const nameValidation = z
-  .string()
-  .trim()
-  .min(1, 'Category name is required')
-  .max(100, 'Category name must not exceed 100 characters');
+const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
-const descriptionValidation = z
-  .string()
-  .trim()
-  .max(500, 'Description must not exceed 500 characters')
-  .nullable()
-  .optional()
-  .transform((val) => (val && val.length > 0 ? val : null));
+const nameValidation = pipe(
+  string(),
+  trim(),
+  minLength(1, 'Category name is required'),
+  maxLength(100, 'Category name must not exceed 100 characters')
+);
 
-const sortOrderValidation = z.number().int().min(0, 'Sort order must be 0 or greater');
+const descriptionValidation = pipe(
+  optional(
+    nullable(pipe(string(), trim(), maxLength(500, 'Description must not exceed 500 characters'))),
+    null
+  ),
+  transform((value) => (value && value.length > 0 ? value : null))
+);
 
-export const createAccountCategorySchema = z.object({
-  workspace_id: z.string().min(1, 'Workspace ID is required'),
-  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
-  name: nameValidation,
-  description: descriptionValidation,
-  is_liability: z.boolean(),
-  is_system: z.boolean().optional().default(false),
-  sort_order: sortOrderValidation.optional().default(0),
-});
+const sortOrderValidation = pipe(
+  number(),
+  integer('Sort order must be an integer'),
+  minValue(0, 'Sort order must be 0 or greater')
+);
 
-export type CreateAccountCategoryInput = z.infer<typeof createAccountCategorySchema>;
+export const createAccountCategorySchema = withSchemaCompat(
+  object({
+    workspace_id: requiredId('Workspace ID is required'),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    name: nameValidation,
+    description: descriptionValidation,
+    is_liability: boolean(),
+    is_system: optional(boolean(), false),
+    sort_order: optional(sortOrderValidation, 0),
+  })
+);
 
-export const updateAccountCategorySchema = z.object({
-  name: nameValidation.optional(),
-  description: descriptionValidation,
-  is_liability: z.boolean().optional(),
-  sort_order: sortOrderValidation.optional(),
-});
+export type CreateAccountCategoryInput = InferOutput<typeof createAccountCategorySchema>;
 
-export type UpdateAccountCategoryInput = z.infer<typeof updateAccountCategorySchema>;
+export const updateAccountCategorySchema = withSchemaCompat(
+  object({
+    name: optional(nameValidation),
+    description: descriptionValidation,
+    is_liability: optional(boolean()),
+    sort_order: optional(sortOrderValidation),
+  })
+);
 
-export const createAccountCategoryAPISchema = z.object({
-  name: nameValidation,
-  description: descriptionValidation,
-  isLiability: z.boolean(),
-});
+export type UpdateAccountCategoryInput = InferOutput<typeof updateAccountCategorySchema>;
 
-export const updateAccountCategoryAPISchema = z.object({
-  name: nameValidation.optional(),
-  description: descriptionValidation,
-  isLiability: z.boolean().optional(),
-});
+export const createAccountCategoryAPISchema = withSchemaCompat(
+  object({
+    name: nameValidation,
+    description: descriptionValidation,
+    isLiability: boolean(),
+  })
+);
 
-export const accountCategoryFilterSchema = z.object({
-  isLiability: z.boolean().optional(),
-  isSystem: z.boolean().optional(),
-});
+export const updateAccountCategoryAPISchema = withSchemaCompat(
+  object({
+    name: optional(nameValidation),
+    description: descriptionValidation,
+    isLiability: optional(boolean()),
+  })
+);
 
-export type AccountCategoryFilter = z.infer<typeof accountCategoryFilterSchema>;
+export const accountCategoryFilterSchema = withSchemaCompat(
+  object({
+    isLiability: optional(boolean()),
+    isSystem: optional(boolean()),
+  })
+);
+
+export type AccountCategoryFilter = InferOutput<typeof accountCategoryFilterSchema>;

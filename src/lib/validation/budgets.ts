@@ -1,5 +1,24 @@
-import { z } from 'zod';
+import {
+  boolean,
+  check,
+  integer,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  nullable,
+  number,
+  object,
+  optional,
+  pipe,
+  regex,
+  string,
+  transform,
+  union,
+  type InferOutput,
+} from 'valibot';
 import { currencyEnum } from '@/lib/enums';
+import { withSchemaCompat } from './compat';
 
 /**
  * Validation schemas for Budget operations
@@ -9,154 +28,195 @@ import { currencyEnum } from '@/lib/enums';
 export { currencyEnum };
 
 // Month validation (1-12)
-const monthValidation = z
-  .number()
-  .int('Month must be an integer')
-  .min(1, 'Month must be between 1 and 12')
-  .max(12, 'Month must be between 1 and 12');
+const requiredId = (message: string) => pipe(string(), minLength(1, message));
+
+const monthValidation = pipe(
+  number(),
+  integer('Month must be an integer'),
+  minValue(1, 'Month must be between 1 and 12'),
+  maxValue(12, 'Month must be between 1 and 12')
+);
 
 // Year validation (reasonable range)
 // P3: TODO - Consider making year range configurable via constants
-const yearValidation = z
-  .number()
-  .int('Year must be an integer')
-  .min(2000, 'Year must be 2000 or later')
-  .max(2100, 'Year must be 2100 or earlier');
+const yearValidation = pipe(
+  number(),
+  integer('Year must be an integer'),
+  minValue(2000, 'Year must be 2000 or later'),
+  maxValue(2100, 'Year must be 2100 or earlier')
+);
+
+const monthApiValidation = pipe(
+  union([
+    monthValidation,
+    pipe(
+      string(),
+      regex(/^-?\d+$/, 'Month must be an integer'),
+      transform((value) => Number(value))
+    ),
+  ]),
+  integer('Month must be an integer'),
+  minValue(1, 'Month must be between 1 and 12'),
+  maxValue(12, 'Month must be between 1 and 12')
+);
+
+const yearApiValidation = pipe(
+  union([
+    yearValidation,
+    pipe(
+      string(),
+      regex(/^-?\d+$/, 'Year must be an integer'),
+      transform((value) => Number(value))
+    ),
+  ]),
+  integer('Year must be an integer'),
+  minValue(2000, 'Year must be 2000 or later'),
+  maxValue(2100, 'Year must be 2100 or earlier')
+);
 
 // Budget amount validation (required, positive decimal as string)
-const budgetAmountValidation = z
-  .string()
-  .min(1, 'Budget amount is required')
-  .refine(
-    (val) => {
-      const num = parseFloat(val);
-      return !isNaN(num) && num > 0;
-    },
-    { message: 'Budget amount must be a positive number' }
-  );
+const budgetAmountValidation = pipe(
+  string(),
+  minLength(1, 'Budget amount is required'),
+  check((value) => {
+    const parsedAmount = Number.parseFloat(value);
+    return !Number.isNaN(parsedAmount) && parsedAmount > 0;
+  }, 'Budget amount must be a positive number')
+);
 
 // Budget amount for update (optional but must be positive if provided)
-const budgetAmountUpdateValidation = z
-  .string()
-  .optional()
-  .refine(
-    (val) => {
-      if (val === undefined || val === '') return true;
-      const num = parseFloat(val);
-      return !isNaN(num) && num > 0;
-    },
-    { message: 'Budget amount must be a positive number' }
-  );
+const budgetAmountUpdateValidation = optional(
+  pipe(
+    string(),
+    check((value) => {
+      if (value === '') return true;
+
+      const parsedAmount = Number.parseFloat(value);
+      return !Number.isNaN(parsedAmount) && parsedAmount > 0;
+    }, 'Budget amount must be a positive number')
+  )
+);
 
 // Notes validation (optional, max length)
-const notesValidation = z
-  .string()
-  .max(500, 'Notes must not exceed 500 characters')
-  .optional()
-  .nullable()
-  .transform((val) => val || null);
+const notesValidation = pipe(
+  optional(nullable(pipe(string(), maxLength(500, 'Notes must not exceed 500 characters'))), null),
+  transform((value) => value || null)
+);
 
 // Schema for creating a budget (for service layer)
-export const createBudgetSchema = z.object({
-  workspace_id: z.string().min(1, 'Workspace ID is required'),
-  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
-  category_id: z.string().min(1, 'Category ID is required'),
-  month: monthValidation,
-  year: yearValidation,
-  budget_amount: budgetAmountValidation,
-  currency: currencyEnum,
-  notes: notesValidation,
-});
+export const createBudgetSchema = withSchemaCompat(
+  object({
+    workspace_id: requiredId('Workspace ID is required'),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    category_id: requiredId('Category ID is required'),
+    month: monthValidation,
+    year: yearValidation,
+    budget_amount: budgetAmountValidation,
+    currency: currencyEnum,
+    notes: notesValidation,
+  })
+);
 
-export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
+export type CreateBudgetInput = InferOutput<typeof createBudgetSchema>;
 
 // Schema for updating a budget (for service layer)
-export const updateBudgetSchema = z.object({
-  budget_amount: budgetAmountUpdateValidation,
-  notes: notesValidation,
-  is_closed: z.boolean().optional(),
-});
+export const updateBudgetSchema = withSchemaCompat(
+  object({
+    budget_amount: budgetAmountUpdateValidation,
+    notes: notesValidation,
+    is_closed: optional(boolean()),
+  })
+);
 
-export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
+export type UpdateBudgetInput = InferOutput<typeof updateBudgetSchema>;
 
 // Schema for copying budgets to another month (for service layer)
-export const copyBudgetsSchema = z
-  .object({
-    workspace_id: z.string().min(1, 'Workspace ID is required'),
-    created_by_user_id: z.string().min(1, 'Created by user ID is required'),
-    source_month: monthValidation,
-    source_year: yearValidation,
-    target_month: monthValidation,
-    target_year: yearValidation,
-  })
-  .refine(
-    (data) => {
-      // Cannot copy to the same month/year
-      return data.source_month !== data.target_month || data.source_year !== data.target_year;
-    },
-    { message: 'Target month/year must be different from source' }
-  );
+export const copyBudgetsSchema = withSchemaCompat(
+  pipe(
+    object({
+      workspace_id: requiredId('Workspace ID is required'),
+      created_by_user_id: requiredId('Created by user ID is required'),
+      source_month: monthValidation,
+      source_year: yearValidation,
+      target_month: monthValidation,
+      target_year: yearValidation,
+    }),
+    check(
+      (data) => data.source_month !== data.target_month || data.source_year !== data.target_year,
+      'Target month/year must be different from source'
+    )
+  )
+);
 
-export type CopyBudgetsInput = z.infer<typeof copyBudgetsSchema>;
+export type CopyBudgetsInput = InferOutput<typeof copyBudgetsSchema>;
 
 // API-specific schemas that don't include user_id (comes from auth)
-export const createBudgetAPISchema = z.object({
-  category_id: z.string().min(1, 'Category ID is required'),
-  month: monthValidation,
-  year: yearValidation,
-  budget_amount: budgetAmountValidation,
-  currency: currencyEnum,
-  notes: notesValidation,
-});
+export const createBudgetAPISchema = withSchemaCompat(
+  object({
+    category_id: requiredId('Category ID is required'),
+    month: monthApiValidation,
+    year: yearApiValidation,
+    budget_amount: budgetAmountValidation,
+    currency: currencyEnum,
+    notes: notesValidation,
+  })
+);
 
-export type CreateBudgetAPIInput = z.infer<typeof createBudgetAPISchema>;
+export type CreateBudgetAPIInput = InferOutput<typeof createBudgetAPISchema>;
 
 export const updateBudgetAPISchema = updateBudgetSchema;
 
-export type UpdateBudgetAPIInput = z.infer<typeof updateBudgetAPISchema>;
+export type UpdateBudgetAPIInput = InferOutput<typeof updateBudgetAPISchema>;
 
-export const copyBudgetsAPISchema = z
-  .object({
-    source_month: monthValidation,
-    source_year: yearValidation,
-    target_month: monthValidation,
-    target_year: yearValidation,
-  })
-  .refine(
-    (data) => {
-      return data.source_month !== data.target_month || data.source_year !== data.target_year;
-    },
-    { message: 'Target month/year must be different from source' }
-  );
+export const copyBudgetsAPISchema = withSchemaCompat(
+  pipe(
+    object({
+      source_month: monthApiValidation,
+      source_year: yearApiValidation,
+      target_month: monthApiValidation,
+      target_year: yearApiValidation,
+    }),
+    check(
+      (data) => data.source_month !== data.target_month || data.source_year !== data.target_year,
+      'Target month/year must be different from source'
+    )
+  )
+);
 
-export type CopyBudgetsAPIInput = z.infer<typeof copyBudgetsAPISchema>;
+export type CopyBudgetsAPIInput = InferOutput<typeof copyBudgetsAPISchema>;
 
 // Schema for budget filters (query parameters)
-export const budgetFilterSchema = z.object({
-  month: monthValidation,
-  year: yearValidation,
-  currency: currencyEnum.optional(),
-  category_id: z.string().optional(),
-});
+export const budgetFilterSchema = withSchemaCompat(
+  object({
+    month: monthApiValidation,
+    year: yearApiValidation,
+    currency: optional(currencyEnum),
+    category_id: optional(string()),
+  })
+);
 
-export type BudgetFilter = z.infer<typeof budgetFilterSchema>;
+export type BudgetFilter = InferOutput<typeof budgetFilterSchema>;
 
 // Schema for initializing all budgets (for service layer)
-export const initializeBudgetsSchema = z.object({
-  workspace_id: z.string().min(1, 'Workspace ID is required'),
-  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
-  month: monthValidation,
-  year: yearValidation,
-  currency: currencyEnum,
-});
+export const initializeBudgetsSchema = withSchemaCompat(
+  object({
+    workspace_id: requiredId('Workspace ID is required'),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    month: monthValidation,
+    year: yearValidation,
+    currency: currencyEnum,
+  })
+);
 
-export type InitializeBudgetsInput = z.infer<typeof initializeBudgetsSchema>;
+export type InitializeBudgetsInput = InferOutput<typeof initializeBudgetsSchema>;
 
 // API-specific schema (workspace_id and user_id come from auth context)
-export const initializeBudgetsAPISchema = z.object({
-  month: monthValidation,
-  year: yearValidation,
-  currency: currencyEnum,
-});
+export const initializeBudgetsAPISchema = withSchemaCompat(
+  object({
+    month: monthApiValidation,
+    year: yearApiValidation,
+    currency: currencyEnum,
+  })
+);
 
-export type InitializeBudgetsAPIInput = z.infer<typeof initializeBudgetsAPISchema>;
+export type InitializeBudgetsAPIInput = InferOutput<typeof initializeBudgetsAPISchema>;
