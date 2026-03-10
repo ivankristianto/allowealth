@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "97331202-1eb5-487c-b388-41791ce00024",
+  "id": "a744d622-fba6-4e5c-8cb9-bc2312704b20",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account_categories": {
@@ -1129,6 +1129,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "income_source_type": {
+          "name": "income_source_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'other'"
+        },
         "description": {
           "name": "description",
           "type": "text",
@@ -2144,6 +2152,22 @@
           "notNull": true,
           "autoincrement": false
         },
+        "frequency": {
+          "name": "frequency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'monthly'"
+        },
+        "interval_count": {
+          "name": "interval_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
         "start_date": {
           "name": "start_date",
           "type": "text",
@@ -2229,6 +2253,16 @@
         "recurring_templates_workspace_id_status_idx": {
           "name": "recurring_templates_workspace_id_status_idx",
           "columns": ["workspace_id", "status"],
+          "isUnique": false
+        },
+        "recurring_templates_workspace_id_account_id_idx": {
+          "name": "recurring_templates_workspace_id_account_id_idx",
+          "columns": ["workspace_id", "account_id"],
+          "isUnique": false
+        },
+        "recurring_templates_workspace_id_type_idx": {
+          "name": "recurring_templates_workspace_id_type_idx",
+          "columns": ["workspace_id", "type"],
           "isUnique": false
         },
         "recurring_templates_category_id_idx": {

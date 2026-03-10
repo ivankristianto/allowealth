@@ -856,7 +856,7 @@ drizzle/
     └── meta/        # Drizzle migration metadata
 ```
 
-> **Note**: Migration history was reset on 2026-03-02 for MVP pre-release cleanup.
+> **Note**: Migration history was reset on 2026-03-10 to collapse the SQLite chain back to a single baseline.
 > The current `0000_*.sql` files are the active baseline for all current tables.
 
 ### Migration Commands

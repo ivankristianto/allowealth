@@ -1,1 +1,0 @@
-ALTER TABLE "budget_categories" ADD COLUMN "income_source_type" text DEFAULT 'other' NOT NULL;

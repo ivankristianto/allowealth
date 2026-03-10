@@ -171,6 +171,7 @@ CREATE TABLE `budget_categories` (
 	`created_by_user_id` text NOT NULL,
 	`name` text NOT NULL,
 	`type` text NOT NULL,
+	`income_source_type` text DEFAULT 'other' NOT NULL,
 	`description` text,
 	`icon` text DEFAULT 'tag' NOT NULL,
 	`color` text DEFAULT 'bg-neutral' NOT NULL,
@@ -331,6 +332,8 @@ CREATE TABLE `recurring_templates` (
 	`category_id` text NOT NULL,
 	`account_id` text NOT NULL,
 	`day_of_month` integer NOT NULL,
+	`frequency` text DEFAULT 'monthly' NOT NULL,
+	`interval_count` integer DEFAULT 1 NOT NULL,
 	`start_date` text NOT NULL,
 	`end_date` text,
 	`total_occurrences` integer,
@@ -349,6 +352,8 @@ CREATE TABLE `recurring_templates` (
 --> statement-breakpoint
 CREATE INDEX `recurring_templates_workspace_id_idx` ON `recurring_templates` (`workspace_id`);--> statement-breakpoint
 CREATE INDEX `recurring_templates_workspace_id_status_idx` ON `recurring_templates` (`workspace_id`,`status`);--> statement-breakpoint
+CREATE INDEX `recurring_templates_workspace_id_account_id_idx` ON `recurring_templates` (`workspace_id`,`account_id`);--> statement-breakpoint
+CREATE INDEX `recurring_templates_workspace_id_type_idx` ON `recurring_templates` (`workspace_id`,`type`);--> statement-breakpoint
 CREATE INDEX `recurring_templates_category_id_idx` ON `recurring_templates` (`category_id`);--> statement-breakpoint
 CREATE TABLE `recurring_occurrences` (
 	`id` text PRIMARY KEY NOT NULL,

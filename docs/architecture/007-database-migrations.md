@@ -9,9 +9,9 @@ This project uses Drizzle ORM with a single SQLite-compatible migration strategy
 
 Every schema change is represented once, in the SQLite schema and SQLite migration directory.
 
-As of 2026-03-02, migration history was intentionally reset for MVP pre-release cleanup. The active baseline starts at `0000_*.sql`.
+As of 2026-03-10, migration history was intentionally reset again to collapse the SQLite chain back to a single baseline. The active baseline starts at `0000_*.sql`.
 
-## Reset Cutover (2026-03-02)
+## Reset Cutover (2026-03-10)
 
 This reset is destructive for environments that previously applied the old migration chain. Do not run the new baseline over an existing database without reset.
 
