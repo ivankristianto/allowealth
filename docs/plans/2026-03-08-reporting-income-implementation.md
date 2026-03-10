@@ -143,12 +143,12 @@ git commit -m $'feat(schema): add income source classification to categories\n\n
 - Modify: `src/pages/budget/categories/index.astro`
 - Modify: `src/db/seed/data/categories.ts`
 - Modify: `src/db/seed/domains/categories.ts`
-- Create: `src/pages/api/categories/index.test.ts`
-- Create: `src/pages/api/categories/[id].test.ts`
+- Create: `src/__tests__/api/categories/index.test.ts`
+- Create: `src/__tests__/api/categories/[id].test.ts`
 
 **Step 1: Write the failing API tests**
 
-Create `src/pages/api/categories/index.test.ts` with:
+Create `src/__tests__/api/categories/index.test.ts` with:
 
 ```typescript
 it('creates income categories with income_source_type', async () => {
@@ -174,7 +174,7 @@ it('creates income categories with income_source_type', async () => {
 });
 ```
 
-Create `src/pages/api/categories/[id].test.ts` with:
+Create `src/__tests__/api/categories/[id].test.ts` with:
 
 ```typescript
 it('updates income_source_type on existing income categories', async () => {
@@ -197,7 +197,7 @@ it('updates income_source_type on existing income categories', async () => {
 **Step 2: Run the tests to verify they fail**
 
 ```bash
-bun test src/pages/api/categories/index.test.ts src/pages/api/categories/[id].test.ts
+bun test src/__tests__/api/categories/index.test.ts src/__tests__/api/categories/[id].test.ts
 ```
 
 Expected: FAIL because validation and route handlers ignore the new field.
@@ -264,7 +264,7 @@ Then write `income_source_type` during seed inserts in `src/db/seed/domains/cate
 **Step 6: Run the focused tests**
 
 ```bash
-bun test src/pages/api/categories/index.test.ts src/pages/api/categories/[id].test.ts
+bun test src/__tests__/api/categories/index.test.ts src/__tests__/api/categories/[id].test.ts
 ```
 
 Expected: PASS.
@@ -280,7 +280,7 @@ Expected: PASS.
 **Step 8: Commit**
 
 ```bash
-git add src/lib/validation/categories.ts src/services/category.service.ts src/pages/api/categories/index.ts src/pages/api/categories/[id].ts src/components/organisms/CategoryModal.astro src/pages/budget/categories/categories-client.ts src/pages/budget/categories/index.astro src/db/seed/data/categories.ts src/db/seed/domains/categories.ts src/pages/api/categories/index.test.ts src/pages/api/categories/[id].test.ts
+git add src/lib/validation/categories.ts src/services/category.service.ts src/pages/api/categories/index.ts src/pages/api/categories/[id].ts src/components/organisms/CategoryModal.astro src/pages/budget/categories/categories-client.ts src/pages/budget/categories/index.astro src/db/seed/data/categories.ts src/db/seed/domains/categories.ts src/__tests__/api/categories/index.test.ts src/__tests__/api/categories/[id].test.ts
 git commit -m $'feat(categories): support income source classification in category flows\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>'
 ```
 
@@ -518,11 +518,11 @@ git commit -m $'feat(reporting): add overview and income report service contract
 - Create: `src/components/organisms/OverviewReportsPage.client.ts`
 - Modify: `src/pages/reports/index.astro`
 - Modify: `src/pages/api/reports/index.ts`
-- Create: `src/pages/api/reports/index.test.ts`
+- Create: `src/__tests__/api/reports/index.test.ts`
 
 **Step 1: Write the failing API contract test**
 
-Create `src/pages/api/reports/index.test.ts`:
+Create `src/__tests__/api/reports/index.test.ts`:
 
 ```typescript
 it('returns lightweight overview partials', async () => {
@@ -552,7 +552,7 @@ it('rejects invalid member filters for overview reports', async () => {
 **Step 2: Run the test to verify it fails**
 
 ```bash
-bun test src/pages/api/reports/index.test.ts
+bun test src/__tests__/api/reports/index.test.ts
 ```
 
 Expected: FAIL because `/api/reports` still returns the expense-heavy payload.
@@ -585,7 +585,7 @@ Update `src/pages/api/reports/index.ts` so it:
 **Step 4: Run the focused test**
 
 ```bash
-bun test src/pages/api/reports/index.test.ts
+bun test src/__tests__/api/reports/index.test.ts
 ```
 
 Expected: PASS.
@@ -601,7 +601,7 @@ Expected: PASS.
 **Step 6: Commit**
 
 ```bash
-git add src/components/partials/OverviewSummaryCardsPartial.astro src/components/partials/OverviewChartsPartial.astro src/components/partials/OverviewPreviewCardsPartial.astro src/components/organisms/OverviewReportsPage.client.ts src/pages/reports/index.astro src/pages/api/reports/index.ts src/pages/api/reports/index.test.ts
+git add src/components/partials/OverviewSummaryCardsPartial.astro src/components/partials/OverviewChartsPartial.astro src/components/partials/OverviewPreviewCardsPartial.astro src/components/organisms/OverviewReportsPage.client.ts src/pages/reports/index.astro src/pages/api/reports/index.ts src/__tests__/api/reports/index.test.ts
 git commit -m $'feat(reports): make the top-level reports page an overview\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>'
 ```
 
@@ -612,12 +612,12 @@ git commit -m $'feat(reports): make the top-level reports page an overview\n\nCo
 **Files:**
 - Create: `src/pages/reports/expenses/index.astro`
 - Create: `src/pages/api/reports/expenses/index.ts`
-- Create: `src/pages/api/reports/expenses/index.test.ts`
+- Create: `src/__tests__/api/reports/expenses/index.test.ts`
 - Modify: `src/pages/reports/members/index.astro`
 
 **Step 1: Write the failing expense-endpoint test**
 
-Create `src/pages/api/reports/expenses/index.test.ts`:
+Create `src/__tests__/api/reports/expenses/index.test.ts`:
 
 ```typescript
 it('returns expense-detail partials', async () => {
@@ -648,7 +648,7 @@ it('rejects invalid member filters for expense reports', async () => {
 **Step 2: Run the test to verify it fails**
 
 ```bash
-bun test src/pages/api/reports/expenses/index.test.ts
+bun test src/__tests__/api/reports/expenses/index.test.ts
 ```
 
 Expected: FAIL because the endpoint does not exist yet.
@@ -677,7 +677,7 @@ Update `src/pages/reports/members/index.astro` breadcrumbs so they return to `/r
 **Step 5: Run the focused test**
 
 ```bash
-bun test src/pages/api/reports/expenses/index.test.ts
+bun test src/__tests__/api/reports/expenses/index.test.ts
 ```
 
 Expected: PASS.
@@ -685,7 +685,7 @@ Expected: PASS.
 **Step 6: Commit**
 
 ```bash
-git add src/pages/reports/expenses/index.astro src/pages/api/reports/expenses/index.ts src/pages/api/reports/expenses/index.test.ts src/pages/reports/members/index.astro
+git add src/pages/reports/expenses/index.astro src/pages/api/reports/expenses/index.ts src/__tests__/api/reports/expenses/index.test.ts src/pages/reports/members/index.astro
 git commit -m $'feat(reports): split expense detail into its own page\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>'
 ```
 
@@ -706,13 +706,13 @@ git commit -m $'feat(reports): split expense detail into its own page\n\nCo-auth
 - Create: `src/components/organisms/IncomeReportsPage.client.ts`
 - Create: `src/pages/reports/income/index.astro`
 - Create: `src/pages/api/reports/income/index.ts`
-- Create: `src/pages/api/reports/income/index.test.ts`
+- Create: `src/__tests__/api/reports/income/index.test.ts`
 - Modify: `src/pages/api/reports/category-drilldown.ts`
-- Create: `src/pages/api/reports/category-drilldown.test.ts`
+- Create: `src/__tests__/api/reports/category-drilldown.test.ts`
 
 **Step 1: Write the failing income-endpoint test**
 
-Create `src/pages/api/reports/income/index.test.ts`:
+Create `src/__tests__/api/reports/income/index.test.ts`:
 
 ```typescript
 it('returns income detail data with source groups and history', async () => {
@@ -741,13 +741,13 @@ it('rejects invalid member filters for income reports', async () => {
 });
 ```
 
-Create `src/pages/api/reports/category-drilldown.test.ts` with a case that proves income source rows still open through the shared drill-down endpoint and render the adapted modal content for income categories.
+Create `src/__tests__/api/reports/category-drilldown.test.ts` with a case that proves income source rows still open through the shared drill-down endpoint and render the adapted modal content for income categories.
 
 **Step 2: Run the test to verify it fails**
 
 ```bash
-bun test src/pages/api/reports/income/index.test.ts
-bun test src/pages/api/reports/category-drilldown.test.ts
+bun test src/__tests__/api/reports/income/index.test.ts
+bun test src/__tests__/api/reports/category-drilldown.test.ts
 ```
 
 Expected: FAIL because the route does not exist yet.
@@ -792,8 +792,8 @@ In `src/pages/api/reports/income/index.ts`:
 **Step 5: Run the focused test**
 
 ```bash
-bun test src/pages/api/reports/income/index.test.ts
-bun test src/pages/api/reports/category-drilldown.test.ts
+bun test src/__tests__/api/reports/income/index.test.ts
+bun test src/__tests__/api/reports/category-drilldown.test.ts
 ```
 
 Expected: PASS.
@@ -809,7 +809,7 @@ Expected: PASS with the real page contract now consuming the service shape.
 **Step 7: Commit**
 
 ```bash
-git add src/components/organisms/ResourceAllocationChart.astro src/components/organisms/IncomeSourceTrendChart.astro src/components/organisms/CategoryDrillDownModal.astro src/components/partials/IncomeSummaryCardsPartial.astro src/components/partials/IncomeChartsPartial.astro src/components/partials/IncomeSourceTablePartial.astro src/components/partials/IncomeHistoryTablePartial.astro src/components/partials/IncomeMemberTablePartial.astro src/components/partials/CategoryDrillDownPartial.astro src/components/organisms/IncomeReportsPage.client.ts src/pages/reports/income/index.astro src/pages/api/reports/income/index.ts src/pages/api/reports/income/index.test.ts src/pages/api/reports/category-drilldown.ts src/pages/api/reports/category-drilldown.test.ts
+git add src/components/organisms/ResourceAllocationChart.astro src/components/organisms/IncomeSourceTrendChart.astro src/components/organisms/CategoryDrillDownModal.astro src/components/partials/IncomeSummaryCardsPartial.astro src/components/partials/IncomeChartsPartial.astro src/components/partials/IncomeSourceTablePartial.astro src/components/partials/IncomeHistoryTablePartial.astro src/components/partials/IncomeMemberTablePartial.astro src/components/partials/CategoryDrillDownPartial.astro src/components/organisms/IncomeReportsPage.client.ts src/pages/reports/income/index.astro src/pages/api/reports/income/index.ts src/__tests__/api/reports/income/index.test.ts src/pages/api/reports/category-drilldown.ts src/__tests__/api/reports/category-drilldown.test.ts
 git commit -m $'feat(reports): add dedicated income reporting page\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>'
 ```
 
@@ -894,7 +894,7 @@ Expected: PASS.
 **Step 5: Run the full verification suite**
 
 ```bash
-bun test src/db/index.integration.test.ts src/pages/api/categories/index.test.ts src/pages/api/categories/[id].test.ts src/lib/reporting/report-state.test.ts src/services/__tests__/report-income-report.test.ts src/pages/api/reports/index.test.ts src/pages/api/reports/expenses/index.test.ts src/pages/api/reports/income/index.test.ts src/pages/api/reports/category-drilldown.test.ts tests/integration/api/reports/openapi-contract.test.ts
+bun test src/db/index.integration.test.ts src/__tests__/api/categories/index.test.ts src/__tests__/api/categories/[id].test.ts src/lib/reporting/report-state.test.ts src/services/__tests__/report-income-report.test.ts src/__tests__/api/reports/index.test.ts src/__tests__/api/reports/expenses/index.test.ts src/__tests__/api/reports/income/index.test.ts src/__tests__/api/reports/category-drilldown.test.ts tests/integration/api/reports/openapi-contract.test.ts
 bun test src/services/__tests__/performance-benchmark.test.ts
 bun run lint:fix
 bun run stylelint:fix
