@@ -954,7 +954,6 @@ const defaultDatePick =
               formError.classList.remove('hidden');
             }
           }
-          addToast(result.error?.message || 'Failed to save transaction', 'error');
         } else {
           const actionWord = isEditMode ? 'updated' : 'saved';
           addToast(
@@ -1041,7 +1040,6 @@ const defaultDatePick =
           formError.textContent = 'Network error. Please try again.';
           formError.classList.remove('hidden');
         }
-        addToast('Network error. Please try again.', 'error');
       } finally {
         if (submitButton) {
           submitButton.disabled = false;

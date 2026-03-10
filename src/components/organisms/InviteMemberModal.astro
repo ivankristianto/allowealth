@@ -206,7 +206,6 @@ const { id } = Astro.props;
             errorEl.textContent = message;
             errorEl.classList.remove('hidden');
           }
-          addToast(message, 'error');
         } finally {
           if (submitBtn) {
             submitBtn.disabled = false;
