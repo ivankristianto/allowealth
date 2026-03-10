@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { isoDateTime, object, optional, pipe, regex, string } from 'valibot';
 import { accountService } from '@/services';
 import {
   successResponse,
@@ -11,10 +11,10 @@ import {
 import { logError } from '@/lib/utils';
 
 // Validation schema
-const updateBalanceSchema = z.object({
-  balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
-  notes: z.string().optional(),
-  recorded_at: z.iso.datetime().optional(),
+const updateBalanceSchema = object({
+  balance: pipe(string(), regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number')),
+  notes: optional(string()),
+  recorded_at: optional(pipe(string(), isoDateTime('Invalid datetime format'))),
 });
 
 /**

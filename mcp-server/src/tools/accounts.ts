@@ -1,12 +1,12 @@
-import { z } from 'zod';
+import { object, optional, parse, picklist } from 'valibot';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 
-export const listCategoriesSchema = z.object({
-  type: z.enum(['expense', 'income']).optional(),
+export const listCategoriesSchema = object({
+  type: optional(picklist(['expense', 'income'])),
 });
 
-export const listAccountsSchema = z.object({});
+export const listAccountsSchema = object({});
 
 export const tools: Tool[] = [
   {
@@ -37,7 +37,7 @@ export const tools: Tool[] = [
 
 export async function handleListCategories(args: Record<string, unknown>, ctx: ToolContext) {
   const { workspaceId } = ctx.auth;
-  const input = listCategoriesSchema.parse(args);
+  const input = parse(listCategoriesSchema, args);
 
   const categories = await ctx.services.category.findAll(workspaceId, {
     type: input.type,
@@ -57,7 +57,7 @@ export async function handleListCategories(args: Record<string, unknown>, ctx: T
 
 export async function handleListAccounts(_args: Record<string, unknown>, ctx: ToolContext) {
   const { workspaceId } = ctx.auth;
-  listAccountsSchema.parse(_args);
+  parse(listAccountsSchema, _args);
 
   const accounts = await ctx.services.account.findAll(workspaceId);
 

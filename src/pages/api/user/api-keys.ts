@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { z } from 'zod';
+import { check, maxLength, minLength, object, optional, pipe, string, trim } from 'valibot';
 import { apiKeyService } from '@/services';
 import {
   successResponse,
@@ -16,18 +16,18 @@ import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysLis
 
 const MAX_KEYS_PER_USER = 25;
 
-const generateKeySchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(100),
-  expires_at: z
-    .string()
-    .refine((val) => !isNaN(new Date(val).getTime()), {
-      message: 'Invalid date format',
-    })
-    .optional(),
+const generateKeySchema = object({
+  name: pipe(string(), trim(), minLength(1, 'Name is required'), maxLength(100)),
+  expires_at: optional(
+    pipe(
+      string(),
+      check((value) => !Number.isNaN(new Date(value).getTime()), 'Invalid date format')
+    )
+  ),
 });
 
-const revokeKeySchema = z.object({
-  id: z.string().min(1, 'Key ID is required'),
+const revokeKeySchema = object({
+  id: pipe(string(), minLength(1, 'Key ID is required')),
 });
 
 /**

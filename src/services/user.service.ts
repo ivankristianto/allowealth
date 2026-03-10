@@ -17,7 +17,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
-import { z } from 'zod';
+import { maxLength, minLength, object, parse, pipe, regex, string, type InferInput } from 'valibot';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
 import {
   PASSWORD_MIN_LENGTH,
@@ -26,25 +26,30 @@ import {
 } from '@/lib/validation';
 
 /**
- * Zod schemas for user service validation
+ * Validation schemas for user service input
  */
-const updateProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
+const updateProfileSchema = object({
+  name: pipe(
+    string(),
+    minLength(1, 'Name is required'),
+    maxLength(255, 'Name must be less than 255 characters')
+  ),
 });
 
-export const updatePasswordSchema = z.object({
-  oldPassword: z.string().min(1, 'Old password is required'),
-  newPassword: z
-    .string()
-    .min(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGES.minLength)
-    .regex(PASSWORD_REQUIREMENTS.hasLetter, PASSWORD_ERROR_MESSAGES.hasLetter)
-    .regex(PASSWORD_REQUIREMENTS.hasNumberOrSpecial, PASSWORD_ERROR_MESSAGES.hasNumberOrSpecial),
+export const updatePasswordSchema = object({
+  oldPassword: pipe(string(), minLength(1, 'Old password is required')),
+  newPassword: pipe(
+    string(),
+    minLength(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGES.minLength),
+    regex(PASSWORD_REQUIREMENTS.hasLetter, PASSWORD_ERROR_MESSAGES.hasLetter),
+    regex(PASSWORD_REQUIREMENTS.hasNumberOrSpecial, PASSWORD_ERROR_MESSAGES.hasNumberOrSpecial)
+  ),
 });
 
 /**
- * Input type inferred from Zod schema
+ * Input type inferred from validation schema
  */
-export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
+export type UpdatePasswordInput = InferInput<typeof updatePasswordSchema>;
 
 /**
  * Constant-time delay function to prevent timing attacks
@@ -91,8 +96,8 @@ export class UserService {
    * @throws {UserServiceError} If user not found or validation fails
    */
   async updateProfile(userId: string, input: { name: string }) {
-    // Validate input using Zod schema
-    const validated = updateProfileSchema.parse(input);
+    // Validate input using the service schema
+    const validated = parse(updateProfileSchema, input);
 
     // Check if user exists
     const user = await this.db.query.users.findFirst({
@@ -129,8 +134,8 @@ export class UserService {
    * @throws {UserServiceError} If user not found, old password invalid, or new password weak
    */
   async updatePassword(userId: string, input: UpdatePasswordInput) {
-    // Validate input using Zod schema (includes password strength validation)
-    const validated = updatePasswordSchema.parse(input);
+    // Validate input using the service schema (includes password strength validation)
+    const validated = parse(updatePasswordSchema, input);
 
     // Check if user exists
     const user = await this.db.query.users.findFirst({

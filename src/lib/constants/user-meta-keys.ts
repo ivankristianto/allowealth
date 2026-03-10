@@ -4,7 +4,16 @@
  * Defines the allowlist of meta keys, their types, validation schemas, and defaults.
  * All meta keys must be validated against this allowlist at the service layer.
  */
-import { z } from 'zod';
+import {
+  email,
+  maxLength,
+  parse,
+  picklist,
+  pipe,
+  string,
+  type BaseIssue,
+  type BaseSchema,
+} from 'valibot';
 
 /**
  * Allowed meta keys - only these keys can be stored in user_meta
@@ -47,38 +56,51 @@ export const META_VALUE_MAX_SIZE = 4096;
  * Validation schemas for each meta key's value
  *
  * Note: All values are stored as strings in the database.
- * Boolean values are stored as 'true' or 'false' strings.
+ * Boolean values remain stored as 'true' or 'false' strings.
  */
-export const META_VALUE_SCHEMAS: Record<UserMetaKey, z.ZodType<string>> = {
-  [USER_META_KEYS.SHOW_CONVERTED_TOTALS]: z.enum(['true', 'false'], {
-    message: 'Value must be "true" or "false"',
-  }),
-  [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: z.enum(['true', 'false'], {
-    message: 'Value must be "true" or "false"',
-  }),
-  [USER_META_KEYS.PHONE]: z.string().max(50, 'Phone number must be at most 50 characters'),
-  [USER_META_KEYS.THEME]: z.enum(['system', 'light', 'dark', 'monochrome'], {
-    message: 'Value must be "system", "light", "dark", or "monochrome"',
-  }),
-  [USER_META_KEYS.PENDING_EMAIL]: z
-    .email({ message: 'Invalid email format' })
-    .max(255, 'Email must be at most 255 characters'),
+export const META_VALUE_SCHEMAS: Record<
+  UserMetaKey,
+  BaseSchema<string, string, BaseIssue<unknown>>
+> = {
+  [USER_META_KEYS.SHOW_CONVERTED_TOTALS]: picklist(
+    ['true', 'false'],
+    'Value must be "true" or "false"'
+  ),
+  [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: picklist(
+    ['true', 'false'],
+    'Value must be "true" or "false"'
+  ),
+  [USER_META_KEYS.PHONE]: pipe(
+    string(),
+    maxLength(50, 'Phone number must be at most 50 characters')
+  ),
+  [USER_META_KEYS.THEME]: picklist(
+    ['system', 'light', 'dark', 'monochrome'],
+    'Value must be "system", "light", "dark", or "monochrome"'
+  ),
+  [USER_META_KEYS.PENDING_EMAIL]: pipe(
+    string(),
+    email('Invalid email format'),
+    maxLength(255, 'Email must be at most 255 characters')
+  ),
 };
+
+const META_KEY_OPTIONS = [
+  USER_META_KEYS.SHOW_CONVERTED_TOTALS,
+  USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
+  USER_META_KEYS.PHONE,
+  USER_META_KEYS.THEME,
+  USER_META_KEYS.PENDING_EMAIL,
+] as const;
+
+const INVALID_META_KEY_MESSAGE = `Invalid meta key. Must be one of: ${VALID_META_KEYS.join(', ')}`;
 
 /**
  * Schema to validate meta key
  */
-export const metaKeySchema = z.enum(
-  [
-    USER_META_KEYS.SHOW_CONVERTED_TOTALS,
-    USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
-    USER_META_KEYS.PHONE,
-    USER_META_KEYS.THEME,
-    USER_META_KEYS.PENDING_EMAIL,
-  ],
-  {
-    message: `Invalid meta key. Must be one of: ${VALID_META_KEYS.join(', ')}`,
-  }
+export const metaKeySchema = pipe(
+  string(INVALID_META_KEY_MESSAGE),
+  picklist(META_KEY_OPTIONS, INVALID_META_KEY_MESSAGE)
 );
 
 /**
@@ -92,7 +114,7 @@ export function isValidMetaKey(key: string): key is UserMetaKey {
  * Validate a meta value against its key's schema
  * @param key - The meta key
  * @param value - The value to validate
- * @returns The validated value or throws ZodError
+ * @returns The validated value or throws when validation fails
  */
 export function validateMetaValue(key: UserMetaKey, value: string): string {
   // Check value size limit using actual byte length (not character count)
@@ -102,7 +124,7 @@ export function validateMetaValue(key: UserMetaKey, value: string): string {
   }
 
   const schema = META_VALUE_SCHEMAS[key];
-  return schema.parse(value);
+  return parse(schema, value);
 }
 
 /**

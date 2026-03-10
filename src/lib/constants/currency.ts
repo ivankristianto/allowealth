@@ -8,7 +8,7 @@
  * 2. Add currency metadata to `CURRENCY_META` object
  * 3. Add currency option to `CURRENCY_OPTIONS` array
  * 4. Update server-side validation in `src/services/user.service.ts` updateSettingsSchema
- * 5. Update Zod enum to include new currency: `z.enum(['IDR', 'USD', 'EUR', ...])`
+ * 5. Update shared currency validation to include the new currency where applicable
  *
  * @module lib/constants/currency
  */

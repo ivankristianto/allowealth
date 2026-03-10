@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { maxValue, minValue, number, object, optional, parse, picklist, pipe } from 'valibot';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 
@@ -17,10 +17,10 @@ const SUPPORTED_CURRENCIES = [
   'INR',
 ] as const;
 
-export const budgetSummarySchema = z.object({
-  month: z.number().min(1).max(12).optional(),
-  year: z.number().min(2020).max(2100).optional(),
-  currency: z.enum(SUPPORTED_CURRENCIES).default('IDR'),
+export const budgetSummarySchema = object({
+  month: optional(pipe(number(), minValue(1), maxValue(12))),
+  year: optional(pipe(number(), minValue(2020), maxValue(2100))),
+  currency: optional(picklist(SUPPORTED_CURRENCIES), 'IDR'),
 });
 
 export const tool: Tool = {
@@ -43,7 +43,7 @@ export const tool: Tool = {
 
 export async function handleGetBudgetSummary(args: Record<string, unknown>, ctx: ToolContext) {
   const { workspaceId } = ctx.auth;
-  const input = budgetSummarySchema.parse(args);
+  const input = parse(budgetSummarySchema, args);
 
   const now = new Date();
   const month = input.month ?? now.getMonth() + 1;
