@@ -197,6 +197,7 @@ export const GET: APIRoute = async (context) => {
             currency,
             resourceAllocationSubtitle: range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX',
             financialVelocitySubtitle: range === 'monthly' ? 'LAST 3 MONTHS' : 'MONTHLY BREAKDOWN',
+            hideFinancialVelocity: true,
           },
         });
         htmlParts.push(`<!-- PARTIAL:charts -->\n${chartsHtml}`);

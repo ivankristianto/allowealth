@@ -8,6 +8,7 @@
  */
 
 import { animate } from 'motion/mini';
+import { dispatchReinitEvent } from '@/lib/utils/dom';
 import { initPeriodNavigator } from '@/components/molecules/PeriodNavigator.client';
 
 /**
@@ -117,6 +118,9 @@ export function renderSummaryHtml(html: string): void {
         { delay: i * 0.1, duration: 0.4, easing: [0.22, 1, 0.36, 1] } as any
       );
     });
+
+    // Re-initialize BudgetSummary interactivity after HTML injection
+    dispatchReinitEvent('budget-summary:reinit');
   });
 }
 
