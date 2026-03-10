@@ -96,10 +96,19 @@ const budgetAmountUpdateValidation = optional(
   )
 );
 
-// Notes validation (optional, max length)
+// Notes validation for create — defaults absent field to null
 const notesValidation = pipe(
   optional(nullable(pipe(string(), maxLength(500, 'Notes must not exceed 500 characters'))), null),
   transform((value) => value || null)
+);
+
+// Notes validation for update — preserves undefined when field is absent so the
+// service's `!== undefined` guard correctly skips unset fields
+const notesUpdateValidation = optional(
+  pipe(
+    nullable(pipe(string(), maxLength(500, 'Notes must not exceed 500 characters'))),
+    transform((value) => value || null)
+  )
 );
 
 // Schema for creating a budget (for service layer)
@@ -119,7 +128,7 @@ export type CreateBudgetInput = InferOutput<typeof createBudgetSchema>;
 // Schema for updating a budget (for service layer)
 export const updateBudgetSchema = object({
   budget_amount: budgetAmountUpdateValidation,
-  notes: notesValidation,
+  notes: notesUpdateValidation,
   is_closed: optional(boolean()),
 });
 

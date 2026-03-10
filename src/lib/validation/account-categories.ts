@@ -32,6 +32,15 @@ const descriptionValidation = pipe(
   transform((value) => (value && value.length > 0 ? value : null))
 );
 
+// Update variant: preserves undefined when field is absent so the service's
+// `!== undefined` guard correctly skips unset fields
+const descriptionUpdateValidation = optional(
+  pipe(
+    nullable(pipe(string(), trim(), maxLength(500, 'Description must not exceed 500 characters'))),
+    transform((value) => (value && value.length > 0 ? value : null))
+  )
+);
+
 const sortOrderValidation = pipe(
   number(),
   integer('Sort order must be an integer'),
@@ -52,7 +61,7 @@ export type CreateAccountCategoryInput = InferOutput<typeof createAccountCategor
 
 export const updateAccountCategorySchema = object({
   name: optional(nameValidation),
-  description: descriptionValidation,
+  description: descriptionUpdateValidation,
   is_liability: optional(boolean()),
   sort_order: optional(sortOrderValidation),
 });
@@ -67,7 +76,7 @@ export const createAccountCategoryAPISchema = object({
 
 export const updateAccountCategoryAPISchema = object({
   name: optional(nameValidation),
-  description: descriptionValidation,
+  description: descriptionUpdateValidation,
   isLiability: optional(boolean()),
 });
 

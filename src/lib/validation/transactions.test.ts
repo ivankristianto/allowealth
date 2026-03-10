@@ -10,7 +10,7 @@ describe('transaction validation', () => {
         amount: '100',
         currency: 'IDR',
         account_id: 'account-1',
-        transaction_date: '2026-03-10',
+        transaction_date: '2020-01-15',
       })
     ).toThrow();
   });
@@ -22,7 +22,7 @@ describe('transaction validation', () => {
         amount: '100',
         currency: 'IDR',
         account_id: 'account-1',
-        transaction_date: '2026-03-10',
+        transaction_date: '2020-01-15',
       })
     ).toThrow();
   });
@@ -44,8 +44,8 @@ describe('transaction validation', () => {
     const parsed = parse(transactionFilterSchema, {
       limit: '10',
       offset: '5',
-      start_date: '2026-03-01',
-      end_date: '2026-03-10',
+      start_date: '2020-01-01',
+      end_date: '2020-01-15',
     });
 
     expect(parsed.limit).toBe(10);

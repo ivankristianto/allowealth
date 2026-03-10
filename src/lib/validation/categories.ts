@@ -61,6 +61,15 @@ const descriptionValidation = pipe(
   transform((value) => value || null)
 );
 
+// Update variant: preserves undefined when field is absent so the service's
+// `!== undefined` guard correctly skips unset fields
+const descriptionUpdateValidation = optional(
+  pipe(
+    nullable(pipe(string(), maxLength(200, 'Description must not exceed 200 characters'))),
+    transform((value) => value || null)
+  )
+);
+
 // Schema for creating a category (for service layer)
 export const createCategorySchema = object({
   workspace_id: requiredId('Workspace ID is required'),
@@ -80,7 +89,7 @@ export const updateCategorySchema = object({
   name: optional(nameValidation),
   type: optional(categoryTypeEnum),
   income_source_type: optional(incomeSourceTypeEnum),
-  description: descriptionValidation,
+  description: descriptionUpdateValidation,
   icon: optional(string()),
   color: optional(string()),
   is_active: optional(boolean()),

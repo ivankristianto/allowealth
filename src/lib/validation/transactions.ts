@@ -124,15 +124,21 @@ function buildCreateTransactionSchema<TSchema extends BaseSchema<Date, Date, Bas
 
   return pipe(
     baseSchema,
-    check(
-      (data: InferOutput<typeof baseSchema>) =>
-        data.type !== 'transfer' || Boolean(data.to_account_id),
-      'Destination account is required for transfers'
+    forward(
+      check(
+        (data: InferOutput<typeof baseSchema>) =>
+          data.type !== 'transfer' || Boolean(data.to_account_id),
+        'Destination account is required for transfers'
+      ),
+      ['to_account_id'] as any // eslint type resolution fails for generic schema paths
     ),
-    check(
-      (data: InferOutput<typeof baseSchema>) =>
-        data.type === 'transfer' || Boolean(data.category_id),
-      'Category is required for expense/income transactions'
+    forward(
+      check(
+        (data: InferOutput<typeof baseSchema>) =>
+          data.type === 'transfer' || Boolean(data.category_id),
+        'Category is required for expense/income transactions'
+      ),
+      ['category_id'] as any // eslint type resolution fails for generic schema paths
     )
   );
 }
@@ -183,13 +189,19 @@ export const createTransactionAPISchema = pipe(
       pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
     ),
   }),
-  check(
-    (data) => data.type !== 'transfer' || Boolean(data.to_account_id),
-    'Destination account is required for transfers'
+  forward(
+    check(
+      (data) => data.type !== 'transfer' || Boolean(data.to_account_id),
+      'Destination account is required for transfers'
+    ),
+    ['to_account_id'] as const
   ),
-  check(
-    (data) => data.type === 'transfer' || Boolean(data.category_id),
-    'Category is required for expense/income transactions'
+  forward(
+    check(
+      (data) => data.type === 'transfer' || Boolean(data.category_id),
+      'Category is required for expense/income transactions'
+    ),
+    ['category_id'] as const
   )
 );
 

@@ -1,7 +1,5 @@
 # Valibot Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Replace Zod with Valibot across the application and MCP server, preserve validation accept/reject rules and inferred types, normalize API validation payloads, and remove Zod completely from runtime dependencies.
 
 **Architecture:** Shared schema modules, service-layer validators, API route request schemas, and MCP tool schemas all move to native Valibot definitions. `src/lib/api-utils.ts` becomes the single API-validation boundary that parses request JSON with Valibot and returns a repo-owned normalized issue shape. The migration lands as a full cutover with no compatibility layer and no mixed-validator end state.
