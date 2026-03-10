@@ -43,6 +43,7 @@ Personal and family financial application for expense tracking, budgeting, accou
 | **Logging**             | Structured consola loggers               | `console.log`                                  | `009-logger-abstraction.md`               |
 | **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes                      | `010-mcp-server-architecture.md`          |
 | **CLI Commands**        | `bun run aw <command>` (citty)           | Standalone scripts in `src/cli/`               | `COMMANDS.md`                             |
+| **Validation**          | Valibot (`import * as v from 'valibot'`) | Zod (`import { z } from 'zod'`)                | `rules/backend/api.md`                    |
 
 ## Key Commands
 
