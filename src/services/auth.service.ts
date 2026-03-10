@@ -1,811 +1,280 @@
-/**
- * Authentication Service
- *
- * Provides high-level authentication operations including user registration,
- * login, logout, session validation, and user retrieval.
- *
- * Error codes:
- * - USER_EXISTS: Email already registered
- * - INVALID_CREDENTIALS: Email or password incorrect
- * - INVALID_INPUT: Input validation failed
- * - DATABASE_ERROR: Database operation failed
- */
-
-import { auth, type User, type Session } from '@/lib/auth/lucia';
-import { hashPassword, verifyPassword } from '@/lib/auth/password';
+import { APIError } from 'better-auth';
+import { and, eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { db, getActiveSchema, runTransaction, type IDatabase } from '@/db';
-import { AccountCategoryService } from '@/services/account-category.service';
+import { getSignupMode } from '@/lib/auth/signup-mode';
 import { createLogger } from '@/lib/logger';
+import type { AuthUser, BetterAuthUser } from '@/lib/auth/types';
+import { AccountCategoryService } from './account-category.service';
+import { WorkspaceInvitationService } from './workspace-invitation.service';
 
 const log = createLogger('auth');
-import { eq, and } from 'drizzle-orm';
 
-// Get the correct schema for the current database dialect
-const schema = getActiveSchema();
-import { nanoid } from 'nanoid';
-
-/**
- * Error codes for authentication operations
- */
 export const AUTH_ERRORS = {
-  USER_EXISTS: 'USER_EXISTS',
-  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
-  INVALID_INPUT: 'INVALID_INPUT',
-  DATABASE_ERROR: 'DATABASE_ERROR',
-  NOT_AUTHENTICATED: 'NOT_AUTHENTICATED',
-  SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
-  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
-  WORKSPACE_INACTIVE: 'WORKSPACE_INACTIVE',
-  OAUTH_PROVIDER_ERROR: 'OAUTH_PROVIDER_ERROR',
-  OAUTH_LINK_REQUIRED: 'OAUTH_LINK_REQUIRED',
-  OAUTH_UNLINK_DENIED: 'OAUTH_UNLINK_DENIED',
+  INVITATION_REQUIRED: 'INVITATION_REQUIRED',
+  INVALID_INVITATION: 'INVALID_INVITATION',
+  GOOGLE_ACCOUNT_NOT_LINKED: 'GOOGLE_ACCOUNT_NOT_LINKED',
+  BOOTSTRAP_FAILED: 'BOOTSTRAP_FAILED',
 } as const;
 
-/**
- * OAuth provider profile data
- */
-export interface OAuthProfile {
-  provider: string;
-  providerAccountId: string;
-  email: string;
-  name: string;
-  avatarUrl?: string;
+export const GOOGLE_ACCOUNT_NOT_LINKED_MESSAGE =
+  'Sign in with your existing method first, then connect Google from Settings > Security.';
+
+type AuthHookContext = {
+  body?: Record<string, unknown> | null;
+  request?: Request;
+} | null;
+
+type AuthProvider = 'credential' | 'google';
+
+type DomainUserRow = (typeof schema.users)['$inferSelect'];
+
+const schema = getActiveSchema();
+
+function getInvitationToken(context: AuthHookContext): string | null {
+  const token = context?.body?.invitationToken;
+  return typeof token === 'string' && token.length > 0 ? token : null;
 }
 
-/**
- * Result types for OAuth login/register
- */
-export type OAuthResult =
-  | { needsLinking: false; user: User; session: Session; isNewUser: boolean }
-  | { needsLinking: true; pendingUserId: string; email: string; provider: string };
-
-/**
- * Auth error class
- */
-export class AuthError extends Error {
-  public email?: string;
-
-  constructor(
-    public code: string,
-    message: string
-  ) {
-    super(message);
-    this.name = 'AuthError';
-  }
+function getAuthProvider(context: AuthHookContext): AuthProvider {
+  const pathname = context?.request ? new URL(context.request.url).pathname : '';
+  return pathname.includes('/callback/google') ? 'google' : 'credential';
 }
 
-/**
- * Input validation result
- */
-interface ValidationResult {
-  valid: boolean;
-  errors?: string[];
-}
-
-/**
- * Validate email format
- */
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Validate password strength
- * - Minimum 12 characters
- * - At least one letter
- * - At least one number or special character
- */
-function validatePassword(password: string): boolean {
-  if (password.length < 12) return false;
-  const hasLetter = /[a-zA-Z]/.test(password);
-  const hasNumberOrSpecial = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-  return hasLetter && hasNumberOrSpecial;
-}
-
-/**
- * Validate registration input
- */
-function validateRegistrationInput(
-  email: string,
-  password: string,
-  name: string
-): ValidationResult {
-  const errors: string[] = [];
-
-  if (!email || !validateEmail(email)) {
-    errors.push('Valid email is required');
+function requireEmail(authUser: BetterAuthUser): string {
+  if (!authUser.email) {
+    throw new Error('Better Auth user is missing an email address');
   }
 
-  if (!password || !validatePassword(password)) {
-    errors.push(
-      'Password must be at least 12 characters with letters and numbers/special characters'
-    );
-  }
+  return authUser.email.toLowerCase();
+}
 
-  if (!name || name.trim().length === 0) {
-    errors.push('Name is required');
-  }
-
+function mapDomainUser(domainUser: DomainUserRow): AuthUser {
   return {
-    valid: errors.length === 0,
-    errors: errors.length > 0 ? errors : undefined,
+    id: domainUser.id,
+    email: domainUser.email,
+    name: domainUser.name,
+    role: domainUser.role,
+    workspaceId: domainUser.workspace_id ?? null,
+    avatarUrl: domainUser.avatar_url ?? null,
+    deletedAt: domainUser.deleted_at ?? null,
   };
 }
 
-/**
- * Validate login input
- */
-function validateLoginInput(email: string, password: string): ValidationResult {
-  const errors: string[] = [];
-
-  if (!email || !validateEmail(email)) {
-    errors.push('Valid email is required');
-  }
-
-  if (!password) {
-    errors.push('Password is required');
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors: errors.length > 0 ? errors : undefined,
-  };
-}
-
-/**
- * Initialize a new workspace for a user
- *
- * Creates the workspace record within the provided transaction.
- * Both password registration and OAuth registration share this logic.
- *
- * @param tx - Database transaction handle
- * @param workspaceId - Pre-generated workspace ID
- * @param userName - User display name (used for workspace name)
- * @param options - Workspace options (status: 'active' for OAuth, 'inactive' for email signup)
- */
-async function initializeWorkspace(
-  tx: IDatabase,
-  workspaceId: string,
-  userName: string,
-  options: { status: 'active' | 'inactive' }
+async function ensureSignupAllowed(
+  authUser: BetterAuthUser,
+  context: AuthHookContext,
+  database: IDatabase
 ): Promise<void> {
-  await tx.insert(schema.workspaces).values({
-    id: workspaceId,
-    name: `${userName.trim()}'s Workspace`,
-    status: options.status,
+  if (getSignupMode() === 'public') {
+    return;
+  }
+
+  const invitationToken = getInvitationToken(context);
+  if (!invitationToken) {
+    throw APIError.from('FORBIDDEN', {
+      code: AUTH_ERRORS.INVITATION_REQUIRED,
+      message: 'An invitation is required to create an account.',
+    });
+  }
+
+  const invitationService = new WorkspaceInvitationService(database);
+  const invitation = await invitationService.validateAndGet(invitationToken);
+
+  if (invitation.email.toLowerCase() !== requireEmail(authUser)) {
+    throw APIError.from('BAD_REQUEST', {
+      code: AUTH_ERRORS.INVALID_INVITATION,
+      message: 'This invitation is only valid for the invited email address.',
+    });
+  }
+}
+
+async function createWorkspaceOwner(
+  authUser: BetterAuthUser,
+  database: IDatabase
+): Promise<AuthUser> {
+  const workspaceId = nanoid();
+
+  await runTransaction(database, async (tx) => {
+    await tx.insert(schema.workspaces).values({
+      id: workspaceId,
+      name: `${authUser.name.trim()}'s Workspace`,
+      status: 'active',
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    await tx.insert(schema.users).values({
+      id: authUser.id,
+      workspace_id: workspaceId,
+      email: requireEmail(authUser),
+      password_hash: null,
+      name: authUser.name.trim(),
+      role: 'admin',
+      avatar_url: authUser.image ?? null,
+      email_verified_at: authUser.emailVerified === true ? new Date() : null,
+      deleted_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+  });
+
+  const accountCategoryService = new AccountCategoryService(database);
+  await accountCategoryService.seedDefaultCategories(workspaceId, authUser.id);
+
+  const domainUser = await database.query.users.findFirst({
+    where: eq(schema.users.id, authUser.id),
+  });
+
+  if (!domainUser) {
+    throw new Error('Failed to load bootstrapped workspace owner');
+  }
+
+  return mapDomainUser(domainUser);
+}
+
+async function createInvitedUser(
+  authUser: BetterAuthUser,
+  invitationToken: string,
+  database: IDatabase
+): Promise<AuthUser> {
+  const invitationService = new WorkspaceInvitationService(database);
+  const invitation = await invitationService.validateAndGet(invitationToken);
+
+  if (invitation.email.toLowerCase() !== requireEmail(authUser)) {
+    throw new Error('Invitation email does not match the authenticated user');
+  }
+
+  await database.insert(schema.users).values({
+    id: authUser.id,
+    workspace_id: invitation.workspace_id,
+    email: requireEmail(authUser),
+    password_hash: null,
+    name: authUser.name.trim(),
+    role: invitation.role,
+    avatar_url: authUser.image ?? null,
+    email_verified_at: authUser.emailVerified === true ? new Date() : null,
+    deleted_at: null,
     created_at: new Date(),
     updated_at: new Date(),
   });
-}
 
-/**
- * Register a new user
- *
- * Creates a new workspace and makes the user an admin of that workspace.
- *
- * @param email - User email address
- * @param password - User password (will be hashed)
- * @param name - User display name
- * @returns Promise resolving to the created user
- * @throws {AuthError} If email already exists or input is invalid
- */
-export async function register(email: string, password: string, name: string): Promise<User> {
-  // Validate input
-  const validation = validateRegistrationInput(email, password, name);
-  if (!validation.valid) {
-    throw new AuthError(AUTH_ERRORS.INVALID_INPUT, validation.errors!.join(', '));
-  }
+  await invitationService.accept(invitationToken);
 
-  try {
-    // Check if user already exists
-    const existingUser = await db.query.users.findFirst({
-      where: eq(schema.users.email, email.toLowerCase()),
-    });
-
-    if (existingUser) {
-      throw new AuthError(AUTH_ERRORS.USER_EXISTS, 'An account with this email already exists');
-    }
-
-    // Hash password
-    const passwordHash = await hashPassword(password);
-
-    // Generate unique IDs
-    const workspaceId = nanoid();
-    const userId = nanoid();
-
-    // Use transaction for atomicity (prevents orphaned workspaces)
-    const newUser: typeof schema.users.$inferSelect = await runTransaction(db, async (tx) => {
-      await initializeWorkspace(tx, workspaceId, name, { status: 'inactive' });
-      const [user] = await tx
-        .insert(schema.users)
-        .values({
-          id: userId,
-          workspace_id: workspaceId,
-          email: email.toLowerCase(),
-          password_hash: passwordHash,
-          name: name.trim(),
-          role: 'admin' as const,
-        })
-        .returning();
-      return user;
-    });
-
-    if (!newUser) {
-      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
-    }
-
-    // NOTE: Account category seeding deferred until email verification
-    // (handled in verify-email endpoint)
-    // NOTE: Verification email is sent by the caller (signup endpoint)
-
-    log.info('User registered (unverified)', {
-      userId: newUser.id,
-      workspaceId,
-    });
-
-    // Return user in Lucia format
-    return {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      attributes: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-      },
-    } as User & { attributes: any };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      throw error;
-    }
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Database operation failed');
-  }
-}
-
-/**
- * Register a new user with an invitation
- *
- * Adds the user to an existing workspace with the specified role.
- * Does NOT create a new workspace or default account categories (those belong to workspace creator).
- *
- * @param email - User email address
- * @param password - User password (will be hashed)
- * @param name - User display name
- * @param workspaceId - ID of the workspace to join
- * @param role - Role in the workspace ('admin' or 'member')
- * @returns Promise resolving to the created user
- * @throws {AuthError} If email already exists or input is invalid
- */
-export async function registerWithInvitation(
-  email: string,
-  password: string,
-  name: string,
-  workspaceId: string,
-  role: 'admin' | 'member'
-): Promise<User> {
-  // Validate input
-  const validation = validateRegistrationInput(email, password, name);
-  if (!validation.valid) {
-    throw new AuthError(AUTH_ERRORS.INVALID_INPUT, validation.errors!.join(', '));
-  }
-
-  try {
-    // Check if user already exists
-    const existingUser = await db.query.users.findFirst({
-      where: eq(schema.users.email, email.toLowerCase()),
-    });
-
-    if (existingUser) {
-      throw new AuthError(AUTH_ERRORS.USER_EXISTS, 'An account with this email already exists');
-    }
-
-    // Hash password
-    const passwordHash = await hashPassword(password);
-
-    // Generate unique user ID
-    const userId = nanoid();
-
-    // Create user in the invited workspace (no new workspace creation)
-    // Email is auto-verified: invitation token proves email ownership
-    const [newUser] = await db
-      .insert(schema.users)
-      .values({
-        id: userId,
-        workspace_id: workspaceId,
-        email: email.toLowerCase(),
-        password_hash: passwordHash,
-        name: name.trim(),
-        role: role,
-        email_verified_at: new Date(),
-      })
-      .returning();
-
-    if (!newUser) {
-      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
-    }
-
-    // NOTE: Email is auto-verified (invitation proves ownership), no verification email sent
-    // NOTE: Default categories are seeded by the caller (signup endpoint) for admin users
-
-    log.info('User registered via invitation (auto-verified)', {
-      userId: newUser.id,
-      workspaceId,
-    });
-
-    // Return user in Lucia format
-    return {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      attributes: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-      },
-    } as User & { attributes: any };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      throw error;
-    }
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Database operation failed');
-  }
-}
-
-/**
- * Login a user
- *
- * @param email - User email address
- * @param password - User password
- * @returns Promise resolving to { user, session, isDeleted }
- * @throws {AuthError} If credentials are invalid
- */
-export async function login(
-  email: string,
-  password: string
-): Promise<{ user: User; session: Session; isDeleted: boolean }> {
-  // Validate input
-  const validation = validateLoginInput(email, password);
-  if (!validation.valid) {
-    throw new AuthError(AUTH_ERRORS.INVALID_INPUT, validation.errors!.join(', '));
-  }
-
-  try {
-    // Find user by email
-    const user = await db.query.users.findFirst({
-      where: eq(schema.users.email, email.toLowerCase()),
-    });
-
-    if (!user) {
-      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
-    }
-
-    // OAuth-only users don't have passwords
-    if (!user.password_hash) {
-      throw new AuthError(
-        AUTH_ERRORS.INVALID_CREDENTIALS,
-        'This account uses social login. Please sign in with your linked provider.'
-      );
-    }
-
-    // Always verify password first to maintain constant timing
-    // (prevents timing oracle that could distinguish verified vs unverified accounts)
-    const isValidPassword = await verifyPassword(password, user.password_hash);
-
-    // Check password validity before revealing email verification status
-    if (!isValidPassword) {
-      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
-    }
-
-    // Check email verification after password check
-    if (!user.email_verified_at) {
-      log.warn('Login attempt with unverified email', { userId: user.id });
-      const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
-      err.email = user.email;
-      throw err;
-    }
-
-    // Check if workspace is active (skip for super_admin who have no workspace)
-    if (user.role !== 'super_admin') {
-      const workspace = await db.query.workspaces.findFirst({
-        where: eq(schema.workspaces.id, user.workspace_id),
-      });
-
-      if (!workspace || workspace.status !== 'active') {
-        log.warn('Login attempt with inactive workspace', {
-          userId: user.id,
-          workspaceId: user.workspace_id,
-        });
-        throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
-      }
-    }
-
-    // Check if user has been soft-deleted
-    const isDeleted = user.deleted_at !== null;
-
-    // Create session using Lucia
-    // Note: Lucia's createSession expects (userId, attributes)
-    // The adapter should handle inserting the session into the database
-    const session = await auth.createSession(user.id, {});
-
-    // Return user in Lucia format with workspace context
-    const luciaUser: User = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      workspaceId: user.workspace_id,
-      role: user.role as 'admin' | 'member' | 'super_admin',
-      avatarUrl: user.avatar_url ?? null,
-      deletedAt: user.deleted_at,
-    };
-
-    return {
-      user: luciaUser,
-      session,
-      isDeleted,
-    };
-  } catch (error) {
-    if (error instanceof AuthError) {
-      throw error;
-    }
-    // Log full error details for diagnosis
-    const errObj = error as Record<string, unknown>;
-    const details = [
-      errObj.message,
-      errObj.code && `code=${errObj.code}`,
-      errObj.severity && `severity=${errObj.severity}`,
-      errObj.detail && `detail=${errObj.detail}`,
-      errObj.hint && `hint=${errObj.hint}`,
-      errObj.cause && `cause=${errObj.cause}`,
-    ]
-      .filter(Boolean)
-      .join(' | ');
-    log.error('DB error details:', details);
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, `Database operation failed: ${details}`);
-  }
-}
-
-/**
- * Logout a user
- *
- * @param sessionId - Session ID to invalidate
- * @returns Promise resolving when session is invalidated
- * @throws {AuthError} If session not found or database error occurs
- */
-export async function logout(sessionId: string): Promise<void> {
-  if (!sessionId) {
-    throw new AuthError(AUTH_ERRORS.NOT_AUTHENTICATED, 'No session provided');
-  }
-
-  try {
-    await auth.invalidateSession(sessionId);
-  } catch (error) {
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to invalidate session');
-  }
-}
-
-/**
- * Validate a session
- *
- * @param sessionId - Session ID to validate
- * @returns Promise resolving to session if valid, null otherwise
- */
-export async function validateSession(sessionId: string): Promise<Session | null> {
-  if (!sessionId) {
-    return null;
-  }
-
-  try {
-    const { session } = await auth.validateSession(sessionId);
-    return session;
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
- * Get user from session
- *
- * @param sessionId - Session ID
- * @returns Promise resolving to user if found, null otherwise
- */
-export async function getUser(sessionId: string): Promise<User | null> {
-  if (!sessionId) {
-    return null;
-  }
-
-  try {
-    const { user, session } = await auth.validateSession(sessionId);
-
-    if (!session || !user) {
-      return null;
-    }
-
-    // Cast to our custom User type (Lucia's getUserAttributes returns these properties)
-    return user as unknown as User;
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
- * Login or register a user via OAuth provider
- *
- * Flow:
- * 1. Check if oauth_account exists for this provider+id → return existing user
- * 2. Check if a user exists with matching email → request account linking
- * 3. No match → create new user + workspace + oauth_account
- */
-export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<OAuthResult> {
-  try {
-    // 1. Check if oauth_account already linked
-    const existingOAuth = await db.query.oauthAccounts.findFirst({
-      where: and(
-        eq(schema.oauthAccounts.provider, profile.provider),
-        eq(schema.oauthAccounts.provider_account_id, profile.providerAccountId)
-      ),
-    });
-
-    if (existingOAuth) {
-      const user = await db.query.users.findFirst({
-        where: eq(schema.users.id, existingOAuth.user_id),
-      });
-
-      if (!user || user.deleted_at) {
-        throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
-      }
-
-      // Check workspace is active (skip for super_admin who have no workspace)
-      if (user.role !== 'super_admin') {
-        const workspace = await db.query.workspaces.findFirst({
-          where: eq(schema.workspaces.id, user.workspace_id),
-        });
-        if (!workspace || workspace.status !== 'active') {
-          throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
-        }
-      }
-
-      const session = await auth.createSession(user.id, {});
-      const luciaUser: User = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        workspaceId: user.workspace_id,
-        role: user.role as 'admin' | 'member' | 'super_admin',
-        avatarUrl: user.avatar_url ?? null,
-        deletedAt: user.deleted_at,
-      };
-
-      log.info('OAuth login (existing link)', { userId: user.id, provider: profile.provider });
-      return { needsLinking: false, user: luciaUser, session, isNewUser: false };
-    }
-
-    // 2. Check if user exists with matching email
-    const existingUser = await db.query.users.findFirst({
-      where: eq(schema.users.email, profile.email.toLowerCase()),
-    });
-
-    if (existingUser) {
-      if (existingUser.deleted_at) {
-        throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
-      }
-
-      log.info('OAuth login requires linking', {
-        userId: existingUser.id,
-        provider: profile.provider,
-      });
-      return {
-        needsLinking: true,
-        pendingUserId: existingUser.id,
-        email: existingUser.email,
-        provider: profile.provider,
-      };
-    }
-
-    // 3. New user — create user + workspace + oauth_account
-    const workspaceId = nanoid();
-    const userId = nanoid();
-    const oauthAccountId = nanoid();
-
-    const newUser = await runTransaction(db, async (tx) => {
-      await initializeWorkspace(tx, workspaceId, profile.name, { status: 'active' });
-
-      const [user] = await tx
-        .insert(schema.users)
-        .values({
-          id: userId,
-          workspace_id: workspaceId,
-          email: profile.email.toLowerCase(),
-          password_hash: null,
-          name: profile.name.trim(),
-          role: 'admin' as const,
-          avatar_url: profile.avatarUrl || null,
-          email_verified_at: new Date(),
-        })
-        .returning();
-
-      await tx.insert(schema.oauthAccounts).values({
-        id: oauthAccountId,
-        user_id: userId,
-        provider: profile.provider,
-        provider_account_id: profile.providerAccountId,
-        email: profile.email.toLowerCase(),
-      });
-
-      return user;
-    });
-
-    if (!newUser) {
-      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
-    }
-
-    // Seed default account categories — OAuth users are immediately active
-    try {
-      const accountCategoryService = new AccountCategoryService(db);
-      await accountCategoryService.seedDefaultCategories(workspaceId, userId);
-    } catch (seedError) {
-      // Non-fatal: user can still use the app, categories can be seeded later
-      log.error('Failed to seed default categories for OAuth user', {
-        userId,
-        workspaceId,
-        error: seedError,
-      });
-    }
-
-    const session = await auth.createSession(newUser.id, {});
-    const luciaUser: User = {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      workspaceId: newUser.workspace_id,
-      role: newUser.role as 'admin' | 'member' | 'super_admin',
-      avatarUrl: newUser.avatar_url ?? null,
-      deletedAt: newUser.deleted_at,
-    };
-
-    log.info('OAuth registration (new user)', {
-      userId: newUser.id,
-      provider: profile.provider,
-      workspaceId,
-    });
-    return { needsLinking: false, user: luciaUser, session, isNewUser: true };
-  } catch (error) {
-    if (error instanceof AuthError) throw error;
-    log.error('OAuth login/register error', error);
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'OAuth authentication failed');
-  }
-}
-
-/**
- * Confirm account linking after user consent
- */
-export async function confirmAccountLink(
-  userId: string,
-  profile: OAuthProfile
-): Promise<{ user: User; session: Session }> {
-  try {
-    const existingUser = await db.query.users.findFirst({
-      where: eq(schema.users.id, userId),
-    });
-
-    if (!existingUser || existingUser.deleted_at) {
-      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
-    }
-
-    // Check workspace is active before creating session (skip for super_admin)
-    if (existingUser.role !== 'super_admin') {
-      const workspace = await db.query.workspaces.findFirst({
-        where: eq(schema.workspaces.id, existingUser.workspace_id),
-      });
-      if (!workspace || workspace.status !== 'active') {
-        log.warn('Account link attempt with inactive workspace', {
-          userId,
-          workspaceId: existingUser.workspace_id,
-        });
-        throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
-      }
-    }
-
-    const oauthAccountId = nanoid();
-
-    await runTransaction(db, async (tx) => {
-      await tx.insert(schema.oauthAccounts).values({
-        id: oauthAccountId,
-        user_id: userId,
-        provider: profile.provider,
-        provider_account_id: profile.providerAccountId,
-        email: profile.email.toLowerCase(),
-      });
-
-      const updates: Record<string, unknown> = {};
-      if (!existingUser.avatar_url && profile.avatarUrl) {
-        updates.avatar_url = profile.avatarUrl;
-      }
-      if (!existingUser.email_verified_at) {
-        updates.email_verified_at = new Date();
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await tx.update(schema.users).set(updates).where(eq(schema.users.id, userId));
-      }
-    });
-
-    const updatedUser = await db.query.users.findFirst({
-      where: eq(schema.users.id, userId),
-    });
-
-    if (!updatedUser) {
-      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to fetch updated user');
-    }
-
-    const session = await auth.createSession(userId, {});
-    const luciaUser: User = {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      workspaceId: updatedUser.workspace_id,
-      role: updatedUser.role as 'admin' | 'member' | 'super_admin',
-      avatarUrl: updatedUser.avatar_url ?? null,
-      deletedAt: updatedUser.deleted_at,
-    };
-
-    log.info('OAuth account linked', { userId, provider: profile.provider });
-    return { user: luciaUser, session };
-  } catch (error) {
-    if (error instanceof AuthError) throw error;
-    log.error('Account linking error', error);
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Account linking failed');
-  }
-}
-
-/**
- * Unlink an OAuth provider from a user account
- */
-export async function unlinkOAuthProvider(userId: string, provider: string): Promise<void> {
-  try {
-    const user = await db.query.users.findFirst({
-      where: eq(schema.users.id, userId),
-    });
-
-    if (!user) {
-      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'User not found');
-    }
-
-    if (!user.password_hash) {
-      throw new AuthError(
-        AUTH_ERRORS.OAUTH_UNLINK_DENIED,
-        'Cannot unlink: no password set. Add a password first.'
-      );
-    }
-
-    await runTransaction(db, async (tx) => {
-      await tx
-        .delete(schema.oauthAccounts)
-        .where(
-          and(eq(schema.oauthAccounts.user_id, userId), eq(schema.oauthAccounts.provider, provider))
-        );
-
-      // Clear avatar_url since it likely came from the OAuth provider
-      if (user.avatar_url) {
-        await tx.update(schema.users).set({ avatar_url: null }).where(eq(schema.users.id, userId));
-      }
-    });
-
-    log.info('OAuth provider unlinked', { userId, provider });
-  } catch (error) {
-    if (error instanceof AuthError) throw error;
-    log.error('OAuth unlink error', error);
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to unlink provider');
-  }
-}
-
-/**
- * Get all linked OAuth accounts for a user
- */
-export async function getLinkedOAuthAccounts(
-  userId: string
-): Promise<Array<typeof schema.oauthAccounts.$inferSelect>> {
-  return db.query.oauthAccounts.findMany({
-    where: eq(schema.oauthAccounts.user_id, userId),
+  const domainUser = await database.query.users.findFirst({
+    where: eq(schema.users.id, authUser.id),
   });
+
+  if (!domainUser) {
+    throw new Error('Failed to load invited workspace member');
+  }
+
+  return mapDomainUser(domainUser);
+}
+
+export async function beforeAuthUserCreate(
+  authUser: BetterAuthUser,
+  context: AuthHookContext,
+  database: IDatabase = db
+): Promise<void> {
+  await ensureSignupAllowed(authUser, context, database);
+}
+
+export async function bootstrapAuthUser(
+  authUser: BetterAuthUser,
+  context: AuthHookContext,
+  provider: AuthProvider = getAuthProvider(context),
+  database: IDatabase = db
+): Promise<AuthUser> {
+  const existingDomainUser = await database.query.users.findFirst({
+    where: eq(schema.users.id, authUser.id),
+  });
+
+  if (existingDomainUser) {
+    return mapDomainUser(existingDomainUser);
+  }
+
+  try {
+    const invitationToken = getInvitationToken(context);
+
+    if (invitationToken) {
+      const invitedUser = await createInvitedUser(authUser, invitationToken, database);
+      log.info('Bootstrapped invited auth user', { userId: invitedUser.id });
+      return invitedUser;
+    }
+
+    const workspaceOwner = await createWorkspaceOwner(authUser, database);
+    log.info('Bootstrapped auth user workspace', {
+      userId: workspaceOwner.id,
+      provider,
+      workspaceId: workspaceOwner.workspaceId,
+    });
+    return workspaceOwner;
+  } catch (error) {
+    log.error('Failed to bootstrap auth user', {
+      userId: authUser.id,
+      provider,
+      error,
+    });
+
+    throw error instanceof Error
+      ? error
+      : new Error('Failed to bootstrap auth user domain data');
+  }
+}
+
+export function getGoogleAuthErrorMessage(errorCode?: string | null): string | null {
+  if (errorCode === 'account_not_linked') {
+    return GOOGLE_ACCOUNT_NOT_LINKED_MESSAGE;
+  }
+
+  return null;
+}
+
+export async function getGoogleSignInStatus(
+  email: string,
+  database: IDatabase = db
+): Promise<{ status: 'blocked' | 'linked' | 'new-user'; message?: string }> {
+  const normalizedEmail = email.toLowerCase();
+  const domainUser = await database.query.users.findFirst({
+    where: eq(schema.users.email, normalizedEmail),
+  });
+
+  if (!domainUser) {
+    return { status: 'new-user' };
+  }
+
+  const linkedGoogleAccount = await database.query.account.findFirst({
+    where: and(eq(schema.account.userId, domainUser.id), eq(schema.account.providerId, 'google')),
+  });
+
+  if (linkedGoogleAccount) {
+    return { status: 'linked' };
+  }
+
+  return {
+    status: 'blocked',
+    message: GOOGLE_ACCOUNT_NOT_LINKED_MESSAGE,
+  };
+}
+
+export async function getLinkedOAuthAccounts(
+  userId: string,
+  database: IDatabase = db
+): Promise<Array<{ id: string; provider: string; email?: string; connected: boolean }>> {
+  const [domainUser, linkedAccounts] = await Promise.all([
+    database.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    }),
+    database.query.account.findMany({
+      where: eq(schema.account.userId, userId),
+    }),
+  ]);
+
+  return linkedAccounts.map((linkedAccount) => ({
+    id: linkedAccount.id,
+    provider: linkedAccount.providerId,
+    email: domainUser?.email,
+    connected: true,
+  }));
 }

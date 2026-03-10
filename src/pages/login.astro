@@ -7,6 +7,7 @@
 
 import AuthLayout from '../layouts/AuthLayout.astro';
 import LoginForm from '../components/molecules/LoginForm.astro';
+import { getGoogleAuthErrorMessage } from '@/services/auth.service';
 
 // Get error message and redirect from query params (if any)
 const url = new URL(Astro.request.url);
@@ -17,6 +18,7 @@ const verified = url.searchParams.get('verified');
 const emailChanged = url.searchParams.get('email-changed');
 const emailParam = url.searchParams.get('email') || '';
 
+const oauthErrorMessage = getGoogleAuthErrorMessage(error);
 const oauthError = Astro.url.searchParams.get('oauth_error') || '';
 
 const errorMessages: Record<string, string> = {
@@ -31,8 +33,11 @@ const errorMessages: Record<string, string> = {
 
 // Only use whitelisted error codes to prevent XSS
 // expired_token uses banner (with resend button), not inline error
-const errorMessage =
-  error && error !== 'expired_token' && errorMessages[error] ? errorMessages[error] : '';
+const errorMessage = oauthErrorMessage
+  ? oauthErrorMessage
+  : error && error !== 'expired_token' && errorMessages[error]
+    ? errorMessages[error]
+    : '';
 
 // Determine banner for verification status
 let bannerMessage = '';

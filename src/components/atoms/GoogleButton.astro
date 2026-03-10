@@ -12,16 +12,19 @@ interface Props {
 
 const { action = 'Sign in', class: className = '' } = Astro.props;
 const label = `${action} with Google`;
+const redirectPath = action === 'Sign up' ? '/signup' : '/login';
 ---
 
 <a
-  href="/api/auth/google"
+  href="#"
   class:list={[
     'btn btn-outline border-base-300 bg-base-100 hover:bg-base-200 gap-3 h-14 rounded-2xl text-base font-semibold w-full',
     className,
   ]}
   role="button"
   aria-label={label}
+  data-google-auth-button
+  data-error-callback={redirectPath}
 >
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="shrink-0">
     <path
@@ -43,3 +46,41 @@ const label = `${action} with Google`;
   </svg>
   <span>{label}</span>
 </a>
+
+<script>
+  const button = document.currentScript?.previousElementSibling;
+
+  if (!(button instanceof HTMLAnchorElement)) {
+    throw new Error('Google auth button anchor not found');
+  }
+
+  button.addEventListener('click', async (event) => {
+    event.preventDefault();
+
+    const response = await fetch('/api/auth/sign-in/social', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        provider: 'google',
+        callbackURL: '/dashboard',
+        errorCallbackURL: button.dataset.errorCallback || '/login',
+        disableRedirect: true,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result?.url) {
+      const params = new URLSearchParams({
+        error: result?.code || 'oauth_error',
+      });
+      window.location.href = `${button.dataset.errorCallback || '/login'}?${params.toString()}`;
+      return;
+    }
+
+    window.location.href = result.url;
+  });
+</script>

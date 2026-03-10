@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
+import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
 export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
@@ -21,6 +22,23 @@ export const auth = betterAuth({
     provider: 'sqlite',
     schema,
   }),
+  account: {
+    accountLinking: {
+      disableImplicitLinking: true,
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user, context) => {
+          await beforeAuthUserCreate(user, context);
+        },
+        after: async (user, context) => {
+          await bootstrapAuthUser(user, context);
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },

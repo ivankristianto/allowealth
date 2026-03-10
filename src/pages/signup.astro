@@ -15,7 +15,6 @@ import Button from '../components/atoms/Button.astro';
 import Label from '../components/atoms/Label.astro';
 import GoogleButton from '../components/atoms/GoogleButton.astro';
 import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astro';
-import { getSignupUrl } from '@/lib/config';
 import { workspaceInvitationService, workspaceService } from '@/services';
 import Turnstile from '../components/atoms/Turnstile.astro';
 import { getSignupMode } from '@/lib/auth/signup-mode';
@@ -196,7 +195,6 @@ const invitationErrorMessage =
             class="space-y-5"
             data-signup-form
             data-invitation-token={token || ''}
-            data-api-signup-url={getSignupUrl()}
             novalidate
           >
             <div id="form-messages" class="space-y-2" aria-live="polite" tabindex="-1">
@@ -364,7 +362,6 @@ const invitationErrorMessage =
 
     // Get values from data attributes
     const invitationToken = form.getAttribute('data-invitation-token') || '';
-    const apiSignupUrl = form.getAttribute('data-api-signup-url') || '/api/signup';
 
     // Password toggle for confirm-password is handled by PasswordField's
     // inline script (binds to all [data-toggle-password] buttons globally)
@@ -417,29 +414,25 @@ const invitationErrorMessage =
       if (submitButton) submitButton.disabled = true;
 
       try {
-        // Build signup URL with token if present
-        const signupUrl = invitationToken
-          ? `${apiSignupUrl}?token=${encodeURIComponent(invitationToken)}`
-          : apiSignupUrl;
-
-        const response = await fetch(signupUrl, {
+        const response = await fetch('/api/auth/sign-up/email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
           body: JSON.stringify({
-            name: data.name,
-            email: data.email,
-            password: data.password,
+            name: String(data.name || ''),
+            email: String(data.email || ''),
+            password: String(data.password || ''),
+            callbackURL: '/dashboard',
+            invitationToken,
             turnstileToken: data.turnstileToken,
           }),
         });
 
         const result = await response.json();
 
-        if (response.ok && result.success) {
-          // Registration successful
+        if (response.ok && !result?.error) {
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-success">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -450,15 +443,12 @@ const invitationErrorMessage =
             </div>
           `;
 
-          // Reset form
           form.reset();
 
-          // Redirect to login after delay
           setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = '/dashboard';
           }, 2000);
         } else {
-          // Registration failed
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-error">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -466,7 +456,7 @@ const invitationErrorMessage =
                 <path d="m15 9-6 6"></path>
                 <path d="m9 9 6 6"></path>
               </svg>
-              <span>${window.RegistrationValidation.escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
+              <span>${window.RegistrationValidation.escapeHtml(result?.message || result?.error?.message || 'Registration failed. Please try again.')}</span>
             </div>
           `;
         }
