@@ -1,6 +1,6 @@
 /// <reference types="astro/client" />
 
-import type { User, Session } from '@/lib/auth/lucia';
+import type { AuthSession, AuthUser } from '@/lib/auth/types';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 import type { PerfCollector } from '@/lib/perf';
 
@@ -9,8 +9,8 @@ declare global {
 
   namespace App {
     interface Locals {
-      user?: User | null;
-      session?: Session | null;
+      user?: AuthUser | null;
+      session?: AuthSession | null;
       userSettings?: UserSettings;
       layoutCategories?: ReadonlyArray<{
         id: string;

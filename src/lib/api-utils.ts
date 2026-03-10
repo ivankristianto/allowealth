@@ -1,6 +1,5 @@
 import type { APIContext } from 'astro';
 import { z } from 'zod';
-import { auth } from '@/lib/auth/lucia';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { requireTenantContext } from '@/lib/tenant/context';
 
@@ -229,29 +228,7 @@ export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
  * @returns User ID string if session is valid, null otherwise
  */
 export async function getUserId(context: APIContext): Promise<string | null> {
-  // Extract session ID from cookies using Lucia's cookie name
-  const sessionId = context.cookies.get(auth.sessionCookieName)?.value;
-
-  // No session cookie found
-  if (!sessionId) {
-    return null;
-  }
-
-  try {
-    // Validate session using Lucia
-    const { session, user } = await auth.validateSession(sessionId);
-
-    // Session is invalid or expired
-    if (!session || !user) {
-      return null;
-    }
-
-    // Return user ID from valid session
-    return user.id;
-  } catch {
-    // Session validation failed (invalid token, database error, etc.)
-    return null;
-  }
+  return context.locals.user?.id ?? null;
 }
 
 /**

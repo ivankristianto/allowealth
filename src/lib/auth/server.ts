@@ -4,6 +4,9 @@ import { twoFactor } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
 
+export const AUTH_PATH_PREFIX = '/api/auth';
+export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
+
 const baseURL = process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? '4321'}`;
 const secret =
   process.env.BETTER_AUTH_SECRET ??
@@ -12,6 +15,7 @@ const secret =
 
 export const auth = betterAuth({
   baseURL,
+  basePath: AUTH_PATH_PREFIX,
   secret,
   database: drizzleAdapter(db, {
     provider: 'sqlite',
