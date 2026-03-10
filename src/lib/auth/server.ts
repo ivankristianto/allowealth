@@ -12,7 +12,6 @@ export const AUTH_PATH_PREFIX = '/api/auth';
 export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
 
 const isProduction = getEnv('NODE_ENV') === 'production';
-const baseURL = getEnv('PUBLIC_URL') ?? `http://localhost:${getEnv('PORT') ?? '4321'}`;
 const secret =
   getEnv('BETTER_AUTH_SECRET') ??
   (isProduction ? undefined : 'better-auth-dev-secret-for-local-development-only-0123456789');
@@ -33,9 +32,30 @@ if (isProduction && (!googleClientId || !googleClientSecret)) {
 
 const emailService = new EmailService();
 
+function getDevelopmentBaseURL(): string {
+  const devHost = getEnv('DEV_HOST');
+  const port = getEnv('PORT') ?? '4321';
+  return `http://${devHost || 'localhost'}:${port}`;
+}
+
+export function getAuthBaseURL(): string {
+  return getEnv('PUBLIC_URL') ?? getDevelopmentBaseURL();
+}
+
+export function getTrustedOrigins(): string[] {
+  const trustedOrigins = [getAuthBaseURL()];
+
+  if (!isProduction && getEnv('DEV_HOST')) {
+    trustedOrigins.push(getDevelopmentBaseURL());
+  }
+
+  return Array.from(new Set(trustedOrigins));
+}
+
 export const auth = betterAuth({
-  baseURL,
+  baseURL: getAuthBaseURL(),
   basePath: AUTH_PATH_PREFIX,
+  trustedOrigins: getTrustedOrigins(),
   secret,
   database: drizzleAdapter(db, {
     provider: 'sqlite',
