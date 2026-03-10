@@ -2,6 +2,7 @@
 export * from './workspaces';
 export * from './workspace-meta';
 export * from './workspace-invitations';
+export * from './better-auth';
 export * from './users';
 export * from './user-meta';
 export * from './sessions';

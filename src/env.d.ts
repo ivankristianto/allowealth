@@ -52,10 +52,14 @@ declare global {
   interface ImportMetaEnv {
     /** Base URL for API endpoints (default: /api) */
     readonly PUBLIC_API_URL?: string;
+    /** Public application origin used for auth redirects and email links */
+    readonly PUBLIC_URL?: string;
     /** App mode: full (default) or app_only */
     readonly APP_MODE?: 'app_only' | 'full';
     /** Signup mode: invite_only (default) or public */
     readonly SIGNUP_MODE?: 'invite_only' | 'public';
+    /** Better Auth signing secret */
+    readonly BETTER_AUTH_SECRET?: string;
 
     // Cache configuration
     readonly CACHE_DRIVER?: 'upstash' | 'memory' | 'none';
@@ -87,6 +91,10 @@ declare global {
     readonly PUBLIC_TURNSTILE_SITE_KEY?: string;
     /** Secret key for server-side Turnstile token verification */
     readonly TURNSTILE_SECRET_KEY?: string;
+
+    // Google OAuth (SSO)
+    readonly GOOGLE_CLIENT_ID?: string;
+    readonly GOOGLE_CLIENT_SECRET?: string;
   }
 
   interface ImportMeta {
