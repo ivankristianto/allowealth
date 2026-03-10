@@ -8,38 +8,9 @@
 
 import AuthLayout from '@/layouts/AuthLayout.astro';
 import MfaVerifyForm from '@/components/molecules/MfaVerifyForm.astro';
-import { verifyCookieSignature } from '@/lib/crypto/cookie-signature';
 
 const url = new URL(Astro.request.url);
 const redirect = url.searchParams.get('redirect') || '';
-
-// Ensure this page is only usable with a pending MFA cookie.
-const mfaPending = Astro.cookies.get('mfa_pending')?.value;
-let isValidPendingSession = false;
-
-if (mfaPending) {
-  try {
-    const verifiedJson = await verifyCookieSignature(mfaPending);
-    if (verifiedJson) {
-      try {
-        const parsed = JSON.parse(verifiedJson);
-        isValidPendingSession =
-          typeof parsed.userId === 'string' &&
-          parsed.userId.length > 0 &&
-          typeof parsed.expiresAt === 'number' &&
-          Date.now() <= parsed.expiresAt;
-      } catch {
-        isValidPendingSession = false;
-      }
-    }
-  } catch {
-    isValidPendingSession = false;
-  }
-}
-
-if (!isValidPendingSession) {
-  return Astro.redirect('/login');
-}
 ---
 
 <AuthLayout title="allowealth - Verify Identity">

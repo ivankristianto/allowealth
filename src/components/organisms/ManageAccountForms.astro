@@ -12,7 +12,7 @@ import Button from '@/components/atoms/Button.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
 import { User, Mail, TriangleAlert } from '@lucide/astro';
-import type { User as UserType } from '@/lib/auth/lucia';
+import type { AuthUser as UserType } from '@/lib/auth/types';
 import { patterns } from '@/lib/validation/patterns';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 

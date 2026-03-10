@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
+import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
@@ -13,6 +14,7 @@ const secret =
   process.env.BETTER_AUTH_SECRET ??
   process.env.SESSION_SECRET ??
   'better-auth-dev-secret-change-me';
+const emailService = new EmailService();
 
 export const auth = betterAuth({
   baseURL,
@@ -41,6 +43,22 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      if (!user.email) {
+        return;
+      }
+
+      if (emailService.isConfigured()) {
+        await emailService.sendPasswordReset({
+          to: user.email,
+          resetUrl: url,
+          expiresIn: '1 hour',
+        });
+        return;
+      }
+
+      console.info(`[better-auth] password reset URL for ${user.email}: ${url}`);
+    },
   },
   socialProviders: {
     google: {

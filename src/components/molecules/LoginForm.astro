@@ -179,10 +179,11 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 </div>
 
 <script>
+  import { authClient } from '@/lib/auth/client';
+
   // Read server values from data attributes
   const loginForm = document.getElementById('login-form');
   const redirectTo = loginForm?.dataset.redirect || '';
-  const apiLoginUrl = loginForm?.dataset.apiLogin || '/api/auth/login';
   const resendApiUrl = loginForm?.dataset.resendApi || '/api/auth/resend-verification';
 
   // Helper function to clone icon from template
@@ -216,37 +217,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
     // Safe: textContent prevents XSS
     textSpan.textContent = message;
     alertDiv.appendChild(textSpan);
-
-    messagesContainer.appendChild(alertDiv);
-  };
-
-  // Show verification error with resend button
-  const showVerificationError = (emailAddr: string) => {
-    if (!messagesContainer) return;
-    messagesContainer.innerHTML = '';
-
-    const alertDiv = document.createElement('div');
-    alertDiv.setAttribute('role', 'alert');
-    alertDiv.className = 'alert alert-error';
-
-    const icon = getErrorIcon();
-    if (icon) alertDiv.appendChild(icon);
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'flex flex-wrap items-center gap-2';
-
-    const textSpan = document.createElement('span');
-    textSpan.textContent = 'Please verify your email before signing in.';
-    contentDiv.appendChild(textSpan);
-
-    const resendBtn = document.createElement('button');
-    resendBtn.type = 'button';
-    resendBtn.className = 'underline font-bold';
-    resendBtn.textContent = 'Resend verification email';
-    resendBtn.dataset.resendEmail = emailAddr;
-    contentDiv.appendChild(resendBtn);
-
-    alertDiv.appendChild(contentDiv);
 
     messagesContainer.appendChild(alertDiv);
   };
@@ -351,43 +321,31 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       if (submitButton) submitButton.disabled = true;
 
       try {
-        const formData = new FormData(form);
-        const data = {
-          email: formData.get('email'),
-          password: formData.get('password'),
-          remember: formData.get('remember') === 'true',
-          turnstileToken: formData.get('cf-turnstile-response') || '',
-        };
-
-        const response = await fetch(apiLoginUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(data),
+        const result = await authClient.signIn.email({
+          email: emailInput.value.trim(),
+          password: passwordInput.value,
+          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)
+            ?.checked,
+          callbackURL: redirectTo || '/dashboard',
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          if (result.data?.requiresMfa) {
-            const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
-            window.location.href = mfaUrl;
-          } else {
-            // Login successful - redirect to dashboard or return URL
-            const returnUrl = redirectTo || '/dashboard';
-            window.location.href = returnUrl;
-          }
-        } else if (result.code === 'EMAIL_NOT_VERIFIED') {
-          // Show verification error with resend option
-          showVerificationError(result.email || emailInput.value);
-        } else {
-          // Login failed - show error message
-          showErrorAlert(
-            result.error?.message || result.error || 'Login failed. Please try again.'
-          );
+        if (result.error) {
+          showErrorAlert(result.error.message || 'Login failed. Please try again.');
+          return;
         }
+
+        if (result.data && 'twoFactorRedirect' in result.data) {
+          const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
+          window.location.href = mfaUrl;
+          return;
+        }
+
+        if (result.data?.url) {
+          window.location.href = result.data.url;
+          return;
+        }
+
+        window.location.href = redirectTo || '/dashboard';
       } catch (error) {
         console.error('Login error:', error);
         // Show error message

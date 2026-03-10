@@ -17,7 +17,8 @@ import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import Button from '@/components/atoms/Button.astro';
 import { History } from '@lucide/astro';
-import { apiKeyService, mfaService } from '@/services';
+import { apiKeyService } from '@/services';
+import { auth } from '@/lib/auth/server';
 import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
 const currentPath = '/security';
@@ -59,7 +60,10 @@ if (user?.id) {
 // Fetch MFA status
 let mfaStatus = { enabled: false, hasBackupCodes: false, backupCodesRemaining: 0 };
 if (user?.id) {
-  mfaStatus = await mfaService.getStatus(user.id);
+  const authSession = await auth.api.getSession({ headers: Astro.request.headers }).catch(
+    () => null
+  );
+  mfaStatus.enabled = Boolean(authSession?.user?.twoFactorEnabled);
 }
 
 // @TODO: Wire with backend for passkeys.

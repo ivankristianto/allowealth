@@ -17,7 +17,8 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { dashboardService, mfaService, workspaceMetaService, workspaceService } from '@/services';
+import { dashboardService, workspaceMetaService, workspaceService } from '@/services';
+import { auth } from '@/lib/auth/server';
 import type { DashboardData } from '@/services/dashboard.service';
 import type { OnboardingStatus } from '@/services/workspace.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
@@ -97,8 +98,8 @@ try {
         ? activeCurrencyCookie
         : primaryCurrency;
 
-    // Fetch dashboard data and MFA status in parallel (MFA is non-critical)
-    const [dashResult, mfaResult] = await Promise.all([
+    // Fetch dashboard data and Better Auth MFA status in parallel (MFA is non-critical)
+    const [dashResult, authSession] = await Promise.all([
       dashboardService.getDashboardData(
         user.workspaceId,
         currentMonth,
@@ -106,11 +107,11 @@ try {
         selectedDetailCurrency,
         perf
       ),
-      mfaService.getStatus(user.id).catch(() => ({ enabled: false })),
+      auth.api.getSession({ headers: Astro.request.headers }).catch(() => null),
     ]);
 
     dashboardData = dashResult;
-    mfaEnabled = mfaResult.enabled;
+    mfaEnabled = Boolean(authSession?.user?.twoFactorEnabled);
   }
 } catch (err) {
   console.error('Error loading dashboard data:', err);

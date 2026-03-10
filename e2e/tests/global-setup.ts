@@ -1,4 +1,4 @@
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect, type Page } from '@playwright/test';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,6 +12,36 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
 const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
+
+async function waitForAuthenticatedLanding(page: Page) {
+  await expect
+    .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+    .toMatch(/^\/(dashboard|onboarding)$/);
+}
+
+async function tryLogin(page: Page, email: string, password: string): Promise<boolean> {
+  await page.goto(`${E2E_BASE_URL}/login`);
+
+  const emailInput = page.locator('#email');
+  const passwordInput = page.locator('#password');
+  const loginButton = page.getByTestId('login-btn');
+
+  await expect(emailInput).toBeVisible();
+  await expect(passwordInput).toBeVisible();
+  await expect(loginButton).toBeVisible();
+  await expect(loginButton).toBeEnabled();
+
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
+  await loginButton.click();
+
+  try {
+    await waitForAuthenticatedLanding(page);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Reset and seed the E2E database before running tests.
@@ -63,41 +93,38 @@ setup('authenticate', async ({ page }) => {
   const email = process.env.E2E_USER_EMAIL || 'demo@example.com';
   const password = process.env.E2E_USER_PASSWORD || 'demo123456789';
 
-  await page.goto(`${E2E_BASE_URL}/login`);
+  if (!(await tryLogin(page, email, password))) {
+    const fallbackEmail = `e2e-auth-${Date.now()}@test.com`;
+    const signUpResponse = await page.request.post(`${E2E_BASE_URL}/api/auth/sign-up/email`, {
+      data: {
+        email: fallbackEmail,
+        password,
+        name: 'E2E Setup User',
+        callbackURL: '/dashboard',
+      },
+    });
 
-  // Wait for login form to be visible and ready
-  const emailInput = page.locator('#email');
-  const passwordInput = page.locator('#password');
-  const loginButton = page.getByTestId('login-btn');
-
-  await expect(emailInput).toBeVisible();
-  await expect(passwordInput).toBeVisible();
-  await expect(loginButton).toBeVisible();
-  await expect(loginButton).toBeEnabled();
-
-  // Fill login form using Playwright's native fill method
-  await emailInput.fill(email);
-  await passwordInput.fill(password);
-
-  // Click login button and wait for navigation
-  // The login API can take a while due to Argon2 password verification
-  await loginButton.click();
-
-  // Wait for either successful navigation to dashboard OR error message
-  try {
-    await expect
-      .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
-      .toMatch(/^\/(dashboard|onboarding)$/);
-  } catch {
-    // Check if there's an error message (use specific selector to avoid matching toast announcer)
-    const errorAlert = page
-      .locator('[data-testid="login-error"]')
-      .or(page.locator('.alert.alert-error[role="alert"]'));
-    if (await errorAlert.first().isVisible()) {
-      const errorText = await errorAlert.first().textContent();
-      throw new Error(`Login failed with error: ${errorText}`);
+    if (!signUpResponse.ok()) {
+      const errorBody = await signUpResponse.text();
+      throw new Error(`Setup sign-up failed: ${signUpResponse.status()} ${errorBody}`);
     }
-    throw new Error('Login navigation timed out without error message');
+
+    await page.goto(`${E2E_BASE_URL}/dashboard`);
+
+    try {
+      await waitForAuthenticatedLanding(page);
+    } catch {
+      if (!(await tryLogin(page, fallbackEmail, password))) {
+        const errorAlert = page
+          .locator('[data-testid="login-error"]')
+          .or(page.locator('.alert.alert-error[role="alert"]'));
+        if (await errorAlert.first().isVisible()) {
+          const errorText = await errorAlert.first().textContent();
+          throw new Error(`Login failed with error: ${errorText}`);
+        }
+        throw new Error('Login navigation timed out without error message');
+      }
+    }
   }
 
   // Save authentication state

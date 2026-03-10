@@ -17,7 +17,7 @@ import { Menu, Plus } from '@lucide/astro';
 import Button from '../atoms/Button.astro';
 import CurrencySwitcher from '../atoms/CurrencySwitcher.astro';
 import GreetingHeader from '../molecules/GreetingHeader.astro';
-import type { User } from '@/lib/auth/lucia';
+import type { AuthUser as User } from '@/lib/auth/types';
 import type { Currency } from '@/lib/constants/currency';
 
 interface Props {

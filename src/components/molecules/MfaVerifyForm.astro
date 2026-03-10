@@ -117,6 +117,8 @@ const { redirectTo = '' } = Astro.props;
 </div>
 
 <script>
+  import { authClient } from '@/lib/auth/client';
+
   const form = document.getElementById('mfa-form') as HTMLFormElement | null;
   const messagesContainer = document.getElementById('mfa-messages');
   const totpSection = document.getElementById('totp-section');
@@ -133,7 +135,6 @@ const { redirectTo = '' } = Astro.props;
     console.error('MFA form elements not found');
   } else {
     const redirectTo = form.dataset.redirect || '';
-    const apiVerifyUrl = form.dataset.apiVerify || '/api/auth/login/verify-mfa';
     let isBackupMode = false;
 
     const getErrorIcon = () => {
@@ -214,23 +215,27 @@ const { redirectTo = '' } = Astro.props;
       submitButton.disabled = true;
 
       try {
-        const response = await fetch(apiVerifyUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ code, isBackupCode: isBackupMode }),
-        });
+        const result = isBackupMode
+          ? await authClient.twoFactor.verifyBackupCode({
+              code,
+              trustDevice: false,
+            })
+          : await authClient.twoFactor.verifyTotp({
+              code,
+              trustDevice: false,
+            });
 
-        const result = await response.json();
+        if (result.error) {
+          showError(result.error.message || 'Invalid verification code');
+          return;
+        }
 
-        if (response.ok && result.success) {
+        if (result.data) {
           window.location.href = redirectTo || '/dashboard';
           return;
         }
 
-        showError(result.error?.message || 'Invalid verification code');
+        showError('Invalid verification code');
       } catch {
         showError('An error occurred. Please try again.');
       } finally {

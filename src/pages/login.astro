@@ -15,6 +15,7 @@ const error = url.searchParams.get('error');
 const redirect = url.searchParams.get('redirect') || '';
 const registered = url.searchParams.get('registered');
 const verified = url.searchParams.get('verified');
+const passwordReset = url.searchParams.get('password-reset');
 const emailChanged = url.searchParams.get('email-changed');
 const emailParam = url.searchParams.get('email') || '';
 
@@ -48,6 +49,9 @@ if (registered === 'true') {
   bannerType = 'info';
 } else if (verified === 'true') {
   bannerMessage = 'Email verified! You can now sign in.';
+  bannerType = 'success';
+} else if (passwordReset === 'true') {
+  bannerMessage = 'Password updated. You can now sign in.';
   bannerType = 'success';
 } else if (error === 'expired_token') {
   bannerMessage = 'Verification link has expired.';

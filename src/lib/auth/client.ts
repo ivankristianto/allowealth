@@ -1,8 +1,15 @@
 import { createAuthClient } from 'better-auth/client';
 import { twoFactorClient } from 'better-auth/client/plugins';
-import { AUTH_PATH_PREFIX } from './server';
+import { getEnv } from '@/lib/env';
+
+const AUTH_PATH_PREFIX = '/api/auth';
+
+const authClientOrigin =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : getEnv('PUBLIC_URL') || `http://localhost:${process.env.PORT ?? '4321'}`;
 
 export const authClient = createAuthClient({
-  baseURL: AUTH_PATH_PREFIX,
+  baseURL: new URL(AUTH_PATH_PREFIX, authClientOrigin).toString(),
   plugins: [twoFactorClient()],
 });

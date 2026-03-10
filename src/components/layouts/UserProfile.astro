@@ -10,7 +10,7 @@
 
 import { User, Shield, LogOut, ChevronDown, Sun, Moon, Monitor, Contrast } from '@lucide/astro';
 
-import type { User as UserType } from '@/lib/auth/lucia';
+import type { AuthUser as UserType } from '@/lib/auth/types';
 
 interface Props {
   user?: UserType | null;
