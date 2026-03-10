@@ -5,8 +5,8 @@
  * Premium sidebar navigation with brand header, gradient active states,
  * and user profile section. Matches the premium UI redesign specifications.
  *
- * @design-system Oasis Finance v1.0.0
- * @see https://github.com/oasis-finance/design-system
+ * @design-system Allowealth v1.0.0
+ * @see https://github.com/allowealth/design-system
  */
 
 import { X, ChevronLeft, User as UserIcon, Shield, LogOut } from '@lucide/astro';
@@ -26,7 +26,7 @@ const { currentPath = '/', user = null } = Astro.props;
 // Check if user is super admin
 const isSuperAdmin = user?.role === 'super_admin';
 
-// Oasis Finance v1.0.0 Design System - Sidebar specifications:
+// Allowealth v1.0.0 Design System - Sidebar specifications:
 // - Width: 16rem (256px)
 // - Brand section padding: p-8 (2rem) - matches PoC
 // - Nav item padding: py-3 px-5 (0.75rem 1.25rem) - matches PoC

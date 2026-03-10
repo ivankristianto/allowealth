@@ -3,7 +3,7 @@
  * Input Component
  *
  * Form input component with support for text, number, date, select, and search types.
- * Aligned with Oasis Finance v1.0.0 design system.
+ * Aligned with Allowealth v1.0.0 design system.
  *
  * @param {string} type - Input type: text, number, email, date, select, search, password
  * @param {string} placeholder - Placeholder text
@@ -80,7 +80,7 @@ const {
 // Check if input has an icon slot
 const hasIcon = icon || Astro.slots.has('icon');
 
-// Base input styles aligned with Oasis Finance v1.0.0 design system
+// Base input styles aligned with Allowealth v1.0.0 design system
 // Height: 2.5rem (40px), Font size: 0.75rem (12px), Border radius: var(--radius-field)
 const inputClasses = [
   'input input-bordered w-full h-10 rounded-lg border border-base-300',
@@ -110,7 +110,7 @@ const selectOptions = type === 'select' ? options : [];
   {
     hasIcon && (
       <div
-        class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
+        class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/50"
         aria-hidden="true"
       >
         <slot name="icon" />

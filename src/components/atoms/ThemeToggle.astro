@@ -6,7 +6,7 @@
  * Displays a moon icon in light mode (to switch to dark) and
  * a sun icon in dark mode (to switch to light).
  *
- * @design-system Oasis Finance v1.0.0
+ * @design-system Allowealth v1.0.0
  * @accessibility WCAG 2.1 AA compliant - minimum touch target 44x44px
  *
  * @param size - Button size: 'sm' for header/compact, 'md' for floating/default
@@ -44,7 +44,7 @@ const config = sizeClasses[size];
     type="button"
     data-theme-toggle
     class:list={[
-      'bg-base-100 border border-base-300 flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group text-neutral hover:bg-base-100',
+      'bg-base-100 border border-base-300 flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group text-base-content hover:bg-base-100',
       config.button,
     ]}
     aria-label="Toggle dark mode"
