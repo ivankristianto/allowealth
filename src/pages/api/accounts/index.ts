@@ -1,5 +1,16 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import {
+  check,
+  forward,
+  maxLength,
+  minLength,
+  object,
+  optional,
+  picklist,
+  pipe,
+  regex,
+  string,
+} from 'valibot';
 import { accountService, accountCategoryService } from '@/services';
 import {
   successResponse,
@@ -25,18 +36,19 @@ const LEGACY_NAME_BY_TYPE = new Map(
 );
 
 // Validation schemas using the shared account types
-const createAccountSchema = z
-  .object({
-    name: z.string().min(1).max(255),
-    categoryId: z.string().min(1).optional(),
-    type: z.enum(VALID_ACCOUNT_TYPES).optional(),
-    balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
-    currency: z.enum(AVAILABLE_CURRENCIES),
-  })
-  .refine((data) => data.categoryId || data.type, {
-    message: 'Category or type is required',
-    path: ['categoryId'],
-  });
+const createAccountSchema = pipe(
+  object({
+    name: pipe(string(), minLength(1), maxLength(255)),
+    categoryId: optional(pipe(string(), minLength(1))),
+    type: optional(picklist(VALID_ACCOUNT_TYPES)),
+    balance: pipe(string(), regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number')),
+    currency: picklist(AVAILABLE_CURRENCIES),
+  }),
+  forward(
+    check((data) => Boolean(data.categoryId || data.type), 'Category or type is required'),
+    ['categoryId'] as const
+  )
+);
 
 /**
  * GET /api/accounts

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { object, picklist } from 'valibot';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import {
   errorResponse,
@@ -12,10 +12,11 @@ import { logError } from '@/lib/utils';
 import { userMetaService } from '@/services';
 import { UserMetaServiceError } from '@/services/service-errors';
 
-const updateThemeSchema = z.object({
-  theme: z.enum(['system', 'light', 'dark', 'monochrome'], {
-    message: 'Theme must be one of: system, light, dark, monochrome',
-  }),
+const updateThemeSchema = object({
+  theme: picklist(
+    ['system', 'light', 'dark', 'monochrome'],
+    'Theme must be one of: system, light, dark, monochrome'
+  ),
 });
 
 export const PUT: APIRoute = async (context) => {

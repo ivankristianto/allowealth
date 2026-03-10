@@ -1156,7 +1156,7 @@ Errors: 1 (invalid category)
 - Styling: Tailwind CSS v4 + DaisyUI
 - Component Library: Custom (documented in design system docs)
 - Charts: Chart.js or Recharts
-- Forms: React Hook Form + Zod validation
+- Forms: React Hook Form + Valibot validation
 - State Management: Zustand or Nanostores
 - Build Tool: Bun
 
@@ -1167,7 +1167,7 @@ Errors: 1 (invalid category)
 - ORM: Drizzle ORM
 - Authentication: Lucia Auth
 - Password Hashing: Argon2id
-- Validation: Zod
+- Validation: Valibot
 - API Pattern: Internal service layer (not REST for MVP)
 
 **Development Tools:**
@@ -1672,7 +1672,7 @@ export const sessions = pgTable(
 ### SEC-4: Input Validation
 
 - Server-side validation on all inputs
-- Use Zod schemas for validation
+- Use Valibot schemas for validation
 - Sanitize HTML in user-generated content
 - Validate file uploads (type, size, content)
 - Reject malformed requests

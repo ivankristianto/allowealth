@@ -1,6 +1,7 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq, and, gte, lte, sql, inArray, or, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { parse } from 'valibot';
 import {
   decimalSubtract,
   decimalDivide,
@@ -779,7 +780,7 @@ export class BudgetService {
    * Note: Currency is now specified directly on the budget, no longer validated against category
    */
   async createBudget(input: CreateBudgetInput): Promise<Budget> {
-    const validated = createBudgetSchema.parse(input);
+    const validated = parse(createBudgetSchema, input);
     await this.assertWorkspaceCurrencyAllowed(validated.workspace_id, validated.currency);
 
     // Check if category exists and belongs to workspace
@@ -845,7 +846,7 @@ export class BudgetService {
    * Update an existing budget record
    */
   async updateBudget(id: string, workspaceId: string, input: UpdateBudgetInput): Promise<Budget> {
-    const validated = updateBudgetSchema.parse(input);
+    const validated = parse(updateBudgetSchema, input);
 
     // Check if budget exists and belongs to workspace
     const existingBudget = await this.getBudgetById(id, workspaceId);
@@ -1035,7 +1036,7 @@ export class BudgetService {
    * Creates budget entries with amount='0' for categories without budgets in the target month
    */
   async initializeAllBudgets(input: InitializeBudgetsInput): Promise<InitializeBudgetsResult> {
-    const validated = initializeBudgetsSchema.parse(input);
+    const validated = parse(initializeBudgetsSchema, input);
     await this.assertWorkspaceCurrencyAllowed(validated.workspace_id, validated.currency);
 
     const result = await runTransaction(this.db, async (tx) => {
@@ -1148,7 +1149,7 @@ export class BudgetService {
    * to properly handle multi-currency budgets.
    */
   async copyBudgetsToMonth(input: CopyBudgetsInput): Promise<CopyBudgetsResult> {
-    const validated = copyBudgetsSchema.parse(input);
+    const validated = parse(copyBudgetsSchema, input);
 
     // Get all budgets from source month
     const sourceBudgets = await this.db.query.budgets.findMany({

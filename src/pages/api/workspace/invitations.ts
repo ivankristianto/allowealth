@@ -9,14 +9,14 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { WorkspaceInvitationServiceError } from '@/services/service-errors';
-import { z } from 'zod';
+import { email, object, optional, picklist, pipe, string } from 'valibot';
 
 /**
  * Schema for POST request body - create invitation
  */
-const createInvitationSchema = z.object({
-  email: z.email({ message: 'Invalid email format' }),
-  role: z.enum(['admin', 'member']).default('member'),
+const createInvitationSchema = object({
+  email: pipe(string(), email('Invalid email format')),
+  role: optional(picklist(['admin', 'member']), 'member'),
 });
 
 /**

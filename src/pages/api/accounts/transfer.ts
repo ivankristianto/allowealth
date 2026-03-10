@@ -9,25 +9,30 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { ServiceErrorCode } from '@/services/service-errors';
-import { z } from 'zod';
+import { check, forward, maxLength, minLength, object, optional, pipe, string } from 'valibot';
 import { isValidCurrency } from '@/lib/constants/currency';
 
-const transferSchema = z
-  .object({
-    fromAccountId: z.string().min(1),
-    toAccountId: z.string().min(1),
-    amount: z
-      .string()
-      .refine(
-        (v) => /^\d+(\.\d+)?$/.test(v.trim()) && parseFloat(v) > 0,
+const transferSchema = pipe(
+  object({
+    fromAccountId: pipe(string(), minLength(1)),
+    toAccountId: pipe(string(), minLength(1)),
+    amount: pipe(
+      string(),
+      check(
+        (value) => /^\d+(\.\d+)?$/.test(value.trim()) && Number.parseFloat(value) > 0,
         'Amount must be a valid positive number'
-      ),
-    notes: z.string().max(500).optional(),
-  })
-  .refine((d) => d.fromAccountId !== d.toAccountId, {
-    message: 'Source and destination must be different',
-    path: ['toAccountId'],
-  });
+      )
+    ),
+    notes: optional(pipe(string(), maxLength(500))),
+  }),
+  forward(
+    check(
+      (data) => data.fromAccountId !== data.toAccountId,
+      'Source and destination must be different'
+    ),
+    ['toAccountId'] as const
+  )
+);
 
 /**
  * POST /api/accounts/transfer

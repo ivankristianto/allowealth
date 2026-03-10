@@ -8,6 +8,15 @@ interface TestLocalsUser {
   role: 'admin' | 'member';
 }
 
+function hasNormalizedIssue(details: any[], path: string[]) {
+  return details.some(
+    (issue) =>
+      JSON.stringify(issue.path) === JSON.stringify(path) &&
+      typeof issue.message === 'string' &&
+      typeof issue.code === 'string'
+  );
+}
+
 function createApiContext(body: unknown, user?: TestLocalsUser) {
   return {
     request: new Request('http://localhost/api/onboarding/budgets', {
@@ -28,6 +37,26 @@ describe('POST /api/onboarding/budgets', () => {
     budgetService.createBudget = originalCreateBudget;
     budgetService.findAllBudgets = originalFindAllBudgets;
     budgetService.updateBudget = originalUpdateBudget;
+  });
+
+  it('returns normalized validation details for invalid budget payloads', async () => {
+    const response = await POST(
+      createApiContext(
+        {
+          budgets: [{ categoryId: '', amount: 'abc', currency: 'IDR' }],
+          month: 13,
+          year: 2026,
+        },
+        { id: 'user-1', workspaceId: 'workspace-1', role: 'member' }
+      )
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.success).toBe(false);
+    expect(payload.error.code).toBe('VALIDATION_ERROR');
+    expect(hasNormalizedIssue(payload.error.details, ['budgets', '0', 'categoryId'])).toBe(true);
+    expect(hasNormalizedIssue(payload.error.details, ['budgets', '0', 'amount'])).toBe(true);
   });
 
   it('maps budget service errors to API responses', async () => {

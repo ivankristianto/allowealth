@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { maxLength, minLength, object, optional, picklist, pipe, string } from 'valibot';
 import { accountService, accountCategoryService } from '@/services';
 import {
   successResponse,
@@ -22,11 +22,11 @@ const LEGACY_NAME_BY_TYPE = new Map(
   DEFAULT_ACCOUNT_CATEGORIES.map((category) => [category.legacyType, category.name])
 );
 
-const updateAccountSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  categoryId: z.string().min(1).optional(),
-  type: z
-    .enum([
+const updateAccountSchema = object({
+  name: optional(pipe(string(), minLength(1), maxLength(255))),
+  categoryId: optional(pipe(string(), minLength(1))),
+  type: optional(
+    picklist([
       'cash',
       'bank_account',
       'e_wallet',
@@ -38,8 +38,8 @@ const updateAccountSchema = z.object({
       'credit_card',
       'loan',
     ])
-    .optional(),
-  currency: z.enum(AVAILABLE_CURRENCIES).optional(),
+  ),
+  currency: optional(picklist(AVAILABLE_CURRENCIES)),
 });
 
 /**

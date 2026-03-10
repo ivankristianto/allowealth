@@ -1,6 +1,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, ne } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { parse } from 'valibot';
 import {
   createCategorySchema,
   updateCategorySchema,
@@ -43,8 +44,8 @@ export class CategoryService {
    * @param perf - Optional performance collector for timing metrics
    */
   async create(input: CreateCategoryInput, perf?: PerfCollector) {
-    // Validate input using Zod schema
-    const validated = createCategorySchema.parse(input);
+    // Validate input using the service schema
+    const validated = parse(createCategorySchema, input);
 
     const id = nanoid();
 
@@ -137,8 +138,8 @@ export class CategoryService {
    * @param perf - Optional performance collector for timing metrics
    */
   async update(id: string, workspaceId: string, input: UpdateCategoryInput, perf?: PerfCollector) {
-    // Validate input using Zod schema
-    const validated = updateCategorySchema.parse(input);
+    // Validate input using the service schema
+    const validated = parse(updateCategorySchema, input);
     const existingCategory = await this.findById(id, workspaceId, perf);
     const resolvedCategoryType = validated.type ?? existingCategory?.type;
 

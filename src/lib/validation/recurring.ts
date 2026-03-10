@@ -1,4 +1,28 @@
-import { z } from 'zod';
+import {
+  boolean,
+  check,
+  date,
+  forward,
+  integer,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  nullable,
+  number,
+  optional,
+  picklist,
+  pipe,
+  regex,
+  strictObject,
+  string,
+  transform,
+  union,
+  type BaseIssue,
+  type BaseSchema,
+  type InferInput,
+  type InferOutput,
+} from 'valibot';
 import {
   currencyEnum,
   recurringTemplateStatusEnum,
@@ -6,177 +30,256 @@ import {
   categoryTypeEnum,
 } from '@/lib/enums';
 
-const dateStringValidation = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-  .refine((value) => !Number.isNaN(new Date(value).getTime()), 'Invalid date');
+const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
-const amountValidation = z
-  .string()
-  .min(1, 'Amount is required')
-  .refine(
-    (value) => {
-      const parsed = Number.parseFloat(value);
-      return Number.isFinite(parsed) && parsed > 0;
-    },
-    { message: 'Amount must be greater than 0' }
+const dateStringValidation = pipe(
+  string(),
+  regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  check((value) => !Number.isNaN(new Date(value).getTime()), 'Invalid date')
+);
+
+const amountValidation = pipe(
+  string(),
+  minLength(1, 'Amount is required'),
+  check((value) => {
+    const parsedAmount = Number.parseFloat(value);
+    return Number.isFinite(parsedAmount) && parsedAmount > 0;
+  }, 'Amount must be greater than 0')
+);
+
+const frequencyEnum = picklist(['weekly', 'monthly']);
+
+const dayOfMonthValidation = pipe(
+  number(),
+  integer('Day of month must be an integer'),
+  minValue(1, 'Day of month must be between 1 and 31'),
+  maxValue(31, 'Day of month must be between 1 and 31')
+);
+
+const intervalCountValidation = pipe(
+  number(),
+  integer('Interval count must be an integer'),
+  minValue(1, 'Interval count must be between 1 and 52'),
+  maxValue(52, 'Interval count must be between 1 and 52')
+);
+
+const totalOccurrencesValidation = pipe(
+  number(),
+  integer('Total occurrences must be an integer'),
+  minValue(1, 'Total occurrences must be at least 1')
+);
+
+const startingOccurrenceValidation = pipe(
+  number(),
+  integer('Starting occurrence number must be an integer'),
+  minValue(1, 'Starting occurrence number must be at least 1')
+);
+
+function coercedInteger(label: string, minimum: number, maximum?: number) {
+  const baseSchema = pipe(
+    union([number(), pipe(string(), regex(/^-?\d+$/, `${label} must be an integer`))]),
+    transform((value) => Number(value)),
+    number(),
+    integer(`${label} must be an integer`),
+    minValue(minimum, `${label} must be at least ${minimum}`)
   );
 
-const frequencyEnum = z.enum(['weekly', 'monthly']);
+  if (maximum === undefined) {
+    return baseSchema;
+  }
 
-const baseRecurringTemplateSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(200, 'Name must not exceed 200 characters'),
+  return pipe(baseSchema, maxValue(maximum, `${label} must be at most ${maximum}`));
+}
+
+const coercedBoolean = optional(
+  union([
+    boolean(),
+    pipe(
+      picklist(['true', 'false']),
+      transform((value) => value === 'true')
+    ),
+  ])
+);
+
+function refineRecurringTemplate<TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>>(
+  schema: TSchema
+) {
+  return pipe(
+    schema,
+    forward(
+      check(
+        (data: { frequency?: 'weekly' | 'monthly'; day_of_month?: number | null }) =>
+          data.frequency === 'weekly' || data.day_of_month !== undefined,
+        'Day of month is required for monthly frequency'
+      ),
+      ['day_of_month'] as const
+    ),
+    forward(
+      check(
+        (data: { is_installment?: boolean; total_occurrences?: number | null }) =>
+          !data.is_installment || Boolean(data.total_occurrences),
+        'Installments require total occurrences'
+      ),
+      ['total_occurrences'] as const
+    ),
+    forward(
+      check(
+        (data: { total_occurrences?: number | null; starting_occurrence_number?: number }) =>
+          data.total_occurrences === undefined ||
+          data.total_occurrences === null ||
+          (data.starting_occurrence_number ?? 1) <= data.total_occurrences,
+        'Starting occurrence number must be less than or equal to total occurrences'
+      ),
+      ['starting_occurrence_number'] as const
+    )
+  ) as unknown as TSchema;
+}
+
+const recurringTemplateBaseEntries = {
+  name: pipe(
+    string(),
+    minLength(1, 'Name is required'),
+    maxLength(200, 'Name must not exceed 200 characters')
+  ),
   type: categoryTypeEnum,
   amount: amountValidation,
   currency: currencyEnum,
-  category_id: z.string().min(1, 'Category is required'),
-  account_id: z.string().min(1, 'Account is required'),
-  day_of_month: z.number().int().min(1).max(31).optional(),
-  frequency: frequencyEnum.default('monthly'),
-  interval_count: z.number().int().min(1).max(52).default(1),
+  category_id: requiredId('Category is required'),
+  account_id: requiredId('Account is required'),
+  day_of_month: optional(dayOfMonthValidation),
+  frequency: optional(frequencyEnum, 'monthly'),
+  interval_count: optional(intervalCountValidation, 1),
   start_date: dateStringValidation,
-  end_date: dateStringValidation.optional(),
-  total_occurrences: z.number().int().min(1).optional(),
-  is_installment: z.boolean().default(false),
-  installment_label: z.string().max(100).optional(),
-  starting_occurrence_number: z.number().int().min(1).default(1),
-  description: z.string().max(500).optional(),
-  status: recurringTemplateStatusEnum.default('active'),
-});
-
-function refineRecurringTemplate<T extends z.ZodTypeAny>(schema: T): T {
-  return schema
-    .refine(
-      (data: any) =>
-        data.frequency === 'weekly' ||
-        (data.day_of_month !== undefined && data.day_of_month !== null),
-      {
-        message: 'Day of month is required for monthly frequency',
-        path: ['day_of_month'],
-      }
-    )
-    .refine((data: any) => !data.is_installment || Boolean(data.total_occurrences), {
-      message: 'Installments require total occurrences',
-      path: ['total_occurrences'],
-    })
-    .refine(
-      (data: any) =>
-        data.total_occurrences === undefined ||
-        data.starting_occurrence_number <= data.total_occurrences,
-      {
-        message: 'Starting occurrence number must be less than or equal to total occurrences',
-        path: ['starting_occurrence_number'],
-      }
-    ) as T;
-}
+  end_date: optional(dateStringValidation),
+  total_occurrences: optional(totalOccurrencesValidation),
+  is_installment: optional(boolean(), false),
+  installment_label: optional(
+    pipe(string(), maxLength(100, 'Installment label must not exceed 100 characters'))
+  ),
+  starting_occurrence_number: optional(startingOccurrenceValidation, 1),
+  description: optional(
+    pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+  ),
+  status: optional(recurringTemplateStatusEnum, 'active'),
+} as const;
 
 // Service layer schemas
 export const createRecurringTemplateSchema = refineRecurringTemplate(
-  baseRecurringTemplateSchema.extend({
-    workspace_id: z.string().min(1, 'Workspace ID is required'),
-    created_by_user_id: z.string().min(1, 'Created by user ID is required'),
+  strictObject({
+    workspace_id: requiredId('Workspace ID is required'),
+    created_by_user_id: requiredId('Created by user ID is required'),
+    ...recurringTemplateBaseEntries,
   })
-).strict();
+);
 
-export const updateRecurringTemplateSchema = z
-  .object({
-    workspace_id: z.string().min(1, 'Workspace ID is required'),
-    name: z.string().min(1).max(200).optional(),
-    type: categoryTypeEnum.optional(),
-    amount: amountValidation.optional(),
-    currency: currencyEnum.optional(),
-    category_id: z.string().min(1).optional(),
-    account_id: z.string().min(1).optional(),
-    day_of_month: z.number().int().min(1).max(31).optional(),
-    frequency: frequencyEnum.optional(),
-    interval_count: z.number().int().min(1).max(52).optional(),
-    start_date: dateStringValidation.optional(),
-    end_date: dateStringValidation.nullable().optional(),
-    total_occurrences: z.number().int().min(1).nullable().optional(),
-    is_installment: z.boolean().optional(),
-    installment_label: z.string().max(100).nullable().optional(),
-    starting_occurrence_number: z.number().int().min(1).optional(),
-    description: z.string().max(500).nullable().optional(),
-  })
-  .strict();
+export const updateRecurringTemplateSchema = strictObject({
+  workspace_id: requiredId('Workspace ID is required'),
+  name: optional(pipe(string(), minLength(1), maxLength(200))),
+  type: optional(categoryTypeEnum),
+  amount: optional(amountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category is required')),
+  account_id: optional(requiredId('Account is required')),
+  day_of_month: optional(dayOfMonthValidation),
+  frequency: optional(frequencyEnum),
+  interval_count: optional(intervalCountValidation),
+  start_date: optional(dateStringValidation),
+  end_date: optional(nullable(dateStringValidation)),
+  total_occurrences: optional(nullable(totalOccurrencesValidation)),
+  is_installment: optional(boolean()),
+  installment_label: optional(nullable(pipe(string(), maxLength(100)))),
+  starting_occurrence_number: optional(startingOccurrenceValidation),
+  description: optional(nullable(pipe(string(), maxLength(500)))),
+});
 
-export const confirmOccurrenceSchema = z
-  .object({
-    amount: amountValidation,
-    transaction_date: z.date(),
-    category_id: z.string().min(1, 'Category ID is required'),
-    account_id: z.string().min(1, 'Account ID is required'),
-    workspace_id: z.string().min(1, 'Workspace ID is required'),
-    user_id: z.string().min(1, 'User ID is required'),
-  })
-  .strict();
+export const confirmOccurrenceSchema = strictObject({
+  amount: amountValidation,
+  transaction_date: date(),
+  category_id: requiredId('Category ID is required'),
+  account_id: requiredId('Account ID is required'),
+  workspace_id: requiredId('Workspace ID is required'),
+  user_id: requiredId('User ID is required'),
+});
 
-export const skipOccurrenceSchema = z
-  .object({
-    skip_reason: z.string().max(200, 'Skip reason must not exceed 200 characters').optional(),
-  })
-  .strict();
+export const skipOccurrenceSchema = strictObject({
+  skip_reason: optional(
+    pipe(string(), maxLength(200, 'Skip reason must not exceed 200 characters'))
+  ),
+});
 
 // API layer schemas
 export const createRecurringTemplateAPISchema = refineRecurringTemplate(
-  z.object({
-    name: z.string().min(1, 'Name is required').max(200, 'Name must not exceed 200 characters'),
+  strictObject({
+    name: pipe(
+      string(),
+      minLength(1, 'Name is required'),
+      maxLength(200, 'Name must not exceed 200 characters')
+    ),
     type: categoryTypeEnum,
     amount: amountValidation,
     currency: currencyEnum,
-    category_id: z.string().min(1, 'Category is required'),
-    account_id: z.string().min(1, 'Account is required'),
-    day_of_month: z.coerce.number().int().min(1).max(31).optional(),
-    frequency: frequencyEnum.default('monthly'),
-    interval_count: z.coerce.number().int().min(1).max(52).default(1),
+    category_id: requiredId('Category is required'),
+    account_id: requiredId('Account is required'),
+    day_of_month: optional(coercedInteger('Day of month', 1, 31)),
+    frequency: optional(frequencyEnum, 'monthly'),
+    interval_count: optional(coercedInteger('Interval count', 1, 52), 1),
     start_date: dateStringValidation,
-    end_date: dateStringValidation.optional(),
-    total_occurrences: z.coerce.number().int().min(1).optional(),
-    is_installment: z.coerce.boolean().default(false),
-    installment_label: z.string().max(100).optional(),
-    starting_occurrence_number: z.coerce.number().int().min(1).default(1),
-    description: z.string().max(500).optional(),
-    status: recurringTemplateStatusEnum.default('active'),
+    end_date: optional(dateStringValidation),
+    total_occurrences: optional(coercedInteger('Total occurrences', 1)),
+    is_installment: optional(
+      union([
+        boolean(),
+        pipe(
+          picklist(['true', 'false']),
+          transform((value) => value === 'true')
+        ),
+      ]),
+      false
+    ),
+    installment_label: optional(
+      pipe(string(), maxLength(100, 'Installment label must not exceed 100 characters'))
+    ),
+    starting_occurrence_number: optional(coercedInteger('Starting occurrence number', 1), 1),
+    description: optional(
+      pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
+    ),
+    status: optional(recurringTemplateStatusEnum, 'active'),
   })
-).strict();
+);
 
-export const updateRecurringTemplateAPISchema = z
-  .object({
-    name: z.string().min(1).max(200).optional(),
-    type: categoryTypeEnum.optional(),
-    amount: amountValidation.optional(),
-    currency: currencyEnum.optional(),
-    category_id: z.string().min(1).optional(),
-    account_id: z.string().min(1).optional(),
-    day_of_month: z.coerce.number().int().min(1).max(31).optional(),
-    frequency: frequencyEnum.optional(),
-    interval_count: z.coerce.number().int().min(1).max(52).optional(),
-    start_date: dateStringValidation.optional(),
-    end_date: dateStringValidation.nullable().optional(),
-    total_occurrences: z.union([z.coerce.number().int().min(1), z.null()]).optional(),
-    is_installment: z.coerce.boolean().optional(),
-    installment_label: z.string().max(100).nullable().optional(),
-    starting_occurrence_number: z.coerce.number().int().min(1).optional(),
-    description: z.string().max(500).nullable().optional(),
-  })
-  .strict();
+export const updateRecurringTemplateAPISchema = strictObject({
+  name: optional(pipe(string(), minLength(1), maxLength(200))),
+  type: optional(categoryTypeEnum),
+  amount: optional(amountValidation),
+  currency: optional(currencyEnum),
+  category_id: optional(requiredId('Category is required')),
+  account_id: optional(requiredId('Account is required')),
+  day_of_month: optional(coercedInteger('Day of month', 1, 31)),
+  frequency: optional(frequencyEnum),
+  interval_count: optional(coercedInteger('Interval count', 1, 52)),
+  start_date: optional(dateStringValidation),
+  end_date: optional(nullable(dateStringValidation)),
+  total_occurrences: optional(nullable(coercedInteger('Total occurrences', 1))),
+  is_installment: coercedBoolean,
+  installment_label: optional(nullable(pipe(string(), maxLength(100)))),
+  starting_occurrence_number: optional(coercedInteger('Starting occurrence number', 1)),
+  description: optional(nullable(pipe(string(), maxLength(500)))),
+});
 
-export const confirmOccurrenceAPISchema = z
-  .object({
-    amount: amountValidation,
-    transaction_date: dateStringValidation,
-    category_id: z.string().min(1, 'Category ID is required'),
-    account_id: z.string().min(1, 'Account ID is required'),
-  })
-  .strict();
+export const confirmOccurrenceAPISchema = strictObject({
+  amount: amountValidation,
+  transaction_date: dateStringValidation,
+  category_id: requiredId('Category ID is required'),
+  account_id: requiredId('Account ID is required'),
+});
 
 export const occurrenceStatusSchema = recurringOccurrenceStatusEnum;
 
-export type CreateRecurringTemplateInput = z.input<typeof createRecurringTemplateSchema>;
-export type UpdateRecurringTemplateInput = z.input<typeof updateRecurringTemplateSchema>;
-export type ConfirmOccurrenceInput = z.input<typeof confirmOccurrenceSchema>;
-export type SkipOccurrenceInput = z.input<typeof skipOccurrenceSchema>;
+export type CreateRecurringTemplateInput = InferInput<typeof createRecurringTemplateSchema>;
+export type UpdateRecurringTemplateInput = InferInput<typeof updateRecurringTemplateSchema>;
+export type ConfirmOccurrenceInput = InferInput<typeof confirmOccurrenceSchema>;
+export type SkipOccurrenceInput = InferInput<typeof skipOccurrenceSchema>;
 
-export type CreateRecurringTemplateAPIInput = z.input<typeof createRecurringTemplateAPISchema>;
-export type UpdateRecurringTemplateAPIInput = z.input<typeof updateRecurringTemplateAPISchema>;
-export type ConfirmOccurrenceAPIInput = z.input<typeof confirmOccurrenceAPISchema>;
+export type CreateRecurringTemplateAPIInput = InferOutput<typeof createRecurringTemplateAPISchema>;
+export type UpdateRecurringTemplateAPIInput = InferOutput<typeof updateRecurringTemplateAPISchema>;
+export type ConfirmOccurrenceAPIInput = InferOutput<typeof confirmOccurrenceAPISchema>;

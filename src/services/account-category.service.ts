@@ -1,6 +1,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { and, eq, ne, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { parse } from 'valibot';
 import {
   createAccountCategorySchema,
   updateAccountCategorySchema,
@@ -34,7 +35,7 @@ export class AccountCategoryService {
   }
 
   async create(input: CreateAccountCategoryInput) {
-    const validated = createAccountCategorySchema.parse(input);
+    const validated = parse(createAccountCategorySchema, input);
 
     if (!validated.is_system) {
       const customCount = await this.countCustom(validated.workspace_id);
@@ -165,7 +166,7 @@ export class AccountCategoryService {
       );
     }
 
-    const validated = updateAccountCategorySchema.parse(input);
+    const validated = parse(updateAccountCategorySchema, input);
 
     if (validated.name) {
       const nameExists = await this.existsByName(validated.name, workspaceId, id);

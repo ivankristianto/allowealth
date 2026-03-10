@@ -122,26 +122,25 @@ return new Response(JSON.stringify({ error: 'Failed to create budget' }), {
 
 ## Request Validation
 
-```typescript
-import { z } from 'zod';
+Use `validateBody()` from `src/lib/api-utils.ts` with a Valibot schema. This parses the request body and returns a normalized `{ path, message, code }` issue shape on failure.
 
-const CreateBudgetSchema = z.object({
-  name: z.string().min(1),
-  amount: z.number().positive(),
-  currency: z.enum(['IDR', 'USD']),
+```typescript
+import * as v from 'valibot';
+import { validateBody, isValidationError, errorResponse } from '@/lib/api-utils';
+
+const createBudgetSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1)),
+  amount: v.pipe(v.number(), v.minValue(0)),
+  currency: v.picklist(['IDR', 'USD']),
 });
 
 export async function POST({ request, locals }) {
-  const data = await request.json();
-
-  const result = CreateBudgetSchema.safeParse(data);
-  if (!result.success) {
-    return new Response(JSON.stringify({ errors: result.error.flatten() }), {
-      status: 400,
-    });
+  const validation = await validateBody(request, createBudgetSchema);
+  if (isValidationError(validation)) {
+    return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
   }
 
-  const budget = await budgetService.create(result.data);
+  const budget = await budgetService.create(validation.data);
   return new Response(JSON.stringify({ budget }), { status: 201 });
 }
 ```
@@ -149,7 +148,9 @@ export async function POST({ request, locals }) {
 **Rules:**
 
 - ✅ **Validate inputs at system boundaries** (user input, external APIs)
-- ✅ **Use Zod or similar for request validation** - structured error messages
+- ✅ **Use Valibot for request validation** — import from `valibot`, never from `zod`
+- ✅ **Use `validateBody()` from `@/lib/api-utils`** — normalizes errors into repo-owned `{ path, message, code }` shape
+- ❌ **Import from `zod`** — Zod has been removed; use Valibot everywhere
 
 ## CSRF Protection
 
@@ -310,15 +311,13 @@ export async function POST({ request, locals }) {
   const data = await request.json();
 
   // Validate
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    return new Response(JSON.stringify({ errors: result.error.flatten() }), {
-      status: 400,
-    });
+  const validation = await validateBody(request, schema);
+  if (isValidationError(validation)) {
+    return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
   }
 
   // Call service
-  const budget = await budgetService.create(result.data, locals.user!.id);
+  const budget = await budgetService.create(validation.data, locals.user!.id);
 
   return new Response(JSON.stringify({ budget }), { status: 201 });
 }

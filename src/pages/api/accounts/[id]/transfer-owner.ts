@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
+import { minLength, object, pipe, string } from 'valibot';
 import { accountService } from '@/services';
 import {
   successResponse,
@@ -12,8 +12,8 @@ import { logError } from '@/lib/utils';
 import { AccountServiceError } from '@/services/service-errors';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 
-const transferOwnerSchema = z.object({
-  owner_user_id: z.string().min(1, 'Owner user ID is required'),
+const transferOwnerSchema = object({
+  owner_user_id: pipe(string(), minLength(1, 'Owner user ID is required')),
 });
 
 /**
