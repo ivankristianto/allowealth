@@ -46,6 +46,14 @@ This file is managed by Claude Code's auto-memory system.
 - Lazy load charts with Intersection Observer
 - Prerender public pages
 
+## Validation
+
+- **Valibot only** — Zod was fully removed in PR #310. Never import from `zod`.
+- Import: `import * as v from 'valibot'`
+- API routes: use `validateBody(request, schema)` + `isValidationError()` from `@/lib/api-utils`
+- Error shape returned by `validateBody`: `{ path: string[], message: string, code: string }`
+- Validation runs server-side only — neither library ships to the client bundle
+
 ---
 
 ## User Preferences (Critical)
