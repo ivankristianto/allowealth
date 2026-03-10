@@ -3,10 +3,8 @@ import { sqliteTimestampNow } from './base';
 import { userMfa } from './user-mfa';
 
 /**
- * User MFA Backup Codes Table
- *
- * Stores hashed single-use backup codes for account recovery.
- * Each code is hashed with PBKDF2-SHA256 before storage.
+ * Deprecated custom MFA backup-code table.
+ * Better Auth now stores backup codes in its own `twoFactor` table.
  */
 export const userMfaBackupCodes = sqliteTable(
   'user_mfa_backup_codes',

@@ -36,6 +36,22 @@ describe('ApiKeyService cache contract', () => {
     expect(validateSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('validateCached returns the auth context shape used by downstream services', async () => {
+    apiKeyService.validate = mock(async () => ({
+      workspaceId: 'ws-current',
+      userId: 'user-current',
+      apiKeyId: 'key-current',
+    })) as any;
+
+    const result = await apiKeyService.validateCached('aw_downstream_contract_key_123456');
+
+    expect(result).toEqual({
+      workspaceId: 'ws-current',
+      userId: 'user-current',
+      apiKeyId: 'key-current',
+    });
+  });
+
   it('revoke invalidates API key cache tags in service layer', async () => {
     const cache = getCacheManager();
     await cache.set(

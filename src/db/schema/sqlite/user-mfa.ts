@@ -3,10 +3,8 @@ import { sqliteTimestampNow } from './base';
 import { users } from './users';
 
 /**
- * User MFA Table
- *
- * Stores TOTP MFA configuration per user.
- * TOTP secret is encrypted at rest using AES-GCM.
+ * Deprecated custom MFA table. Better Auth now owns MFA state.
+ * This file remains on disk temporarily for migration cleanup only.
  */
 export const userMfa = sqliteTable(
   'user_mfa',

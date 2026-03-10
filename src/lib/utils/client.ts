@@ -6,10 +6,10 @@
  */
 
 import { addToast } from '@/lib/stores/toastStore';
-import { getCsrfHeaders } from '@/lib/csrf-client';
+import { authClient } from '@/lib/auth/client';
 
 /**
- * POST /api/auth/logout and redirect to /login on success.
+ * Sign out through Better Auth and redirect to /login on success.
  * Shared by UserProfile dropdown and mobile navigation logout buttons.
  *
  * @param onBeforeRedirect - Optional callback invoked after a successful
@@ -17,13 +17,9 @@ import { getCsrfHeaders } from '@/lib/csrf-client';
  */
 export async function performLogout(onBeforeRedirect?: () => void): Promise<void> {
   try {
-    const response = await fetch('/api/auth/logout', {
-      method: 'POST',
-      headers: getCsrfHeaders(),
-      credentials: 'include',
-    });
+    const response = await authClient.signOut();
 
-    if (response.ok) {
+    if (!response.error) {
       onBeforeRedirect?.();
       addToast('Signed out successfully', 'success');
       setTimeout(() => {
