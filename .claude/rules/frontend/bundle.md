@@ -34,10 +34,10 @@ import { formatCurrency } from '@/lib/utils'; // Imports everything
 
 ```typescript
 // ✅ Correct: Type-only import (won't be bundled in client)
-import type { User } from '@/lib/auth/lucia';
+import type { AuthUser } from '@/lib/auth/types';
 
 // ❌ Wrong: Runtime import in client code
-import { User } from '@/lib/auth/lucia'; // Bundles server code
+import { auth } from '@/lib/auth/server'; // Bundles server code
 ```
 
 ## Chart.js Setup

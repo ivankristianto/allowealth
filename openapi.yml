@@ -6,20 +6,24 @@ info:
     account management, and financial forecasting.
 
     **Authentication:**
-    Most endpoints require session-based authentication via HTTP-only session cookies.
-    The following endpoints are public (no authentication required):
-    - `POST /api/auth/signup`
-    - `POST /api/auth/login`
-    - `POST /api/auth/login/verify-mfa`
-    - `POST /api/auth/forgot-password`
+    Most endpoints require session-based authentication via the `better-auth.session_token`
+    HTTP-only cookie. Authentication is mounted through the Better Auth catch-all route at
+    `/api/auth/*`, with `/api/auth/verify-email` remaining app-owned.
+
+    Common public auth endpoints used by the app:
+    - `POST /api/auth/sign-up/email`
+    - `POST /api/auth/sign-in/email`
+    - `POST /api/auth/sign-in/social`
+    - `GET|POST /api/auth/callback/{id}`
+    - `POST /api/auth/request-password-reset`
+    - `POST /api/auth/reset-password`
     - `GET /api/auth/verify-email`
-    - `POST /api/auth/resend-verification`
-    - `GET /api/auth/google`
-    - `GET /api/auth/google/callback`
-    - `POST /api/auth/google/link`
 
     **Response Format:**
-    All responses follow a standard format:
+    App-owned JSON endpoints generally follow a standard envelope, while Better Auth
+    endpoints return library-managed payloads documented per operation.
+
+    Example app-owned response:
     ```json
     {
       "success": true|false,
@@ -70,38 +74,36 @@ tags:
     description: Admin-only endpoints for system monitoring and diagnostics
 
 paths:
-  /api/auth/signup:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1signup'
-  /api/auth/login:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1login'
-  /api/auth/login/verify-mfa:
-    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1login~1verify-mfa'
-  /api/auth/logout:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1logout'
-  /api/auth/mfa/setup:
-    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1setup'
-  /api/auth/mfa/verify-setup:
-    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1verify-setup'
-  /api/auth/mfa/status:
-    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1status'
-  /api/auth/mfa/disable:
-    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1disable'
-  /api/auth/mfa/regenerate-backup-codes:
-    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1regenerate-backup-codes'
-  /api/auth/forgot-password:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1forgot-password'
+  /api/auth/sign-up/email:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1sign-up~1email'
+  /api/auth/sign-in/email:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1sign-in~1email'
+  /api/auth/sign-in/social:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1sign-in~1social'
+  /api/auth/callback/{id}:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1callback~1{id}'
+  /api/auth/sign-out:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1sign-out'
+  /api/auth/two-factor/enable:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1two-factor~1enable'
+  /api/auth/two-factor/verify-totp:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1two-factor~1verify-totp'
+  /api/auth/two-factor/verify-backup-code:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1two-factor~1verify-backup-code'
+  /api/auth/two-factor/disable:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1two-factor~1disable'
+  /api/auth/two-factor/generate-backup-codes:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1two-factor~1generate-backup-codes'
+  /api/auth/request-password-reset:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1request-password-reset'
+  /api/auth/reset-password:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1reset-password'
   /api/auth/verify-email:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1verify-email'
-  /api/auth/resend-verification:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1resend-verification'
-  /api/auth/google:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1google'
-  /api/auth/google/callback:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1google~1callback'
-  /api/auth/google/link:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1google~1link'
-  /api/auth/google/unlink:
-    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1google~1unlink'
+  /api/auth/link-social:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1link-social'
+  /api/auth/unlink-account:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1unlink-account'
 
   /api/user/profile:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
@@ -218,8 +220,8 @@ components:
     sessionAuth:
       type: apiKey
       in: cookie
-      name: sid
-      description: Session-based authentication using HTTP-only cookies
+      name: better-auth.session_token
+      description: Better Auth session cookie used by middleware-backed authentication
 
   parameters:
     IdParameter:
@@ -250,27 +252,6 @@ components:
       $ref: './openapi/schemas/LoginRequest.yml#/LoginRequest'
     ForgotPasswordRequest:
       $ref: './openapi/schemas/ForgotPasswordRequest.yml#/ForgotPasswordRequest'
-    ForgotPasswordResponse:
-      $ref: './openapi/schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
-    AuthSuccessResponse:
-      $ref: './openapi/schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
-    ResendVerificationRequest:
-      $ref: './openapi/schemas/ResendVerificationRequest.yml#/ResendVerificationRequest'
-    OAuthAccount:
-      $ref: './openapi/schemas/OAuthAccount.yml#/OAuthAccount'
-    MfaSetupResponse:
-      $ref: './openapi/schemas/MfaSetupResponse.yml#/MfaSetupResponse'
-    MfaVerifySetupRequest:
-      $ref: './openapi/schemas/MfaVerifySetupRequest.yml#/MfaVerifySetupRequest'
-    MfaVerifySetupResponse:
-      $ref: './openapi/schemas/MfaVerifySetupResponse.yml#/MfaVerifySetupResponse'
-    MfaStatusResponse:
-      $ref: './openapi/schemas/MfaStatusResponse.yml#/MfaStatusResponse'
-    MfaDisableRequest:
-      $ref: './openapi/schemas/MfaDisableRequest.yml#/MfaDisableRequest'
-    MfaVerifyLoginRequest:
-      $ref: './openapi/schemas/MfaVerifyLoginRequest.yml#/MfaVerifyLoginRequest'
-
     # User Schemas
     UpdateUserProfileRequest:
       $ref: './openapi/schemas/UpdateUserProfileRequest.yml#/UpdateUserProfileRequest'

@@ -8,7 +8,7 @@ This directory contains the modular OpenAPI 3.1.0 specification for the Expenses
 openapi/
 ├── README.md                        # This file
 ├── paths/                           # API endpoint definitions organized by feature
-│   ├── auth.yml                     # Authentication endpoints (signup, login, logout)
+│   ├── auth.yml                     # Better Auth endpoints used by the app + app-owned verify-email
 │   ├── user.yml                     # User profile and settings endpoints
 │   ├── user-meta.yml                # User meta/preferences endpoints
 │   ├── workspace.yml                # Workspace management endpoints (settings, members, invitations)
@@ -26,7 +26,7 @@ openapi/
 │   ├── ErrorResponse.yml            # Error response schema
 │   ├── SignupRequest.yml            # Registration request schema
 │   ├── LoginRequest.yml             # Login request schema
-│   ├── AuthSuccessResponse.yml      # Authentication success response
+│   ├── ForgotPasswordRequest.yml    # Password reset request schema
 │   ├── UpdateUserProfileRequest.yml # Profile update request
 │   ├── UserProfileResponse.yml      # Profile response
 │   ├── UpdatePasswordRequest.yml    # Password change request
@@ -122,7 +122,7 @@ Use Swagger UI or Redoc to view the compiled specification:
 
 When using `$ref` with paths that contain `/`, use `~1` to escape the forward slash:
 
-- `/api/auth/login` becomes `~1api~1auth~1login`
+- `/api/auth/sign-in/email` becomes `~1api~1auth~1sign-in~1email`
 - `/api/transactions/{id}` becomes `~1api~1transactions~1{id}`
 
 ## Validation Commands

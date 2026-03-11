@@ -786,10 +786,11 @@ Errors: 1 (invalid category)
 
 **FR-1.2 User Authentication**
 
-- Login with email/password
-- Session management (remember me option)
+- Login with email/password and Google
+- Better Auth session management (remember me option)
 - Logout functionality
-- Password reset via email (Phase 2)
+- Password reset via email
+- Optional TOTP-based two-factor authentication with backup codes
 
 **FR-1.3 User Profile**
 
@@ -1165,8 +1166,8 @@ Errors: 1 (invalid category)
 - Runtime: Bun 1.x
 - Database: SQLite (development) / Cloudflare D1 (production)
 - ORM: Drizzle ORM
-- Authentication: Lucia Auth
-- Password Hashing: Argon2id
+- Authentication: Better Auth
+- Password Hashing: PBKDF2-SHA256 (Web Crypto API)
 - Validation: Valibot
 - API Pattern: Internal service layer (not REST for MVP)
 
@@ -1247,12 +1248,15 @@ Errors: 1 (invalid category)
 
 **Authentication:**
 
-- Argon2id password hashing (min cost: 3)
-- Session-based authentication
+- Better Auth-managed authentication
+- PBKDF2-SHA256 password hashing
+- Session-based authentication with HTTP-only cookies
 - HTTP-only cookies
 - CSRF protection on all forms
 - Session timeout: 30 days (configurable)
-- Secure password reset flow (Phase 2)
+- Secure password reset flow
+- Optional Google sign-in and authenticated account linking
+- Optional TOTP-based two-factor authentication with backup codes
 
 **Authorization:**
 
@@ -1624,23 +1628,17 @@ export const exchangeRates = pgTable(
 );
 ```
 
-#### Sessions Table (for Lucia Auth)
+#### Better Auth Tables
 
-```typescript
-export const sessions = pgTable(
-  'sessions',
-  {
-    id: varchar('id', { length: 255 }).primaryKey(),
-    user_id: varchar('user_id', { length: 36 })
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    expires_at: timestamp('expires_at').notNull(),
-  },
-  (table) => ({
-    userIdIdx: index('user_id_idx').on(table.user_id),
-  })
-);
-```
+The application now uses Better Auth-managed tables for authentication concerns:
+
+- `user`: canonical auth identity used by Better Auth
+- `session`: session records keyed by the `better-auth.session_token` cookie
+- `account`: credential and social-provider accounts (including Google)
+- `verification`: password-reset and other verification tokens
+- `twoFactor`: TOTP secret and backup-code state
+
+The domain `users` table remains the app-owned source for workspace membership, roles, and profile fields.
 
 ---
 
@@ -1648,7 +1646,7 @@ export const sessions = pgTable(
 
 ### SEC-1: Password Security
 
-- Use Argon2id hashing algorithm
+- Use PBKDF2-SHA256 hashing via Web Crypto API
 - Minimum password length: 12 characters
 - Require mix of uppercase, lowercase, numbers, special characters
 - Check against common password lists (Phase 2)
@@ -1879,7 +1877,7 @@ export const sessions = pgTable(
 - **DaisyUI:** https://daisyui.com
 - **Astro:** https://astro.build
 - **Drizzle ORM:** https://orm.drizzle.team
-- **Lucia Auth:** https://lucia-auth.com
+- **Better Auth:** https://www.better-auth.com
 - **WCAG 2.1:** https://www.w3.org/WAI/WCAG21/quickref/
 
 ### C. Changelog

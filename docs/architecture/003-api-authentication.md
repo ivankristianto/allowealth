@@ -86,7 +86,7 @@ API routes should rely on the middleware-owned locals shape:
 ## Security Notes
 
 1. Middleware is the single place where request auth is resolved.
-2. Better Auth owns credential login, Google OAuth, password reset, email verification, linked accounts, and 2FA auth state.
+2. Better Auth owns credential login, Google OAuth, password reset, linked accounts, and 2FA auth state. The app still owns `/api/auth/verify-email` for email-change and signup verification redirects.
 3. CSRF exemptions now target the Better Auth catch-all route plus the remaining app-owned endpoints.
 4. The Better Auth cutover invalidates old sessions, so users are forced to sign in again after deployment.
 

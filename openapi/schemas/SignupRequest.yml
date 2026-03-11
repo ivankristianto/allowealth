@@ -19,6 +19,20 @@ SignupRequest:
       maxLength: 255
       description: User display name
       example: John Doe
+    callbackURL:
+      type: string
+      description: URL to redirect to after sign-up completes
+      example: /dashboard
+    rememberMe:
+      type: boolean
+      description: Whether to create a persistent session cookie
+      default: false
+    invitationToken:
+      type: string
+      description: Required when `SIGNUP_MODE=invite_only`
+    workspaceName:
+      type: string
+      description: Optional workspace name for self-serve sign-up
     turnstileToken:
       type: string
       description: >

@@ -16,6 +16,14 @@ LoginRequest:
         User password. Password format validation is enforced during signup
         and password changes, not during login.
       example: mypassword123
+    callbackURL:
+      type: string
+      description: URL to redirect to after sign-in completes
+      example: /dashboard
+    rememberMe:
+      type: boolean
+      description: Whether to create a persistent session cookie
+      default: false
     turnstileToken:
       type: string
       description: >

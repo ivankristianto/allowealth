@@ -54,6 +54,12 @@ This file is managed by Claude Code's auto-memory system.
 - Error shape returned by `validateBody`: `{ path: string[], message: string, code: string }`
 - Validation runs server-side only — neither library ships to the client bundle
 
+## Auth
+
+- **Better Auth is the canonical auth layer** — use `src/lib/auth/server.ts`, `src/lib/auth/client.ts`, `src/lib/auth/types.ts`, and `src/db/schema/sqlite/better-auth.ts`
+- **Do not document or add Lucia-era routes** — `/api/auth/login`, `/api/auth/signup`, `/api/auth/google/*`, and `/api/auth/mfa/*` are deprecated
+- **Current auth surface** — Better Auth is mounted at `src/pages/api/auth/[...all].ts`; app-owned email verification remains at `/api/auth/verify-email`
+
 ---
 
 ## User Preferences (Critical)
