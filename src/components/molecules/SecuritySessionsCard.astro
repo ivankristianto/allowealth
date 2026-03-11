@@ -1,0 +1,240 @@
+---
+/**
+ * Security Active Sessions Card
+ *
+ * Displays active sessions with revoke-one and revoke-all-others actions.
+ * Uses SecuritySessionsListPartial for the session list (supports ?_render=html refresh).
+ */
+import SecurityCard from '@/components/molecules/SecurityCard.astro';
+import Button from '@/components/atoms/Button.astro';
+import { Smartphone } from '@lucide/astro';
+import SecuritySessionsListPartial from '@/components/partials/SecuritySessionsListPartial.astro';
+import type { NormalizedSession } from '@/lib/auth/types';
+
+export interface Props {
+  sessions: NormalizedSession[];
+}
+
+const { sessions } = Astro.props;
+const hasOtherSessions = sessions.some((s) => !s.isCurrent);
+---
+
+<SecurityCard
+  title="Active Sessions"
+  subtitle="Devices signed in to your account"
+  iconVariant="accent"
+  data-sessions-card
+>
+  <Smartphone slot="icon" size={20} class="stroke-current" aria-hidden="true" />
+
+  {
+    hasOtherSessions && (
+      <span slot="header-action">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-revoke-all-sessions
+          className="text-error border-error/30 hover:bg-error/10"
+        >
+          Revoke All Others
+        </Button>
+      </span>
+    )
+  }
+
+  <div data-sessions-list>
+    <SecuritySessionsListPartial sessions={sessions} />
+  </div>
+
+  <!-- Revoke Single Session Confirmation Modal -->
+  <dialog slot="after" id="revoke-session-modal" class="modal" data-revoke-session-modal>
+    <div class="modal-box max-w-sm">
+      <h3 class="text-lg font-bold">Revoke Session</h3>
+      <p class="py-4 text-sm text-base-content/70">
+        Are you sure you want to revoke <strong data-revoke-session-label></strong>? That device
+        will be signed out immediately.
+      </p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
+        </form>
+        <button
+          type="button"
+          class="btn btn-error btn-sm rounded-xl"
+          data-confirm-revoke-session
+          data-revoking-token=""
+        >
+          Revoke
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Revoke All Others Confirmation Modal -->
+  <dialog slot="after" id="revoke-all-sessions-modal" class="modal" data-revoke-all-modal>
+    <div class="modal-box max-w-sm">
+      <h3 class="text-lg font-bold">Revoke All Other Sessions</h3>
+      <p class="py-4 text-sm text-base-content/70">
+        All other sessions will be signed out immediately. Only your current session will remain
+        active.
+      </p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
+        </form>
+        <button type="button" class="btn btn-error btn-sm rounded-xl" data-confirm-revoke-all>
+          Revoke All
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</SecurityCard>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { setButtonLoading } from '@/lib/client-utils';
+  import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
+
+  const initializedCards = new WeakSet<Element>();
+
+  function initSessionsCard() {
+    document.querySelectorAll<HTMLElement>('[data-sessions-card]').forEach((card) => {
+      if (initializedCards.has(card)) return;
+      initializedCards.add(card);
+
+      const listContainer = card.querySelector<HTMLElement>('[data-sessions-list]');
+      const revokeModal = card.querySelector<HTMLDialogElement>('[data-revoke-session-modal]');
+      const revokeLabelEl = card.querySelector<HTMLElement>('[data-revoke-session-label]');
+      const confirmRevokeBtn = card.querySelector<HTMLButtonElement>(
+        '[data-confirm-revoke-session]'
+      );
+      const revokeAllModal = card.querySelector<HTMLDialogElement>('[data-revoke-all-modal]');
+      const confirmRevokeAllBtn = card.querySelector<HTMLButtonElement>(
+        '[data-confirm-revoke-all]'
+      );
+      const revokeAllBtn = card.querySelector<HTMLButtonElement>('[data-revoke-all-sessions]');
+
+      if (!listContainer || !revokeModal || !revokeLabelEl || !confirmRevokeBtn) return;
+
+      // Delegate revoke button clicks
+      card.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-revoke-session]');
+        if (!btn) return;
+
+        const token = btn.getAttribute('data-session-token') || '';
+        const label = btn.getAttribute('data-session-label') || '';
+
+        revokeLabelEl.textContent = label;
+        confirmRevokeBtn.setAttribute('data-revoking-token', token);
+        revokeModal.showModal();
+      });
+
+      // Confirm revoke single session
+      confirmRevokeBtn.addEventListener('click', async () => {
+        const token = confirmRevokeBtn.getAttribute('data-revoking-token');
+        if (!token) return;
+
+        setButtonLoading(confirmRevokeBtn, true);
+
+        try {
+          const response = await fetch('/api/user/sessions', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({ token }),
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to revoke session');
+          }
+
+          addToast('Session revoked', 'success');
+          revokeModal.close();
+
+          // Remove the row from DOM
+          const row = listContainer.querySelector(
+            `[data-session-item][data-session-token="${CSS.escape(token)}"]`
+          );
+          if (row) row.remove();
+
+          // If only current session remains, refresh to update UI
+          const remaining = listContainer.querySelectorAll('[data-session-item]');
+          if (remaining.length <= 1) {
+            await refreshSessionList(listContainer);
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to revoke session';
+          addToast(message, 'error');
+        } finally {
+          setButtonLoading(confirmRevokeBtn, false);
+        }
+      });
+
+      // Revoke all others button
+      if (revokeAllBtn && revokeAllModal && confirmRevokeAllBtn) {
+        revokeAllBtn.addEventListener('click', () => {
+          revokeAllModal.showModal();
+        });
+
+        confirmRevokeAllBtn.addEventListener('click', async () => {
+          setButtonLoading(confirmRevokeAllBtn, true);
+
+          try {
+            const response = await fetch('/api/user/sessions', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getCsrfHeaders(),
+              },
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to revoke sessions');
+            }
+
+            addToast('All other sessions revoked', 'success');
+            revokeAllModal.close();
+            await refreshSessionList(listContainer);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to revoke sessions';
+            addToast(message, 'error');
+          } finally {
+            setButtonLoading(confirmRevokeAllBtn, false);
+          }
+        });
+      }
+    });
+  }
+
+  async function refreshSessionList(container: HTMLElement) {
+    try {
+      const response = await fetch('/api/user/sessions?_render=html', {
+        credentials: 'include',
+        headers: getCsrfHeaders(),
+      });
+      if (response.ok) {
+        const html = await response.text();
+        replaceWithSanitizedHtml(container, html);
+      }
+    } catch {
+      // Silently fail — list will refresh on next page load
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initSessionsCard);
+  document.addEventListener('astro:page-load', initSessionsCard);
+</script>
