@@ -8,6 +8,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 import { getEnv } from '@/lib/env';
+import { hashOpaqueToken } from '@/lib/crypto/token-hash';
 import { and, eq } from 'drizzle-orm';
 import type { EmailService } from '@/services/email';
 import type { users } from '@/db/schema/sqlite/users';
@@ -294,9 +295,11 @@ export class EmailVerificationService {
    * @returns Result with user or error
    */
   async verifyEmail(token: string): Promise<VerifyEmailResult> {
+    const tokenHash = await hashOpaqueToken(token);
+
     // Look up token
     const tokenRecord = await this.db.query.emailVerificationTokens.findFirst({
-      where: eq(this.schema.emailVerificationTokens.token, token),
+      where: eq(this.schema.emailVerificationTokens.token, tokenHash),
     });
 
     if (!tokenRecord) {
@@ -313,7 +316,7 @@ export class EmailVerificationService {
       // Clean up expired token
       await this.db
         .delete(this.schema.emailVerificationTokens)
-        .where(eq(this.schema.emailVerificationTokens.token, token));
+        .where(eq(this.schema.emailVerificationTokens.token, tokenHash));
 
       // Get user email for resend functionality
       const userRecord = await this.db.query.users.findFirst({

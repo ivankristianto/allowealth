@@ -164,28 +164,30 @@ export class UserService {
       hashBetterAuthPassword(validated.newPassword),
     ]);
 
-    // Update legacy domain password hash
+    const authSchema = getActiveSchema();
+    const now = new Date();
+
     await this.db
       .update(this.schema.users)
       .set({
         password_hash: newPasswordHash,
-        updated_at: new Date(),
+        updated_at: now,
       })
       .where(eq(this.schema.users.id, userId));
 
-    // Update better-auth credential account password (used for sign-in)
-    const authSchema = getActiveSchema();
     await this.db
       .update(authSchema.account)
       .set({
         password: betterAuthHash,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .where(
         and(eq(authSchema.account.userId, userId), eq(authSchema.account.providerId, 'credential'))
       );
 
-    return { success: true };
+    await this.db.delete(authSchema.session).where(eq(authSchema.session.userId, userId));
+
+    return { success: true, reauthRequired: true };
   }
 
   /**

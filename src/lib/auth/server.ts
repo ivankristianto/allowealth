@@ -11,14 +11,14 @@ import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service
 export const AUTH_PATH_PREFIX = '/api/auth';
 export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
 
-const isProduction = getEnv('NODE_ENV') === 'production';
-const secret =
-  getEnv('BETTER_AUTH_SECRET') ??
-  (isProduction ? undefined : 'better-auth-dev-secret-for-local-development-only-0123456789');
+const nodeEnv = getEnv('NODE_ENV');
+const isTest = nodeEnv === 'test';
+const isProduction = nodeEnv === 'production';
+const secret = getEnv('BETTER_AUTH_SECRET');
 const logger = createLogger('better-auth');
 
 if (!secret) {
-  throw new Error('BETTER_AUTH_SECRET must be set in production');
+  throw new Error('BETTER_AUTH_SECRET must be set');
 }
 
 const googleClientId =

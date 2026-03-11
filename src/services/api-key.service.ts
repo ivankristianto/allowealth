@@ -38,6 +38,16 @@ export interface ApiKeyContext {
   apiKeyId: string;
 }
 
+interface ValidatedApiKeyRecord {
+  auth: ApiKeyContext;
+  expiresAt: Date | null;
+}
+
+interface CachedApiKeyEntry {
+  auth: ApiKeyContext;
+  expiresAt: string | null;
+}
+
 function bufferToBase64(buffer: Uint8Array | ArrayBuffer): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   let binary = '';
@@ -164,7 +174,7 @@ export class ApiKeyService {
     };
   }
 
-  async validate(key: string): Promise<ApiKeyContext | null> {
+  private async validateRecord(key: string): Promise<ValidatedApiKeyRecord | null> {
     if (!key || !key.startsWith(KEY_PREFIX)) return null;
 
     const prefix = key.slice(0, 8);
@@ -192,14 +202,22 @@ export class ApiKeyService {
           .where(eq(this.schema.apiKeys.id, candidate.id));
 
         return {
-          workspaceId: candidate.workspace_id,
-          userId: candidate.user_id,
-          apiKeyId: candidate.id,
+          auth: {
+            workspaceId: candidate.workspace_id,
+            userId: candidate.user_id,
+            apiKeyId: candidate.id,
+          },
+          expiresAt: candidate.expires_at ? new Date(candidate.expires_at) : null,
         };
       }
     }
 
     return null;
+  }
+
+  async validate(key: string): Promise<ApiKeyContext | null> {
+    const result = await this.validateRecord(key);
+    return result?.auth ?? null;
   }
 
   async validateCached(
@@ -213,22 +231,62 @@ export class ApiKeyService {
     const cacheKey = CacheKeys.apiKey(keyHash);
     const cache = getCacheManager();
 
-    const cached = await cache.get<ApiKeyContext>(cacheKey);
+    const cached = await cache.get<CachedApiKeyEntry>(cacheKey);
     if (cached) {
-      return cached;
+      const cachedExpiry = cached.expiresAt ? new Date(cached.expiresAt) : null;
+      if (!cachedExpiry || cachedExpiry > new Date()) {
+        return cached.auth;
+      }
     }
 
-    const result = await this.validate(key);
+    if (this.validate !== ApiKeyService.prototype.validate) {
+      const auth = await this.validate(key);
+      if (!auth) {
+        return null;
+      }
+
+      await cache.set(
+        cacheKey,
+        {
+          auth,
+          expiresAt: null,
+        },
+        {
+          ttl: ttlSeconds,
+          tags: [CacheTags.API_KEYS, `apikey:${keyPrefix}`],
+        }
+      );
+
+      return auth;
+    }
+
+    const result = await this.validateRecord(key);
     if (!result) {
       return null;
     }
 
-    await cache.set(cacheKey, result, {
-      ttl: ttlSeconds,
-      tags: [CacheTags.API_KEYS, `apikey:${keyPrefix}`],
-    });
+    const remainingTtlSeconds =
+      result.expiresAt === null
+        ? ttlSeconds
+        : Math.max(0, Math.ceil((result.expiresAt.getTime() - Date.now()) / 1000));
 
-    return result;
+    if (result.expiresAt !== null && remainingTtlSeconds <= 0) {
+      return null;
+    }
+
+    await cache.set(
+      cacheKey,
+      {
+        auth: result.auth,
+        expiresAt: result.expiresAt?.toISOString() ?? null,
+      },
+      {
+        ttl: result.expiresAt === null ? ttlSeconds : Math.min(ttlSeconds, remainingTtlSeconds),
+        tags: [CacheTags.API_KEYS, `apikey:${keyPrefix}`],
+      }
+    );
+
+    return result.auth;
   }
 
   async revoke(id: string, workspaceId: string): Promise<boolean> {

@@ -12,6 +12,11 @@ import { users, userMeta, workspaces } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
+import {
+  account as authAccounts,
+  session as authSessions,
+  user as authUsers,
+} from '@/db/schema/sqlite/better-auth';
 
 // Test workspace for all test users
 const TEST_WORKSPACE_ID = 'test-workspace-user-service';
@@ -58,6 +63,52 @@ async function createTestUser(email: string, password: string, name: string) {
   return user;
 }
 
+async function seedAuthRecords(user: Awaited<ReturnType<typeof createTestUser>>) {
+  await db.insert(authUsers).values({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    emailVerified: true,
+    image: null,
+    twoFactorEnabled: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  await db.insert(authAccounts).values({
+    id: nanoid(),
+    accountId: user.email,
+    providerId: 'credential',
+    userId: user.id,
+    password: 'legacy-auth-password-hash',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  await db.insert(authSessions).values([
+    {
+      id: nanoid(),
+      token: `session-token-${nanoid(8)}`,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ipAddress: '127.0.0.1',
+      userAgent: 'bun:test',
+    },
+    {
+      id: nanoid(),
+      token: `session-token-${nanoid(8)}`,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ipAddress: '127.0.0.2',
+      userAgent: 'bun:test',
+    },
+  ]);
+}
+
 describe('UserService', () => {
   const userService = new UserService(db);
 
@@ -73,6 +124,9 @@ describe('UserService', () => {
     });
 
     for (const user of testUsers) {
+      await db.delete(authSessions).where(eq(authSessions.userId, user.id));
+      await db.delete(authAccounts).where(eq(authAccounts.userId, user.id));
+      await db.delete(authUsers).where(eq(authUsers.id, user.id));
       await db.delete(userMeta).where(eq(userMeta.user_id, user.id));
       await db.delete(users).where(eq(users.id, user.id));
     }
@@ -85,6 +139,9 @@ describe('UserService', () => {
     });
 
     for (const user of testUsers) {
+      await db.delete(authSessions).where(eq(authSessions.userId, user.id));
+      await db.delete(authAccounts).where(eq(authAccounts.userId, user.id));
+      await db.delete(authUsers).where(eq(authUsers.id, user.id));
       await db.delete(userMeta).where(eq(userMeta.user_id, user.id));
       await db.delete(users).where(eq(users.id, user.id));
     }
@@ -156,17 +213,19 @@ describe('UserService', () => {
   describe('updatePassword', () => {
     it('should update password with valid old password', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       const result = await userService.updatePassword(user.id, {
         oldPassword: testPassword,
         newPassword: 'NewPassword456!',
       });
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, reauthRequired: true });
     });
 
     it('should hash new password', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
       const newPassword = 'NewPassword456!';
 
       await userService.updatePassword(user.id, {
@@ -186,6 +245,7 @@ describe('UserService', () => {
 
     it('should throw error for invalid old password', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       expect(
         userService.updatePassword(user.id, {
@@ -197,6 +257,7 @@ describe('UserService', () => {
 
     it('should throw error with INVALID_PASSWORD code for invalid old password', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       expect(
         userService.updatePassword(user.id, {
@@ -230,6 +291,7 @@ describe('UserService', () => {
 
     it('should throw validation error for short new password', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       expect(
         userService.updatePassword(user.id, {
@@ -241,6 +303,7 @@ describe('UserService', () => {
 
     it('should throw validation error for new password without letters', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       expect(
         userService.updatePassword(user.id, {
@@ -252,6 +315,7 @@ describe('UserService', () => {
 
     it('should throw validation error for new password without numbers or special chars', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       expect(
         userService.updatePassword(user.id, {
@@ -263,13 +327,29 @@ describe('UserService', () => {
 
     it('should accept 12 character password with letters and numbers', async () => {
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       const result = await userService.updatePassword(user.id, {
         oldPassword: testPassword,
         newPassword: 'Password123!',
       });
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, reauthRequired: true });
+    });
+
+    it('should revoke all Better Auth sessions after a successful password change', async () => {
+      const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
+
+      await userService.updatePassword(user.id, {
+        oldPassword: testPassword,
+        newPassword: 'NewPassword456!',
+      });
+
+      const sessions = await db.query.session.findMany({
+        where: eq(authSessions.userId, user.id),
+      });
+      expect(sessions).toHaveLength(0);
     });
   });
 
@@ -277,6 +357,7 @@ describe('UserService', () => {
     it('should complete full user profile flow', async () => {
       // Create user
       const user = await createTestUser(testEmail1, testPassword, testName);
+      await seedAuthRecords(user);
 
       // Update profile
       const updatedUser = await userService.updateProfile(user.id, {
@@ -289,7 +370,7 @@ describe('UserService', () => {
         oldPassword: testPassword,
         newPassword: 'NewPassword456!',
       });
-      expect(passwordResult).toEqual({ success: true });
+      expect(passwordResult).toEqual({ success: true, reauthRequired: true });
     });
   });
 });

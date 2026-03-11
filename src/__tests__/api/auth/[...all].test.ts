@@ -109,6 +109,33 @@ describe('Better Auth catch-all route', () => {
     expect(authHandlerMock).not.toHaveBeenCalled();
   });
 
+  test('returns service error when bot protection is not configured', async () => {
+    verifyTurnstileTokenMock.mockResolvedValue({
+      success: false,
+      error: 'Bot protection is not configured for this environment.',
+      status: 503,
+    });
+
+    const response = await POST({
+      request: new Request('http://localhost/api/auth/sign-up/email', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'user@example.com',
+          password: 'secret',
+          turnstileToken: 'ignored-token',
+        }),
+      }),
+    } as never);
+    const payload = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(payload.error.code).toBe('TURNSTILE_VERIFICATION_FAILED');
+    expect(authHandlerMock).not.toHaveBeenCalled();
+  });
+
   test('does not require Turnstile for non-protected Better Auth endpoints', async () => {
     const response = await POST({
       request: new Request('http://localhost/api/auth/sign-in/social', {

@@ -10,6 +10,7 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import { hashOpaqueToken } from '@/lib/crypto/token-hash';
 import { account as authAccounts, user as authUsers } from '@/db/schema/sqlite/better-auth';
 
 describe('EmailVerificationService', () => {
@@ -92,7 +93,8 @@ describe('EmailVerificationService', () => {
         .limit(1);
 
       expect(dbToken.length).toBe(1);
-      expect(dbToken[0].token).toBe(token);
+      expect(dbToken[0].token).not.toBe(token);
+      expect(dbToken[0].token).toBe(await hashOpaqueToken(token));
 
       // Check expiration is ~24 hours from now
       const expiresIn = dbToken[0].expires_at.getTime() - Date.now();
@@ -293,12 +295,13 @@ describe('EmailVerificationService', () => {
 
     it('should return error for expired token', async () => {
       const expiredToken = nanoid(64);
+      const expiredTokenHash = await hashOpaqueToken(expiredToken);
       const pastTime = new Date(Date.now() - 25 * 60 * 60 * 1000);
 
       await db.insert(emailVerificationTokens).values({
         id: nanoid(),
         user_id: testUserId,
-        token: expiredToken,
+        token: expiredTokenHash,
         expires_at: pastTime,
       });
 

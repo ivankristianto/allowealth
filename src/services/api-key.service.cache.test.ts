@@ -52,6 +52,59 @@ describe('ApiKeyService cache contract', () => {
     });
   });
 
+  it('validateCached does not return a cached context after the API key expires', async () => {
+    let insertedValues: any;
+    const expiresAt = new Date(Date.now() + 20);
+    const values = mock((payload: any) => {
+      insertedValues = payload;
+      return {
+        returning: mock(() =>
+          Promise.resolve([
+            {
+              id: payload.id,
+              name: payload.name,
+              key_prefix: payload.key_prefix,
+              created_at: payload.created_at,
+              expires_at: payload.expires_at,
+            },
+          ])
+        ),
+      };
+    });
+    (mockDb.insert as any).mockReturnValue({ values });
+
+    const { plainKey } = await apiKeyService.generate({
+      workspace_id: 'ws-expiring',
+      user_id: 'user-expiring',
+      name: 'expiring key',
+      expires_at: expiresAt,
+    });
+
+    (mockDb.query.apiKeys.findMany as any).mockImplementation(async () => [
+      {
+        id: insertedValues.id,
+        workspace_id: insertedValues.workspace_id,
+        user_id: insertedValues.user_id,
+        key_prefix: insertedValues.key_prefix,
+        key_hash: insertedValues.key_hash,
+        expires_at: expiresAt,
+        deleted_at: null,
+      },
+    ]);
+
+    const first = await apiKeyService.validateCached(plainKey, 300);
+    expect(first).toEqual({
+      workspaceId: 'ws-expiring',
+      userId: 'user-expiring',
+      apiKeyId: insertedValues.id,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    const second = await apiKeyService.validateCached(plainKey, 300);
+    expect(second).toBeNull();
+  });
+
   it('revoke invalidates API key cache tags in service layer', async () => {
     const cache = getCacheManager();
     await cache.set(

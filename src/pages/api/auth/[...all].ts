@@ -23,7 +23,7 @@ function getClientIp(headers: Headers): string {
   return '127.0.0.1';
 }
 
-function createTurnstileErrorResponse(message: string): Response {
+function createTurnstileErrorResponse(message: string, status = 400): Response {
   return Response.json(
     {
       message,
@@ -32,7 +32,7 @@ function createTurnstileErrorResponse(message: string): Response {
         message,
       },
     },
-    { status: 400 }
+    { status }
   );
 }
 
@@ -61,7 +61,8 @@ async function verifyProtectedAuthRequest(request: Request): Promise<Response | 
   }
 
   return createTurnstileErrorResponse(
-    verification.error || 'Bot protection verification failed. Please try again.'
+    verification.error || 'Bot protection verification failed. Please try again.',
+    verification.status ?? 400
   );
 }
 

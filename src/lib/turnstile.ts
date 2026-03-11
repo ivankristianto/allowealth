@@ -15,6 +15,7 @@ const VERIFY_TIMEOUT_MS = 5000;
 export interface TurnstileVerificationResult {
   success: boolean;
   error?: string;
+  status?: number;
 }
 
 interface SiteverifyResponse {
@@ -36,10 +37,21 @@ export async function verifyTurnstileToken(
   clientIP: string
 ): Promise<TurnstileVerificationResult> {
   const secretKey = getEnv('TURNSTILE_SECRET_KEY');
+  const nodeEnv = getEnv('NODE_ENV');
+  const isTest = nodeEnv === 'test';
+  const isOptionalRuntime = import.meta.env.DEV || isTest;
 
-  // Graceful degradation: skip verification if not configured
+  // Allow local dev and tests to run without external Turnstile configuration.
   if (!secretKey) {
-    return { success: true };
+    if (isOptionalRuntime) {
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: 'Bot protection is not configured for this environment.',
+      status: 503,
+    };
   }
 
   // Token is required when Turnstile is configured
@@ -75,6 +87,7 @@ export async function verifyTurnstileToken(
       return {
         success: false,
         error: 'Bot protection verification service unavailable. Please try again later.',
+        status: 503,
       };
     }
 
@@ -90,6 +103,7 @@ export async function verifyTurnstileToken(
     return {
       success: false,
       error: 'Bot protection verification failed. Please refresh the page and try again.',
+      status: 400,
     };
   } catch (err) {
     // Fail-closed: network errors reject the request
@@ -97,6 +111,7 @@ export async function verifyTurnstileToken(
     return {
       success: false,
       error: 'Bot protection verification service unavailable. Please try again later.',
+      status: 503,
     };
   }
 }

@@ -57,7 +57,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('skips verification when secret key is not configured', async () => {
-    setTestEnv({ TURNSTILE_SECRET_KEY: undefined });
+    setTestEnv({ NODE_ENV: 'test', TURNSTILE_SECRET_KEY: undefined });
     const fetchMock = mock(() => Promise.resolve(new Response())) as unknown as typeof fetch;
     globalThis.fetch = fetchMock;
 
@@ -65,6 +65,18 @@ describe('verifyTurnstileToken', () => {
 
     expect(result.success).toBe(true);
     // fetch should NOT have been called — verification was skipped
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+  });
+
+  test('fails closed when secret key is missing outside dev and test', async () => {
+    setTestEnv({ NODE_ENV: 'production', TURNSTILE_SECRET_KEY: undefined });
+    const fetchMock = mock(() => Promise.resolve(new Response())) as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
+
+    const result = await verifyTurnstileToken('any-token', '127.0.0.1');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('not configured');
     expect(fetchMock).toHaveBeenCalledTimes(0);
   });
 
