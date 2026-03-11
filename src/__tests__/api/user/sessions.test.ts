@@ -90,9 +90,10 @@ describe('API /api/user/sessions', () => {
       expect(response.status).toBe(200);
       expect(payload.success).toBe(true);
       expect(payload.data.sessions).toHaveLength(2);
-      // Current session should be first
+      // Current session should be first, token should not be exposed
       expect(payload.data.sessions[0].isCurrent).toBe(true);
-      expect(payload.data.sessions[0].token).toBe('current-tok');
+      expect(payload.data.sessions[0].id).toBe('sess-2');
+      expect(payload.data.sessions[0].token).toBeUndefined();
     });
   });
 
@@ -102,11 +103,14 @@ describe('API /api/user/sessions', () => {
       expect(response.status).toBe(401);
     });
 
-    it('returns 400 when trying to revoke current session', async () => {
+    it('returns 400 when trying to revoke current session by id', async () => {
+      // listSessions must return sessions so the route can find the target
+      (authApi as any).listSessions = mock(() => Promise.resolve(fakeSessions));
+
       const response = await DELETE(
         createApiContext({
           method: 'DELETE',
-          body: { token: 'current-tok' },
+          body: { id: 'sess-2' }, // sess-2 has token 'current-tok'
         })
       );
       const payload = await response.json();
@@ -115,13 +119,27 @@ describe('API /api/user/sessions', () => {
       expect(payload.success).toBe(false);
     });
 
-    it('revokes a non-current session', async () => {
+    it('returns 404 for unknown session id', async () => {
+      (authApi as any).listSessions = mock(() => Promise.resolve(fakeSessions));
+
+      const response = await DELETE(
+        createApiContext({
+          method: 'DELETE',
+          body: { id: 'nonexistent' },
+        })
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it('revokes a non-current session by id', async () => {
+      (authApi as any).listSessions = mock(() => Promise.resolve(fakeSessions));
       (authApi as any).revokeSession = mock(() => Promise.resolve({ status: true }));
 
       const response = await DELETE(
         createApiContext({
           method: 'DELETE',
-          body: { token: 'other-tok' },
+          body: { id: 'sess-1' }, // sess-1 has token 'tok-1' (not current)
         })
       );
       const payload = await response.json();

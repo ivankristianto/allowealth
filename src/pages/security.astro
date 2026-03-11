@@ -25,6 +25,7 @@ import { auth } from '@/lib/auth/server';
 import { db } from '@/db';
 import { account as authAccount, twoFactor } from '@/db/schema/sqlite';
 import { eq } from 'drizzle-orm';
+import { logError } from '@/lib/utils';
 
 const currentPath = '/security';
 
@@ -106,8 +107,8 @@ if (user?.id) {
     });
     const currentToken = Astro.locals.session?.token ?? '';
     activeSessions = SessionManagementService.listForUser(rawSessions, currentToken);
-  } catch {
-    // Fail gracefully — card will show empty state
+  } catch (err) {
+    logError('Failed to list sessions', err);
   }
 }
 

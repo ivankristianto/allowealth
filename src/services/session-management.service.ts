@@ -50,11 +50,6 @@ export class SessionManagementService {
       throw new Error('Cannot revoke the current session');
     }
   }
-
-  /** Return tokens of all sessions except the current one. */
-  static getOtherTokens(sessions: RawSession[], currentToken: string): string[] {
-    return sessions.filter((s) => s.token !== currentToken).map((s) => s.token);
-  }
 }
 
 // ---------------------------------------------------------------------------

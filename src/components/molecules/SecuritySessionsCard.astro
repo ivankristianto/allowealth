@@ -63,7 +63,7 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
           type="button"
           class="btn btn-error btn-sm rounded-xl"
           data-confirm-revoke-session
-          data-revoking-token=""
+          data-revoking-id=""
         >
           Revoke
         </button>
@@ -129,18 +129,18 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
         const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-revoke-session]');
         if (!btn) return;
 
-        const token = btn.getAttribute('data-session-token') || '';
+        const sessionId = btn.getAttribute('data-session-id') || '';
         const label = btn.getAttribute('data-session-label') || '';
 
         revokeLabelEl.textContent = label;
-        confirmRevokeBtn.setAttribute('data-revoking-token', token);
+        confirmRevokeBtn.setAttribute('data-revoking-id', sessionId);
         revokeModal.showModal();
       });
 
       // Confirm revoke single session
       confirmRevokeBtn.addEventListener('click', async () => {
-        const token = confirmRevokeBtn.getAttribute('data-revoking-token');
-        if (!token) return;
+        const sessionId = confirmRevokeBtn.getAttribute('data-revoking-id');
+        if (!sessionId) return;
 
         setButtonLoading(confirmRevokeBtn, true);
 
@@ -152,7 +152,7 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
               'Content-Type': 'application/json',
               ...getCsrfHeaders(),
             },
-            body: JSON.stringify({ token }),
+            body: JSON.stringify({ id: sessionId }),
           });
 
           const result = await response.json();
@@ -165,7 +165,7 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
 
           // Remove the row from DOM
           const row = listContainer.querySelector(
-            `[data-session-item][data-session-token="${CSS.escape(token)}"]`
+            `[data-session-item][data-session-id="${CSS.escape(sessionId)}"]`
           );
           if (row) row.remove();
 

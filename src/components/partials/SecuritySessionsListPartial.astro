@@ -41,7 +41,7 @@ function formatRelativeDate(date: Date): string {
         <div
           class="flex items-center justify-between gap-4 p-4"
           data-session-item
-          data-session-token={session.token}
+          data-session-id={session.id}
         >
           <div class="flex items-center gap-4 min-w-0">
             <div class="rounded-xl bg-base-200 p-2 text-base-content/60 shrink-0">
@@ -65,7 +65,7 @@ function formatRelativeDate(date: Date): string {
               type="button"
               class="btn btn-ghost btn-sm text-error rounded-xl"
               data-revoke-session
-              data-session-token={session.token}
+              data-session-id={session.id}
               data-session-label={session.deviceLabel}
               aria-label={`Revoke ${session.deviceLabel}`}
             >

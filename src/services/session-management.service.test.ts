@@ -78,17 +78,4 @@ describe('SessionManagementService', () => {
       ).not.toThrow();
     });
   });
-
-  describe('revokeOtherSessions', () => {
-    it('identifies tokens to revoke (excludes current)', () => {
-      const sessions = [
-        makeSession({ id: 'sess-1', token: 'tok-1' }),
-        makeSession({ id: 'sess-2', token: 'tok-2' }),
-        makeSession({ id: 'sess-3', token: 'tok-3' }),
-      ];
-
-      const tokensToRevoke = SessionManagementService.getOtherTokens(sessions, 'tok-2');
-      expect(tokensToRevoke).toEqual(['tok-1', 'tok-3']);
-    });
-  });
 });
