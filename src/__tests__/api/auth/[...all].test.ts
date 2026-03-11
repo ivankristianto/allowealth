@@ -61,6 +61,28 @@ describe('Better Auth catch-all route', () => {
     expect(authHandlerMock).toHaveBeenCalledTimes(1);
   });
 
+  test('prefers Cloudflare client IP over spoofable forwarding headers', async () => {
+    const response = await POST({
+      request: new Request('http://localhost/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'cf-connecting-ip': '198.51.100.25',
+          'x-forwarded-for': '203.0.113.10',
+        },
+        body: JSON.stringify({
+          email: 'user@example.com',
+          password: 'secret',
+          turnstileToken: 'valid-turnstile-token',
+        }),
+      }),
+    } as never);
+
+    expect(response.status).toBe(200);
+    expect(verifyTurnstileTokenMock).toHaveBeenCalledWith('valid-turnstile-token', '198.51.100.25');
+    expect(authHandlerMock).toHaveBeenCalledTimes(1);
+  });
+
   test('blocks protected auth routes when Turnstile verification fails', async () => {
     verifyTurnstileTokenMock.mockResolvedValue({
       success: false,

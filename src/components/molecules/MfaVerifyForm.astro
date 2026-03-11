@@ -112,6 +112,7 @@ const { redirectTo = '' } = Astro.props;
 
 <script>
   import { authClient } from '@/lib/auth/client';
+  import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
 
   const form = document.getElementById('mfa-form') as HTMLFormElement | null;
   const messagesContainer = document.getElementById('mfa-messages');
@@ -128,7 +129,7 @@ const { redirectTo = '' } = Astro.props;
   if (!form || !submitButton) {
     console.error('MFA form elements not found');
   } else {
-    const redirectTo = form.dataset.redirect || '';
+    const redirectTo = sanitizePostAuthRedirect(form.dataset.redirect);
     let isBackupMode = false;
 
     const getErrorIcon = () => {

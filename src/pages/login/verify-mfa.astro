@@ -8,9 +8,10 @@
 
 import AuthLayout from '@/layouts/AuthLayout.astro';
 import MfaVerifyForm from '@/components/molecules/MfaVerifyForm.astro';
+import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
 
 const url = new URL(Astro.request.url);
-const redirect = url.searchParams.get('redirect') || '';
+const redirect = sanitizePostAuthRedirect(url.searchParams.get('redirect'));
 ---
 
 <AuthLayout title="allowealth - Verify Identity">

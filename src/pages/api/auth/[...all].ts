@@ -5,12 +5,22 @@ import { verifyTurnstileToken } from '@/lib/turnstile';
 const TURNSTILE_PROTECTED_PATHS = new Set(['/api/auth/sign-in/email', '/api/auth/sign-up/email']);
 
 function getClientIp(headers: Headers): string {
+  const cloudflareIp = headers.get('cf-connecting-ip');
+  if (cloudflareIp) {
+    return cloudflareIp.trim();
+  }
+
+  const realIp = headers.get('x-real-ip');
+  if (realIp) {
+    return realIp.trim();
+  }
+
   const forwardedFor = headers.get('x-forwarded-for');
   if (forwardedFor) {
     return forwardedFor.split(',')[0]?.trim() || '127.0.0.1';
   }
 
-  return headers.get('cf-connecting-ip') || '127.0.0.1';
+  return '127.0.0.1';
 }
 
 function createTurnstileErrorResponse(message: string): Response {

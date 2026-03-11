@@ -7,12 +7,13 @@
 
 import AuthLayout from '../layouts/AuthLayout.astro';
 import LoginForm from '../components/molecules/LoginForm.astro';
+import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
 import { getGoogleAuthErrorMessage } from '@/services/auth.service';
 
 // Get error message and redirect from query params (if any)
 const url = new URL(Astro.request.url);
 const error = url.searchParams.get('error');
-const redirect = url.searchParams.get('redirect') || '';
+const redirect = sanitizePostAuthRedirect(url.searchParams.get('redirect'));
 const registered = url.searchParams.get('registered');
 const verified = url.searchParams.get('verified');
 const passwordReset = url.searchParams.get('password-reset');

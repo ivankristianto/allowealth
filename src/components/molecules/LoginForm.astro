@@ -169,9 +169,11 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 </div>
 
 <script>
+  import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
+
   // Read server values from data attributes
   const loginForm = document.getElementById('login-form');
-  const redirectTo = loginForm?.dataset.redirect || '';
+  const redirectTo = sanitizePostAuthRedirect(loginForm?.dataset.redirect);
 
   // Helper function to clone icon from template
   const getErrorIcon = () => {
