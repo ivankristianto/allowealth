@@ -6,7 +6,11 @@ import { logError } from '@/lib/utils';
 import { BudgetServiceError } from '@/services/service-errors';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { isValidNanoid } from '@/lib/validation/nanoid';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import CategoryDrillDownPartial from '@/components/partials/CategoryDrillDownPartial.astro';
 
@@ -35,7 +39,10 @@ import CategoryDrillDownPartial from '@/components/partials/CategoryDrillDownPar
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
-  const render = createRenderHelper(url);
+  const render = createRenderHelper(url, context.request);
+  if (isRejectedHtmlRenderRequest(url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     // 1. Authenticate user

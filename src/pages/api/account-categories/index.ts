@@ -11,7 +11,11 @@ import {
 import { createAccountCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 
 // Import partial component for HTML rendering
 import AccountCategoryTablePartial from '@/components/partials/AccountCategoryTablePartial.astro';
@@ -37,6 +41,10 @@ export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
     const { url } = context;
+    const render = createRenderHelper(url, context.request);
+    if (isRejectedHtmlRenderRequest(url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     const isLiabilityParam = url.searchParams.get('isLiability');
     const isSystemParam = url.searchParams.get('isSystem');
@@ -52,9 +60,6 @@ export const GET: APIRoute = async (context) => {
     const categories = await accountCategoryService.findAll(auth.workspaceId, filters);
     const counts = await accountService.countByCategory(auth.workspaceId);
     const countMap = new Map(counts.map((row) => [row.category_id, row.count]));
-
-    // Check if HTML rendering is requested
-    const render = createRenderHelper(url);
 
     if (render.wantsHtml()) {
       // Render HTML fragments using Astro Container API
@@ -100,7 +105,11 @@ export const GET: APIRoute = async (context) => {
       )
     );
   } catch (error) {
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (error instanceof Error && error.message === 'Unauthorized') {
       return render.wantsHtml()
@@ -122,7 +131,11 @@ export const GET: APIRoute = async (context) => {
 export const POST: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     const validation = await validateBody(context.request, createAccountCategoryAPISchema);
 
@@ -178,7 +191,11 @@ export const POST: APIRoute = async (context) => {
 
     return successResponse(toAccountCategoryResponse(category), 201);
   } catch (error) {
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (error instanceof Error && error.message === 'Unauthorized') {
       return render.wantsHtml()

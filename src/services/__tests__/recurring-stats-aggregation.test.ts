@@ -83,6 +83,9 @@ describe('Recurring stats aggregation regression', () => {
       url: new URL('http://localhost/api/recurring/stats?_render=html&month=2026-01'),
       request: new Request('http://localhost/api/recurring/stats?_render=html&month=2026-01', {
         method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
       }),
       locals: {
         user: {

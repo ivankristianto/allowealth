@@ -5,6 +5,7 @@
  * Supports HTML responses for server-rendered fragments.
  */
 
+import { csrfFetch } from '@/lib/csrf-client';
 import type { MonthlyBudgetHistory } from '@/services';
 
 /** HTML response from _render=html requests */
@@ -108,7 +109,7 @@ export async function fetchBudgetHistoryHtml(
   const url = `/api/budget/history?${queryString}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await csrfFetch(url, {
       method: 'GET',
       headers: {
         Accept: 'text/html',
@@ -216,7 +217,7 @@ export async function fetchCategoryTrendsHtml(
   const url = `/api/budget/category-trends?${params.toString()}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await csrfFetch(url, {
       method: 'GET',
       headers: { Accept: 'text/html' },
       signal: activeController.signal,

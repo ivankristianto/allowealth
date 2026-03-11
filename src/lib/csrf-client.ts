@@ -36,6 +36,8 @@ const CSRF_COOKIE_NAME = 'csrf_token';
  * CSRF token header name - must match server-side configuration
  */
 const CSRF_HEADER_NAME = 'X-CSRF-Token';
+const REQUESTED_WITH_HEADER_NAME = 'X-Requested-With';
+const REQUESTED_WITH_HEADER_VALUE = 'XMLHttpRequest';
 
 /**
  * HTTP methods that require CSRF token
@@ -103,17 +105,27 @@ function requiresCsrfToken(method: string): boolean {
  * ```
  */
 export async function csrfFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const method = init?.method?.toUpperCase() || 'GET';
+  const method =
+    init?.method?.toUpperCase() || (input instanceof Request ? input.method.toUpperCase() : 'GET');
+  const headers = input instanceof Request ? new Headers(input.headers) : new Headers();
+  const overrideHeaders = new Headers(init?.headers);
+
+  overrideHeaders.forEach((value, key) => {
+    headers.set(key, value);
+  });
+  headers.set(REQUESTED_WITH_HEADER_NAME, REQUESTED_WITH_HEADER_VALUE);
 
   // Only add CSRF token for state-changing methods
   if (!requiresCsrfToken(method)) {
-    return fetch(input, init);
+    return fetch(input, {
+      ...init,
+      headers,
+    });
   }
 
   const csrfToken = getCsrfToken();
 
   // Merge CSRF header with existing headers
-  const headers = new Headers(init?.headers);
   if (csrfToken) {
     headers.set(CSRF_HEADER_NAME, csrfToken);
   }
@@ -145,6 +157,7 @@ export async function csrfFetch(input: RequestInfo | URL, init?: RequestInit): P
 export function getCsrfHeaders(additionalHeaders?: Record<string, string>): Record<string, string> {
   const csrfToken = getCsrfToken();
   return {
+    [REQUESTED_WITH_HEADER_NAME]: REQUESTED_WITH_HEADER_VALUE,
     ...additionalHeaders,
     ...(csrfToken ? { [CSRF_HEADER_NAME]: csrfToken } : {}),
   };

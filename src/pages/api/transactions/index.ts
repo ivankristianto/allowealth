@@ -12,7 +12,11 @@ import {
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
 import { logError, transformTransaction, formatMonthKey, getCurrentMonthKey } from '@/lib/utils';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 
 // Import partial components for HTML rendering
 import TransactionListPartial from '@/components/partials/TransactionListPartial.astro';
@@ -29,6 +33,10 @@ export const GET: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const perf = context.locals.perf;
     const { url } = context;
+    const render = createRenderHelper(url, context.request);
+    if (isRejectedHtmlRenderRequest(url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     const { limit, offset } = getPaginationParams(url);
     const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
@@ -132,9 +140,6 @@ export const GET: APIRoute = async (context) => {
       });
     }
 
-    // Check if HTML rendering is requested
-    const render = createRenderHelper(url);
-
     if (render.wantsHtml()) {
       // Render HTML fragments using Astro Container API
       const container = await AstroContainer.create();
@@ -216,7 +221,11 @@ export const GET: APIRoute = async (context) => {
       ...(monthSummary && { summary: monthSummary }),
     });
   } catch (error) {
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (error instanceof Error && error.message === 'Unauthorized') {
       return render.wantsHtml()

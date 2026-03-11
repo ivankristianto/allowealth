@@ -11,7 +11,11 @@ import {
 import { updateAccountCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 
 // Import partial component for HTML rendering
 import AccountCategoryTablePartial from '@/components/partials/AccountCategoryTablePartial.astro';
@@ -69,7 +73,11 @@ export const PUT: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
     const { id } = context.params;
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (!id) {
       return render.wantsHtml()
@@ -127,7 +135,11 @@ export const PUT: APIRoute = async (context) => {
 
     return successResponse(toAccountCategoryResponse(category));
   } catch (error) {
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (error instanceof Error && error.message === 'Unauthorized') {
       return render.wantsHtml()
@@ -155,7 +167,11 @@ export const DELETE: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
     const { id } = context.params;
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (!id) {
       return render.wantsHtml()
@@ -201,7 +217,11 @@ export const DELETE: APIRoute = async (context) => {
 
     return successResponse({ message: 'Category deleted successfully' });
   } catch (error) {
-    const render = createRenderHelper(context.url);
+    const render = createRenderHelper(context.url, context.request);
+
+    if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     if (error instanceof Error && error.message === 'Unauthorized') {
       return render.wantsHtml()

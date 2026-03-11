@@ -403,6 +403,16 @@ export const RATE_LIMIT_PRESETS = {
   } satisfies RateLimitConfig,
 
   /**
+   * Rate limit for session revocation actions.
+   * 5 requests per minute per authenticated user.
+   */
+  sessionRevocation: {
+    maxRequests: 5,
+    windowMs: 60 * 1000, // 1 minute
+    message: 'Too many session revocation requests. Please try again in a minute.',
+  } satisfies RateLimitConfig,
+
+  /**
    * Standard API rate limit
    * 100 requests per minute per IP
    */

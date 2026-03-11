@@ -3,7 +3,12 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { minLength, object, pipe, string } from 'valibot';
 import { auth } from '@/lib/auth/server';
 import { successResponse, errorResponse, validateBody, isValidationError } from '@/lib/api-utils';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
+import { checkRateLimitByKey, createRateLimitResponse, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
 import { logError } from '@/lib/utils';
 import { SessionManagementService } from '@/services/session-management.service';
 import SecuritySessionsListPartial from '@/components/partials/SecuritySessionsListPartial.astro';
@@ -19,7 +24,10 @@ const revokeSessionSchema = object({
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
-  const render = createRenderHelper(url);
+  const render = createRenderHelper(url, context.request);
+  if (isRejectedHtmlRenderRequest(url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     const user = context.locals.user;
@@ -64,6 +72,14 @@ export const DELETE: APIRoute = async (context) => {
     const currentToken = context.locals.session?.token;
     if (!currentToken) return errorResponse('Unauthorized', 401);
 
+    const rateLimitResult = checkRateLimitByKey(
+      `session-revocation:${user.id}`,
+      RATE_LIMIT_PRESETS.sessionRevocation
+    );
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.sessionRevocation.message);
+    }
+
     const validation = await validateBody(context.request, revokeSessionSchema);
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
@@ -107,6 +123,14 @@ export const POST: APIRoute = async (context) => {
   try {
     const user = context.locals.user;
     if (!user?.id) return errorResponse('Unauthorized', 401);
+
+    const rateLimitResult = checkRateLimitByKey(
+      `session-revocation:${user.id}`,
+      RATE_LIMIT_PRESETS.sessionRevocation
+    );
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.sessionRevocation.message);
+    }
 
     await auth.api.revokeOtherSessions({
       headers: context.request.headers,

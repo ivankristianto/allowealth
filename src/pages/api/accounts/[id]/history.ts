@@ -3,7 +3,11 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { accountService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 
 // Import partial component for HTML rendering
 import AccountHistoryPartial from '@/components/partials/AccountHistoryPartial.astro';
@@ -17,7 +21,10 @@ import AccountHistoryPartial from '@/components/partials/AccountHistoryPartial.a
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
-  const render = createRenderHelper(url);
+  const render = createRenderHelper(url, context.request);
+  if (isRejectedHtmlRenderRequest(url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     const auth = getAuthenticatedUser(context);

@@ -6,7 +6,11 @@ import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-
 import { transactionIdSchema } from '@/lib/validation/transactions';
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import TransactionHistoryPartial from '@/components/partials/TransactionHistoryPartial.astro';
 
 /**
@@ -18,6 +22,10 @@ export const GET: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const { id } = context.params;
     const { url } = context;
+    const render = createRenderHelper(url, context.request);
+    if (isRejectedHtmlRenderRequest(url, context.request)) {
+      return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+    }
 
     const idValidation = safeParse(transactionIdSchema, id);
     if (!idValidation.success) {
@@ -31,8 +39,6 @@ export const GET: APIRoute = async (context) => {
       auth.workspaceId,
       showAll
     );
-
-    const render = createRenderHelper(url);
 
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();

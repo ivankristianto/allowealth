@@ -9,7 +9,11 @@ import {
   getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import { logError } from '@/lib/utils';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit';
 import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
@@ -37,7 +41,10 @@ const revokeKeySchema = object({
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
-  const render = createRenderHelper(url);
+  const render = createRenderHelper(url, context.request);
+  if (isRejectedHtmlRenderRequest(url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     const auth = getAuthenticatedUser(context);

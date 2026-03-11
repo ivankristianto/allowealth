@@ -11,7 +11,14 @@ const originalGetMembers = workspaceService.getMembers;
 function createApiContext(urlStr: string) {
   const url = new URL(urlStr, 'http://localhost');
   return {
-    request: new Request(url.toString()),
+    request: new Request(url.toString(), {
+      headers:
+        url.searchParams.get('_render') === 'html'
+          ? {
+              'X-Requested-With': 'XMLHttpRequest',
+            }
+          : undefined,
+    }),
     url,
     locals: {
       user: { id: 'user-1', workspaceId: 'ws-1', role: 'admin' },

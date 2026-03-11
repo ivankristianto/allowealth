@@ -9,7 +9,11 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createRecurringTemplateAPISchema } from '@/lib/validation/recurring';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import RecurringTemplateListPartial from '@/components/partials/RecurringTemplateListPartial.astro';
 
 type StatusFilter = 'active' | 'paused' | 'completed' | 'cancelled' | 'all';
@@ -34,7 +38,11 @@ function parsePositiveInt(value: string | null, fallback: number): number {
 }
 
 export const GET: APIRoute = async (context) => {
-  const render = createRenderHelper(context.url);
+  const render = createRenderHelper(context.url, context.request);
+
+  if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     const auth = getAuthenticatedUser(context);
@@ -94,7 +102,11 @@ export const GET: APIRoute = async (context) => {
 };
 
 export const POST: APIRoute = async (context) => {
-  const render = createRenderHelper(context.url);
+  const render = createRenderHelper(context.url, context.request);
+
+  if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     const auth = getAuthenticatedUser(context);

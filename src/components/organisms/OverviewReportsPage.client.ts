@@ -16,6 +16,7 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from './ReportsRenderer.client';
+import { csrfFetch } from '@/lib/csrf-client';
 import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
@@ -98,7 +99,7 @@ async function fetchOverviewHtml(
   params.set('period', period);
   params.set('currency', currency);
 
-  const response = await fetch(`/api/reports?${params.toString()}`);
+  const response = await csrfFetch(`/api/reports?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch overview data: ${response.statusText}`);
   }
@@ -161,7 +162,7 @@ async function fetchAndRenderSelector(): Promise<void> {
     params.set('period', currentState.period);
     params.set('currency', currentState.currency);
 
-    const response = await fetch(`/api/reports?${params.toString()}`);
+    const response = await csrfFetch(`/api/reports?${params.toString()}`);
     if (!response.ok) throw new Error(`Failed to fetch selector: ${response.statusText}`);
 
     const html = await response.text();

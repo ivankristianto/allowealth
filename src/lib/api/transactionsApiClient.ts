@@ -13,7 +13,7 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 import type { TransactionFilters } from '@/lib/stores/transactionFiltersStore';
 import { parseMonthKeyToISO } from '@/lib/utils/date';
 import { PAGINATION } from '@/lib/constants/pagination';
-import { getCsrfHeaders } from '@/lib/csrf-client';
+import { csrfFetch, getCsrfHeaders } from '@/lib/csrf-client';
 
 const DEFAULT_PAGE_SIZE = PAGINATION.DEFAULT_PAGE_SIZE;
 
@@ -257,7 +257,7 @@ export async function fetchTransactionsHtml(
   const url = `/api/transactions?${queryString}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await csrfFetch(url, {
       method: 'GET',
       headers: {
         Accept: 'text/html',

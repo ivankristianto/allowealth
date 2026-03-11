@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it, mock } from 'bun:test';
+import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { setTestEnv } from '@/lib/env';
+import { clearRateLimitStore } from '@/lib/rate-limit';
 
 // Set env before auth module loads
 setTestEnv({
@@ -18,6 +19,7 @@ function createApiContext(options: {
   user?: { id: string; workspaceId: string; role: 'admin' | 'member' } | null;
   session?: { token: string } | null;
   url?: string;
+  headers?: Record<string, string>;
 }) {
   const method = options.method ?? 'GET';
   const urlStr = options.url ?? 'http://localhost/api/user/sessions';
@@ -25,7 +27,7 @@ function createApiContext(options: {
   return {
     request: new Request(urlStr, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
       body: options.body ? JSON.stringify(options.body) : undefined,
     }),
     url: new URL(urlStr),
@@ -65,7 +67,7 @@ const fakeSessions = [
 describe('API /api/user/sessions', () => {
   beforeAll(async () => {
     const authModule = await import('@/lib/auth/server');
-    authApi = authModule.auth.api;
+    authApi = (authModule.auth as any).api ??= {};
 
     // Stub Better Auth API methods
     (authApi as any).listSessions = mock(() => Promise.resolve([]));
@@ -73,6 +75,13 @@ describe('API /api/user/sessions', () => {
     (authApi as any).revokeOtherSessions = mock(() => Promise.resolve({ status: true }));
 
     ({ GET, DELETE, POST } = await import('@/pages/api/user/sessions'));
+  });
+
+  beforeEach(() => {
+    clearRateLimitStore();
+    (authApi as any).listSessions = mock(() => Promise.resolve([]));
+    (authApi as any).revokeSession = mock(() => Promise.resolve({ status: true }));
+    (authApi as any).revokeOtherSessions = mock(() => Promise.resolve({ status: true }));
   });
 
   describe('GET', () => {
@@ -94,6 +103,19 @@ describe('API /api/user/sessions', () => {
       expect(payload.data.sessions[0].isCurrent).toBe(true);
       expect(payload.data.sessions[0].id).toBe('sess-2');
       expect(payload.data.sessions[0].token).toBeUndefined();
+    });
+
+    it('returns 403 for html render requests without XMLHttpRequest header', async () => {
+      (authApi as any).listSessions = mock(() => Promise.resolve(fakeSessions));
+
+      const response = await GET(
+        createApiContext({
+          url: 'http://localhost/api/user/sessions?_render=html',
+        })
+      );
+
+      expect(response.status).toBe(403);
+      expect(response.headers.get('Content-Type')).toBe('application/json');
     });
   });
 
@@ -147,6 +169,31 @@ describe('API /api/user/sessions', () => {
       expect(response.status).toBe(200);
       expect(payload.success).toBe(true);
     });
+
+    it('rate limits repeated revoke requests', async () => {
+      (authApi as any).listSessions = mock(() => Promise.resolve(fakeSessions));
+
+      for (let i = 0; i < 5; i++) {
+        const response = await DELETE(
+          createApiContext({
+            method: 'DELETE',
+            body: { id: 'sess-1' },
+          })
+        );
+        expect(response.status).toBe(200);
+      }
+
+      const limitedResponse = await DELETE(
+        createApiContext({
+          method: 'DELETE',
+          body: { id: 'sess-1' },
+        })
+      );
+      const payload = await limitedResponse.json();
+
+      expect(limitedResponse.status).toBe(429);
+      expect(payload.error.code).toBe('RATE_LIMIT_EXCEEDED');
+    });
   });
 
   describe('POST (revoke all others)', () => {
@@ -175,6 +222,19 @@ describe('API /api/user/sessions', () => {
 
       expect(response.status).toBe(500);
       expect(payload.success).toBe(false);
+    });
+
+    it('rate limits repeated revoke-all requests', async () => {
+      for (let i = 0; i < 5; i++) {
+        const response = await POST(createApiContext({ method: 'POST' }));
+        expect(response.status).toBe(200);
+      }
+
+      const limitedResponse = await POST(createApiContext({ method: 'POST' }));
+      const payload = await limitedResponse.json();
+
+      expect(limitedResponse.status).toBe(429);
+      expect(payload.error.code).toBe('RATE_LIMIT_EXCEEDED');
     });
   });
 });

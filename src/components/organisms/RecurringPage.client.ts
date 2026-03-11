@@ -1,5 +1,5 @@
 import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
-import { getCsrfHeaders } from '@/lib/csrf-client';
+import { csrfFetch, getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
 import {
   attachAmountFormatter,
@@ -130,7 +130,7 @@ function updateUrl(): void {
 }
 
 async function fetchHtml(path: string, signal: AbortSignal): Promise<string> {
-  const response = await fetch(path, {
+  const response = await csrfFetch(path, {
     headers: { Accept: 'text/html' },
     signal,
   });
