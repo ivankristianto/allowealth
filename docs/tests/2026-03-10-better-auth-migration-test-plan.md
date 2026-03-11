@@ -248,4 +248,28 @@ This migration replaces Lucia + Arctic + Oslo with `better-auth`. All custom ses
 | Signup Turnstile API          | —     | `src/__tests__/api/auth/signup-turnstile.test.ts`          |
 | Email change verification     | —     | `src/__tests__/api/auth/verify-email-email-change.test.ts` |
 
+| Session management service | — | `src/services/session-management.service.test.ts` |
+| Session API routes | — | `src/__tests__/api/user/sessions.test.ts` |
+
 Full E2E suite: `bun run test:e2e --grep "auth core|security auth"`
+
+---
+
+### 10. Active Sessions Management
+
+**Services under test:** `SessionManagementService`, `GET/DELETE/POST /api/user/sessions`, `SecuritySessionsCard`
+
+> **Priority:** Medium — session visibility and revocation.
+
+| Step  | Action                                                            | Expected Result                                                   |
+| ----- | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 10.1  | Navigate to `/security`                                           | Active Sessions card is visible with at least 1 session           |
+| 10.2  | Verify current session row                                        | Shows "Current" badge, device label (e.g. Chrome on macOS), IP    |
+| 10.3  | No Revoke button on current session                               | Trash icon is absent for the current session row                  |
+| 10.4  | Open a second browser/incognito and sign in with the same account | Security page now shows 2 sessions                                |
+| 10.5  | Click Revoke on the other session                                 | Confirmation modal appears with device label                      |
+| 10.6  | Confirm revoke                                                    | Toast "Session revoked", row removed, other browser is signed out |
+| 10.7  | Sign in again from the second browser                             | Two sessions appear again                                         |
+| 10.8  | Click "Revoke All Others"                                         | Confirmation modal: "All other sessions will be signed out"       |
+| 10.9  | Confirm revoke all                                                | Toast "All other sessions revoked", only current session remains  |
+| 10.10 | Verify current session is still active                            | Page remains accessible, no redirect to login                     |
