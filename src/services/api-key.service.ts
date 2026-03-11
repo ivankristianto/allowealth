@@ -240,24 +240,7 @@ export class ApiKeyService {
     }
 
     if (this.validate !== ApiKeyService.prototype.validate) {
-      const auth = await this.validate(key);
-      if (!auth) {
-        return null;
-      }
-
-      await cache.set(
-        cacheKey,
-        {
-          auth,
-          expiresAt: null,
-        },
-        {
-          ttl: ttlSeconds,
-          tags: [CacheTags.API_KEYS, `apikey:${keyPrefix}`],
-        }
-      );
-
-      return auth;
+      return this.validate(key);
     }
 
     const result = await this.validateRecord(key);

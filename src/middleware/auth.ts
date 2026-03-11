@@ -56,21 +56,12 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     });
 
     if (!result?.session || !result.user) {
-      context.locals.user = null;
-      context.locals.session = null;
-      if (!isAuthApi) {
-        context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
-      }
+      clearAuthenticatedLocals(context, isAuthApi);
     } else {
       const hydratedUser = await hydrateUser(result.user as BetterAuthUser);
 
       if (!hydratedUser || hydratedUser.deletedAt) {
-        context.locals.user = null;
-        context.locals.session = null;
-
-        if (!isAuthApi) {
-          context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
-        }
+        clearAuthenticatedLocals(context, isAuthApi);
       } else {
         context.locals.session = mapSession(result.session);
         context.locals.user = hydratedUser;
@@ -88,17 +79,25 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     }
   } catch (error) {
     logError('Session validation error', error);
-    context.locals.user = null;
-    context.locals.session = null;
-    // Validation threw — clear stale auth_hint
-    if (!isAuthApi) {
-      context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
-    }
+    clearAuthenticatedLocals(context, isAuthApi);
   }
 
   perf?.recordPhase('mw.auth', performance.now() - authStart);
   return next();
 };
+
+function clearAuthenticatedLocals(
+  context: Parameters<MiddlewareHandler>[0],
+  isAuthApi: boolean
+): void {
+  context.locals.user = null;
+  context.locals.session = null;
+
+  if (!isAuthApi) {
+    context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
+    context.cookies.delete(AUTH_SESSION_COOKIE_NAME, { path: '/' });
+  }
+}
 
 function mapSession(session: Record<string, unknown>): AuthSession {
   return {

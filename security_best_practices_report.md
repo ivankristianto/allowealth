@@ -18,9 +18,9 @@ I did not identify a remaining confirmed CSRF or redirect regression in the Bett
 
 - Status: Fixed
 - Updated locations:
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/lib/auth/server.ts:101`
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/services/email/email.service.ts:87`
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/services/email/email.service.ts:160`
+  - `src/lib/auth/server.ts:101`
+  - `src/services/email/email.service.ts:87`
+  - `src/services/email/email.service.ts:160`
 - Remediation:
   - password reset now goes through `EmailService` instead of logging the raw reset URL
   - password reset delivery failures are swallowed and logged without tokens so the forgot-password flow remains indistinguishable for existing and nonexistent emails
@@ -31,8 +31,8 @@ I did not identify a remaining confirmed CSRF or redirect regression in the Bett
 
 - Status: Fixed
 - Updated locations:
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/lib/auth/server.ts:34`
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/lib/auth/server.ts:36`
+  - `src/lib/auth/server.ts:34`
+  - `src/lib/auth/server.ts:36`
 - Remediation:
   - production startup now throws if either `PUBLIC_TURNSTILE_SITE_KEY` or `TURNSTILE_SECRET_KEY` is missing
   - captcha is no longer silently disabled in production
@@ -41,9 +41,9 @@ I did not identify a remaining confirmed CSRF or redirect regression in the Bett
 
 - Status: Fixed
 - Updated locations:
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/lib/auth/server.ts:39`
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/lib/auth/server.ts:113`
-  - `/Users/ivan/Works/allowealth.worktrees/migrate-to-better-auth/src/lib/auth/secondary-storage.ts:1`
+  - `src/lib/auth/server.ts:39`
+  - `src/lib/auth/server.ts:113`
+  - `src/lib/auth/secondary-storage.ts:1`
 - Remediation:
   - Better Auth now has explicit route-specific rate-limit rules for sign-in, sign-up, password reset, and social sign-in initiation
   - Better Auth now prefers `cf-connecting-ip` before `x-forwarded-for`

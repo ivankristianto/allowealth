@@ -171,5 +171,20 @@ describe('authentication middleware', () => {
     expect(response.status).toBe(200);
     expect(context.locals.user).toBeNull();
     expect(context.locals.session).toBeNull();
+    expect(context.cookies.delete).toHaveBeenCalledWith('better-auth.session_token', { path: '/' });
+  });
+
+  test('deletes stale session cookies when better-auth returns no session', async () => {
+    getSessionMock.mockResolvedValue(null);
+    const context = createContext('/dashboard', 'expired-cookie');
+
+    const response = expectResponse(
+      await authentication(context as never, async () => new Response('ok'))
+    );
+
+    expect(response.status).toBe(200);
+    expect(context.locals.user).toBeNull();
+    expect(context.locals.session).toBeNull();
+    expect(context.cookies.delete).toHaveBeenCalledWith('better-auth.session_token', { path: '/' });
   });
 });

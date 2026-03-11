@@ -11,7 +11,7 @@ import Input from '@/components/atoms/Input.astro';
 import Button from '@/components/atoms/Button.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
-import { User, Mail, TriangleAlert } from '@lucide/astro';
+import { User, Mail } from '@lucide/astro';
 import type { AuthUser as UserType } from '@/lib/auth/types';
 import { patterns } from '@/lib/validation/patterns';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
@@ -19,10 +19,9 @@ import type { UserSettings } from '@/lib/constants/user-meta-keys';
 export interface Props {
   user: UserType;
   pendingEmail?: string | null;
-  hasLinkedOAuth?: boolean;
 }
 
-const { user, pendingEmail = null, hasLinkedOAuth = false } = Astro.props;
+const { user, pendingEmail = null } = Astro.props;
 
 // Get user settings from SSR (loaded in ProtectedLayout)
 const userSettings = Astro.locals.userSettings as UserSettings;
@@ -139,20 +138,6 @@ const profileDetails = {
                         </div>
                       </div>
                     </div>
-                  </div>
-                )
-              }
-              {
-                hasLinkedOAuth && (
-                  <div
-                    class="mt-2 flex items-center gap-2 text-sm text-warning"
-                    id="oauth-warning"
-                    style="display: none;"
-                  >
-                    <TriangleAlert size={16} class="shrink-0" />
-                    <span>
-                      Changing your email will unlink all connected OAuth accounts (e.g., Google).
-                    </span>
                   </div>
                 )
               }

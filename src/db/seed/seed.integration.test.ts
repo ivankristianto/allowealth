@@ -29,7 +29,7 @@ function deleteSqliteArtifacts(dbPath: string) {
 }
 
 function setupTestDatabase(dbPath: string) {
-  execFileSync('bun', ['run', 'db:push', '--force'], {
+  execFileSync('bun', ['run', 'db:setup'], {
     cwd: process.cwd(),
     env: {
       ...process.env,

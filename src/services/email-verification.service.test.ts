@@ -180,18 +180,10 @@ describe('EmailVerificationService', () => {
       expect(tokens.length).toBe(1);
     });
 
-    it('should unlink Better Auth social accounts when requesting email change', async () => {
+    it('preserves linked sign-in methods while an email change is pending', async () => {
       await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
 
       await db.insert(authAccounts).values([
-        {
-          id: nanoid(),
-          accountId: `credential-${nanoid(8)}`,
-          providerId: 'credential',
-          userId: testUserId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
         {
           id: nanoid(),
           accountId: `google-${nanoid(8)}`,
@@ -239,9 +231,12 @@ describe('EmailVerificationService', () => {
         .select()
         .from(oauthAccounts)
         .where(eq(oauthAccounts.user_id, testUserId));
-      expect(remainingAuthAccounts).toHaveLength(1);
-      expect(remainingAuthAccounts[0].providerId).toBe('credential');
-      expect(remainingOauthAccounts.length).toBe(0);
+      expect(remainingAuthAccounts).toHaveLength(2);
+      expect(remainingAuthAccounts.map((account) => account.providerId).sort()).toEqual([
+        'github',
+        'google',
+      ]);
+      expect(remainingOauthAccounts).toHaveLength(2);
     });
   });
 

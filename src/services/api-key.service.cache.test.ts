@@ -20,20 +20,49 @@ describe('ApiKeyService cache contract', () => {
     setTestEnv(null);
   });
 
-  it('validateCached reuses cached auth context and avoids repeated PBKDF2 validation', async () => {
-    const validateSpy = mock(async () => ({
-      workspaceId: 'ws-1',
-      userId: 'user-1',
-      apiKeyId: 'key-1',
-    }));
-    apiKeyService.validate = validateSpy as any;
+  it('validateCached reuses cached auth context after a successful record lookup', async () => {
+    let insertedValues: any;
+    const values = mock((payload: any) => {
+      insertedValues = payload;
+      return {
+        returning: mock(() =>
+          Promise.resolve([
+            {
+              id: payload.id,
+              name: payload.name,
+              key_prefix: payload.key_prefix,
+              created_at: payload.created_at,
+              expires_at: payload.expires_at,
+            },
+          ])
+        ),
+      };
+    });
+    (mockDb.insert as any).mockReturnValue({ values });
 
-    const key = 'aw_abcdefghijklmnopqrstuvwxyz123456';
-    const first = await apiKeyService.validateCached(key);
-    const second = await apiKeyService.validateCached(key);
+    const { plainKey } = await apiKeyService.generate({
+      workspace_id: 'ws-1',
+      user_id: 'user-1',
+      name: 'cached key',
+    });
+
+    (mockDb.query.apiKeys.findMany as any).mockImplementation(async () => [
+      {
+        id: insertedValues.id,
+        workspace_id: insertedValues.workspace_id,
+        user_id: insertedValues.user_id,
+        key_prefix: insertedValues.key_prefix,
+        key_hash: insertedValues.key_hash,
+        expires_at: insertedValues.expires_at,
+        deleted_at: null,
+      },
+    ]);
+
+    const first = await apiKeyService.validateCached(plainKey);
+    const second = await apiKeyService.validateCached(plainKey);
 
     expect(first).toEqual(second);
-    expect(validateSpy).toHaveBeenCalledTimes(1);
+    expect(mockDb.query.apiKeys.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('validateCached returns the auth context shape used by downstream services', async () => {
@@ -50,6 +79,21 @@ describe('ApiKeyService cache contract', () => {
       userId: 'user-current',
       apiKeyId: 'key-current',
     });
+  });
+
+  it('does not cache overridden validate() results when expiry is unknown', async () => {
+    const validateSpy = mock(async () => ({
+      workspaceId: 'ws-override',
+      userId: 'user-override',
+      apiKeyId: 'key-override',
+    }));
+    apiKeyService.validate = validateSpy as any;
+
+    const first = await apiKeyService.validateCached('aw_override_key_12345678901234567890');
+    const second = await apiKeyService.validateCached('aw_override_key_12345678901234567890');
+
+    expect(first).toEqual(second);
+    expect(validateSpy).toHaveBeenCalledTimes(2);
   });
 
   it('validateCached does not return a cached context after the API key expires', async () => {

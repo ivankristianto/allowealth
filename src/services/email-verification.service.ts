@@ -174,8 +174,6 @@ export class EmailVerificationService {
       });
     }
 
-    await this.unlinkOAuthAccountsForEmailChange(userId);
-
     log.info('Email change requested', { userId, newEmail: normalizedEmail });
   }
 
@@ -453,41 +451,5 @@ export class EmailVerificationService {
 
     const verifiedUser = { ...user, email_verified_at: verifiedAt };
     return { success: true, user: verifiedUser };
-  }
-
-  private async unlinkOAuthAccountsForEmailChange(userId: string): Promise<void> {
-    try {
-      const [legacyOauthAccounts, authAccounts] = await Promise.all([
-        this.db.query.oauthAccounts.findMany({
-          where: eq(this.schema.oauthAccounts.user_id, userId),
-        }),
-        this.db.query.account.findMany({
-          where: eq(this.schema.account.userId, userId),
-        }),
-      ]);
-
-      const socialAccounts = authAccounts.filter((account) => account.providerId !== 'credential');
-
-      for (const account of socialAccounts) {
-        await this.db.delete(this.schema.account).where(eq(this.schema.account.id, account.id));
-      }
-
-      for (const account of legacyOauthAccounts) {
-        await this.db
-          .delete(this.schema.oauthAccounts)
-          .where(eq(this.schema.oauthAccounts.id, account.id));
-      }
-
-      const unlinkedCount = socialAccounts.length + legacyOauthAccounts.length;
-      if (unlinkedCount > 0) {
-        log.info('Unlinked OAuth accounts for email change', {
-          userId,
-          count: unlinkedCount,
-        });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      log.warn('Failed to unlink OAuth accounts', { userId, error: message });
-    }
   }
 }
