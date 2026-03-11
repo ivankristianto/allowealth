@@ -33,8 +33,3 @@ SignupRequest:
     workspaceName:
       type: string
       description: Optional workspace name for self-serve sign-up
-    turnstileToken:
-      type: string
-      description: >
-        Cloudflare Turnstile verification token (from cf-turnstile-response widget).
-        Optional when Turnstile is not configured.

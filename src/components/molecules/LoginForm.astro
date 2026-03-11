@@ -169,6 +169,12 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 </div>
 
 <script>
+  import { authClient } from '@/lib/auth/client';
+  import {
+    buildCaptchaHeaders,
+    hasCaptchaWidget,
+    resetCaptchaWidget,
+  } from '@/lib/auth/captcha-client';
   import {
     sanitizeClientAuthNavigationTarget,
     sanitizePostAuthRedirect,
@@ -269,6 +275,11 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         errors.push('Please enter your password');
       }
 
+      const captchaHeaders = buildCaptchaHeaders(form);
+      if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
+        errors.push('Please complete the bot protection check');
+      }
+
       // Display validation errors
       if (errors.length > 0) {
         showErrorAlert(errors.join(', '));
@@ -281,41 +292,33 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       if (submitButton) submitButton.disabled = true;
 
       try {
-        const response = await fetch('/api/auth/sign-in/email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        let shouldRedirectToTwoFactor = false;
+        const result = await authClient.signIn.email({
+          email: emailInput.value.trim(),
+          password: passwordInput.value,
+          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)?.checked,
+          callbackURL: redirectTo || '/dashboard',
+          fetchOptions: {
+            headers: captchaHeaders,
+            onSuccess(context) {
+              shouldRedirectToTwoFactor = context.data?.twoFactorRedirect === true;
+            },
           },
-          credentials: 'include',
-          body: JSON.stringify({
-            email: emailInput.value.trim(),
-            password: passwordInput.value,
-            rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)
-              ?.checked,
-            turnstileToken:
-              (form.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | null)
-                ?.value || '',
-            callbackURL: redirectTo || '/dashboard',
-          }),
         });
 
-        const result = await response.json();
-
-        if (!response.ok || result.error) {
-          showErrorAlert(
-            result.error?.message || result.message || 'Login failed. Please try again.'
-          );
+        if (result.error) {
+          showErrorAlert(result.error.message || 'Login failed. Please try again.');
           return;
         }
 
-        if (result.twoFactorRedirect === true) {
+        if (shouldRedirectToTwoFactor) {
           const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
           window.location.href = mfaUrl;
           return;
         }
 
-        if (typeof result.url === 'string' && result.url.length > 0) {
-          const safeTarget = sanitizeClientAuthNavigationTarget(result.url, {
+        if (typeof result.data?.url === 'string' && result.data.url.length > 0) {
+          const safeTarget = sanitizeClientAuthNavigationTarget(result.data.url, {
             currentOrigin: window.location.origin,
           });
 
@@ -339,10 +342,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
-        // Reset Turnstile widget for retry
-        if (typeof turnstile !== 'undefined') {
-          turnstile.reset();
-        }
+        resetCaptchaWidget();
       }
     });
   }

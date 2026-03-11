@@ -133,6 +133,7 @@ describe('EmailService', () => {
   describe('graceful degradation', () => {
     it('should use console provider when env vars not configured', async () => {
       setTestEnv({
+        NODE_ENV: 'development',
         EMAIL_MODE: 'real',
         // No provider/key/address set
       });
@@ -146,6 +147,47 @@ describe('EmailService', () => {
       });
 
       expect(result.success).toBe(true);
+    });
+
+    it('rejects console fallback in production when email config is missing', async () => {
+      setTestEnv({
+        NODE_ENV: 'production',
+        EMAIL_MODE: 'real',
+        EMAIL_PROVIDER: '',
+        EMAIL_API_KEY: '',
+        EMAIL_SENDER_ADDRESS: '',
+      });
+
+      const service = new EmailService();
+
+      await expect(
+        service.sendPasswordReset({
+          to: 'user@example.com',
+          resetUrl: 'https://example.com/reset?token=abc',
+          expiresIn: '1 hour',
+        })
+      ).rejects.toMatchObject({
+        code: EmailErrorCode.NOT_CONFIGURED,
+      });
+    });
+
+    it('rejects console mode in production for token-bearing emails', async () => {
+      setTestEnv({
+        NODE_ENV: 'production',
+        EMAIL_MODE: 'console',
+      });
+
+      const service = new EmailService();
+
+      await expect(
+        service.sendEmailVerification({
+          to: 'user@example.com',
+          userName: 'Test User',
+          verificationUrl: 'https://example.com/verify?token=abc',
+        })
+      ).rejects.toMatchObject({
+        code: EmailErrorCode.NOT_CONFIGURED,
+      });
     });
   });
 });

@@ -1,12 +1,13 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { twoFactor } from 'better-auth/plugins';
+import { captcha, twoFactor } from 'better-auth/plugins';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
+import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
 export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
@@ -30,6 +31,20 @@ if (isProduction && (!googleClientId || !googleClientSecret)) {
 }
 
 const emailService = new EmailService();
+const turnstileSiteKey = getEnv('PUBLIC_TURNSTILE_SITE_KEY');
+const turnstileSecretKey = getEnv('TURNSTILE_SECRET_KEY');
+const authSecondaryStorage = createAuthSecondaryStorage();
+
+if (isProduction && (!turnstileSiteKey || !turnstileSecretKey)) {
+  throw new Error('PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production');
+}
+
+export const AUTH_RATE_LIMIT_RULES = {
+  '/sign-in/email': { window: 15 * 60, max: 10 },
+  '/sign-up/email': { window: 60 * 60, max: 5 },
+  '/request-password-reset': { window: 60 * 60, max: 3 },
+  '/sign-in/social': { window: 15 * 60, max: 10 },
+} as const;
 
 function getDevelopmentBaseURL(): string {
   const devHost = getEnv('DEV_HOST');
@@ -49,6 +64,18 @@ export function getTrustedOrigins(): string[] {
   }
 
   return Array.from(new Set(trustedOrigins));
+}
+
+const authPlugins: Array<ReturnType<typeof twoFactor> | ReturnType<typeof captcha>> = [twoFactor()];
+const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);
+
+if (hasTurnstileConfig) {
+  authPlugins.unshift(
+    captcha({
+      provider: 'cloudflare-turnstile',
+      secretKey: turnstileSecretKey,
+    })
+  );
 }
 
 export const auth = betterAuth({
@@ -84,16 +111,17 @@ export const auth = betterAuth({
         return;
       }
 
-      if (emailService.isConfigured()) {
+      try {
         await emailService.sendPasswordReset({
           to: user.email,
           resetUrl: url,
           expiresIn: '1 hour',
         });
-        return;
+      } catch (error) {
+        logger.error('password reset delivery unavailable', {
+          code: error instanceof Error && 'code' in error ? String(error.code) : 'unknown',
+        });
       }
-
-      logger.info(`password reset URL for ${user.email}: ${url}`);
     },
   },
   socialProviders: {
@@ -102,5 +130,16 @@ export const auth = betterAuth({
       clientSecret: googleClientSecret!,
     },
   },
-  plugins: [twoFactor()],
+  secondaryStorage: authSecondaryStorage,
+  rateLimit: {
+    enabled: isProduction,
+    storage: authSecondaryStorage ? 'secondary-storage' : 'memory',
+    customRules: AUTH_RATE_LIMIT_RULES,
+  },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'],
+    },
+  },
+  plugins: authPlugins,
 });

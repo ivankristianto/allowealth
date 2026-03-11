@@ -24,8 +24,3 @@ LoginRequest:
       type: boolean
       description: Whether to create a persistent session cookie
       default: false
-    turnstileToken:
-      type: string
-      description: >
-        Cloudflare Turnstile verification token (from cf-turnstile-response widget).
-        Optional when Turnstile is not configured.

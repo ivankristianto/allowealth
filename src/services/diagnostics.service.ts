@@ -140,6 +140,7 @@ export class DiagnosticsService {
       'PUBLIC_URL',
       'DEV_HOST',
       'BETTER_AUTH_SECRET',
+      'PUBLIC_TURNSTILE_SITE_KEY',
       'TURNSTILE_SECRET_KEY',
       'EMAIL_MODE',
       'LOG_LEVEL',
@@ -191,6 +192,14 @@ export class DiagnosticsService {
     }
 
     if (!import.meta.env.DEV && getEnv('NODE_ENV') !== 'test' && !getEnv('TURNSTILE_SECRET_KEY')) {
+      missingRequired.push('TURNSTILE_SECRET_KEY');
+    }
+
+    if (getEnv('TURNSTILE_SECRET_KEY') && !getEnv('PUBLIC_TURNSTILE_SITE_KEY')) {
+      missingRequired.push('PUBLIC_TURNSTILE_SITE_KEY');
+    }
+
+    if (getEnv('PUBLIC_TURNSTILE_SITE_KEY') && !getEnv('TURNSTILE_SECRET_KEY')) {
       missingRequired.push('TURNSTILE_SECRET_KEY');
     }
 

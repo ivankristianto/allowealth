@@ -6,6 +6,11 @@ import { fileURLToPath } from 'url';
 
 const E2E_PORT = 4320;
 const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+const E2E_CAPTCHA_TOKEN = process.env.E2E_TURNSTILE_TOKEN;
+
+function getCaptchaHeaders(): Record<string, string> {
+  return E2E_CAPTCHA_TOKEN ? { 'x-captcha-response': E2E_CAPTCHA_TOKEN } : {};
+}
 
 // Get directory name in ES module context
 const __filename = fileURLToPath(import.meta.url);
@@ -96,6 +101,7 @@ setup('authenticate', async ({ page }) => {
   if (!(await tryLogin(page, email, password))) {
     const fallbackEmail = `e2e-auth-${Date.now()}@test.com`;
     const signUpResponse = await page.request.post(`${E2E_BASE_URL}/api/auth/sign-up/email`, {
+      headers: getCaptchaHeaders(),
       data: {
         email: fallbackEmail,
         password,

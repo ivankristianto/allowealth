@@ -1,4 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { setTestEnv } from '@/lib/env';
 
 const authHandlerMock = mock(async (request: Request) =>
   Response.json({
@@ -6,8 +7,6 @@ const authHandlerMock = mock(async (request: Request) =>
     pathname: new URL(request.url).pathname,
   })
 );
-const verifyTurnstileTokenMock = mock(async () => ({ success: true }));
-
 (mock as any).module('@/lib/auth/server', () => ({
   auth: {
     handler: authHandlerMock,
@@ -23,134 +22,67 @@ const verifyTurnstileTokenMock = mock(async () => ({ success: true }));
   ],
 }));
 
-(mock as any).module('@/lib/turnstile', () => ({
-  verifyTurnstileToken: verifyTurnstileTokenMock,
-}));
-
-let POST: typeof import('@/pages/api/auth/[...all]').POST;
+async function importFreshRoute() {
+  return import(`../../../pages/api/auth/[...all].ts?test=${Date.now()}-${Math.random()}`);
+}
 
 describe('Better Auth catch-all route', () => {
-  beforeAll(async () => {
-    ({ POST } = await import('@/pages/api/auth/[...all]'));
-  });
-
   beforeEach(() => {
     authHandlerMock.mockClear();
-    verifyTurnstileTokenMock.mockReset();
-    verifyTurnstileTokenMock.mockResolvedValue({ success: true });
+    setTestEnv({
+      NODE_ENV: 'test',
+      BETTER_AUTH_SECRET: 'test-better-auth-secret-1234567890',
+      TURNSTILE_SECRET_KEY: 'turnstile-secret',
+    });
   });
 
-  test('passes credential sign-in requests through when Turnstile succeeds', async () => {
+  test('passes credential sign-in requests directly to Better Auth', async () => {
+    const { POST } = await importFreshRoute();
     const response = await POST({
       request: new Request('http://localhost/api/auth/sign-in/email', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-forwarded-for': '203.0.113.10',
         },
         body: JSON.stringify({
           email: 'user@example.com',
           password: 'secret',
-          turnstileToken: 'valid-turnstile-token',
         }),
       }),
     } as never);
 
     expect(response.status).toBe(200);
-    expect(verifyTurnstileTokenMock).toHaveBeenCalledWith('valid-turnstile-token', '203.0.113.10');
+    expect(authHandlerMock).toHaveBeenCalledTimes(1);
+    expect((authHandlerMock as any).mock.calls[0]?.[0]).toBeInstanceOf(Request);
+  });
+
+  test('passes password reset requests directly to Better Auth', async () => {
+    const { POST } = await importFreshRoute();
+    const response = await POST({
+      request: new Request('http://localhost/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'user@example.com',
+        }),
+      }),
+    } as never);
+
+    expect(response.status).toBe(200);
     expect(authHandlerMock).toHaveBeenCalledTimes(1);
   });
 
-  test('prefers Cloudflare client IP over spoofable forwarding headers', async () => {
-    const response = await POST({
-      request: new Request('http://localhost/api/auth/sign-in/email', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'cf-connecting-ip': '198.51.100.25',
-          'x-forwarded-for': '203.0.113.10',
-        },
-        body: JSON.stringify({
-          email: 'user@example.com',
-          password: 'secret',
-          turnstileToken: 'valid-turnstile-token',
-        }),
+  test('passes GET requests directly to Better Auth', async () => {
+    const { GET } = await importFreshRoute();
+    const response = await GET({
+      request: new Request('http://localhost/api/auth/session', {
+        method: 'GET',
       }),
     } as never);
 
     expect(response.status).toBe(200);
-    expect(verifyTurnstileTokenMock).toHaveBeenCalledWith('valid-turnstile-token', '198.51.100.25');
-    expect(authHandlerMock).toHaveBeenCalledTimes(1);
-  });
-
-  test('blocks protected auth routes when Turnstile verification fails', async () => {
-    verifyTurnstileTokenMock.mockResolvedValue({
-      success: false,
-      error: 'Bot protection verification failed.',
-    });
-
-    const response = await POST({
-      request: new Request('http://localhost/api/auth/sign-up/email', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: 'user@example.com',
-          password: 'secret',
-          turnstileToken: 'invalid-turnstile-token',
-        }),
-      }),
-    } as never);
-    const payload = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(payload.error.code).toBe('TURNSTILE_VERIFICATION_FAILED');
-    expect(authHandlerMock).not.toHaveBeenCalled();
-  });
-
-  test('returns service error when bot protection is not configured', async () => {
-    verifyTurnstileTokenMock.mockResolvedValue({
-      success: false,
-      error: 'Bot protection is not configured for this environment.',
-      status: 503,
-    });
-
-    const response = await POST({
-      request: new Request('http://localhost/api/auth/sign-up/email', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: 'user@example.com',
-          password: 'secret',
-          turnstileToken: 'ignored-token',
-        }),
-      }),
-    } as never);
-    const payload = await response.json();
-
-    expect(response.status).toBe(503);
-    expect(payload.error.code).toBe('TURNSTILE_VERIFICATION_FAILED');
-    expect(authHandlerMock).not.toHaveBeenCalled();
-  });
-
-  test('does not require Turnstile for non-protected Better Auth endpoints', async () => {
-    const response = await POST({
-      request: new Request('http://localhost/api/auth/sign-in/social', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          provider: 'google',
-        }),
-      }),
-    } as never);
-
-    expect(response.status).toBe(200);
-    expect(verifyTurnstileTokenMock).not.toHaveBeenCalled();
     expect(authHandlerMock).toHaveBeenCalledTimes(1);
   });
 });

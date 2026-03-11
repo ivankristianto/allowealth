@@ -361,6 +361,8 @@ const invitationErrorMessage =
 
 <script nonce={cspNonce} is:inline>
   document.addEventListener('DOMContentLoaded', () => {
+    const authClientModulePromise = import('@/lib/auth/client');
+    const captchaClientModulePromise = import('@/lib/auth/captcha-client');
     const form = document.querySelector('[data-signup-form]');
     const messagesContainer = document.getElementById('form-messages');
     const submitButton = form?.querySelector('[data-submit-button]');
@@ -398,7 +400,6 @@ const invitationErrorMessage =
         email: formData.get('email'),
         password: formData.get('password'),
         'confirm-password': formData.get('confirm-password'),
-        turnstileToken: formData.get('cf-turnstile-response') || '',
       };
 
       // Use shared validation from RegistrationValidation module
@@ -416,6 +417,16 @@ const invitationErrorMessage =
         return;
       }
 
+      const { buildCaptchaHeaders, hasCaptchaWidget, resetCaptchaWidget } =
+        await captchaClientModulePromise;
+      const captchaHeaders = buildCaptchaHeaders(form);
+      if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
+        messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors([
+          'Please complete the bot protection check',
+        ]);
+        return;
+      }
+
       // Show loading state
       form.classList.add('submitting');
       if (buttonText) buttonText.classList.add('hidden');
@@ -423,26 +434,24 @@ const invitationErrorMessage =
       if (submitButton) submitButton.disabled = true;
 
       try {
-        const response = await fetch('/api/auth/sign-up/email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const { authClient } = await authClientModulePromise;
+        const result = await authClient.signUp.email({
+          name: String(data.name || ''),
+          email: String(data.email || ''),
+          password: String(data.password || ''),
+          callbackURL: '/dashboard',
+          invitationToken,
+          workspaceName:
+            typeof formData.get('workspaceName') === 'string' &&
+            String(formData.get('workspaceName')).trim().length > 0
+              ? String(formData.get('workspaceName')).trim()
+              : undefined,
+          fetchOptions: {
+            headers: captchaHeaders,
           },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: String(data.name || ''),
-            email: String(data.email || ''),
-            password: String(data.password || ''),
-            callbackURL: '/dashboard',
-            invitationToken,
-            workspaceName: data.workspaceName ? String(data.workspaceName) : undefined,
-            turnstileToken: data.turnstileToken,
-          }),
         });
 
-        const result = await response.json();
-
-        if (response.ok && !result?.error) {
+        if (!result.error) {
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-success">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -488,10 +497,7 @@ const invitationErrorMessage =
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
-        // Reset Turnstile widget for retry
-        if (typeof turnstile !== 'undefined') {
-          turnstile.reset();
-        }
+        resetCaptchaWidget();
       }
     });
   });

@@ -8,7 +8,15 @@ paths:
       description: |
         Better Auth email sign-up endpoint served by `src/pages/api/auth/[...all].ts`.
         Supports app-owned signup hooks such as invitation checks and workspace bootstrap.
+        When Turnstile is configured, send the widget token in the `x-captcha-response` header.
       security: []
+      parameters:
+        - name: x-captcha-response
+          in: header
+          required: false
+          description: Cloudflare Turnstile response token. Required when Turnstile is configured.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -67,9 +75,16 @@ paths:
       operationId: signInEmail
       summary: Sign in with email and password
       description: |
-        Better Auth credential sign-in endpoint. The app adds Turnstile verification
-        before forwarding the request to Better Auth.
+        Better Auth credential sign-in endpoint.
+        When Turnstile is configured, send the widget token in the `x-captcha-response` header.
       security: []
+      parameters:
+        - name: x-captcha-response
+          in: header
+          required: false
+          description: Cloudflare Turnstile response token. Required when Turnstile is configured.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -257,7 +272,15 @@ paths:
       description: |
         Better Auth password-reset request endpoint. The response is intentionally
         generic to avoid revealing whether an email exists.
+        When Turnstile is configured, send the widget token in the `x-captcha-response` header.
       security: []
+      parameters:
+        - name: x-captcha-response
+          in: header
+          required: false
+          description: Cloudflare Turnstile response token. Required when Turnstile is configured.
+          schema:
+            type: string
       requestBody:
         required: true
         content:

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const E2E_BASE_URL = 'http://localhost:4320';
+const E2E_CAPTCHA_TOKEN = process.env.E2E_TURNSTILE_TOKEN;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
@@ -15,6 +16,10 @@ function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}-${testEmailCounter++}@test.com`;
 }
 
+function getCaptchaHeaders(): Record<string, string> {
+  return E2E_CAPTCHA_TOKEN ? { 'x-captcha-response': E2E_CAPTCHA_TOKEN } : {};
+}
+
 async function registerUser(
   request: APIRequestContext,
   overrides?: { email?: string; password?: string; name?: string }
@@ -24,6 +29,7 @@ async function registerUser(
   const name = overrides?.name ?? 'E2E Auth User';
 
   const response = await request.post(`${E2E_BASE_URL}/api/auth/sign-up/email`, {
+    headers: getCaptchaHeaders(),
     data: {
       email,
       password,
@@ -59,15 +65,17 @@ async function submitLoginForm(
 async function browserPost<T>(
   page: import('@playwright/test').Page,
   path: string,
-  body?: Record<string, unknown>
+  body?: Record<string, unknown>,
+  headers?: Record<string, string>
 ): Promise<{ ok: boolean; status: number; json: T | null }> {
   return page.evaluate(
-    async ({ requestPath, requestBody }) => {
+    async ({ requestPath, requestBody, requestHeaders }) => {
       const response = await fetch(requestPath, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...requestHeaders,
         },
         body: requestBody ? JSON.stringify(requestBody) : undefined,
       });
@@ -80,7 +88,7 @@ async function browserPost<T>(
         json: text ? JSON.parse(text) : null,
       };
     },
-    { requestPath: path, requestBody: body ?? null }
+    { requestPath: path, requestBody: body ?? null, requestHeaders: headers ?? {} }
   );
 }
 
@@ -190,7 +198,8 @@ test.describe('auth core', () => {
         {
           email,
           redirectTo: '/reset-password',
-        }
+        },
+        getCaptchaHeaders()
       );
       expect(resetRequest.ok).toBe(true);
       expect(resetRequest.json?.status).toBe(true);
