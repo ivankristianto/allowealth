@@ -164,5 +164,17 @@ describe('API /api/user/sessions', () => {
       expect(response.status).toBe(200);
       expect(payload.success).toBe(true);
     });
+
+    it('returns 500 when revokeOtherSessions fails', async () => {
+      (authApi as any).revokeOtherSessions = mock(() =>
+        Promise.reject(new Error('Better Auth internal error'))
+      );
+
+      const response = await POST(createApiContext({ method: 'POST' }));
+      const payload = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(payload.success).toBe(false);
+    });
   });
 });

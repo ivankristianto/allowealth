@@ -2,13 +2,7 @@ import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { minLength, object, pipe, string } from 'valibot';
 import { auth } from '@/lib/auth/server';
-import {
-  successResponse,
-  errorResponse,
-  getAuthenticatedUser,
-  validateBody,
-  isValidationError,
-} from '@/lib/api-utils';
+import { successResponse, errorResponse, validateBody, isValidationError } from '@/lib/api-utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import { logError } from '@/lib/utils';
 import { SessionManagementService } from '@/services/session-management.service';
@@ -28,14 +22,16 @@ export const GET: APIRoute = async (context) => {
   const render = createRenderHelper(url);
 
   try {
-    getAuthenticatedUser(context);
+    const user = context.locals.user;
+    if (!user?.id) return errorResponse('Unauthorized', 401);
     const currentToken = context.locals.session?.token;
+    if (!currentToken) return errorResponse('Unauthorized', 401);
 
     const rawSessions = await auth.api.listSessions({
       headers: context.request.headers,
     });
 
-    const sessions = SessionManagementService.listForUser(rawSessions, currentToken ?? '');
+    const sessions = SessionManagementService.listForUser(rawSessions, currentToken);
 
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();
@@ -45,9 +41,7 @@ export const GET: APIRoute = async (context) => {
       return render.html(html);
     }
 
-    // Strip tokens from JSON response — tokens must not leave the server
-    const safeSessions = sessions.map(({ token: _token, ...rest }) => rest);
-    return successResponse({ sessions: safeSessions });
+    return successResponse({ sessions });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
@@ -65,8 +59,10 @@ export const GET: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    getAuthenticatedUser(context);
-    const currentToken = context.locals.session?.token ?? '';
+    const user = context.locals.user;
+    if (!user?.id) return errorResponse('Unauthorized', 401);
+    const currentToken = context.locals.session?.token;
+    if (!currentToken) return errorResponse('Unauthorized', 401);
 
     const validation = await validateBody(context.request, revokeSessionSchema);
     if (isValidationError(validation)) {
@@ -109,7 +105,8 @@ export const DELETE: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    getAuthenticatedUser(context);
+    const user = context.locals.user;
+    if (!user?.id) return errorResponse('Unauthorized', 401);
 
     await auth.api.revokeOtherSessions({
       headers: context.request.headers,

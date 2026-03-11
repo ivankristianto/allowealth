@@ -107,6 +107,8 @@ paths:
 
   /api/user/profile:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
+  /api/user/sessions:
+    $ref: './openapi/paths/user.yml#/paths/~1api~1user~1sessions'
   /api/user/password:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1password'
   # Workspace endpoints

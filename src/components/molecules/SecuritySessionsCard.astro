@@ -230,8 +230,8 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
         const html = await response.text();
         replaceWithSanitizedHtml(container, html);
       }
-    } catch {
-      // Silently fail — list will refresh on next page load
+    } catch (err) {
+      console.warn('[sessions] Failed to refresh session list', err);
     }
   }
 

@@ -224,6 +224,7 @@ This migration replaces Lucia + Arctic + Oslo with `better-auth`. All custom ses
 | 10  | Profile page                     | Name, email, password form all visible with new session shape | ✅ PASS    | All fields pre-filled; `PUT /api/user/profile` returns 200; changes persist after reload                                                         |
 | 11  | Session persistence              | Cookie persists across tabs; deleted cookie logs out          | ✅ PASS    | `HttpOnly`, `SameSite=Lax` ✅; no expiry without `rememberMe` (session cookie — expected); unauthenticated access → redirect to `/login` ✅      |
 | 12  | Signup mode                      | Closed mode blocks registration                               | ✅ PASS    | `/signup` shows "Invitation Required" heading; registration blocked                                                                              |
+| 13  | Active sessions                  | View, revoke single, revoke all others                        |            | See Section 10                                                                                                                                   |
 
 **Critical paths:** Steps 1, 3, 4, 6, 7, and 8 are highest priority.
 

@@ -28,7 +28,6 @@ export class SessionManagementService {
   static listForUser(sessions: RawSession[], currentToken: string): NormalizedSession[] {
     const normalized = sessions.map((s) => ({
       id: s.id,
-      token: s.token,
       isCurrent: s.token === currentToken,
       deviceLabel: parseDeviceLabel(s.userAgent),
       ipAddress: s.ipAddress ?? 'Unknown IP',

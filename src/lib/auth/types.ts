@@ -33,7 +33,6 @@ export interface BetterAuthUser {
 /** Normalized session row for the Active Sessions UI */
 export interface NormalizedSession {
   id: string;
-  token: string;
   isCurrent: boolean;
   deviceLabel: string;
   ipAddress: string;
