@@ -1,0 +1,26 @@
+---
+/**
+ * SecuritySessionsListPartial
+ *
+ * Server-rendered partial for the active sessions list.
+ * Returned by GET /api/user/sessions?_render=html for client-side refresh.
+ *
+ * Stub — full implementation in Task 3.
+ */
+
+import type { NormalizedSession } from '@/lib/auth/types';
+
+export interface Props {
+  sessions: NormalizedSession[];
+}
+
+const { sessions } = Astro.props;
+---
+
+<div>
+  {
+    sessions.length === 0 && (
+      <p class="text-sm text-base-content/50 text-center py-8">No active sessions</p>
+    )
+  }
+</div>
