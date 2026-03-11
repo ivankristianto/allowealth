@@ -12,7 +12,6 @@ export const AUTH_PATH_PREFIX = '/api/auth';
 export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
 
 const nodeEnv = getEnv('NODE_ENV');
-const isTest = nodeEnv === 'test';
 const isProduction = nodeEnv === 'production';
 const secret = getEnv('BETTER_AUTH_SECRET');
 const logger = createLogger('better-auth');

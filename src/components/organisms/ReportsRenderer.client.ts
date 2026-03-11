@@ -10,6 +10,7 @@
 import { animate } from 'motion/mini';
 import { dispatchReinitEvent } from '@/lib/utils/dom';
 import { initPeriodNavigator } from '@/components/molecules/PeriodNavigator.client';
+import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
 
 /**
  * Parse HTML partials from API response
@@ -99,7 +100,7 @@ export function renderSummaryHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -137,7 +138,7 @@ export function renderChartsHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -167,7 +168,7 @@ export function renderTableHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -191,7 +192,7 @@ export function renderMembersHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -215,7 +216,7 @@ export function renderSelectorHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -251,7 +252,7 @@ export function renderPreviewsHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -275,7 +276,7 @@ export function renderWealthHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML (server-rendered trusted content from our API)
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -299,7 +300,7 @@ export function renderSourcesHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {
@@ -323,7 +324,7 @@ export function renderHistoryHtml(html: string): void {
     easing: 'ease-out',
   } as any).finished.then(() => {
     // Inject new HTML
-    container.innerHTML = html;
+    replaceWithSanitizedHtml(container, html);
 
     // Fade in new content and clear loading state after animation
     const fadeIn = animate(container, { opacity: [0, 1] }, {

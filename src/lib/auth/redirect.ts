@@ -36,3 +36,45 @@ export function sanitizePostAuthRedirect(value: string | null | undefined): stri
     return '';
   }
 }
+
+export const GOOGLE_AUTH_ALLOWED_ORIGINS = ['https://accounts.google.com'] as const;
+
+interface ClientAuthNavigationOptions {
+  currentOrigin: string;
+  allowedExternalOrigins?: readonly string[];
+}
+
+/**
+ * Normalize auth result URLs before navigating on the client.
+ *
+ * Same-origin destinations are collapsed to path/search/hash form.
+ * External destinations are allowed only when their origin is explicitly allowlisted.
+ */
+export function sanitizeClientAuthNavigationTarget(
+  value: string | null | undefined,
+  options: ClientAuthNavigationOptions
+): string {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const target = new URL(value.trim(), options.currentOrigin);
+
+    if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+      return '';
+    }
+
+    if (target.origin === options.currentOrigin) {
+      return `${target.pathname}${target.search}${target.hash}`;
+    }
+
+    if (options.allowedExternalOrigins?.includes(target.origin)) {
+      return target.toString();
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+}

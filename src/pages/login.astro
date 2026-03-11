@@ -17,6 +17,7 @@ const redirect = sanitizePostAuthRedirect(url.searchParams.get('redirect'));
 const registered = url.searchParams.get('registered');
 const verified = url.searchParams.get('verified');
 const passwordReset = url.searchParams.get('password-reset');
+const passwordChanged = url.searchParams.get('password-changed');
 const emailChanged = url.searchParams.get('email-changed');
 const oauthErrorCodes = new Set(['oauth_error', 'link_expired', 'link_failed', 'rate_limited']);
 const oauthError =
@@ -53,6 +54,9 @@ if (registered === 'true') {
   bannerType = 'success';
 } else if (passwordReset === 'true') {
   bannerMessage = 'Password updated. You can now sign in.';
+  bannerType = 'success';
+} else if (passwordChanged === 'true') {
+  bannerMessage = 'Password changed successfully. Please sign in again.';
   bannerType = 'success';
 } else if (error === 'expired_token') {
   bannerMessage =

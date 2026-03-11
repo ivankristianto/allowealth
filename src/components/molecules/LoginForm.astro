@@ -169,7 +169,10 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 </div>
 
 <script>
-  import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
+  import {
+    sanitizeClientAuthNavigationTarget,
+    sanitizePostAuthRedirect,
+  } from '@/lib/auth/redirect';
 
   // Read server values from data attributes
   const loginForm = document.getElementById('login-form');
@@ -312,8 +315,18 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         }
 
         if (typeof result.url === 'string' && result.url.length > 0) {
-          window.location.href = result.url;
-          return;
+          const safeTarget = sanitizeClientAuthNavigationTarget(result.url, {
+            currentOrigin: window.location.origin,
+          });
+
+          if (safeTarget) {
+            window.location.href = safeTarget;
+            return;
+          }
+
+          showErrorAlert(
+            'Received an invalid redirect target. Sending you to a safe page instead.'
+          );
         }
 
         window.location.href = redirectTo || '/dashboard';

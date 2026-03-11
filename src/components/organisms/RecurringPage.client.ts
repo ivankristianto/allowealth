@@ -20,6 +20,7 @@ import {
   getOccurrenceDateLabel,
   type RecurringOccurrenceType,
 } from '@/components/organisms/recurring-ui';
+import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
 
 interface RecurringOccurrenceLike {
   id: string;
@@ -152,7 +153,7 @@ async function refreshTemplateList(signal: AbortSignal): Promise<void> {
   params.set('limit', String(TEMPLATE_LIMIT));
 
   const html = await fetchHtml(`/api/recurring?${params}`, signal);
-  container.innerHTML = html;
+  replaceWithSanitizedHtml(container, html);
 
   const currentPage = Number(
     container.querySelector('[data-pagination]')?.getAttribute('data-current-page')
@@ -171,7 +172,7 @@ async function refreshPendingList(signal: AbortSignal): Promise<void> {
     `/api/recurring/occurrences?month=${encodeURIComponent(month)}&status=pending&_render=html`,
     signal
   );
-  container.innerHTML = html;
+  replaceWithSanitizedHtml(container, html);
   bindPendingFilterButtons(signal);
   applyPendingQueueFilter();
 }
@@ -185,7 +186,7 @@ async function refreshStats(signal: AbortSignal): Promise<void> {
     `/api/recurring/stats?month=${encodeURIComponent(month)}&_render=html`,
     signal
   );
-  container.innerHTML = html;
+  replaceWithSanitizedHtml(container, html);
 }
 
 async function refreshCalendar(signal: AbortSignal): Promise<void> {
@@ -197,7 +198,7 @@ async function refreshCalendar(signal: AbortSignal): Promise<void> {
     `/api/recurring/calendar?year=${parts.year}&month=${parts.month}&_render=html`,
     signal
   );
-  container.innerHTML = html;
+  replaceWithSanitizedHtml(container, html);
   loadedCalendarMonth = currentMonth;
 }
 

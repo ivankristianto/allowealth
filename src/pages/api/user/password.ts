@@ -15,7 +15,7 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  * PUT /api/user/password
  *
  * Updates the current authenticated user's password after verifying the old password.
- * The user's session remains active after password change (no re-authentication required).
+ * Successful changes revoke all sessions and require the user to sign in again.
  *
  * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
  * @param {Object} requestBody - Request body containing password change data
@@ -37,7 +37,8 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  * {
  *   "success": true,
  *   "data": {
- *     "message": "Password changed successfully"
+ *     "success": true,
+ *     "reauthRequired": true
  *   }
  * }
  * ```

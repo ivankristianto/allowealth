@@ -164,28 +164,34 @@ export class UserService {
       hashBetterAuthPassword(validated.newPassword),
     ]);
 
-    const authSchema = getActiveSchema();
     const now = new Date();
 
-    await this.db
-      .update(this.schema.users)
-      .set({
-        password_hash: newPasswordHash,
-        updated_at: now,
-      })
-      .where(eq(this.schema.users.id, userId));
+    await this.db.transaction(async (tx) => {
+      const authSchema = getActiveSchema();
 
-    await this.db
-      .update(authSchema.account)
-      .set({
-        password: betterAuthHash,
-        updatedAt: now,
-      })
-      .where(
-        and(eq(authSchema.account.userId, userId), eq(authSchema.account.providerId, 'credential'))
-      );
+      await tx
+        .update(authSchema.users)
+        .set({
+          password_hash: newPasswordHash,
+          updated_at: now,
+        })
+        .where(eq(authSchema.users.id, userId));
 
-    await this.db.delete(authSchema.session).where(eq(authSchema.session.userId, userId));
+      await tx
+        .update(authSchema.account)
+        .set({
+          password: betterAuthHash,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(authSchema.account.userId, userId),
+            eq(authSchema.account.providerId, 'credential')
+          )
+        );
+
+      await tx.delete(authSchema.session).where(eq(authSchema.session.userId, userId));
+    });
 
     return { success: true, reauthRequired: true };
   }

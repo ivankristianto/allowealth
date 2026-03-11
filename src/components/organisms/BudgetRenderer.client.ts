@@ -15,6 +15,10 @@ import { animate } from 'motion/mini';
 import { animationDuration } from '@/lib/tokens';
 import { dispatchReinitEvent } from '@/lib/utils/dom';
 import type { FetchBudgetOverviewHtmlResponse } from '@/lib/api/budgetApiClient';
+import {
+  createSanitizedHtmlContainer,
+  replaceWithSanitizedHtml,
+} from '@/lib/dom/sanitize-fragment';
 
 // Check if user prefers reduced motion
 const prefersReducedMotion = (): boolean =>
@@ -108,7 +112,7 @@ export function renderSummaryHtml(html: string): void {
     return;
   }
 
-  container.innerHTML = html;
+  replaceWithSanitizedHtml(container, html);
 
   if (!prefersReducedMotion()) {
     animate(container, { opacity: [0.5, 1] }, { duration: ANIMATION_DURATION });
@@ -129,8 +133,7 @@ export function renderCopyActionHtml(html: string): void {
   if (!btn) return;
 
   // Parse the partial to extract disabled state and tooltip
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const doc = createSanitizedHtmlContainer(html);
   const partialBtn = doc.querySelector('button') as HTMLButtonElement | null;
 
   if (partialBtn) {
@@ -157,7 +160,7 @@ export function renderCardsHtml(html: string): void {
     return;
   }
 
-  cardView.innerHTML = html;
+  replaceWithSanitizedHtml(cardView, html);
 
   // Animate cards with stagger effect
   if (!prefersReducedMotion()) {
@@ -190,7 +193,7 @@ export function renderTableHtml(html: string): void {
     return;
   }
 
-  tableView.innerHTML = html;
+  replaceWithSanitizedHtml(tableView, html);
 }
 
 /**
@@ -203,7 +206,7 @@ export function renderAdviceHtml(html: string): void {
     return;
   }
 
-  container.innerHTML = html;
+  replaceWithSanitizedHtml(container, html);
 
   // Animate advice banner with slide-in effect
   if (!prefersReducedMotion() && html.trim()) {

@@ -48,39 +48,64 @@ const redirectPath = action === 'Sign up' ? '/signup' : '/login';
 </a>
 
 <script>
-  const button = document.currentScript?.previousElementSibling;
+  import {
+    GOOGLE_AUTH_ALLOWED_ORIGINS,
+    sanitizeClientAuthNavigationTarget,
+    sanitizePostAuthRedirect,
+  } from '@/lib/auth/redirect';
 
-  if (!(button instanceof HTMLAnchorElement)) {
-    throw new Error('Google auth button anchor not found');
+  const initializedButtons = new WeakSet<HTMLAnchorElement>();
+
+  function initGoogleAuthButtons() {
+    document.querySelectorAll<HTMLAnchorElement>('[data-google-auth-button]').forEach((button) => {
+      if (initializedButtons.has(button)) {
+        return;
+      }
+      initializedButtons.add(button);
+
+      const errorCallbackPath = sanitizePostAuthRedirect(button.dataset.errorCallback) || '/login';
+
+      button.addEventListener('click', async (event) => {
+        event.preventDefault();
+
+        const response = await fetch('/api/auth/sign-in/social', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            provider: 'google',
+            callbackURL: '/dashboard',
+            errorCallbackURL: errorCallbackPath,
+            disableRedirect: true,
+          }),
+        });
+
+        const result = await response.json();
+        const safeTarget = sanitizeClientAuthNavigationTarget(result?.url, {
+          currentOrigin: window.location.origin,
+          allowedExternalOrigins: GOOGLE_AUTH_ALLOWED_ORIGINS,
+        });
+
+        if (!response.ok || !result?.url || !safeTarget) {
+          const params = new URLSearchParams({
+            oauth_error: 'oauth_error',
+          });
+          window.location.href = `${errorCallbackPath}?${params.toString()}`;
+          return;
+        }
+
+        window.location.href = safeTarget;
+      });
+    });
   }
 
-  button.addEventListener('click', async (event) => {
-    event.preventDefault();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGoogleAuthButtons, { once: true });
+  } else {
+    initGoogleAuthButtons();
+  }
 
-    const response = await fetch('/api/auth/sign-in/social', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        provider: 'google',
-        callbackURL: '/dashboard',
-        errorCallbackURL: button.dataset.errorCallback || '/login',
-        disableRedirect: true,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || !result?.url) {
-      const params = new URLSearchParams({
-        error: result?.code || 'oauth_error',
-      });
-      window.location.href = `${button.dataset.errorCallback || '/login'}?${params.toString()}`;
-      return;
-    }
-
-    window.location.href = result.url;
-  });
+  document.addEventListener('astro:page-load', initGoogleAuthButtons);
 </script>

@@ -11,6 +11,10 @@
 import { animate } from 'motion/mini';
 import { animationDuration } from '@/lib/tokens';
 import type { FetchTransactionsHtmlResponse } from '@/lib/api/transactionsApiClient';
+import {
+  createSanitizedHtmlContainer,
+  replaceWithSanitizedHtml,
+} from '@/lib/dom/sanitize-fragment';
 
 // Check if user prefers reduced motion
 const prefersReducedMotion =
@@ -145,7 +149,7 @@ export function renderTransactionListHtml(html: string): void {
   }
 
   // Inject the HTML
-  listContainer.innerHTML = html;
+  replaceWithSanitizedHtml(listContainer, html);
 
   // Animate new rows
   if (!prefersReducedMotion) {
@@ -178,8 +182,7 @@ export function renderSummaryCardsHtml(html: string): void {
   const existingContainers = document.querySelectorAll<HTMLElement>('[data-summary-container]');
 
   // Parse the new HTML from the server partial
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
+  const temp = createSanitizedHtmlContainer(html);
   const newContainers = temp.querySelectorAll<HTMLElement>('[data-summary-container]');
 
   if (existingContainers.length > 0 && newContainers.length > 0) {
@@ -226,8 +229,7 @@ export function renderPaginationHtml(html: string): void {
   }
 
   // Replace the entire pagination container
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
+  const temp = createSanitizedHtmlContainer(html);
   const newPagination = temp.firstElementChild;
 
   if (newPagination && paginationContainer.parentElement) {

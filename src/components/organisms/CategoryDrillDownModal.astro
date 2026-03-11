@@ -34,6 +34,7 @@ const { id } = Astro.props;
 <script>
   import { initTransactionHistory } from '../molecules/TransactionHistory.client';
   import { getOrderedCategories } from './BudgetCategoryNav.client';
+  import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
   initTransactionHistory();
 
   const initializedModals = new WeakSet<Element>();
@@ -228,7 +229,7 @@ const { id } = Astro.props;
           // Guard: if aborted between fetch and render, skip DOM update
           if (controller.signal.aborted) return;
           if (contentContainer) {
-            contentContainer.innerHTML = html;
+            replaceWithSanitizedHtml(contentContainer, html);
           }
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');
@@ -286,7 +287,7 @@ const { id } = Astro.props;
           );
           if (controller.signal.aborted) return;
           if (contentContainer) {
-            contentContainer.innerHTML = html;
+            replaceWithSanitizedHtml(contentContainer, html);
           }
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');

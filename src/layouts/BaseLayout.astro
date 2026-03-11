@@ -2,6 +2,8 @@
 import '../styles/globals.css';
 import { ClientRouter } from 'astro:transitions';
 import ToastContainer from '@/components/molecules/ToastContainer.astro';
+import { getEnv } from '@/lib/env';
+import { isPerfDebugEnabled } from '@/lib/perf/debug';
 
 interface Props {
   title?: string;
@@ -19,7 +21,8 @@ const ssrFilterStyle = ssrTheme === 'monochrome' ? 'filter: grayscale(100%)' : u
 
 // Get perf collector for debug output (only when PERF_DEBUG=true)
 const perf = Astro.locals.perf;
-const perfDebugComment = perf ? perf.toHtmlComment() : '';
+const perfDebugComment =
+  perf && isPerfDebugEnabled(getEnv('PERF_DEBUG'), import.meta.env.DEV) ? perf.toHtmlComment() : '';
 ---
 
 <!doctype html>
