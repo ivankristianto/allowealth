@@ -59,6 +59,7 @@ export * from './email';
 export * from './email-verification.service';
 export * from './super-admin.service';
 export * from './diagnostics.service';
+export * from './session-management.service';
 
 // Export singleton instances with real database
 export const categoryService = new CategoryService(db);

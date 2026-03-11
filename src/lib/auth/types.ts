@@ -29,3 +29,14 @@ export interface BetterAuthUser {
   emailVerified?: boolean;
   twoFactorEnabled?: boolean;
 }
+
+/** Normalized session row for the Active Sessions UI */
+export interface NormalizedSession {
+  id: string;
+  token: string;
+  isCurrent: boolean;
+  deviceLabel: string;
+  ipAddress: string;
+  createdAt: Date;
+  expiresAt: Date;
+}
