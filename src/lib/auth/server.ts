@@ -14,12 +14,13 @@ export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
 
 const nodeEnv = getEnv('NODE_ENV');
 const isProduction = nodeEnv === 'production';
-const secret = getEnv('BETTER_AUTH_SECRET');
-const logger = createLogger('better-auth');
 
+const secret = getEnv('BETTER_AUTH_SECRET');
 if (!secret) {
   throw new Error('BETTER_AUTH_SECRET must be set');
 }
+
+const logger = createLogger('better-auth');
 
 const googleClientId =
   getEnv('GOOGLE_CLIENT_ID') ?? (isProduction ? undefined : 'test-google-client-id');

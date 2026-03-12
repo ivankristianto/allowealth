@@ -105,5 +105,22 @@ export default defineCommand({
         exec('bun', ['run', 'scripts/generate-email-key.ts']);
       },
     }),
+
+    'generate-auth-secret': defineCommand({
+      meta: {
+        name: 'generate-auth-secret',
+        description: 'Generate random BETTER_AUTH_SECRET for authentication',
+      },
+      run() {
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        const secret = btoa(String.fromCharCode(...array));
+
+        console.log('\n🔐 Better Auth Secret Generator\n');
+        console.log('Add the following line to your .env file:\n');
+        console.log(`BETTER_AUTH_SECRET=${secret}`);
+        console.log('\n⚠️  Keep this secret secure! It is used to sign authentication tokens.\n');
+      },
+    }),
   },
 });

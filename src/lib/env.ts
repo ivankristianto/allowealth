@@ -48,7 +48,7 @@ export function setRuntimeEnv(env: Record<string, string | undefined>): void {
  */
 export function getEnv(key: string): string | undefined {
   // Check test overrides first (for unit tests)
-  if (testOverrides?.[key] !== undefined) {
+  if (testOverrides && key in testOverrides) {
     return testOverrides[key];
   }
 
