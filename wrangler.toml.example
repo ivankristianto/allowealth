@@ -34,6 +34,7 @@ binding = "ASSETS"
 [vars]
 NODE_ENV = "production"
 PUBLIC_URL = "https://allowealth.io"
+PUBLIC_SITE_URL = "https://allowealth.io"
 SIGNUP_MODE = "invite_only"
 CACHE_DRIVER = "upstash"
 PERF_DEBUG = "true"

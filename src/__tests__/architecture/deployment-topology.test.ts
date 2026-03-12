@@ -19,6 +19,9 @@ describe('deployment topology', () => {
     expect(existsSync('apps/site/src/pages/index.astro')).toBe(true);
     expect(existsSync('apps/site/src/pages/terms.astro')).toBe(true);
     expect(existsSync('apps/site/src/pages/privacy.astro')).toBe(true);
+    expect(existsSync('src/pages/index.astro')).toBe(false);
+    expect(existsSync('src/pages/terms.astro')).toBe(false);
+    expect(existsSync('src/pages/privacy.astro')).toBe(false);
     expect(existsSync('docs/sites')).toBe(false);
   });
 
