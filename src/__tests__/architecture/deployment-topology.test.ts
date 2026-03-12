@@ -29,7 +29,15 @@ describe('deployment topology', () => {
   });
 
   test('non-historical source files no longer reference docs/sites', () => {
-    const references = rgOutput(['-n', 'docs/sites', '.', '-g', '!docs/plans/**']);
+    const references = rgOutput([
+      '-n',
+      'docs/sites',
+      '.',
+      '-g',
+      '!docs/plans/**',
+      '-g',
+      '!src/__tests__/architecture/deployment-topology.test.ts',
+    ]);
     expect(references).toBe('');
   });
 });

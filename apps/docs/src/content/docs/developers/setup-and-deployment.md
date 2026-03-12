@@ -46,7 +46,7 @@ bun run docs:dev
 ```
 
 - **App:** Runs the Astro server from the project root.
-- **Docs:** Runs the Starlight server from `docs/sites`.
+- **Docs:** Runs the Starlight server from `apps/docs`.
 
 ### 3. Run Quality Gates
 

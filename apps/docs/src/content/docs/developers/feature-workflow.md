@@ -48,7 +48,7 @@ Run targeted tests for your affected area, then run broader suites if risk is hi
 
 ## Documentation updates you should not skip
 
-- Update docs content in `docs/sites/src/content/docs/` for user-visible behavior changes.
+- Update docs content in `apps/docs/src/content/docs/` for user-visible behavior changes.
 - Update command docs in `COMMANDS.md` when scripts change.
 - Update OpenAPI artifacts when API response/contract changes.
 

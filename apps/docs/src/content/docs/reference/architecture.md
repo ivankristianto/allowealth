@@ -20,7 +20,7 @@ Use this page to orient quickly inside the codebase.
 - `src/pages/api/`: HTTP API endpoints
 - `src/cli/`: `aw` command definitions
 - `src/db/`: schema, migration, connection, seed scripts
-- `docs/sites/`: Starlight user/developer docs site
+- `apps/docs/`: Starlight user/developer docs site
 - `docs/architecture/`: ADRs and deeper architecture decisions
 
 ## Request flow

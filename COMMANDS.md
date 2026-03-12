@@ -31,14 +31,14 @@ bun run docs:check         # Validate docs site
 
 ### Docs Deployment
 
-| Command                                                  | Description                             |
-| -------------------------------------------------------- | --------------------------------------- |
-| `bun run docs:build`                                     | Build docs output before deployment     |
-| `bunx wrangler deploy --config docs/sites/wrangler.toml` | Deploy docs worker/assets to Cloudflare |
+| Command                                                 | Description                             |
+| ------------------------------------------------------- | --------------------------------------- |
+| `bun run docs:build`                                    | Build docs output before deployment     |
+| `bunx wrangler deploy --config apps/docs/wrangler.toml` | Deploy docs worker/assets to Cloudflare |
 
 ```bash
 bun run docs:build
-bunx wrangler deploy --config docs/sites/wrangler.toml
+bunx wrangler deploy --config apps/docs/wrangler.toml
 ```
 
 ### Docs Domain Go-Live Checklist (Manual)

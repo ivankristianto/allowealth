@@ -6,7 +6,7 @@ function readRecurringPage(): string {
 }
 
 function readRecurringDocs(): string {
-  return readFileSync('docs/sites/src/content/docs/end-users/recurring.md', 'utf8');
+  return readFileSync('apps/docs/src/content/docs/end-users/recurring.md', 'utf8');
 }
 
 describe('recurring copy consistency', () => {
