@@ -29,6 +29,15 @@ cp .env.example .env
 ./scripts/setup.sh
 ```
 
+At minimum, set these auth-related values in your local `.env` before testing sign-in:
+
+```bash
+PUBLIC_URL=http://localhost:4321
+BETTER_AUTH_SECRET=replace-with-a-random-secret
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
 ### 2. Start Application and Docs
 
 ```bash
@@ -90,12 +99,14 @@ database_id = "<your-database-id>"
 
 ##### 2. Set secrets
 
-D1 does not use `DATABASE_URL`. Set only the application secrets:
+D1 does not use `DATABASE_URL`. Set the application secrets instead:
 
 ```bash
 wrangler secret put EMAIL_API_KEY
+wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put PUBLIC_URL
 ```
 
 ##### 3. Migrate and deploy
@@ -109,6 +120,8 @@ done
 
 bun run deploy:cloudflare
 ```
+
+After the Better Auth migration, the first deployment forces a one-time logout because legacy sessions are not preserved.
 
 ##### 4. Create the first workspace
 
@@ -141,6 +154,7 @@ routes = [
 - **"Cannot perform I/O on behalf of a different request":** The `database` middleware must call `prepareForRequest()` to reset connections per request.
 - **"D1_ENABLED is set but D1 binding is not available":** Uncomment the `[[d1_databases]]` section in `wrangler.toml` and verify the database ID.
 - **`import.meta.env.DATABASE_URL` is undefined:** Use `getEnv('DATABASE_URL')` to read from the runtime environment instead of the build-time environment.
+- **Google OAuth callback fails:** Verify Google is configured with `/api/auth/callback/google` and that `PUBLIC_URL` matches the deployed origin exactly.
 
 ## Related Documentation
 

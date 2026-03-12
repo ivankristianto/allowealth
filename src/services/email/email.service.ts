@@ -67,6 +67,11 @@ interface EmailConfig {
   senderAddress: string;
 }
 
+function isDevelopmentLikeEmailRuntime(): boolean {
+  const nodeEnv = getEnv('NODE_ENV');
+  return nodeEnv === 'development' || nodeEnv === 'test';
+}
+
 /**
  * Email Service
  *
@@ -94,6 +99,10 @@ export class EmailService {
   isConfigured(): boolean {
     const config = this.getEmailConfig();
     return !!(config.provider && config.apiKey && config.senderAddress);
+  }
+
+  canUseConsoleFallback(): boolean {
+    return isDevelopmentLikeEmailRuntime();
   }
 
   /**
@@ -175,6 +184,14 @@ export class EmailService {
 
     // Check if we're in console mode (development)
     if (getEnv('EMAIL_MODE') === 'console') {
+      if (!this.canUseConsoleFallback()) {
+        throw new EmailServiceError(
+          EmailErrorCode.NOT_CONFIGURED,
+          'Console email mode is only allowed in development or test environments',
+          503
+        );
+      }
+
       return consoleProvider.send({
         apiKey: '',
         from: { name: 'Console Mode', email: 'console@localhost' },
@@ -189,6 +206,14 @@ export class EmailService {
 
     // If not configured, fall back to console
     if (!config.provider || !config.apiKey || !config.senderAddress) {
+      if (!this.canUseConsoleFallback()) {
+        throw new EmailServiceError(
+          EmailErrorCode.NOT_CONFIGURED,
+          'Email service is not configured',
+          503
+        );
+      }
+
       log.warn('not configured, falling back to console provider');
       return consoleProvider.send({
         apiKey: '',

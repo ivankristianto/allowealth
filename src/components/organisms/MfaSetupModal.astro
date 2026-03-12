@@ -2,9 +2,10 @@
 /**
  * MfaSetupModal
  *
- * Two-step wizard for enabling MFA:
- * 1) Fetch and display QR code / manual key
- * 2) Verify TOTP code to finalize setup
+ * Better Auth-backed TOTP setup:
+ * 1) Confirm the current password
+ * 2) Show the authenticator secret
+ * 3) Verify the current TOTP code to finalize setup
  */
 
 import Modal from '@/components/molecules/Modal.astro';
@@ -36,24 +37,57 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         </div>
       </div>
 
-      <div data-step="loading" class="space-y-3">
+      <form data-step="credentials" class="space-y-4">
+        <div class="form-control">
+          <label for={`${id}-password`} class="label">
+            <span class="label-text font-semibold">Account password</span>
+          </label>
+          <input
+            id={`${id}-password`}
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            class="input input-bordered w-full"
+            data-testid="mfa-password-input"
+          />
+        </div>
+
+        <div class="hidden alert alert-error text-sm" data-mfa-password-error role="alert"></div>
+
+        <div class="flex items-center gap-4 pt-2">
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            data-mfa-cancel-setup
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent rounded-2xl"
+            data-mfa-start
+            data-testid="mfa-start-btn"
+          >
+            Continue
+          </button>
+        </div>
+      </form>
+
+      <div data-step="loading" class="hidden space-y-3">
         <div class="alert alert-info">
           <span class="loading loading-spinner loading-sm"></span>
-          <span>Preparing your MFA setup...</span>
+          <span>Preparing your authenticator setup...</span>
         </div>
       </div>
 
       <div data-step="setup" class="hidden space-y-4">
-        <div class="rounded-2xl border border-base-300 bg-base-200 p-4">
-          <img
-            alt="MFA QR code"
-            class="mx-auto h-56 w-56 max-w-full rounded-lg border border-base-300 bg-white p-3"
-            data-mfa-qr
-          />
-        </div>
         <div class="rounded-2xl border border-base-300 bg-base-200 p-4 space-y-2">
+          <p class="text-sm text-base-content/70">
+            Add a new TOTP account in your authenticator app, then paste the secret below.
+          </p>
           <p class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
-            Manual setup code
+            Setup key
           </p>
           <code class="font-mono text-sm break-all" data-manual-code></code>
         </div>
@@ -76,6 +110,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
             placeholder="000000"
             maxlength="6"
             class="input input-bordered w-full text-center text-2xl tracking-[0.5em] font-bold"
+            data-testid="mfa-verification-input"
           />
         </div>
 
@@ -89,7 +124,12 @@ const { id = 'mfa-setup-modal' } = Astro.props;
           >
             Cancel
           </button>
-          <button type="submit" class="flex-[2] btn btn-accent rounded-2xl" data-mfa-verify-btn>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent rounded-2xl"
+            data-mfa-verify-btn
+            data-testid="mfa-verify-btn"
+          >
             Verify & Enable
           </button>
         </div>
@@ -99,10 +139,53 @@ const { id = 'mfa-setup-modal' } = Astro.props;
 </div>
 
 <script>
-  import { csrfFetch } from '@/lib/csrf-client';
+  import { authClient } from '@/lib/auth/client';
   import { addToast } from '@/lib/stores/toastStore';
 
   const initializedContainers = new WeakSet<Element>();
+
+  function getAuthErrorMessage(error: unknown, fallbackMessage: string): string {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
+      return error.message;
+    }
+
+    if (error && typeof error === 'object' && 'error' in error) {
+      const nestedError = error.error;
+      if (
+        nestedError &&
+        typeof nestedError === 'object' &&
+        'message' in nestedError &&
+        typeof nestedError.message === 'string'
+      ) {
+        return nestedError.message;
+      }
+    }
+
+    if (
+      error &&
+      typeof error === 'object' &&
+      'statusText' in error &&
+      typeof error.statusText === 'string'
+    ) {
+      return error.statusText;
+    }
+
+    return fallbackMessage;
+  }
+
+  function getSecretFromTotpUri(totpURI: string): string {
+    try {
+      const parsedURL = new URL(totpURI);
+      return parsedURL.searchParams.get('secret') ?? '';
+    } catch {
+      return '';
+    }
+  }
 
   function initMfaSetupModal() {
     document
@@ -115,33 +198,57 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         if (!id) return;
 
         const modal = document.getElementById(id) as HTMLDialogElement | null;
+        const stepCredentials = container.querySelector<HTMLFormElement>(
+          '[data-step="credentials"]'
+        );
         const stepLoading = container.querySelector<HTMLElement>('[data-step="loading"]');
         const stepSetup = container.querySelector<HTMLElement>('[data-step="setup"]');
         const stepVerify = container.querySelector<HTMLFormElement>('[data-step="verify"]');
-        const qrImage = container.querySelector<HTMLImageElement>('[data-mfa-qr]');
         const manualCode = container.querySelector<HTMLElement>('[data-manual-code]');
+        const passwordInput = container.querySelector<HTMLInputElement>('input[name="password"]');
+        const passwordError = container.querySelector<HTMLElement>('[data-mfa-password-error]');
         const codeInput = container.querySelector<HTMLInputElement>('input[name="code"]');
         const errorEl = container.querySelector<HTMLElement>('[data-mfa-error]');
+        const cancelSetupBtn =
+          container.querySelector<HTMLButtonElement>('[data-mfa-cancel-setup]');
         const cancelBtn = container.querySelector<HTMLButtonElement>('[data-mfa-cancel]');
+        const startBtn = container.querySelector<HTMLButtonElement>('[data-mfa-start]');
         const continueBtn = container.querySelector<HTMLButtonElement>('[data-mfa-continue]');
         const verifyBtn = container.querySelector<HTMLButtonElement>('[data-mfa-verify-btn]');
 
         if (
           !modal ||
+          !stepCredentials ||
           !stepLoading ||
           !stepSetup ||
           !stepVerify ||
-          !qrImage ||
           !manualCode ||
+          !passwordInput ||
           !codeInput
         ) {
           return;
         }
 
-        const setStep = (step: 'loading' | 'setup' | 'verify') => {
+        let setupPassword = '';
+        let backupCodes: string[] = [];
+
+        const setStep = (step: 'credentials' | 'loading' | 'setup' | 'verify') => {
+          stepCredentials.classList.toggle('hidden', step !== 'credentials');
           stepLoading.classList.toggle('hidden', step !== 'loading');
           stepSetup.classList.toggle('hidden', step !== 'setup');
           stepVerify.classList.toggle('hidden', step !== 'verify');
+        };
+
+        const clearPasswordError = () => {
+          if (!passwordError) return;
+          passwordError.textContent = '';
+          passwordError.classList.add('hidden');
+        };
+
+        const showPasswordError = (message: string) => {
+          if (!passwordError) return;
+          passwordError.textContent = message;
+          passwordError.classList.remove('hidden');
         };
 
         const clearError = () => {
@@ -157,49 +264,76 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         };
 
         const resetModal = () => {
+          clearPasswordError();
           clearError();
+          setupPassword = '';
+          backupCodes = [];
+          passwordInput.value = '';
           codeInput.value = '';
-          qrImage.removeAttribute('src');
           manualCode.textContent = '';
+          startBtn?.removeAttribute('disabled');
           verifyBtn?.removeAttribute('disabled');
         };
 
-        const openSetup = async () => {
+        const openSetup = () => {
           resetModal();
-          setStep('loading');
+          setStep('credentials');
           modal.showModal();
-
-          try {
-            const response = await csrfFetch('/api/auth/mfa/setup', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-              throw new Error(result.error?.message || 'Failed to initialize MFA setup');
-            }
-
-            qrImage.src = result.data.qrCodeDataUrl;
-            manualCode.textContent = result.data.manualEntryCode;
-            setStep('setup');
-          } catch (error) {
-            modal.close();
-            const message =
-              error instanceof Error ? error.message : 'Failed to initialize MFA setup';
-            addToast(message, 'error');
-          }
+          requestAnimationFrame(() => passwordInput.focus());
         };
 
         document.addEventListener('mfa:open-setup', () => {
-          void openSetup();
+          openSetup();
+        });
+
+        cancelSetupBtn?.addEventListener('click', () => {
+          modal.close();
         });
 
         cancelBtn?.addEventListener('click', () => {
           modal.close();
+        });
+
+        stepCredentials.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          clearPasswordError();
+          clearError();
+
+          const password = passwordInput.value;
+          if (!password) {
+            showPasswordError('Please enter your account password.');
+            return;
+          }
+
+          if (startBtn) startBtn.disabled = true;
+          setupPassword = password;
+          setStep('loading');
+
+          try {
+            const result = await authClient.twoFactor.enable({
+              password,
+              issuer: 'Allowealth',
+            });
+
+            if (result.error) {
+              throw result.error;
+            }
+
+            const totpURI = result.data?.totpURI;
+            backupCodes = result.data?.backupCodes ?? [];
+
+            if (!totpURI) {
+              throw new Error('Authenticator setup details were not returned.');
+            }
+
+            manualCode.textContent = getSecretFromTotpUri(totpURI);
+            setStep('setup');
+          } catch (error) {
+            setStep('credentials');
+            showPasswordError(getAuthErrorMessage(error, 'Failed to initialize MFA setup.'));
+          } finally {
+            if (startBtn) startBtn.disabled = false;
+          }
         });
 
         continueBtn?.addEventListener('click', () => {
@@ -221,18 +355,9 @@ const { id = 'mfa-setup-modal' } = Astro.props;
           if (verifyBtn) verifyBtn.disabled = true;
 
           try {
-            const response = await csrfFetch('/api/auth/mfa/verify-setup', {
-              method: 'POST',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ code }),
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-              throw new Error(result.error?.message || 'Failed to verify MFA code');
+            const result = await authClient.twoFactor.verifyTotp({ code });
+            if (result.error) {
+              throw result.error;
             }
 
             modal.close();
@@ -241,12 +366,13 @@ const { id = 'mfa-setup-modal' } = Astro.props;
             document.dispatchEvent(
               new CustomEvent('mfa-setup-complete', {
                 detail: {
-                  backupCodes: result.data.backupCodes,
+                  backupCodes,
+                  password: setupPassword,
                 },
               })
             );
           } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to verify setup code';
+            const message = getAuthErrorMessage(error, 'Failed to verify setup code.');
             showError(message);
           } finally {
             if (verifyBtn) verifyBtn.disabled = false;

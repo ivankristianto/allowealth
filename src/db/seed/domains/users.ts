@@ -5,7 +5,8 @@
  */
 
 import { db } from '@/db';
-import { users, userMeta } from '@/db/schema';
+import { account as authAccounts, user as authUsers, users, userMeta } from '@/db/schema';
+import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { hashPassword } from '@/lib/auth/password';
 import { nanoid } from 'nanoid';
@@ -14,6 +15,54 @@ import { DEMO_ADMIN, DEMO_MEMBER, DEMO_SUPER_ADMIN } from '../config';
 export interface SeededUsers {
   adminUserId: string;
   memberUserId: string;
+}
+
+async function createSeededCredentialIdentity(
+  userId: string,
+  email: string,
+  name: string,
+  role: 'admin' | 'member' | 'super_admin',
+  workspaceId: string | null,
+  password: string,
+  now: Date
+): Promise<void> {
+  const [legacyPasswordHash, authPasswordHash] = await Promise.all([
+    hashPassword(password),
+    hashBetterAuthPassword(password),
+  ]);
+
+  await db.insert(users).values({
+    id: userId,
+    workspace_id: workspaceId,
+    email,
+    password_hash: legacyPasswordHash,
+    name,
+    role,
+    email_verified_at: now,
+    created_at: now,
+    updated_at: now,
+  });
+
+  await db.insert(authUsers).values({
+    id: userId,
+    email,
+    name,
+    emailVerified: true,
+    image: null,
+    twoFactorEnabled: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  await db.insert(authAccounts).values({
+    id: `credential-${userId}`,
+    accountId: userId,
+    providerId: 'credential',
+    userId,
+    password: authPasswordHash,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 /**
@@ -26,19 +75,15 @@ export async function seedUsers(workspaceId: string): Promise<SeededUsers> {
 
   // Create admin user
   const adminUserId = nanoid();
-  const adminPasswordHash = await hashPassword(DEMO_ADMIN.password);
-
-  await db.insert(users).values({
-    id: adminUserId,
-    workspace_id: workspaceId,
-    email: DEMO_ADMIN.email,
-    password_hash: adminPasswordHash,
-    name: DEMO_ADMIN.name,
-    role: DEMO_ADMIN.role,
-    email_verified_at: now,
-    created_at: now,
-    updated_at: now,
-  });
+  await createSeededCredentialIdentity(
+    adminUserId,
+    DEMO_ADMIN.email,
+    DEMO_ADMIN.name,
+    DEMO_ADMIN.role,
+    workspaceId,
+    DEMO_ADMIN.password,
+    now
+  );
 
   // Insert admin user meta values (without currency - it's workspace-scoped only)
   await db.insert(userMeta).values([
@@ -62,19 +107,15 @@ export async function seedUsers(workspaceId: string): Promise<SeededUsers> {
 
   // Create member user
   const memberUserId = nanoid();
-  const memberPasswordHash = await hashPassword(DEMO_MEMBER.password);
-
-  await db.insert(users).values({
-    id: memberUserId,
-    workspace_id: workspaceId,
-    email: DEMO_MEMBER.email,
-    password_hash: memberPasswordHash,
-    name: DEMO_MEMBER.name,
-    role: DEMO_MEMBER.role,
-    email_verified_at: now,
-    created_at: now,
-    updated_at: now,
-  });
+  await createSeededCredentialIdentity(
+    memberUserId,
+    DEMO_MEMBER.email,
+    DEMO_MEMBER.name,
+    DEMO_MEMBER.role,
+    workspaceId,
+    DEMO_MEMBER.password,
+    now
+  );
 
   // Insert member user meta values (without currency - it's workspace-scoped only)
   await db.insert(userMeta).values([
@@ -98,19 +139,15 @@ export async function seedUsers(workspaceId: string): Promise<SeededUsers> {
 
   // Create super admin user (no workspace)
   const superAdminUserId = nanoid();
-  const superAdminPasswordHash = await hashPassword(DEMO_SUPER_ADMIN.password);
-
-  await db.insert(users).values({
-    id: superAdminUserId,
-    workspace_id: null,
-    email: DEMO_SUPER_ADMIN.email,
-    password_hash: superAdminPasswordHash,
-    name: DEMO_SUPER_ADMIN.name,
-    role: DEMO_SUPER_ADMIN.role,
-    email_verified_at: now,
-    created_at: now,
-    updated_at: now,
-  });
+  await createSeededCredentialIdentity(
+    superAdminUserId,
+    DEMO_SUPER_ADMIN.email,
+    DEMO_SUPER_ADMIN.name,
+    DEMO_SUPER_ADMIN.role,
+    null,
+    DEMO_SUPER_ADMIN.password,
+    now
+  );
 
   console.log(`✓ Created admin user: ${DEMO_ADMIN.email}`);
   console.log(`✓ Created member user: ${DEMO_MEMBER.email}`);

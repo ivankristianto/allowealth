@@ -8,6 +8,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 import { getEnv } from '@/lib/env';
+import { hashOpaqueToken } from '@/lib/crypto/token-hash';
 import { and, eq } from 'drizzle-orm';
 import type { EmailService } from '@/services/email';
 import type { users } from '@/db/schema/sqlite/users';
@@ -125,6 +126,18 @@ export class EmailVerificationService {
       );
     }
 
+    const existingAuthUser = await this.db.query.user.findFirst({
+      where: eq(this.schema.user.email, normalizedEmail),
+    });
+
+    if (existingAuthUser && existingAuthUser.id !== userId) {
+      throw new UserServiceError(
+        ServiceErrorCode.EMAIL_ALREADY_EXISTS,
+        'Email already exists',
+        409
+      );
+    }
+
     if (this.userMetaSvc) {
       await this.userMetaSvc.setUserMeta(userId, USER_META_KEYS.PENDING_EMAIL, normalizedEmail);
     } else {
@@ -159,28 +172,6 @@ export class EmailVerificationService {
         newEmail: normalizedEmail,
         verificationUrl,
       });
-    }
-
-    try {
-      const oauthAccounts = await this.db.query.oauthAccounts.findMany({
-        where: eq(this.schema.oauthAccounts.user_id, userId),
-      });
-
-      for (const account of oauthAccounts) {
-        await this.db
-          .delete(this.schema.oauthAccounts)
-          .where(eq(this.schema.oauthAccounts.id, account.id));
-      }
-
-      if (oauthAccounts.length > 0) {
-        log.info('Unlinked OAuth accounts for email change', {
-          userId,
-          count: oauthAccounts.length,
-        });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      log.warn('Failed to unlink OAuth accounts', { userId, error: message });
     }
 
     log.info('Email change requested', { userId, newEmail: normalizedEmail });
@@ -302,9 +293,11 @@ export class EmailVerificationService {
    * @returns Result with user or error
    */
   async verifyEmail(token: string): Promise<VerifyEmailResult> {
+    const tokenHash = await hashOpaqueToken(token);
+
     // Look up token
     const tokenRecord = await this.db.query.emailVerificationTokens.findFirst({
-      where: eq(this.schema.emailVerificationTokens.token, token),
+      where: eq(this.schema.emailVerificationTokens.token, tokenHash),
     });
 
     if (!tokenRecord) {
@@ -321,7 +314,7 @@ export class EmailVerificationService {
       // Clean up expired token
       await this.db
         .delete(this.schema.emailVerificationTokens)
-        .where(eq(this.schema.emailVerificationTokens.token, token));
+        .where(eq(this.schema.emailVerificationTokens.token, tokenHash));
 
       // Get user email for resend functionality
       const userRecord = await this.db.query.users.findFirst({
@@ -354,19 +347,44 @@ export class EmailVerificationService {
     const pendingEmail = await this.getPendingEmailChange(userId);
 
     if (pendingEmail) {
-      const emailTaken = await this.db.query.users.findFirst({
-        where: eq(this.schema.users.email, pendingEmail),
-      });
+      const [emailTaken, authEmailTaken, authUserRecord] = await Promise.all([
+        this.db.query.users.findFirst({
+          where: eq(this.schema.users.email, pendingEmail),
+        }),
+        this.db.query.user.findFirst({
+          where: eq(this.schema.user.email, pendingEmail),
+        }),
+        this.db.query.user.findFirst({
+          where: eq(this.schema.user.id, userId),
+        }),
+      ]);
 
-      if (emailTaken && emailTaken.id !== userId) {
+      if (
+        (emailTaken && emailTaken.id !== userId) ||
+        (authEmailTaken && authEmailTaken.id !== userId)
+      ) {
         log.warn('Pending email claimed by another user', { userId, pendingEmail });
         await this.clearPendingEmailAndTokens(userId);
         return { success: false, error: 'EMAIL_ALREADY_EXISTS' };
       }
 
+      if (!authUserRecord) {
+        log.error('Better Auth user not found for email change verification', { userId });
+        return { success: false, error: 'USER_NOT_FOUND' };
+      }
+
       const verifiedAt = new Date();
       const updatedAt = new Date();
       try {
+        await this.db
+          .update(this.schema.user)
+          .set({
+            email: pendingEmail,
+            emailVerified: true,
+            updatedAt,
+          })
+          .where(eq(this.schema.user.id, userId));
+
         await this.db
           .update(this.schema.users)
           .set({

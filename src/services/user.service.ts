@@ -15,8 +15,9 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
+import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { maxLength, minLength, object, parse, pipe, regex, string, type InferInput } from 'valibot';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
 import {
@@ -157,19 +158,42 @@ export class UserService {
       throw new UserServiceError(ServiceErrorCode.INVALID_PASSWORD, 'Invalid old password', 400);
     }
 
-    // Hash new password
-    const newPasswordHash = await hashPassword(validated.newPassword);
+    // Hash new password for both legacy domain table and better-auth account table
+    const [newPasswordHash, betterAuthHash] = await Promise.all([
+      hashPassword(validated.newPassword),
+      hashBetterAuthPassword(validated.newPassword),
+    ]);
 
-    // Update password
-    await this.db
-      .update(this.schema.users)
-      .set({
-        password_hash: newPasswordHash,
-        updated_at: new Date(),
-      })
-      .where(eq(this.schema.users.id, userId));
+    const now = new Date();
 
-    return { success: true };
+    await this.db.transaction(async (tx) => {
+      const authSchema = getActiveSchema();
+
+      await tx
+        .update(authSchema.users)
+        .set({
+          password_hash: newPasswordHash,
+          updated_at: now,
+        })
+        .where(eq(authSchema.users.id, userId));
+
+      await tx
+        .update(authSchema.account)
+        .set({
+          password: betterAuthHash,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(authSchema.account.userId, userId),
+            eq(authSchema.account.providerId, 'credential')
+          )
+        );
+
+      await tx.delete(authSchema.session).where(eq(authSchema.session.userId, userId));
+    });
+
+    return { success: true, reauthRequired: true };
   }
 
   /**

@@ -1,0 +1,63 @@
+# Session List Response Schema
+SessionListResponse:
+  type: object
+  required: [success, data]
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/NormalizedSession'
+
+NormalizedSession:
+  type: object
+  required: [id, isCurrent, deviceLabel, ipAddress, createdAt, expiresAt]
+  properties:
+    id:
+      type: string
+      example: 'sess-abc123'
+    isCurrent:
+      type: boolean
+      example: true
+    deviceLabel:
+      type: string
+      example: 'Chrome on macOS'
+    ipAddress:
+      type: string
+      example: '192.168.1.1'
+    createdAt:
+      type: string
+      format: date-time
+    expiresAt:
+      type: string
+      format: date-time
+
+RevokeSessionRequest:
+  type: object
+  required: [id]
+  properties:
+    id:
+      type: string
+      minLength: 1
+      description: Session ID to revoke
+      example: 'sess-abc123'
+
+SessionActionResponse:
+  type: object
+  required: [success, data]
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'Session revoked'

@@ -2,105 +2,113 @@
 
 ## Prerequisites
 
-- A Google Cloud project (create one at [console.cloud.google.com](https://console.cloud.google.com/))
-- The application running locally (`bun dev`) or deployed
+- A Google Cloud project
+- The application running locally or deployed
+- Better Auth configured in the target environment
 
-## Step 1: Configure OAuth Consent Screen
+## Step 1: Configure the OAuth Consent Screen
 
-1. Go to **Google Cloud Console > APIs & Services > OAuth consent screen**.
-2. Select **External** user type (or Internal for Google Workspace orgs).
-3. Fill in the required fields:
-   - **App name**: Your application name
-   - **User support email**: Your email
-   - **Developer contact email**: Your email
-4. Add scopes: `openid`, `email`, `profile`.
-5. Save. For development, add your Google account under **Test users**.
+1. Open **Google Cloud Console > APIs & Services > OAuth consent screen**.
+2. Choose **External** unless you are using a restricted Google Workspace deployment.
+3. Fill in the required app and contact details.
+4. Add these scopes:
+   - `openid`
+   - `email`
+   - `profile`
+5. While the app is still in testing, add your development accounts as **Test users**.
 
 ## Step 2: Create OAuth Credentials
 
-1. Go to **APIs & Services > Credentials**.
+1. Open **APIs & Services > Credentials**.
 2. Click **Create Credentials > OAuth 2.0 Client ID**.
-3. Select **Web application**.
-4. Add **Authorized redirect URIs**:
-   - Development: `http://localhost:4321/api/auth/google/callback`
-   - Production: `https://yourdomain.com/api/auth/google/callback`
-5. Click **Create** and copy the **Client ID** and **Client Secret**.
+3. Choose **Web application**.
+4. Add authorized redirect URIs:
+   - Development: `http://localhost:4321/api/auth/callback/google`
+   - Production: `https://yourdomain.com/api/auth/callback/google`
+5. Copy the generated **Client ID** and **Client Secret**.
 
-The redirect URI must match exactly — including the protocol, port, and path.
+The redirect URI must match exactly, including protocol, host, port, and path.
 
 ## Step 3: Set Environment Variables
 
-Add to your `.env` (development) or `.env.production` (production):
+Add these values to your environment:
 
 ```bash
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-client-secret
+BETTER_AUTH_SECRET=replace-with-a-random-secret
 PUBLIC_URL=http://localhost:4321
 ```
 
-For production, set `PUBLIC_URL` to your deployed URL (no trailing slash):
+For production:
 
 ```bash
 PUBLIC_URL=https://yourdomain.com
 ```
 
-`PUBLIC_URL` is the shared canonical app origin used for OAuth redirect URIs, email links, and invitation URLs. It's referenced in `src/lib/auth/oauth.ts` to build the Google callback URI.
+Notes:
 
-## Step 4: Verify Setup
+- `PUBLIC_URL` is the canonical app origin used for auth redirects and email links.
+- `BETTER_AUTH_SECRET` must be a strong secret and should not reuse a placeholder dev value in production.
+- Google linking and sign-in share the same Better Auth integration; no separate custom callback route is required.
 
-1. Start the dev server: `bun dev`
-2. Navigate to `/login`.
-3. Click **Sign in with Google**.
-4. Expected flows:
+## Step 4: Verify the Flow
 
-| Scenario                       | Expected behavior                                                     |
-| ------------------------------ | --------------------------------------------------------------------- |
-| New user                       | Google consent screen → auto-register → redirect to `/dashboard`      |
-| Existing OAuth link            | Google consent screen → direct login → redirect to `/dashboard`       |
-| Email already exists (no link) | Google consent screen → account linking page → confirm → `/dashboard` |
+1. Start the app with `bun run dev`.
+2. Open `/login`.
+3. Click **Continue with Google**.
+4. Confirm the expected result:
 
-5. Check the Security page (`/security`) to verify the Google account appears under linked providers.
+| Scenario                                     | Expected behavior                                                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| New Google user                              | Google consent, account creation, workspace bootstrap, redirect to `/dashboard`                            |
+| Existing linked Google account               | Google consent, normal sign-in, redirect to `/dashboard`                                                   |
+| Existing local account without Google linked | Sign-in is blocked and the user is told to sign in first, then connect Google from **Settings > Security** |
+
+5. While signed in, open `/security` and confirm the **Connected Accounts** card can start Google linking from the authenticated settings flow.
 
 ## Troubleshooting
 
 ### `redirect_uri_mismatch`
 
-The redirect URI in Google Cloud Console doesn't match. Verify:
+Verify:
 
-- Protocol: `http` for localhost, `https` for production
-- Port: `4321` for local dev (or your custom port)
-- Path: `/api/auth/google/callback` (exact match)
-- No trailing slash
+- the redirect path is `/api/auth/callback/google`
+- localhost uses the correct dev port
+- production uses `https`
+- there is no trailing slash mismatch
 
-### `access_denied` or blank error
+### Google sign-in says the account is not linked
 
-- Ensure your Google account is listed as a **Test user** in the consent screen (required while app is in "Testing" status).
-- Verify the consent screen has `openid`, `email`, and `profile` scopes.
+This is expected for an existing email/password account that has not linked Google yet.
+
+Fix:
+
+1. Sign in with your existing method.
+2. Open **Settings > Security**.
+3. Use **Connect Account** for Google.
+4. Retry Google sign-in after linking completes.
 
 ### `GOOGLE_CLIENT_ID is not set`
 
-The env vars aren't loaded. Check:
+Check that:
 
-- `.env` file exists in the project root
-- Variable names match exactly (no extra spaces)
-- Restart the dev server after changing `.env`
+- the variable names match exactly
+- your `.env` file is loaded by the current process
+- you restarted the dev server after changing env vars
 
-### Rate limited on callback
+### Better Auth sessions reset after deployment
 
-The callback endpoint allows 10 requests per 15 minutes per IP. Wait and retry, or check for redirect loops causing repeated callback hits.
-
-### Account linking page shows expired
-
-The linking cookie expires after 10 minutes. Restart the OAuth flow by clicking **Sign in with Google** again.
+The Better Auth cutover invalidates legacy sessions. A one-time forced logout after deployment is expected.
 
 ## Moving to Production
 
-1. **Publish the consent screen**: In Google Cloud Console, go to the OAuth consent screen and click **Publish App**. This removes the test-user restriction.
-2. **Update redirect URIs**: Add your production URL (`https://yourdomain.com/api/auth/google/callback`) to the OAuth client's authorized redirect URIs.
-3. **Verify domain ownership**: Google may require domain verification for published apps. Follow the instructions in the console.
-4. **Set production env vars**: Ensure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `PUBLIC_URL` are set in your production environment.
-5. **Run migrations**: The `oauth_accounts` table must exist in production. Run `bun run db:migrate:prod` if not already applied.
+1. Publish the Google consent screen when you are ready for non-test users.
+2. Add the production redirect URI: `https://yourdomain.com/api/auth/callback/google`.
+3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, and `PUBLIC_URL` in production.
+4. Apply database migrations before deploy.
+5. Expect users to sign in again after the first Better Auth deployment.
 
 ## Architecture Reference
 
-For design decisions behind the OAuth implementation (provider-agnostic schema, PKCE flow, signed cookies, account linking pattern), see [ADR 011: OAuth SSO Integration](../architecture/011-oauth-sso-architecture.md).
+For the product rules behind Google sign-in and explicit linking, see [ADR 011: OAuth SSO Integration](../architecture/011-oauth-sso-architecture.md).

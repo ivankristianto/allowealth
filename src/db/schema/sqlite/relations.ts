@@ -10,6 +10,7 @@ import { relations } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { workspaceMeta } from './workspace-meta';
 import { workspaceInvitations } from './workspace-invitations';
+import { user, session, account, verification, twoFactor } from './better-auth';
 import { users } from './users';
 import { userMeta } from './user-meta';
 import { sessions } from './sessions';
@@ -27,8 +28,39 @@ import { budgets } from './budgets';
 import { auditLogs } from './audit-logs';
 import { apiKeys } from './api-keys';
 import { oauthAccounts } from './oauth-accounts';
-import { userMfa } from './user-mfa';
-import { userMfaBackupCodes } from './user-mfa-backup-codes';
+
+// Better Auth relations
+export const authUsersRelations = relations(user, ({ many, one }) => ({
+  sessions: many(session),
+  accounts: many(account),
+  twoFactor: one(twoFactor, {
+    fields: [user.id],
+    references: [twoFactor.userId],
+  }),
+}));
+
+export const authSessionsRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const authAccountsRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const authVerificationsRelations = relations(verification, () => ({}));
+
+export const authTwoFactorsRelations = relations(twoFactor, ({ one }) => ({
+  user: one(user, {
+    fields: [twoFactor.userId],
+    references: [user.id],
+  }),
+}));
 
 // Workspace relations
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
@@ -86,10 +118,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdBudgets: many(budgets),
   apiKeys: many(apiKeys),
   oauthAccounts: many(oauthAccounts),
-  mfa: one(userMfa, {
-    fields: [users.id],
-    references: [userMfa.user_id],
-  }),
 }));
 
 // User meta relations
@@ -315,22 +343,5 @@ export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
   user: one(users, {
     fields: [oauthAccounts.user_id],
     references: [users.id],
-  }),
-}));
-
-// User MFA relations
-export const userMfaRelations = relations(userMfa, ({ one, many }) => ({
-  user: one(users, {
-    fields: [userMfa.user_id],
-    references: [users.id],
-  }),
-  backupCodes: many(userMfaBackupCodes),
-}));
-
-// User MFA backup codes relations
-export const userMfaBackupCodesRelations = relations(userMfaBackupCodes, ({ one }) => ({
-  userMfa: one(userMfa, {
-    fields: [userMfaBackupCodes.user_mfa_id],
-    references: [userMfa.id],
   }),
 }));

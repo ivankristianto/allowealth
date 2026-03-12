@@ -6,8 +6,7 @@ import { users } from './users';
 /**
  * Email Verification Tokens Table
  *
- * Stores email verification tokens for user registration.
- * Tokens expire after 24 hours and are deleted after successful verification.
+ * App-owned email verification tokens retained for profile email-change flows.
  */
 export const emailVerificationTokens = sqliteTable(
   'email_verification_tokens',

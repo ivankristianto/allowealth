@@ -73,6 +73,91 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/user/sessions:
+    get:
+      tags: [User]
+      summary: List active sessions
+      description: |
+        List all active sessions for the authenticated user.
+        Current session is returned first. Supports `?_render=html` for
+        server-rendered HTML partial.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: _render
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [html]
+          description: Return server-rendered HTML fragment instead of JSON
+      responses:
+        '200':
+          description: Sessions listed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/SessionListResponse.yml#/SessionListResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    delete:
+      tags: [User]
+      summary: Revoke a single session
+      description: |
+        Revoke a single non-current session by ID. The session token is
+        resolved server-side to avoid exposing tokens in the client.
+        Attempting to revoke the current session returns 400.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/SessionListResponse.yml#/RevokeSessionRequest'
+      responses:
+        '200':
+          description: Session revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/SessionListResponse.yml#/SessionActionResponse'
+        '400':
+          description: Cannot revoke the current session or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    post:
+      tags: [User]
+      summary: Revoke all other sessions
+      description: |
+        Revoke all sessions except the current one. Uses POST because the
+        action is a bulk destructive operation, not a resource creation.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: All other sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/SessionListResponse.yml#/SessionActionResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/user/password:
     put:
       tags: [User]

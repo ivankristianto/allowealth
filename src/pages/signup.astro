@@ -15,10 +15,10 @@ import Button from '../components/atoms/Button.astro';
 import Label from '../components/atoms/Label.astro';
 import GoogleButton from '../components/atoms/GoogleButton.astro';
 import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astro';
-import { getSignupUrl } from '@/lib/config';
 import { workspaceInvitationService, workspaceService } from '@/services';
 import Turnstile from '../components/atoms/Turnstile.astro';
 import { getSignupMode } from '@/lib/auth/signup-mode';
+import { getGoogleAuthErrorMessage } from '@/services/auth.service';
 
 // Get query params
 const url = new URL(Astro.request.url);
@@ -29,6 +29,8 @@ const isPublicSignupEnabled = signupMode === 'public';
 
 // Error messages mapping
 const errorMessages: Record<string, string> = {
+  account_not_linked:
+    'Sign in with your existing method first, then connect Google from Settings > Security.',
   email_exists: 'An account with this email already exists.',
   weak_password: 'Password must be at least 12 characters long.',
   invalid_email: 'Please enter a valid email address.',
@@ -40,8 +42,14 @@ const errorMessages: Record<string, string> = {
   token_used: 'This invitation has already been used.',
 };
 
+const oauthErrorMessage = getGoogleAuthErrorMessage(error);
+
 // Only use whitelisted error codes to prevent XSS
-const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
+const errorMessage = oauthErrorMessage
+  ? oauthErrorMessage
+  : error
+    ? errorMessages[error] || 'An error occurred. Please try again.'
+    : '';
 
 // Invitation data (if token is present)
 let invitation: {
@@ -196,7 +204,6 @@ const invitationErrorMessage =
             class="space-y-5"
             data-signup-form
             data-invitation-token={token || ''}
-            data-api-signup-url={getSignupUrl()}
             novalidate
           >
             <div id="form-messages" class="space-y-2" aria-live="polite" tabindex="-1">
@@ -354,6 +361,8 @@ const invitationErrorMessage =
 
 <script nonce={cspNonce} is:inline>
   document.addEventListener('DOMContentLoaded', () => {
+    const authClientModulePromise = import('@/lib/auth/client');
+    const captchaClientModulePromise = import('@/lib/auth/captcha-client');
     const form = document.querySelector('[data-signup-form]');
     const messagesContainer = document.getElementById('form-messages');
     const submitButton = form?.querySelector('[data-submit-button]');
@@ -364,7 +373,6 @@ const invitationErrorMessage =
 
     // Get values from data attributes
     const invitationToken = form.getAttribute('data-invitation-token') || '';
-    const apiSignupUrl = form.getAttribute('data-api-signup-url') || '/api/signup';
 
     // Password toggle for confirm-password is handled by PasswordField's
     // inline script (binds to all [data-toggle-password] buttons globally)
@@ -392,7 +400,6 @@ const invitationErrorMessage =
         email: formData.get('email'),
         password: formData.get('password'),
         'confirm-password': formData.get('confirm-password'),
-        turnstileToken: formData.get('cf-turnstile-response') || '',
       };
 
       // Use shared validation from RegistrationValidation module
@@ -410,6 +417,16 @@ const invitationErrorMessage =
         return;
       }
 
+      const { buildCaptchaHeaders, hasCaptchaWidget, resetCaptchaWidget } =
+        await captchaClientModulePromise;
+      const captchaHeaders = buildCaptchaHeaders(form);
+      if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
+        messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors([
+          'Please complete the bot protection check',
+        ]);
+        return;
+      }
+
       // Show loading state
       form.classList.add('submitting');
       if (buttonText) buttonText.classList.add('hidden');
@@ -417,29 +434,24 @@ const invitationErrorMessage =
       if (submitButton) submitButton.disabled = true;
 
       try {
-        // Build signup URL with token if present
-        const signupUrl = invitationToken
-          ? `${apiSignupUrl}?token=${encodeURIComponent(invitationToken)}`
-          : apiSignupUrl;
-
-        const response = await fetch(signupUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const { authClient } = await authClientModulePromise;
+        const result = await authClient.signUp.email({
+          name: String(data.name || ''),
+          email: String(data.email || ''),
+          password: String(data.password || ''),
+          callbackURL: '/dashboard',
+          invitationToken,
+          workspaceName:
+            typeof formData.get('workspaceName') === 'string' &&
+            String(formData.get('workspaceName')).trim().length > 0
+              ? String(formData.get('workspaceName')).trim()
+              : undefined,
+          fetchOptions: {
+            headers: captchaHeaders,
           },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: data.name,
-            email: data.email,
-            password: data.password,
-            turnstileToken: data.turnstileToken,
-          }),
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          // Registration successful
+        if (!result.error) {
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-success">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -450,15 +462,12 @@ const invitationErrorMessage =
             </div>
           `;
 
-          // Reset form
           form.reset();
 
-          // Redirect to login after delay
           setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = '/dashboard';
           }, 2000);
         } else {
-          // Registration failed
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-error">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -466,7 +475,7 @@ const invitationErrorMessage =
                 <path d="m15 9-6 6"></path>
                 <path d="m9 9 6 6"></path>
               </svg>
-              <span>${window.RegistrationValidation.escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
+              <span>${window.RegistrationValidation.escapeHtml(result?.message || result?.error?.message || 'Registration failed. Please try again.')}</span>
             </div>
           `;
         }
@@ -488,10 +497,7 @@ const invitationErrorMessage =
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
-        // Reset Turnstile widget for retry
-        if (typeof turnstile !== 'undefined') {
-          turnstile.reset();
-        }
+        resetCaptchaWidget();
       }
     });
   });

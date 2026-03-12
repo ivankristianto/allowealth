@@ -10,6 +10,8 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import { hashOpaqueToken } from '@/lib/crypto/token-hash';
+import { account as authAccounts, user as authUsers } from '@/db/schema/sqlite/better-auth';
 
 describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
@@ -18,6 +20,8 @@ describe('EmailVerificationService', () => {
 
   async function cleanupTestData() {
     if (testUserId) {
+      await db.delete(authAccounts).where(eq(authAccounts.userId, testUserId));
+      await db.delete(authUsers).where(eq(authUsers.id, testUserId));
       await db.delete(oauthAccounts).where(eq(oauthAccounts.user_id, testUserId));
       await db.delete(userMeta).where(eq(userMeta.user_id, testUserId));
       await db
@@ -53,6 +57,21 @@ describe('EmailVerificationService', () => {
       workspace_id: testWorkspaceId,
       role: 'admin',
     });
+
+    const domainUser = await db.query.users.findFirst({
+      where: eq(users.id, testUserId),
+    });
+
+    await db.insert(authUsers).values({
+      id: testUserId,
+      email: domainUser!.email,
+      name: domainUser!.name,
+      emailVerified: true,
+      image: null,
+      twoFactorEnabled: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   });
 
   afterEach(async () => {
@@ -74,7 +93,8 @@ describe('EmailVerificationService', () => {
         .limit(1);
 
       expect(dbToken.length).toBe(1);
-      expect(dbToken[0].token).toBe(token);
+      expect(dbToken[0].token).not.toBe(token);
+      expect(dbToken[0].token).toBe(await hashOpaqueToken(token));
 
       // Check expiration is ~24 hours from now
       const expiresIn = dbToken[0].expires_at.getTime() - Date.now();
@@ -160,8 +180,27 @@ describe('EmailVerificationService', () => {
       expect(tokens.length).toBe(1);
     });
 
-    it('should unlink all OAuth accounts when requesting email change', async () => {
+    it('preserves linked sign-in methods while an email change is pending', async () => {
       await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+
+      await db.insert(authAccounts).values([
+        {
+          id: nanoid(),
+          accountId: `google-${nanoid(8)}`,
+          providerId: 'google',
+          userId: testUserId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: nanoid(),
+          accountId: `github-${nanoid(8)}`,
+          providerId: 'github',
+          userId: testUserId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
 
       await db.insert(oauthAccounts).values([
         {
@@ -184,11 +223,20 @@ describe('EmailVerificationService', () => {
 
       await service.requestEmailChange(testUserId, 'oauth-unlink@example.com');
 
+      const remainingAuthAccounts = await db
+        .select()
+        .from(authAccounts)
+        .where(eq(authAccounts.userId, testUserId));
       const remainingOauthAccounts = await db
         .select()
         .from(oauthAccounts)
         .where(eq(oauthAccounts.user_id, testUserId));
-      expect(remainingOauthAccounts.length).toBe(0);
+      expect(remainingAuthAccounts).toHaveLength(2);
+      expect(remainingAuthAccounts.map((account) => account.providerId).sort()).toEqual([
+        'github',
+        'google',
+      ]);
+      expect(remainingOauthAccounts).toHaveLength(2);
     });
   });
 
@@ -242,12 +290,13 @@ describe('EmailVerificationService', () => {
 
     it('should return error for expired token', async () => {
       const expiredToken = nanoid(64);
+      const expiredTokenHash = await hashOpaqueToken(expiredToken);
       const pastTime = new Date(Date.now() - 25 * 60 * 60 * 1000);
 
       await db.insert(emailVerificationTokens).values({
         id: nanoid(),
         user_id: testUserId,
-        token: expiredToken,
+        token: expiredTokenHash,
         expires_at: pastTime,
       });
 
@@ -310,7 +359,11 @@ describe('EmailVerificationService', () => {
       }
 
       const updatedUser = await db.query.users.findFirst({ where: eq(users.id, testUserId) });
+      const updatedAuthUser = await db.query.user.findFirst({
+        where: eq(authUsers.id, testUserId),
+      });
       expect(updatedUser?.email).toBe('changed@example.com');
+      expect(updatedAuthUser?.email).toBe('changed@example.com');
 
       const meta = await db.query.userMeta.findFirst({
         where: and(

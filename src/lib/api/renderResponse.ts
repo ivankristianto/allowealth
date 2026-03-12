@@ -14,6 +14,11 @@
 
 export type RenderFormat = 'html' | 'json';
 
+export const HTML_RENDER_REQUEST_HEADER = 'X-Requested-With';
+export const HTML_RENDER_REQUEST_VALUE = 'XMLHttpRequest';
+export const HTML_RENDER_REQUEST_REQUIRED_MESSAGE =
+  'HTML partial requests require X-Requested-With: XMLHttpRequest.';
+
 export interface RenderHelper {
   /** Check if the request wants HTML response */
   wantsHtml: () => boolean;
@@ -34,9 +39,23 @@ export interface RenderHelper {
  * @param url - The request URL (to check for _render param)
  * @returns RenderHelper with format-aware response methods
  */
-export function createRenderHelper(url: URL): RenderHelper {
+function requestedHtmlWithoutHeader(url: URL, request?: Request): boolean {
+  if (url.searchParams.get('_render') !== 'html') {
+    return false;
+  }
+
+  const requestedWith = request?.headers.get(HTML_RENDER_REQUEST_HEADER);
+  return requestedWith?.toLowerCase() !== HTML_RENDER_REQUEST_VALUE.toLowerCase();
+}
+
+export function isRejectedHtmlRenderRequest(url: URL, request?: Request): boolean {
+  return requestedHtmlWithoutHeader(url, request);
+}
+
+export function createRenderHelper(url: URL, request?: Request): RenderHelper {
   const renderParam = url.searchParams.get('_render');
-  const format: RenderFormat = renderParam === 'html' ? 'html' : 'json';
+  const format: RenderFormat =
+    renderParam === 'html' && !requestedHtmlWithoutHeader(url, request) ? 'html' : 'json';
 
   return {
     wantsHtml: () => format === 'html',
@@ -121,6 +140,6 @@ function escapeHtml(str: string): string {
  * Check if a URL requests HTML rendering
  * Convenience function for quick checks
  */
-export function wantsHtmlRender(url: URL): boolean {
-  return url.searchParams.get('_render') === 'html';
+export function wantsHtmlRender(url: URL, request?: Request): boolean {
+  return createRenderHelper(url, request).wantsHtml();
 }

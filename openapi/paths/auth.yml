@@ -1,21 +1,20 @@
 # Authentication endpoint paths
 paths:
-  /api/auth/signup:
+  /api/auth/sign-up/email:
     post:
       tags: [Authentication]
-      summary: Register a new user
+      operationId: signUpEmail
+      summary: Register a new user with email and password
       description: |
-        Create a new user account with email, password, and name.
-        A verification email is sent to the provided email address.
-        The user must verify their email before they can log in.
-        When `SIGNUP_MODE=invite_only`, signup requires an invitation token.
-        When `SIGNUP_MODE=public`, signup without a token is allowed.
+        Better Auth email sign-up endpoint served by `src/pages/api/auth/[...all].ts`.
+        Supports app-owned signup hooks such as invitation checks and workspace bootstrap.
+        When Turnstile is configured, send the widget token in the `x-captcha-response` header.
       security: []
       parameters:
-        - name: token
-          in: query
+        - name: x-captcha-response
+          in: header
           required: false
-          description: Invitation token from workspace admin
+          description: Cloudflare Turnstile response token. Required when Turnstile is configured.
           schema:
             type: string
       requestBody:
@@ -25,33 +24,67 @@ paths:
             schema:
               $ref: '../schemas/SignupRequest.yml#/SignupRequest'
       responses:
-        '201':
-          description: User created successfully. Verification email sent to the provided address.
+        '200':
+          description: Auth user created and session established
           content:
             application/json:
               schema:
-                $ref: '../schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
+                type: object
+                required: [token, user]
+                properties:
+                  token:
+                    type: [string, 'null']
+                    description: Session token when Better Auth returns it in the response body
+                  user:
+                    type: object
+                    required: [id, email, name, emailVerified]
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      name:
+                        type: string
+                      image:
+                        type: [string, 'null']
+                      emailVerified:
+                        type: boolean
         '400':
-          description: Bad request - invalid input, invalid invitation token, or Turnstile verification failed
+          description: Invalid input or Turnstile verification failed
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '409':
-          description: Email already exists
+        '403':
+          description: Signup blocked by product policy (for example, invitation required)
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
+        '422':
+          description: Validation or Better Auth request error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
 
-  /api/auth/login:
+  /api/auth/sign-in/email:
     post:
       tags: [Authentication]
-      summary: Login user
-      description: Authenticate user with email and password, creates session
+      operationId: signInEmail
+      summary: Sign in with email and password
+      description: |
+        Better Auth credential sign-in endpoint.
+        When Turnstile is configured, send the widget token in the `x-captcha-response` header.
       security: []
+      parameters:
+        - name: x-captcha-response
+          in: header
+          required: false
+          description: Cloudflare Turnstile response token. Required when Turnstile is configured.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -60,18 +93,39 @@ paths:
               $ref: '../schemas/LoginRequest.yml#/LoginRequest'
       responses:
         '200':
-          description: Login successful
-          headers:
-            Set-Cookie:
-              description: Session cookie (HTTP-only, secure)
-              schema:
-                type: string
+          description: Authentication completed or advanced to a redirect target
           content:
             application/json:
               schema:
-                $ref: '../schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
+                type: object
+                required: [redirect, token, user]
+                properties:
+                  redirect:
+                    type: boolean
+                    description: Whether the client should follow `url`
+                  token:
+                    type: string
+                    description: Better Auth session token
+                  url:
+                    type: [string, 'null']
+                    description: Redirect target returned by Better Auth
+                  user:
+                    type: object
+                    required: [id, email, name, emailVerified]
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      name:
+                        type: string
+                      image:
+                        type: [string, 'null']
+                      emailVerified:
+                        type: boolean
         '400':
-          description: Bad request - invalid input or Turnstile verification failed
+          description: Invalid input or Turnstile verification failed
           content:
             application/json:
               schema:
@@ -83,88 +137,150 @@ paths:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '403':
-          description: |
-            Account access denied. Possible reasons:
-            - EMAIL_NOT_VERIFIED: User has not verified their email address
-            - WORKSPACE_INACTIVE: The user's workspace is inactive
+          description: Authentication blocked by account or workspace policy
           content:
             application/json:
               schema:
-                oneOf:
-                  - type: object
-                    description: Email not verified
-                    required: [error, code, email]
-                    properties:
-                      error:
-                        type: string
-                        example: Email not verified
-                      code:
-                        type: string
-                        example: EMAIL_NOT_VERIFIED
-                      email:
-                        type: string
-                        format: email
-                        description: The unverified email address (for resend verification flow)
-                        example: user@example.com
-                  - type: object
-                    description: Workspace inactive
-                    required: [error, code]
-                    properties:
-                      error:
-                        type: string
-                        example: Workspace inactive
-                      code:
-                        type: string
-                        example: WORKSPACE_INACTIVE
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
 
-  /api/auth/logout:
+  /api/auth/sign-in/social:
     post:
       tags: [Authentication]
-      summary: Logout user
-      description: Invalidate current session and clear session cookie
-      security:
-        - sessionAuth: []
+      operationId: signInSocial
+      summary: Start social sign-in
+      description: |
+        Starts the Better Auth social-provider flow. In this app the active provider
+        is Google, and Better Auth handles provider state plus the redirect callback.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider]
+              properties:
+                provider:
+                  type: string
+                  example: google
+                callbackURL:
+                  type: string
+                  example: /dashboard
+                newUserCallbackURL:
+                  type: string
+                  example: /dashboard
+                errorCallbackURL:
+                  type: string
+                  example: /login
+                disableRedirect:
+                  type: boolean
+                  default: false
+                requestSignUp:
+                  type: boolean
+                  default: true
       responses:
         '200':
-          description: Logout successful
-          headers:
-            Set-Cookie:
-              description: Blank session cookie to clear existing cookie
-              schema:
-                type: string
+          description: Redirect target or direct auth result for the provider flow
           content:
             application/json:
               schema:
                 type: object
+                required: [redirect]
+                properties:
+                  redirect:
+                    type: boolean
+                  url:
+                    type: [string, 'null']
+                  token:
+                    type: [string, 'null']
+
+  /api/auth/callback/{id}:
+    get:
+      tags: [Authentication]
+      operationId: authCallbackGet
+      summary: Social provider callback
+      description: |
+        Better Auth callback endpoint for the provider flow. Google uses
+        `/api/auth/callback/google`.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Provider identifier
+          schema:
+            type: string
+            example: google
+      responses:
+        '302':
+          description: Redirects the browser back to the application
+          headers:
+            Location:
+              description: Redirect target chosen by Better Auth
+              schema:
+                type: string
+    post:
+      tags: [Authentication]
+      operationId: authCallbackPost
+      summary: Social provider callback (POST variant)
+      description: Some OAuth providers POST their callback payload instead of using GET.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Provider identifier
+          schema:
+            type: string
+            example: google
+      responses:
+        '302':
+          description: Redirects the browser back to the application
+          headers:
+            Location:
+              description: Redirect target chosen by Better Auth
+              schema:
+                type: string
+
+  /api/auth/sign-out:
+    post:
+      tags: [Authentication]
+      operationId: signOut
+      summary: Sign out the current session
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
                 properties:
                   success:
                     type: boolean
-                  data:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: Logged out successfully
+                    example: true
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
 
-  /api/auth/forgot-password:
+  /api/auth/request-password-reset:
     post:
       tags: [Authentication]
-      summary: Request password reset
+      operationId: requestPasswordReset
+      summary: Request a password reset email
       description: |
-        Request a password reset email. For security reasons, this endpoint
-        always returns a success response regardless of whether the email
-        exists in the system. This prevents email enumeration attacks.
-
-        If the email exists, a password reset link will be sent.
-        If the email does not exist, no email is sent but the response
-        is identical to prevent attackers from discovering valid emails.
+        Better Auth password-reset request endpoint. The response is intentionally
+        generic to avoid revealing whether an email exists.
+        When Turnstile is configured, send the widget token in the `x-captcha-response` header.
       security: []
+      parameters:
+        - name: x-captcha-response
+          in: header
+          required: false
+          description: Cloudflare Turnstile response token. Required when Turnstile is configured.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -173,30 +289,162 @@ paths:
               $ref: '../schemas/ForgotPasswordRequest.yml#/ForgotPasswordRequest'
       responses:
         '200':
-          description: |
-            Password reset request processed. This response is returned
-            regardless of whether the email exists in the system.
+          description: Password-reset request accepted
           content:
             application/json:
               schema:
-                $ref: '../schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
+                type: object
+                required: [status, message]
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: If an account exists with this email, we've sent a password reset link.
         '400':
-          description: Invalid input (e.g., malformed email format)
+          description: Invalid request body
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/auth/reset-password:
+    post:
+      tags: [Authentication]
+      operationId: resetPassword
+      summary: Complete a password reset
+      description: Resets the password with the verified Better Auth reset token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword, token]
+              properties:
+                newPassword:
+                  $ref: '../schemas/Password.yml#/Password'
+                token:
+                  type: string
+                  description: Reset token issued by the Better Auth password-reset flow
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/link-social:
+    post:
+      tags: [Authentication]
+      operationId: linkSocialAccount
+      summary: Link a social account to the current user
+      description: |
+        Starts an authenticated Better Auth linking flow from Settings > Security.
+        Existing password users must be signed in before linking Google.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider]
+              properties:
+                provider:
+                  type: string
+                  example: google
+                callbackURL:
+                  type: string
+                  example: /security
+                disableRedirect:
+                  type: boolean
+                  default: false
+                errorCallbackURL:
+                  type: string
+                  example: /security
+      responses:
+        '200':
+          description: Linking flow started
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [redirect, url]
+                properties:
+                  redirect:
+                    type: boolean
+                  url:
+                    type: string
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+
+  /api/auth/unlink-account:
+    post:
+      tags: [Authentication]
+      operationId: unlinkAccount
+      summary: Unlink a provider account
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [providerId]
+              properties:
+                providerId:
+                  type: string
+                  example: google
+                accountId:
+                  type: string
+                  description: Optional provider account identifier when multiple accounts exist
+      responses:
+        '200':
+          description: Provider unlinked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Unlink rejected by Better Auth safety checks
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
 
   /api/auth/verify-email:
     get:
       tags: [Authentication]
+      operationId: verifyEmail
       summary: Verify user email
       description: |
-        Verify a user's email address using a token sent via verification email.
-        On success or failure, redirects to the login page with a status query parameter
-        indicating the result (e.g., ?verified=true or ?error=invalid_token).
+        App-owned email verification route. This route is intentionally separate from
+        the Better Auth catch-all because the app applies workspace activation and
+        post-verification redirects.
       security: []
       parameters:
         - name: token
@@ -207,185 +455,10 @@ paths:
             type: string
       responses:
         '302':
-          description: |
-            Redirects to login page with verification status.
-            Possible redirect targets:
-            - /login?verified=true - Email verified successfully
-            - /login?error=invalid_token - Token is invalid or expired
-            - /login?error=already_verified - Email was already verified
+          description: Redirects to the login page with the verification result
           headers:
             Location:
-              description: Redirect URL to login page with status
+              description: Redirect URL to the login page
               schema:
                 type: string
                 example: /login?verified=true
-
-  /api/auth/resend-verification:
-    post:
-      tags: [Authentication]
-      summary: Resend verification email
-      description: |
-        Resend the email verification link. For security reasons, this endpoint
-        always returns a success response regardless of whether the email
-        exists in the system. This prevents email enumeration attacks.
-
-        Rate limited to 3 requests per hour per IP address.
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/ResendVerificationRequest.yml#/ResendVerificationRequest'
-      responses:
-        '200':
-          description: |
-            Verification email request processed. This response is returned
-            regardless of whether the email exists or is already verified.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [message]
-                properties:
-                  message:
-                    type: string
-                    example: If your email is registered and unverified, a verification link has been sent.
-        '400':
-          description: Invalid input (e.g., malformed email format)
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '429':
-          description: Rate limit exceeded. Maximum 3 requests per hour per IP.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [success, error]
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: object
-                    required: [message, code]
-                    properties:
-                      message:
-                        type: string
-                        example: Too many verification requests. Please try again later.
-                      code:
-                        type: string
-                        example: RATE_LIMIT_EXCEEDED
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
-
-  /api/auth/google:
-    get:
-      tags: [Authentication]
-      summary: Initiate Google OAuth flow
-      description: |
-        Redirects to Google's authorization page for OAuth sign-in/sign-up.
-        Generates PKCE code verifier and state parameter stored in HTTP-only cookies.
-      security: []
-      responses:
-        '302':
-          description: Redirect to Google authorization URL
-          headers:
-            Location:
-              description: Google OAuth authorization URL
-              schema:
-                type: string
-            Set-Cookie:
-              description: OAuth state and code verifier cookies (HTTP-only, 10-minute expiry)
-              schema:
-                type: string
-
-  /api/auth/google/callback:
-    get:
-      tags: [Authentication]
-      summary: Google OAuth callback
-      description: |
-        Handles the OAuth callback from Google. Validates state parameter,
-        exchanges authorization code for tokens, and creates or links user account.
-      security: []
-      parameters:
-        - name: code
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: state
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '302':
-          description: |
-            Redirects based on result:
-            - /dashboard: Login/signup successful
-            - /auth/link-account: Existing email found, needs linking consent
-            - /login?oauth_error=...: Authentication failed
-          headers:
-            Location:
-              description: Redirect target based on authentication result
-              schema:
-                type: string
-
-  /api/auth/google/link:
-    post:
-      tags: [Authentication]
-      summary: Confirm OAuth account linking
-      description: |
-        Confirms linking a Google account to an existing user after explicit consent.
-        Reads pending link data from HTTP-only cookie set during callback.
-      security: []
-      responses:
-        '302':
-          description: |
-            Redirects based on result:
-            - /dashboard: Linking successful
-            - /login?oauth_error=link_expired: Pending link expired
-            - /login?oauth_error=link_failed: Linking failed
-          headers:
-            Location:
-              description: Redirect target based on linking result
-              schema:
-                type: string
-
-  /api/auth/google/unlink:
-    post:
-      tags: [Authentication]
-      summary: Unlink Google account
-      description: |
-        Removes the Google OAuth link from the authenticated user's account.
-        Fails if the user has no password set (would leave them with no auth method).
-      security:
-        - sessionAuth: []
-      responses:
-        '200':
-          description: Google account unlinked successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: Google account unlinked
-        '400':
-          description: Cannot unlink (no password set)
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'

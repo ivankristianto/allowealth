@@ -45,20 +45,23 @@ The application uses a **workspace-centric** multi-tenant model:
 ## Schema Overview
 
 ```
-20 TABLES
+CORE RUNTIME TABLES
 
-  WORKSPACE MANAGEMENT          AUTH & USERS                FINANCIAL DATA
-  ─────────────────────         ────────────                ──────────────
+  WORKSPACE MANAGEMENT          DOMAIN USERS & AUTH         FINANCIAL DATA
+  ─────────────────────         ───────────────────         ──────────────
   workspaces                    users                       budget_categories
   workspace_meta                user_meta                   budgets
-  workspace_invitations         sessions                    transactions
-                                password_reset_tokens       accounts
-                                email_verification_tokens   account_categories
-  SECURITY & AUDIT              oauth_accounts              account_history
-  ────────────────                                          account_update_reminders
-  api_keys                                                 account_snapshots
-  audit_logs                                               account_snapshot_items
+  workspace_invitations         user                        transactions
+                                session                     accounts
+                                account                     account_categories
+                                verification                account_history
+  SECURITY & AUDIT              twoFactor                   account_update_reminders
+  ────────────────                                          account_snapshots
+  api_keys                                                 account_snapshot_items
+  audit_logs
 ```
+
+Legacy Lucia-era auth tables still exist in the schema during cleanup, but they are deprecated and should not be used for new code.
 
 ## Entity Relationship Diagram
 
@@ -80,10 +83,11 @@ erDiagram
 
     %% User relationships
     USERS ||--o{ USER_META : "has_preferences"
-    USERS ||--o{ SESSIONS : "has_sessions"
-    USERS ||--o{ PASSWORD_RESET_TOKENS : "requests"
-    USERS ||--o{ EMAIL_VERIFICATION_TOKENS : "verifies"
-    USERS ||--o{ OAUTH_ACCOUNTS : "links"
+    USERS ||--|| AUTH_USERS : "mirrors_identity"
+    AUTH_USERS ||--o{ AUTH_SESSIONS : "has_sessions"
+    AUTH_USERS ||--o{ AUTH_ACCOUNTS : "links"
+    AUTH_USERS ||--o{ AUTH_VERIFICATIONS : "verifies"
+    AUTH_USERS ||--o| AUTH_TWO_FACTOR : "secures"
     USERS ||--o{ API_KEYS : "owns"
     USERS ||--o{ WORKSPACE_INVITATIONS : "invites"
 
@@ -427,24 +431,65 @@ User accounts belonging to a workspace with role-based access.
   - `super_admin`: System-level admin with elevated privileges
 - **Soft Delete**: Removed members have `deleted_at` set (preserves audit trail)
 
-#### `sessions`
+#### `user`
 
-Lucia Auth session storage.
+Canonical Better Auth identity records.
 
 - **Primary Key**: `id` (text)
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
-- **Indexes**: `expires_at` for efficient cleanup
-- **Notes**: DB columns remain snake_case (`user_id`, `expires_at`); Drizzle exposes camelCase field names for Lucia adapter compatibility.
+- **Unique Constraints**: `email`
+- **Key Fields**:
+  - `email`: Auth email address used by Better Auth
+  - `name`: Auth display name
+  - `image`: Optional provider avatar
+  - `emailVerified`: Boolean email verification flag
+  - `twoFactorEnabled`: Boolean flag mirrored from Better Auth 2FA state
 
-#### `password_reset_tokens`
+#### `session`
 
-Secure password reset functionality.
+Better Auth session storage.
 
 - **Primary Key**: `id` (text)
 - **Unique Constraints**: `token`
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
-- **Indexes**: `token`, `user_id`, `expires_at`
-- **TTL**: Tokens expire after 1 hour
+- **Foreign Keys**: `userId` → `user.id` (cascade delete)
+- **Indexes**: `token`, `userId`, `expiresAt`
+- **Use Case**: Backs the `better-auth.session_token` cookie used by middleware session hydration
+
+#### `account`
+
+Better Auth account records for password credentials and linked social providers.
+
+- **Primary Key**: `id` (text)
+- **Foreign Keys**: `userId` → `user.id` (cascade delete)
+- **Key Fields**:
+  - `providerId`: Provider identifier (`credential`, `google`, etc.)
+  - `accountId`: Provider-specific account ID
+  - `password`: Better Auth-managed credential secret (nullable for social providers)
+  - `accessToken`, `refreshToken`, `idToken`: Provider tokens when applicable
+- **Unique Constraint**: (`providerId`, `accountId`)
+
+#### `verification`
+
+Better Auth verification records.
+
+- **Primary Key**: `id` (text)
+- **Key Fields**:
+  - `identifier`: Verification purpose identifier
+  - `value`: Stored token or verification payload
+  - `expiresAt`: Expiration timestamp
+- **Use Case**: Supports password reset and other Better Auth verification flows
+
+#### `twoFactor`
+
+Better Auth TOTP and backup-code state.
+
+- **Primary Key**: `id` (text)
+- **Unique Constraints**: `userId`
+- **Foreign Keys**: `userId` → `user.id` (cascade delete)
+- **Key Fields**:
+  - `secret`: Encrypted/shared TOTP secret
+  - `backupCodes`: Stored backup-code payload
+
+Legacy Lucia-era tables remain in `src/db/schema/sqlite/` for migration cleanup (`sessions`, `password_reset_tokens`, `email_verification_tokens`, `oauth_accounts`, `user_mfa`, and `user_mfa_backup_codes`). They are not the canonical auth source anymore.
 
 #### `user_meta`
 
@@ -786,8 +831,8 @@ Application layer must update `updated_at` on modifications.
 ### Current Indexes
 
 ```typescript
-// sessions - efficient session cleanup
-index('sessions_expires_at_idx').on(table.expiresAt);
+// Better Auth session - efficient session cleanup
+index('session_expires_at_idx').on(table.expiresAt);
 
 // password_reset_tokens - lookup optimization
 index('password_reset_tokens_token_idx').on(table.token);
@@ -980,10 +1025,13 @@ src/db/schema/
 │   ├── workspace-invitations.ts  # Pending workspace invitations
 │   ├── users.ts                  # User accounts (with workspace_id, role)
 │   ├── user-meta.ts              # User preferences (key-value)
-│   ├── sessions.ts               # Authentication sessions
-│   ├── password-reset-tokens.ts  # Password reset
-│   ├── email-verification-tokens.ts # Email verification
-│   ├── oauth-accounts.ts         # OAuth/SSO linked accounts
+│   ├── better-auth.ts            # Better Auth tables (user, session, account, verification, twoFactor)
+│   ├── sessions.ts               # Legacy Lucia-era auth table pending cleanup
+│   ├── password-reset-tokens.ts  # Legacy auth table pending cleanup
+│   ├── email-verification-tokens.ts # Legacy auth table pending cleanup
+│   ├── oauth-accounts.ts         # Legacy auth table pending cleanup
+│   ├── user-mfa.ts               # Legacy auth table pending cleanup
+│   ├── user-mfa-backup-codes.ts  # Legacy auth table pending cleanup
 │   ├── categories.ts             # Income/expense categories (table: budget_categories)
 │   ├── account-categories.ts       # Custom account categories
 │   ├── budgets.ts                # Period-specific budget allocations

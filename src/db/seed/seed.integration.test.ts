@@ -1,18 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { Database } from 'bun:sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
+import { verifyPassword } from 'better-auth/crypto';
 import { nanoid } from 'nanoid';
 import { join } from 'node:path';
 import { existsSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 import { closeDatabase, db, resetDb } from '@/db';
-import * as schema from '@/db/schema/sqlite';
 import { seedWorkspace } from './domains/workspace';
 import { seedUsers } from './domains/users';
 import { seedCategories, seedAccountCategories } from './domains/categories';
 import { seedAccounts, seedAccountHistory, seedAccountSnapshots } from './domains/accounts';
 import { seedIncomeTransactions } from './domains/transactions';
+import { DEMO_ADMIN, DEMO_MEMBER } from './config';
 import { getTrailingMonths } from './lib/dates';
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
@@ -30,10 +29,15 @@ function deleteSqliteArtifacts(dbPath: string) {
 }
 
 function setupTestDatabase(dbPath: string) {
-  const rawDb = new Database(dbPath);
-  const drizzleDb = drizzle(rawDb, { schema });
-  migrate(drizzleDb, { migrationsFolder: join(process.cwd(), 'drizzle/sqlite') });
-  rawDb.close();
+  execFileSync('bun', ['run', 'db:setup'], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      DATABASE_URL: dbPath,
+      D1_ENABLED: 'false',
+    },
+    stdio: 'ignore',
+  });
 }
 
 describe('seed integration', () => {
@@ -144,5 +148,45 @@ describe('seed integration', () => {
     expect(mortgageSnapshots[0]!.balance).toBeGreaterThan(
       mortgageSnapshots[mortgageSnapshots.length - 1]!.balance
     );
+  });
+
+  it('creates Better Auth credential records for seeded demo users', async () => {
+    const workspaceId = await seedWorkspace();
+    const { adminUserId, memberUserId } = await seedUsers(workspaceId);
+
+    const [adminAuthUser, adminCredentialAccount, memberAuthUser, memberCredentialAccount] =
+      await Promise.all([
+        db.query.user.findFirst({
+          where: (user, { eq }) => eq(user.id, adminUserId),
+        }),
+        db.query.account.findFirst({
+          where: (account, { and, eq }) =>
+            and(eq(account.userId, adminUserId), eq(account.providerId, 'credential')),
+        }),
+        db.query.user.findFirst({
+          where: (user, { eq }) => eq(user.id, memberUserId),
+        }),
+        db.query.account.findFirst({
+          where: (account, { and, eq }) =>
+            and(eq(account.userId, memberUserId), eq(account.providerId, 'credential')),
+        }),
+      ]);
+
+    expect(adminAuthUser?.email).toBe(DEMO_ADMIN.email);
+    expect(memberAuthUser?.email).toBe(DEMO_MEMBER.email);
+    expect(adminCredentialAccount?.accountId).toBe(adminUserId);
+    expect(memberCredentialAccount?.accountId).toBe(memberUserId);
+    expect(
+      await verifyPassword({
+        password: DEMO_ADMIN.password,
+        hash: adminCredentialAccount?.password ?? '',
+      })
+    ).toBe(true);
+    expect(
+      await verifyPassword({
+        password: DEMO_MEMBER.password,
+        hash: memberCredentialAccount?.password ?? '',
+      })
+    ).toBe(true);
   });
 });

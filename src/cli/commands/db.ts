@@ -188,39 +188,22 @@ function backupToPath(target: string, outputPath: string): void {
 export default defineCommand({
   meta: { name: 'db', description: 'Database management commands' },
   subCommands: {
-    migrate: defineCommand({
-      meta: { name: 'migrate', description: 'Apply pending database migrations' },
+    setup: defineCommand({
+      meta: { name: 'setup', description: 'Create database tables from schema (no migrations)' },
       args: {
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, isD1, isD1Local } = await import('../lib/target');
+        const { resolveTarget, isD1 } = await import('../lib/target');
         await resolveTarget(args);
 
         if (isD1()) {
-          const { migrateD1 } = await import('../lib/d1-migrate');
-          await migrateD1({ local: isD1Local() });
+          console.error('❌ D1 setup should be done via Wrangler.');
+          console.error('   Use: wrangler d1 execute <db-name> --file=./src/db/setup.sql');
+          process.exit(1);
         } else {
-          exec('drizzle-kit', ['migrate']);
+          exec('bun', ['run', 'src/db/setup.ts']);
         }
-      },
-    }),
-    generate: defineCommand({
-      meta: { name: 'generate', description: 'Generate migration from schema changes' },
-      run() {
-        exec('drizzle-kit', ['generate']);
-      },
-    }),
-    push: defineCommand({
-      meta: { name: 'push', description: 'Push schema directly to database (dev only)' },
-      run() {
-        exec('drizzle-kit', ['push']);
-      },
-    }),
-    studio: defineCommand({
-      meta: { name: 'studio', description: 'Open Drizzle Studio visual DB browser' },
-      run() {
-        exec('drizzle-kit', ['studio']);
       },
     }),
     seed: defineCommand({
@@ -282,7 +265,7 @@ export default defineCommand({
         console.log('Resetting database...');
         exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
         exec('mkdir', ['-p', 'db']);
-        exec('drizzle-kit', ['push', '--force']);
+        exec('bun', ['run', 'src/db/setup.ts']);
         exec('bun', ['run', 'src/db/seed/index.ts']);
       },
     }),
@@ -351,7 +334,7 @@ export default defineCommand({
           console.log('✅ SQLite database file deleted.');
         }
 
-        console.log('\n✅ Database dropped. Run "aw db migrate" to recreate schema.\n');
+        console.log('\n✅ Database dropped. Run "aw db setup" to recreate schema.\n');
       },
     }),
     backup: defineCommand({

@@ -10,7 +10,7 @@
  */
 
 import { workspaces, users, type IDatabase, getActiveSchema } from '@/db';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, isNull, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { maxLength, minLength, object, parse, pipe, string, type InferInput } from 'valibot';
 import { WorkspaceServiceError, ServiceErrorCode } from './service-errors';
@@ -192,23 +192,34 @@ export class WorkspaceService {
       );
     }
 
-    // Get all non-deleted users in the workspace, including MFA status
+    // Get all non-deleted users in the workspace, then hydrate MFA status from Better Auth.
     const members = await this.db.query.users.findMany({
       where: and(
         eq(this.schema.users.workspace_id, workspaceId),
         isNull(this.schema.users.deleted_at)
       ),
-      with: {
-        mfa: {
-          columns: { mfa_enabled: true },
-        },
-      },
     });
 
-    // Map to exclude password_hash for security and normalize MFA flag
-    return members.map(({ password_hash: _, mfa, ...member }) => ({
+    const memberIds = members.map((member) => member.id);
+    const authUsers =
+      memberIds.length === 0
+        ? []
+        : await this.db.query.user.findMany({
+            where: inArray(this.schema.user.id, memberIds),
+            columns: {
+              id: true,
+              twoFactorEnabled: true,
+            },
+          });
+
+    const mfaStatusByUserId = new Map(
+      authUsers.map((authUser) => [authUser.id, authUser.twoFactorEnabled === true])
+    );
+
+    // Map to exclude password_hash for security and normalize MFA flag.
+    return members.map(({ password_hash: _, ...member }) => ({
       ...member,
-      mfaEnabled: mfa?.mfa_enabled === true,
+      mfaEnabled: mfaStatusByUserId.get(member.id) === true,
     }));
   }
 

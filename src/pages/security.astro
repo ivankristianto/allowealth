@@ -10,6 +10,7 @@ import SecurityConnectedAccountsCard from '@/components/molecules/SecurityConnec
 import SecurityMfaCard from '@/components/molecules/SecurityMfaCard.astro';
 import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.astro';
 import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astro';
+import SecuritySessionsCard from '@/components/molecules/SecuritySessionsCard.astro';
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import MfaSetupModal from '@/components/organisms/MfaSetupModal.astro';
@@ -17,8 +18,14 @@ import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import Button from '@/components/atoms/Button.astro';
 import { History } from '@lucide/astro';
-import { apiKeyService, mfaService } from '@/services';
-import { getLinkedOAuthAccounts } from '@/services/auth.service';
+import { apiKeyService } from '@/services';
+import { SessionManagementService } from '@/services/session-management.service';
+import type { NormalizedSession } from '@/lib/auth/types';
+import { auth } from '@/lib/auth/server';
+import { db } from '@/db';
+import { account as authAccount, twoFactor } from '@/db/schema/sqlite';
+import { eq } from 'drizzle-orm';
+import { logError } from '@/lib/utils';
 
 const currentPath = '/security';
 
@@ -40,26 +47,69 @@ let connectedAccounts: Array<{
   id: string;
   provider: string;
   email?: string;
+  accountId?: string;
   connected: boolean;
+  canUnlink: boolean;
 }> = [];
+let mfaStatus = { enabled: false, hasBackupCodes: false, backupCodesRemaining: 0 };
+
+function getBackupCodeCount(serializedBackupCodes: string | null | undefined): number {
+  if (!serializedBackupCodes) {
+    return 0;
+  }
+
+  try {
+    const parsed = JSON.parse(serializedBackupCodes);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
 
 if (user?.id) {
-  const linkedAccounts = await getLinkedOAuthAccounts(user.id);
-  const googleAccount = linkedAccounts.find((a) => a.provider === 'google');
+  const [authAccounts, authSession, twoFactorState] = await Promise.all([
+    db.query.account.findMany({
+      where: eq(authAccount.userId, user.id),
+    }),
+    auth.api.getSession({ headers: Astro.request.headers }).catch(() => null),
+    db.query.twoFactor.findFirst({
+      where: eq(twoFactor.userId, user.id),
+    }),
+  ]);
+
+  const googleAccount = authAccounts.find((authProvider) => authProvider.providerId === 'google');
+  const canUnlinkGoogleAccount = Boolean(googleAccount) && authAccounts.length > 1;
+
   connectedAccounts = [
     {
       id: 'google',
       provider: 'Google',
-      email: googleAccount?.email,
+      email: user.email,
+      accountId: googleAccount?.accountId,
       connected: !!googleAccount,
+      canUnlink: canUnlinkGoogleAccount,
     },
   ];
+
+  mfaStatus.enabled = Boolean(authSession?.user?.twoFactorEnabled);
+  mfaStatus.backupCodesRemaining = mfaStatus.enabled
+    ? getBackupCodeCount(twoFactorState?.backupCodes)
+    : 0;
+  mfaStatus.hasBackupCodes = mfaStatus.backupCodesRemaining > 0;
 }
 
-// Fetch MFA status
-let mfaStatus = { enabled: false, hasBackupCodes: false, backupCodesRemaining: 0 };
+// Fetch active sessions for the current user
+let activeSessions: NormalizedSession[] = [];
 if (user?.id) {
-  mfaStatus = await mfaService.getStatus(user.id);
+  try {
+    const rawSessions = await auth.api.listSessions({
+      headers: Astro.request.headers,
+    });
+    const currentToken = Astro.locals.session?.token ?? '';
+    activeSessions = SessionManagementService.listForUser(rawSessions, currentToken);
+  } catch (err) {
+    logError('Failed to list sessions', err);
+  }
 }
 
 // @TODO: Wire with backend for passkeys.
@@ -112,6 +162,7 @@ const toneDotClasses: Record<string, string> = {
         enabled={mfaStatus.enabled}
         backupCodesRemaining={mfaStatus.backupCodesRemaining}
       />
+      <SecuritySessionsCard sessions={activeSessions} />
       <SecurityPasskeysCard passkeys={passkeys} />
       <SecurityApiKeysCard keys={apiKeys} />
 

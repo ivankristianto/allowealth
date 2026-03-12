@@ -2,6 +2,10 @@ import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-co
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
 
+/**
+ * Legacy custom OAuth account table kept for app-owned email-change flows.
+ * New sign-in and linking flows use Better Auth's `account` table.
+ */
 export const oauthAccounts = sqliteTable(
   'oauth_accounts',
   {

@@ -4,12 +4,8 @@ import { users } from './users';
 /**
  * Sessions table
  *
- * Stores user sessions for authentication.
- *
- * IMPORTANT: Column names use camelCase for proper Lucia Drizzle adapter compatibility.
- * The adapter expects properties: userId, expiresAt (not user_id, expires_at).
- *
- * @see https://lucia-auth.com/adapters/drizzle
+ * Legacy app-owned session table retained only for historical data access.
+ * Better Auth now manages active browser sessions in `better-auth.ts`.
  */
 export const sessions = sqliteTable(
   'sessions',

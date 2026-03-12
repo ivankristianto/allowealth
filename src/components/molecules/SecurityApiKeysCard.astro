@@ -83,6 +83,7 @@ const { keys } = Astro.props;
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
   import { setButtonLoading } from '@/lib/client-utils';
+  import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
 
   const initializedCards = new WeakSet<Element>();
 
@@ -194,7 +195,7 @@ const { keys } = Astro.props;
       });
       if (response.ok) {
         const html = await response.text();
-        container.innerHTML = html;
+        replaceWithSanitizedHtml(container, html);
       }
     } catch {
       // Silently fail — list will refresh on next page load

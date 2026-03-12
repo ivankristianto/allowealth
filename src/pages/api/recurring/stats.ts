@@ -2,7 +2,11 @@ import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { recurringOccurrenceService, RecurringServiceError, ServiceError } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
-import { createRenderHelper } from '@/lib/api/renderResponse';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
 
 function parseMonth(value: string | null): string {
@@ -11,7 +15,11 @@ function parseMonth(value: string | null): string {
 }
 
 export const GET: APIRoute = async (context) => {
-  const render = createRenderHelper(context.url);
+  const render = createRenderHelper(context.url, context.request);
+
+  if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
 
   try {
     const auth = getAuthenticatedUser(context);

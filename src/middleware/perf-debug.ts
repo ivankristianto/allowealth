@@ -13,6 +13,7 @@ import type { MiddlewareHandler } from 'astro';
 import { PerfCollector } from '@/lib/perf';
 import { getEnv } from '@/lib/env';
 import { getDatabaseConfig } from '@/db/config';
+import { isPerfDebugEnabled } from '@/lib/perf/debug';
 
 /**
  * Build Server-Timing header from timing entries
@@ -31,7 +32,7 @@ function buildServerTimingHeader(timings: Record<string, number>): string {
 }
 
 export const perfDebug: MiddlewareHandler = async (context, next) => {
-  const enabled = getEnv('PERF_DEBUG') === 'true';
+  const enabled = isPerfDebugEnabled(getEnv('PERF_DEBUG'), import.meta.env.DEV);
 
   if (!enabled) {
     return next();

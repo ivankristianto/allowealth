@@ -9,9 +9,8 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import DangerZone from '@/components/organisms/DangerZone.astro';
 import ManageAccountForms from '@/components/organisms/ManageAccountForms.astro';
 import ManageAppearancesForm from '@/components/organisms/ManageAppearancesForm.astro';
-import type { User } from '@/lib/auth/lucia';
+import type { AuthUser as User } from '@/lib/auth/types';
 import { emailVerificationService, userMetaService } from '@/services';
-import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
 const currentPath = '/profile';
 
@@ -20,13 +19,11 @@ const user = Astro.locals.user! as User;
 const freshSettings = await userMetaService.getUserSettings(user.id);
 const currentTheme = freshSettings.theme || 'system';
 const pendingEmail = await emailVerificationService.getPendingEmailChange(user.id);
-const oauthAccounts = await getLinkedOAuthAccounts(user.id);
-const hasLinkedOAuth = oauthAccounts.length > 0;
 ---
 
 <ProtectedLayout title="Profile" currentPath={currentPath} subtitle="Manage your account details">
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <ManageAccountForms user={user} pendingEmail={pendingEmail} hasLinkedOAuth={hasLinkedOAuth} />
+    <ManageAccountForms user={user} pendingEmail={pendingEmail} />
     <ManageAppearancesForm currentTheme={currentTheme} />
     <DangerZone />
   </div>
@@ -45,16 +42,7 @@ const hasLinkedOAuth = oauthAccounts.length > 0;
   const profileForm = document.getElementById('profile-form');
   const profileNameInput = document.getElementById('full-name');
   const profileEmailInput = document.getElementById('email');
-  const oauthWarning = document.getElementById('oauth-warning');
   const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
-
-  if (profileEmailInput instanceof HTMLInputElement && oauthWarning instanceof HTMLElement) {
-    profileEmailInput.addEventListener('input', () => {
-      const currentEmail = profileEmailInput.dataset.currentEmail || '';
-      const isChanged = profileEmailInput.value.toLowerCase() !== currentEmail.toLowerCase();
-      oauthWarning.style.display = isChanged ? 'flex' : 'none';
-    });
-  }
 
   if (
     profileForm instanceof HTMLFormElement &&

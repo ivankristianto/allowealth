@@ -9,12 +9,12 @@
 
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
-import { auth } from '@/lib/auth/lucia';
-import { invalidateUserSessions } from '@/lib/auth/session-cache';
+import { session as authSession } from '@/db/schema/sqlite/better-auth';
 import { EmailVerificationService } from '@/services/email-verification.service';
 import { WorkspaceService } from '@/services/workspace.service';
 import { AccountCategoryService } from '@/services/account-category.service';
 import { createLogger } from '@/lib/logger';
+import { eq } from 'drizzle-orm';
 
 const log = createLogger('api:verify-email');
 
@@ -58,19 +58,9 @@ export const GET: APIRoute = async ({ request, redirect }) => {
 
     const user = result.user;
 
-    // Handle email change verification by clearing all existing sessions first.
+    // Handle email change verification by forcing re-authentication everywhere.
     if (result.emailChanged) {
-      const authWithDeleteSessions = auth as typeof auth & {
-        deleteUserSessions?: (userId: string) => Promise<void>;
-      };
-
-      if (authWithDeleteSessions.deleteUserSessions) {
-        await authWithDeleteSessions.deleteUserSessions(user.id);
-      } else {
-        await auth.invalidateUserSessions(user.id);
-      }
-
-      await invalidateUserSessions(user.id);
+      await db.delete(authSession).where(eq(authSession.userId, user.id));
 
       log.info('Email changed, all sessions invalidated', { userId: user.id });
       return redirect('/login?email-changed=true', 302);

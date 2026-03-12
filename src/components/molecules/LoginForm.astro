@@ -25,7 +25,6 @@ export interface Props {
   redirectTo?: string;
   bannerMessage?: string;
   bannerType?: 'info' | 'success' | 'error';
-  resendEmail?: string;
   oauthError?: string;
 }
 
@@ -35,7 +34,6 @@ const {
   redirectTo = '',
   bannerMessage = '',
   bannerType = 'info',
-  resendEmail = '',
   oauthError = '',
 } = Astro.props;
 
@@ -61,14 +59,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
           {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
           {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
           {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
-          <div class="flex flex-wrap items-center gap-2">
-            <span>{bannerMessage}</span>
-            {resendEmail && (
-              <button type="button" class="underline font-bold" data-resend-email={resendEmail}>
-                Resend verification email
-              </button>
-            )}
-          </div>
+          <span>{bannerMessage}</span>
         </div>
       )
     }
@@ -91,7 +82,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       data-testid="login-form"
       data-redirect={redirectTo}
       data-api-login="/api/auth/login"
-      data-resend-api="/api/auth/resend-verification"
       class="space-y-5"
       novalidate
     >
@@ -179,11 +169,20 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 </div>
 
 <script>
+  import { authClient } from '@/lib/auth/client';
+  import {
+    buildCaptchaHeaders,
+    hasCaptchaWidget,
+    resetCaptchaWidget,
+  } from '@/lib/auth/captcha-client';
+  import {
+    sanitizeClientAuthNavigationTarget,
+    sanitizePostAuthRedirect,
+  } from '@/lib/auth/redirect';
+
   // Read server values from data attributes
   const loginForm = document.getElementById('login-form');
-  const redirectTo = loginForm?.dataset.redirect || '';
-  const apiLoginUrl = loginForm?.dataset.apiLogin || '/api/auth/login';
-  const resendApiUrl = loginForm?.dataset.resendApi || '/api/auth/resend-verification';
+  const redirectTo = sanitizePostAuthRedirect(loginForm?.dataset.redirect);
 
   // Helper function to clone icon from template
   const getErrorIcon = () => {
@@ -219,69 +218,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 
     messagesContainer.appendChild(alertDiv);
   };
-
-  // Show verification error with resend button
-  const showVerificationError = (emailAddr: string) => {
-    if (!messagesContainer) return;
-    messagesContainer.innerHTML = '';
-
-    const alertDiv = document.createElement('div');
-    alertDiv.setAttribute('role', 'alert');
-    alertDiv.className = 'alert alert-error';
-
-    const icon = getErrorIcon();
-    if (icon) alertDiv.appendChild(icon);
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'flex flex-wrap items-center gap-2';
-
-    const textSpan = document.createElement('span');
-    textSpan.textContent = 'Please verify your email before signing in.';
-    contentDiv.appendChild(textSpan);
-
-    const resendBtn = document.createElement('button');
-    resendBtn.type = 'button';
-    resendBtn.className = 'underline font-bold';
-    resendBtn.textContent = 'Resend verification email';
-    resendBtn.dataset.resendEmail = emailAddr;
-    contentDiv.appendChild(resendBtn);
-
-    alertDiv.appendChild(contentDiv);
-
-    messagesContainer.appendChild(alertDiv);
-  };
-
-  // Handle resend verification email clicks (event delegation)
-  document.addEventListener('click', async (e) => {
-    const target = e.target as HTMLButtonElement | null;
-    if (!target?.dataset?.resendEmail) return;
-
-    const resendEmail = target.dataset.resendEmail;
-    if (!resendEmail) return;
-
-    target.disabled = true;
-    target.textContent = 'Sending...';
-
-    try {
-      const res = await fetch(resendApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resendEmail }),
-      });
-
-      if (res.ok) {
-        target.textContent = 'Sent! Check your inbox';
-        target.className = 'font-bold opacity-70 cursor-default';
-      } else {
-        const data = await res.json();
-        target.textContent = data.error?.message || 'Failed to send';
-        target.disabled = false;
-      }
-    } catch {
-      target.textContent = 'Failed to send. Try again.';
-      target.disabled = false;
-    }
-  });
 
   const form = loginForm as HTMLFormElement | null;
   const messagesContainer = document.getElementById('login-messages');
@@ -339,6 +275,11 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         errors.push('Please enter your password');
       }
 
+      const captchaHeaders = buildCaptchaHeaders(form);
+      if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
+        errors.push('Please complete the bot protection check');
+      }
+
       // Display validation errors
       if (errors.length > 0) {
         showErrorAlert(errors.join(', '));
@@ -351,43 +292,47 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       if (submitButton) submitButton.disabled = true;
 
       try {
-        const formData = new FormData(form);
-        const data = {
-          email: formData.get('email'),
-          password: formData.get('password'),
-          remember: formData.get('remember') === 'true',
-          turnstileToken: formData.get('cf-turnstile-response') || '',
-        };
-
-        const response = await fetch(apiLoginUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        let shouldRedirectToTwoFactor = false;
+        const result = await authClient.signIn.email({
+          email: emailInput.value.trim(),
+          password: passwordInput.value,
+          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)?.checked,
+          callbackURL: redirectTo || '/dashboard',
+          fetchOptions: {
+            headers: captchaHeaders,
+            onSuccess(context) {
+              shouldRedirectToTwoFactor = context.data?.twoFactorRedirect === true;
+            },
           },
-          credentials: 'include',
-          body: JSON.stringify(data),
         });
 
-        const result = await response.json();
+        if (result.error) {
+          showErrorAlert(result.error.message || 'Login failed. Please try again.');
+          return;
+        }
 
-        if (response.ok && result.success) {
-          if (result.data?.requiresMfa) {
-            const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
-            window.location.href = mfaUrl;
-          } else {
-            // Login successful - redirect to dashboard or return URL
-            const returnUrl = redirectTo || '/dashboard';
-            window.location.href = returnUrl;
+        if (shouldRedirectToTwoFactor) {
+          const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
+          window.location.href = mfaUrl;
+          return;
+        }
+
+        if (typeof result.data?.url === 'string' && result.data.url.length > 0) {
+          const safeTarget = sanitizeClientAuthNavigationTarget(result.data.url, {
+            currentOrigin: window.location.origin,
+          });
+
+          if (safeTarget) {
+            window.location.href = safeTarget;
+            return;
           }
-        } else if (result.code === 'EMAIL_NOT_VERIFIED') {
-          // Show verification error with resend option
-          showVerificationError(result.email || emailInput.value);
-        } else {
-          // Login failed - show error message
+
           showErrorAlert(
-            result.error?.message || result.error || 'Login failed. Please try again.'
+            'Received an invalid redirect target. Sending you to a safe page instead.'
           );
         }
+
+        window.location.href = redirectTo || '/dashboard';
       } catch (error) {
         console.error('Login error:', error);
         // Show error message
@@ -397,10 +342,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
-        // Reset Turnstile widget for retry
-        if (typeof turnstile !== 'undefined') {
-          turnstile.reset();
-        }
+        resetCaptchaWidget();
       }
     });
   }

@@ -29,7 +29,7 @@ This is a **TypeScript-primary codebase**:
 
 - ✅ Write TypeScript with strict type checking, use `tsc --noEmit` to verify
 - ✅ Define explicit types instead of using `any`, use type inference where appropriate
-- ✅ Import project types from `@/lib/auth/lucia` etc., not library packages directly
+- ✅ Import project types from `@/lib/auth/types` etc., not library packages directly
 - ❌ Use `any` type without justification or skip typecheck
 
 ## Performance

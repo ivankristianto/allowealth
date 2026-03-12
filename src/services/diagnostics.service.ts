@@ -139,6 +139,9 @@ export class DiagnosticsService {
       'UPSTASH_REDIS_REST_URL',
       'PUBLIC_URL',
       'DEV_HOST',
+      'BETTER_AUTH_SECRET',
+      'PUBLIC_TURNSTILE_SITE_KEY',
+      'TURNSTILE_SECRET_KEY',
       'EMAIL_MODE',
       'LOG_LEVEL',
       'PERF_DEBUG',
@@ -182,6 +185,22 @@ export class DiagnosticsService {
     // PUBLIC_URL is required only when DEV_HOST is not set
     if (!getEnv('DEV_HOST') && !getEnv('PUBLIC_URL')) {
       missingRequired.push('PUBLIC_URL');
+    }
+
+    if (getEnv('NODE_ENV') !== 'test' && !getEnv('BETTER_AUTH_SECRET')) {
+      missingRequired.push('BETTER_AUTH_SECRET');
+    }
+
+    if (!import.meta.env.DEV && getEnv('NODE_ENV') !== 'test' && !getEnv('TURNSTILE_SECRET_KEY')) {
+      missingRequired.push('TURNSTILE_SECRET_KEY');
+    }
+
+    if (getEnv('TURNSTILE_SECRET_KEY') && !getEnv('PUBLIC_TURNSTILE_SITE_KEY')) {
+      missingRequired.push('PUBLIC_TURNSTILE_SITE_KEY');
+    }
+
+    if (getEnv('PUBLIC_TURNSTILE_SITE_KEY') && !getEnv('TURNSTILE_SECRET_KEY')) {
+      missingRequired.push('TURNSTILE_SECRET_KEY');
     }
 
     // Add warnings for potential issues

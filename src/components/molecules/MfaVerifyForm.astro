@@ -32,13 +32,7 @@ const { redirectTo = '' } = Astro.props;
 
     <div id="mfa-messages" aria-live="polite" aria-atomic="true"></div>
 
-    <form
-      id="mfa-form"
-      data-redirect={redirectTo}
-      data-api-verify="/api/auth/login/verify-mfa"
-      class="space-y-5"
-      novalidate
-    >
+    <form id="mfa-form" data-redirect={redirectTo} class="space-y-5" novalidate>
       <div id="totp-section">
         <FormField label="Verification Code" htmlFor="mfa-code" required>
           <input
@@ -117,6 +111,9 @@ const { redirectTo = '' } = Astro.props;
 </div>
 
 <script>
+  import { authClient } from '@/lib/auth/client';
+  import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
+
   const form = document.getElementById('mfa-form') as HTMLFormElement | null;
   const messagesContainer = document.getElementById('mfa-messages');
   const totpSection = document.getElementById('totp-section');
@@ -132,8 +129,7 @@ const { redirectTo = '' } = Astro.props;
   if (!form || !submitButton) {
     console.error('MFA form elements not found');
   } else {
-    const redirectTo = form.dataset.redirect || '';
-    const apiVerifyUrl = form.dataset.apiVerify || '/api/auth/login/verify-mfa';
+    const redirectTo = sanitizePostAuthRedirect(form.dataset.redirect);
     let isBackupMode = false;
 
     const getErrorIcon = () => {
@@ -214,23 +210,27 @@ const { redirectTo = '' } = Astro.props;
       submitButton.disabled = true;
 
       try {
-        const response = await fetch(apiVerifyUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ code, isBackupCode: isBackupMode }),
-        });
+        const result = isBackupMode
+          ? await authClient.twoFactor.verifyBackupCode({
+              code,
+              trustDevice: false,
+            })
+          : await authClient.twoFactor.verifyTotp({
+              code,
+              trustDevice: false,
+            });
 
-        const result = await response.json();
+        if (result.error) {
+          showError(result.error.message || 'Invalid verification code');
+          return;
+        }
 
-        if (response.ok && result.success) {
+        if (result.data) {
           window.location.href = redirectTo || '/dashboard';
           return;
         }
 
-        showError(result.error?.message || 'Invalid verification code');
+        showError('Invalid verification code');
       } catch {
         showError('An error occurred. Please try again.');
       } finally {

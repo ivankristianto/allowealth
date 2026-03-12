@@ -1,35 +1,13 @@
-# MFA endpoint paths
+# Better Auth two-factor endpoint paths
 paths:
-  /api/auth/mfa/setup:
+  /api/auth/two-factor/enable:
     post:
-      operationId: initializeMfaSetup
       tags: [Authentication]
-      summary: Initialize MFA setup
-      description: Generate a TOTP secret and return QR code + manual entry key.
-      security:
-        - sessionAuth: []
-      responses:
-        '200':
-          description: MFA setup initialized successfully
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/MfaSetupResponse.yml#/MfaSetupResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '400':
-          description: Setup failed
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-
-  /api/auth/mfa/verify-setup:
-    post:
-      operationId: verifyMfaSetup
-      tags: [Authentication]
-      summary: Verify MFA setup
-      description: Verify initial authenticator code and enable MFA.
+      operationId: enableTwoFactor
+      summary: Start two-factor setup
+      description: |
+        Requires an authenticated session and password confirmation.
+        Returns the TOTP URI plus the first set of backup codes.
       security:
         - sessionAuth: []
       requestBody:
@@ -37,167 +15,202 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../schemas/MfaVerifySetupRequest.yml#/MfaVerifySetupRequest'
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                issuer:
+                  type: string
+                  example: Allowealth
       responses:
         '200':
-          description: MFA setup verified and enabled
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/MfaVerifySetupResponse.yml#/MfaVerifySetupResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '400':
-          description: Invalid verification code or setup state
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-
-  /api/auth/mfa/status:
-    get:
-      operationId: getMfaStatus
-      tags: [Authentication]
-      summary: Get MFA status
-      description: Returns MFA enabled state and backup code availability for current user.
-      security:
-        - sessionAuth: []
-      responses:
-        '200':
-          description: MFA status returned
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/MfaStatusResponse.yml#/MfaStatusResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-
-  /api/auth/mfa/disable:
-    post:
-      operationId: disableMfa
-      tags: [Authentication]
-      summary: Disable MFA
-      description: Disable MFA after verifying current TOTP or backup code.
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/MfaDisableRequest.yml#/MfaDisableRequest'
-      responses:
-        '200':
-          description: MFA disabled
+          description: Two-factor setup initialized
           content:
             application/json:
               schema:
                 type: object
-                required: [success, data]
+                required: [totpURI, backupCodes]
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    required: [message]
-                    properties:
-                      message:
-                        type: string
-                        example: MFA disabled successfully
+                  totpURI:
+                    type: string
+                    description: otpauth:// URI for authenticator apps
+                  backupCodes:
+                    type: array
+                    items:
+                      type: string
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
-        '400':
-          description: Invalid verification code
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
 
-  /api/auth/mfa/regenerate-backup-codes:
+  /api/auth/two-factor/verify-totp:
     post:
-      operationId: regenerateMfaBackupCodes
       tags: [Authentication]
-      summary: Regenerate backup codes
-      description: Generates a new set of backup codes after TOTP verification.
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/MfaDisableRequest.yml#/MfaDisableRequest'
-      responses:
-        '200':
-          description: New backup codes generated
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/MfaVerifySetupResponse.yml#/MfaVerifySetupResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '400':
-          description: Verification failed
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-
-  /api/auth/login/verify-mfa:
-    post:
-      operationId: verifyLoginMfa
-      tags: [Authentication]
-      summary: Verify MFA during login
-      description: Completes login by verifying a pending MFA challenge.
+      operationId: verifyTotp
+      summary: Verify a TOTP code
+      description: |
+        Used both to finish setup and to complete a sign-in that is paused for
+        two-factor verification.
       security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '../schemas/MfaVerifyLoginRequest.yml#/MfaVerifyLoginRequest'
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  example: '123456'
+                trustDevice:
+                  type: boolean
+                  default: false
       responses:
         '200':
-          description: MFA verified and session established
-          headers:
-            Set-Cookie:
-              description: Session cookie
-              schema:
-                type: string
+          description: Verification accepted and session completed or updated
           content:
             application/json:
               schema:
                 type: object
-                required: [success, data]
+                required: [token, user]
                 properties:
-                  success:
+                  token:
+                    type: string
+                  user:
+                    type: object
+                    required: [id, email, name]
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      name:
+                        type: string
+                      twoFactorEnabled:
+                        type: boolean
+        '400':
+          description: Invalid verification code or missing challenge state
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/two-factor/verify-backup-code:
+    post:
+      tags: [Authentication]
+      operationId: verifyBackupCode
+      summary: Verify a backup code
+      description: Completes a two-factor challenge using a one-time backup code.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                trustDevice:
+                  type: boolean
+                  default: false
+                disableSession:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Verification accepted and session completed or updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, user]
+                properties:
+                  token:
+                    type: [string, 'null']
+                  user:
+                    type: object
+                    required: [id, email, name]
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      name:
+                        type: string
+                      twoFactorEnabled:
+                        type: boolean
+        '400':
+          description: Invalid verification code or missing challenge state
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/two-factor/disable:
+    post:
+      tags: [Authentication]
+      operationId: disableTwoFactor
+      summary: Disable two-factor authentication
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Two-factor disabled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
                     type: boolean
                     example: true
-                  data:
-                    type: object
-                    required: [verified]
-                    properties:
-                      verified:
-                        type: boolean
-                        example: true
-        '400':
-          description: Missing pending MFA state or invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '401':
-          description: Invalid MFA code
+          $ref: '../responses/common.yml#/Unauthorized'
+
+  /api/auth/two-factor/generate-backup-codes:
+    post:
+      tags: [Authentication]
+      operationId: generateBackupCodes
+      summary: Generate a new set of backup codes
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: New backup codes generated
           content:
             application/json:
               schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '429':
-          description: Too many MFA verification attempts
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
+                type: object
+                required: [backupCodes]
+                properties:
+                  backupCodes:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'

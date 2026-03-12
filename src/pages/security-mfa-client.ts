@@ -1,7 +1,7 @@
-import { csrfFetch } from '@/lib/csrf-client';
+import { authClient } from '@/lib/auth/client';
 import { addToast } from '@/lib/stores/toastStore';
 
-function requestCode(
+function requestPassword(
   title: string,
   description: string,
   confirmLabel?: string
@@ -10,7 +10,7 @@ function requestCode(
     const handler = (event: Event) => {
       document.removeEventListener('mfa:confirm-result', handler);
       const detail = (event as CustomEvent).detail;
-      resolve(detail?.code || null);
+      resolve(detail?.password || null);
     };
     document.addEventListener('mfa:confirm-result', handler);
     document.dispatchEvent(
@@ -21,22 +21,17 @@ function requestCode(
   });
 }
 
-async function callMfaEndpoint(path: string, body: Record<string, unknown>) {
-  const response = await csrfFetch(path, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  const result = await response.json();
-  if (!response.ok || !result.success) {
-    throw new Error(result.error?.message || 'Request failed');
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
   }
 
-  return result;
+  return fallback;
 }
 
 function initSecurityMfaClient() {
@@ -60,28 +55,36 @@ function initSecurityMfaClient() {
       }
 
       if (action === 'disable-mfa') {
-        const code = await requestCode(
+        const password = await requestPassword(
           'Disable MFA',
-          'Enter your authenticator code or a backup code to disable multi-factor authentication.',
+          'Enter your account password to disable multi-factor authentication.',
           'Disable MFA'
         );
-        if (!code) return;
+        if (!password) return;
 
-        await callMfaEndpoint('/api/auth/mfa/disable', { code });
+        const result = await authClient.twoFactor.disable({ password });
+        if (result.error) {
+          throw result.error;
+        }
+
         addToast('MFA disabled successfully.', 'success');
         window.setTimeout(() => window.location.reload(), 300);
         return;
       }
 
       if (action === 'regenerate-backup-codes') {
-        const code = await requestCode(
+        const password = await requestPassword(
           'Regenerate Backup Codes',
-          'Enter a 6-digit authenticator code to regenerate your backup codes.',
+          'Enter your account password to regenerate your backup codes.',
           'Regenerate'
         );
-        if (!code) return;
+        if (!password) return;
 
-        const result = await callMfaEndpoint('/api/auth/mfa/regenerate-backup-codes', { code });
+        const result = await authClient.twoFactor.generateBackupCodes({ password });
+        if (result.error) {
+          throw result.error;
+        }
+
         const backupCodes = result.data?.backupCodes;
 
         if (!Array.isArray(backupCodes)) {
@@ -97,7 +100,7 @@ function initSecurityMfaClient() {
         return;
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'MFA action failed';
+      const message = getErrorMessage(error, 'MFA action failed');
       addToast(message, 'error');
     }
   });

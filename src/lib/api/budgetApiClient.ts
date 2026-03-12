@@ -8,6 +8,7 @@
  * See: docs/architecture/002-interactive-pages.md
  */
 
+import { csrfFetch } from '@/lib/csrf-client';
 import type { BudgetSummary } from '@/services';
 
 /** HTML response from _render=html requests */
@@ -134,7 +135,7 @@ export async function fetchBudgetOverviewHtml(
   const url = `/api/budget/overview?${queryString}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await csrfFetch(url, {
       method: 'GET',
       headers: {
         Accept: 'text/html',

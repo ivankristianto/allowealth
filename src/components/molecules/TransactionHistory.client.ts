@@ -10,6 +10,7 @@
  */
 
 import { addToast } from '@/lib/stores/toastStore';
+import { csrfFetch } from '@/lib/csrf-client';
 let controller: AbortController | null = null;
 
 /**
@@ -46,7 +47,7 @@ async function toggleHistory(transactionId: string, showAll = false): Promise<vo
   // Fetch history HTML
   try {
     const allParam = showAll ? '&all=true' : '';
-    const response = await fetch(
+    const response = await csrfFetch(
       `/api/transactions/${transactionId}/history?_render=html${allParam}`,
       {
         method: 'GET',

@@ -159,20 +159,27 @@ describe('csrf', () => {
   });
 
   describe('isCsrfExempt', () => {
-    test('returns true for login endpoint', () => {
-      expect(isCsrfExempt('/api/auth/login')).toBe(true);
+    test('returns true for better-auth sign-in endpoint', () => {
+      expect(isCsrfExempt('/api/auth/sign-in/email')).toBe(true);
+      expect(isCsrfExempt('/api/auth/sign-in/social')).toBe(true);
     });
 
-    test('returns true for signup endpoint', () => {
-      expect(isCsrfExempt('/api/auth/signup')).toBe(true);
+    test('returns true for better-auth sign-up endpoint', () => {
+      expect(isCsrfExempt('/api/auth/sign-up/email')).toBe(true);
     });
 
-    test('returns true for forgot-password endpoint', () => {
-      expect(isCsrfExempt('/api/auth/forgot-password')).toBe(true);
+    test('returns true for better-auth forgot-password endpoint', () => {
+      expect(isCsrfExempt('/api/auth/forget-password')).toBe(true);
     });
 
-    test('returns true for logout endpoint', () => {
-      expect(isCsrfExempt('/api/auth/logout')).toBe(true);
+    test('returns true for better-auth sign-out endpoint', () => {
+      expect(isCsrfExempt('/api/auth/sign-out')).toBe(true);
+    });
+
+    test('returns true for all /api/auth/* paths', () => {
+      expect(isCsrfExempt('/api/auth/two-factor/totp/verify')).toBe(true);
+      expect(isCsrfExempt('/api/auth/reset-password')).toBe(true);
+      expect(isCsrfExempt('/api/auth/verify-email')).toBe(true);
     });
 
     test('returns false for non-exempt endpoints', () => {
@@ -182,19 +189,13 @@ describe('csrf', () => {
       expect(isCsrfExempt('/api/budget/overview')).toBe(false);
     });
 
-    test('requires exact path match', () => {
-      // Subpaths should not be exempt
-      expect(isCsrfExempt('/api/auth/login/extra')).toBe(false);
-      expect(isCsrfExempt('/api/auth/signup/')).toBe(false);
-
-      // Prefixes should not match
+    test('requires a path segment after /api/auth', () => {
+      // The prefix itself without a path is not exempt
       expect(isCsrfExempt('/api/auth')).toBe(false);
-      expect(isCsrfExempt('/api/auth/')).toBe(false);
     });
 
     test('is case-sensitive', () => {
-      expect(isCsrfExempt('/api/auth/LOGIN')).toBe(false);
-      expect(isCsrfExempt('/API/AUTH/LOGIN')).toBe(false);
+      expect(isCsrfExempt('/API/AUTH/sign-in/email')).toBe(false);
     });
   });
 
@@ -239,11 +240,8 @@ describe('csrf', () => {
       expect(CSRF_PROTECTED_METHODS).toContain('PATCH');
     });
 
-    test('CSRF_EXEMPT_ENDPOINTS includes auth endpoints', () => {
-      expect(CSRF_EXEMPT_ENDPOINTS).toContain('/api/auth/login');
-      expect(CSRF_EXEMPT_ENDPOINTS).toContain('/api/auth/signup');
-      expect(CSRF_EXEMPT_ENDPOINTS).toContain('/api/auth/forgot-password');
-      expect(CSRF_EXEMPT_ENDPOINTS).toContain('/api/auth/logout');
+    test('CSRF_EXEMPT_ENDPOINTS includes the better-auth prefix', () => {
+      expect(CSRF_EXEMPT_ENDPOINTS).toContain('/api/auth');
     });
   });
 });

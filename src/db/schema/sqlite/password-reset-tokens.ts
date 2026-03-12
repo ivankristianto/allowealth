@@ -6,8 +6,7 @@ import { users } from './users';
 /**
  * Password Reset Tokens Table
  *
- * Stores secure tokens for password reset functionality.
- * Tokens expire after 1 hour for security.
+ * App-owned password reset tokens retained until all callers are migrated.
  */
 export const passwordResetTokens = sqliteTable(
   'password_reset_tokens',

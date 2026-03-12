@@ -12,16 +12,19 @@ interface Props {
 
 const { action = 'Sign in', class: className = '' } = Astro.props;
 const label = `${action} with Google`;
+const redirectPath = action === 'Sign up' ? '/signup' : '/login';
 ---
 
 <a
-  href="/api/auth/google"
+  href="#"
   class:list={[
     'btn btn-outline border-base-300 bg-base-100 hover:bg-base-200 gap-3 h-14 rounded-2xl text-base font-semibold w-full',
     className,
   ]}
   role="button"
   aria-label={label}
+  data-google-auth-button
+  data-error-callback={redirectPath}
 >
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="shrink-0">
     <path
@@ -43,3 +46,66 @@ const label = `${action} with Google`;
   </svg>
   <span>{label}</span>
 </a>
+
+<script>
+  import {
+    GOOGLE_AUTH_ALLOWED_ORIGINS,
+    sanitizeClientAuthNavigationTarget,
+    sanitizePostAuthRedirect,
+  } from '@/lib/auth/redirect';
+
+  const initializedButtons = new WeakSet<HTMLAnchorElement>();
+
+  function initGoogleAuthButtons() {
+    document.querySelectorAll<HTMLAnchorElement>('[data-google-auth-button]').forEach((button) => {
+      if (initializedButtons.has(button)) {
+        return;
+      }
+      initializedButtons.add(button);
+
+      const errorCallbackPath = sanitizePostAuthRedirect(button.dataset.errorCallback) || '/login';
+
+      button.addEventListener('click', async (event) => {
+        event.preventDefault();
+
+        const response = await fetch('/api/auth/sign-in/social', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            provider: 'google',
+            callbackURL: '/dashboard',
+            errorCallbackURL: errorCallbackPath,
+            disableRedirect: true,
+          }),
+        });
+
+        const result = await response.json();
+        const safeTarget = sanitizeClientAuthNavigationTarget(result?.url, {
+          currentOrigin: window.location.origin,
+          allowedExternalOrigins: GOOGLE_AUTH_ALLOWED_ORIGINS,
+        });
+
+        if (!response.ok || !result?.url || !safeTarget) {
+          const params = new URLSearchParams({
+            oauth_error: 'oauth_error',
+          });
+          window.location.href = `${errorCallbackPath}?${params.toString()}`;
+          return;
+        }
+
+        window.location.href = safeTarget;
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGoogleAuthButtons, { once: true });
+  } else {
+    initGoogleAuthButtons();
+  }
+
+  document.addEventListener('astro:page-load', initGoogleAuthButtons);
+</script>

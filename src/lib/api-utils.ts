@@ -1,7 +1,6 @@
 import type { APIContext } from 'astro';
 import type { BaseIssue, BaseSchema, BaseSchemaAsync } from 'valibot';
 import { safeParseAsync } from 'valibot';
-import { auth } from '@/lib/auth/lucia';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { requireTenantContext } from '@/lib/tenant/context';
 
@@ -239,43 +238,17 @@ export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
 }
 
 /**
- * Get user ID from Lucia session cookie
+ * Get user ID from session
  *
- * @deprecated Use `getAuthenticatedUser(context)` instead. This function makes
- * a redundant database call since the middleware already validates the session
- * and sets `context.locals.user`.
- *
- * Extracts the session ID from the request cookies and validates it
- * using Lucia's validateSession method. Returns the user ID if the
- * session is valid, null otherwise.
+ * @deprecated Use `getAuthenticatedUser(context)` instead. This function is
+ * redundant since the middleware already validates the session and sets
+ * `context.locals.user`.
  *
  * @param context - Astro API context containing request cookies
  * @returns User ID string if session is valid, null otherwise
  */
 export async function getUserId(context: APIContext): Promise<string | null> {
-  // Extract session ID from cookies using Lucia's cookie name
-  const sessionId = context.cookies.get(auth.sessionCookieName)?.value;
-
-  // No session cookie found
-  if (!sessionId) {
-    return null;
-  }
-
-  try {
-    // Validate session using Lucia
-    const { session, user } = await auth.validateSession(sessionId);
-
-    // Session is invalid or expired
-    if (!session || !user) {
-      return null;
-    }
-
-    // Return user ID from valid session
-    return user.id;
-  } catch {
-    // Session validation failed (invalid token, database error, etc.)
-    return null;
-  }
+  return context.locals.user?.id ?? null;
 }
 
 /**

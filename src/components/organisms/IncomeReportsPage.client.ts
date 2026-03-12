@@ -17,6 +17,7 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from './ReportsRenderer.client';
+import { csrfFetch } from '@/lib/csrf-client';
 import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
@@ -118,7 +119,7 @@ async function fetchIncomeHtml(
   partial: string = 'all'
 ): Promise<ReturnType<typeof parseHtmlPartials>> {
   const params = buildFetchParams(partial);
-  const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+  const response = await csrfFetch(`${apiEndpoint}?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch income data: ${response.statusText}`);
   }
@@ -197,7 +198,7 @@ async function fetchAndRenderSelector(): Promise<void> {
     params.set('period', currentState.period);
     params.set('currency', currentState.currency);
 
-    const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+    const response = await csrfFetch(`${apiEndpoint}?${params.toString()}`);
     if (!response.ok) throw new Error(`Failed to fetch selector: ${response.statusText}`);
 
     const html = await response.text();

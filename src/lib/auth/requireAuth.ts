@@ -1,3 +1,5 @@
+import type { AuthUser } from './types';
+
 /**
  * Protected Route Helper
  *
@@ -88,7 +90,7 @@ export function requireAuth(astro: any, redirectTo: string = '/login'): AuthChec
  * ```
  */
 export function isAuthenticated(astro: any): boolean {
-  return astro.locals?.user !== null;
+  return astro.locals?.user != null;
 }
 
 /**
@@ -99,8 +101,8 @@ export function isAuthenticated(astro: any): boolean {
  * @param astro - Astro global object
  * @returns User object if authenticated, null otherwise
  */
-export function getCurrentUser(astro: any): any {
-  return astro.locals?.user;
+export function getCurrentUser(astro: any): AuthUser | null {
+  return astro.locals?.user ?? null;
 }
 
 /**

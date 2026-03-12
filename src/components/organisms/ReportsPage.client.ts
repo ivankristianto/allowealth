@@ -18,6 +18,7 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from './ReportsRenderer.client';
+import { csrfFetch } from '@/lib/csrf-client';
 import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
 import { navigate } from 'astro:transitions/client';
@@ -138,7 +139,7 @@ async function fetchReportHtml(
   params.set('period', period);
   params.set('currency', currency);
 
-  const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+  const response = await csrfFetch(`${apiEndpoint}?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch report data: ${response.statusText}`);
@@ -219,7 +220,7 @@ async function fetchAndRenderSelector(): Promise<void> {
     params.set('period', currentState.period);
     params.set('currency', currentState.currency);
 
-    const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+    const response = await csrfFetch(`${apiEndpoint}?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch selector: ${response.statusText}`);

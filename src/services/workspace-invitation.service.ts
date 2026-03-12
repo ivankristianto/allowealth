@@ -37,6 +37,7 @@ import {
   type InferInput,
 } from 'valibot';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
+import { hashOpaqueToken } from '@/lib/crypto/token-hash';
 
 const workspaceInvitationEmailService = new EmailService();
 
@@ -116,6 +117,7 @@ export class WorkspaceInvitationService {
 
     const id = nanoid();
     const token = nanoid(TOKEN_LENGTH); // 64-character secure token
+    const tokenHash = await hashOpaqueToken(token);
     const now = new Date();
     const expiresAt = new Date(now.getTime() + INVITATION_EXPIRY_MS);
 
@@ -125,7 +127,7 @@ export class WorkspaceInvitationService {
         id,
         workspace_id: validated.workspaceId,
         email: validated.email.toLowerCase(),
-        token,
+        token: tokenHash,
         invited_by_user_id: validated.invitedByUserId ?? null,
         role: validated.role,
         expires_at: expiresAt,
@@ -135,7 +137,7 @@ export class WorkspaceInvitationService {
       .returning();
 
     // Send invitation email
-    await this.sendInvitationEmail(invitation);
+    await this.sendInvitationEmail(invitation, token);
 
     return invitation;
   }
@@ -147,8 +149,9 @@ export class WorkspaceInvitationService {
    * @returns Promise resolving to invitation or null if not found
    */
   async findByToken(token: string): Promise<WorkspaceInvitation | null> {
+    const tokenHash = await hashOpaqueToken(token);
     const invitation = await this.db.query.workspaceInvitations.findFirst({
-      where: eq(this.schema.workspaceInvitations.token, token),
+      where: eq(this.schema.workspaceInvitations.token, tokenHash),
     });
 
     return invitation ?? null;
@@ -239,12 +242,13 @@ export class WorkspaceInvitationService {
     }
 
     // Mark as accepted
+    const tokenHash = await hashOpaqueToken(token);
     await this.db
       .update(this.schema.workspaceInvitations)
       .set({
         accepted_at: now,
       })
-      .where(eq(this.schema.workspaceInvitations.token, token));
+      .where(eq(this.schema.workspaceInvitations.token, tokenHash));
   }
 
   /**
@@ -300,21 +304,27 @@ export class WorkspaceInvitationService {
       );
     }
 
-    // Extend expiration
+    const nextToken = nanoid(TOKEN_LENGTH);
+    const nextTokenHash = await hashOpaqueToken(nextToken);
     const newExpiresAt = new Date(Date.now() + INVITATION_EXPIRY_MS);
 
     await this.db
       .update(this.schema.workspaceInvitations)
       .set({
+        token: nextTokenHash,
         expires_at: newExpiresAt,
       })
       .where(eq(this.schema.workspaceInvitations.id, id));
 
     // Send invitation email
-    await this.sendInvitationEmail({
-      ...invitation,
-      expires_at: newExpiresAt,
-    });
+    await this.sendInvitationEmail(
+      {
+        ...invitation,
+        token: nextTokenHash,
+        expires_at: newExpiresAt,
+      },
+      nextToken
+    );
   }
 
   /**
@@ -385,7 +395,10 @@ export class WorkspaceInvitationService {
   /**
    * Send invitation email to the invitee
    */
-  private async sendInvitationEmail(invitation: WorkspaceInvitation): Promise<void> {
+  private async sendInvitationEmail(
+    invitation: WorkspaceInvitation,
+    plaintextToken: string
+  ): Promise<void> {
     try {
       // Get workspace name
       const workspace = await this.db.query.workspaces.findFirst({
@@ -403,7 +416,7 @@ export class WorkspaceInvitationService {
 
       // Build invite URL
       const baseUrl = getBaseUrl();
-      const inviteUrl = `${baseUrl}/signup?token=${invitation.token}`;
+      const inviteUrl = `${baseUrl}/signup?token=${plaintextToken}`;
 
       // Calculate expiration time
       const expiresIn = `${INVITATION_EXPIRY_DAYS} days`;

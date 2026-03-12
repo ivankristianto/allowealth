@@ -11,7 +11,7 @@ Personal and family financial application for expense tracking, budgeting, accou
 - **State Management:** Nano Stores (client-side reactive state)
 - **Animations:** Motion/mini (client-side animations)
 - **Database:** Drizzle ORM + SQLite (dev) / Cloudflare D1 (prod)
-- **Auth:** Lucia Auth
+- **Auth:** Better Auth
 - **Cache:** CacheManager + Upstash Redis (prod) / Memory (dev)
 - **Logging:** Structured consola loggers
 

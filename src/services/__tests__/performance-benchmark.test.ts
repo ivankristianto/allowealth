@@ -14,9 +14,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { nanoid } from 'nanoid';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { unlinkSync, existsSync, writeFileSync } from 'node:fs';
 
 import * as schema from '@/db/schema/sqlite';
@@ -173,16 +172,19 @@ let accountCategoryService: AccountCategoryService;
 let workspaceService: WorkspaceService;
 let userService: UserService;
 
-beforeAll(() => {
+beforeAll(async () => {
   rawDb = new Database(DB_PATH);
   rawDb.prepare('PRAGMA journal_mode = WAL').run();
   rawDb.prepare('PRAGMA synchronous = NORMAL').run();
   rawDb.prepare('PRAGMA cache_size = -64000').run();
   rawDb.prepare('PRAGMA foreign_keys = ON').run();
 
-  db = drizzle(rawDb, { schema });
+  // Execute consolidated schema setup SQL (no migrations)
+  const setupSqlPath = join(process.cwd(), 'src', 'db', 'setup.sql');
+  const sql = await Bun.file(setupSqlPath).text();
+  rawDb.exec(sql);
 
-  migrate(db, { migrationsFolder: join(process.cwd(), 'drizzle', 'sqlite') });
+  db = drizzle(rawDb, { schema });
 
   seedDatabase(db);
 
