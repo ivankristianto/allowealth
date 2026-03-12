@@ -66,7 +66,13 @@ export async function seedBudgets(
   }
 
   if (budgetRecords.length > 0) {
-    await db.insert(budgets).values(budgetRecords);
+    // D1 allows at most 100 bound params per statement.
+    // This insert binds 12 columns per row, so max safe batch size is 8 rows (96 params).
+    const BATCH_SIZE = 8;
+    for (let index = 0; index < budgetRecords.length; index += BATCH_SIZE) {
+      const batch = budgetRecords.slice(index, index + BATCH_SIZE);
+      await db.insert(budgets).values(batch);
+    }
   }
 
   console.log(`✓ Created ${budgetRecords.length} budget records`);

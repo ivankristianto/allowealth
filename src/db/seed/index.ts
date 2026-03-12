@@ -37,6 +37,12 @@ import {
   passwordResetTokens,
   budgets,
   auditLogs,
+  // Better Auth tables
+  user,
+  account,
+  session as betterAuthSession,
+  verification,
+  twoFactor,
 } from '@/db/schema';
 
 // Domain seeders
@@ -242,6 +248,12 @@ async function clearAllTables() {
     await db.delete(accountCategories);
     await db.delete(categories);
     await db.delete(userMeta);
+    // Better Auth tables (must be deleted before app users due to FK relationships)
+    await db.delete(twoFactor);
+    await db.delete(account);
+    await db.delete(betterAuthSession);
+    await db.delete(verification);
+    await db.delete(user);
     await db.delete(users);
     await db.delete(workspaceMeta);
     await db.delete(workspaces);
