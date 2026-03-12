@@ -1,19 +1,18 @@
-# Cloudflare Workers Configuration
-# https://developers.cloudflare.com/workers/wrangler/configuration/
+# Cloudflare Workers configuration template for the root app.
+# Copy this file once per deployment target and customize it locally.
 #
-# SETUP: Copy this file to wrangler.toml and fill in your own values.
-#   cp wrangler.toml.example wrangler.toml
+# Examples:
+#   cp wrangler.toml.example wrangler.demo.toml
+#   cp wrangler.toml.example wrangler.vv.toml
 #
-# wrangler.toml is gitignored -- never commit it with real IDs or secrets.
-#
-# DATABASE: Cloudflare D1 (SQLite-compatible database at the edge)
-#   1. Create DB:   wrangler d1 create allowealth-db
-#   2. Set ID:      replace YOUR_D1_DATABASE_ID with the returned ID
-#   3. Migrations:  for f in drizzle/sqlite/*.sql; do wrangler d1 execute allowealth-db --remote --file="$f"; done
-#   4. Deploy:      bun run deploy:cloudflare
+# Rules:
+# - one worker deployment = one D1 database
+# - set PUBLIC_URL to the app domain for that worker
+# - set PUBLIC_SITE_URL to the static site domain
+# - do not commit real IDs or secrets
 
 account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
-name = "allowealth"
+name = "YOUR_WORKER_NAME"
 main = "dist/_worker.js/index.js"
 compatibility_date = "2026-02-01"
 compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
@@ -21,7 +20,7 @@ compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
 # Custom domain routes (must be top-level, before any [section] headers)
 # https://developers.cloudflare.com/workers/configuration/routing/routes/
 routes = [
-  { pattern = "allowealth.io", custom_domain = true },
+  { pattern = "your-app.example.com", custom_domain = true },
 ]
 
 # Static assets configuration
@@ -33,7 +32,7 @@ binding = "ASSETS"
 # Environment variables (non-secret)
 [vars]
 NODE_ENV = "production"
-PUBLIC_URL = "https://allowealth.io"
+PUBLIC_URL = "https://your-app.example.com"
 PUBLIC_SITE_URL = "https://allowealth.io"
 SIGNUP_MODE = "invite_only"
 CACHE_DRIVER = "upstash"
@@ -52,8 +51,8 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 # -- Cloudflare D1 (SQLite at the edge) --
 [[d1_databases]]
 binding = "DB"
-database_name = "allowealth-db"
-database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create allowealth-db
+database_name = "YOUR_D1_DATABASE_NAME"
+database_id = "YOUR_D1_DATABASE_ID"
 
 # Workers Logs -- captures all console.* output, auto-indexes JSON fields
 # https://developers.cloudflare.com/workers/observability/logs/workers-logs/

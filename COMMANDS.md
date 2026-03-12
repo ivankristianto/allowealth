@@ -29,16 +29,42 @@ bun run docs:build         # Build docs site
 bun run docs:check         # Validate docs site
 ```
 
+## Marketing Site
+
+| Command                           | Description                              |
+| --------------------------------- | ---------------------------------------- |
+| `bun install --cwd apps/site`     | Install marketing site dependencies      |
+| `bun run --cwd apps/site dev`     | Start the marketing site dev server      |
+| `bun run --cwd apps/site build`   | Build the static marketing site          |
+| `bun run --cwd apps/site preview` | Preview the built marketing site locally |
+
+```bash
+bun install --cwd apps/site
+bun run --cwd apps/site build
+```
+
 ### Docs Deployment
 
-| Command                                                 | Description                             |
-| ------------------------------------------------------- | --------------------------------------- |
-| `bun run docs:build`                                    | Build docs output before deployment     |
-| `bunx wrangler deploy --config apps/docs/wrangler.toml` | Deploy docs worker/assets to Cloudflare |
+| Command                                                       | Description                         |
+| ------------------------------------------------------------- | ----------------------------------- |
+| `bun run docs:build`                                          | Build docs output before deployment |
+| `bunx wrangler pages deploy --config apps/docs/wrangler.toml` | Deploy docs Pages project           |
 
 ```bash
 bun run docs:build
-bunx wrangler deploy --config apps/docs/wrangler.toml
+bunx wrangler pages deploy --config apps/docs/wrangler.toml
+```
+
+### Marketing Site Deployment
+
+| Command                                                       | Description                    |
+| ------------------------------------------------------------- | ------------------------------ |
+| `bun run --cwd apps/site build`                               | Build marketing site output    |
+| `bunx wrangler pages deploy --config apps/site/wrangler.toml` | Deploy marketing Pages project |
+
+```bash
+bun run --cwd apps/site build
+bunx wrangler pages deploy --config apps/site/wrangler.toml
 ```
 
 ### Docs Domain Go-Live Checklist (Manual)
@@ -73,6 +99,17 @@ Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 bun run build                # Default build
 bun run deploy:cloudflare    # Build + deploy to Workers
 ```
+
+### Worker Config Setup
+
+Copy `wrangler.toml.example` per app worker deployment and customize the placeholders:
+
+```bash
+cp wrangler.toml.example wrangler.demo.toml
+cp wrangler.toml.example wrangler.vv.toml
+```
+
+Set a distinct `PUBLIC_URL`, `PUBLIC_SITE_URL`, and D1 database per worker.
 
 ## Quality Gates
 

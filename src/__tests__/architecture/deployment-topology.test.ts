@@ -16,12 +16,15 @@ describe('deployment topology', () => {
   test('uses apps/docs and apps/site deployment surfaces', () => {
     expect(existsSync('apps/docs/wrangler.toml')).toBe(true);
     expect(existsSync('apps/site/wrangler.toml')).toBe(true);
+    expect(existsSync('apps/site/public/_headers')).toBe(true);
+    expect(existsSync('apps/site/src/__tests__/routes.test.ts')).toBe(true);
     expect(existsSync('apps/site/src/pages/index.astro')).toBe(true);
     expect(existsSync('apps/site/src/pages/terms.astro')).toBe(true);
     expect(existsSync('apps/site/src/pages/privacy.astro')).toBe(true);
     expect(existsSync('src/pages/index.astro')).toBe(false);
     expect(existsSync('src/pages/terms.astro')).toBe(false);
     expect(existsSync('src/pages/privacy.astro')).toBe(false);
+    expect(existsSync('.github/workflows/deploy-site.yml')).toBe(true);
     expect(existsSync('docs/sites')).toBe(false);
   });
 
@@ -32,6 +35,18 @@ describe('deployment topology', () => {
     expect(pkg).toContain('--cwd apps/docs');
     expect(workflow).toContain("paths:\n      - 'apps/docs/**'");
     expect(workflow).toContain('workingDirectory: apps/docs');
+  });
+
+  test('worker example and site workflow document the split topology', () => {
+    const wranglerExample = readFileSync('wrangler.toml.example', 'utf-8');
+    const siteWorkflow = readFileSync('.github/workflows/deploy-site.yml', 'utf-8');
+
+    expect(wranglerExample).toContain('YOUR_WORKER_NAME');
+    expect(wranglerExample).toContain('PUBLIC_SITE_URL');
+    expect(wranglerExample).not.toContain('APP_MODE');
+    expect(siteWorkflow).toContain("paths:\n      - 'apps/site/**'");
+    expect(siteWorkflow).toContain('workingDirectory: apps/site');
+    expect(siteWorkflow).toContain('command: pages deploy');
   });
 
   test('non-historical source files no longer reference docs/sites', () => {
