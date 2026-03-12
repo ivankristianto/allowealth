@@ -116,19 +116,28 @@ bun run deploy:cloudflare    # Build + deploy to Workers
 
 ### Worker Config Setup
 
-Copy `wrangler.toml.example` per app worker deployment and customize the placeholders:
+Deployments are managed via environments in `wrangler.toml`. Each environment has its own worker name, domain, and D1 database.
+
+To add a new environment, add an `[env.<name>]` section to `wrangler.toml` and create a D1 database:
 
 ```bash
-cp wrangler.toml.example wrangler.demo.toml
-cp wrangler.toml.example wrangler.vv.toml
+wrangler d1 create allowealth-<name>-db
 ```
 
-Set a distinct `PUBLIC_URL`, `PUBLIC_SITE_URL`, and D1 database per worker.
-Deploy per worker with:
+Then update the `database_id` in `wrangler.toml` and run migrations:
+
+```bash
+for f in drizzle/sqlite/*.sql; do
+  wrangler d1 execute allowealth-<name>-db --remote --file="$f" --env <name>
+done
+```
+
+Deploy per environment with:
 
 ```bash
 bun run build:cloudflare
-wrangler deploy --config wrangler.demo.toml
+wrangler deploy --env demo   # → demo.allowealth.io
+wrangler deploy --env vv     # → vv.allowealth.io
 ```
 
 ## Quality Gates

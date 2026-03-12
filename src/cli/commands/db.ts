@@ -206,6 +206,41 @@ export default defineCommand({
         }
       },
     }),
+    migrate: defineCommand({
+      meta: { name: 'migrate', description: 'Apply pending database migrations' },
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, isD1, isD1Local } = await import('../lib/target');
+        await resolveTarget(args);
+
+        if (isD1()) {
+          const { migrateD1 } = await import('../lib/d1-migrate');
+          await migrateD1({ local: isD1Local() });
+        } else {
+          exec('drizzle-kit', ['migrate']);
+        }
+      },
+    }),
+    generate: defineCommand({
+      meta: { name: 'generate', description: 'Generate migration from schema changes' },
+      run() {
+        exec('drizzle-kit', ['generate']);
+      },
+    }),
+    push: defineCommand({
+      meta: { name: 'push', description: 'Push schema directly to database (dev only)' },
+      run() {
+        exec('drizzle-kit', ['push']);
+      },
+    }),
+    studio: defineCommand({
+      meta: { name: 'studio', description: 'Open Drizzle Studio visual DB browser' },
+      run() {
+        exec('drizzle-kit', ['studio']);
+      },
+    }),
     seed: defineCommand({
       meta: { name: 'seed', description: 'Seed database with demo data' },
       args: {
@@ -334,7 +369,7 @@ export default defineCommand({
           console.log('✅ SQLite database file deleted.');
         }
 
-        console.log('\n✅ Database dropped. Run "aw db setup" to recreate schema.\n');
+        console.log('\n✅ Database dropped. Run "aw db migrate" to recreate schema.\n');
       },
     }),
     backup: defineCommand({
