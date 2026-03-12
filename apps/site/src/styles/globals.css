@@ -1,0 +1,477 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './animations.css';
+
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+  exclude: properties;
+}
+
+/* ========================================
+   DAISYUI THEME CONFIGURATION (v5 @plugin syntax)
+   ======================================== */
+
+/* Light Theme - Allowealth v1.1.0 (Forest Green) */
+@plugin "daisyui/theme" {
+  name: 'light';
+  default: true;
+
+  /* Color tokens - slate primary (text/headings), forest accent (CTAs) */
+  --color-primary: #0f172a; /* slate-900 - headings, primary text */
+  --color-primary-content: #ffffff;
+  --color-secondary: #0f172a; /* slate-900 - secondary buttons */
+  --color-secondary-content: #ffffff;
+  --color-accent: #15803d; /* forest-700 - CTAs, WCAG AA compliant on all backgrounds */
+  --color-accent-content: #ffffff;
+  --color-neutral: #475569; /* slate-600 - WCAG AA compliant on base-300 */
+  --color-neutral-content: #ffffff;
+  --color-base-100: #ffffff; /* white */
+  --color-base-200: #f8fafc; /* slate-50 */
+  --color-base-300: #e2e8f0; /* slate-200 */
+  --color-base-content: #0f172a; /* slate-900 - maximum contrast */
+
+  /* Semantic colors */
+  --color-info: #0ea5e9; /* sky-500 - distinct from accent */
+  --color-info-content: #ffffff;
+  --color-success: #10b981; /* emerald-500 */
+  --color-success-content: #ffffff;
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning-content: #ffffff;
+  --color-error: #f43f5e; /* rose-500 */
+  --color-error-content: #ffffff;
+
+  /* Design variables (from styles.json) */
+  --radius-selector: 1rem;
+  --radius-field: 0rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Dark Theme - Comfortable Dark v1.2.0
+   Raised floor, lowered ceiling, widened surface steps.
+   Targets ~12:1 body text, ~14:1 headings, visible card elevation. */
+@plugin "daisyui/theme" {
+  name: 'dark';
+  prefersdark: true;
+  color-scheme: dark;
+
+  /* Base surfaces — visible 3-step elevation (gray-900 → slate-800 → slate-700) */
+  --color-base-100: #111827; /* gray-900  — body, sidebar */
+  --color-base-200: #1e293b; /* slate-800 — cards, elevated surfaces */
+  --color-base-300: #334155; /* slate-700 — borders, hover states */
+  --color-base-content: #cbd5e1; /* slate-300 — comfortable ~12:1 on base-100 */
+
+  /* Primary / secondary — headings, emphasized text */
+  --color-primary: #e2e8f0; /* slate-200 — ~14:1 on base-100 */
+  --color-primary-content: #111827;
+  --color-secondary: #e2e8f0;
+  --color-secondary-content: #111827;
+
+  /* Accent — desaturated forest green, comfortable on dark surfaces */
+  --color-accent: #22c55e; /* green-500 — less neon than green-400 */
+  --color-accent-content: #052e16; /* dark green for contrast on accent bg */
+
+  /* Neutral — secondary text, icons, muted labels */
+  --color-neutral: #94a3b8; /* slate-400 — ~7:1 on base-100 */
+  --color-neutral-content: #111827;
+
+  /* Semantic colors — tuned for dark mode comfort */
+  --color-info: #38bdf8; /* sky-400 */
+  --color-info-content: #111827;
+  --color-success: #34d399; /* emerald-400 */
+  --color-success-content: #111827;
+  --color-warning: #fbbf24; /* amber-400 */
+  --color-warning-content: #111827;
+  --color-error: #f87171; /* red-400 — warmer, less pink than rose-400 */
+  --color-error-content: #111827;
+
+  /* Design variables */
+  --radius-selector: 1rem;
+  --radius-field: 0rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ========================================
+   GLOBAL STYLES AND RESETS
+   ======================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Theme transition animation - smooth color changes when toggling themes */
+/* Applied to main containers only to avoid interfering with component animations */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    transition: background-color 0.3s ease;
+  }
+
+  body {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  /* Main layout containers that should transition smoothly */
+  .theme-transition {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease;
+  }
+}
+
+body {
+  background-color: var(--color-base-100, #ffffff);
+  color: var(--color-base-content, #0f172a);
+  min-height: 100vh;
+}
+
+/* Focus styles for accessibility - use accent color for interactive elements */
+*:focus-visible {
+  outline: 2px solid var(--color-accent, #15803d);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for webkit browsers - use base tokens for theme-aware colors */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--color-base-200, #f8fafc);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-base-300, #e2e8f0);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral, #64748b);
+}
+
+/* ========================================
+   UTILITY CLASSES FOR FINANCE DATA
+   ======================================== */
+
+/* Currency display */
+.currency-idr {
+  color: var(--color-currency-idr);
+}
+
+.currency-usd {
+  color: var(--color-currency-usd);
+}
+
+/* Budget status indicators */
+.status-ok {
+  color: var(--color-status-ok);
+}
+
+.status-warning {
+  color: var(--color-status-warning);
+}
+
+.status-danger {
+  color: var(--color-status-danger);
+}
+
+/* ========================================
+   UTILITY CLASSES (from design system)
+   ======================================== */
+
+/* Shadow utilities - using tokenized shadows from styles.json */
+.shadow-premium {
+  box-shadow: var(--shadow-premium);
+}
+
+.shadow-premium-lg {
+  box-shadow: var(--shadow-premium-lg);
+}
+
+.shadow-accent-glow {
+  box-shadow: var(--shadow-accent-glow);
+}
+
+.shadow-accent-glow-lg {
+  box-shadow: var(--shadow-accent-glow-lg);
+}
+
+/* Border radius utilities - for premium cards */
+.rounded-card {
+  border-radius: var(--radius-card);
+}
+
+.rounded-card-lg {
+  border-radius: var(--radius-card-lg);
+}
+
+/* Typography utilities - premium label styles */
+.label-premium {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* Active navigation gradient - using pattern token */
+.nav-active {
+  background: var(--sidebar-active-gradient);
+  border-left: var(--sidebar-active-border);
+}
+
+/* Glass effect - using glass tokens */
+.glass-effect {
+  backdrop-filter: blur(var(--glass-blur));
+  background: var(--glass-bg-light);
+}
+
+[data-theme='dark'] .glass-effect {
+  background: var(--glass-bg-dark);
+}
+
+/* Mobile bottom navigation utilities */
+.mobile-nav-surface {
+  background: var(--mobile-nav-surface-bg);
+  box-shadow: var(--mobile-nav-surface-shadow);
+}
+
+.mobile-nav-top-accent {
+  background-color: var(--mobile-nav-accent-line);
+}
+
+.mobile-nav-fab-halo {
+  background: var(--mobile-nav-fab-halo);
+}
+
+.mobile-nav-fab-surface {
+  box-shadow: var(--mobile-nav-fab-shadow);
+}
+
+.mobile-nav-fab-offset {
+  position: relative;
+  top: var(--mobile-nav-fab-offset-y);
+}
+
+.pb-safe-bottom-nav {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Badge text size - accessibility-adjusted (12px minimum) */
+.text-badge {
+  font-size: var(--badge-font-size);
+}
+
+/* Container max width - using layout token */
+.container-app {
+  max-width: var(--layout-container-max-width);
+}
+
+/* NOTE: Do NOT use @apply with DaisyUI component classes (btn, btn-outline, etc.).
+   Tailwind v4 + DaisyUI v5 @apply expands these styles at a late CSS position,
+   causing cascade ordering issues (e.g. --btn-fg override breaks btn-accent text color).
+   Always use DaisyUI classes directly as utility classes on elements. */
+
+/* ========================================
+   TABLE SCROLL HINTS
+   Shadow + chevron overlays on horizontally
+   scrollable tables to signal more content
+   off-screen. Overlay divs are created by
+   ScrollHint.client.ts at runtime.
+   ======================================== */
+
+.table-scroll-hint {
+  position: relative;
+  isolation: isolate;
+}
+
+/* --- Base overlay -------------------------------------------------- */
+.table-scroll-hint > .scroll-hint-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity var(--duration-normal, 0.3s) var(--ease-default, ease);
+  display: flex;
+  align-items: center;
+}
+
+/* --- Animated chevron via ::after ---------------------------------- */
+.table-scroll-hint > .scroll-hint-fade::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-style: solid;
+  border-color: var(--color-base-content);
+  flex-shrink: 0;
+}
+
+/* --- Left fade ----------------------------------------------------- */
+.table-scroll-hint > .scroll-hint-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--color-base-100), transparent);
+  box-shadow: 2px 0 8px -2px rgb(0 0 0 / 0.1);
+}
+
+.table-scroll-hint > .scroll-hint-fade-left::after {
+  border-width: 0 0 2px 2px;
+  transform: rotate(45deg);
+  margin-left: 8px;
+  animation: sh-nudge-l 2s var(--ease-in-out, ease-in-out) infinite;
+}
+
+/* --- Right fade ---------------------------------------------------- */
+.table-scroll-hint > .scroll-hint-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--color-base-100), transparent);
+  box-shadow: -2px 0 8px -2px rgb(0 0 0 / 0.1);
+}
+
+.table-scroll-hint > .scroll-hint-fade-right::after {
+  border-width: 2px 2px 0 0;
+  transform: rotate(45deg);
+  margin-left: auto;
+  margin-right: 8px;
+  animation: sh-nudge-r 2s var(--ease-in-out, ease-in-out) infinite;
+}
+
+/* --- Chevron keyframes --------------------------------------------- */
+@keyframes sh-nudge-l {
+  0%,
+  100% {
+    transform: rotate(45deg) translate(0, 0);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: rotate(45deg) translate(-3px, 3px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes sh-nudge-r {
+  0%,
+  100% {
+    transform: rotate(45deg) translate(0, 0);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: rotate(45deg) translate(3px, -3px);
+    opacity: 0.5;
+  }
+}
+
+/* --- Dark mode: stronger shadows ----------------------------------- */
+[data-theme='dark'] .table-scroll-hint > .scroll-hint-fade-left {
+  box-shadow: 2px 0 12px -2px rgb(0 0 0 / 0.3);
+}
+
+[data-theme='dark'] .table-scroll-hint > .scroll-hint-fade-right {
+  box-shadow: -2px 0 12px -2px rgb(0 0 0 / 0.3);
+}
+
+/* Ensure low-emphasis base-content text still meets WCAG AA in dark mode. */
+[data-theme='dark'] :where([class*='text-base-content/30']) {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+}
+
+[data-theme='dark'] :where([class*='text-base-content/40']) {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+}
+
+[data-theme='dark'] :where([class*='placeholder:text-base-content/30'])::placeholder {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+  opacity: 1;
+}
+
+/* --- Respect reduced motion ---------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .table-scroll-hint > .scroll-hint-fade::after {
+    animation: none;
+    opacity: 0.3;
+  }
+}
+
+/* ========================================
+   SCROLLBAR HIDE UTILITY
+   Hide scrollbar but keep scroll functionality
+   ======================================== */
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================
+   MOBILE DRAWER PERFORMANCE OVERRIDE
+   Replaces DaisyUI's :root:has(.drawer-toggle:checked) with a
+   JS-controlled data attribute to avoid full-document style recalc.
+   See: MobileDrawer.client.ts
+   ======================================== */
+
+@media (width < 1024px) {
+  .drawer-side[data-mobile-drawer-js='true'] {
+    /* Avoid delayed parent fade that can desync panel shell vs. inner content paint. */
+    opacity: 1;
+    transition: visibility 0s linear 0.3s;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true']:not([data-mobile-open='true']) {
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] {
+    pointer-events: auto;
+    visibility: visible;
+    overflow-y: auto;
+    transition-delay: 0s;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'] > .drawer-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] > .drawer-overlay {
+    opacity: 1;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true']:not([data-mobile-open='true'])
+    > :not(.drawer-overlay) {
+    translate: -100%;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'] > :not(.drawer-overlay) {
+    transition: translate 0.3s ease-out;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] > :not(.drawer-overlay) {
+    translate: 0%;
+  }
+}

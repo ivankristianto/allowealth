@@ -29,16 +29,43 @@ bun run docs:build         # Build docs site
 bun run docs:check         # Validate docs site
 ```
 
+## Landing Page (Marketing Site)
+
+| Command                   | Description                        |
+| ------------------------- | ---------------------------------- |
+| `bun run landing:dev`     | Start landing page dev server      |
+| `bun run landing:build`   | Build static landing page          |
+| `bun run landing:preview` | Preview built landing page locally |
+| `bun run landing:check`   | Run Astro type/content checks      |
+
+```bash
+bun run landing:dev         # Start landing page dev server
+bun run landing:build       # Build landing page
+bun run landing:check       # Validate landing page
+```
+
+### Landing Page Deployment
+
+| Command                  | Description                  |
+| ------------------------ | ---------------------------- |
+| `bun run landing:build`  | Build landing page output    |
+| `bun run landing:deploy` | Deploy landing page to Pages |
+
+```bash
+bun run landing:build
+bun run landing:deploy
+```
+
 ### Docs Deployment
 
-| Command                                                  | Description                             |
-| -------------------------------------------------------- | --------------------------------------- |
-| `bun run docs:build`                                     | Build docs output before deployment     |
-| `bunx wrangler deploy --config docs/sites/wrangler.toml` | Deploy docs worker/assets to Cloudflare |
+| Command                                                       | Description                         |
+| ------------------------------------------------------------- | ----------------------------------- |
+| `bun run docs:build`                                          | Build docs output before deployment |
+| `bunx wrangler pages deploy --config apps/docs/wrangler.toml` | Deploy docs Pages project           |
 
 ```bash
 bun run docs:build
-bunx wrangler deploy --config docs/sites/wrangler.toml
+bunx wrangler pages deploy --config apps/docs/wrangler.toml
 ```
 
 ### Docs Domain Go-Live Checklist (Manual)
@@ -54,24 +81,54 @@ curl -I https://docs.allowealth.io
 
 Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 
+### Landing Page Domain Go-Live Checklist (Manual)
+
+1. Attach `allowealth.io` as a custom domain to `allowealth-site` in Cloudflare.
+2. Verify the DNS record exists and is proxied in Cloudflare DNS.
+3. Verify the SSL/TLS status is active.
+4. Run smoke check:
+
+```bash
+curl -I https://allowealth.io
+```
+
+Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
+
 ## Build & Deploy
 
-| Command                     | Description                                          |
-| --------------------------- | ---------------------------------------------------- |
-| `bun run build`             | Build for default target                             |
-| `bun run build:node`        | Build for Node.js deployment                         |
-| `bun run build:cloudflare`  | Build for Cloudflare Workers                         |
-| `bun run build:vercel`      | Build for Vercel                                     |
-| `bun run build:netlify`     | Build for Netlify                                    |
-| `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html` |
-| `bun run bundle:report`     | Build and run bundle size analysis                   |
-| `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers               |
-| `bun run deploy:vercel`     | Build and deploy to Vercel                           |
-| `bun run deploy:netlify`    | Build and deploy to Netlify                          |
+| Command                     | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| `bun run build`             | Build for default target                                     |
+| `bun run build:node`        | Build for Node.js deployment                                 |
+| `bun run build:cloudflare`  | Build for Cloudflare Workers                                 |
+| `bun run build:vercel`      | Build for Vercel                                             |
+| `bun run build:netlify`     | Build for Netlify                                            |
+| `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html`         |
+| `bun run bundle:report`     | Build and run bundle size analysis                           |
+| `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers with `/wrangler.toml` |
+| `bun run deploy:vercel`     | Build and deploy to Vercel                                   |
+| `bun run deploy:netlify`    | Build and deploy to Netlify                                  |
 
 ```bash
 bun run build                # Default build
 bun run deploy:cloudflare    # Build + deploy to Workers
+```
+
+### Worker Config Setup
+
+Copy `wrangler.toml.example` per app worker deployment and customize the placeholders:
+
+```bash
+cp wrangler.toml.example wrangler.demo.toml
+cp wrangler.toml.example wrangler.vv.toml
+```
+
+Set a distinct `PUBLIC_URL`, `PUBLIC_SITE_URL`, and D1 database per worker.
+Deploy per worker with:
+
+```bash
+bun run build:cloudflare
+wrangler deploy --config wrangler.demo.toml
 ```
 
 ## Quality Gates

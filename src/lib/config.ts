@@ -51,11 +51,7 @@ export function getApiUrl(): string {
  */
 export function buildApiUrl(path: string): string {
   const baseUrl = getApiUrl();
-  // Remove trailing slash from base URL
-  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  // Remove leading slash from path if present, then join
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `${cleanBaseUrl}/${cleanPath}`;
+  return buildUrl(baseUrl, path);
 }
 
 /**
@@ -107,6 +103,31 @@ export function getLogoutUrl(): string {
 }
 
 /**
+ * Get the public marketing site origin used for legal and marketing links.
+ *
+ * @returns The configured public site origin.
+ */
+export function getPublicSiteOrigin(): string {
+  return import.meta.env.PUBLIC_SITE_URL || 'https://allowealth.io';
+}
+
+/**
+ * Build a full public site URL from a path.
+ *
+ * @param path - The public site path (for example: '/terms')
+ * @returns The full public site URL
+ */
+export function getPublicSiteUrl(path = '/'): string {
+  return buildUrl(getPublicSiteOrigin(), path);
+}
+
+function buildUrl(baseUrl: string, path: string): string {
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${cleanBaseUrl}/${cleanPath}`;
+}
+
+/**
  * Configuration object export for convenience.
  *
  * @example
@@ -126,4 +147,5 @@ export const config = {
     login: getLoginUrl(),
     logout: getLogoutUrl(),
   },
+  publicSiteUrl: getPublicSiteOrigin(),
 } as const;

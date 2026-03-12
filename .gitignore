@@ -74,7 +74,10 @@ test-results/
 .vercel/
 .netlify/
 .astro/
-wrangler.toml
+/wrangler*.toml
+!/wrangler.toml.example
+!/apps/docs/wrangler.toml
+!/apps/site/wrangler.toml
 
 # Git worktrees
 expenses.worktrees/

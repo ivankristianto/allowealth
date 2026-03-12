@@ -1,0 +1,565 @@
+/**
+ * Design Tokens for Finance Manager
+ * ==================================
+ * Single source of truth for all design decisions
+ * Modify these values to update the entire application
+ *
+ * Color Semantics (Allowealth v1.1.0 - Forest Green):
+ * - primary: slate-900 (#0f172a) - headings, primary text, secondary buttons
+ * - accent: forest-700 (#15803d) - CTAs, interactive elements, WCAG AA compliant
+ * - success: emerald-500 (#10b981) - positive status, confirmations
+ * - warning: amber-500 (#f59e0b) - budget alerts, caution states
+ * - error: rose-500 (#f43f5e) - over budget, destructive actions
+ * - info: sky-500 (#0ea5e9) - informational messages (distinct from accent)
+ */
+
+:root {
+  /* ========================================
+   * COLORS (via DaisyUI theme)
+   * ======================================== */
+
+  /* Semantic Colors - mapped to DaisyUI tokens */
+  /* Primary: Text/headings (slate - from styles.json) */
+  --color-primary: #0f172a; /* slate-900 */
+  --color-primary-hover: #0f172a;
+  --color-primary-light: #f1f5f9; /* slate-100 */
+
+  /* Accent: CTAs, active states (forest green - v1.2.0 contrast-improved) */
+  --color-accent: #15803d; /* forest-700 - WCAG AA on all backgrounds */
+  --color-accent-hover: #166534; /* forest-800 */
+  --color-accent-content: #ffffff;
+
+  /* Warning: Budget alerts (yellow/orange) */
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning-hover: #d97706; /* amber-600 */
+  --color-warning-light: #fef3c7; /* amber-100 */
+
+  /* Error: Over budget (rose - from styles.json) */
+  --color-error: #f43f5e; /* rose-500 */
+  --color-error-hover: #e11d48; /* rose-600 */
+  --color-error-light: #ffe4e6; /* rose-100 */
+
+  /* Success: Confirmations (emerald) */
+  --color-success: #10b981; /* emerald-500 */
+  --color-success-hover: #059669; /* emerald-600 */
+
+  /* Info: Neutral information (sky - distinct from forest accent) */
+  --color-info: #0ea5e9; /* sky-500 */
+  --color-info-hover: #0284c7; /* sky-600 */
+
+  /* Slate color scale (from styles.json) */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+
+  /* Forest green color scale (v1.1.0 accent) */
+  --color-forest-50: #f0fdf4;
+  --color-forest-100: #dcfce7;
+  --color-forest-200: #bbf7d0;
+  --color-forest-300: #86efac;
+  --color-forest-400: #4ade80;
+  --color-forest-500: #22c55e;
+  --color-forest-600: #16a34a;
+  --color-forest-700: #15803d;
+  --color-forest-800: #166534;
+  --color-forest-900: #14532d;
+
+  /* Sky color scale (info color) */
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
+
+  /* Rose color scale (from styles.json) */
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+
+  /* Neutral: Data display (slate scale - contrast-improved) */
+  --color-neutral-50: #f8fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #475569; /* slate-600 - WCAG AA on base-300 */
+  --color-neutral-600: #334155;
+  --color-neutral-700: #1e293b;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+
+  /* Currency colors */
+  --color-currency-idr: #10b981; /* Emerald for IDR */
+  --color-currency-usd: #0ea5e9; /* Sky for USD (distinct from forest accent) */
+
+  /* Status indicators */
+  --color-status-ok: #22c55e; /* Green - under 80% */
+  --color-status-warning: #f59e0b; /* Yellow - 80-99% */
+  --color-status-danger: #f43f5e; /* Rose - over 100% */
+
+  /* ========================================
+   * TYPOGRAPHY
+   * ======================================== */
+
+  /* Font families (Inter from styles.json) */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+
+  /* Font sizes (accessibility-adjusted scale - min 13px for readability) */
+  --text-xs: 0.8125rem; /* 13px - minimum accessible size */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 0.9375rem; /* 15px - accessible body text */
+  --text-md: 1rem; /* 16px */
+  --text-lg: 1.0625rem; /* 17px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem; /* 36px */
+  --text-5xl: 3rem; /* 48px */
+  --text-6xl: 3.75rem; /* 60px */
+
+  /* Font weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* Letter spacing */
+  --tracking-tighter: -0.05em;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
+
+  /* ========================================
+   * SPACING (Tailwind scale: 4px base)
+   * ======================================== */
+
+  --spacing-0: 0;
+  --spacing-px: 1px;
+  --spacing-0_5: 0.125rem; /* 2px */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-1_5: 0.375rem; /* 6px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-2_5: 0.625rem; /* 10px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-3_5: 0.875rem; /* 14px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-5: 1.25rem; /* 20px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-7: 1.75rem; /* 28px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-9: 2.25rem; /* 36px */
+  --spacing-10: 2.5rem; /* 40px */
+  --spacing-11: 2.75rem; /* 44px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-14: 3.5rem; /* 56px */
+  --spacing-16: 4rem; /* 64px */
+  --spacing-20: 5rem; /* 80px */
+  --spacing-24: 6rem; /* 96px */
+  --spacing-32: 8rem; /* 128px */
+
+  /* Common spacing presets */
+  --spacing-card: var(--spacing-6); /* 24px - card padding */
+  --spacing-card-lg: var(--spacing-8); /* 32px - large card padding (PoC) */
+  --spacing-section: var(--spacing-8); /* 32px - section gaps */
+  --spacing-form: var(--spacing-4); /* 16px - form field gaps */
+
+  /* ========================================
+   * BORDER RADIUS
+   * ======================================== */
+
+  --radius-none: 0;
+  --radius-sm: 0.125rem; /* 2px */
+  --radius-md: 0.375rem; /* 6px */
+  --radius-lg: 0.5rem; /* 8px */
+  --radius-xl: 0.75rem; /* 12px */
+  --radius-2xl: 1rem; /* 16px */
+  --radius-3xl: 1.5rem; /* 24px */
+  --radius-full: 9999px;
+
+  /* Premium card radius - matches PoC design */
+  --radius-card: var(--radius-xl); /* 0.75rem - premium card */
+  --radius-card-lg: 1.25rem; /* 20px - premium large card */
+
+  /* ========================================
+   * SHADOWS
+   * ======================================== */
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* Premium shadow tokens */
+  --shadow-premium-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+
+  /* ========================================
+   * Z-INDEX SCALE
+   * ======================================== */
+
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+
+  /* ========================================
+   * TRANSITIONS
+   * ======================================== */
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ========================================
+   * TOAST ANIMATIONS
+   * ======================================== */
+
+  --toast-duration-enter: 0.3s;
+  --toast-duration-exit: 0.2s;
+  --toast-easing-enter: ease-out;
+  --toast-easing-exit: ease-in;
+  --toast-distance: 50px;
+
+  /* ========================================
+   * BREAKPOINTS (for reference in JS)
+   * ======================================== */
+
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* ========================================
+   * COMPONENT TOKENS (from styles.json)
+   * ======================================== */
+
+  /* Button tokens */
+  --button-sm-padding: 0.375rem 0.75rem;
+  --button-sm-height: 2rem;
+  --button-sm-font-size: 0.8125rem;
+  --button-md-padding: 0.625rem 1.25rem;
+  --button-md-height: 2.5rem;
+  --button-md-font-size: 0.9375rem;
+  --button-lg-padding: 0.75rem 1.5rem;
+  --button-lg-height: 3rem;
+  --button-lg-font-size: 0.9375rem;
+  --button-primary-bg: #15803d;
+  --button-primary-color: #ffffff;
+  --button-primary-shadow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
+  --button-secondary-bg: #0f172a;
+  --button-secondary-color: #ffffff;
+  --button-ghost-border: 1px solid #e2e8f0;
+
+  /* Card tokens */
+  --card-padding: 1.75rem;
+  --card-border: 1px solid;
+  --card-border-color-light: #e2e8f0;
+  --card-border-color-dark: #334155; /* slate-700 = base-300 */
+  --card-bg-light: #ffffff;
+  --card-bg-dark: #1e293b; /* slate-800 = base-200 */
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
+
+  /* Input tokens */
+  --input-height: 2.5rem;
+  --input-padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  --input-font-size: 0.8125rem;
+  --input-bg-light: #f1f5f9;
+  --input-bg-dark: #334155; /* slate-700 = base-300 (sunken) */
+  --input-focus-ring: 2px solid rgb(21 128 61 / 0.25);
+
+  /* Badge tokens */
+  --badge-padding: 0.25rem 0.625rem;
+  --badge-font-size: 0.8125rem;
+  --badge-font-weight: 700;
+
+  /* Sidebar tokens */
+  --sidebar-width: 16rem;
+  --sidebar-bg-light: #ffffff;
+  --sidebar-bg-dark: #111827; /* gray-900 = base-100 */
+  --sidebar-border-light: #e2e8f0;
+  --sidebar-border-dark: #334155; /* slate-700 = base-300 */
+  --sidebar-nav-item-padding: 0.625rem 1rem;
+  --sidebar-nav-item-gap: 0.75rem;
+  --sidebar-icon-size: 22px;
+  --sidebar-active-gradient: linear-gradient(
+    90deg,
+    rgb(21 128 61 / 0.1) 0%,
+    rgb(21 128 61 / 0) 100%
+  );
+  --sidebar-active-border: 2px solid #15803d;
+
+  /* Table tokens */
+  --table-header-bg-light: rgb(248 250 252 / 0.5);
+  --table-header-bg-dark: rgb(51 65 85 / 0.5); /* slate-700 */
+  --table-row-hover-light: #f8fafc;
+  --table-row-hover-dark: rgb(51 65 85 / 0.4); /* slate-700 */
+  --table-cell-padding: 1rem 1.5rem;
+  --table-icon-size: 22px;
+
+  /* Layout tokens (from styles.json) */
+  --layout-container-max-width: 1400px;
+  --layout-header-height: 5rem;
+  --layout-header-padding: 1.25rem;
+  --layout-bottom-nav-height: 4rem;
+  --layout-bottom-nav-padding: 0.75rem 1rem;
+
+  /* ========================================
+   * EFFECT TOKENS (from styles.json)
+   * ======================================== */
+
+  /* Glass effect */
+  --glass-blur: 12px;
+  --glass-bg-light: rgb(255 255 255 / 0.8);
+  --glass-bg-dark: rgb(17 24 39 / 0.8);
+
+  /* Gradients */
+  --gradient-accent-glow: radial-gradient(circle, rgb(21 128 61 / 0.1) 0%, transparent 70%);
+
+  /* Premium shadows */
+  --shadow-premium: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  --shadow-accent-glow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
+  --shadow-accent-glow-lg: 0 25px 50px -12px rgb(21 128 61 / 0.3);
+
+  /* Mobile bottom navigation */
+  --mobile-nav-surface-bg: linear-gradient(
+    to top,
+    rgb(255 255 255 / 1) 0%,
+    rgb(255 255 255 / 0.95) 56%,
+    rgb(255 255 255 / 0.9) 100%
+  );
+  --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.18);
+  --mobile-nav-accent-line: rgb(21 128 61 / 0.25);
+  --mobile-nav-fab-halo: radial-gradient(
+    circle at center,
+    rgb(21 128 61 / 0.2) 0%,
+    transparent 72%
+  );
+  --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.3);
+  --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
+
+  /* ========================================
+   * ANIMATION TOKENS (from styles.json)
+   * ======================================== */
+
+  /* Animation durations */
+  --anim-duration-instant: 0s;
+  --anim-duration-fast: 0.15s;
+  --anim-duration-normal: 0.3s;
+  --anim-duration-slow: 0.5s;
+  --anim-duration-slower: 1s;
+
+  /* Animation easing */
+  --anim-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --anim-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --anim-easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --anim-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --anim-easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --anim-easing-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+
+  /* Spring configurations */
+  --spring-smooth-stiffness: 100;
+  --spring-smooth-damping: 15;
+  --spring-smooth-mass: 1;
+  --spring-bouncy-stiffness: 300;
+  --spring-bouncy-damping: 10;
+  --spring-bouncy-mass: 1;
+  --spring-gentle-stiffness: 50;
+  --spring-gentle-damping: 20;
+  --spring-gentle-mass: 1;
+  --spring-snappy-stiffness: 400;
+  --spring-snappy-damping: 30;
+  --spring-snappy-mass: 1;
+}
+
+/* ========================================
+ * DARK THEME TOKENS — Comfortable Dark v1.2.0
+ * Raised floor, visible surface steps, reduced glare.
+ * ======================================== */
+
+[data-theme='dark'] {
+  /* Primary: headings in dark mode (~12:1 on base-100) */
+  --color-primary: #e2e8f0; /* slate-200 */
+  --color-primary-hover: #e2e8f0;
+  --color-primary-light: #1e293b; /* slate-800 — elevated surface */
+
+  /* Accent: CTAs — desaturated green-500 */
+  --color-accent: #22c55e; /* green-500 — less neon than green-400 */
+  --color-accent-hover: #16a34a; /* green-600 */
+
+  /* Semantic colors — tuned for dark mode comfort */
+  --color-error: #f87171; /* red-400 — warmer, less pink */
+  --color-error-hover: #ef4444; /* red-500 */
+  --color-success: #34d399; /* emerald-400 */
+  --color-success-hover: #10b981; /* emerald-500 */
+  --color-warning: #fbbf24; /* amber-400 */
+  --color-warning-hover: #f59e0b; /* amber-500 */
+
+  /* Info: sky-400 (distinct from forest accent) */
+  --color-info: #38bdf8;
+  --color-info-hover: #0ea5e9; /* sky-500 */
+
+  /* Slate scale — standard Tailwind values for dark mode */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #111827;
+
+  /* Forest green scale */
+  --color-forest-400: #4ade80;
+  --color-forest-500: #22c55e;
+  --color-forest-900: #14532d;
+
+  /* Sky scale */
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+
+  /* Mobile bottom navigation — aligned to new base palette */
+  --mobile-nav-surface-bg: linear-gradient(
+    to top,
+    rgb(17 24 39 / 0.96) 0%,
+    rgb(17 24 39 / 0.92) 56%,
+    rgb(17 24 39 / 0.86) 100%
+  );
+  --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.45);
+  --mobile-nav-accent-line: rgb(34 197 94 / 0.35);
+  --mobile-nav-fab-halo: radial-gradient(
+    circle at center,
+    rgb(34 197 94 / 0.24) 0%,
+    transparent 72%
+  );
+  --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.55);
+  --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
+
+  /* Rose scale */
+  --color-rose-500: #f43f5e;
+
+  /* Emerald scale */
+  --color-emerald-400: #34d399;
+  --color-emerald-900: #064e3b;
+
+  /* Component dark mode overrides — aligned to base surface hierarchy */
+  --card-bg: var(--color-slate-800); /* #1e293b = base-200 (elevated) */
+  --card-border-color: var(--color-slate-700); /* #334155 = base-300 (visible) */
+  --input-bg: var(--color-slate-700); /* #334155 = base-300 (sunken input) */
+  --sidebar-bg: var(--color-slate-900); /* #111827 = base-100 (body level) */
+  --sidebar-border: var(--color-slate-700); /* #334155 = base-300 (visible) */
+}
+
+.token-badge-padding {
+  padding: var(--spacing-1_5) var(--spacing-4);
+}
+
+.token-text-xs {
+  font-size: var(--text-xs);
+  line-height: var(--leading-none);
+}
+
+.token-text-sm {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.token-text-base {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+}
+
+.token-mt-6 {
+  margin-top: var(--spacing-6);
+}
+
+.token-card-padding-lg {
+  padding: var(--spacing-card-lg);
+}
+
+.token-padding-md {
+  padding: var(--spacing-5);
+}
+
+.token-padding-sm {
+  padding: var(--spacing-form);
+}
+
+.token-gap-lg {
+  gap: var(--spacing-5);
+}
+
+.token-gap-md {
+  gap: var(--spacing-form);
+}
+
+.token-stack-sm > * + * {
+  margin-top: var(--spacing-3);
+}
+
+.token-input-surface-base {
+  @apply border border-base-300 bg-base-200 text-base-content;
+}
+
+.token-input-surface-default {
+  @apply border border-base-300 bg-base-100 text-base-content;
+}
+
+.token-input-focus-accent {
+  @apply focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2;
+}
+
+.token-input-height-xl {
+  height: var(--spacing-14);
+}
+
+.token-input-padding-xl {
+  padding-left: var(--spacing-6);
+  padding-right: var(--spacing-6);
+}
+
+.token-input-padding-search-compact {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-8);
+}
+
+.token-input-padding-search-default {
+  padding: var(--spacing-2_5) var(--spacing-3) var(--spacing-2_5) var(--spacing-10);
+}
+
+@media (width >= 640px) {
+  .token-input-padding-search-default {
+    padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) var(--spacing-11);
+  }
+}
+
+.token-placeholder-muted {
+  @apply placeholder:text-base-content/40;
+}

@@ -14,7 +14,6 @@ import type { MiddlewareHandler } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { isAppOnly } from '@/lib/auth/app-mode';
 import { auth, AUTH_PATH_PREFIX, AUTH_SESSION_COOKIE_NAME } from '@/lib/auth/server';
 import type { AuthSession, AuthUser, BetterAuthUser } from '@/lib/auth/types';
 import { logError } from '@/lib/logger';
@@ -22,14 +21,12 @@ import { logError } from '@/lib/logger';
 /** Non-httpOnly cookie for client-side auth detection on static pages */
 const AUTH_HINT_COOKIE = 'auth_hint';
 const AUTH_HINT_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
-const PUBLIC_STATIC_PATHS = new Set(['/', '/privacy', '/terms']);
 
 export const authentication: MiddlewareHandler = async (context, next) => {
   const perf = context.locals.perf;
   const authStart = performance.now();
-  const isPublicStaticPath = PUBLIC_STATIC_PATHS.has(context.url.pathname);
 
-  if (context.isPrerendered || (isPublicStaticPath && !isAppOnly())) {
+  if (context.isPrerendered) {
     context.locals.user = null;
     context.locals.session = null;
     perf?.recordPhase('mw.auth', performance.now() - authStart);

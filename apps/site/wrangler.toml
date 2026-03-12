@@ -1,0 +1,13 @@
+# Cloudflare Pages configuration for the Allowealth marketing site.
+# Deploys independently from the app worker.
+# Set PUBLIC_APP_URL in the Pages project environment
+# (for example: https://demo.allowealth.io).
+
+name = "allowealth-site"
+compatibility_date = "2026-03-11"
+pages_build_output_dir = "./dist"
+
+# Deploy with:
+# 1. bun install
+# 2. bun run build
+# 3. wrangler pages deploy

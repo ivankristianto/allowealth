@@ -453,7 +453,13 @@ See `.github/workflows/e2e-tests.yml` for the full CI configuration.
 
 ## Deployment
 
-Allowealth now uses SQLite for local development and Cloudflare D1 for production. Cloudflare Workers is the supported production deployment target.
+Allowealth now uses separate deployment surfaces in one repo:
+
+- root app: Cloudflare Workers
+- `apps/site`: Cloudflare Pages for `allowealth.io`
+- `apps/docs`: Cloudflare Pages for docs
+
+Each app worker deployment uses its own D1 database. The marketing site and docs site stay static.
 
 ### Supported targets
 
@@ -469,9 +475,10 @@ Allowealth now uses SQLite for local development and Cloudflare D1 for productio
 Before deploying to production, create:
 
 1. a Cloudflare account
-2. a D1 database
-3. a local `wrangler.toml` copied from `wrangler.toml.example`
+2. one D1 database per app worker deployment
+3. a local worker config copied from `wrangler.toml.example`
 4. Cloudflare secrets for app integrations
+5. separate Cloudflare Pages projects for `apps/site` and `apps/docs`
 
 ### Production environment
 
@@ -480,6 +487,7 @@ Use production values such as:
 ```bash
 NODE_ENV=production
 PUBLIC_URL=https://your-app.example.com
+PUBLIC_SITE_URL=https://allowealth.io
 SIGNUP_MODE=invite_only
 ```
 
@@ -488,31 +496,44 @@ SIGNUP_MODE=invite_only
 ### Cloudflare Workers deployment
 
 ```bash
-# Install adapter and Wrangler CLI
-bun add -d @astrojs/cloudflare
-bun add -d wrangler
+# Copy and configure a worker-specific wrangler file
+cp wrangler.toml.example wrangler.demo.toml
 
-# Copy and configure wrangler.toml
-cp wrangler.toml.example wrangler.toml
-
-# Create D1
-wrangler d1 create allowealth-db
+# Create a D1 database for this worker
+wrangler d1 create your-demo-db
 
 # Apply migrations
 for file in drizzle/sqlite/*.sql; do
-  wrangler d1 execute allowealth-db --remote --file="$file"
+  wrangler d1 execute your-demo-db --remote --file="$file"
 done
 
 # Set application secrets
+wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put EMAIL_API_KEY
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
 
-# Build and deploy
-bun run deploy:cloudflare
+# Build and deploy with the worker-specific config
+bun run build:cloudflare
+wrangler deploy --config wrangler.demo.toml
 ```
 
-`wrangler.toml` is gitignored and must be created locally from `wrangler.toml.example`. Replace placeholder values with your real Cloudflare IDs.
+Repeat the worker setup for each app domain you operate (`demo`, `vv`, future customer instances). Each worker should have its own `PUBLIC_URL`, D1 database, and secrets. The app uses `PUBLIC_SITE_URL` for legal and marketing links back to the static site.
+
+### Cloudflare Pages deployment
+
+```bash
+# Marketing site
+bun install --cwd apps/site
+bun run --cwd apps/site build
+# Configure PUBLIC_APP_URL in Cloudflare Pages to point at your public app worker
+bunx wrangler pages deploy --config apps/site/wrangler.toml
+
+# Docs site
+bun install --cwd apps/docs
+bun run docs:build
+bunx wrangler pages deploy --config apps/docs/wrangler.toml
+```
 
 ### First deployment checklist
 

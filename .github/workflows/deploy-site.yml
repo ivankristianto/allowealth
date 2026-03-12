@@ -1,0 +1,42 @@
+name: Deploy Marketing Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/site/**'
+      - '.github/workflows/deploy-site.yml'
+
+jobs:
+  deploy-site:
+    name: Deploy allowealth.io
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install root and site dependencies
+        run: bun install && bun install --cwd apps/site
+
+      - name: Verify split topology contracts
+        run: bun test ./src/__tests__/architecture/deployment-topology.test.ts
+
+      - name: Build marketing site
+        run: bun run --cwd apps/site build
+
+      - name: Deploy marketing site to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/site
+          command: pages deploy

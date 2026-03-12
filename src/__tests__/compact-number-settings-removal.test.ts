@@ -51,7 +51,7 @@ describe('compact number settings removal', () => {
 
   it('removes compact number documentation and legacy raw-setting displays', () => {
     const readmeSource = read('README.md');
-    const settingsDocSource = read('docs/sites/src/content/docs/end-users/settings.md');
+    const settingsDocSource = read('apps/docs/src/content/docs/end-users/settings.md');
     const architectureDocSource = read('docs/architecture/004-database-schema.md');
     const superAdminSource = read('src/services/super-admin.service.ts');
 

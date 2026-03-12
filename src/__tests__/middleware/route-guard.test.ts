@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import type { APIContext } from 'astro';
-import { setTestEnv } from '@/lib/env';
 import { routeGuard } from '@/middleware/route-guard';
 
 type MockUser = NonNullable<App.Locals['user']>;
@@ -55,38 +54,18 @@ function expectResponse(response: Response | void): Response {
 }
 
 describe('routeGuard app-only public routes', () => {
-  afterEach(() => {
-    setTestEnv(null);
-  });
-
-  test('preserves default full-mode behavior for public routes', async () => {
-    setTestEnv({ APP_MODE: 'full' });
+  test('redirects signed-out homepage visits to login', async () => {
     const context = createMockContext('/');
 
     const response = expectResponse(
       await routeGuard(context, async () => new Response(null, { status: 204 }))
     );
 
-    expect(response.status).toBe(204);
-    expect(response.headers.get('Location')).toBeNull();
+    expect(response.status).toBe(302);
+    expect(response.headers.get('Location')).toBe('/login');
   });
 
-  test('redirects app-only public routes to login for signed-out users', async () => {
-    setTestEnv({ APP_MODE: 'app_only' });
-
-    for (const pathname of ['/', '/terms', '/privacy']) {
-      const context = createMockContext(pathname);
-      const response = expectResponse(
-        await routeGuard(context, async () => new Response(null, { status: 204 }))
-      );
-
-      expect(response.status).toBe(302);
-      expect(response.headers.get('Location')).toBe('/login');
-    }
-  });
-
-  test('redirects authenticated app-only homepage visits to dashboard', async () => {
-    setTestEnv({ APP_MODE: 'app_only' });
+  test('redirects authenticated homepage visits to dashboard', async () => {
     const context = createMockContext('/', {
       id: 'user-1',
       email: 'user@example.com',
@@ -103,5 +82,24 @@ describe('routeGuard app-only public routes', () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get('Location')).toBe('/dashboard');
+  });
+
+  test('redirects authenticated super admin homepage visits to admin', async () => {
+    const context = createMockContext('/', {
+      id: 'user-2',
+      email: 'admin@example.com',
+      name: 'Admin User',
+      role: 'super_admin',
+      workspaceId: null,
+      avatarUrl: null,
+      deletedAt: null,
+    } as MockUser);
+
+    const response = expectResponse(
+      await routeGuard(context, async () => new Response(null, { status: 204 }))
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('Location')).toBe('/admin');
   });
 });

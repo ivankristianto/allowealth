@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs/sites/**'
+      - 'apps/docs/**'
       - '.github/workflows/deploy-docs-site.yml'
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
           bun-version: latest
 
       - name: Install root & docs dependencies
-        run: bun install && bun install --cwd docs/sites
+        run: bun install && bun install --cwd apps/docs
 
       - name: Build docs site
         run: bun run docs:build
@@ -35,5 +35,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: docs/sites
+          workingDirectory: apps/docs
           command: pages deploy
