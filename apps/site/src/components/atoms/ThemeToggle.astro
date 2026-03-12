@@ -1,0 +1,87 @@
+---
+/**
+ * ThemeToggle Component
+ *
+ * A button that toggles between light and dark themes.
+ * Displays a moon icon in light mode (to switch to dark) and
+ * a sun icon in dark mode (to switch to light).
+ *
+ * @design-system Allowealth v1.0.0
+ * @accessibility WCAG 2.1 AA compliant - minimum touch target 44x44px
+ *
+ * @param size - Button size: 'sm' for header/compact, 'md' for floating/default
+ * @param className - Additional CSS classes
+ */
+
+import { Moon, Sun } from '@lucide/astro';
+
+interface Props {
+  /** Button size: 'sm' for header, 'md' for floating (default) */
+  size?: 'sm' | 'md';
+  /** Additional CSS classes */
+  className?: string;
+}
+
+const { size = 'md', className = '' } = Astro.props;
+
+// Size-specific classes
+const sizeClasses = {
+  sm: {
+    button: 'p-3 rounded-full shadow-sm',
+    icon: 20,
+  },
+  md: {
+    button: 'w-14 h-14 rounded-2xl shadow-xl hover:scale-110',
+    icon: 24,
+  },
+};
+
+const config = sizeClasses[size];
+---
+
+<div class:list={['theme-toggle-wrapper', className]}>
+  <button
+    type="button"
+    data-theme-toggle
+    class:list={[
+      'bg-base-100 border border-base-300 flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group text-base-content hover:bg-base-100',
+      config.button,
+    ]}
+    aria-label="Toggle dark mode"
+    title="Toggle dark mode"
+  >
+    <!-- Moon icon - shown in light mode -->
+    <Moon
+      size={config.icon}
+      class="stroke-current theme-icon-light transition-transform duration-200 group-hover:rotate-12"
+      aria-hidden="true"
+    />
+    <!-- Sun icon - shown in dark mode -->
+    <Sun
+      size={config.icon}
+      class="stroke-current theme-icon-dark hidden transition-transform duration-200 group-hover:rotate-12"
+      aria-hidden="true"
+    />
+  </button>
+</div>
+
+<style>
+  /* Show/hide icons based on theme */
+  :global([data-theme='dark']) .theme-icon-light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .theme-icon-dark {
+    display: block;
+  }
+
+  :global([data-theme='light']) .theme-icon-light {
+    display: block;
+  }
+
+  :global([data-theme='light']) .theme-icon-dark {
+    display: none;
+  }
+</style>
+
+<script src="./ThemeToggle.client.ts"></script>

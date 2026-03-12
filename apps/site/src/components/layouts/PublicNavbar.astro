@@ -1,0 +1,100 @@
+---
+/**
+ * PublicNavbar Component
+ *
+ * Glass-effect navigation bar for public landing pages.
+ * Shows logo, nav links (desktop only), and CTA button.
+ * Auth state is detected client-side via auth_hint cookie (see PublicAuthCta.client.ts).
+ *
+ * TODO: P2 - Add mobile navigation menu (hamburger dropdown or drawer)
+ * for access to Features and Documentation links on mobile devices.
+ */
+
+import { brandContent } from '@/lib/landing-content';
+import Button from '@/components/atoms/Button.astro';
+
+const navLinks = [
+  { label: 'Features', href: '/#features' },
+  { label: 'Documentation', href: 'https://docs.allowealth.io', external: true },
+];
+---
+
+<nav
+  class="fixed top-0 left-0 right-0 z-50 px-4 py-4 md:px-8"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <div
+    class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 bg-base-100/70 backdrop-blur-2xl border border-base-300/20 rounded-3xl shadow-premium"
+  >
+    <!-- Logo and Brand -->
+    <a
+      href="/"
+      class="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-lg group"
+      data-logo
+      aria-label={`${brandContent.name} - Go to homepage`}
+    >
+      <div
+        class="w-9 h-9 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 p-1.5 group-hover:from-primary/30 group-hover:to-accent/30 transition-all duration-300"
+      >
+        <img src="/favicon.svg" alt="" class="w-full h-full" aria-hidden="true" />
+      </div>
+      <span class="text-lg font-bold tracking-tight text-base-content">
+        {brandContent.name}
+      </span>
+    </a>
+
+    <!-- Desktop Navigation Links -->
+    <ul class="hidden lg:flex items-center gap-10 list-none m-0 p-0">
+      {
+        navLinks.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              target={link.external ? '_blank' : undefined}
+              rel={link.external ? 'noopener noreferrer' : undefined}
+              class="text-sm font-bold text-base-content/60 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded inline-flex items-center gap-1"
+            >
+              {link.label}
+              {link.external && (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="opacity-50"
+                  aria-hidden="true"
+                >
+                  <path d="M7 7h10v10" />
+                  <path d="M7 17 17 7" />
+                </svg>
+              )}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- Auth Buttons -->
+    <div class="flex items-center gap-3 sm:gap-4">
+      <span data-auth-hide>
+        <Button variant="ghost" href="/login" size="md" dataAstroReload> Sign in </Button>
+      </span>
+      <Button
+        variant="primary"
+        href="/signup"
+        size="md"
+        data-auth-cta
+        data-auth-href="/dashboard"
+        dataAstroReload
+      >
+        <span data-auth-cta-text data-auth-text="Enter Dashboard">Start Free</span>
+      </Button>
+    </div>
+  </div>
+</nav>

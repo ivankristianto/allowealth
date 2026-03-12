@@ -1,0 +1,142 @@
+---
+/**
+ * Button Component
+ *
+ * A versatile button component with multiple variants, sizes, and states.
+ * Follows Allowealth v1.0.0 design system with slate-primary/indigo-accent color model.
+ *
+ * @param {string} variant - Button style variant: primary (accent/indigo CTAs), secondary, outline, ghost, danger, warning, success
+ * @param {string} size - Button size: sm, md, lg, xl (DaisyUI btn sizes)
+ * @param {boolean} disabled - Whether the button is disabled
+ * @param {boolean} loading - Show loading spinner
+ * @param {string} type - Button type: button, submit, reset
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID
+ */
+
+import type { HTMLAttributes } from 'astro/types';
+
+type ButtonAttributes = Omit<
+  HTMLAttributes<'button'>,
+  'class' | 'type' | 'disabled' | 'id' | 'href'
+>;
+type AnchorAttributes = Omit<HTMLAttributes<'a'>, 'class' | 'id' | 'href'>;
+
+export interface Props extends ButtonAttributes, AnchorAttributes {
+  variant?:
+    | 'primary'
+    | 'accent'
+    | 'secondary'
+    | 'outline'
+    | 'ghost'
+    | 'danger'
+    | 'warning'
+    | 'success';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  disabled?: boolean;
+  loading?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+  className?: string;
+  id?: string;
+  href?: string;
+  /**
+   * Test ID for E2E testing
+   */
+  'data-testid'?: string;
+  /**
+   * Render data-astro-reload on anchor variant only.
+   */
+  dataAstroReload?: boolean;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  loading = false,
+  type = 'button',
+  className = '',
+  id = '',
+  href = '',
+  'data-testid': dataTestId = '',
+  dataAstroReload = false,
+  ...rest
+} = Astro.props;
+
+const isDisabled = disabled || loading;
+
+// Base classes - focus ring uses accent color for theme-aware consistency
+// rounded-2xl (1rem) follows design system borderRadius.2xl
+// NOTE: Do NOT use @apply with DaisyUI component classes in globals.css.
+// Tailwind v4 + DaisyUI v5 @apply expands btn styles at a late position in the CSS,
+// causing --btn-fg to override btn-accent's --btn-fg due to source order cascade.
+const baseClasses =
+  'btn inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
+
+// Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Allowealth v1.0.0
+const variantClasses: Record<string, string> = {
+  primary: 'btn-accent shadow-accent-glow',
+  accent: 'btn-accent shadow-accent-glow',
+  secondary: 'btn-secondary border border-base-300',
+  outline: 'btn-outline border border-accent text-accent hover:bg-accent/10 hover:border-accent',
+  ghost: 'btn-ghost text-base-content border border-base-300 hover:bg-base-200',
+  danger: 'btn-error',
+  warning: 'btn-warning',
+  success: 'btn-success',
+};
+
+// Size classes - match DaisyUI btn sizes (btn-sm, btn-md, btn-lg, btn-xl)
+// sm: h-8 (2rem), text-xs
+// md: h-10 (2.5rem), text-sm
+// lg: h-12 (3rem), text-sm
+// xl: h-16 (4rem), text-lg
+const sizeClasses: Record<string, string> = {
+  sm: 'btn-sm',
+  md: 'btn-md',
+  lg: 'btn-lg',
+  xl: 'btn-xl text-lg',
+};
+
+// Combined classes
+const buttonClasses = [
+  baseClasses,
+  variantClasses[variant] || variantClasses.primary,
+  sizeClasses[size] || sizeClasses.md,
+  isDisabled ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0' : 'cursor-pointer',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+{
+  href ? (
+    <a
+      class={buttonClasses}
+      id={id}
+      href={href}
+      aria-disabled={isDisabled}
+      aria-busy={loading}
+      data-testid={dataTestId || undefined}
+      data-astro-reload={dataAstroReload ? true : undefined}
+      {...rest}
+    >
+      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
+      <slot />
+    </a>
+  ) : (
+    <button
+      class={buttonClasses}
+      id={id}
+      disabled={isDisabled}
+      type={type}
+      aria-disabled={isDisabled}
+      aria-busy={loading}
+      data-testid={dataTestId || undefined}
+      {...rest}
+    >
+      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
+      <slot />
+    </button>
+  )
+}

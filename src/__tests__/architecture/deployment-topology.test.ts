@@ -16,6 +16,9 @@ describe('deployment topology', () => {
   test('uses apps/docs and apps/site deployment surfaces', () => {
     expect(existsSync('apps/docs/wrangler.toml')).toBe(true);
     expect(existsSync('apps/site/wrangler.toml')).toBe(true);
+    expect(existsSync('apps/site/src/pages/index.astro')).toBe(true);
+    expect(existsSync('apps/site/src/pages/terms.astro')).toBe(true);
+    expect(existsSync('apps/site/src/pages/privacy.astro')).toBe(true);
     expect(existsSync('docs/sites')).toBe(false);
   });
 
