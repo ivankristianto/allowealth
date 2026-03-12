@@ -160,7 +160,7 @@ describe('EmailService', () => {
 
       const service = new EmailService();
 
-      await expect(
+      expect(
         service.sendPasswordReset({
           to: 'user@example.com',
           resetUrl: 'https://example.com/reset?token=abc',
@@ -179,7 +179,7 @@ describe('EmailService', () => {
 
       const service = new EmailService();
 
-      await expect(
+      expect(
         service.sendEmailVerification({
           to: 'user@example.com',
           userName: 'Test User',

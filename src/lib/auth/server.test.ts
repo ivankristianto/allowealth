@@ -74,7 +74,7 @@ describe('better-auth server config', () => {
     expect(pluginIds).toContain('two-factor');
   });
 
-  it('uses DEV_HOST as a trusted origin when PUBLIC_URL is unset', () => {
+  it('uses DEV_HOST as a trusted origin when PUBLIC_URL is unset', async () => {
     setTestEnv({
       NODE_ENV: 'test',
       BETTER_AUTH_SECRET: 'test-better-auth-secret',
@@ -85,10 +85,9 @@ describe('better-auth server config', () => {
       PORT: '4326',
     });
 
-    return importFreshServer().then((mod) => {
-      expect(mod.getAuthBaseURL()).toBe('http://auth.allowealth.local:4326');
-      expect(mod.getTrustedOrigins()).toContain('http://auth.allowealth.local:4326');
-    });
+    const mod = await importFreshServer();
+    expect(mod.getAuthBaseURL()).toBe('http://auth.allowealth.local:4326');
+    expect(mod.getTrustedOrigins()).toContain('http://auth.allowealth.local:4326');
   });
 
   it('fails to initialize outside tests when BETTER_AUTH_SECRET is missing', async () => {

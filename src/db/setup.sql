@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS `workspaces` (
 -- ============================================
 -- USERS & AUTH
 -- ============================================
+
+-- Application users table (domain model)
 CREATE TABLE IF NOT EXISTS `users` (
   `id` text PRIMARY KEY NOT NULL,
   `workspace_id` text,
@@ -34,7 +36,23 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);
 CREATE INDEX IF NOT EXISTS `users_workspace_id_idx` ON `users` (`workspace_id`);
 
--- Better-Auth tables
+-- Better-Auth tables (must be created in dependency order)
+-- user table first (no FK dependencies)
+CREATE TABLE IF NOT EXISTS `user` (
+  `id` text PRIMARY KEY NOT NULL,
+  `name` text NOT NULL,
+  `email` text NOT NULL,
+  `emailVerified` integer DEFAULT false NOT NULL,
+  `image` text,
+  `twoFactorEnabled` integer DEFAULT false NOT NULL,
+  `createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+  `updatedAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS `user_email_unique` ON `user` (`email`);
+CREATE INDEX IF NOT EXISTS `user_email_idx` ON `user` (`email`);
+
+-- account table references user
 CREATE TABLE IF NOT EXISTS `account` (
   `id` text PRIMARY KEY NOT NULL,
   `accountId` text NOT NULL,
@@ -83,20 +101,6 @@ CREATE TABLE IF NOT EXISTS `twoFactor` (
 CREATE UNIQUE INDEX IF NOT EXISTS `twoFactor_userId_unique` ON `twoFactor` (`userId`);
 CREATE INDEX IF NOT EXISTS `two_factor_user_id_idx` ON `twoFactor` (`userId`);
 CREATE INDEX IF NOT EXISTS `two_factor_secret_idx` ON `twoFactor` (`secret`);
-
-CREATE TABLE IF NOT EXISTS `user` (
-  `id` text PRIMARY KEY NOT NULL,
-  `name` text NOT NULL,
-  `email` text NOT NULL,
-  `emailVerified` integer DEFAULT false NOT NULL,
-  `image` text,
-  `twoFactorEnabled` integer DEFAULT false NOT NULL,
-  `createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
-  `updatedAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS `user_email_unique` ON `user` (`email`);
-CREATE INDEX IF NOT EXISTS `user_email_idx` ON `user` (`email`);
 
 CREATE TABLE IF NOT EXISTS `verification` (
   `id` text PRIMARY KEY NOT NULL,

@@ -16,13 +16,14 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
+import { Database } from 'bun:sqlite';
 import { db, getDb, resetDb } from '@/db';
 import { workspaces, users, categories, accounts, transactions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { existsSync, unlinkSync } from 'node:fs';
 
 // Test workspace for all test users
 const TEST_WORKSPACE_ID = 'test-workspace-runtime-agnostic';
-import { execSync } from 'node:child_process';
 
 // Test database path (use -test postfix for isolation)
 const TEST_DB_PATH = 'db/.test-integration.db';
@@ -31,17 +32,57 @@ const TEST_DB_PATH = 'db/.test-integration.db';
 const originalEnv = { ...process.env };
 
 /**
- * Setup test database schema
- * Uses drizzle-kit to push schema to test database
+ * Remove comments from SQL statement
  */
-function setupTestDatabase() {
+function removeComments(sql: string): string {
+  // Remove single-line comments (-- ...)
+  let result = sql.replace(/--[^\n]*/g, '');
+  // Remove multi-line comments (/* ... */)
+  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+  return result.trim();
+}
+
+/**
+ * Execute SQL statements from setup.sql
+ * Splits by semicolon and executes each statement separately
+ */
+function execSetupSql(db: Database, sql: string) {
+  const statements = sql
+    .split(';')
+    .map((s) => removeComments(s).trim())
+    .filter((s) => s.length > 0);
+
+  for (const stmt of statements) {
+    try {
+      db.prepare(stmt).run();
+    } catch (error: any) {
+      // Ignore "already exists" errors for idempotent setup
+      if (!error.message?.includes('already exists')) {
+        throw error;
+      }
+    }
+  }
+}
+
+/**
+ * Setup test database schema
+ * Uses setup.sql to create schema
+ */
+async function setupTestDatabase() {
   console.log(`[Integration Test] Setting up test database at ${TEST_DB_PATH}...`);
   try {
-    // Call drizzle-kit directly with --url flag
-    execSync(`DATABASE_URL="${TEST_DB_PATH}" bunx drizzle-kit push --force`, {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-    });
+    // Clean up any existing test database
+    if (existsSync(TEST_DB_PATH)) {
+      unlinkSync(TEST_DB_PATH);
+    }
+
+    // Create fresh database and apply schema from setup.sql
+    const rawDb = new Database(TEST_DB_PATH);
+    const setupSqlPath = new URL('./setup.sql', import.meta.url);
+    const sql = await Bun.file(setupSqlPath).text();
+    execSetupSql(rawDb, sql);
+    rawDb.close();
+
     console.log('[Integration Test] Test database schema created');
   } catch (error) {
     console.error('[Integration Test] Failed to set up test database:', error);
@@ -170,10 +211,10 @@ async function cleanupTestData() {
 }
 
 describe('Database Integration Tests', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     // Set up test database schema
-    setupTestDatabase();
-  }, 30_000); // drizzle-kit push can be slow on first run or schema changes
+    await setupTestDatabase();
+  }, 30_000);
 
   beforeEach(() => {
     // Set test database path for isolation (use relative path for consistency)

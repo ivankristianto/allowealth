@@ -1,4 +1,3 @@
-/* eslint-disable no-console -- CLI script requires console output */
 /**
  * Database Setup Script
  *
@@ -17,6 +16,39 @@ import { dirname } from 'node:path';
 
 const config = getDatabaseConfig();
 
+/**
+ * Remove comments from SQL statement
+ */
+function removeComments(sql: string): string {
+  // Remove single-line comments (-- ...)
+  let result = sql.replace(/--[^\n]*/g, '');
+  // Remove multi-line comments (/* ... */)
+  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+  return result.trim();
+}
+
+/**
+ * Execute SQL statements from setup.sql
+ * Splits by semicolon and executes each statement separately
+ */
+function execSetupSql(db: Database, sql: string) {
+  const statements = sql
+    .split(';')
+    .map((s) => removeComments(s).trim())
+    .filter((s) => s.length > 0);
+
+  for (const stmt of statements) {
+    try {
+      db.prepare(stmt).run();
+    } catch (error: any) {
+      // Ignore "already exists" errors for idempotent setup
+      if (!error.message?.includes('already exists')) {
+        throw error;
+      }
+    }
+  }
+}
+
 async function setupDatabase() {
   console.log(`\n🔧 Setting up database (${config.dialect})...\n`);
 
@@ -28,41 +60,30 @@ async function setupDatabase() {
 
   const dbPath = config.url;
 
-  // Ensure directory exists
   const dbDir = dirname(dbPath);
   if (!existsSync(dbDir)) {
     mkdirSync(dbDir, { recursive: true });
     console.log(`  📁 Created directory: ${dbDir}`);
   }
 
-  // Read the SQL file
   const sqlFile = new URL('./setup.sql', import.meta.url);
   const sql = await Bun.file(sqlFile).text();
 
-  // Open database
   const db = new Database(dbPath);
 
   try {
-    // Execute all SQL statements in a single transaction
-    // SQLite can handle multiple statements in one exec() call
-    db.exec(sql);
+    execSetupSql(db, sql);
 
     console.log(`  ✓ Database created at: ${dbPath}`);
     console.log('\n✅ Database setup complete!\n');
   } catch (error: any) {
-    // Ignore "already exists" errors for idempotent setup
-    if (error.message?.includes('already exists')) {
-      console.log(`  ✓ Database already exists at: ${dbPath}`);
-      console.log('\n✅ Database setup complete!\n');
-    } else {
-      throw error;
-    }
+    console.error('\n❌ Setup failed:', error);
+    process.exit(1);
   } finally {
     db.close();
   }
 }
 
-// Run the setup
 setupDatabase().catch((error) => {
   console.error('\n❌ Setup failed:', error);
   process.exit(1);
