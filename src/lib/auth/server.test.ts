@@ -2,13 +2,22 @@ import { afterEach, describe, expect, it } from 'bun:test';
 import { resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 
+let resetAuthInstance: (() => void) | null = null;
+
 afterEach(() => {
   setTestEnv(null);
   resetCacheManager();
+  // Reset the lazy auth instance to ensure clean state between tests
+  if (resetAuthInstance) {
+    resetAuthInstance();
+    resetAuthInstance = null;
+  }
 });
 
 async function importFreshServer() {
-  return import(`./server?test=${Date.now()}-${Math.random()}`);
+  const mod = await import(`./server?test=${Date.now()}-${Math.random()}`);
+  resetAuthInstance = mod.resetAuthInstance;
+  return mod;
 }
 
 describe('better-auth server config', () => {
@@ -98,7 +107,9 @@ describe('better-auth server config', () => {
       GOOGLE_CLIENT_SECRET: 'prod-google-client-secret',
     });
 
-    await expect(importFreshServer()).rejects.toThrow('BETTER_AUTH_SECRET must be set');
+    const mod = await importFreshServer();
+    // Access auth.options to trigger lazy initialization
+    expect(() => mod.auth.options).toThrow('BETTER_AUTH_SECRET must be set');
   });
 
   it('fails to initialize in production when Turnstile config is missing', async () => {
@@ -111,7 +122,9 @@ describe('better-auth server config', () => {
       TURNSTILE_SECRET_KEY: undefined,
     });
 
-    await expect(importFreshServer()).rejects.toThrow(
+    const mod = await importFreshServer();
+    // Access auth.options to trigger lazy initialization
+    expect(() => mod.auth.options).toThrow(
       'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production'
     );
   });
@@ -126,7 +139,9 @@ describe('better-auth server config', () => {
       TURNSTILE_SECRET_KEY: undefined,
     });
 
-    await expect(importFreshServer()).rejects.toThrow(
+    const mod = await importFreshServer();
+    // Access auth.options to trigger lazy initialization
+    expect(() => mod.auth.options).toThrow(
       'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production'
     );
   });
