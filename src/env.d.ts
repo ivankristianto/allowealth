@@ -54,8 +54,6 @@ declare global {
     readonly PUBLIC_API_URL?: string;
     /** Public application origin used for auth redirects and email links */
     readonly PUBLIC_URL?: string;
-    /** App mode: full (default) or app_only */
-    readonly APP_MODE?: 'app_only' | 'full';
     /** Signup mode: invite_only (default) or public */
     readonly SIGNUP_MODE?: 'invite_only' | 'public';
     /** Better Auth signing secret */
