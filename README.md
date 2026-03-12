@@ -513,8 +513,9 @@ wrangler secret put EMAIL_API_KEY
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
 
-# Build and deploy
-bun run deploy:cloudflare
+# Build and deploy with the worker-specific config
+bun run build:cloudflare
+wrangler deploy --config wrangler.demo.toml
 ```
 
 Repeat the worker setup for each app domain you operate (`demo`, `vv`, future customer instances). Each worker should have its own `PUBLIC_URL`, D1 database, and secrets. The app uses `PUBLIC_SITE_URL` for legal and marketing links back to the static site.
@@ -525,6 +526,7 @@ Repeat the worker setup for each app domain you operate (`demo`, `vv`, future cu
 # Marketing site
 bun install --cwd apps/site
 bun run --cwd apps/site build
+# Configure PUBLIC_APP_URL in Cloudflare Pages to point at your public app worker
 bunx wrangler pages deploy --config apps/site/wrangler.toml
 
 # Docs site

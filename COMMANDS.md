@@ -82,18 +82,18 @@ Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 
 ## Build & Deploy
 
-| Command                     | Description                                          |
-| --------------------------- | ---------------------------------------------------- |
-| `bun run build`             | Build for default target                             |
-| `bun run build:node`        | Build for Node.js deployment                         |
-| `bun run build:cloudflare`  | Build for Cloudflare Workers                         |
-| `bun run build:vercel`      | Build for Vercel                                     |
-| `bun run build:netlify`     | Build for Netlify                                    |
-| `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html` |
-| `bun run bundle:report`     | Build and run bundle size analysis                   |
-| `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers               |
-| `bun run deploy:vercel`     | Build and deploy to Vercel                           |
-| `bun run deploy:netlify`    | Build and deploy to Netlify                          |
+| Command                     | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| `bun run build`             | Build for default target                                     |
+| `bun run build:node`        | Build for Node.js deployment                                 |
+| `bun run build:cloudflare`  | Build for Cloudflare Workers                                 |
+| `bun run build:vercel`      | Build for Vercel                                             |
+| `bun run build:netlify`     | Build for Netlify                                            |
+| `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html`         |
+| `bun run bundle:report`     | Build and run bundle size analysis                           |
+| `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers with `/wrangler.toml` |
+| `bun run deploy:vercel`     | Build and deploy to Vercel                                   |
+| `bun run deploy:netlify`    | Build and deploy to Netlify                                  |
 
 ```bash
 bun run build                # Default build
@@ -110,6 +110,12 @@ cp wrangler.toml.example wrangler.vv.toml
 ```
 
 Set a distinct `PUBLIC_URL`, `PUBLIC_SITE_URL`, and D1 database per worker.
+Deploy per worker with:
+
+```bash
+bun run build:cloudflare
+wrangler deploy --config wrangler.demo.toml
+```
 
 ## Quality Gates
 

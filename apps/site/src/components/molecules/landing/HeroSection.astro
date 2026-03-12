@@ -3,13 +3,15 @@
  * HeroSection Component
  *
  * Landing page hero with badge, headline, description, and dual CTAs.
- * Auth state is detected client-side via auth_hint cookie (see PublicAuthCta.client.ts).
  */
 
 import { Sparkles, ArrowRight } from '@lucide/astro';
 import { heroContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
 import GitHubIcon from '@/components/atoms/GitHubIcon.astro';
+import { getPublicAppUrl } from '@/lib/config';
+
+const signupUrl = getPublicAppUrl('/signup');
 ---
 
 <header class="relative z-10 pt-36 sm:pt-48 pb-16 sm:pb-32 px-6 overflow-hidden">
@@ -61,18 +63,8 @@ import GitHubIcon from '@/components/atoms/GitHubIcon.astro';
       class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 animate-fade-in-up-delay-2"
     >
       <!-- Primary CTA -->
-      <Button
-        variant="primary"
-        href="/signup"
-        size="xl"
-        className="w-full sm:w-auto"
-        data-auth-cta
-        data-auth-href="/dashboard"
-        dataAstroReload
-      >
-        <span data-auth-cta-text data-auth-text={heroContent.ctaLoggedIn}
-          >{heroContent.ctaGuest}</span
-        >
+      <Button variant="primary" href={signupUrl} size="xl" className="w-full sm:w-auto">
+        <span>{heroContent.ctaGuest}</span>
         <ArrowRight size={20} class="stroke-current" aria-hidden="true" />
       </Button>
 

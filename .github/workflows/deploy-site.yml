@@ -27,6 +27,9 @@ jobs:
       - name: Install root and site dependencies
         run: bun install && bun install --cwd apps/site
 
+      - name: Verify split topology contracts
+        run: bun test ./src/__tests__/architecture/deployment-topology.test.ts
+
       - name: Build marketing site
         run: bun run --cwd apps/site build
 

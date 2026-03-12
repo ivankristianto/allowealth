@@ -4,7 +4,6 @@
  *
  * Glass-effect navigation bar for public landing pages.
  * Shows logo, nav links (desktop only), and CTA button.
- * Auth state is detected client-side via auth_hint cookie (see PublicAuthCta.client.ts).
  *
  * TODO: P2 - Add mobile navigation menu (hamburger dropdown or drawer)
  * for access to Features and Documentation links on mobile devices.
@@ -12,11 +11,14 @@
 
 import { brandContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
+import { getPublicAppUrl } from '@/lib/config';
 
 const navLinks = [
   { label: 'Features', href: '/#features' },
   { label: 'Documentation', href: 'https://docs.allowealth.io', external: true },
 ];
+const loginUrl = getPublicAppUrl('/login');
+const signupUrl = getPublicAppUrl('/signup');
 ---
 
 <nav
@@ -82,19 +84,8 @@ const navLinks = [
 
     <!-- Auth Buttons -->
     <div class="flex items-center gap-3 sm:gap-4">
-      <span data-auth-hide>
-        <Button variant="ghost" href="/login" size="md" dataAstroReload> Sign in </Button>
-      </span>
-      <Button
-        variant="primary"
-        href="/signup"
-        size="md"
-        data-auth-cta
-        data-auth-href="/dashboard"
-        dataAstroReload
-      >
-        <span data-auth-cta-text data-auth-text="Enter Dashboard">Start Free</span>
-      </Button>
+      <Button variant="ghost" href={loginUrl} size="md"> Sign in </Button>
+      <Button variant="primary" href={signupUrl} size="md"> Start Free </Button>
     </div>
   </div>
 </nav>

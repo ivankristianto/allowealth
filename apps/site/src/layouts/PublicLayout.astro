@@ -51,11 +51,6 @@ const { title = 'allowealth', showBackground = true } = Astro.props;
 
   <!-- Floating Theme Toggle -->
   <ThemeToggle className="fixed bottom-6 right-6 z-50" />
-
-  <!-- Client-side auth detection for CTA swapping -->
-  <script>
-    import '@/components/layouts/PublicAuthCta.client.ts';
-  </script>
 </BaseLayout>
 
 <style is:global>

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 import { describe, expect, test } from 'bun:test';
 
@@ -12,12 +12,17 @@ function rgOutput(args: string[]): string {
   }
 }
 
+function getHeadersBlock(content: string, route: string): string {
+  const escapedRoute = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = content.match(new RegExp(`(^|\\n)${escapedRoute}\\n((?:\\s{2}.+\\n?)*)`, 'm'));
+  return match?.[0] ?? '';
+}
+
 describe('deployment topology', () => {
   test('uses apps/docs and apps/site deployment surfaces', () => {
     expect(existsSync('apps/docs/wrangler.toml')).toBe(true);
     expect(existsSync('apps/site/wrangler.toml')).toBe(true);
     expect(existsSync('apps/site/public/_headers')).toBe(true);
-    expect(existsSync('apps/site/src/__tests__/routes.test.ts')).toBe(true);
     expect(existsSync('apps/site/src/pages/index.astro')).toBe(true);
     expect(existsSync('apps/site/src/pages/terms.astro')).toBe(true);
     expect(existsSync('apps/site/src/pages/privacy.astro')).toBe(true);
@@ -26,6 +31,29 @@ describe('deployment topology', () => {
     expect(existsSync('src/pages/privacy.astro')).toBe(false);
     expect(existsSync('.github/workflows/deploy-site.yml')).toBe(true);
     expect(existsSync('docs/sites')).toBe(false);
+  });
+
+  test('marketing site owns route isolation and static security headers', () => {
+    const pages = readdirSync('apps/site/src/pages')
+      .filter((file) => file.endsWith('.astro'))
+      .sort();
+    const headersFile = readFileSync('apps/site/public/_headers', 'utf-8');
+
+    expect(pages).toEqual(['index.astro', 'privacy.astro', 'terms.astro']);
+    expect(pages).not.toContain('login.astro');
+    expect(pages).not.toContain('dashboard.astro');
+
+    for (const route of ['/', '/privacy', '/terms']) {
+      const routeBlock = getHeadersBlock(headersFile, route);
+
+      expect(routeBlock).not.toBe('');
+      expect(routeBlock).toContain('Content-Security-Policy:');
+      expect(routeBlock).toContain("script-src 'self'");
+      expect(routeBlock).toContain("frame-ancestors 'none'");
+      expect(routeBlock).toContain('X-Frame-Options: DENY');
+    }
+
+    expect(existsSync('public/_headers')).toBe(false);
   });
 
   test('docs scripts and workflow target apps/docs', () => {
