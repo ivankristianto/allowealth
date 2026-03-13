@@ -17,6 +17,7 @@ export default defineConfig({
       customCss: ['./src/styles/brand.css'],
       sidebar: [
         { slug: 'getting-started' },
+        { slug: 'self-host' },
         { slug: 'core-concepts' },
         {
           label: 'Guides: End Users',
