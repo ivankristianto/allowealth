@@ -23,7 +23,7 @@ import { SessionManagementService } from '@/services/session-management.service'
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { db } from '@/db';
-import { account as authAccount, twoFactor } from '@/db/schema/sqlite';
+import { account as authAccount, twoFactor, passkey as passkeyTable } from '@/db/schema/sqlite';
 import { eq } from 'drizzle-orm';
 import { logError } from '@/lib/utils';
 
@@ -112,14 +112,23 @@ if (user?.id) {
   }
 }
 
-// @TODO: Wire with backend for passkeys.
-const passkeys = [
-  {
-    id: 'pk-1',
-    name: 'MacBook Pro Touch ID',
-    addedOn: 'Jan 15, 2024',
-  },
-];
+// Fetch registered passkeys for the current user
+let passkeys: Array<{
+  id: string;
+  name: string | null;
+  deviceType: string;
+  createdAt: Date;
+}> = [];
+if (user?.id) {
+  try {
+    passkeys = await db.query.passkey.findMany({
+      where: eq(passkeyTable.userId, user.id),
+      columns: { id: true, name: true, deviceType: true, createdAt: true },
+    });
+  } catch (err) {
+    logError('Failed to fetch passkeys', err);
+  }
+}
 
 // @TODO: Wire with backend for security activity.
 const securityEvents = [
@@ -212,4 +221,7 @@ const toneDotClasses: Record<string, string> = {
   <MfaConfirmModal />
   <MfaBackupCodesModal />
   <script src="./security-mfa-client.ts"></script>
+  <script>
+    import '../components/molecules/security-passkeys.client.ts';
+  </script>
 </ProtectedLayout>

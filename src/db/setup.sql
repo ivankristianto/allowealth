@@ -102,6 +102,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS `twoFactor_userId_unique` ON `twoFactor` (`use
 CREATE INDEX IF NOT EXISTS `two_factor_user_id_idx` ON `twoFactor` (`userId`);
 CREATE INDEX IF NOT EXISTS `two_factor_secret_idx` ON `twoFactor` (`secret`);
 
+CREATE TABLE IF NOT EXISTS `passkey` (
+  `id` text PRIMARY KEY NOT NULL,
+  `name` text,
+  `publicKey` text NOT NULL,
+  `userId` text NOT NULL,
+  `credentialID` text NOT NULL,
+  `counter` integer NOT NULL,
+  `deviceType` text NOT NULL,
+  `backedUp` integer NOT NULL,
+  `transports` text,
+  `aaguid` text,
+  `createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+  FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS `passkey_credential_id_unique` ON `passkey` (`credentialID`);
+CREATE INDEX IF NOT EXISTS `passkey_user_id_idx` ON `passkey` (`userId`);
+
 CREATE TABLE IF NOT EXISTS `verification` (
   `id` text PRIMARY KEY NOT NULL,
   `identifier` text NOT NULL,

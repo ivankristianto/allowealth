@@ -10,7 +10,7 @@ import { relations } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { workspaceMeta } from './workspace-meta';
 import { workspaceInvitations } from './workspace-invitations';
-import { user, session, account, verification, twoFactor } from './better-auth';
+import { user, session, account, verification, twoFactor, passkey } from './better-auth';
 import { users } from './users';
 import { userMeta } from './user-meta';
 import { sessions } from './sessions';
@@ -58,6 +58,13 @@ export const authVerificationsRelations = relations(verification, () => ({}));
 export const authTwoFactorsRelations = relations(twoFactor, ({ one }) => ({
   user: one(user, {
     fields: [twoFactor.userId],
+    references: [user.id],
+  }),
+}));
+
+export const authPasskeysRelations = relations(passkey, ({ one }) => ({
+  user: one(user, {
+    fields: [passkey.userId],
     references: [user.id],
   }),
 }));

@@ -10,8 +10,9 @@ import { Key, KeyRound, Plus, Trash2 } from '@lucide/astro';
 
 interface Passkey {
   id: string;
-  name: string;
-  addedOn: string;
+  name: string | null;
+  deviceType: string;
+  createdAt: Date;
 }
 
 export interface Props {
@@ -19,19 +20,23 @@ export interface Props {
 }
 
 const { passkeys } = Astro.props;
-
-// @TODO: Implement passkey management actions.
 ---
 
 <SecurityCard
   title="Passkeys"
   subtitle="Biometric & Hardware Keys"
-  iconVariant="warning"
-  badge="Under Development"
+  iconVariant="success"
 >
   <Key slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
-  <Button slot="header-action" type="button" variant="primary" size="sm" disabled>
+  <Button
+    slot="header-action"
+    type="button"
+    variant="primary"
+    size="sm"
+    id="add-passkey-btn"
+    data-action="add-passkey"
+  >
     <Plus size={16} class="stroke-current" aria-hidden="true" />
     Add Passkey
   </Button>
@@ -41,30 +46,77 @@ const { passkeys } = Astro.props;
   </p>
 
   <div
+    id="passkeys-list"
     class="border border-base-300 rounded-2xl overflow-hidden divide-y divide-base-300 bg-base-100"
   >
     {
-      passkeys.map((passkey) => (
-        <div class="flex items-center justify-between gap-4 p-4">
-          <div class="flex items-center gap-4">
-            <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
-              <KeyRound size={18} class="stroke-current" aria-hidden="true" />
-            </div>
-            <div>
-              <p class="text-sm font-semibold">{passkey.name}</p>
-              <p class="text-xs text-base-content/60">Added on {passkey.addedOn}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="btn btn-ghost btn-sm rounded-xl text-error"
-            aria-label="Remove passkey"
-            disabled
+      passkeys.length === 0 ? (
+        <p id="passkeys-empty" class="p-4 text-sm text-base-content/50 text-center">
+          No passkeys registered yet.
+        </p>
+      ) : (
+        passkeys.map((passkey) => (
+          <div
+            class="flex items-center justify-between gap-4 p-4"
+            data-passkey-id={passkey.id}
           >
-            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-          </button>
-        </div>
-      ))
+            <div class="flex items-center gap-4">
+              <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
+                <KeyRound size={18} class="stroke-current" aria-hidden="true" />
+              </div>
+              <div>
+                <p class="text-sm font-semibold">
+                  {passkey.name || passkey.deviceType || 'Passkey'}
+                </p>
+                <p class="text-xs text-base-content/60">
+                  Added on{' '}
+                  {passkey.createdAt.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm rounded-xl text-error"
+              aria-label="Remove passkey"
+              data-action="delete-passkey"
+              data-passkey-id={passkey.id}
+            >
+              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+            </button>
+          </div>
+        ))
+      )
     }
   </div>
+
+  <!-- Delete Confirmation Modal -->
+  <dialog slot="after" id="delete-passkey-modal" class="modal" data-delete-passkey-modal>
+    <div class="modal-box max-w-sm">
+      <h3 class="text-lg font-bold">Remove Passkey</h3>
+      <p class="py-4 text-sm text-base-content/70">
+        Are you sure you want to remove this passkey? You will no longer be able to use it to sign
+        in.
+      </p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
+        </form>
+        <button
+          type="button"
+          class="btn btn-error btn-sm rounded-xl"
+          data-confirm-delete-passkey
+          data-deleting-passkey-id=""
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 </SecurityCard>

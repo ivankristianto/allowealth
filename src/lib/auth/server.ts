@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import type { BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { captcha, twoFactor } from 'better-auth/plugins';
+import { passkey } from '@better-auth/passkey';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
 import { getEnv } from '@/lib/env';
@@ -87,8 +88,13 @@ function createAuthInstance() {
     throw new Error('PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production');
   }
 
-  const authPlugins: Array<ReturnType<typeof twoFactor> | ReturnType<typeof captcha>> = [
+  const authPlugins: Array<ReturnType<typeof twoFactor> | ReturnType<typeof captcha> | ReturnType<typeof passkey>> = [
     twoFactor(),
+    passkey({
+      rpID: getEnv('RP_ID') ?? new URL(getAuthBaseURL()).hostname,
+      rpName: getEnv('RP_NAME') ?? 'Allowealth',
+      origin: getAuthBaseURL(),
+    }),
   ];
   const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);
 

@@ -60,6 +60,7 @@
   },
   "dependencies": {
     "@astrojs/node": "9.5.2",
+    "@better-auth/passkey": "^1.5.5",
     "@lucide/astro": "^0.562.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@tailwindcss/vite": "^4.1.18",
