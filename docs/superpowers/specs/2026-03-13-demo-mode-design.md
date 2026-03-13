@@ -39,7 +39,8 @@ export function isDemoMode(): boolean {
 ```
 
 - No new middleware. `getEnv` already resolves Cloudflare Workers runtime env, `process.env`, and `import.meta.env` in priority order.
-- `DEMO_MODE=true` is set in the Cloudflare Workers environment (via CF dashboard or `wrangler.toml` vars) — not committed to the repo.
+- `DEMO_MODE=true` is set in the Cloudflare Workers environment (via CF dashboard or `wrangler.toml` `[vars]`) — not committed to the repo.
+- **`isDemoMode()` must only be called at request time** — inside Astro frontmatter or API route handlers, after middleware has populated the Workers runtime env. Never at module load time (e.g., as a top-level constant outside a request handler), or it will return `false` on Cloudflare Workers where `runtimeEnv` is not yet set.
 
 ### 2. Demo Banner Component
 
@@ -50,6 +51,7 @@ Renders a full-width warning alert bar only when demo mode is active. Returns ea
 - Uses DaisyUI `alert alert-warning` with `rounded-none` to span the full viewport width.
 - Text: "This is a demo environment. All data resets daily."
 - `role="alert"` for accessibility.
+- The banner is **static** (not fixed/sticky). It flows before the `<Header>` in the DOM.
 - No client-side JavaScript.
 
 ### 3. MainLayout Integration
@@ -65,6 +67,8 @@ Renders a full-width warning alert bar only when demo mode is active. Returns ea
   <slot />
 </div>
 ```
+
+The banner is static and flows with the page. If the `<Header>` is sticky, verify during implementation that the `<main>` top-padding (`pt-28` / `pt-40`) still accounts for the banner height, and adjust as needed.
 
 ### 4. UI Restrictions
 
@@ -109,20 +113,21 @@ New `aw demo` top-level command with a `reset` subcommand:
 bun run aw demo reset [--target sqlite|d1|d1-local]
 ```
 
-Steps:
-1. Resolve target via `resolveTarget(args)` (same pattern as `aw db` commands).
-2. Run `db empty` to wipe all data while preserving schema.
-3. Run `db seed` to reseed with demo data.
+Implementation steps:
+
+1. Resolve target via `resolveTarget(args)` — same pattern as `aw db` commands.
+2. Use the project's `exec` helper (`src/cli/lib/exec.ts`, wraps `execFileSync`) to run `src/db/empty.ts` via Bun, wiping all data while preserving schema. `AW_TARGET` and `D1_ENABLED` are inherited by the subprocess via `process.env`.
+3. Use the same `exec` helper to run `src/db/seed/index.ts --months=3` via Bun, reseeding with demo data. Three months of data is the appropriate volume for a demo environment.
 4. Log success.
 
-For D1 targets, both `empty` and `seed` already support the D1 driver through the `resolveTarget` mechanism and `D1_ENABLED` env flag.
+**Note on the seeder's production guard:** The seeder guards against running in production by checking `import.meta.env.MODE === 'production'`. When invoked via `bun run src/db/seed/index.ts` (as done here), `MODE` defaults to `'development'`, so the guard does not activate. This is intentional — the CLI is the authoritative mechanism for triggering resets, and requiring a separate `ALLOW_SEED=true` env var in CI would be redundant given that the workflow already requires Cloudflare credentials.
 
 ### 6. GitHub Actions Workflow
 
 **File:** `.github/workflows/demo-reset.yml`
 
 Triggers:
-- `schedule`: daily at `00:00 UTC` (configurable via cron expression in the workflow file)
+- `schedule`: daily at `00:00 UTC` (configurable via the cron expression in the workflow file)
 - `workflow_dispatch`: for manual resets
 
 Steps:
@@ -135,7 +140,9 @@ Required GitHub secrets:
 - `CLOUDFLARE_API_TOKEN` — Wrangler uses this to authenticate with Cloudflare
 - `CLOUDFLARE_ACCOUNT_ID` — identifies the CF account
 
-The `aw demo reset` command invokes Wrangler internally through the existing `exec` utility (`execFileSync`), which picks up `CLOUDFLARE_API_TOKEN` from the environment automatically.
+The `aw demo reset` command invokes Wrangler internally through the project's `exec` helper (`execFileSync`), which inherits `CLOUDFLARE_API_TOKEN` from the environment automatically. The D1 database binding is read from `wrangler.toml` (already committed to the repo), so no additional `CLOUDFLARE_DATABASE_ID` secret is required.
+
+**Note on reset timing:** The reset runs at 00:00 UTC daily. The banner text says "data resets daily" without specifying a time, which is intentional — users see the banner regardless of their timezone and understand the environment is ephemeral.
 
 ---
 
@@ -143,37 +150,39 @@ The `aw demo reset` command invokes Wrangler internally through the existing `ex
 
 ```
 DEMO_MODE=true (CF env var)
-        │
-        ▼
-  isDemoMode()          ←── called at SSR render time in MainLayout + affected pages
-        │
-   ┌────┴────┐
-   │         │
+        |
+        v
+  isDemoMode()          <-- called at SSR render time in MainLayout + affected pages
+        |
+   +----+----+
+   |         |
 Banner     UI gate
 (MainLayout)  (settings / security / profile pages)
 ```
 
 ```
-GitHub Actions (cron: daily)
-        │
-        ▼
+GitHub Actions (cron: daily at 00:00 UTC)
+        |
+        v
 bun run aw demo reset --target d1
-        │
-   ┌────┴──────────────┐
-   │                   │
-aw db empty          aw db seed
-(wipe D1 data)    (reseed D1 data)
+        |
+   +----+-------------------------------+
+   |                                   |
+bun run src/db/empty.ts     bun run src/db/seed/index.ts --months=3
+(wipe D1 data)              (reseed D1 with 3 months of demo data)
 ```
 
 ---
 
-## Environment Variable
+## Environment Variables
 
 | Variable | Value | Where set |
 |---|---|---|
 | `DEMO_MODE` | `true` | Cloudflare Workers environment (CF dashboard or `wrangler.toml` `[vars]`) |
+| `CLOUDFLARE_API_TOKEN` | (secret) | GitHub Actions secret |
+| `CLOUDFLARE_ACCOUNT_ID` | (secret) | GitHub Actions secret |
 
-Not committed to the repository. Absent or any value other than `"true"` leaves demo mode off.
+`DEMO_MODE` is not committed to the repository. Absent or any value other than `"true"` leaves demo mode off.
 
 ---
 
