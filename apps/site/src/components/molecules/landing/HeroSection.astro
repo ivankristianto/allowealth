@@ -9,9 +9,6 @@ import { Sparkles, ArrowRight } from '@lucide/astro';
 import { heroContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
 import GitHubIcon from '@/components/atoms/GitHubIcon.astro';
-import { getPublicAppUrl } from '@/lib/config';
-
-const primaryCtaHref = heroContent.ctaGuestHref ?? getPublicAppUrl('/signup');
 ---
 
 <header class="relative z-10 pt-36 sm:pt-48 pb-16 sm:pb-32 px-6 overflow-hidden">
@@ -63,7 +60,12 @@ const primaryCtaHref = heroContent.ctaGuestHref ?? getPublicAppUrl('/signup');
       class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 animate-fade-in-up-delay-2"
     >
       <!-- Primary CTA -->
-      <Button variant="primary" href={primaryCtaHref} size="xl" className="w-full sm:w-auto">
+      <Button
+        variant="primary"
+        href={heroContent.ctaGuestHref}
+        size="xl"
+        className="w-full sm:w-auto"
+      >
         <span>{heroContent.ctaGuest}</span>
         <ArrowRight size={20} class="stroke-current" aria-hidden="true" />
       </Button>
