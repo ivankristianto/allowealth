@@ -5,15 +5,15 @@ interface Props {
   title?: string;
   description?: string;
   canonical?: string;
-  image?: string;
+  ogImage?: string;
   ogType?: string;
 }
 
 const {
   title = 'allowealth',
-  description = 'Fast, multi-currency household finance tracker. Bank accounts, savings, and investments — all in one secure workspace.',
+  description,
   canonical,
-  image = 'https://allowealth.io/screenshots/dashboard-light.png',
+  ogImage = 'https://allowealth.io/screenshots/dashboard-light.png',
   ogType = 'website',
 } = Astro.props;
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
@@ -26,23 +26,22 @@ const canonicalURL = canonical ?? Astro.url.origin + Astro.url.pathname;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{browserTitle}</title>
-    <meta name="description" content={description} />
+    {description && <meta name="description" content={description} />}
     <link rel="canonical" href={canonicalURL} />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
+    <meta property="og:title" content={browserTitle} />
+    {description && <meta property="og:description" content={description} />}
     <meta property="og:type" content={ogType} />
     <meta property="og:url" content={canonicalURL} />
-    <meta property="og:title" content={browserTitle} />
-    <meta property="og:description" content={description} />
-    <meta property="og:image" content={image} />
+    <meta property="og:image" content={ogImage} />
     <meta property="og:site_name" content="allowealth" />
-    <meta property="og:locale" content="en_US" />
 
-    <!-- Twitter -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={browserTitle} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={image} />
+    {description && <meta name="twitter:description" content={description} />}
+    <meta name="twitter:image" content={ogImage} />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script src="/scripts/theme-init.js" is:inline></script>

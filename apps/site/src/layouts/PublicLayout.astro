@@ -15,7 +15,7 @@ interface Props {
   title?: string;
   description?: string;
   canonical?: string;
-  image?: string;
+  ogImage?: string;
   ogType?: string;
   showBackground?: boolean;
 }
@@ -24,7 +24,7 @@ const {
   title = 'allowealth',
   description,
   canonical,
-  image,
+  ogImage,
   ogType,
   showBackground = true,
 } = Astro.props;
@@ -34,7 +34,7 @@ const {
   title={title}
   description={description}
   canonical={canonical}
-  image={image}
+  ogImage={ogImage}
   ogType={ogType}
 >
   <slot name="head" slot="head" />
