@@ -82,9 +82,19 @@ const { id = 'mfa-setup-modal' } = Astro.props;
       </div>
 
       <div data-step="setup" class="hidden space-y-4">
+        <div class="flex flex-col items-center gap-4">
+          <img
+            data-qr-code
+            alt="QR Code for authenticator app"
+            class="w-48 h-48 rounded-xl border border-base-300 bg-white p-2"
+          />
+          <p class="text-sm text-base-content/70 text-center">
+            Scan this QR code with your authenticator app
+          </p>
+        </div>
         <div class="rounded-2xl border border-base-300 bg-base-200 p-4 space-y-2">
           <p class="text-sm text-base-content/70">
-            Add a new TOTP account in your authenticator app, then paste the secret below.
+            Can't scan? Add a new TOTP account manually with this key:
           </p>
           <p class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
             Setup key
@@ -139,6 +149,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
 </div>
 
 <script>
+  import QRCode from 'qrcode';
   import { authClient } from '@/lib/auth/client';
   import { addToast } from '@/lib/stores/toastStore';
 
@@ -205,6 +216,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         const stepSetup = container.querySelector<HTMLElement>('[data-step="setup"]');
         const stepVerify = container.querySelector<HTMLFormElement>('[data-step="verify"]');
         const manualCode = container.querySelector<HTMLElement>('[data-manual-code]');
+        const qrCodeImg = container.querySelector<HTMLImageElement>('[data-qr-code]');
         const passwordInput = container.querySelector<HTMLInputElement>('input[name="password"]');
         const passwordError = container.querySelector<HTMLElement>('[data-mfa-password-error]');
         const codeInput = container.querySelector<HTMLInputElement>('input[name="code"]');
@@ -271,6 +283,10 @@ const { id = 'mfa-setup-modal' } = Astro.props;
           passwordInput.value = '';
           codeInput.value = '';
           manualCode.textContent = '';
+          if (qrCodeImg) {
+            qrCodeImg.src = '';
+            qrCodeImg.classList.remove('hidden');
+          }
           startBtn?.removeAttribute('disabled');
           verifyBtn?.removeAttribute('disabled');
         };
@@ -327,6 +343,25 @@ const { id = 'mfa-setup-modal' } = Astro.props;
             }
 
             manualCode.textContent = getSecretFromTotpUri(totpURI);
+
+            // Generate QR code from TOTP URI
+            if (qrCodeImg) {
+              try {
+                const qrDataUrl = await QRCode.toDataURL(totpURI, {
+                  width: 192,
+                  margin: 2,
+                  color: {
+                    dark: '#000000',
+                    light: '#ffffff',
+                  },
+                });
+                qrCodeImg.src = qrDataUrl;
+              } catch {
+                // If QR generation fails, hide the image and show manual code only
+                qrCodeImg.classList.add('hidden');
+              }
+            }
+
             setStep('setup');
           } catch (error) {
             setStep('credentials');
