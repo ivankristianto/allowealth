@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   site: 'https://allowealth.io',
   output: 'static',
+  build: {
+    inlineStylesheets: 'always',
+  },
   vite: {
     plugins: [tailwindcss()],
     build: {
