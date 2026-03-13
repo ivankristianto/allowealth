@@ -1,0 +1,24 @@
+---
+/**
+ * DemoBanner
+ *
+ * Full-width warning bar shown at the top of every page in demo mode.
+ * Returns nothing when DEMO_MODE is not active.
+ *
+ * Must be rendered inside an SSR request context (Astro frontmatter),
+ * not at module load time.
+ */
+import { FlaskConical } from '@lucide/astro';
+
+import { isDemoMode } from '@/lib/demo-mode';
+
+if (!isDemoMode()) return;
+---
+
+<div
+  role="alert"
+  class="alert alert-warning rounded-none flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
+>
+  <FlaskConical size={16} class="stroke-current shrink-0" aria-hidden="true" />
+  <span>This is a demo environment. All data resets daily.</span>
+</div>
