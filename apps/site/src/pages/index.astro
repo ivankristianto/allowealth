@@ -10,9 +10,49 @@ import HeroSection from '@/components/molecules/landing/HeroSection.astro';
 import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
 import FeaturesGrid from '@/components/molecules/landing/FeaturesGrid.astro';
 import FaqSection from '@/components/molecules/landing/FaqSection.astro';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://allowealth.io/#website',
+      url: 'https://allowealth.io',
+      name: 'allowealth',
+      description:
+        'Manage your money together with allowealth. The collaborative financial management platform for modern families.',
+      publisher: {
+        '@id': 'https://allowealth.io/#organization',
+      },
+    },
+    {
+      '@type': 'Organization',
+      '@id': 'https://allowealth.io/#organization',
+      name: 'allowealth',
+      url: 'https://allowealth.io',
+      logo: 'https://allowealth.io/favicon.svg',
+      sameAs: ['https://github.com/ivankristianto/allowealth'],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'allowealth',
+      applicationCategory: 'FinanceApplication',
+      operatingSystem: 'Web',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    },
+  ],
+};
 ---
 
-<PublicLayout title="allowealth - Manage Money Together">
+<PublicLayout
+  title="allowealth - Manage Money Together"
+  description="Manage your money together with allowealth. The collaborative financial management platform for modern families."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   <HeroSection />
   <ShowcaseSection />
   <FeaturesGrid />
