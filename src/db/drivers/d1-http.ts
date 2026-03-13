@@ -7,7 +7,7 @@
  * This driver is used by CLI commands (`--target d1`) to interact with the
  * production D1 database without a Workers runtime.
  *
- * Requires CLOUDFLARE_TOKEN in .env.production with D1 Edit permissions.
+ * Requires CLOUDFLARE_API_TOKEN (or legacy CLOUDFLARE_TOKEN) with D1 Edit permissions.
  *
  * @see https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/
  */
@@ -24,6 +24,39 @@ function getRequire() {
 interface WranglerD1Config {
   accountId: string;
   databaseId: string;
+}
+
+/**
+ * Resolve the remote D1 identifiers from CI/local env or fall back to wrangler.toml.
+ */
+export function resolveD1HttpConfig(
+  projectRoot: string,
+  env: NodeJS.ProcessEnv = process.env
+): WranglerD1Config {
+  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
+  const databaseId = env.D1_DATABASE_ID;
+
+  if (accountId && databaseId) {
+    return { accountId, databaseId };
+  }
+
+  return readWranglerConfig(projectRoot);
+}
+
+/**
+ * Resolve the Cloudflare token for the D1 HTTP driver.
+ */
+export function getD1HttpToken(env: NodeJS.ProcessEnv = process.env): string {
+  const token = env.CLOUDFLARE_API_TOKEN ?? env.CLOUDFLARE_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      'Cloudflare token is required for remote D1 access.\n' +
+        'Set CLOUDFLARE_API_TOKEN (or legacy CLOUDFLARE_TOKEN) with D1 Edit permissions.'
+    );
+  }
+
+  return token;
 }
 
 /**
@@ -60,18 +93,14 @@ export function readWranglerConfig(projectRoot: string): WranglerD1Config {
  * @returns Drizzle database instance
  */
 export function createD1HttpDatabase<T extends Record<string, unknown>>(schema: T) {
-  const token = getEnv('CLOUDFLARE_TOKEN');
-  if (!token) {
-    throw new Error(
-      'CLOUDFLARE_TOKEN is required for remote D1 access.\n' +
-        'Generate a token at https://dash.cloudflare.com/profile/api-tokens\n' +
-        'with "D1 Edit" permissions, then add it to .env.production'
-    );
-  }
+  const token = getD1HttpToken({
+    CLOUDFLARE_API_TOKEN: getEnv('CLOUDFLARE_API_TOKEN'),
+    CLOUDFLARE_TOKEN: getEnv('CLOUDFLARE_TOKEN'),
+  });
 
   // Find project root (where wrangler.toml lives)
   const projectRoot = resolve(import.meta.dir, '../../..');
-  const { accountId, databaseId } = readWranglerConfig(projectRoot);
+  const { accountId, databaseId } = resolveD1HttpConfig(projectRoot);
 
   const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
 

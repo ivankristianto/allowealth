@@ -26,7 +26,7 @@ jobs:
 
       - name: Reset demo data on D1
         # AW_TARGET=d1 + D1_ENABLED=true replaces --target d1 to avoid loadEnvFile('.env.production')
-        # which is not present in CI. Wrangler picks up CLOUDFLARE_API_TOKEN automatically.
+        # which is not present in CI. The D1 HTTP driver reads Cloudflare auth + database IDs from env.
         # --yes skips the interactive confirmation prompt.
         run: bun run aw demo reset --yes
         env:
@@ -34,3 +34,4 @@ jobs:
           D1_ENABLED: 'true'
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
