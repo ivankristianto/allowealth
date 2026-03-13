@@ -20,10 +20,23 @@ interface Props {
   showBackground?: boolean;
 }
 
-const { title = 'allowealth', description, canonical, ogImage, ogType, showBackground = true } = Astro.props;
+const {
+  title = 'allowealth',
+  description,
+  canonical,
+  ogImage,
+  ogType,
+  showBackground = true,
+} = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} canonical={canonical} ogImage={ogImage} ogType={ogType}>
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  ogImage={ogImage}
+  ogType={ogType}
+>
   <slot name="head" slot="head" />
   <!-- Skip to content link for accessibility -->
   <a
