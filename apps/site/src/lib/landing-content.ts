@@ -66,6 +66,7 @@ export interface FaqItem {
   answer: string;
 }
 
+const DEMO_URL = 'https://demo.allowealth.io';
 const SELF_HOST_DOCS_URL = 'https://docs.allowealth.io/self-host';
 
 // ============================================================================
@@ -347,6 +348,7 @@ export const heroContent = {
   description:
     'Stop guessing where it all went. Allowealth gives households and families a clear, shared view of their money — so you can plan with confidence, not anxiety.',
   ctaGuest: 'Try the Demo',
+  ctaGuestHref: DEMO_URL,
   ctaLoggedIn: 'Go to Dashboard',
   ctaSecondary: 'Your data, your rules',
   ctaSecondaryHref: SELF_HOST_DOCS_URL,
@@ -359,5 +361,5 @@ export const heroContent = {
 export const brandContent = {
   name: 'allowealth',
   tagline: 'A shared money operating system for households and small communities.',
-  copyright: `© ${new Date().getFullYear()} allowealth. Manage money together.`,
+  copyright: `© ${new Date().getFullYear()} allowealth. Allow your wealth to grow`,
 };
