@@ -11,6 +11,7 @@ import Label from '@/components/atoms/Label.astro';
 import Card from '@/components/atoms/Card.astro';
 import MemberList from '@/components/organisms/MemberList.astro';
 import InviteMemberModal from '@/components/organisms/InviteMemberModal.astro';
+import { isDemoMode } from '@/lib/demo-mode';
 import {
   Bell,
   Building2,
@@ -136,6 +137,7 @@ const navItems = [
 ] as const;
 
 const activeSection = 'general';
+const demoMode = isDemoMode();
 
 const currencyOptions = CURRENCY_OPTIONS.map((opt) => ({
   value: opt.value,
@@ -452,7 +454,7 @@ const dataActions = [
                     {members.length} Active Member{members.length !== 1 ? 's' : ''}
                   </p>
                   {
-                    isAdmin && (
+                    isAdmin && !demoMode && (
                       <button
                         type="button"
                         class="btn btn-ghost btn-sm rounded-xl gap-2"
@@ -469,7 +471,7 @@ const dataActions = [
 
                 {/* Pending Invitations (Admin only) */}
                 {
-                  isAdmin && invitations.length > 0 && (
+                  !demoMode && isAdmin && invitations.length > 0 && (
                     <div class="mt-6">
                       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
@@ -528,9 +530,17 @@ const dataActions = [
                 }
 
                 {
-                  isAdmin && invitations.length === 0 && (
+                  !demoMode && isAdmin && invitations.length === 0 && (
                     <p class="text-sm text-base-content/60 text-center py-4">
                       No pending invitations. Use the "Invite Member" button to add new members.
+                    </p>
+                  )
+                }
+
+                {
+                  isAdmin && demoMode && (
+                    <p class="py-4 text-center text-sm text-base-content/60">
+                      Member invitations are disabled in demo mode.
                     </p>
                   )
                 }
