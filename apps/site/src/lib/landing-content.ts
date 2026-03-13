@@ -66,6 +66,8 @@ export interface FaqItem {
   answer: string;
 }
 
+const SELF_HOST_DOCS_URL = 'https://docs.allowealth.io/self-host';
+
 // ============================================================================
 // Pricing Data
 // ============================================================================
@@ -118,7 +120,7 @@ export const footerLinks: FooterLinkSection[] = [
     title: 'Product',
     links: [
       { label: 'Features', href: '/#features' },
-      { label: 'Self-Host Guide', href: 'https://docs.allowealth.io/self-host' },
+      { label: 'Self-Host Guide', href: SELF_HOST_DOCS_URL },
       { label: 'Roadmap', href: 'https://github.com/ivankristianto/allowealth/issues' },
     ],
   },
@@ -347,7 +349,7 @@ export const heroContent = {
   ctaGuest: 'Try the Demo',
   ctaLoggedIn: 'Go to Dashboard',
   ctaSecondary: 'Your data, your rules',
-  ctaSecondaryHref: 'https://docs.allowealth.io/self-host',
+  ctaSecondaryHref: SELF_HOST_DOCS_URL,
 };
 
 // ============================================================================
