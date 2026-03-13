@@ -152,7 +152,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'every day.',
     highlightColor: 'text-primary',
     description:
-      'See household or group spending, account totals, and budget health in one shared view, without the admin work.',
+      'No more end-of-month surprises. One shared view of spending, accounts, and budget health — so everyone stays on the same page.',
     features: ['Shared monthly overview', 'Group account totals', 'Shared budget health'],
     featureIconColor: 'text-primary',
     imageUrl: '/screenshots/dashboard.jpg',
@@ -168,7 +168,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'together.',
     highlightColor: 'text-accent',
     description:
-      'Record income and expenses as a household or community. No more guessing who paid for what. Import easily from your bank.',
+      'Every dollar in, every dollar out — logged and categorized. No more guessing who paid for what or where it all went.',
     features: ['Log shared expenses', 'Filter by month or category', 'Import bank statements'],
     featureIconColor: 'text-accent',
     imageUrl: '/screenshots/transactions.jpg',
@@ -185,7 +185,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'not just track it.',
     highlightColor: 'text-success',
     description:
-      'Set limits by category and get alerts before you overspend. Plan each month together and stay accountable.',
+      'Set limits before the month starts, not after. Get alerts before you overspend and stay accountable together.',
     features: ['Category limits with alerts', 'Monthly budget planning', 'Copy budgets forward'],
     featureIconColor: 'text-success',
     imageUrl: '/screenshots/budget.jpg',
@@ -201,7 +201,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'one workspace.',
     highlightColor: 'text-warning',
     description:
-      'Bank accounts, savings, and investments — all together. Track balances across currencies and automate recurring transactions.',
+      'Every bank account, savings pot, and investment in one place. Track across currencies without the spreadsheet juggling.',
     features: [
       'Multi-currency (IDR / USD / EUR)',
       'Bank, savings & investment accounts',
@@ -222,7 +222,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'full picture.',
     highlightColor: 'text-info',
     description:
-      'Clear spending trends, category breakdowns, and month-over-month analysis. Export and share anytime.',
+      'Spot patterns before they become problems. Category breakdowns, monthly trends, and year-over-year analysis — always at hand.',
     features: ['Spending trends by category', 'Monthly and yearly analysis', 'Export and share'],
     featureIconColor: 'text-info',
     imageUrl: '/screenshots/reports.jpg',
@@ -295,7 +295,7 @@ export const featureGridItems: FeatureGridItem[] = [
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
     title: 'Forecast',
-    description: 'Project savings, explore what-ifs, and plan your financial future together.',
+    description: 'See months ahead. Model scenarios. Plan your financial future with confidence.',
     colSpan: 'md:col-span-8',
     variant: 'light',
   },
@@ -339,15 +339,15 @@ export const faqItems: FaqItem[] = [
 
 export const heroContent = {
   badge: 'For Households & Communities',
-  title: 'Manage money',
-  titleHighlightPrefix: 'together. ',
-  titleHighlight: 'Without stress.',
+  title: 'Know where every dollar goes.',
+  titleHighlightPrefix: 'Own where ',
+  titleHighlight: "you're headed.",
   description:
-    'A shared money operating system for households and small communities. See where your money goes, plan budgets together, and skip the spreadsheets.',
-  ctaGuest: 'Get Started Free',
+    'Stop guessing where it all went. Allowealth gives households and families a clear, shared view of their money — so you can plan with confidence, not anxiety.',
+  ctaGuest: 'Try the Demo',
   ctaLoggedIn: 'Go to Dashboard',
-  ctaSecondary: 'See how it works',
-  ctaSecondaryHref: '#showcase',
+  ctaSecondary: 'Your data, your rules',
+  ctaSecondaryHref: 'https://docs.allowealth.io/self-host',
 };
 
 // ============================================================================
