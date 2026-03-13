@@ -3,10 +3,21 @@ import '../styles/globals.css';
 
 interface Props {
   title?: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
 }
 
-const { title = 'allowealth' } = Astro.props;
+const {
+  title = 'allowealth',
+  description,
+  canonical,
+  ogImage = 'https://allowealth.io/screenshots/dashboard-light.png',
+  ogType = 'website',
+} = Astro.props;
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
+const canonicalURL = canonical ?? Astro.url.origin + Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -15,6 +26,23 @@ const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` :
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{browserTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={browserTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="allowealth" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={browserTitle} />
+    {description && <meta name="twitter:description" content={description} />}
+    <meta name="twitter:image" content={ogImage} />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script src="/scripts/theme-init.js" is:inline></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,6 +51,7 @@ const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` :
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <slot name="head" />
   </head>
   <body>
     <slot />
