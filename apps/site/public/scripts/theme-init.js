@@ -20,7 +20,7 @@
     let savedTheme = null;
     try {
       savedTheme = localStorage.getItem('theme');
-    } catch (_) {
+    } catch {
       // localStorage may be unavailable (e.g. private browsing restrictions)
     }
     if (savedTheme === 'light' || savedTheme === 'dark') {
