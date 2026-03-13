@@ -21,7 +21,7 @@ const hasNoBackupCodes = backupCodesRemaining === 0;
 
 <section class="card bg-base-100 shadow border border-base-300" data-mfa-card>
   <div class="card-body p-6 space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-4">
       <div class="flex items-center gap-4">
         <IconBadge variant={enabled ? 'success' : 'warning'} size="sm">
           {
@@ -39,14 +39,28 @@ const hasNoBackupCodes = backupCodesRemaining === 0;
           </p>
         </div>
       </div>
-      {enabled && <span class="badge badge-success badge-sm gap-1">Active</span>}
+      {
+        enabled ? (
+          <span class="badge badge-success badge-sm gap-1">Active</span>
+        ) : (
+          <Button
+            variant="accent"
+            size="sm"
+            className="rounded-lg sm:rounded-xl shrink-0"
+            data-action="enable-mfa"
+            data-testid="enable-mfa-btn"
+          >
+            Enable MFA
+          </Button>
+        )
+      }
     </div>
 
     {
       enabled ? (
         <div class="space-y-4">
           <div class="rounded-2xl border border-base-300 bg-base-200/60 p-4">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-4">
               <div>
                 <p class="text-sm font-semibold">Authenticator App</p>
                 <p class="text-xs text-base-content/60">
@@ -54,7 +68,7 @@ const hasNoBackupCodes = backupCodesRemaining === 0;
                   remaining
                 </p>
               </div>
-              <div class="flex gap-2">
+              <div class="flex gap-2 shrink-0">
                 <button
                   type="button"
                   class="btn btn-outline btn-sm rounded-xl"
@@ -90,19 +104,11 @@ const hasNoBackupCodes = backupCodesRemaining === 0;
           )}
         </div>
       ) : (
-        <div class="space-y-4">
-          <p class="text-sm text-base-content/60">
+        <div class="rounded-2xl border border-base-300 bg-base-200/60 p-4">
+          <p class="text-sm text-base-content/70">
             Add an extra layer of security by requiring a verification code from your authenticator
             app when signing in. You will confirm your account password before setup starts.
           </p>
-          <Button
-            variant="accent"
-            className="w-full"
-            data-action="enable-mfa"
-            data-testid="enable-mfa-btn"
-          >
-            Enable MFA
-          </Button>
         </div>
       )
     }
