@@ -14,7 +14,7 @@ import type { MiddlewareHandler } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { auth, AUTH_PATH_PREFIX, AUTH_SESSION_COOKIE_NAME } from '@/lib/auth/server';
+import { auth, AUTH_PATH_PREFIX, getSessionCookieName } from '@/lib/auth/server';
 import type { AuthSession, AuthUser, BetterAuthUser } from '@/lib/auth/types';
 import { logError } from '@/lib/logger';
 
@@ -33,7 +33,8 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     return next();
   }
 
-  const sessionCookie = context.cookies.get(AUTH_SESSION_COOKIE_NAME)?.value;
+  const sessionCookieName = getSessionCookieName();
+  const sessionCookie = context.cookies.get(sessionCookieName)?.value;
 
   const isAuthApi = context.url.pathname.startsWith(AUTH_PATH_PREFIX);
 
@@ -53,12 +54,12 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     });
 
     if (!result?.session || !result.user) {
-      clearAuthenticatedLocals(context, isAuthApi);
+      clearAuthenticatedLocals(context, isAuthApi, sessionCookieName);
     } else {
       const hydratedUser = await hydrateUser(result.user as BetterAuthUser);
 
       if (!hydratedUser || hydratedUser.deletedAt) {
-        clearAuthenticatedLocals(context, isAuthApi);
+        clearAuthenticatedLocals(context, isAuthApi, sessionCookieName);
       } else {
         context.locals.session = mapSession(result.session);
         context.locals.user = hydratedUser;
@@ -76,7 +77,7 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     }
   } catch (error) {
     logError('Session validation error', error);
-    clearAuthenticatedLocals(context, isAuthApi);
+    clearAuthenticatedLocals(context, isAuthApi, sessionCookieName);
   }
 
   perf?.recordPhase('mw.auth', performance.now() - authStart);
@@ -85,14 +86,15 @@ export const authentication: MiddlewareHandler = async (context, next) => {
 
 function clearAuthenticatedLocals(
   context: Parameters<MiddlewareHandler>[0],
-  isAuthApi: boolean
+  isAuthApi: boolean,
+  sessionCookieName: string
 ): void {
   context.locals.user = null;
   context.locals.session = null;
 
   if (!isAuthApi) {
     context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
-    context.cookies.delete(AUTH_SESSION_COOKIE_NAME, { path: '/' });
+    context.cookies.delete(sessionCookieName, { path: '/' });
   }
 }
 

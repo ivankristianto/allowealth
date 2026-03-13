@@ -11,7 +11,13 @@ import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
-export const AUTH_SESSION_COOKIE_NAME = 'better-auth.session_token';
+const AUTH_SESSION_COOKIE_BASE = 'better-auth.session_token';
+
+export function getSessionCookieName(): string {
+  const baseURL = getAuthBaseURL();
+  const useSecureCookies = baseURL.startsWith('https://');
+  return useSecureCookies ? `__Secure-${AUTH_SESSION_COOKIE_BASE}` : AUTH_SESSION_COOKIE_BASE;
+}
 
 const logger = createLogger('better-auth');
 

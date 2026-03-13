@@ -12,7 +12,7 @@ const getSessionMock = mock(async () => null);
     },
   },
   AUTH_PATH_PREFIX: '/api/auth',
-  AUTH_SESSION_COOKIE_NAME: 'better-auth.session_token',
+  getSessionCookieName: () => 'better-auth.session_token',
   getAuthBaseURL: () =>
     process.env.PUBLIC_URL ??
     `http://${process.env.DEV_HOST ?? 'localhost'}:${process.env.PORT ?? '4321'}`,
