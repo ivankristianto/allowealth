@@ -10,7 +10,7 @@ interface Props {
 const {
   title = 'allowealth',
   description = 'Fast, multi-currency household finance tracker. Bank accounts, savings, and investments — all in one secure workspace.',
-  image = '/favicon.svg',
+  image = '/screenshots/accounts.jpg',
 } = Astro.props;
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
 const canonicalURL = new URL(Astro.url.pathname, Astro.site || Astro.url.origin);
@@ -27,17 +27,19 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || Astro.url.origin)
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:url" content={canonicalURL.toString()} />
     <meta property="og:title" content={browserTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={new URL(image, Astro.url)} />
+    <meta property="og:image" content={new URL(image, Astro.url).toString()} />
+    <meta property="og:site_name" content="allowealth" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={browserTitle} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={new URL(image, Astro.url)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL.toString()} />
+    <meta name="twitter:title" content={browserTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL(image, Astro.url).toString()} />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script src="/scripts/theme-init.js" is:inline></script>
