@@ -5,7 +5,7 @@ draft: false
 head: []
 sidebar:
   label: Core Concepts
-  order: 2
+  order: 3
 audience:
   - user
   - admin
