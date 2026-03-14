@@ -10,14 +10,11 @@
  */
 
 import { brandContent } from '@/lib/landing-content';
-import Button from '@/components/atoms/Button.astro';
-import { getPublicAppUrl } from '@/lib/config';
 
 const navLinks = [
   { label: 'Features', href: '/#features' },
   { label: 'Documentation', href: 'https://docs.allowealth.io', external: true },
 ];
-const demoUrl = getPublicAppUrl('/');
 ---
 
 <nav
@@ -80,10 +77,5 @@ const demoUrl = getPublicAppUrl('/');
         ))
       }
     </ul>
-
-    <!-- CTA Button -->
-    <div class="flex items-center">
-      <Button variant="primary" href={demoUrl} size="md">Try Demo</Button>
-    </div>
   </div>
 </nav>

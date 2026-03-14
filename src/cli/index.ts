@@ -41,6 +41,7 @@ const main = defineCommand({
     budgets: () => import('./commands/budgets').then((m) => m.default),
     categories: () => import('./commands/categories').then((m) => m.default),
     db: () => import('./commands/db').then((m) => m.default),
+    demo: () => import('./commands/demo').then((m) => m.default),
     deploy: () => import('./commands/deploy').then((m) => m.default),
     mcp: () => import('./commands/mcp').then((m) => m.default),
     recurring: () => import('./commands/recurring').then((m) => m.default),

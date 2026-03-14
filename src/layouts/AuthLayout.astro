@@ -7,6 +7,7 @@
  */
 
 import BaseLayout from './BaseLayout.astro';
+import DemoBanner from '../components/atoms/DemoBanner.astro';
 
 interface Props {
   title?: string;
@@ -16,35 +17,39 @@ const { title = 'allowealth - Login' } = Astro.props;
 ---
 
 <BaseLayout title={title}>
-  <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
-    <div class="w-full max-w-md">
-      <!-- Logo/Branding -->
-      <div class="text-center mb-8">
-        <a
-          href="/"
-          class="flex items-center justify-center gap-3 mb-2 group"
-          aria-label="allowealth Home"
-        >
-          <img
-            src="/favicon.svg"
-            alt=""
-            class="w-10 h-10 transition-transform duration-200 group-hover:scale-105"
-            aria-hidden="true"
-          />
-          <h1 class="text-2xl font-bold tracking-tight text-base-content">allowealth</h1>
-        </a>
-        <p class="text-sm text-base-content/60 mt-2 font-medium">
-          Manage your finances in one place
+  <div class="flex min-h-screen flex-col bg-base-200">
+    <DemoBanner />
+
+    <div class="flex flex-1 items-center justify-center p-4">
+      <div class="w-full max-w-md">
+        <!-- Logo/Branding -->
+        <div class="text-center mb-8">
+          <a
+            href="/"
+            class="flex items-center justify-center gap-3 mb-2 group"
+            aria-label="allowealth Home"
+          >
+            <img
+              src="/favicon.svg"
+              alt=""
+              class="w-10 h-10 transition-transform duration-200 group-hover:scale-105"
+              aria-hidden="true"
+            />
+            <h1 class="text-2xl font-bold tracking-tight text-base-content">allowealth</h1>
+          </a>
+          <p class="text-sm text-base-content/60 mt-2 font-medium">
+            Manage your finances in one place
+          </p>
+        </div>
+
+        <!-- Main Content -->
+        <slot />
+
+        <!-- Footer -->
+        <p class="text-center text-xs text-base-content/60 mt-8">
+          &copy; {new Date().getFullYear()} allowealth. All rights reserved.
         </p>
       </div>
-
-      <!-- Main Content -->
-      <slot />
-
-      <!-- Footer -->
-      <p class="text-center text-xs text-base-content/60 mt-8">
-        &copy; {new Date().getFullYear()} allowealth. All rights reserved.
-      </p>
     </div>
   </div>
 </BaseLayout>
