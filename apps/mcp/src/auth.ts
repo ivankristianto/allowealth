@@ -1,5 +1,4 @@
-import { db } from '@/db';
-import { ApiKeyService } from '@/services/api-key.service';
+import { validateMcpToken } from '@/lib/mcp-auth';
 
 export interface AuthContext {
   workspaceId: string;
@@ -10,47 +9,41 @@ export interface AuthContext {
 let cachedContext: AuthContext | null = null;
 
 /**
- * Authenticate the API key from environment and cache the result.
- * Called once on server startup (expensive PBKDF2 verification).
+ * Authenticate the OAuth access token from environment and cache the result.
+ * Called once on server startup.
  */
 export async function authenticate(): Promise<AuthContext> {
   if (cachedContext) return cachedContext;
 
-  const apiKey = process.env.ALLOWEALTH_API_KEY;
-  if (!apiKey) {
-    throw new Error('ALLOWEALTH_API_KEY environment variable is required');
+  const token = process.env.ALLOWEALTH_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error('ALLOWEALTH_ACCESS_TOKEN environment variable is required');
   }
 
-  const service = new ApiKeyService(db);
-  const result = await service.validate(apiKey);
-
+  const result = await validateMcpToken(token);
   if (!result) {
-    throw new Error('Invalid API key. Check ALLOWEALTH_API_KEY.');
+    throw new Error('Invalid or expired OAuth token. Check ALLOWEALTH_ACCESS_TOKEN.');
   }
 
-  cachedContext = {
-    workspaceId: result.workspaceId,
-    userId: result.userId,
-    tokenId: result.apiKeyId,
-  };
+  cachedContext = result;
   return cachedContext;
 }
 
 /**
- * Get the auth context with a lightweight revocation/expiry check.
- * Verifies the key hasn't been revoked or expired since startup
- * without re-running PBKDF2.
+ * Get the auth context, re-validating the token for expiry/revocation.
+ * Does not re-hash — uses the cache layer in validateMcpToken.
  */
 export async function getAuthContext(): Promise<AuthContext> {
   if (!cachedContext) {
     throw new Error('Not authenticated. Call authenticate() first.');
   }
 
-  const key = await new ApiKeyService(db).getStatus(cachedContext.tokenId);
+  const token = process.env.ALLOWEALTH_ACCESS_TOKEN!;
+  const result = await validateMcpToken(token);
 
-  if (!key || key.deleted_at || (key.expires_at && new Date(key.expires_at) < new Date())) {
-    throw new Error('API key is no longer valid.');
+  if (!result) {
+    throw new Error('OAuth token is no longer valid.');
   }
 
-  return cachedContext;
+  return result;
 }
