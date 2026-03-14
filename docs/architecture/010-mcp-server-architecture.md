@@ -22,16 +22,18 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 
 ### 1. Dual-Transport Architecture
 
-- **stdio entry point (`mcp-server/`)**: A standalone TypeScript package for local execution via CLI/desktop apps.
+- **stdio entry point (`apps/mcp/`)**: A standalone TypeScript package for local execution via CLI and desktop apps.
 - **HTTP entry point (`/api/mcp`)**: An Astro API route within the main application, enabling access via Cloudflare Workers without requiring long-lived stateful sessions.
 - **Shared Tools**: Tool handlers are defined in a shared layer and receive service instances via **Dependency Injection (ToolContext)**. This ensures consistency between transports and maximizes code reuse.
 
-### 2. Authentication: API Key System
+### 2. Authentication: OAuth 2.0
 
-- **Per-User/Workspace Keys**: Users can generate multiple named API keys (e.g., "Claude Desktop").
-- **Security**: Keys are stored as PBKDF2-SHA256 hashes in the `api_keys` table.
-- **Optimization**: To avoid expensive hashing on every request, validation results are cached in the `CacheManager` (Upstash/Memory) with a 5-minute TTL.
-- **Soft Revocation**: Revoking a key invalidates its cache entry via tag-based invalidation (`apikey:{prefix}`).
+- **OAuth Provider**: Allowealth uses the better-auth `mcp` plugin to expose an OAuth 2.0 provider for MCP clients.
+- **Pre-seeded Clients**: `bun run aw db seed-oauth-clients` creates the well-known clients used by Claude Desktop, ChatGPT, and generic MCP clients.
+- **Database Model**: OAuth state is stored in three tables: `oauthApplication`, `oauthAccessToken`, and `oauthConsent`.
+- **Consent + Token UX**: Users authorize clients on `/oauth/authorize`, then copy the one-time access token from `/oauth/display-token`.
+- **Optimization**: `src/lib/mcp-auth.ts` validates access tokens and caches successful lookups in the `CacheManager` for 5 minutes.
+- **Revocation**: Revoking a connected app deletes the token record and invalidates the cache tag for that token immediately.
 
 ### 3. Tool Design Principles
 
@@ -49,30 +51,30 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 - `get_account_summary` / `get_dashboard`: Snapshot of total financial position.
 
 **HTTP Authentication Header:**
-`Authorization: Bearer aw_...`
+`Authorization: Bearer <oauth_access_token>`
 
 ## Consequences
 
 ### Positive
 
-- **Security**: API keys provide a secure, revokable way for external agents to access user data.
+- **Security**: OAuth access tokens provide a standard, revokable way for external agents to access user data.
 - **Portability**: Allowealth data becomes accessible to any AI that supports the MCP standard.
-- **Maintainability**: Reuses 90%+ of existing services; no duplication of game logic.
+- **Maintainability**: Reuses shared MCP tool handlers and centralizes token validation in `src/lib/mcp-auth.ts`.
 - **Observability**: Routes through standard middleware (logging, metrics).
 
 ### Negative
 
 - **Stateless Limitation**: MCP features requiring persistent sessions (like SSE or complex multi-step notifications) are not supported on the HTTP transport.
-- **Key Management**: Requires a new surface area for API key lifecycle management (CLI first, then UI).
+- **OAuth Surface Area**: Adds consent screens, client seeding, and token lifecycle management to the product.
 
 ## Future Considerations
 
-- UI-based API key management in user settings.
-- Rate limiting per API key.
+- Refresh-token rotation and shorter-lived access tokens for remote clients.
+- Rate limiting per OAuth client or token.
 - Audit logs specifically for MCP-driven actions.
 
 ## References
 
 - **MCP Protocol**: [Model Context Protocol](https://modelcontextprotocol.io)
 - **Design Document**: `docs/done/2026-02-04-mcp-server-design.md`
-- **Implementation**: `mcp-server/` and `src/pages/api/mcp.ts`
+- **Implementation**: `apps/mcp/`, `src/pages/api/mcp.ts`, and `src/lib/mcp-auth.ts`

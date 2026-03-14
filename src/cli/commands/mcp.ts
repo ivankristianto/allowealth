@@ -7,7 +7,7 @@ export default defineCommand({
     start: defineCommand({
       meta: { name: 'start', description: 'Start MCP server for AI assistant integration' },
       run() {
-        exec('bun', ['run', 'mcp-server/src/index.ts']);
+        exec('bun', ['run', 'apps/mcp/src/index.ts']);
       },
     }),
   },
