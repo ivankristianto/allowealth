@@ -1,13 +1,13 @@
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
-import { ApiKeyService } from '@/services/api-key.service';
+import { validateMcpToken } from '@/lib/mcp-auth';
 import { createServices } from '@mcp-server/context';
 import { registerTools, handleToolCall } from '@mcp-server/tools/index';
 import type { ToolContext } from '@mcp-server/tools/types';
 
 /**
  * Extract bearer token from Authorization header.
- * Expected format: "Bearer aw_..."
+ * Expected format: "Bearer <oauth-token>"
  */
 function extractBearerToken(request: Request): string | null {
   const header = request.headers.get('Authorization');
@@ -107,18 +107,18 @@ async function dispatchMcpMessage(
 /**
  * POST /api/mcp - MCP JSON-RPC 2.0 endpoint
  *
- * Authenticates via Bearer token (API key), builds a per-request ToolContext,
+ * Authenticates via Bearer token (OAuth token), builds a per-request ToolContext,
  * and dispatches JSON-RPC messages to the MCP tool handlers.
  */
 export const POST: APIRoute = async (context) => {
   const apiKey = extractBearerToken(context.request);
   if (!apiKey) {
-    return errorResponse(401, 'Missing Authorization header. Use: Bearer aw_...');
+    return errorResponse(401, 'Missing Authorization header. Use: Bearer <oauth-token>');
   }
 
-  const auth = await new ApiKeyService(db).validateCached(apiKey);
+  const auth = await validateMcpToken(apiKey);
   if (!auth) {
-    return errorResponse(401, 'Invalid API key');
+    return errorResponse(401, 'Invalid or expired OAuth token');
   }
 
   // Build per-request ToolContext with fresh DB connection and service instances

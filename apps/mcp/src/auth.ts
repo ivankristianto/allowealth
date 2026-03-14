@@ -4,7 +4,7 @@ import { ApiKeyService } from '@/services/api-key.service';
 export interface AuthContext {
   workspaceId: string;
   userId: string;
-  apiKeyId: string;
+  tokenId: string;
 }
 
 let cachedContext: AuthContext | null = null;
@@ -28,7 +28,11 @@ export async function authenticate(): Promise<AuthContext> {
     throw new Error('Invalid API key. Check ALLOWEALTH_API_KEY.');
   }
 
-  cachedContext = result;
+  cachedContext = {
+    workspaceId: result.workspaceId,
+    userId: result.userId,
+    tokenId: result.apiKeyId,
+  };
   return cachedContext;
 }
 
@@ -42,7 +46,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     throw new Error('Not authenticated. Call authenticate() first.');
   }
 
-  const key = await new ApiKeyService(db).getStatus(cachedContext.apiKeyId);
+  const key = await new ApiKeyService(db).getStatus(cachedContext.tokenId);
 
   if (!key || key.deleted_at || (key.expires_at && new Date(key.expires_at) < new Date())) {
     throw new Error('API key is no longer valid.');
