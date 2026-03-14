@@ -88,7 +88,9 @@ function createAuthInstance() {
     throw new Error('PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production');
   }
 
-  const authPlugins: Array<ReturnType<typeof twoFactor> | ReturnType<typeof captcha> | ReturnType<typeof passkey>> = [
+  const authPlugins: Array<
+    ReturnType<typeof twoFactor> | ReturnType<typeof captcha> | ReturnType<typeof passkey>
+  > = [
     twoFactor(),
     passkey({
       rpID: getEnv('RP_ID') ?? new URL(getAuthBaseURL()).hostname,

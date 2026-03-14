@@ -22,11 +22,7 @@ export interface Props {
 const { passkeys } = Astro.props;
 ---
 
-<SecurityCard
-  title="Passkeys"
-  subtitle="Biometric & Hardware Keys"
-  iconVariant="success"
->
+<SecurityCard title="Passkeys" subtitle="Biometric & Hardware Keys" iconVariant="success">
   <Key slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
   <Button
@@ -56,10 +52,7 @@ const { passkeys } = Astro.props;
         </p>
       ) : (
         passkeys.map((passkey) => (
-          <div
-            class="flex items-center justify-between gap-4 p-4"
-            data-passkey-id={passkey.id}
-          >
+          <div class="flex items-center justify-between gap-4 p-4" data-passkey-id={passkey.id}>
             <div class="flex items-center gap-4">
               <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
                 <KeyRound size={18} class="stroke-current" aria-hidden="true" />

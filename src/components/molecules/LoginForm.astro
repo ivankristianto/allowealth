@@ -287,18 +287,26 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
     });
 
     // Passkey conditional UI autofill (browser shows passkey suggestions in email field)
-    if (typeof PublicKeyCredential !== 'undefined' && PublicKeyCredential.isConditionalMediationAvailable) {
-      PublicKeyCredential.isConditionalMediationAvailable().then((available) => {
-        if (available) {
-          authClient.signIn.passkey({ autoFill: true }).then((result) => {
-            if (!result?.error) {
-              window.location.href = redirectTo || '/dashboard';
-            }
-          }).catch(() => {
-            // Conditional UI silently fails if user cancels or no passkeys
-          });
-        }
-      }).catch(() => {});
+    if (
+      typeof PublicKeyCredential !== 'undefined' &&
+      PublicKeyCredential.isConditionalMediationAvailable
+    ) {
+      PublicKeyCredential.isConditionalMediationAvailable()
+        .then((available) => {
+          if (available) {
+            authClient.signIn
+              .passkey({ autoFill: true })
+              .then((result) => {
+                if (!result?.error) {
+                  window.location.href = redirectTo || '/dashboard';
+                }
+              })
+              .catch(() => {
+                // Conditional UI silently fails if user cancels or no passkeys
+              });
+          }
+        })
+        .catch(() => {});
     }
 
     // Form submission with fetch API
@@ -420,7 +428,8 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
     passkeyBtn.addEventListener('click', async () => {
       passkeyBtn.disabled = true;
       const originalContent = passkeyBtn.innerHTML;
-      passkeyBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span><span>Signing In...</span>';
+      passkeyBtn.innerHTML =
+        '<span class="loading loading-spinner loading-sm"></span><span>Signing In...</span>';
 
       try {
         const result = await authClient.signIn.passkey();
@@ -429,7 +438,10 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
           const code = (result.error as { code?: string }).code || '';
           const msg = result.error.message || '';
 
-          if (code === 'PASSKEY_NOT_FOUND' || code === 'AUTHENTICATION_FAILED' && msg.toLowerCase().includes('no passkey')) {
+          if (
+            code === 'PASSKEY_NOT_FOUND' ||
+            (code === 'AUTHENTICATION_FAILED' && msg.toLowerCase().includes('no passkey'))
+          ) {
             showInfoAlert('No passkeys registered yet. Sign in with your password first.');
           } else if (isPasskeyCancellation(msg)) {
             showInfoAlert('Passkey sign-in was cancelled.');

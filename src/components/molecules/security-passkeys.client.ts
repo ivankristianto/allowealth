@@ -10,10 +10,7 @@ import { addToast } from '@/lib/stores/toastStore';
 
 let controller: AbortController | null = null;
 
-function getPasskeyLabel(passkey: {
-  name?: string | null;
-  deviceType: string;
-}): string {
+function getPasskeyLabel(passkey: { name?: string | null; deviceType: string }): string {
   return passkey.name || passkey.deviceType || 'Passkey';
 }
 
@@ -111,24 +108,18 @@ async function refreshPasskeyList() {
 }
 
 function attachDeleteListeners(container: Element) {
-  const modal = document.getElementById(
-    'delete-passkey-modal'
-  ) as HTMLDialogElement | null;
-  const confirmBtn = document.querySelector<HTMLButtonElement>(
-    '[data-confirm-delete-passkey]'
-  );
+  const modal = document.getElementById('delete-passkey-modal') as HTMLDialogElement | null;
+  const confirmBtn = document.querySelector<HTMLButtonElement>('[data-confirm-delete-passkey]');
 
-  container
-    .querySelectorAll<HTMLButtonElement>('[data-action="delete-passkey"]')
-    .forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.passkeyId;
-        if (!id || !modal || !confirmBtn) return;
+  container.querySelectorAll<HTMLButtonElement>('[data-action="delete-passkey"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.passkeyId;
+      if (!id || !modal || !confirmBtn) return;
 
-        confirmBtn.dataset.deletingPasskeyId = id;
-        modal.showModal();
-      });
+      confirmBtn.dataset.deletingPasskeyId = id;
+      modal.showModal();
     });
+  });
 
   if (confirmBtn && modal) {
     // Remove any previous listener to avoid duplication when re-attaching

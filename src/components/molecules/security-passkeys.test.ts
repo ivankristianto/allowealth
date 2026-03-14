@@ -86,7 +86,7 @@ describe('security-passkeys.client.ts', () => {
 
   it('handles user cancellation gracefully without window.confirm', () => {
     const source = readPasskeysClient();
-    expect(source).toContain("Registration cancelled");
+    expect(source).toContain('Registration cancelled');
     expect(source).toContain('isCancellationError');
     expect(source).not.toContain('window.confirm');
   });

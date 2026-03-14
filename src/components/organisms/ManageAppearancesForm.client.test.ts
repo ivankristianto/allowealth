@@ -1,21 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Window } from 'happy-dom';
-import { clearAllToasts, toasts } from '@/lib/stores/toastStore';
-import { THEME_CHANGE_EVENT } from '@/lib/utils/theme-client';
+
+// Import these after setting up DOM globals in beforeEach
+let clearAllToasts: typeof import('@/lib/stores/toastStore').clearAllToasts;
+let toasts: typeof import('@/lib/stores/toastStore').toasts;
+let THEME_CHANGE_EVENT: typeof import('@/lib/utils/theme-client').THEME_CHANGE_EVENT;
 
 describe('ManageAppearancesForm client behavior', () => {
   let originalWindow: typeof globalThis.window | undefined;
   let originalDocument: typeof globalThis.document | undefined;
   let originalEvent: typeof globalThis.Event | undefined;
+  let originalCustomEvent: typeof globalThis.CustomEvent | undefined;
   let originalHTMLElement: typeof globalThis.HTMLElement | undefined;
   let originalHTMLInputElement: typeof globalThis.HTMLInputElement | undefined;
   let originalAbortController: typeof globalThis.AbortController | undefined;
   let originalFetch: typeof globalThis.fetch | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     originalWindow = globalThis.window;
     originalDocument = globalThis.document;
     originalEvent = globalThis.Event;
+    originalCustomEvent = globalThis.CustomEvent;
     originalHTMLElement = globalThis.HTMLElement;
     originalHTMLInputElement = globalThis.HTMLInputElement;
     originalAbortController = globalThis.AbortController;
@@ -54,9 +59,18 @@ describe('ManageAppearancesForm client behavior', () => {
     (globalThis as Record<string, unknown>).window = window;
     (globalThis as Record<string, unknown>).document = document;
     (globalThis as Record<string, unknown>).Event = window.Event;
+    (globalThis as Record<string, unknown>).CustomEvent = window.CustomEvent;
     (globalThis as Record<string, unknown>).HTMLElement = window.HTMLElement;
     (globalThis as Record<string, unknown>).HTMLInputElement = window.HTMLInputElement;
     (globalThis as Record<string, unknown>).AbortController = window.AbortController;
+
+    // Import modules AFTER setting up DOM globals
+    const toastModule = await import('@/lib/stores/toastStore');
+    clearAllToasts = toastModule.clearAllToasts;
+    toasts = toastModule.toasts;
+
+    const themeModule = await import('@/lib/utils/theme-client');
+    THEME_CHANGE_EVENT = themeModule.THEME_CHANGE_EVENT;
 
     clearAllToasts();
   });
@@ -66,6 +80,7 @@ describe('ManageAppearancesForm client behavior', () => {
     (globalThis as Record<string, unknown>).window = originalWindow;
     (globalThis as Record<string, unknown>).document = originalDocument;
     (globalThis as Record<string, unknown>).Event = originalEvent;
+    (globalThis as Record<string, unknown>).CustomEvent = originalCustomEvent;
     (globalThis as Record<string, unknown>).HTMLElement = originalHTMLElement;
     (globalThis as Record<string, unknown>).HTMLInputElement = originalHTMLInputElement;
     (globalThis as Record<string, unknown>).AbortController = originalAbortController;
