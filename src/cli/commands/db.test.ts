@@ -11,6 +11,14 @@ describe('db command', () => {
     expect(command.subCommands.restore).toBeDefined();
   });
 
+  it('exposes the seed-oauth-clients subcommand', () => {
+    const command = dbCommand as unknown as {
+      subCommands: Record<string, unknown>;
+    };
+
+    expect(command.subCommands['seed-oauth-clients']).toBeDefined();
+  });
+
   it('backup command supports target selection', () => {
     const command = dbCommand as unknown as {
       subCommands: {

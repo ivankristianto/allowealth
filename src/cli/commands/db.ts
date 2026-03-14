@@ -284,6 +284,70 @@ export default defineCommand({
         exec('bun', seedArgs);
       },
     }),
+    'seed-oauth-clients': defineCommand({
+      meta: {
+        name: 'seed-oauth-clients',
+        description: 'Upsert pre-registered MCP OAuth clients',
+      },
+      async run() {
+        const { db, getActiveSchema } = await import('@/db');
+        const { nanoid } = await import('nanoid');
+        const { eq } = await import('drizzle-orm');
+
+        const schema = getActiveSchema();
+        const baseUrl = process.env.PUBLIC_URL ?? 'http://localhost:4321';
+
+        // All seeded clients are public (no client_secret required).
+        // The display-token redirect runs in the user's browser, making these
+        // effectively public clients regardless of which AI assistant they represent.
+        const clients = [
+          {
+            clientId: 'mcp-claude-desktop',
+            name: 'Claude Desktop',
+            type: 'public' as const,
+            redirectUrls: `${baseUrl}/oauth/display-token`,
+          },
+          {
+            clientId: 'mcp-openai',
+            name: 'ChatGPT',
+            type: 'public' as const,
+            redirectUrls: `${baseUrl}/oauth/display-token`,
+          },
+          {
+            clientId: 'mcp-generic',
+            name: 'Generic MCP Client',
+            type: 'public' as const,
+            redirectUrls: `${baseUrl}/oauth/display-token`,
+          },
+        ] as const;
+
+        for (const client of clients) {
+          const existing = await db.query.oauthApplication.findFirst({
+            where: eq(schema.oauthApplication.clientId, client.clientId),
+          });
+
+          if (existing) {
+            console.log(`  ↺  Already exists: ${client.name}`);
+            continue;
+          }
+
+          await db.insert(schema.oauthApplication).values({
+            id: nanoid(),
+            clientId: client.clientId,
+            name: client.name,
+            type: client.type,
+            redirectUrls: client.redirectUrls,
+            disabled: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          console.log(`  ✓  Seeded: ${client.name}`);
+        }
+
+        console.log('\n✅ OAuth clients seeded.\n');
+      },
+    }),
     reset: defineCommand({
       meta: { name: 'reset', description: 'Delete SQLite DB, push schema, and seed (dev only)' },
       args: {
