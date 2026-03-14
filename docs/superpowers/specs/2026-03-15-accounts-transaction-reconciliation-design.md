@@ -70,12 +70,19 @@ Three new calls added to `index.astro` frontmatter, all run in parallel via `Pro
 
 `getSnapshotForMonth` calls `findAll` + history queries internally. For historical months the page now calls it twice (start and end). To avoid the cost on repeat visits, cache `getSnapshotForMonth` results inside `accountService` using the existing CacheManager:
 
+Add a `CacheKeys.accountSnapshot` builder to `src/lib/cache/keys.ts`:
+
 ```typescript
-const cacheKey = `accounts:snapshot:${workspaceId}:${year}:${month}`;
-// TTL: 3600s, tag: `accounts:${workspaceId}` (invalidated on any balance update)
+/** Account snapshot: cache:accounts-snapshot:{workspaceId}:{year}:{month} */
+accountSnapshot: (workspaceId: string, year: number, month: number): string =>
+  `${PREFIX}:accounts-snapshot:${workspaceId}:${year}:${month}`,
 ```
 
-Past month-end snapshots are immutable, making them ideal cache candidates. The cache tag ensures invalidation when accounts change. `getMonthSummary` is a single aggregation query (~2ms per benchmark) and does not need caching.
+Use the existing `cacheOrFetch` helper inside `getSnapshotForMonth`:
+- **Tags:** `[CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]` — the same two-tag set used by all account mutations, ensuring the snapshot cache is invalidated on any balance update
+- **TTL:** 3600s
+
+Past month-end snapshots are immutable once the month is over, making them ideal cache candidates. `getMonthSummary` is a single aggregation query (~2ms per benchmark) and does not need caching.
 
 ---
 
@@ -115,7 +122,7 @@ interface Props {
 }
 ```
 
-**Empty state:** If all rows have zero income, zero expenses, and zero balance change — render nothing. No all-zeros card shown.
+**Empty state:** Render nothing only when every row satisfies `income === 0 && expenses === 0 && balanceChange === 0`. A nonzero balance change with zero transactions is the most important signal to show — it must not be suppressed.
 
 **Layout per currency row:**
 
@@ -186,3 +193,7 @@ The reconciliation card only renders when `accounts.length > 0` (inside the exis
 - Currency conversion for multi-currency comparisons
 - Detailed breakdown of variance causes
 - Transaction editing from accounts page
+
+## Known Limitations
+
+- Accounts in currencies not listed in `workspaceCurrencies` are excluded from reconciliation rows with no indication. This is consistent with the multi-currency model elsewhere in the app (currency conversion is out of scope) and acceptable for the MVP.
