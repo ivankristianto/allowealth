@@ -38,7 +38,7 @@
       "@services/*": ["src/services/*"],
       "@styles/*": ["src/styles/*"],
       "@src-types/*": ["src/types/*"],
-      "@mcp-server/*": ["mcp-server/src/*"]
+      "@mcp-server/*": ["apps/mcp/src/*"]
     },
     "plugins": [
       {
@@ -46,6 +46,6 @@
       }
     ]
   },
-  "include": ["src/**/*", "mcp-server/src/**/*"],
+  "include": ["src/**/*", "apps/mcp/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
