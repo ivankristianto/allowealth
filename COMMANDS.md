@@ -195,11 +195,11 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Target Values
 
-| Target     | Database               | Env loading                  | Auth                                                                                                               |
-| ---------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                                |
-| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` in `.env.production` (maps to `CLOUDFLARE_API_TOKEN` for wrangler; requires D1 Edit permission) |
-| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite                                                                                        |
+| Target     | Database               | Env loading                  | Auth / config                                                                                                                         |
+| ---------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                                                   |
+| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_API_TOKEN` or `CLOUDFLARE_TOKEN`; local runs read `wrangler.toml`, CI can pass `CLOUDFLARE_ACCOUNT_ID` + `D1_DATABASE_ID` |
+| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite                                                                                                           |
 
 ### Quick Reference
 
@@ -368,6 +368,30 @@ bun run aw db restore --target d1 --file backups/d1-2026-03-04T16-30-00.sql --fo
 | `sqlite`   | `.db`          | `.db`, `.sql` |
 | `d1`       | `.sql`         | `.sql`        |
 | `d1-local` | `.sql`         | `.sql`        |
+
+### Demo
+
+| Command                                   | Description                                                   |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| `bun run aw demo --help`                  | Show demo environment commands                                |
+| `bun run aw demo reset`                   | Empty and reseed the local SQLite demo dataset                |
+| `bun run aw demo reset --target d1 --yes` | Empty and reseed the remote D1 demo dataset without prompting |
+| `bun run aw demo reset --target d1-local` | Empty and reseed the local D1 demo dataset                    |
+
+`DEMO_MODE` controls the UI. `aw demo reset` refreshes the data.
+
+```bash
+# Enable the demo experience locally
+echo 'DEMO_MODE=true' >> .env
+
+# Refresh demo data in the default local SQLite database
+bun run aw demo reset
+
+# Refresh remote demo data in CI or a non-interactive shell
+bun run aw demo reset --target d1 --yes
+```
+
+When `DEMO_MODE=true`, the app shows a warning banner on every page and disables member invitations, profile editing, password changes, MFA controls, and active session management.
 
 ### Admin & Security
 

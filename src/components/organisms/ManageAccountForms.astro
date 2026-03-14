@@ -19,9 +19,10 @@ import type { UserSettings } from '@/lib/constants/user-meta-keys';
 export interface Props {
   user: UserType;
   pendingEmail?: string | null;
+  demoMode?: boolean;
 }
 
-const { user, pendingEmail = null } = Astro.props;
+const { user, pendingEmail = null, demoMode = false } = Astro.props;
 
 // Get user settings from SSR (loaded in ProtectedLayout)
 const userSettings = Astro.locals.userSettings as UserSettings;
@@ -37,135 +38,165 @@ const profileDetails = {
 ---
 
 <div class="space-y-8">
-  <section class="card bg-base-100 shadow border border-base-300">
-    <div class="card-body p-6 space-y-6">
-      <div class="flex items-center gap-4">
-        <IconBadge variant="accent" size="sm">
-          <User size={20} class="stroke-current" aria-hidden="true" />
-        </IconBadge>
-        <div>
-          <h3 class="text-lg font-bold">Public Profile</h3>
-          <p class="text-xs uppercase tracking-widest text-base-content/50">General Information</p>
+  {
+    demoMode ? (
+      <div class="card border border-base-300 bg-base-200/60 shadow">
+        <div class="card-body p-6">
+          <p class="text-center text-sm text-base-content/60">
+            Profile editing is disabled in demo mode.
+          </p>
         </div>
       </div>
-
-      <form
-        id="profile-form"
-        class="space-y-6"
-        novalidate
-        data-had-pending-email={pendingEmail ? 'true' : 'false'}
-      >
-        <div class="space-y-6">
-          <div class="flex flex-col items-center gap-3">
-            <div class="avatar placeholder">
-              <div
-                class="bg-accent/20 text-accent rounded-full w-20 h-20 flex items-center justify-center"
-              >
-                <span class="text-2xl font-bold">{profileInitial}</span>
-              </div>
+    ) : (
+      <section class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-6 space-y-6">
+          <div class="flex items-center gap-4">
+            <IconBadge variant="accent" size="sm">
+              <User size={20} class="stroke-current" aria-hidden="true" />
+            </IconBadge>
+            <div>
+              <h3 class="text-lg font-bold">Public Profile</h3>
+              <p class="text-xs uppercase tracking-widest text-base-content/50">
+                General Information
+              </p>
             </div>
-            <button type="button" class="link link-accent text-xs font-semibold"
-              >Change Photo</button
-            >
           </div>
 
-          <div class="grid grid-cols-1 gap-4">
-            <div class="form-control">
-              <Label htmlFor="full-name" required>Full Name</Label>
-              <Input
-                type="text"
-                id="full-name"
-                name="name"
-                placeholder="Your name"
-                value={displayName}
-                required
-                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
-              />
-            </div>
+          <form
+            id="profile-form"
+            class="space-y-6"
+            novalidate
+            data-had-pending-email={pendingEmail ? 'true' : 'false'}
+          >
+            <div class="space-y-6">
+              <div class="flex flex-col items-center gap-3">
+                <div class="avatar placeholder">
+                  <div class="bg-accent/20 text-accent rounded-full w-20 h-20 flex items-center justify-center">
+                    <span class="text-2xl font-bold">{profileInitial}</span>
+                  </div>
+                </div>
+                <button type="button" class="link link-accent text-xs font-semibold">
+                  Change Photo
+                </button>
+              </div>
 
-            <div class="form-control">
-              <Label htmlFor="email" required>Email Address</Label>
-              <Input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="your@email.com"
-                value={displayEmail}
-                pattern={patterns.email.html}
-                title={patterns.email.title}
-                required
-                data-current-email={displayEmail}
-                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
-              />
-              <p class="mt-1.5 text-xs text-base-content/40">
-                Changing your email requires verification and re-login. Make sure the new address is
-                correct.
-              </p>
-              {
-                pendingEmail && (
-                  <div
-                    class="mt-3 rounded-xl bg-info/8 border border-info/20 p-4"
-                    role="status"
-                    id="pending-email-banner"
-                    data-pending-email={pendingEmail}
-                  >
-                    <div class="flex items-start gap-3">
-                      <div class="rounded-lg bg-info/15 p-1.5 mt-0.5">
-                        <Mail size={14} class="text-info" aria-hidden="true" />
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-base-content">Email change pending</p>
-                        <p class="text-xs text-base-content/60 mt-0.5">
-                          Verification link sent to{' '}
-                          <strong class="text-base-content/80">{pendingEmail}</strong>
-                        </p>
-                        <div class="flex items-center gap-1 mt-1.5 -ml-2">
-                          <button
-                            type="button"
-                            id="resend-email-change-btn"
-                            class="text-xs font-bold text-info underline underline-offset-2 hover:text-info/80 transition-colors min-h-[44px] min-w-[44px] px-2 inline-flex items-center"
-                          >
-                            Resend email
-                          </button>
-                          <span class="text-base-content/20">|</span>
-                          <button
-                            type="button"
-                            id="cancel-email-change-btn"
-                            class="text-xs font-bold text-base-content/40 underline underline-offset-2 hover:text-error/70 transition-colors min-h-[44px] min-w-[44px] px-2 inline-flex items-center"
-                          >
-                            Cancel change
-                          </button>
+              <div class="grid grid-cols-1 gap-4">
+                <div class="form-control">
+                  <Label htmlFor="full-name" required>
+                    Full Name
+                  </Label>
+                  <Input
+                    type="text"
+                    id="full-name"
+                    name="name"
+                    placeholder="Your name"
+                    value={displayName}
+                    required
+                    className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+                  />
+                </div>
+
+                <div class="form-control">
+                  <Label htmlFor="email" required>
+                    Email Address
+                  </Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="your@email.com"
+                    value={displayEmail}
+                    pattern={patterns.email.html}
+                    title={patterns.email.title}
+                    required
+                    data-current-email={displayEmail}
+                    className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+                  />
+                  <p class="mt-1.5 text-xs text-base-content/40">
+                    Changing your email requires verification and re-login. Make sure the new
+                    address is correct.
+                  </p>
+                  {pendingEmail && (
+                    <div
+                      class="mt-3 rounded-xl bg-info/8 border border-info/20 p-4"
+                      role="status"
+                      id="pending-email-banner"
+                      data-pending-email={pendingEmail}
+                    >
+                      <div class="flex items-start gap-3">
+                        <div class="rounded-lg bg-info/15 p-1.5 mt-0.5">
+                          <Mail size={14} class="text-info" aria-hidden="true" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-semibold text-base-content">
+                            Email change pending
+                          </p>
+                          <p class="mt-0.5 text-xs text-base-content/60">
+                            Verification link sent to{' '}
+                            <strong class="text-base-content/80">{pendingEmail}</strong>
+                          </p>
+                          <div class="mt-1.5 -ml-2 flex items-center gap-1">
+                            <button
+                              type="button"
+                              id="resend-email-change-btn"
+                              class="inline-flex min-h-[44px] min-w-[44px] items-center px-2 text-xs font-bold text-info underline underline-offset-2 transition-colors hover:text-info/80"
+                            >
+                              Resend email
+                            </button>
+                            <span class="text-base-content/20">|</span>
+                            <button
+                              type="button"
+                              id="cancel-email-change-btn"
+                              class="inline-flex min-h-[44px] min-w-[44px] items-center px-2 text-xs font-bold text-base-content/40 underline underline-offset-2 transition-colors hover:text-error/70"
+                            >
+                              Cancel change
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )
-              }
+                  )}
+                </div>
+
+                <div class="form-control">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    placeholder="+62 812-3456-7890"
+                    value={profileDetails.phone}
+                    className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+                  />
+                  <p class="mt-1.5 text-xs text-base-content/40">
+                    Include country code, e.g. +62 812 3456 7890
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div class="form-control">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                type="text"
-                id="phone"
-                name="phone"
-                placeholder="+62 812-3456-7890"
-                value={profileDetails.phone}
-                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
-              />
-              <p class="mt-1.5 text-xs text-base-content/40">
-                Include country code, e.g. +62 812 3456 7890
-              </p>
+            <div class="flex justify-end">
+              <Button type="submit" variant="accent" className="h-14">
+                Save Profile Changes
+              </Button>
             </div>
-          </div>
+          </form>
         </div>
+      </section>
+    )
+  }
 
-        <div class="flex justify-end">
-          <Button type="submit" variant="accent" className="h-14">Save Profile Changes</Button>
+  {
+    demoMode ? (
+      <div class="card border border-base-300 bg-base-200/60 shadow">
+        <div class="card-body p-6">
+          <p class="text-center text-sm text-base-content/60">
+            Password changes are disabled in demo mode.
+          </p>
         </div>
-      </form>
-    </div>
-  </section>
-
-  <PasswordChangeForm formId="password-change-form" />
+      </div>
+    ) : (
+      <PasswordChangeForm formId="password-change-form" />
+    )
+  }
 </div>

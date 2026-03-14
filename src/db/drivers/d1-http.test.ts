@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { readWranglerConfig, mapD1Result } from './d1-http';
+import { getD1HttpToken, mapD1Result, readWranglerConfig, resolveD1HttpConfig } from './d1-http';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -64,6 +64,56 @@ describe('readWranglerConfig', () => {
 
     const config = readWranglerConfig(tempDir);
     expect(config.databaseId).toBe('real-id');
+  });
+});
+
+describe('resolveD1HttpConfig', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'd1-http-config-test-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true });
+  });
+
+  it('uses Cloudflare env vars when provided', () => {
+    const config = resolveD1HttpConfig(tempDir, {
+      CLOUDFLARE_ACCOUNT_ID: 'env-account',
+      D1_DATABASE_ID: 'env-database',
+    });
+
+    expect(config).toEqual({
+      accountId: 'env-account',
+      databaseId: 'env-database',
+    });
+  });
+
+  it('falls back to wrangler.toml when env vars are absent', () => {
+    writeFileSync(
+      join(tempDir, 'wrangler.toml'),
+      `account_id = "abc123"\nname = "my-app"\n\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "my-db"\ndatabase_id = "def456"\n`
+    );
+
+    expect(resolveD1HttpConfig(tempDir, {})).toEqual({
+      accountId: 'abc123',
+      databaseId: 'def456',
+    });
+  });
+});
+
+describe('getD1HttpToken', () => {
+  it('uses CLOUDFLARE_API_TOKEN when available', () => {
+    expect(getD1HttpToken({ CLOUDFLARE_API_TOKEN: 'api-token' })).toBe('api-token');
+  });
+
+  it('falls back to CLOUDFLARE_TOKEN', () => {
+    expect(getD1HttpToken({ CLOUDFLARE_TOKEN: 'legacy-token' })).toBe('legacy-token');
+  });
+
+  it('throws when no token is available', () => {
+    expect(() => getD1HttpToken({})).toThrow('Cloudflare token');
   });
 });
 

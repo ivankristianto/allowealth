@@ -10,6 +10,7 @@ import DangerZone from '@/components/organisms/DangerZone.astro';
 import ManageAccountForms from '@/components/organisms/ManageAccountForms.astro';
 import ManageAppearancesForm from '@/components/organisms/ManageAppearancesForm.astro';
 import type { AuthUser as User } from '@/lib/auth/types';
+import { isDemoMode } from '@/lib/demo-mode';
 import { emailVerificationService, userMetaService } from '@/services';
 
 const currentPath = '/profile';
@@ -19,11 +20,12 @@ const user = Astro.locals.user! as User;
 const freshSettings = await userMetaService.getUserSettings(user.id);
 const currentTheme = freshSettings.theme || 'system';
 const pendingEmail = await emailVerificationService.getPendingEmailChange(user.id);
+const demoMode = isDemoMode();
 ---
 
 <ProtectedLayout title="Profile" currentPath={currentPath} subtitle="Manage your account details">
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <ManageAccountForms user={user} pendingEmail={pendingEmail} />
+    <ManageAccountForms user={user} pendingEmail={pendingEmail} demoMode={demoMode} />
     <ManageAppearancesForm currentTheme={currentTheme} />
     <DangerZone />
   </div>
