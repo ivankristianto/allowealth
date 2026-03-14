@@ -74,25 +74,10 @@ export default defineCommand({
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-
-        const { db } = await import('@/db');
-        const { ApiKeyService } = await import('@/services/api-key.service');
-
-        const service = new ApiKeyService(db);
-        const result = await service.generate({
-          workspace_id: args['workspace-id'] as string,
-          user_id: args['user-id'] as string,
-          name: args.name as string,
-        });
-
-        console.log('\nAPI Key Created');
-        console.log('==================\n');
-        console.log(`Name:    ${args.name}`);
-        console.log(`Prefix:  ${result.apiKey.key_prefix}...`);
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('Your API key (shown ONCE, save it now):\n');
-        console.log(`  ${result.plainKey}`);
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+        console.error(
+          'Error: create-api-key has been removed. Use Security -> Connected Apps in the web app to authorize an MCP client.'
+        );
+        process.exit(1);
       },
     }),
 
