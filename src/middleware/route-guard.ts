@@ -24,6 +24,7 @@ const PROTECTED_PREFIXES = [
   '/settings',
   '/profile',
   '/security',
+  '/oauth',
 ] as const;
 
 /** Pages that authenticated users should be redirected away from */

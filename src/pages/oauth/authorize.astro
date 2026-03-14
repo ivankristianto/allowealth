@@ -1,0 +1,58 @@
+---
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import { db, getActiveSchema } from '@/db';
+import { eq } from 'drizzle-orm';
+
+const schema = getActiveSchema();
+
+// Extract OAuth params passed by the mcp plugin
+const consentCode = Astro.url.searchParams.get('consent_code') ?? '';
+const clientId = Astro.url.searchParams.get('client_id') ?? '';
+
+// Look up the client display name
+let clientName = clientId;
+if (clientId) {
+  const app = await db.query.oauthApplication.findFirst({
+    where: eq(schema.oauthApplication.clientId, clientId),
+    columns: { name: true },
+  });
+  if (app) clientName = app.name;
+}
+---
+
+<ProtectedLayout title="Authorize Access" currentPath="/oauth/authorize">
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="card bg-base-100 shadow-xl w-full max-w-sm">
+      <div class="card-body gap-6">
+        <div class="text-center">
+          <h1 class="text-xl font-bold">{clientName}</h1>
+          <p class="text-base-content/60 text-sm mt-1">wants access to your Allowealth account</p>
+        </div>
+
+        <div class="bg-base-200 rounded-box p-4">
+          <p class="text-sm font-medium mb-2">This will allow it to:</p>
+          <ul class="text-sm text-base-content/70 space-y-1">
+            <li>• Read your accounts and balances</li>
+            <li>• Read and create transactions</li>
+            <li>• Read budget summaries</li>
+            <li>• Read category and account lists</li>
+          </ul>
+        </div>
+
+        <div class="flex gap-3">
+          <form method="POST" action="/api/auth/oauth2/consent" class="flex-1">
+            <input type="hidden" name="accept" value="false" />
+            <input type="hidden" name="consent_code" value={consentCode} />
+            <button type="submit" class="btn btn-outline w-full">Deny</button>
+          </form>
+
+          <form method="POST" action="/api/auth/oauth2/consent" class="flex-1">
+            <input type="hidden" name="accept" value="true" />
+            <input type="hidden" name="consent_code" value={consentCode} />
+            <button type="submit" class="btn btn-primary w-full">Authorize</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</ProtectedLayout>
