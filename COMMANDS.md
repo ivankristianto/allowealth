@@ -378,6 +378,21 @@ bun run aw db restore --target d1 --file backups/d1-2026-03-04T16-30-00.sql --fo
 | `bun run aw demo reset --target d1 --yes` | Empty and reseed the remote D1 demo dataset without prompting |
 | `bun run aw demo reset --target d1-local` | Empty and reseed the local D1 demo dataset                    |
 
+`DEMO_MODE` controls the UI. `aw demo reset` refreshes the data.
+
+```bash
+# Enable the demo experience locally
+echo 'DEMO_MODE=true' >> .env
+
+# Refresh demo data in the default local SQLite database
+bun run aw demo reset
+
+# Refresh remote demo data in CI or a non-interactive shell
+bun run aw demo reset --target d1 --yes
+```
+
+When `DEMO_MODE=true`, the app shows a warning banner on every page and disables member invitations, profile editing, password changes, MFA controls, and active session management.
+
 ### Admin & Security
 
 | Command                                                                            | Description                                     |

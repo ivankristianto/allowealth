@@ -15,6 +15,45 @@ bun run db:reset
 bun run dev
 ```
 
+## Demo Mode
+
+`DEMO_MODE` is an environment flag that turns the app into a safer demo experience.
+
+- Set `DEMO_MODE=true` in `.env` or your deployed runtime environment to enable it.
+- Any value other than `"true"` leaves demo mode off.
+- When enabled, the app shows a warning banner on every page and disables invite management, profile editing, password changes, MFA controls, and active session management.
+
+### Local demo setup
+
+```bash
+cp .env.example .env
+
+# Then edit .env and set:
+DEMO_MODE=true
+```
+
+Start the app with `bun run dev`, then sign in with the seeded demo account:
+
+- **Email:** `demo@example.com`
+- **Password:** `demo123456789`
+
+### Reset demo data
+
+Use the `aw demo reset` command to refresh demo data without changing schema:
+
+```bash
+# Reset local SQLite demo data
+bun run aw demo reset
+
+# Reset local D1 demo data
+bun run aw demo reset --target d1-local
+
+# Reset remote D1 demo data non-interactively
+bun run aw demo reset --target d1 --yes
+```
+
+For remote D1 resets, local runs read `wrangler.toml`. CI can provide `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `D1_DATABASE_ID` directly.
+
 ## Local Development Setup
 
 ### dnsmasq (Custom `.allowealth.local` Hostname)
@@ -107,7 +146,7 @@ After setup completes, start the dev server with `bun run dev` and access the ap
 After seeding, you can log in with:
 
 - **Email:** `demo@example.com`
-- **Password:** `demo123`
+- **Password:** `demo123456789`
 
 ### Seeded Data
 
