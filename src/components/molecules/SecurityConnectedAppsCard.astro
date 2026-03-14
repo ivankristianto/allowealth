@@ -1,0 +1,154 @@
+---
+import Button from '@/components/atoms/Button.astro';
+
+interface ConnectedApp {
+  tokenId: string;
+  clientName: string;
+  clientId: string;
+  createdAt: Date;
+  accessTokenExpiresAt: Date;
+}
+
+interface Props {
+  apps: ConnectedApp[];
+  baseUrl: string;
+}
+
+const { apps, baseUrl } = Astro.props;
+
+const clientLabels: Record<string, string> = {
+  'mcp-claude-desktop': 'Claude Desktop',
+  'mcp-openai': 'ChatGPT',
+  'mcp-generic': 'Generic Client',
+};
+
+function getAuthorizeUrl(clientId: string): string {
+  const params = new URLSearchParams({
+    client_id: clientId,
+    response_type: 'code',
+    redirect_uri: `${baseUrl}/oauth/display-token`,
+    scope: 'openid mcp',
+    state: clientId,
+  });
+
+  return `/api/auth/oauth2/authorize?${params.toString()}`;
+}
+---
+
+<div class="card bg-base-100 shadow-sm border border-base-200" data-connected-apps-card>
+  <div class="card-body gap-4">
+    <div>
+      <h2 class="card-title text-base">Connected Apps</h2>
+      <p class="text-sm text-base-content/60">
+        AI assistants authorized to access your financial data.
+      </p>
+    </div>
+
+    {
+      apps.length === 0 ? (
+        <div class="text-sm text-base-content/50 py-4 text-center">
+          No apps connected yet.
+          <br />
+          Visit Security → Connected Apps and click Connect to authorize an AI assistant.
+        </div>
+      ) : (
+        <ul class="divide-y divide-base-200">
+          {apps.map((app) => (
+            <li class="flex items-center justify-between py-3 gap-4">
+              <div class="min-w-0">
+                <p class="font-medium text-sm truncate">{app.clientName}</p>
+                <p class="text-xs text-base-content/50">
+                  Authorized {app.createdAt.toLocaleDateString()} · Expires{' '}
+                  {app.accessTokenExpiresAt.toLocaleDateString()}
+                </p>
+              </div>
+              <form method="POST" action="/api/user/revoke-mcp-token" data-revoke-token-form>
+                <input type="hidden" name="tokenId" value={app.tokenId} />
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  className="text-error shrink-0"
+                  data-revoke-token-button
+                >
+                  Revoke
+                </Button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <div class="pt-2 border-t border-base-200">
+      <p class="text-xs text-base-content/50 mb-3">Connect an AI assistant:</p>
+      <div class="flex flex-wrap gap-2">
+        {
+          (['mcp-claude-desktop', 'mcp-openai', 'mcp-generic'] as const).map((clientId) => (
+            <Button href={getAuthorizeUrl(clientId)} variant="outline" size="sm">
+              {clientLabels[clientId]}
+            </Button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { setButtonLoading } from '@/lib/client-utils';
+
+  const initializedCards = new WeakSet<Element>();
+
+  function initConnectedAppsCard() {
+    document.querySelectorAll<HTMLElement>('[data-connected-apps-card]').forEach((card) => {
+      if (initializedCards.has(card)) return;
+      initializedCards.add(card);
+
+      card.querySelectorAll<HTMLFormElement>('[data-revoke-token-form]').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const button = form.querySelector<HTMLButtonElement>('[data-revoke-token-button]');
+          if (!button) return;
+
+          setButtonLoading(button, true);
+
+          try {
+            const response = await fetch(form.action, {
+              method: 'POST',
+              credentials: 'include',
+              headers: getCsrfHeaders(),
+              body: new FormData(form),
+            });
+
+            if (!response.ok) {
+              const message = await response.text();
+              throw new Error(message || 'Failed to revoke app access');
+            }
+
+            addToast('Connected app access revoked', 'success');
+
+            if (response.redirected && response.url) {
+              window.location.href = response.url;
+              return;
+            }
+
+            window.location.reload();
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : 'Failed to revoke connected app access';
+            addToast(message, 'error');
+          } finally {
+            setButtonLoading(button, false);
+          }
+        });
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initConnectedAppsCard);
+  document.addEventListener('astro:page-load', initConnectedAppsCard);
+</script>
