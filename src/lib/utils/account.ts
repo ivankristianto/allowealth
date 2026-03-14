@@ -2,7 +2,7 @@
  * Account utilities for portfolio calculation and visualization
  */
 
-import type { AccountOutput, AccountClass } from '@/lib/types/account';
+import type { AccountOutput, AccountClass, ReconciliationCurrencyRow } from '@/lib/types/account';
 import type { Currency } from '@/lib/constants/currency';
 
 /**
@@ -411,4 +411,47 @@ export const ACCOUNT_TYPE_ORDER: Record<string, number> = {
  */
 export function sortAccountTypes(types: string[]): string[] {
   return types.sort((a, b) => (ACCOUNT_TYPE_ORDER[a] || 99) - (ACCOUNT_TYPE_ORDER[b] || 99));
+}
+
+/**
+ * Calculate transaction reconciliation per currency.
+ *
+ * Compares income/expense net flow against asset account balance changes for the period.
+ * Debt accounts are excluded from balance change so liability movements do not mask asset variance.
+ */
+export function calculateReconciliation(params: {
+  currencies: Currency[];
+  startSnapshots: Array<{ currency: Currency; balance: string; account_class: AccountClass }>;
+  endAccounts: Array<{ currency: Currency; balance: string; account_class: AccountClass }>;
+  transactionSummaries: Array<{ currency: Currency; income: number; expenses: number }>;
+}): ReconciliationCurrencyRow[] {
+  const isAsset = (account: { account_class: AccountClass }) => account.account_class !== 'debt';
+
+  return params.currencies.map((currency) => {
+    const startBalance = params.startSnapshots
+      .filter((snapshot) => snapshot.currency === currency && isAsset(snapshot))
+      .reduce((sum, snapshot) => sum + parseFloat(snapshot.balance ?? '0'), 0);
+
+    const endBalance = params.endAccounts
+      .filter((account) => account.currency === currency && isAsset(account))
+      .reduce((sum, account) => sum + parseFloat(account.balance ?? '0'), 0);
+
+    const summary = params.transactionSummaries.find((item) => item.currency === currency);
+    const income = summary?.income ?? 0;
+    const expenses = summary?.expenses ?? 0;
+
+    const netFlow = income - expenses;
+    const balanceChange = endBalance - startBalance;
+    const variance = balanceChange - netFlow;
+
+    return {
+      currency,
+      income,
+      expenses,
+      netFlow,
+      balanceChange,
+      variance,
+      isBalanced: Math.abs(variance) < 0.01,
+    };
+  });
 }
