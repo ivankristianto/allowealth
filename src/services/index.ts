@@ -75,11 +75,6 @@ export const recurringForecastService = new RecurringForecastService(db);
 export const workspaceService = new WorkspaceService(db);
 export const workspaceMetaService = new WorkspaceMetaService(db);
 export const workspaceInvitationService = new WorkspaceInvitationService(db);
-/**
- * @deprecated MCP authentication now uses OAuth connected apps.
- * Remove this placeholder export after downstream API key references are deleted.
- */
-export const apiKeyService = null;
 export const emailService = new EmailService();
 export const emailVerificationService = new EmailVerificationService(
   db,

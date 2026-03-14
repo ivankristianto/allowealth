@@ -1,10 +1,6 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { oauthAccessToken, users } from '@/db/schema/sqlite';
 
-const moduleMock = mock as typeof mock & {
-  module: (specifier: string, factory: () => unknown) => void;
-};
-
-// ---- Mock DB ----
 const mockFindFirst = mock(async () => null);
 const mockDb = {
   query: {
@@ -13,7 +9,6 @@ const mockDb = {
   },
 };
 
-// ---- Mock cache ----
 const mockCacheGet = mock(async () => null);
 const mockCacheSet = mock(async () => {});
 const mockCacheInvalidate = mock(async () => {});
@@ -23,23 +18,19 @@ const mockCache = {
   invalidateByTags: mockCacheInvalidate,
 };
 
-moduleMock.module('@/db', () => ({
+const testDeps = {
   db: mockDb,
-  getActiveSchema: () => ({
-    oauthAccessToken: { accessToken: 'accessToken' },
-    users: { id: 'id' },
+  getSchema: () => ({
+    oauthAccessToken,
+    users,
   }),
-}));
+  cache: mockCache,
+  cacheKeys: { mcpToken: (hash: string) => `cache:mcptoken:${hash}` },
+  cacheTags: { MCP_TOKENS: 'mcp_tokens' as const },
+  hash: (token: string) => token.slice(0, 8),
+};
 
-moduleMock.module('@/lib/cache', () => ({
-  getCacheManager: () => mockCache,
-  CacheKeys: { mcpToken: (h: string) => `cache:mcptoken:${h}` },
-  CacheTags: { MCP_TOKENS: 'mcp_tokens' },
-  simpleHash: (s: string) => s.slice(0, 8),
-}));
-
-// Import after mocks
-import { validateMcpToken, invalidateMcpToken } from './mcp-auth';
+import { invalidateMcpToken, validateMcpToken } from './mcp-auth';
 
 describe('validateMcpToken', () => {
   beforeEach(() => {
@@ -49,13 +40,13 @@ describe('validateMcpToken', () => {
   });
 
   it('returns null for empty token', async () => {
-    expect(await validateMcpToken('')).toBeNull();
+    expect(await validateMcpToken('', testDeps)).toBeNull();
   });
 
   it('returns null when token not found in DB', async () => {
     mockCacheGet.mockResolvedValue(null);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => null);
-    expect(await validateMcpToken('unknown-token')).toBeNull();
+    expect(await validateMcpToken('unknown-token', testDeps)).toBeNull();
   });
 
   it('returns null for expired token', async () => {
@@ -67,7 +58,7 @@ describe('validateMcpToken', () => {
       accessTokenExpiresAt: expiredAt,
       userId: 'user-1',
     }));
-    expect(await validateMcpToken('valid-token')).toBeNull();
+    expect(await validateMcpToken('valid-token', testDeps)).toBeNull();
   });
 
   it('returns McpAuthContext for valid token', async () => {
@@ -83,7 +74,7 @@ describe('validateMcpToken', () => {
       workspace_id: 'ws-1',
     }));
 
-    const result = await validateMcpToken('valid-token');
+    const result = await validateMcpToken('valid-token', testDeps);
     expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
     expect(mockCacheSet).toHaveBeenCalledTimes(1);
   });
@@ -92,7 +83,7 @@ describe('validateMcpToken', () => {
     const cached = { workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' };
     mockCacheGet.mockResolvedValue(cached);
 
-    const result = await validateMcpToken('any-token');
+    const result = await validateMcpToken('any-token', testDeps);
     expect(result).toEqual(cached);
     expect(mockFindFirst).not.toHaveBeenCalled();
   });
@@ -108,14 +99,14 @@ describe('validateMcpToken', () => {
     }));
     mockDb.query.users.findFirst = mock(async () => ({ workspace_id: null }));
 
-    expect(await validateMcpToken('valid-token')).toBeNull();
+    expect(await validateMcpToken('valid-token', testDeps)).toBeNull();
   });
 });
 
 describe('invalidateMcpToken', () => {
   it('calls cache invalidateByTags with token tag', async () => {
     mockCacheInvalidate.mockResolvedValue(undefined);
-    await invalidateMcpToken('tok-1');
+    await invalidateMcpToken('tok-1', testDeps);
     expect(mockCacheInvalidate).toHaveBeenCalledWith(['mcp-token:tok-1']);
   });
 });
