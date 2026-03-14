@@ -1,19 +1,12 @@
 ---
 import { History } from '@lucide/astro';
-import type { SecurityEvent } from '@/services/audit-log.service';
+import { toneDotClasses, type SecurityEvent } from '@/services/audit-log.service';
 
 export interface Props {
   events: SecurityEvent[];
 }
 
 const { events } = Astro.props;
-
-const toneDotClasses: Record<SecurityEvent['tone'], string> = {
-  success: 'bg-success',
-  info: 'bg-info',
-  warning: 'bg-warning',
-  error: 'bg-error',
-};
 ---
 
 <section class="card bg-base-200/60 border border-base-300 shadow">

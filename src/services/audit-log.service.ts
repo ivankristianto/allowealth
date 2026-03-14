@@ -6,7 +6,7 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { desc, eq, and } from 'drizzle-orm';
+import { and, desc, eq, gte, lte } from 'drizzle-orm';
 
 const ACTION_LABELS: Record<string, string> = {
   create: 'Created',
@@ -126,6 +126,13 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
 
 export type SecurityEventTone = 'success' | 'info' | 'warning' | 'error';
 
+export const toneDotClasses: Record<SecurityEventTone, string> = {
+  success: 'bg-success',
+  info: 'bg-info',
+  warning: 'bg-warning',
+  error: 'bg-error',
+};
+
 export interface SecurityEvent {
   id: string;
   label: string;
@@ -189,8 +196,26 @@ export class AuditLogService {
    * Fetch all audit log entries for a user/workspace and return them as a
    * CSV string suitable for file download.
    */
-  async exportToCsv(userId: string, workspaceId: string): Promise<string> {
+  async exportToCsv(
+    userId: string,
+    workspaceId: string,
+    options: {
+      limit?: number;
+      startDate?: Date;
+      endDate?: Date;
+    } = {}
+  ): Promise<string> {
+    const { limit = 1000, startDate, endDate } = options;
     const { auditLogs } = this.schema;
+    const conditions = [eq(auditLogs.user_id, userId), eq(auditLogs.workspace_id, workspaceId)];
+
+    if (startDate) {
+      conditions.push(gte(auditLogs.created_at, startDate));
+    }
+
+    if (endDate) {
+      conditions.push(lte(auditLogs.created_at, endDate));
+    }
 
     // IDatabase interface does not expose the full Drizzle query builder chain
     // — using `as any` here is consistent with the pattern used across other
@@ -207,8 +232,9 @@ export class AuditLogService {
         newValue: auditLogs.new_value,
       })
       .from(auditLogs)
-      .where(and(eq(auditLogs.user_id, userId), eq(auditLogs.workspace_id, workspaceId)))
-      .orderBy(desc(auditLogs.created_at));
+      .where(and(...conditions))
+      .orderBy(desc(auditLogs.created_at))
+      .limit(limit);
 
     const header = ['Timestamp', 'Action', 'Entity Type', 'Entity ID', 'Details'];
     const csvRows = (rows as AuditLogRow[]).map((row) => [
