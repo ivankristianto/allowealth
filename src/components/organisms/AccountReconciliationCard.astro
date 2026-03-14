@@ -1,0 +1,138 @@
+---
+/**
+ * AccountReconciliationCard Component
+ *
+ * Shows income, expenses, net flow, and balance change for the selected period.
+ * Compares net flow against balance change to surface reconciliation gaps.
+ *
+ * Renders nothing when all currencies show zero activity.
+ */
+import { ArrowUpDown, CircleCheck, Info, TriangleAlert } from '@lucide/astro';
+
+import { formatCurrency } from '@/lib/formatting';
+import type { ReconciliationCurrencyRow } from '@/lib/types/account';
+
+export interface Props {
+  reconciliation: ReconciliationCurrencyRow[];
+  periodLabel: string;
+}
+
+const { reconciliation, periodLabel } = Astro.props;
+
+const hasActivity = reconciliation.some(
+  (row) => row.income !== 0 || row.expenses !== 0 || row.balanceChange !== 0
+);
+
+const card = 'bg-base-100 border border-base-300 rounded-card shadow-sm p-5 lg:p-6';
+const badge =
+  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider';
+---
+
+{
+  hasActivity && (
+    <div class={card} data-testid="reconciliation-card">
+      <div class="mb-5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <ArrowUpDown size={16} class="stroke-current text-base-content/50" aria-hidden="true" />
+          <h3 class="text-sm font-bold uppercase tracking-wider text-base-content">
+            Transaction Flow
+          </h3>
+        </div>
+        <span class="text-xs font-medium text-base-content/40">{periodLabel}</span>
+      </div>
+
+      <div class="space-y-6">
+        {reconciliation.map((row) => (
+          <div>
+            {reconciliation.length > 1 && (
+              <p class="mb-3 text-xs font-bold uppercase tracking-widest text-base-content/40">
+                {row.currency}
+              </p>
+            )}
+
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-base-content/60">Income</span>
+                <span class="tabular-nums font-semibold text-success">
+                  {formatCurrency(row.income, row.currency)}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <span class="text-base-content/60">Expenses</span>
+                <span class="tabular-nums font-semibold text-error">
+                  - {formatCurrency(row.expenses, row.currency)}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between border-t border-base-300 pt-1">
+                <span class="font-medium text-base-content/60">Net Flow</span>
+                <span
+                  class={`tabular-nums font-bold ${row.netFlow >= 0 ? 'text-base-content' : 'text-error'}`}
+                >
+                  {formatCurrency(row.netFlow, row.currency)}
+                </span>
+              </div>
+
+              <div class="mt-2 border-t border-dashed border-base-300 pt-2" />
+
+              <div class="flex items-center justify-between">
+                <span class="text-base-content/60">Balance Change</span>
+                <span
+                  class={`tabular-nums font-semibold ${row.balanceChange >= 0 ? 'text-base-content' : 'text-error'}`}
+                >
+                  {formatCurrency(row.balanceChange, row.currency)}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-base-content/60">Variance</span>
+                  {!row.isBalanced && (
+                    <div
+                      class="tooltip tooltip-right"
+                      data-tip="Balance changed more or less than recorded transactions. May indicate unrecorded income, missing expenses, or manual balance adjustments."
+                    >
+                      <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-full text-base-content/30 transition-colors hover:text-base-content/60"
+                        aria-label="What does this variance mean?"
+                      >
+                        <Info size={13} class="stroke-current" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div class="flex items-center gap-2">
+                  {row.isBalanced ? (
+                    <>
+                      <span class="tabular-nums text-xs font-bold text-success">
+                        {formatCurrency(0, row.currency)}
+                      </span>
+                      <span class={`${badge} bg-success/10 text-success`}>
+                        <CircleCheck size={11} class="stroke-current" aria-hidden="true" />
+                        Balanced
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span class="tabular-nums text-xs font-bold text-warning">
+                        {row.variance > 0 ? '+' : ''}
+                        {formatCurrency(row.variance, row.currency)}
+                      </span>
+                      <span class={`${badge} bg-warning/10 text-warning`}>
+                        <TriangleAlert size={11} class="stroke-current" aria-hidden="true" />
+                        Gap
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
