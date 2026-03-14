@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/renderResponse';
 import { logError } from '@/lib/utils';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit';
+import { securityActivityService } from '@/services/security-activity.service';
 import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
 
 const MAX_KEYS_PER_USER = 25;
@@ -114,6 +115,15 @@ export const POST: APIRoute = async (context) => {
       name: validation.data.name,
       expires_at: validation.data.expires_at ? new Date(validation.data.expires_at) : undefined,
     });
+    await securityActivityService.logEvent({
+      type: 'api_key_created',
+      userId: auth.userId,
+      entityId: result.apiKey.id,
+      newValue: {
+        name: result.apiKey.name,
+        keyPrefix: result.apiKey.key_prefix,
+      },
+    });
 
     return successResponse({
       plain_key: result.plainKey,
@@ -144,6 +154,7 @@ export const DELETE: APIRoute = async (context) => {
     // Verify the key belongs to this user by checking list filtered by userId
     const userKeys = await apiKeyService.list(auth.workspaceId, auth.userId);
     const ownsKey = userKeys.some((k) => k.id === validation.data.id);
+    const targetKey = userKeys.find((k) => k.id === validation.data.id);
 
     if (!ownsKey) {
       return errorResponse('API key not found', 404);
@@ -153,6 +164,17 @@ export const DELETE: APIRoute = async (context) => {
     if (!revoked) {
       return errorResponse('API key not found', 404);
     }
+    await securityActivityService.logEvent({
+      type: 'api_key_deleted',
+      userId: auth.userId,
+      entityId: validation.data.id,
+      oldValue: targetKey
+        ? {
+            name: targetKey.name,
+            keyPrefix: targetKey.key_prefix,
+          }
+        : null,
+    });
 
     return successResponse({ message: 'API key revoked' });
   } catch (error) {

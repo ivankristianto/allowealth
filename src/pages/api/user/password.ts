@@ -10,6 +10,7 @@ import {
 import { updatePasswordSchema } from '@/services/user.service';
 import { logError } from '@/lib/utils';
 import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
+import { securityActivityService } from '@/services/security-activity.service';
 
 /**
  * PUT /api/user/password
@@ -78,6 +79,10 @@ export const PUT: APIRoute = async (context) => {
     }
 
     const result = await userService.updatePassword(auth.userId, validation.data);
+    await securityActivityService.logEvent({
+      type: 'password_changed',
+      userId: auth.userId,
+    });
 
     return successResponse(result);
   } catch (error) {

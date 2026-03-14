@@ -11,12 +11,12 @@ import SecurityMfaCard from '@/components/molecules/SecurityMfaCard.astro';
 import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.astro';
 import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astro';
 import SecuritySessionsCard from '@/components/molecules/SecuritySessionsCard.astro';
+import SecurityRecentUserActivitiesCard from '@/components/molecules/SecurityRecentUserActivitiesCard.astro';
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import MfaSetupModal from '@/components/organisms/MfaSetupModal.astro';
 import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
-import { History } from '@lucide/astro';
 import { apiKeyService, auditLogService } from '@/services';
 import type { SecurityEvent } from '@/services/audit-log.service';
 import { SessionManagementService } from '@/services/session-management.service';
@@ -141,12 +141,6 @@ if (user?.id && user?.workspaceId) {
   }
 }
 
-const toneDotClasses: Record<string, string> = {
-  success: 'bg-success',
-  info: 'bg-info',
-  warning: 'bg-warning',
-  error: 'bg-error',
-};
 const demoMode = isDemoMode();
 ---
 
@@ -179,44 +173,7 @@ const demoMode = isDemoMode();
       }
       <SecurityPasskeysCard passkeys={passkeys} demoMode={demoMode} />
       <SecurityApiKeysCard keys={apiKeys} />
-
-      <section class="card bg-base-200/60 border border-base-300 shadow">
-        <div class="card-body p-6 space-y-5">
-          <div class="flex items-center gap-2 text-base-content/70">
-            <History size={18} class="stroke-current" aria-hidden="true" />
-            <h3 class="text-sm font-semibold">Recent Security Events</h3>
-          </div>
-
-          <div class="space-y-4">
-            {
-              securityEvents.length === 0 ? (
-                <p class="text-sm text-base-content/50 text-center py-2">
-                  No recent security activity found.
-                </p>
-              ) : (
-                securityEvents.map((event) => (
-                  <div class="flex items-center justify-between gap-4 text-sm">
-                    <div class="flex items-center gap-3">
-                      <span class={`w-2 h-2 rounded-full ${toneDotClasses[event.tone]}`} />
-                      <span class="text-base-content/70">{event.label}</span>
-                    </div>
-                    <span class="text-xs text-base-content/50 uppercase tracking-wide">
-                      {event.timestamp}
-                    </span>
-                  </div>
-                ))
-              )
-            }
-          </div>
-
-          <a
-            href="/api/security/audit-logs"
-            class="btn btn-outline btn-sm w-full text-xs uppercase tracking-widest"
-          >
-            Download Security Audit
-          </a>
-        </div>
-      </section>
+      <SecurityRecentUserActivitiesCard events={securityEvents} />
     </div>
   </div>
 

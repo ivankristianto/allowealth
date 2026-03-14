@@ -11,6 +11,7 @@ import {
 import { checkRateLimitByKey, createRateLimitResponse, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
 import { logError } from '@/lib/utils';
 import { SessionManagementService } from '@/services/session-management.service';
+import { securityActivityService } from '@/services/security-activity.service';
 import SecuritySessionsListPartial from '@/components/partials/SecuritySessionsListPartial.astro';
 
 const revokeSessionSchema = object({
@@ -101,6 +102,11 @@ export const DELETE: APIRoute = async (context) => {
       headers: context.request.headers,
       body: { token: target.token },
     });
+    await securityActivityService.logEvent({
+      type: 'session_revoked',
+      userId: user.id,
+      entityId: target.id,
+    });
 
     return successResponse({ message: 'Session revoked' });
   } catch (error) {
@@ -134,6 +140,10 @@ export const POST: APIRoute = async (context) => {
 
     await auth.api.revokeOtherSessions({
       headers: context.request.headers,
+    });
+    await securityActivityService.logEvent({
+      type: 'other_sessions_revoked',
+      userId: user.id,
     });
 
     return successResponse({ message: 'All other sessions revoked' });
