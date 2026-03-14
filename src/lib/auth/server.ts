@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import type { BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { captcha, twoFactor } from 'better-auth/plugins';
+import { captcha, mcp, twoFactor } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
@@ -48,6 +48,13 @@ export function getTrustedOrigins(): string[] {
     trustedOrigins.push(getDevelopmentBaseURL());
   }
 
+  // Allow MCP subdomain routing
+  const publicUrl = getEnv('PUBLIC_URL');
+  if (publicUrl) {
+    const url = new URL(publicUrl);
+    trustedOrigins.push(`https://*.${url.hostname}`);
+  }
+
   return Array.from(new Set(trustedOrigins));
 }
 
@@ -89,13 +96,26 @@ function createAuthInstance() {
   }
 
   const authPlugins: Array<
-    ReturnType<typeof twoFactor> | ReturnType<typeof captcha> | ReturnType<typeof passkey>
+    | ReturnType<typeof twoFactor>
+    | ReturnType<typeof captcha>
+    | ReturnType<typeof passkey>
+    | ReturnType<typeof mcp>
   > = [
     twoFactor(),
     passkey({
       rpID: getEnv('RP_ID') ?? new URL(getAuthBaseURL()).hostname,
       rpName: getEnv('RP_NAME') ?? 'Allowealth',
       origin: getAuthBaseURL(),
+    }),
+    mcp({
+      loginPage: '/sign-in',
+      oidcConfig: {
+        loginPage: '/sign-in',
+        consentPage: '/oauth/authorize',
+        accessTokenExpiresIn: 86_400,
+        refreshTokenExpiresIn: 7_776_000,
+        scopes: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
+      },
     }),
   ];
   const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);
