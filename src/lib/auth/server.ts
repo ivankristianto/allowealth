@@ -9,6 +9,7 @@ import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
+import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
@@ -29,15 +30,7 @@ export const AUTH_RATE_LIMIT_RULES = {
   '/sign-in/social': { window: 15 * 60, max: 10 },
 } as const;
 
-function getDevelopmentBaseURL(): string {
-  const devHost = getEnv('DEV_HOST');
-  const port = getEnv('PORT') ?? '4321';
-  return `http://${devHost || 'localhost'}:${port}`;
-}
-
-export function getAuthBaseURL(): string {
-  return getEnv('PUBLIC_URL') ?? getDevelopmentBaseURL();
-}
+export { getAuthBaseURL };
 
 export function getTrustedOrigins(): string[] {
   const nodeEnv = getEnv('NODE_ENV');
@@ -108,9 +101,9 @@ function createAuthInstance() {
       origin: getAuthBaseURL(),
     }),
     mcp({
-      loginPage: '/sign-in',
+      loginPage: '/login',
       oidcConfig: {
-        loginPage: '/sign-in',
+        loginPage: '/login',
         consentPage: '/oauth/authorize',
         accessTokenExpiresIn: 86_400,
         refreshTokenExpiresIn: 7_776_000,

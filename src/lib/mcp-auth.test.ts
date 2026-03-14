@@ -37,6 +37,7 @@ describe('validateMcpToken', () => {
     mockFindFirst.mockReset();
     mockCacheGet.mockReset();
     mockCacheSet.mockReset();
+    mockCacheInvalidate.mockReset();
   });
 
   it('returns null for empty token', async () => {
@@ -76,7 +77,33 @@ describe('validateMcpToken', () => {
 
     const result = await validateMcpToken('valid-token', testDeps);
     expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
-    expect(mockCacheSet).toHaveBeenCalledTimes(1);
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'cache:mcptoken:valid-to',
+      { workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' },
+      { ttl: 300, tags: ['mcp_tokens', 'mcp-token:tok-1'] }
+    );
+  });
+
+  it('caps cache TTL to the token remaining lifetime', async () => {
+    mockCacheGet.mockResolvedValue(null);
+    const expiresAt = new Date(Date.now() + 60_000);
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
+      id: 'tok-1',
+      accessToken: 'short-lived-token',
+      accessTokenExpiresAt: expiresAt,
+      userId: 'user-1',
+    }));
+    mockDb.query.users.findFirst = mock(async () => ({
+      workspace_id: 'ws-1',
+    }));
+
+    const result = await validateMcpToken('short-lived-token', testDeps);
+    expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'cache:mcptoken:short-li',
+      { workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' },
+      { ttl: 60, tags: ['mcp_tokens', 'mcp-token:tok-1'] }
+    );
   });
 
   it('returns cached result without hitting DB', async () => {

@@ -292,57 +292,38 @@ export default defineCommand({
       async run() {
         const { db, getActiveSchema } = await import('@/db');
         const { nanoid } = await import('nanoid');
-        const { eq } = await import('drizzle-orm');
+        const { getSeededMcpOAuthClients } = await import('@/lib/mcp-oauth');
 
         const schema = getActiveSchema();
-        const baseUrl = process.env.PUBLIC_URL ?? 'http://localhost:4321';
-
-        // All seeded clients are public (no client_secret required).
-        // The display-token redirect runs in the user's browser, making these
-        // effectively public clients regardless of which AI assistant they represent.
-        const clients = [
-          {
-            clientId: 'mcp-claude-desktop',
-            name: 'Claude Desktop',
-            type: 'public' as const,
-            redirectUrls: `${baseUrl}/oauth/display-token`,
-          },
-          {
-            clientId: 'mcp-openai',
-            name: 'ChatGPT',
-            type: 'public' as const,
-            redirectUrls: `${baseUrl}/oauth/display-token`,
-          },
-          {
-            clientId: 'mcp-generic',
-            name: 'Generic MCP Client',
-            type: 'public' as const,
-            redirectUrls: `${baseUrl}/oauth/display-token`,
-          },
-        ] as const;
+        const clients = getSeededMcpOAuthClients();
 
         for (const client of clients) {
-          const existing = await db.query.oauthApplication.findFirst({
-            where: eq(schema.oauthApplication.clientId, client.clientId),
-          });
+          const now = new Date();
 
-          if (existing) {
-            console.log(`  ↺  Already exists: ${client.name}`);
-            continue;
-          }
+          await db
+            .insert(schema.oauthApplication)
+            .values({
+              id: nanoid(),
+              clientId: client.clientId,
+              name: client.name,
+              type: client.type,
+              redirectUrls: client.redirectUrls,
+              disabled: false,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .onConflictDoUpdate({
+              target: schema.oauthApplication.clientId,
+              set: {
+                name: client.name,
+                type: client.type,
+                redirectUrls: client.redirectUrls,
+                disabled: false,
+                updatedAt: now,
+              },
+            });
 
-          await db.insert(schema.oauthApplication).values({
-            id: nanoid(),
-            clientId: client.clientId,
-            name: client.name,
-            type: client.type,
-            redirectUrls: client.redirectUrls,
-            disabled: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-
-          console.log(`  ✓  Seeded: ${client.name}`);
+          console.log(`  ✓  Upserted: ${client.name}`);
         }
 
         console.log('\n✅ OAuth clients seeded.\n');

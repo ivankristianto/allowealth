@@ -1,5 +1,6 @@
 ---
 import Button from '@/components/atoms/Button.astro';
+import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 
 interface ConnectedApp {
   tokenId: string;
@@ -11,27 +12,21 @@ interface ConnectedApp {
 
 interface Props {
   apps: ConnectedApp[];
-  baseUrl: string;
+  redirectUri: string;
 }
 
-const { apps, baseUrl } = Astro.props;
-
-const clientLabels: Record<string, string> = {
-  'mcp-claude-desktop': 'Claude Desktop',
-  'mcp-openai': 'ChatGPT',
-  'mcp-generic': 'Generic Client',
-};
+const { apps, redirectUri } = Astro.props;
 
 function getAuthorizeUrl(clientId: string): string {
   const params = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
-    redirect_uri: `${baseUrl}/oauth/display-token`,
+    redirect_uri: redirectUri,
     scope: 'openid mcp',
     state: clientId,
   });
 
-  return `/api/auth/oauth2/authorize?${params.toString()}`;
+  return `/api/auth/mcp/authorize?${params.toString()}`;
 }
 ---
 
@@ -84,9 +79,15 @@ function getAuthorizeUrl(clientId: string): string {
       <p class="text-xs text-base-content/50 mb-3">Connect an AI assistant:</p>
       <div class="flex flex-wrap gap-2">
         {
-          (['mcp-claude-desktop', 'mcp-openai', 'mcp-generic'] as const).map((clientId) => (
-            <Button href={getAuthorizeUrl(clientId)} variant="outline" size="sm">
-              {clientLabels[clientId]}
+          MCP_OAUTH_CLIENTS.map((client) => (
+            <Button
+              href={getAuthorizeUrl(client.clientId)}
+              variant="outline"
+              size="sm"
+              data-mcp-connect-link
+              data-client-id={client.clientId}
+            >
+              {client.name}
             </Button>
           ))
         }
@@ -101,6 +102,29 @@ function getAuthorizeUrl(clientId: string): string {
   import { setButtonLoading } from '@/lib/client-utils';
 
   const initializedCards = new WeakSet<Element>();
+  const PKCE_STORAGE_PREFIX = 'mcp-oauth-pkce:';
+
+  function toBase64Url(bytes: Uint8Array): string {
+    return btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  function createFlowId(): string {
+    return window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  function createCodeVerifier(): string {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return toBase64Url(bytes);
+  }
+
+  async function createCodeChallenge(codeVerifier: string): Promise<string> {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+    return toBase64Url(new Uint8Array(digest));
+  }
 
   function initConnectedAppsCard() {
     document.querySelectorAll<HTMLElement>('[data-connected-apps-card]').forEach((card) => {
@@ -143,6 +167,41 @@ function getAuthorizeUrl(clientId: string): string {
             addToast(message, 'error');
           } finally {
             setButtonLoading(button, false);
+          }
+        });
+      });
+
+      card.querySelectorAll<HTMLAnchorElement>('[data-mcp-connect-link]').forEach((link) => {
+        link.addEventListener('click', async (event) => {
+          const clientId = link.dataset.clientId;
+          if (!clientId) return;
+
+          if (!window.crypto?.subtle) {
+            event.preventDefault();
+            addToast('This browser cannot start the secure MCP OAuth flow.', 'error');
+            return;
+          }
+
+          event.preventDefault();
+
+          try {
+            const flowId = createFlowId();
+            const codeVerifier = createCodeVerifier();
+            const codeChallenge = await createCodeChallenge(codeVerifier);
+            const nextUrl = new URL(link.href, window.location.origin);
+
+            sessionStorage.setItem(`${PKCE_STORAGE_PREFIX}${flowId}`, codeVerifier);
+            nextUrl.searchParams.set('state', `${clientId}:${flowId}`);
+            nextUrl.searchParams.set('code_challenge', codeChallenge);
+            nextUrl.searchParams.set('code_challenge_method', 'S256');
+
+            window.location.href = nextUrl.toString();
+          } catch (error) {
+            const message =
+              error instanceof Error
+                ? error.message
+                : 'Failed to start the connected app authorization flow';
+            addToast(message, 'error');
           }
         });
       });

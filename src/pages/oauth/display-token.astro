@@ -1,104 +1,176 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { getAuthBaseURL } from '@/lib/auth/server';
-import { logError } from '@/lib/logger';
 
 const code = Astro.url.searchParams.get('code');
-// The OAuth redirect returns `code` and `state` but NOT `client_id`.
-// We pass client_id through the `state` parameter in the connect URL.
-const clientId = Astro.url.searchParams.get('state') ?? 'mcp-generic';
+const state = Astro.url.searchParams.get('state');
 const error = Astro.url.searchParams.get('error');
 
-let accessToken: string | null = null;
-let exchangeError: string | null = null;
-
-if (error) {
-  exchangeError = 'Authorization was denied.';
-} else if (code) {
-  try {
-    const baseUrl = getAuthBaseURL();
-    // All seeded clients are public — no client_secret is sent.
-    const response = await fetch(`${baseUrl}/api/auth/oauth2/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        client_id: clientId,
-        redirect_uri: `${baseUrl}/oauth/display-token`,
-      }),
-    });
-
-    if (response.ok) {
-      const data = (await response.json()) as { access_token?: string };
-      accessToken = data.access_token ?? null;
-    } else {
-      logError(
-        'OAuth token exchange failed',
-        new Error(`Token endpoint returned HTTP ${response.status}`)
-      );
-      exchangeError = 'Failed to exchange code for token. Try again.';
-    }
-  } catch (error) {
-    logError('OAuth token exchange failed', error);
-    exchangeError = 'Network error during token exchange. Try again.';
-  }
-} else {
-  exchangeError = 'No authorization code received.';
-}
+Astro.response.headers.set('Cache-Control', 'no-store, max-age=0');
+Astro.response.headers.set('Pragma', 'no-cache');
+Astro.response.headers.set('Expires', '0');
 ---
 
 <ProtectedLayout title="Access Token" currentPath="/oauth/display-token">
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="card bg-base-100 shadow-xl w-full max-w-lg">
-      <div class="card-body gap-6">
-        {
-          exchangeError ? (
-            <div class="alert alert-error">
-              <span>{exchangeError}</span>
-            </div>
-          ) : accessToken ? (
-            <>
-              <div class="text-center">
-                <h1 class="text-xl font-bold">Your Access Token</h1>
-                <p class="text-base-content/60 text-sm mt-1">
-                  Copy this token and paste it into your MCP client config as{' '}
-                  <code class="font-mono">ALLOWEALTH_ACCESS_TOKEN</code>. It will not be shown
-                  again.
-                </p>
-              </div>
+      <div
+        id="oauth-token-page"
+        class="card-body gap-6"
+        data-code={code ?? ''}
+        data-state={state ?? ''}
+        data-error={error ?? ''}
+      >
+        <div id="oauth-token-loading" class="text-center space-y-2">
+          <h1 class="text-xl font-bold">Preparing Your Access Token</h1>
+          <p class="text-base-content/60 text-sm">
+            Exchanging your authorization code for a one-time MCP access token...
+          </p>
+        </div>
 
-              <div class="join w-full">
-                <input
-                  id="token-value"
-                  type="text"
-                  readonly
-                  value={accessToken}
-                  class="input input-bordered join-item font-mono text-xs flex-1 min-w-0"
-                />
-                <button type="button" id="copy-token-button" class="btn btn-primary join-item">
-                  Copy
-                </button>
-              </div>
+        <div id="oauth-token-error" class="alert alert-error hidden">
+          <span id="oauth-token-error-message"></span>
+        </div>
 
-              <p class="text-base-content/50 text-xs text-center">
-                Token expires in 24 hours. Return here to get a new one.
-              </p>
-            </>
-          ) : (
-            <div class="alert alert-warning">
-              <span>No token available.</span>
-            </div>
-          )
-        }
+        <div id="oauth-token-success" class="hidden space-y-6">
+          <div class="text-center">
+            <h1 class="text-xl font-bold">Your Access Token</h1>
+            <p class="text-base-content/60 text-sm mt-1">
+              Copy this token and paste it into your MCP client config as{' '}
+              <code class="font-mono">ALLOWEALTH_ACCESS_TOKEN</code>. It will not be shown again.
+            </p>
+          </div>
+
+          <div class="join w-full">
+            <input
+              id="token-value"
+              type="text"
+              readonly
+              value=""
+              class="input input-bordered join-item font-mono text-xs flex-1 min-w-0"
+            />
+            <button type="button" id="copy-token-button" class="btn btn-primary join-item">
+              Copy
+            </button>
+          </div>
+
+          <p class="text-base-content/50 text-xs text-center">
+            Token expires in 24 hours. Return here to get a new one.
+          </p>
+        </div>
       </div>
     </div>
   </div>
 </ProtectedLayout>
 
 <script>
+  const PKCE_STORAGE_PREFIX = 'mcp-oauth-pkce:';
+  const tokenPage = document.getElementById('oauth-token-page');
+  const loadingState = document.getElementById('oauth-token-loading');
+  const errorState = document.getElementById('oauth-token-error');
+  const errorMessage = document.getElementById('oauth-token-error-message');
+  const successState = document.getElementById('oauth-token-success');
   const copyButton = document.getElementById('copy-token-button');
   const tokenInput = document.getElementById('token-value') as HTMLInputElement | null;
+
+  function showError(message: string) {
+    loadingState?.classList.add('hidden');
+    successState?.classList.add('hidden');
+    errorState?.classList.remove('hidden');
+    if (errorMessage) {
+      errorMessage.textContent = message;
+    }
+  }
+
+  function parseState(rawState: string): { clientId: string; flowId: string | null } {
+    if (!rawState) return { clientId: 'mcp-generic', flowId: null };
+
+    const [clientId, flowId] = rawState.split(':', 2);
+    return {
+      clientId: clientId || 'mcp-generic',
+      flowId: flowId || null,
+    };
+  }
+
+  async function exchangeAuthorizationCode() {
+    if (!tokenPage || !tokenInput) return;
+
+    const code = tokenPage.dataset.code;
+    const rawState = tokenPage.dataset.state ?? '';
+    const oauthError = tokenPage.dataset.error;
+
+    if (oauthError) {
+      showError('Authorization was denied.');
+      return;
+    }
+
+    if (!code) {
+      showError('No authorization code received.');
+      return;
+    }
+
+    const { clientId, flowId } = parseState(rawState);
+    if (!flowId) {
+      showError('Missing PKCE session. Start the connection again from Security.');
+      return;
+    }
+
+    const storageKey = `${PKCE_STORAGE_PREFIX}${flowId}`;
+    const codeVerifier = sessionStorage.getItem(storageKey);
+    if (!codeVerifier) {
+      showError('Missing PKCE verifier. Start the connection again from Security.');
+      return;
+    }
+
+    const redirectUri = `${window.location.origin}/oauth/display-token`;
+
+    try {
+      const response = await fetch('/api/auth/mcp/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          code_verifier: codeVerifier,
+        }),
+      });
+
+      if (!response.ok) {
+        let message = 'Failed to exchange code for token. Try again.';
+
+        try {
+          const data = (await response.json()) as {
+            error?: string;
+            error_description?: string;
+            message?: string;
+          };
+          message = data.error_description || data.message || message;
+        } catch {
+          // Leave the generic fallback in place when the response isn't JSON.
+        }
+
+        showError(message);
+        return;
+      }
+
+      const data = (await response.json()) as { access_token?: string };
+      if (!data.access_token) {
+        showError('No access token was returned. Start the connection again.');
+        return;
+      }
+
+      sessionStorage.removeItem(storageKey);
+      tokenInput.value = data.access_token;
+      loadingState?.classList.add('hidden');
+      errorState?.classList.add('hidden');
+      successState?.classList.remove('hidden');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (error) {
+      console.error('OAuth token exchange failed', error);
+      showError('Network error during token exchange. Try again.');
+    }
+  }
 
   copyButton?.addEventListener('click', async () => {
     if (!tokenInput?.value) return;
@@ -106,4 +178,6 @@ if (error) {
     await navigator.clipboard.writeText(tokenInput.value);
     copyButton.textContent = 'Copied!';
   });
+
+  void exchangeAuthorizationCode();
 </script>

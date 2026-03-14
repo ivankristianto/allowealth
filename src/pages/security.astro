@@ -20,12 +20,14 @@ import { SessionManagementService } from '@/services/session-management.service'
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { isDemoMode } from '@/lib/demo-mode';
+import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
 import { db, getActiveSchema } from '@/db';
 import { account as authAccount, twoFactor, passkey as passkeyTable } from '@/db/schema/sqlite';
 import { and, eq, gt } from 'drizzle-orm';
 import { logError } from '@/lib/utils';
 
 const currentPath = '/security';
+const redirectUri = getMcpOAuthRedirectUri();
 
 const user = Astro.locals.user;
 const schema = getActiveSchema();
@@ -39,12 +41,6 @@ let connectedApps: Array<{
 }> = [];
 
 if (user?.id) {
-  const appNames: Record<string, string> = {
-    'mcp-claude-desktop': 'Claude Desktop',
-    'mcp-openai': 'ChatGPT',
-    'mcp-generic': 'Generic MCP Client',
-  };
-
   const tokens = await db
     .select({
       id: schema.oauthAccessToken.id,
@@ -62,7 +58,7 @@ if (user?.id) {
 
   connectedApps = tokens.map((token) => ({
     tokenId: token.id,
-    clientName: appNames[token.clientId] ?? token.clientId,
+    clientName: getMcpOAuthClientName(token.clientId),
     clientId: token.clientId,
     createdAt: token.createdAt,
     accessTokenExpiresAt: token.accessTokenExpiresAt,
@@ -214,7 +210,7 @@ const demoMode = isDemoMode();
         )
       }
       <SecurityPasskeysCard passkeys={passkeys} demoMode={demoMode} />
-      <SecurityConnectedAppsCard apps={connectedApps} baseUrl={Astro.url.origin} />
+      <SecurityConnectedAppsCard apps={connectedApps} redirectUri={redirectUri} />
 
       <section class="card bg-base-200/60 border border-base-300 shadow">
         <div class="card-body p-6 space-y-5">

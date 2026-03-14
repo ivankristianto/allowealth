@@ -24,6 +24,11 @@ interface McpAuthDeps {
   hash: (token: string) => string;
 }
 
+interface TokenLookupResult {
+  auth: McpAuthContext;
+  accessTokenExpiresAt: Date;
+}
+
 function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
   return {
     db,
@@ -36,7 +41,7 @@ function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
   };
 }
 
-async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthContext | null> {
+async function lookupToken(token: string, deps: McpAuthDeps): Promise<TokenLookupResult | null> {
   const schema = deps.getSchema();
 
   const tokenRecord = await deps.db.query.oauthAccessToken.findFirst({
@@ -62,10 +67,18 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
   if (!userRecord?.workspace_id) return null;
 
   return {
-    workspaceId: userRecord.workspace_id,
-    userId,
-    tokenId: tokenRecord.id,
+    auth: {
+      workspaceId: userRecord.workspace_id,
+      userId,
+      tokenId: tokenRecord.id,
+    },
+    accessTokenExpiresAt: tokenRecord.accessTokenExpiresAt,
   };
+}
+
+function getCacheTtlSeconds(accessTokenExpiresAt: Date): number {
+  const secondsUntilExpiry = Math.floor((accessTokenExpiresAt.getTime() - Date.now()) / 1000);
+  return Math.min(CACHE_TTL_SECONDS, secondsUntilExpiry);
 }
 
 export async function validateMcpToken(
@@ -81,15 +94,18 @@ export async function validateMcpToken(
   const cached = await deps.cache.get<McpAuthContext>(cacheKey);
   if (cached) return cached;
 
-  const result = await lookupToken(token, deps);
-  if (!result) return null;
+  const lookup = await lookupToken(token, deps);
+  if (!lookup) return null;
 
-  await deps.cache.set(cacheKey, result, {
-    ttl: CACHE_TTL_SECONDS,
-    tags: [deps.cacheTags.MCP_TOKENS, `mcp-token:${result.tokenId}`],
-  });
+  const ttl = getCacheTtlSeconds(lookup.accessTokenExpiresAt);
+  if (ttl > 0) {
+    await deps.cache.set(cacheKey, lookup.auth, {
+      ttl,
+      tags: [deps.cacheTags.MCP_TOKENS, `mcp-token:${lookup.auth.tokenId}`],
+    });
+  }
 
-  return result;
+  return lookup.auth;
 }
 
 export async function invalidateMcpToken(
