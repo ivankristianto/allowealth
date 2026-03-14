@@ -82,19 +82,19 @@ function getCacheTtlSeconds(accessTokenExpiresAt: Date): number {
 }
 
 export async function validateMcpToken(
-  token: string,
+  rawToken: string,
   overrides: Partial<McpAuthDeps> = {}
 ): Promise<McpAuthContext | null> {
-  if (!token) return null;
+  if (!rawToken) return null;
 
   const deps = resolveDeps(overrides);
-  const tokenHash = deps.hash(token);
+  const tokenHash = deps.hash(rawToken);
   const cacheKey = deps.cacheKeys.mcpToken(tokenHash);
 
   const cached = await deps.cache.get<McpAuthContext>(cacheKey);
   if (cached) return cached;
 
-  const lookup = await lookupToken(token, deps);
+  const lookup = await lookupToken(rawToken, deps);
   if (!lookup) return null;
 
   const ttl = getCacheTtlSeconds(lookup.accessTokenExpiresAt);

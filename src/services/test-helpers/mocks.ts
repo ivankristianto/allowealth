@@ -82,10 +82,6 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
-      apiKeys: {
-        findFirst: mock(() => Promise.resolve(undefined)),
-        findMany: mock(() => Promise.resolve([])),
-      },
       workspaceMeta: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
@@ -378,8 +374,6 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.accountHistory as any).findMany.mockClear();
   (mockDb.query.accountCategories as any).findFirst.mockClear();
   (mockDb.query.accountCategories as any).findMany.mockClear();
-  (mockDb.query.apiKeys.findFirst as any).mockClear();
-  (mockDb.query.apiKeys.findMany as any).mockClear();
   (mockDb.query.workspaceMeta.findFirst as any).mockClear();
   (mockDb.query.workspaceMeta.findMany as any).mockClear();
   (mockDb.query.workspaces.findFirst as any).mockClear();

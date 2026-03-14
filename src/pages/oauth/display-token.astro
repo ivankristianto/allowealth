@@ -167,7 +167,7 @@ Astro.response.headers.set('Expires', '0');
       successState?.classList.remove('hidden');
       window.history.replaceState({}, document.title, window.location.pathname);
     } catch (error) {
-      console.error('OAuth token exchange failed', error);
+      console.error('OAuth token exchange failed:', error instanceof Error ? error.message : error);
       showError('Network error during token exchange. Try again.');
     }
   }
