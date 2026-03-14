@@ -147,11 +147,7 @@ export class AuditLogService {
    * Fetch the most recent audit log entries for a specific user and workspace,
    * formatted as UI-ready security events.
    */
-  async listForUser(
-    userId: string,
-    workspaceId: string,
-    limit = 50
-  ): Promise<SecurityEvent[]> {
+  async listForUser(userId: string, workspaceId: string, limit = 50): Promise<SecurityEvent[]> {
     const { auditLogs } = this.schema;
 
     // IDatabase interface does not expose the full Drizzle query builder chain
@@ -266,10 +262,7 @@ export class AuditLogService {
   /**
    * Produce a short plain-text summary of what changed between old and new values.
    */
-  static summarizeChanges(
-    oldValue: string | null,
-    newValue: string | null
-  ): string {
+  static summarizeChanges(oldValue: string | null, newValue: string | null): string {
     try {
       const oldObj = oldValue ? (JSON.parse(oldValue) as Record<string, unknown>) : null;
       const newObj = newValue ? (JSON.parse(newValue) as Record<string, unknown>) : null;

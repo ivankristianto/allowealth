@@ -34,9 +34,9 @@ describe('AuditLogService', () => {
       expect(AuditLogService.formatLabel('recurring_template.create', 'recurring_template')).toBe(
         'Recurring Transaction Created'
       );
-      expect(AuditLogService.formatLabel('recurring_occurrence.confirm', 'recurring_occurrence')).toBe(
-        'Recurring Occurrence Confirmed'
-      );
+      expect(
+        AuditLogService.formatLabel('recurring_occurrence.confirm', 'recurring_occurrence')
+      ).toBe('Recurring Occurrence Confirmed');
     });
 
     test('falls back to raw action/entity when unknown', () => {
