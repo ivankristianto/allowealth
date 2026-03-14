@@ -10,9 +10,30 @@ import HeroSection from '@/components/molecules/landing/HeroSection.astro';
 import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
 import FeaturesGrid from '@/components/molecules/landing/FeaturesGrid.astro';
 import FaqSection from '@/components/molecules/landing/FaqSection.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'allowealth',
+  url: 'https://allowealth.io',
+  description:
+    'allowealth is a free, open-source shared expense tracker and financial dashboard for households, couples, and families to manage money together.',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+};
 ---
 
-<PublicLayout title="allowealth - Manage Money Together">
+<PublicLayout
+  title="allowealth - Manage Money Together"
+  description="Track shared expenses, manage budgets, and visualise family finances with allowealth — a free, open-source financial dashboard for households and couples."
+  canonical="https://allowealth.io/"
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} slot="head" />
   <HeroSection />
   <ShowcaseSection />
   <FeaturesGrid />

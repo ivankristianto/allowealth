@@ -3,10 +3,21 @@ import '../styles/globals.css';
 
 interface Props {
   title?: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
 }
 
-const { title = 'allowealth' } = Astro.props;
+const {
+  title = 'allowealth',
+  description,
+  canonical,
+  ogImage = 'https://allowealth.io/screenshots/dashboard-light.png',
+  ogType = 'website',
+} = Astro.props;
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
+const canonicalURL = canonical ?? Astro.url.origin + Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -15,14 +26,84 @@ const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` :
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{browserTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={browserTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="allowealth" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={browserTitle} />
+    {description && <meta name="twitter:description" content={description} />}
+    <meta name="twitter:image" content={ogImage} />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script src="/scripts/theme-init.js" is:inline></script>
+    <!-- Inline theme init to prevent FOUC without a render-blocking external request -->
+    <script is:inline>
+      (function () {
+        function applyTheme() {
+          const html = document.documentElement;
+          const themePreference = html.getAttribute('data-theme-preference');
+
+          if (themePreference === 'system') {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              html.setAttribute('data-theme', 'dark');
+              return;
+            }
+            html.setAttribute('data-theme', 'light');
+            return;
+          }
+
+          if (themePreference === 'light' || themePreference === 'dark') {
+            html.setAttribute('data-theme', themePreference);
+            return;
+          }
+
+          let savedTheme = null;
+          try {
+            savedTheme = localStorage.getItem('theme');
+          } catch (_) {
+            // localStorage may be unavailable (e.g. private browsing restrictions)
+          }
+          if (savedTheme === 'light' || savedTheme === 'dark') {
+            html.setAttribute('data-theme', savedTheme);
+            return;
+          }
+
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            html.setAttribute('data-theme', 'dark');
+            return;
+          }
+
+          html.setAttribute('data-theme', 'light');
+        }
+
+        applyTheme();
+        document.addEventListener('astro:after-swap', applyTheme);
+      })();
+    </script>
+    <!-- Async font loading to avoid render-blocking Google Fonts request -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      />
+    </noscript>
+    <slot name="head" />
   </head>
   <body>
     <slot />
