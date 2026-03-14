@@ -77,12 +77,14 @@ GET  /.well-known/oauth-protected-resource — MCP protected resource metadata
 
 ### Well-Known Clients
 
-Allowealth ships with pre-seeded OAuth clients. Users never manage client credentials — they pick a client from the UI and authorize it. The seeder upserts rows into the `oauthApplication` table at `bun run db:seed`.
+Allowealth ships with pre-seeded OAuth clients. Users never manage client credentials — they pick a client from the UI and authorize it. The seeder upserts rows into the `oauthApplication` table via `bun run aw db seed-oauth-clients`.
+
+All clients are `public` type — they use no `client_secret`. Because the `/oauth/display-token` redirect URI runs in the user's browser (not on a server), every client is effectively a public client regardless of which AI assistant it represents.
 
 | client_id | Display name | type |
 |---|---|---|
-| `mcp-claude-desktop` | Claude Desktop | `native` |
-| `mcp-openai` | ChatGPT | `web` |
+| `mcp-claude-desktop` | Claude Desktop | `public` |
+| `mcp-openai` | ChatGPT | `public` |
 | `mcp-generic` | Generic MCP Client | `public` |
 
 ### Scopes
@@ -152,7 +154,8 @@ Remove:
 - `src/components/partials/SecurityApiKeysListPartial.astro`
 
 Add:
-- `SecurityConnectedAppsCard.astro` — lists OAuth clients the user has authorized, with authorized date, last used, and a Revoke button per entry.
+- `SecurityConnectedAppsCard.astro` — lists OAuth clients the user has authorized, with authorized date, expiry, and a Revoke button per entry.
+- `src/pages/api/user/revoke-mcp-token.ts` — thin POST endpoint that accepts a `tokenId` (DB row ID), looks up the actual `accessToken` value server-side, and calls better-auth's revoke endpoint. This keeps raw token values out of the HTML.
 
 ### Consent Screen (`src/pages/oauth/authorize.astro`)
 
@@ -173,9 +176,9 @@ For stdio clients that cannot intercept OAuth redirects automatically, each pre-
 
 1. User visits Security → Connected Apps.
 2. Clicks "Connect" next to a pre-registered client (e.g., Claude Desktop).
-3. Allowealth redirects to the consent screen at `/api/auth/oauth2/authorize?client_id=mcp-claude-desktop&redirect_uri={base_url}/oauth/display-token&...`.
+3. Allowealth redirects to the consent screen at `/api/auth/oauth2/authorize?client_id=mcp-claude-desktop&redirect_uri={base_url}/oauth/display-token&state=mcp-claude-desktop&...`. The `state` parameter carries the `client_id` through the redirect so the display-token page can use it for the token exchange (the OAuth redirect response contains only `code`, not `client_id`).
 4. User approves on the consent screen.
-5. Plugin redirects to `/oauth/display-token?code=...`; the page exchanges the code and displays the access token.
+5. Plugin redirects to `/oauth/display-token?code=...&state=mcp-claude-desktop`; the page reads `client_id` from `state`, exchanges the code, and displays the access token.
 6. User copies the token into the client config as `ALLOWEALTH_ACCESS_TOKEN`.
 
 `MCPSetupInstructionsModal` is dropped. The Connected Apps card includes inline setup instructions for each client type.
@@ -190,7 +193,8 @@ For stdio clients that cannot intercept OAuth redirects automatically, each pre-
 | `src/services/api-key.service.test.ts` | Delete |
 | `src/services/api-key.service.cache.test.ts` | Delete |
 | `src/db/schema/sqlite/api-keys.ts` | Delete |
-| `src/pages/api/user/api-keys.ts` | Delete (replaced by OAuth revoke endpoint) |
+| `src/pages/api/user/api-keys.ts` | Delete |
+| `src/pages/api/user/revoke-mcp-token.ts` | Add — accepts `{ tokenId }`, looks up token, calls better-auth revoke |
 | `SecurityApiKeysCard.astro` | Delete |
 | `GenerateApiKeyModal.astro` | Delete |
 | `MCPSetupInstructionsModal.astro` | Delete |
