@@ -202,3 +202,17 @@ export function getAccountTypeLabel(type: AccountType): string {
 export function formatAccountType(type: AccountType): string {
   return getAccountTypeLabel(type);
 }
+
+/**
+ * One row of reconciliation data per currency.
+ * Compares transaction net flow against account balance change for the period.
+ */
+export interface ReconciliationCurrencyRow {
+  currency: Currency;
+  income: number;
+  expenses: number;
+  netFlow: number; // income - expenses
+  balanceChange: number; // endBalance - startBalance (asset accounts only, excludes debt)
+  variance: number; // balanceChange - netFlow
+  isBalanced: boolean; // Math.abs(variance) < 0.01
+}
