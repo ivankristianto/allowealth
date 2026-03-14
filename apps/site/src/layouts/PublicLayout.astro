@@ -13,13 +13,31 @@ import ThemeToggle from '@/components/atoms/ThemeToggle.astro';
 
 interface Props {
   title?: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
   showBackground?: boolean;
 }
 
-const { title = 'allowealth', showBackground = true } = Astro.props;
+const {
+  title = 'allowealth',
+  description,
+  canonical,
+  ogImage,
+  ogType,
+  showBackground = true,
+} = Astro.props;
 ---
 
-<BaseLayout title={title}>
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  ogImage={ogImage}
+  ogType={ogType}
+>
+  <slot name="head" slot="head" />
   <!-- Skip to content link for accessibility -->
   <a
     href="#main-content"

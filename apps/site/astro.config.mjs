@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
+import sitemap from '@astrojs/sitemap';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
@@ -8,6 +9,7 @@ export default defineConfig({
   build: {
     inlineStylesheets: 'always',
   },
+  integrations: [sitemap()],
   vite: {
     plugins: [tailwindcss()],
     build: {
