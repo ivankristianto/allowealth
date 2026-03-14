@@ -80,6 +80,14 @@ export const CacheKeys = {
   /** All account categories: cache:account-categories:{workspaceId}:{filtersHash} */
   accountCategories: (workspaceId: string, filtersHash: string): string =>
     `${PREFIX}:account-categories:${workspaceId}:${filtersHash}`,
+
+  /** Account month snapshot: cache:accounts-snapshot:{workspaceId}:{year}:{month}:{filtersHash} */
+  accountSnapshot: (
+    workspaceId: string,
+    year: number,
+    month: number,
+    filtersHash: string
+  ): string => `${PREFIX}:accounts-snapshot:${workspaceId}:${year}:${month}:${filtersHash}`,
 } as const;
 
 /**
