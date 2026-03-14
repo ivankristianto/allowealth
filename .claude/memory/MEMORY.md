@@ -59,6 +59,8 @@ This file is managed by Claude Code's auto-memory system.
 - **Better Auth is the canonical auth layer** — use `src/lib/auth/server.ts`, `src/lib/auth/client.ts`, `src/lib/auth/types.ts`, and `src/db/schema/sqlite/better-auth.ts`
 - **Do not document or add Lucia-era routes** — `/api/auth/login`, `/api/auth/signup`, `/api/auth/google/*`, and `/api/auth/mfa/*` are deprecated
 - **Current auth surface** — Better Auth is mounted at `src/pages/api/auth/[...all].ts`; app-owned email verification remains at `/api/auth/verify-email`
+- **Passkeys** — Use `@better-auth/passkey` plugin. Local testing works on `localhost` without HTTPS; other domains require HTTPS or a tunnel
+- **Auth methods** — Email/password, Google OAuth, 2FA/TOTP, and Passkeys (WebAuthn) all via Better Auth plugins
 
 ---
 
