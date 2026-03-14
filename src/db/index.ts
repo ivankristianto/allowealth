@@ -78,7 +78,7 @@ export interface IDatabase {
   };
   select: (columns: any) => {
     from: (table: any) => {
-      where: (condition: any) => {
+      where: (condition: any) => Promise<any[]> & {
         groupBy: (column: any) => Promise<any[]>;
         orderBy: (config: any) => Promise<any[]>;
       };

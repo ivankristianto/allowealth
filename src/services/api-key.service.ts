@@ -1,6 +1,7 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type IDatabase } from '@/db';
 import { nanoid } from 'nanoid';
 import { eq, and, isNull } from 'drizzle-orm';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { getCacheManager, CacheKeys, CacheTags, simpleHash } from '@/lib/cache';
 
 const KEY_PREFIX = 'aw_';
@@ -13,6 +14,19 @@ const PBKDF2_CONFIG = {
 } as const;
 const HASH_PREFIX = '$pbkdf2-sha256$';
 const DEFAULT_VALIDATE_CACHE_TTL_SECONDS = 300;
+
+const legacyApiKeys = sqliteTable('api_keys', {
+  id: text('id').primaryKey(),
+  workspace_id: text('workspace_id').notNull(),
+  user_id: text('user_id').notNull(),
+  name: text('name').notNull(),
+  key_hash: text('key_hash').notNull(),
+  key_prefix: text('key_prefix').notNull(),
+  last_used_at: integer('last_used_at', { mode: 'timestamp' }),
+  expires_at: integer('expires_at', { mode: 'timestamp' }),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+  deleted_at: integer('deleted_at', { mode: 'timestamp' }),
+});
 
 interface GenerateInput {
   workspace_id: string;
@@ -136,10 +150,6 @@ function generateRandomKey(): string {
 }
 
 export class ApiKeyService {
-  private get schema() {
-    return getActiveSchema();
-  }
-
   constructor(private db: IDatabase) {}
 
   async generate(input: GenerateInput): Promise<GenerateResult> {
@@ -149,7 +159,7 @@ export class ApiKeyService {
     const keyPrefix = plainKey.slice(0, 8);
 
     const [apiKey] = await this.db
-      .insert(this.schema.apiKeys)
+      .insert(legacyApiKeys)
       .values({
         id,
         workspace_id: input.workspace_id,
@@ -180,12 +190,17 @@ export class ApiKeyService {
     const prefix = key.slice(0, 8);
 
     // Find non-revoked keys matching the prefix
-    const candidates = await this.db.query.apiKeys.findMany({
-      where: and(
-        eq(this.schema.apiKeys.key_prefix, prefix),
-        isNull(this.schema.apiKeys.deleted_at)
-      ),
-    });
+    const candidates = await this.db
+      .select({
+        id: legacyApiKeys.id,
+        workspace_id: legacyApiKeys.workspace_id,
+        user_id: legacyApiKeys.user_id,
+        key_hash: legacyApiKeys.key_hash,
+        key_prefix: legacyApiKeys.key_prefix,
+        expires_at: legacyApiKeys.expires_at,
+      })
+      .from(legacyApiKeys)
+      .where(and(eq(legacyApiKeys.key_prefix, prefix), isNull(legacyApiKeys.deleted_at)));
 
     for (const candidate of candidates) {
       // Check expiration
@@ -197,9 +212,9 @@ export class ApiKeyService {
       if (valid) {
         // Update last_used_at
         await this.db
-          .update(this.schema.apiKeys)
+          .update(legacyApiKeys)
           .set({ last_used_at: new Date() })
-          .where(eq(this.schema.apiKeys.id, candidate.id));
+          .where(eq(legacyApiKeys.id, candidate.id));
 
         return {
           auth: {
@@ -213,6 +228,20 @@ export class ApiKeyService {
     }
 
     return null;
+  }
+
+  async getStatus(
+    id: string
+  ): Promise<{ deleted_at: Date | null; expires_at: Date | null } | null> {
+    const rows = await this.db
+      .select({
+        deleted_at: legacyApiKeys.deleted_at,
+        expires_at: legacyApiKeys.expires_at,
+      })
+      .from(legacyApiKeys)
+      .where(eq(legacyApiKeys.id, id));
+
+    return rows[0] ?? null;
   }
 
   async validate(key: string): Promise<ApiKeyContext | null> {
@@ -273,19 +302,27 @@ export class ApiKeyService {
   }
 
   async revoke(id: string, workspaceId: string): Promise<boolean> {
-    const existing = await this.db.query.apiKeys.findFirst({
-      where: and(
-        eq(this.schema.apiKeys.id, id),
-        eq(this.schema.apiKeys.workspace_id, workspaceId),
-        isNull(this.schema.apiKeys.deleted_at)
-      ),
-    });
+    const [existing] = await this.db
+      .select({
+        id: legacyApiKeys.id,
+        workspace_id: legacyApiKeys.workspace_id,
+        key_prefix: legacyApiKeys.key_prefix,
+      })
+      .from(legacyApiKeys)
+      .where(
+        and(
+          eq(legacyApiKeys.id, id),
+          eq(legacyApiKeys.workspace_id, workspaceId),
+          isNull(legacyApiKeys.deleted_at)
+        )
+      );
+
     if (!existing) return false;
 
     await this.db
-      .update(this.schema.apiKeys)
+      .update(legacyApiKeys)
       .set({ deleted_at: new Date() })
-      .where(eq(this.schema.apiKeys.id, id));
+      .where(eq(legacyApiKeys.id, id));
 
     const cache = getCacheManager();
     await cache.invalidateByTags([CacheTags.API_KEYS, `apikey:${existing.key_prefix}`]);
@@ -306,16 +343,26 @@ export class ApiKeyService {
       expires_at: Date | null;
     }>
   > {
-    const conditions = [
-      eq(this.schema.apiKeys.workspace_id, workspaceId),
-      isNull(this.schema.apiKeys.deleted_at),
-    ];
-    if (userId) {
-      conditions.push(eq(this.schema.apiKeys.user_id, userId));
-    }
-    const rows = await this.db.query.apiKeys.findMany({
-      where: and(...conditions),
-    });
+    const whereClause = userId
+      ? and(
+          eq(legacyApiKeys.workspace_id, workspaceId),
+          isNull(legacyApiKeys.deleted_at),
+          eq(legacyApiKeys.user_id, userId)
+        )
+      : and(eq(legacyApiKeys.workspace_id, workspaceId), isNull(legacyApiKeys.deleted_at));
+
+    const rows = await this.db
+      .select({
+        id: legacyApiKeys.id,
+        name: legacyApiKeys.name,
+        key_prefix: legacyApiKeys.key_prefix,
+        last_used_at: legacyApiKeys.last_used_at,
+        created_at: legacyApiKeys.created_at,
+        expires_at: legacyApiKeys.expires_at,
+      })
+      .from(legacyApiKeys)
+      .where(whereClause);
+
     return rows.map((row) => ({
       id: row.id,
       name: row.name,

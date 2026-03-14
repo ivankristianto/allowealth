@@ -1,6 +1,5 @@
-import { db, getActiveSchema } from '@/db';
+import { db } from '@/db';
 import { ApiKeyService } from '@/services/api-key.service';
-import { eq } from 'drizzle-orm';
 
 export interface AuthContext {
   workspaceId: string;
@@ -43,11 +42,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     throw new Error('Not authenticated. Call authenticate() first.');
   }
 
-  const schema = getActiveSchema();
-  const key = await db.query.apiKeys.findFirst({
-    where: eq(schema.apiKeys.id, cachedContext.apiKeyId),
-    columns: { deleted_at: true, expires_at: true },
-  });
+  const key = await new ApiKeyService(db).getStatus(cachedContext.apiKeyId);
 
   if (!key || key.deleted_at || (key.expires_at && new Date(key.expires_at) < new Date())) {
     throw new Error('API key is no longer valid.');
