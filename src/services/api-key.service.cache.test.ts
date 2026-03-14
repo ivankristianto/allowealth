@@ -156,7 +156,7 @@ describe('ApiKeyService cache contract', () => {
       { ok: true },
       {
         ttl: 300,
-        tags: [CacheTags.API_KEYS, 'apikey:aw_cache'],
+        tags: [CacheTags.MCP_TOKENS, 'apikey:aw_cache'],
       }
     );
 

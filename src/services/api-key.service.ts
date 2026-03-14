@@ -257,7 +257,7 @@ export class ApiKeyService {
 
     const keyHash = simpleHash(key);
     const keyPrefix = key.slice(0, 8);
-    const cacheKey = CacheKeys.apiKey(keyHash);
+    const cacheKey = CacheKeys.mcpToken(keyHash);
     const cache = getCacheManager();
 
     const cached = await cache.get<CachedApiKeyEntry>(cacheKey);
@@ -294,7 +294,7 @@ export class ApiKeyService {
       },
       {
         ttl: result.expiresAt === null ? ttlSeconds : Math.min(ttlSeconds, remainingTtlSeconds),
-        tags: [CacheTags.API_KEYS, `apikey:${keyPrefix}`],
+        tags: [CacheTags.MCP_TOKENS, `apikey:${keyPrefix}`],
       }
     );
 
@@ -325,7 +325,7 @@ export class ApiKeyService {
       .where(eq(legacyApiKeys.id, id));
 
     const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.API_KEYS, `apikey:${existing.key_prefix}`]);
+    await cache.invalidateByTags([CacheTags.MCP_TOKENS, `apikey:${existing.key_prefix}`]);
 
     return true;
   }
