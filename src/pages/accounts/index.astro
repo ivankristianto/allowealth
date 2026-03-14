@@ -9,6 +9,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountPortfolioSummary from '@components/organisms/AccountPortfolioSummary.astro';
+import AccountReconciliationCard from '@components/organisms/AccountReconciliationCard.astro';
 import AccountActions from '@components/organisms/AccountActions.astro';
 import ActionFilterBar from '@components/organisms/ActionFilterBar.astro';
 import AccountGroupCard from '@components/organisms/AccountGroupCard.astro';
@@ -25,6 +26,7 @@ import { CalendarDays, Info, ListPlus, Plus } from '@lucide/astro';
 import {
   accountService,
   accountCategoryService,
+  transactionService,
   workspaceMetaService,
   workspaceService,
 } from '@/services';
@@ -39,6 +41,7 @@ import {
   calculateDebtTotalsByCurrency,
   groupAccountsByClass,
   calculateGroupTotalsByCurrency,
+  calculateReconciliation,
 } from '@/lib/utils/account';
 
 const user = Astro.locals.user!;
@@ -111,6 +114,8 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
   year: 'numeric',
 });
 const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+const periodStartDate = new Date(selectedYear, selectedMonth - 1, 1);
+const periodEndDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59, 999);
 const currentMonthUrl = new URL(url);
 currentMonthUrl.searchParams.delete('year');
 currentMonthUrl.searchParams.delete('month');
@@ -240,6 +245,54 @@ if (!isViewingCurrentMonth) {
   });
 }
 
+const reconciliationAccountIds = accounts.map((account) => account.id);
+const reconciliation =
+  reconciliationAccountIds.length === 0
+    ? []
+    : await (async () => {
+        const [startSnapshots, txSummaries] = await Promise.all([
+          accountService.getSnapshotForMonth(
+            user.workspaceId,
+            selectedYear,
+            selectedMonth - 1,
+            filters,
+            Astro.locals.perf
+          ),
+          Promise.all(
+            orderedWorkspaceCurrencies.map((currency) =>
+              transactionService
+                .getMonthSummary(
+                  {
+                    workspace_id: user.workspaceId,
+                    created_by_user_id: ownerUserId,
+                    currency,
+                    account_ids: reconciliationAccountIds,
+                    start_date: periodStartDate,
+                    end_date: periodEndDate,
+                  },
+                  Astro.locals.perf
+                )
+                .then((summary) => ({ currency, ...summary }))
+            )
+          ),
+        ]);
+
+        return calculateReconciliation({
+          currencies: orderedWorkspaceCurrencies,
+          startSnapshots: startSnapshots.map((snapshot) => ({
+            currency: snapshot.currency,
+            balance: snapshot.snapshot_balance,
+            account_class: snapshot.account_class ?? deriveAccountClass(snapshot.type),
+          })),
+          endAccounts: accounts.map((account) => ({
+            currency: account.currency,
+            balance: account.balance,
+            account_class: account.account_class,
+          })),
+          transactionSummaries: txSummaries,
+        });
+      })();
+
 // Calculate portfolio totals and allocation
 // @TODO: Wire with backend - Consider moving calculations to service layer
 const accountTotalsByCurrency = calculateAccountTotalsByCurrency(
@@ -345,6 +398,11 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             loading={false}
             latestUpdate={latestUpdate}
             isHistoricalView={!isViewingCurrentMonth}
+          />
+
+          <AccountReconciliationCard
+            reconciliation={reconciliation}
+            periodLabel={currentMonthDisplay}
           />
 
           {/* Action Buttons - after allocation, before filter */}
