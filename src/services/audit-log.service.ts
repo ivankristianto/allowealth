@@ -19,6 +19,12 @@ const ACTION_LABELS: Record<string, string> = {
   session_revoke: 'Session Revoked',
   session_revoke_other: 'Other Sessions Revoked',
   password_change: 'Password Changed',
+  profile_update: 'Profile Updated',
+  email_change_request: 'Email Change Requested',
+  email_change_cancel: 'Email Change Cancelled',
+  theme_change: 'Theme Changed',
+  account_link: 'Account Connected',
+  account_unlink: 'Account Disconnected',
   member_invite: 'Member Invited',
   member_remove: 'Member Removed',
   admin_view: 'Viewed by Admin',
@@ -66,6 +72,12 @@ const SELF_DESCRIBING_ACTIONS = new Set([
   'session_revoke',
   'session_revoke_other',
   'password_change',
+  'profile_update',
+  'email_change_request',
+  'email_change_cancel',
+  'theme_change',
+  'account_link',
+  'account_unlink',
   'member_invite',
   'member_remove',
   'admin_view',
@@ -111,6 +123,7 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
   'recurring_template.pause': 'info',
   'recurring_template.resume': 'info',
   'recurring_occurrence.skip': 'info',
+  theme_change: 'info',
 
   password_change: 'warning',
   member_remove: 'warning',
@@ -118,10 +131,16 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
   mfa_disable: 'warning',
   'recurring_template.cancel': 'warning',
   'recurring_template.delete': 'warning',
+  email_change_request: 'warning',
+  account_unlink: 'warning',
 
   delete: 'error',
   admin_delete: 'error',
   admin_deactivate: 'error',
+  email_change_cancel: 'error',
+
+  profile_update: 'success',
+  account_link: 'success',
 };
 
 export type SecurityEventTone = 'success' | 'info' | 'warning' | 'error';

@@ -62,6 +62,7 @@ export * from './super-admin.service';
 export * from './diagnostics.service';
 export * from './session-management.service';
 export * from './audit-log.service';
+export * from './security-activity.service';
 
 // Export singleton instances with real database
 export const categoryService = new CategoryService(db);

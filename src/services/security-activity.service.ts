@@ -26,6 +26,12 @@ export type SecurityActivityType =
   | 'login'
   | 'logout'
   | 'password_changed'
+  | 'profile_updated'
+  | 'email_change_requested'
+  | 'email_change_cancelled'
+  | 'theme_changed'
+  | 'account_linked'
+  | 'account_unlinked'
   | 'session_revoked'
   | 'other_sessions_revoked'
   | 'api_key_created'
@@ -50,6 +56,12 @@ const EVENT_DEFINITIONS: Record<
   login: { action: 'login', entityType: 'session' },
   logout: { action: 'logout', entityType: 'session' },
   password_changed: { action: 'password_change', entityType: 'user' },
+  profile_updated: { action: 'profile_update', entityType: 'user' },
+  email_change_requested: { action: 'email_change_request', entityType: 'user' },
+  email_change_cancelled: { action: 'email_change_cancel', entityType: 'user' },
+  theme_changed: { action: 'theme_change', entityType: 'user' },
+  account_linked: { action: 'account_link', entityType: 'user' },
+  account_unlinked: { action: 'account_unlink', entityType: 'user' },
   session_revoked: { action: 'session_revoke', entityType: 'session' },
   other_sessions_revoked: { action: 'session_revoke_other', entityType: 'session' },
   api_key_created: { action: 'create', entityType: 'api_key' },
