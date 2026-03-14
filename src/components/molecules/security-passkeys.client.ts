@@ -9,6 +9,7 @@ import { authClient } from '@/lib/auth/client';
 import { addToast } from '@/lib/stores/toastStore';
 
 let controller: AbortController | null = null;
+let deleteController: AbortController | null = null;
 
 function getPasskeyLabel(passkey: { name?: string | null; deviceType: string }): string {
   return passkey.name || passkey.deviceType || 'Passkey';
@@ -76,7 +77,7 @@ function isCancellationError(msg: string): boolean {
   return lower.includes('cancel') || lower.includes('abort') || lower.includes('not allowed');
 }
 
-async function refreshPasskeyList() {
+async function refreshPasskeyList(signal?: AbortSignal) {
   const list = document.getElementById('passkeys-list');
   if (!list) return;
 
@@ -87,7 +88,7 @@ async function refreshPasskeyList() {
     }
 
     const passkeys = result.data ?? [];
-    list.innerHTML = '';
+    list.replaceChildren();
 
     if (passkeys.length === 0) {
       const empty = document.createElement('p');
@@ -100,54 +101,66 @@ async function refreshPasskeyList() {
         list.appendChild(renderPasskeyItem(pk));
       });
       // Re-attach delete listeners to newly rendered buttons
-      attachDeleteListeners(list);
+      if (signal) {
+        attachDeleteListeners(list, signal);
+      }
     }
-  } catch {
-    // Silently fail – list stays as-is
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '';
+    if (!isCancellationError(msg)) {
+      addToast('Failed to load passkeys. Please refresh the page.', 'error');
+    }
   }
 }
 
-function attachDeleteListeners(container: Element) {
+function attachDeleteListeners(container: Element, signal: AbortSignal) {
   const modal = document.getElementById('delete-passkey-modal') as HTMLDialogElement | null;
   const confirmBtn = document.querySelector<HTMLButtonElement>('[data-confirm-delete-passkey]');
 
   container.querySelectorAll<HTMLButtonElement>('[data-action="delete-passkey"]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.passkeyId;
-      if (!id || !modal || !confirmBtn) return;
+    btn.addEventListener(
+      'click',
+      () => {
+        const id = btn.dataset.passkeyId;
+        if (!id || !modal || !confirmBtn) return;
 
-      confirmBtn.dataset.deletingPasskeyId = id;
-      modal.showModal();
-    });
+        // Abort previous delete controller to avoid duplicate listeners
+        deleteController?.abort();
+        deleteController = new AbortController();
+
+        confirmBtn.dataset.deletingPasskeyId = id;
+        modal.showModal();
+
+        // Attach confirmation listener with its own AbortController
+        confirmBtn.addEventListener(
+          'click',
+          async () => {
+            const passkeyId = confirmBtn.dataset.deletingPasskeyId;
+            if (!passkeyId) return;
+
+            modal.close();
+            confirmBtn.disabled = true;
+
+            try {
+              const result = await authClient.passkey.deletePasskey({ id: passkeyId });
+              if (result.error) {
+                addToast(result.error.message || 'Failed to remove passkey', 'error');
+                confirmBtn.disabled = false;
+                return;
+              }
+              addToast('Passkey removed', 'success');
+              await refreshPasskeyList(signal);
+            } catch {
+              addToast('Failed to remove passkey. Please try again.', 'error');
+              confirmBtn.disabled = false;
+            }
+          },
+          { once: true, signal: deleteController.signal }
+        );
+      },
+      { signal }
+    );
   });
-
-  if (confirmBtn && modal) {
-    // Remove any previous listener to avoid duplication when re-attaching
-    const newConfirmBtn = confirmBtn.cloneNode(true) as HTMLButtonElement;
-    confirmBtn.parentNode?.replaceChild(newConfirmBtn, confirmBtn);
-
-    newConfirmBtn.addEventListener('click', async () => {
-      const id = newConfirmBtn.dataset.deletingPasskeyId;
-      if (!id) return;
-
-      modal.close();
-      newConfirmBtn.disabled = true;
-
-      try {
-        const result = await authClient.passkey.deletePasskey({ id });
-        if (result.error) {
-          addToast(result.error.message || 'Failed to remove passkey', 'error');
-          newConfirmBtn.disabled = false;
-          return;
-        }
-        addToast('Passkey removed', 'success');
-        await refreshPasskeyList();
-      } catch {
-        addToast('Failed to remove passkey. Please try again.', 'error');
-        newConfirmBtn.disabled = false;
-      }
-    });
-  }
 }
 
 function initSecurityPasskeys() {
@@ -174,7 +187,7 @@ function initSecurityPasskeys() {
           return;
         }
         addToast('Passkey registered successfully', 'success');
-        await refreshPasskeyList();
+        await refreshPasskeyList(signal);
       } catch (err) {
         const msg = err instanceof Error ? err.message : '';
         if (isCancellationError(msg)) {
@@ -192,7 +205,7 @@ function initSecurityPasskeys() {
   // Attach delete listeners to server-rendered passkey items
   const list = document.getElementById('passkeys-list');
   if (list) {
-    attachDeleteListeners(list);
+    attachDeleteListeners(list, signal);
   }
 }
 
@@ -201,4 +214,5 @@ initSecurityPasskeys();
 document.addEventListener('astro:page-load', initSecurityPasskeys);
 document.addEventListener('astro:before-swap', () => {
   controller?.abort();
+  deleteController?.abort();
 });

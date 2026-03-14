@@ -109,6 +109,7 @@ export const passkey = sqliteTable(
     transports: text('transports'),
     aaguid: text('aaguid'),
     createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   },
   (table) => [
     index('passkey_user_id_idx').on(table.userId),

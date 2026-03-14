@@ -64,9 +64,9 @@ describe('security-passkeys.client.ts', () => {
     expect(source).toContain('authClient.passkey.addPasskey()');
   });
 
-  it('calls authClient.passkey.deletePasskey({ id })', () => {
+  it('calls authClient.passkey.deletePasskey()', () => {
     const source = readPasskeysClient();
-    expect(source).toContain('authClient.passkey.deletePasskey({ id })');
+    expect(source).toContain('authClient.passkey.deletePasskey({ id: passkeyId })');
   });
 
   it('calls authClient.passkey.listUserPasskeys()', () => {
@@ -96,6 +96,31 @@ describe('security-passkeys.client.ts', () => {
     expect(source).toContain('delete-passkey-modal');
     expect(source).toContain('data-confirm-delete-passkey');
     expect(source).toContain('showModal()');
+  });
+});
+
+describe('SecurityPasskeysCard demo mode', () => {
+  it('accepts demoMode prop', () => {
+    const source = readPasskeysCard();
+    expect(source).toContain('demoMode?: boolean');
+  });
+
+  it('shows "Disabled in demo" message when demoMode is true', () => {
+    const source = readPasskeysCard();
+    expect(source).toContain('Disabled in demo');
+    expect(source).toContain('data-testid="passkey-demo-disabled"');
+  });
+
+  it('conditionally renders add button based on demoMode', () => {
+    const source = readPasskeysCard();
+    // Should have conditional rendering for the add button
+    expect(source).toMatch(/demoMode\s*\?\s*.*:.*data-action="add-passkey"/s);
+  });
+
+  it('conditionally renders delete buttons based on demoMode', () => {
+    const source = readPasskeysCard();
+    // Delete button should be wrapped in {!demoMode && (...)}
+    expect(source).toMatch(/!demoMode.*data-action="delete-passkey"/s);
   });
 });
 

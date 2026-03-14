@@ -197,6 +197,9 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
   <div id="icon-error-template">
     <CircleX size={24} class="stroke-current shrink-0" />
   </div>
+  <div id="icon-info-template">
+    <Info size={24} class="stroke-current shrink-0" />
+  </div>
 </div>
 
 <script>
@@ -216,16 +219,20 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
   const redirectTo = sanitizePostAuthRedirect(loginForm?.dataset.redirect);
 
   // Helper function to clone icon from template
-  const getErrorIcon = () => {
-    const template = document.getElementById('icon-error-template');
+  const getIcon = (type: 'error' | 'info') => {
+    const templateId = type === 'error' ? 'icon-error-template' : 'icon-info-template';
+    const template = document.getElementById(templateId);
     if (!template?.firstElementChild) {
-      console.warn('Error icon template not found or empty');
+      console.warn(`${type} icon template not found or empty`);
       return null;
     }
     const clone = template.firstElementChild.cloneNode(true) as Element;
     clone.removeAttribute('id'); // Remove ID to avoid duplicates
     return clone;
   };
+
+  // Backward compatibility: getErrorIcon is now getIcon('error')
+  const getErrorIcon = () => getIcon('error');
 
   // Helper function to show alert messages
   const showErrorAlert = (message: string) => {
@@ -404,10 +411,14 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
   // Helper: show an info-level alert (non-error feedback)
   const showInfoAlert = (message: string) => {
     if (!messagesContainer) return;
-    messagesContainer.innerHTML = '';
+    messagesContainer.replaceChildren();
     const alertDiv = document.createElement('div');
     alertDiv.setAttribute('role', 'alert');
     alertDiv.className = 'alert alert-info';
+    const icon = getIcon('info');
+    if (icon) {
+      alertDiv.appendChild(icon);
+    }
     const textSpan = document.createElement('span');
     textSpan.textContent = message;
     alertDiv.appendChild(textSpan);

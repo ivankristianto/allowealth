@@ -17,25 +17,38 @@ interface Passkey {
 
 export interface Props {
   passkeys: Passkey[];
+  demoMode?: boolean;
 }
 
-const { passkeys } = Astro.props;
+const { passkeys, demoMode = false } = Astro.props;
 ---
 
 <SecurityCard title="Passkeys" subtitle="Biometric & Hardware Keys" iconVariant="success">
   <Key slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
-  <Button
-    slot="header-action"
-    type="button"
-    variant="primary"
-    size="sm"
-    id="add-passkey-btn"
-    data-action="add-passkey"
-  >
-    <Plus size={16} class="stroke-current" aria-hidden="true" />
-    Add Passkey
-  </Button>
+  {
+    demoMode ? (
+      <span
+        slot="header-action"
+        class="text-xs text-base-content/50"
+        data-testid="passkey-demo-disabled"
+      >
+        Disabled in demo
+      </span>
+    ) : (
+      <Button
+        slot="header-action"
+        type="button"
+        variant="primary"
+        size="sm"
+        id="add-passkey-btn"
+        data-action="add-passkey"
+      >
+        <Plus size={16} class="stroke-current" aria-hidden="true" />
+        Add Passkey
+      </Button>
+    )
+  }
 
   <p class="text-sm text-base-content/70">
     Sign in faster and more securely with your biometric data or hardware security keys.
@@ -71,15 +84,17 @@ const { passkeys } = Astro.props;
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm rounded-xl text-error"
-              aria-label="Remove passkey"
-              data-action="delete-passkey"
-              data-passkey-id={passkey.id}
-            >
-              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-            </button>
+            {!demoMode && (
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm rounded-xl text-error"
+                aria-label="Remove passkey"
+                data-action="delete-passkey"
+                data-passkey-id={passkey.id}
+              >
+                <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+              </button>
+            )}
           </div>
         ))
       )
