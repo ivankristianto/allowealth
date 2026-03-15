@@ -62,4 +62,16 @@ describe('typography and currency standardization', () => {
     expect(content).toContain('? formatCurrency(entry.newValue.amount, entry.newValue.currency)');
     expect(content).not.toContain('? `${entry.newValue.currency} ${entry.newValue.amount}`');
   });
+
+  it('formats transaction card aria-label amounts with formatCurrency', () => {
+    const content = read('src/components/molecules/TransactionCard.astro');
+
+    expect(content).toContain("import { formatCurrency } from '@/lib/formatting/currency';");
+    expect(content).toContain(
+      "aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${formatCurrency(amount, transaction?.currency)}`}"
+    );
+    expect(content).not.toContain(
+      "aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction?.currency}`}"
+    );
+  });
 });
