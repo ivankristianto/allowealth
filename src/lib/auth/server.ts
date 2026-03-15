@@ -9,11 +9,13 @@ import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
+import { securityActivityService } from '@/services/security-activity.service';
 import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
 const AUTH_SESSION_COOKIE_BASE = 'better-auth.session_token';
+const AUTH_LOGIN_PATHS = new Set(['/passkey/verify-authentication']);
 
 export function getSessionCookieName(): string {
   const baseURL = getAuthBaseURL();
@@ -144,6 +146,25 @@ function createAuthInstance() {
           },
           after: async (user, context) => {
             await bootstrapAuthUser(user, context);
+          },
+        },
+      },
+      session: {
+        create: {
+          after: async (session, context) => {
+            if (
+              context?.path?.startsWith('/sign-in/') ||
+              (context?.path ? AUTH_LOGIN_PATHS.has(context.path) : false)
+            ) {
+              await securityActivityService.logEvent({ type: 'login', userId: session.userId });
+            }
+          },
+        },
+        delete: {
+          after: async (session, context) => {
+            if (context?.path === '/sign-out') {
+              await securityActivityService.logEvent({ type: 'logout', userId: session.userId });
+            }
           },
         },
       },

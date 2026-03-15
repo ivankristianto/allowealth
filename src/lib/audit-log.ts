@@ -40,7 +40,19 @@ export type AuditAction =
   | 'recurring_template.cancel'
   | 'recurring_template.delete'
   | 'recurring_occurrence.confirm'
-  | 'recurring_occurrence.skip';
+  | 'recurring_occurrence.skip'
+  | 'account_link'
+  | 'account_unlink'
+  | 'session_revoke'
+  | 'session_revoke_other'
+  | 'api_key_create'
+  | 'api_key_delete'
+  | 'passkey_create'
+  | 'passkey_delete'
+  | 'profile_update'
+  | 'email_change_request'
+  | 'email_change_cancel'
+  | 'theme_change';
 
 /**
  * Types of entities that can be audited
@@ -55,7 +67,9 @@ export type AuditEntityType =
   | 'user'
   | 'workspace'
   | 'session'
-  | 'user_mfa';
+  | 'user_mfa'
+  | 'api_key'
+  | 'passkey';
 
 /**
  * Context for audit log entries
