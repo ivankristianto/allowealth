@@ -59,14 +59,15 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
         <form method="dialog">
           <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
         </form>
-        <button
+        <Button
           type="button"
-          class="btn btn-error btn-sm rounded-xl"
+          variant="danger"
+          size="sm"
           data-confirm-revoke-session
           data-revoking-id=""
         >
           Revoke
-        </button>
+        </Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
@@ -86,9 +87,9 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
         <form method="dialog">
           <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
         </form>
-        <button type="button" class="btn btn-error btn-sm rounded-xl" data-confirm-revoke-all>
+        <Button type="button" variant="danger" size="sm" data-confirm-revoke-all>
           Revoke All
-        </button>
+        </Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
