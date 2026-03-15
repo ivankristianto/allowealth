@@ -54,4 +54,12 @@ describe('typography and currency standardization', () => {
     );
     expect(content).not.toContain('text-right font-mono');
   });
+
+  it('formats transaction history create snapshots with formatCurrency', () => {
+    const content = read('src/components/partials/TransactionHistoryPartial.astro');
+
+    expect(content).toContain("import { formatCurrency } from '@/lib/formatting/currency';");
+    expect(content).toContain('? formatCurrency(entry.newValue.amount, entry.newValue.currency)');
+    expect(content).not.toContain('? `${entry.newValue.currency} ${entry.newValue.amount}`');
+  });
 });

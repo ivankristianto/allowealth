@@ -7,6 +7,7 @@
  */
 
 import type { TransactionHistoryEntry } from '@/lib/types/transaction';
+import { formatCurrency } from '@/lib/formatting/currency';
 
 export interface Props {
   history: TransactionHistoryEntry[];
@@ -91,8 +92,10 @@ const formatFieldValue = (field: string, value: unknown): string => {
                   <div class="mt-1 text-xs text-base-content/60">
                     {[
                       entry.newValue.type,
-                      entry.newValue.amount && entry.newValue.currency
-                        ? `${entry.newValue.currency} ${entry.newValue.amount}`
+                      (typeof entry.newValue.amount === 'string' ||
+                        typeof entry.newValue.amount === 'number') &&
+                      typeof entry.newValue.currency === 'string'
+                        ? formatCurrency(entry.newValue.amount, entry.newValue.currency)
                         : null,
                       entry.newValue.description,
                     ]
