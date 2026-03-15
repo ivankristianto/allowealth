@@ -438,6 +438,8 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           <AccountReconciliationCard
             reconciliation={reconciliation}
             periodLabel={currentMonthDisplay}
+            periodStart={new Date(selectedYear, selectedMonth - 1, 0)}
+            periodEnd={isViewingCurrentMonth ? now : periodEndDate}
           />
 
           {/* Action Buttons - after allocation, before filter */}

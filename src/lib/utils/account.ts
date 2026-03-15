@@ -449,6 +449,8 @@ export function calculateReconciliation(params: {
       income,
       expenses,
       netFlow,
+      startBalance,
+      endBalance,
       balanceChange,
       variance,
       isBalanced: Math.abs(variance) < 0.01,

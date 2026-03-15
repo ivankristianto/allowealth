@@ -212,6 +212,8 @@ export interface ReconciliationCurrencyRow {
   income: number;
   expenses: number;
   netFlow: number; // income - expenses
+  startBalance: number; // sum of asset account balances at period start
+  endBalance: number; // sum of asset account balances at period end
   balanceChange: number; // endBalance - startBalance (asset accounts only, excludes debt)
   variance: number; // balanceChange - netFlow
   isBalanced: boolean; // Math.abs(variance) < 0.01

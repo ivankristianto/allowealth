@@ -491,6 +491,8 @@ describe('calculateReconciliation', () => {
     expect(result[0].income).toBe(5000000);
     expect(result[0].expenses).toBe(2000000);
     expect(result[0].netFlow).toBe(3000000);
+    expect(result[0].startBalance).toBe(7000000);
+    expect(result[0].endBalance).toBe(10000000);
     expect(result[0].balanceChange).toBe(3000000);
     expect(result[0].variance).toBe(0);
     expect(result[0].isBalanced).toBe(true);
