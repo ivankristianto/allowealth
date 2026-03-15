@@ -116,3 +116,9 @@ Single PR with systematic file sweep:
 - **Identical DOM output**: The component renders a native `<button>` internally
 - **No client-side JS changes**: `data-*` attributes for event delegation pass through unchanged
 - **Rollback**: Single PR can be reverted cleanly if issues are found
+
+### 6. Implementation Notes
+
+- **`primary` is canonical**: Both `primary` and `accent` variants produce `btn-accent shadow-accent-glow`. Use `variant="primary"` for all migrated accent/primary buttons.
+- **Ghost variant border**: The `<Button variant="ghost">` adds `border border-base-300`, which bare `btn-ghost` does not. Spot-check ghost buttons visually after migration.
+- **Bare `btn` without variant**: Any native buttons using just `class="btn"` with no variant class need case-by-case handling — the component defaults to `variant="primary"` which adds accent styling. These should likely use `variant="ghost"` or `variant="secondary"` depending on context.
