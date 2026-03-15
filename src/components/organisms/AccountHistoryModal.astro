@@ -470,6 +470,8 @@ import Button from '@/components/atoms/Button.astro';
         }
 
         // Update timeframe buttons
+        // NOTE: baseClasses duplicates Button.astro internals because client-side JS
+        // cannot use Astro components. If Button.astro base classes change, update here too.
         if (weeklyBtn && monthlyBtn) {
           const baseClasses =
             'btn btn-sm inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent cursor-pointer rounded-lg border-0 px-4 text-xs font-bold uppercase tracking-widest';

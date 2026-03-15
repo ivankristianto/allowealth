@@ -94,19 +94,15 @@ const IconComponent = iconName ? iconMap[iconName] : null;
   {
     actionLabel && (
       <div>
-        {actionHref ? (
-          <a
-            href={actionHref}
-            class={['btn btn-accent btn-sm rounded-xl', actionClassName].filter(Boolean).join(' ')}
-            {...actionAttributes}
-          >
-            {actionLabel}
-          </a>
-        ) : (
-          <Button variant="primary" size="sm" className={actionClassName} {...actionAttributes}>
-            {actionLabel}
-          </Button>
-        )}
+        <Button
+          variant="primary"
+          size="sm"
+          href={actionHref || undefined}
+          className={actionClassName}
+          {...actionAttributes}
+        >
+          {actionLabel}
+        </Button>
       </div>
     )
   }
