@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS `passkey` (
   `transports` text,
   `aaguid` text,
   `createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+  `updatedAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
   FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 

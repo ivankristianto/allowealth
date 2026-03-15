@@ -6,6 +6,7 @@
  */
 
 import { authClient } from '@/lib/auth/client';
+import { logSecurityActivity } from '@/lib/security-activity.client';
 import { addToast } from '@/lib/stores/toastStore';
 
 let controller: AbortController | null = null;
@@ -148,6 +149,7 @@ function attachDeleteListeners(container: Element, signal: AbortSignal) {
                 confirmBtn.disabled = false;
                 return;
               }
+              await logSecurityActivity({ type: 'passkey_deleted', entityId: passkeyId });
               addToast('Passkey removed', 'success');
               await refreshPasskeyList(signal);
             } catch {
@@ -186,6 +188,11 @@ function initSecurityPasskeys() {
           }
           return;
         }
+        const createdPasskeyId =
+          result && typeof result === 'object' && 'data' in result && result.data?.id
+            ? String(result.data.id)
+            : undefined;
+        await logSecurityActivity({ type: 'passkey_created', entityId: createdPasskeyId });
         addToast('Passkey registered successfully', 'success');
         await refreshPasskeyList(signal);
       } catch (err) {

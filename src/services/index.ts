@@ -35,6 +35,7 @@ import { EmailService } from './email';
 import { EmailVerificationService } from './email-verification.service';
 import { SuperAdminService } from './super-admin.service';
 import { DiagnosticsService } from './diagnostics.service';
+import { AuditLogService } from './audit-log.service';
 
 // Re-export types and utilities
 export * from './transaction.service';
@@ -60,6 +61,8 @@ export * from './email-verification.service';
 export * from './super-admin.service';
 export * from './diagnostics.service';
 export * from './session-management.service';
+export * from './audit-log.service';
+export * from './security-activity.service';
 
 // Export singleton instances with real database
 export const categoryService = new CategoryService(db);
@@ -86,3 +89,4 @@ export const emailVerificationService = new EmailVerificationService(
 );
 export const superAdminService = new SuperAdminService(db);
 export const diagnosticsService = new DiagnosticsService(db);
+export const auditLogService = new AuditLogService(db);

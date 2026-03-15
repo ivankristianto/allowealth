@@ -151,6 +151,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
 <script>
   import QRCode from 'qrcode';
   import { authClient } from '@/lib/auth/client';
+  import { logSecurityActivity } from '@/lib/security-activity.client';
   import { addToast } from '@/lib/stores/toastStore';
 
   const initializedContainers = new WeakSet<Element>();
@@ -394,6 +395,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
             if (result.error) {
               throw result.error;
             }
+            await logSecurityActivity({ type: 'mfa_enabled' });
 
             modal.close();
             addToast('MFA enabled successfully.', 'success');

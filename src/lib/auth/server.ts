@@ -9,6 +9,7 @@ import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
+import { securityActivityService } from '@/services/security-activity.service';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
@@ -21,6 +22,7 @@ export function getSessionCookieName(): string {
 }
 
 const logger = createLogger('better-auth');
+const AUTH_LOGIN_PATHS = new Set(['/passkey/verify-authentication']);
 
 export const AUTH_RATE_LIMIT_RULES = {
   '/sign-in/email': { window: 15 * 60, max: 10 },
@@ -131,6 +133,25 @@ function createAuthInstance() {
           },
           after: async (user, context) => {
             await bootstrapAuthUser(user, context);
+          },
+        },
+      },
+      session: {
+        create: {
+          after: async (session, context) => {
+            if (
+              context?.path?.startsWith('/sign-in/') ||
+              (context?.path ? AUTH_LOGIN_PATHS.has(context.path) : false)
+            ) {
+              await securityActivityService.logEvent({ type: 'login', userId: session.userId });
+            }
+          },
+        },
+        delete: {
+          after: async (session, context) => {
+            if (context?.path === '/sign-out') {
+              await securityActivityService.logEvent({ type: 'logout', userId: session.userId });
+            }
           },
         },
       },

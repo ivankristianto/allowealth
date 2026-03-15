@@ -13,6 +13,7 @@ import { UserServiceError, UserMetaServiceError } from '@/services/service-error
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { and, eq } from 'drizzle-orm';
 import { email, maxLength, minLength, object, optional, pipe, string } from 'valibot';
+import { securityActivityService } from '@/services/security-activity.service';
 
 /**
  * Schema for PUT request body - all profile fields in one request
@@ -122,6 +123,24 @@ export const PUT: APIRoute = async (context) => {
       }
     }
 
+    // Track what changed for audit log
+    const oldValues: Record<string, unknown> = {};
+    const newValues: Record<string, unknown> = {};
+    let hasProfileChanges = false;
+
+    if (name !== currentUser.name) {
+      oldValues.name = currentUser.name;
+      newValues.name = name;
+      hasProfileChanges = true;
+    }
+
+    const currentSettings = await userMetaService.getUserSettings(auth.userId);
+    if (phone !== undefined && phone !== currentSettings.phone) {
+      oldValues.phone = currentSettings.phone;
+      newValues.phone = phone;
+      hasProfileChanges = true;
+    }
+
     // Update user table (name only; email changes are verification-driven)
     const user = await userService.updateProfile(auth.userId, { name });
 
@@ -133,6 +152,26 @@ export const PUT: APIRoute = async (context) => {
     }
 
     await Promise.all(metaPromises);
+
+    // Log profile update if something changed
+    if (hasProfileChanges) {
+      await securityActivityService.logEvent({
+        type: 'profile_updated',
+        userId: auth.userId,
+        oldValue: oldValues,
+        newValue: newValues,
+      });
+    }
+
+    // Log email change request
+    if (pendingEmail) {
+      await securityActivityService.logEvent({
+        type: 'email_change_requested',
+        userId: auth.userId,
+        oldValue: { email: currentUser.email },
+        newValue: { pendingEmail },
+      });
+    }
 
     // Get updated settings
     const settings = await userMetaService.getUserSettings(auth.userId);

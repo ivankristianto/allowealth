@@ -8,6 +8,13 @@ setTestEnv({
   BETTER_AUTH_SECRET: 'test-secret-for-sessions-test',
 });
 
+const logEventMock = mock(() => Promise.resolve());
+(mock as any).module('@/services/security-activity.service', () => ({
+  securityActivityService: {
+    logEvent: logEventMock,
+  },
+}));
+
 let GET: any;
 let DELETE: any;
 let POST: any;
@@ -79,6 +86,7 @@ describe('API /api/user/sessions', () => {
 
   beforeEach(() => {
     clearRateLimitStore();
+    logEventMock.mockClear();
     (authApi as any).listSessions = mock(() => Promise.resolve([]));
     (authApi as any).revokeSession = mock(() => Promise.resolve({ status: true }));
     (authApi as any).revokeOtherSessions = mock(() => Promise.resolve({ status: true }));
@@ -168,6 +176,11 @@ describe('API /api/user/sessions', () => {
 
       expect(response.status).toBe(200);
       expect(payload.success).toBe(true);
+      expect(logEventMock).toHaveBeenCalledWith({
+        type: 'session_revoked',
+        userId: 'user-1',
+        entityId: 'sess-1',
+      });
     });
 
     it('rate limits repeated revoke requests', async () => {
@@ -210,6 +223,10 @@ describe('API /api/user/sessions', () => {
 
       expect(response.status).toBe(200);
       expect(payload.success).toBe(true);
+      expect(logEventMock).toHaveBeenCalledWith({
+        type: 'other_sessions_revoked',
+        userId: 'user-1',
+      });
     });
 
     it('returns 500 when revokeOtherSessions fails', async () => {

@@ -1,4 +1,5 @@
 import { authClient } from '@/lib/auth/client';
+import { logSecurityActivity } from '@/lib/security-activity.client';
 import { addToast } from '@/lib/stores/toastStore';
 
 function requestPassword(
@@ -66,6 +67,7 @@ function initSecurityMfaClient() {
         if (result.error) {
           throw result.error;
         }
+        await logSecurityActivity({ type: 'mfa_disabled' });
 
         addToast('MFA disabled successfully.', 'success');
         window.setTimeout(() => window.location.reload(), 300);
@@ -90,6 +92,7 @@ function initSecurityMfaClient() {
         if (!Array.isArray(backupCodes)) {
           throw new Error('Backup codes not returned by server');
         }
+        await logSecurityActivity({ type: 'mfa_backup_codes_regenerated' });
 
         addToast('Backup codes regenerated.', 'success');
         document.dispatchEvent(

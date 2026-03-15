@@ -18,7 +18,9 @@ export const auditLogs = sqliteTable(
     entity_id: text('entity_id'),
     old_value: text('old_value'),
     new_value: text('new_value'),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteTimestampNow)
+      .notNull(),
   },
   (table) => [
     index('audit_logs_workspace_id_idx').on(table.workspace_id),
