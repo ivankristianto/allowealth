@@ -105,7 +105,7 @@ if (appliedFilters.categoryId) activeFilterLabels.push('Filtered by category');
           ) : (
             transactions.map((txn) => (
               <tr class="hover:bg-base-200/50 transition-colors">
-                <td class="text-base-content/60 text-sm tabular-nums whitespace-nowrap">
+                <td class="text-base-content/60 text-sm whitespace-nowrap">
                   {formatDate(txn.transaction_date)}
                 </td>
                 <td>
@@ -126,7 +126,7 @@ if (appliedFilters.categoryId) activeFilterLabels.push('Filtered by category');
                     {txn.income_source_type}
                   </span>
                 </td>
-                <td class="text-right font-medium text-success tabular-nums">
+                <td class="text-right font-medium text-success">
                   {formatCurrency(txn.amount, currency)}
                 </td>
                 <td class="hidden sm:table-cell text-base-content/60 text-sm">

@@ -129,7 +129,7 @@ const getMemberColor = (name: string) => {
                           style={`width: ${expenseShare}%`}
                         />
                       </div>
-                      <span class="text-xs font-medium text-base-content/60 w-10 text-right tabular-nums">
+                      <span class="text-xs font-medium text-base-content/60 w-10 text-right">
                         {expenseShare.toFixed(0)}%
                       </span>
                     </div>
@@ -140,7 +140,7 @@ const getMemberColor = (name: string) => {
                     {formatCurrency(net, currency)}
                   </td>
                   <td class="text-right hidden sm:table-cell">
-                    <span class="text-base-content/60 tabular-nums">{row.transactionCount}</span>
+                    <span class="text-base-content/60">{row.transactionCount}</span>
                   </td>
                   <td class="text-right w-8">
                     <a
@@ -181,7 +181,7 @@ const getMemberColor = (name: string) => {
               <td class={`text-right font-bold ${totalNet >= 0 ? 'text-success' : 'text-error'}`}>
                 {formatCurrency(totalNet, currency)}
               </td>
-              <td class="text-right hidden sm:table-cell font-bold tabular-nums">{totals.count}</td>
+              <td class="text-right hidden sm:table-cell font-bold">{totals.count}</td>
               <td />
             </tr>
           </tfoot>

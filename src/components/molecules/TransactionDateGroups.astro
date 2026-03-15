@@ -107,10 +107,7 @@ const isCompact = variant === 'compact';
             </div>
             {showCount && group.transactions.length > 0 && (
               <span
-                class:list={[
-                  'font-medium text-base-content/40 tabular-nums',
-                  isCompact ? 'text-xs' : 'text-xs',
-                ]}
+                class:list={['font-medium text-base-content/40', isCompact ? 'text-xs' : 'text-xs']}
               >
                 {group.transactions.length}{' '}
                 {group.transactions.length === 1 ? 'transaction' : 'transactions'}
