@@ -1,5 +1,6 @@
 ---
 import { LayoutGrid, Table as TableIcon } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import SearchInput from '@/components/atoms/SearchInput.astro';
 import {
   BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
@@ -57,24 +58,28 @@ const viewToggleClass = [
     </select>
 
     <div class={viewToggleClass} data-view-toggle>
-      <button
+      <Button
         type="button"
-        class="btn btn-sm btn-ghost btn-active h-full min-h-0 flex-1 rounded-lg"
+        variant="ghost"
+        size="sm"
+        className="btn-active h-full min-h-0 flex-1 rounded-lg border-0"
         data-view-mode="card"
         aria-label="Card view"
         aria-pressed="true"
       >
         <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class="btn btn-sm btn-ghost h-full min-h-0 flex-1 rounded-lg"
+        variant="ghost"
+        size="sm"
+        className="h-full min-h-0 flex-1 rounded-lg border-0"
         data-view-mode="table"
         aria-label="Table view"
         aria-pressed="false"
       >
         <TableIcon size={16} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
     </div>
   </div>
 </div>

@@ -21,6 +21,7 @@
  */
 
 import { ShoppingCart, CircleDollarSign, Plus } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import IconBadge from '../atoms/IconBadge.astro';
 
 export interface QuickAction {
@@ -89,13 +90,14 @@ const { actions = defaultActions, className = '' } = Astro.props;
       }
 
       return (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           data-quick-action={action.variant}
           data-testid={
             action.variant === 'expense' ? 'quick-action-expense' : 'quick-action-income'
           }
-          class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-card-lg border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 cursor-pointer text-left"
+          className="flex-1 justify-center gap-5 px-8 py-7 min-h-[44px] rounded-card-lg bg-base-100 border-base-300 text-base-content shadow-sm hover:bg-base-200 hover:shadow-md hover:scale-[1.02] group relative overflow-hidden text-left"
           aria-label={action.ariaLabel}
         >
           <IconBadge
@@ -106,7 +108,7 @@ const { actions = defaultActions, className = '' } = Astro.props;
             <IconComponent size={24} class="stroke-current" aria-hidden="true" />
           </IconBadge>
           <span class="text-lg tracking-tight font-bold leading-none">{action.label}</span>
-        </button>
+        </Button>
       );
     })
   }
