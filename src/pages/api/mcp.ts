@@ -111,12 +111,12 @@ async function dispatchMcpMessage(
  * and dispatches JSON-RPC messages to the MCP tool handlers.
  */
 export const POST: APIRoute = async (context) => {
-  const apiKey = extractBearerToken(context.request);
-  if (!apiKey) {
+  const accessToken = extractBearerToken(context.request);
+  if (!accessToken) {
     return errorResponse(401, 'Missing Authorization header. Use: Bearer <oauth-token>');
   }
 
-  const auth = await validateMcpToken(apiKey);
+  const auth = await validateMcpToken(accessToken);
   if (!auth) {
     return errorResponse(401, 'Invalid or expired OAuth token');
   }

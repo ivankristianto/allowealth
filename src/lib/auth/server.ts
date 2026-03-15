@@ -43,7 +43,9 @@ export function getTrustedOrigins(): string[] {
     trustedOrigins.push(getDevelopmentBaseURL());
   }
 
-  // Allow MCP subdomain routing
+  // Allow MCP subdomain routing. PUBLIC_URL must be the apex domain
+  // (e.g. https://allowealth.com), not a subdomain, so that
+  // https://*.allowealth.com covers mcp.allowealth.com et al.
   const publicUrl = getEnv('PUBLIC_URL');
   if (publicUrl) {
     const url = new URL(publicUrl);
