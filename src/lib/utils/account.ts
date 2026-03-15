@@ -430,11 +430,17 @@ export function calculateReconciliation(params: {
   return params.currencies.map((currency) => {
     const startBalance = params.startSnapshots
       .filter((snapshot) => snapshot.currency === currency && isAsset(snapshot))
-      .reduce((sum, snapshot) => sum + parseFloat(snapshot.balance ?? '0'), 0);
+      .reduce((sum, snapshot) => {
+        const bal = parseFloat(snapshot.balance || '0');
+        return sum + (isNaN(bal) ? 0 : bal);
+      }, 0);
 
     const endBalance = params.endAccounts
       .filter((account) => account.currency === currency && isAsset(account))
-      .reduce((sum, account) => sum + parseFloat(account.balance ?? '0'), 0);
+      .reduce((sum, account) => {
+        const bal = parseFloat(account.balance || '0');
+        return sum + (isNaN(bal) ? 0 : bal);
+      }, 0);
 
     const summary = params.transactionSummaries.find((item) => item.currency === currency);
     const income = summary?.income ?? 0;

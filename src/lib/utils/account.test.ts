@@ -600,4 +600,20 @@ describe('calculateReconciliation', () => {
 
     expect(result[0].isBalanced).toBe(true);
   });
+
+  it('treats empty or invalid balance strings as 0 without producing NaN', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '')],
+      endAccounts: [makeSnapshot('IDR', 'invalid')],
+      transactionSummaries: [{ currency: 'IDR', income: 0, expenses: 0 }],
+    });
+
+    expect(result[0].startBalance).toBe(0);
+    expect(result[0].endBalance).toBe(0);
+    expect(result[0].balanceChange).toBe(0);
+    expect(result[0].variance).toBe(0);
+    expect(Number.isNaN(result[0].variance)).toBe(false);
+    expect(result[0].isBalanced).toBe(true);
+  });
 });

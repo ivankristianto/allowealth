@@ -658,10 +658,12 @@ export class AccountService {
     perf?: PerfCollector
   ) {
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    const normalizedYear = endOfMonth.getFullYear();
+    const normalizedMonth = endOfMonth.getMonth() + 1;
     const cacheKey = CacheKeys.accountSnapshot(
       workspaceId,
-      year,
-      month,
+      normalizedYear,
+      normalizedMonth,
       hashFilters(filters ?? {})
     );
 

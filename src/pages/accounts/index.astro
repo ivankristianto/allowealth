@@ -303,7 +303,7 @@ const reconciliation =
                     currency,
                     account_ids: reconciliationAccountIds,
                     start_date: periodStartDate,
-                    end_date: periodEndDate,
+                    end_date: isViewingCurrentMonth ? now : periodEndDate,
                   },
                   Astro.locals.perf
                 )
