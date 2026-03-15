@@ -24,6 +24,8 @@ Add `font-variant-numeric: tabular-nums` to the `html` rule in `globals.css`. In
 
 **`Currency.astro` change:** Replace `font-mono font-medium` with `font-medium`. The global `tabular-nums` rule handles digit alignment; no per-component class needed.
 
+**`Percentage.astro` change:** Same treatment — replace `font-mono font-medium` with `font-medium` in `src/components/atoms/Percentage.astro`. This component displays percentages with the same monospace pattern and must match.
+
 **Redundant class cleanup:** Remove `tabular-nums` from these 20 files (the global rule makes them unnecessary):
 
 - `src/pages/accounts/[id].astro`
@@ -51,27 +53,27 @@ Add `font-variant-numeric: tabular-nums` to the `html` rule in `globals.css`. In
 
 The centralized formatter (`src/lib/formatting/currency-core.ts`) produces the correct format: `-Rp30.429.572,00`. Five components bypass it.
 
-#### Fix 1: BudgetImportModal.astro (line ~282)
+#### Fix 1: src/components/organisms/BudgetImportModal.astro (line ~282)
 
-**Before:** CSV preview renders raw `budget_amount` — displays `50000000`.
-**After:** Pass through `formatCurrency(parseFloat(row.budget_amount), currency)`.
+**Before:** CSV preview renders raw `budget_amount` with `class="text-right font-mono"` — displays `50000000` in SF Mono.
+**After:** Pass through `formatCurrency(parseFloat(row.budget_amount), currency)` and remove `font-mono` from the `<td>` class. Currency value is read from the `[data-import-currency]` hidden input in client scope (not the Astro prop).
 
-#### Fix 2: TransactionHistoryPartial.astro (line ~95)
+#### Fix 2: src/components/partials/TransactionHistoryPartial.astro (line ~95)
 
 **Before:** Audit log concatenates currency code and raw amount — displays `IDR 50000000`.
 **After:** Use `formatCurrency(entry.newValue.amount, entry.newValue.currency)`.
 
-#### Fix 3: TransactionCard.astro (line ~191)
+#### Fix 3: src/components/molecules/TransactionCard.astro (line ~191)
 
 **Before:** `aria-label` includes raw amount and currency code — screen readers announce `2940175 IDR`.
 **After:** Use `formatCurrency(amount, transaction?.currency)` so screen readers announce `Rp2.940.175,00`.
 
-#### Fix 4: RecurringPage.client.ts (line ~415)
+#### Fix 4: src/components/organisms/RecurringPage.client.ts (line ~415)
 
 **Before:** Uses `formatAmountForDisplay()` (number-only, no symbol) then appends raw currency code — displays `Original: 5.000.000 IDR`.
 **After:** Import `formatCurrency` from `currency-client.ts` to produce `Original: Rp5.000.000,00`.
 
-#### Fix 5: RecurringBillsWidget.client.ts (line ~99)
+#### Fix 5: src/components/organisms/RecurringBillsWidget.client.ts (line ~99)
 
 Same pattern as Fix 4. Replace `formatAmountForDisplay()` + currency code with `formatCurrency()`.
 
