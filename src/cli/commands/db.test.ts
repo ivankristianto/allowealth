@@ -39,4 +39,45 @@ describe('db command', () => {
     expect(command.subCommands.restore.args['no-backup']).toBeDefined();
     expect(command.subCommands.restore.args.force).toBeDefined();
   });
+
+  it('exposes prune subcommand', () => {
+    const command = dbCommand as unknown as {
+      subCommands: Record<string, unknown>;
+    };
+
+    expect(command.subCommands.prune).toBeDefined();
+  });
+
+  it('prune command exposes audit-logs subcommand', () => {
+    const command = dbCommand as unknown as {
+      subCommands: {
+        prune: {
+          subCommands: Record<string, unknown>;
+        };
+      };
+    };
+
+    expect(command.subCommands.prune.subCommands['audit-logs']).toBeDefined();
+  });
+
+  it('prune audit-logs command includes required flags', () => {
+    const command = dbCommand as unknown as {
+      subCommands: {
+        prune: {
+          subCommands: {
+            'audit-logs': {
+              args: Record<string, unknown>;
+            };
+          };
+        };
+      };
+    };
+
+    const auditLogsArgs = command.subCommands.prune.subCommands['audit-logs'].args;
+
+    expect(auditLogsArgs.target).toBeDefined();
+    expect(auditLogsArgs.days).toBeDefined();
+    expect(auditLogsArgs['dry-run']).toBeDefined();
+    expect(auditLogsArgs.force).toBeDefined();
+  });
 });

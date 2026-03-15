@@ -316,6 +316,7 @@ Aliases provide shorter commands that map to resource operations.
 | `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB           |
 | `bun run aw db backup`                    | Create backup file for the selected target  |
 | `bun run aw db restore`                   | Safely restore from local/cloud backup      |
+| `bun run aw db prune audit-logs`          | Delete audit log entries older than 30 days |
 
 #### Database Drop Command
 
@@ -368,6 +369,41 @@ bun run aw db restore --target d1 --file backups/d1-2026-03-04T16-30-00.sql --fo
 | `sqlite`   | `.db`          | `.db`, `.sql` |
 | `d1`       | `.sql`         | `.sql`        |
 | `d1-local` | `.sql`         | `.sql`        |
+
+#### Audit Log Pruning
+
+The `aw db prune audit-logs` command deletes audit log entries older than a configurable retention period to prevent unlimited database growth.
+
+```bash
+# Preview entries to be deleted (no changes made)
+bun run aw db prune audit-logs --dry-run
+
+# Delete entries older than the default 30 days (with confirmation prompt)
+bun run aw db prune audit-logs
+
+# Delete entries older than 90 days
+bun run aw db prune audit-logs --days 90
+
+# Delete without confirmation prompt
+bun run aw db prune audit-logs --force
+
+# Use AUDIT_LOG_RETENTION_DAYS env var to set the default retention period
+AUDIT_LOG_RETENTION_DAYS=60 bun run aw db prune audit-logs
+```
+
+**Options:**
+
+| Flag        | Description                                                                       | Default                          |
+| ----------- | --------------------------------------------------------------------------------- | -------------------------------- |
+| `--days`    | Retention period in days. Minimum 1. Overrides `AUDIT_LOG_RETENTION_DAYS` env var | `AUDIT_LOG_RETENTION_DAYS` or 30 |
+| `--dry-run` | Preview deletions without executing                                               | `false`                          |
+| `--force`   | Skip confirmation prompt                                                          | `false`                          |
+
+**Behavior:**
+
+- Applies to all workspaces (no workspace filter)
+- Shows count of entries to be deleted before confirming
+- `--dry-run` prints the count but makes no changes
 
 ### Demo
 
