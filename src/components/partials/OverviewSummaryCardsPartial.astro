@@ -37,7 +37,7 @@ const expensesHref = buildReportUrl(REPORT_SECTION_PATHS.expenses, state);
         <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50"
           >Income</span
         >
-        <p class="text-lg font-bold text-success tabular-nums">
+        <p class="text-lg font-bold text-success">
           {formatCurrency(totalIncome, currency)}
         </p>
       </div>
@@ -48,7 +48,7 @@ const expensesHref = buildReportUrl(REPORT_SECTION_PATHS.expenses, state);
         <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50"
           >Spending</span
         >
-        <p class="text-lg font-bold text-error tabular-nums">
+        <p class="text-lg font-bold text-error">
           {formatCurrency(totalExpenses, currency)}
         </p>
       </div>
@@ -58,12 +58,7 @@ const expensesHref = buildReportUrl(REPORT_SECTION_PATHS.expenses, state);
       <div class="py-3 sm:py-0" data-testid="reports-overview-savings-card">
         <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Net</span
         >
-        <p
-          class:list={[
-            'text-lg font-bold tabular-nums',
-            isNetPositive ? 'text-accent' : 'text-error',
-          ]}
-        >
+        <p class:list={['text-lg font-bold', isNetPositive ? 'text-accent' : 'text-error']}>
           {isNetPositive ? '+' : ''}{formatCurrency(netSavings, currency)}
         </p>
       </div>

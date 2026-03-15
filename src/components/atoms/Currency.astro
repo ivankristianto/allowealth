@@ -54,12 +54,7 @@ if (showSign && amount !== 0) {
   formattedAmount = sign + formattedAmount;
 }
 
-const currencyClass = [
-  'font-mono font-medium',
-  sizeClasses[size],
-  variantClasses[variant],
-  className,
-]
+const currencyClass = ['font-medium', sizeClasses[size], variantClasses[variant], className]
   .filter(Boolean)
   .join(' ');
 ---

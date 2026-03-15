@@ -64,12 +64,7 @@ if (showSign && value !== 0) {
   formattedValue = sign + formattedValue;
 }
 
-const percentageClass = [
-  'font-mono font-medium',
-  sizeClasses[size],
-  variantClasses[colorVariant],
-  className,
-]
+const percentageClass = ['font-medium', sizeClasses[size], variantClasses[colorVariant], className]
   .filter(Boolean)
   .join(' ');
 

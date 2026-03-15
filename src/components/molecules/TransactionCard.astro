@@ -14,6 +14,7 @@
 
 import Currency from '../atoms/Currency.astro';
 import CategoryIcon from '../atoms/CategoryIcon.astro';
+import { formatCurrency } from '@/lib/formatting/currency';
 import {
   CreditCard,
   Ellipsis,
@@ -188,7 +189,7 @@ const cardClasses = [
       class={cardClasses}
       data-transaction-card
       data-transaction-id={transaction?.id}
-      aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction?.currency}`}
+      aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${formatCurrency(amount, transaction?.currency)}`}
     >
       {/* Mobile Layout (2-row compact) - shown below @lg container width */}
       <div class="@lg:hidden">

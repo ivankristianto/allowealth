@@ -173,7 +173,7 @@ const queueRows = occurrences.map((occurrence) => {
                     </td>
                     <td>
                       <div class="space-y-1">
-                        <p class="text-sm font-semibold tabular-nums">{dueLabel}</p>
+                        <p class="text-sm font-semibold">{dueLabel}</p>
                         <p
                           class:list={[
                             'text-xs font-semibold',
@@ -191,7 +191,7 @@ const queueRows = occurrences.map((occurrence) => {
                     <td>
                       <p
                         class:list={[
-                          'text-sm font-bold tabular-nums',
+                          'text-sm font-bold',
                           isExpense ? 'text-error' : 'text-success',
                         ]}
                       >

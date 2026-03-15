@@ -87,7 +87,7 @@ const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-e
     </div>
 
     <!-- Hero value -->
-    <p class="text-2xl sm:text-3xl font-bold text-success tabular-nums mt-1">
+    <p class="text-2xl sm:text-3xl font-bold text-success mt-1">
       {formatCurrency(totalIncome, currency)}
     </p>
 
@@ -102,7 +102,7 @@ const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-e
               <div class="flex items-center gap-2">
                 <div class:list={['w-2.5 h-2.5 rounded-full shrink-0', s.bgClass]} />
                 <span class="text-xs text-base-content/60 font-medium">{s.label}</span>
-                <span class="text-xs font-bold text-base-content tabular-nums ml-auto">
+                <span class="text-xs font-bold text-base-content ml-auto">
                   {s.percentage.toFixed(1)}%
                 </span>
               </div>

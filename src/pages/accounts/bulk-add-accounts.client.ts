@@ -165,7 +165,7 @@ export function initBulkAddAccounts() {
     balanceInput.step = '0.01';
     balanceInput.min = '0';
     balanceInput.placeholder = '0';
-    balanceInput.className = `${inputBaseClass} text-right tabular-nums`;
+    balanceInput.className = `${inputBaseClass} text-right`;
     balanceInput.dataset.field = 'balance';
     tdBalance.appendChild(balanceInput);
     tr.appendChild(tdBalance);
