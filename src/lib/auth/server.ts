@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import type { BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { captcha, twoFactor } from 'better-auth/plugins';
+import { captcha, mcp, twoFactor } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
@@ -10,10 +10,12 @@ import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 import { securityActivityService } from '@/services/security-activity.service';
+import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
 const AUTH_SESSION_COOKIE_BASE = 'better-auth.session_token';
+const AUTH_LOGIN_PATHS = new Set(['/passkey/verify-authentication']);
 
 export function getSessionCookieName(): string {
   const baseURL = getAuthBaseURL();
@@ -22,7 +24,6 @@ export function getSessionCookieName(): string {
 }
 
 const logger = createLogger('better-auth');
-const AUTH_LOGIN_PATHS = new Set(['/passkey/verify-authentication']);
 
 export const AUTH_RATE_LIMIT_RULES = {
   '/sign-in/email': { window: 15 * 60, max: 10 },
@@ -31,15 +32,7 @@ export const AUTH_RATE_LIMIT_RULES = {
   '/sign-in/social': { window: 15 * 60, max: 10 },
 } as const;
 
-function getDevelopmentBaseURL(): string {
-  const devHost = getEnv('DEV_HOST');
-  const port = getEnv('PORT') ?? '4321';
-  return `http://${devHost || 'localhost'}:${port}`;
-}
-
-export function getAuthBaseURL(): string {
-  return getEnv('PUBLIC_URL') ?? getDevelopmentBaseURL();
-}
+export { getAuthBaseURL };
 
 export function getTrustedOrigins(): string[] {
   const nodeEnv = getEnv('NODE_ENV');
@@ -48,6 +41,15 @@ export function getTrustedOrigins(): string[] {
 
   if (!isProduction && getEnv('DEV_HOST')) {
     trustedOrigins.push(getDevelopmentBaseURL());
+  }
+
+  // Allow MCP subdomain routing. PUBLIC_URL must be the apex domain
+  // (e.g. https://allowealth.com), not a subdomain, so that
+  // https://*.allowealth.com covers mcp.allowealth.com et al.
+  const publicUrl = getEnv('PUBLIC_URL');
+  if (publicUrl) {
+    const url = new URL(publicUrl);
+    trustedOrigins.push(`https://*.${url.hostname}`);
   }
 
   return Array.from(new Set(trustedOrigins));
@@ -91,13 +93,26 @@ function createAuthInstance() {
   }
 
   const authPlugins: Array<
-    ReturnType<typeof twoFactor> | ReturnType<typeof captcha> | ReturnType<typeof passkey>
+    | ReturnType<typeof twoFactor>
+    | ReturnType<typeof captcha>
+    | ReturnType<typeof passkey>
+    | ReturnType<typeof mcp>
   > = [
     twoFactor(),
     passkey({
       rpID: getEnv('RP_ID') ?? new URL(getAuthBaseURL()).hostname,
       rpName: getEnv('RP_NAME') ?? 'Allowealth',
       origin: getAuthBaseURL(),
+    }),
+    mcp({
+      loginPage: '/login',
+      oidcConfig: {
+        loginPage: '/login',
+        consentPage: '/oauth/authorize',
+        accessTokenExpiresIn: 86_400,
+        refreshTokenExpiresIn: 7_776_000,
+        scopes: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
+      },
     }),
   ];
   const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);

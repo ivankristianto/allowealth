@@ -34,8 +34,8 @@ export type SecurityActivityType =
   | 'account_unlinked'
   | 'session_revoked'
   | 'other_sessions_revoked'
-  | 'api_key_created'
-  | 'api_key_deleted'
+  | 'mcp_token_created'
+  | 'mcp_token_revoked'
   | ClientSecurityActivityType;
 
 export interface SecurityActivityInput {
@@ -64,8 +64,8 @@ const EVENT_DEFINITIONS: Record<
   account_unlinked: { action: 'account_unlink', entityType: 'user' },
   session_revoked: { action: 'session_revoke', entityType: 'session' },
   other_sessions_revoked: { action: 'session_revoke_other', entityType: 'session' },
-  api_key_created: { action: 'create', entityType: 'api_key' },
-  api_key_deleted: { action: 'delete', entityType: 'api_key' },
+  mcp_token_created: { action: 'mcp_token_create', entityType: 'mcp_token' },
+  mcp_token_revoked: { action: 'mcp_token_revoke', entityType: 'mcp_token' },
   mfa_enabled: { action: 'mfa_enable', entityType: 'user_mfa' },
   mfa_disabled: { action: 'mfa_disable', entityType: 'user_mfa' },
   mfa_backup_codes_regenerated: { action: 'mfa_backup_regenerate', entityType: 'user_mfa' },

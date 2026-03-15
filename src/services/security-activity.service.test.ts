@@ -37,12 +37,12 @@ describe('SecurityActivityService', () => {
     });
   });
 
-  test('logs passkey and API key activity as entity-specific audit entries', async () => {
+  test('logs passkey and MCP token activity as entity-specific audit entries', async () => {
     const writeAuditEvent = mock(() => Promise.resolve());
     const service = new SecurityActivityService(createMockDb('ws-1'), writeAuditEvent);
 
     await service.logEvent({ type: 'passkey_created', userId: 'user-1', entityId: 'pk-1' });
-    await service.logEvent({ type: 'api_key_deleted', userId: 'user-1', entityId: 'key-1' });
+    await service.logEvent({ type: 'mcp_token_revoked', userId: 'user-1', entityId: 'tok-1' });
 
     const auditCalls = (writeAuditEvent as any).mock.calls as Array<[Record<string, unknown>]>;
 
@@ -52,9 +52,9 @@ describe('SecurityActivityService', () => {
       entityId: 'pk-1',
     });
     expect(auditCalls[1]?.[0]).toMatchObject({
-      action: 'delete',
-      entityType: 'api_key',
-      entityId: 'key-1',
+      action: 'mcp_token_revoke',
+      entityType: 'mcp_token',
+      entityId: 'tok-1',
     });
   });
 

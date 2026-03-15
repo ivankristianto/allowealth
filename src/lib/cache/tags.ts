@@ -28,5 +28,5 @@ export const CacheTags = {
   ACCOUNTS: 'accounts' as const,
   LAYOUT: 'layout' as const,
   ACCOUNT_CATEGORIES: 'account-categories' as const,
-  API_KEYS: 'api_keys' as const,
+  MCP_TOKENS: 'mcp_tokens' as const,
 } as const;

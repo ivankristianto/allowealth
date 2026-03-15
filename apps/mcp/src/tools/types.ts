@@ -8,7 +8,7 @@ export interface ToolContext {
   auth: {
     workspaceId: string;
     userId: string;
-    apiKeyId: string;
+    tokenId: string;
   };
   services: {
     transaction: TransactionService;

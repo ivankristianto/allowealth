@@ -9,7 +9,7 @@ Model Context Protocol (MCP) server that lets AI assistants (Claude Desktop, Cla
 
 - [Bun](https://bun.sh/) 1.x installed
 - A running Allowealth instance with a database
-- An API key (created via CLI or Settings > Security in the web app)
+- Seeded MCP OAuth clients (`bun run aw db seed-oauth-clients`)
 
 ## Setup
 
@@ -22,23 +22,21 @@ bun install
 cd mcp-server && bun install && cd ..
 ```
 
-### 2. Create an API key
+### 2. Connect an MCP client
 
-**Option A: Via CLI**
+1. Seed the built-in OAuth clients:
 
 ```bash
-bun run cli:list-workspaces
-bun run cli:create-api-key -- \
-  --workspace-id <your-workspace-id> \
-  --user-id <your-user-id> \
-  --name "Claude Desktop"
+bun run aw db seed-oauth-clients
 ```
 
-**Option B: Via web UI**
+2. Start Allowealth and sign in.
+3. Open **Security → Connected Apps**.
+4. Click **Connect** for your client.
+5. Approve the OAuth consent screen.
+6. Copy the one-time access token shown on `/oauth/display-token`.
 
-Go to **Settings > Security > API Keys** and click **Generate New Key**.
-
-Save the displayed key — it is shown only once.
+Use that token as `ALLOWEALTH_ACCESS_TOKEN` for stdio clients or as the Bearer token for HTTP clients.
 
 ### 3. Configure your MCP client
 
@@ -55,9 +53,9 @@ Use this when the MCP client runs on the same machine as the Allowealth database
   "mcpServers": {
     "allowealth": {
       "command": "bun",
-      "args": ["run", "/absolute/path/to/allowealth/mcp-server/src/index.ts"],
+      "args": ["run", "/absolute/path/to/allowealth/apps/mcp/src/index.ts"],
       "env": {
-        "ALLOWEALTH_API_KEY": "aw_your_api_key_here"
+        "ALLOWEALTH_ACCESS_TOKEN": "your_copied_access_token"
       }
     }
   }
@@ -71,9 +69,9 @@ Use this when the MCP client runs on the same machine as the Allowealth database
   "mcpServers": {
     "allowealth": {
       "command": "bun",
-      "args": ["run", "/absolute/path/to/allowealth/mcp-server/src/index.ts"],
+      "args": ["run", "/absolute/path/to/allowealth/apps/mcp/src/index.ts"],
       "env": {
-        "ALLOWEALTH_API_KEY": "aw_your_api_key_here"
+        "ALLOWEALTH_ACCESS_TOKEN": "your_copied_access_token"
       }
     }
   }
@@ -94,7 +92,7 @@ The HTTP endpoint is at `/api/mcp` on your deployed Allowealth instance.
     "allowealth": {
       "url": "https://your-allowealth-domain.com/api/mcp",
       "headers": {
-        "Authorization": "Bearer aw_your_api_key_here"
+        "Authorization": "Bearer your_copied_access_token"
       }
     }
   }
@@ -106,19 +104,19 @@ The HTTP endpoint is at `/api/mcp` on your deployed Allowealth instance.
 ```bash
 # Initialize
 curl -X POST https://your-allowealth-domain.com/api/mcp \
-  -H "Authorization: Bearer aw_your_api_key_here" \
+  -H "Authorization: Bearer your_copied_access_token" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 
 # List tools
 curl -X POST https://your-allowealth-domain.com/api/mcp \
-  -H "Authorization: Bearer aw_your_api_key_here" \
+  -H "Authorization: Bearer your_copied_access_token" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 
 # Call a tool
 curl -X POST https://your-allowealth-domain.com/api/mcp \
-  -H "Authorization: Bearer aw_your_api_key_here" \
+  -H "Authorization: Bearer your_copied_access_token" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_dashboard","arguments":{}}}'
 ```
@@ -161,11 +159,11 @@ The AI will call the appropriate tools automatically. Category and asset names a
 
 ## Security
 
-- API keys are hashed with PBKDF2-SHA256 (100k iterations) before storage
-- Keys are verified with constant-time comparison
-- Revoked or expired keys are checked on every tool call (stdio) and on cache miss (HTTP)
-- HTTP auth results are cached for 5 minutes to avoid PBKDF2 on every request; cache is invalidated immediately on key revocation
-- The plain key is shown only once at creation time
+- OAuth 2.0 is provided by the better-auth `mcp` plugin
+- Tokens are stored in `oauthApplication`, `oauthAccessToken`, and `oauthConsent`
+- Connected Apps only shows the access token once, on the token display page
+- Revoked or expired tokens are checked on every tool call (stdio) and on cache miss (HTTP)
+- HTTP auth results are cached for 5 minutes, and cache is invalidated immediately on revocation
 - Only POST requests are accepted on the HTTP endpoint
 
 ## Running Manually (stdio)
@@ -178,13 +176,11 @@ bun run mcp:start
 bun run mcp:start:prod
 ```
 
-## Revoking an API Key
+## Revoking Access
 
-**Via web UI:** Go to **Settings > Security > API Keys** and click the revoke button next to the key.
+Go to **Security → Connected Apps** and click **Revoke** next to the client you want to disconnect.
 
-**Via CLI:** Currently done via database. Future CLI support planned.
-
-Revoked keys take effect immediately for both stdio (checked per tool call) and HTTP (cache invalidated on revocation).
+Revoked tokens take effect immediately for both stdio (checked per tool call) and HTTP (cache invalidated on revocation).
 
 ## Architecture
 
@@ -200,7 +196,7 @@ Tool Layer (shared)
        │
   ┌────┴────────────┐  ┌──────────────────────────┐
   │ stdio entry      │  │ HTTP entry                │
-  │ mcp-server/      │  │ src/pages/api/mcp.ts      │
+  │ apps/mcp/        │  │ src/pages/api/mcp.ts      │
   │ src/index.ts     │  │                           │
   │                  │  │ Auth: Bearer token         │
   │ Auth: env var    │  │ DB: per-request (MW)       │

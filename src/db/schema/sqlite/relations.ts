@@ -26,7 +26,6 @@ import { accountSnapshots } from './account-snapshots';
 import { accountSnapshotItems } from './account-snapshot-items';
 import { budgets } from './budgets';
 import { auditLogs } from './audit-logs';
-import { apiKeys } from './api-keys';
 import { oauthAccounts } from './oauth-accounts';
 
 // Better Auth relations
@@ -84,7 +83,6 @@ export const workspacesRelations = relations(workspaces, ({ many }) => ({
   accountUpdateReminders: many(accountUpdateReminders),
   budgets: many(budgets),
   auditLogs: many(auditLogs),
-  apiKeys: many(apiKeys),
 }));
 
 // Workspace meta relations
@@ -123,7 +121,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdAccountSnapshots: many(accountSnapshots),
   createdAccountUpdateReminders: many(accountUpdateReminders),
   createdBudgets: many(budgets),
-  apiKeys: many(apiKeys),
   oauthAccounts: many(oauthAccounts),
 }));
 
@@ -329,18 +326,6 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
   user: one(users, {
     fields: [auditLogs.user_id],
-    references: [users.id],
-  }),
-}));
-
-// API keys relations
-export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
-  workspace: one(workspaces, {
-    fields: [apiKeys.workspace_id],
-    references: [workspaces.id],
-  }),
-  user: one(users, {
-    fields: [apiKeys.user_id],
     references: [users.id],
   }),
 }));

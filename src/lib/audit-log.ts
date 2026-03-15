@@ -48,7 +48,11 @@ export type AuditAction =
   | 'recurring_template.cancel'
   | 'recurring_template.delete'
   | 'recurring_occurrence.confirm'
-  | 'recurring_occurrence.skip';
+  | 'recurring_occurrence.skip'
+  | 'mcp_token_create'
+  | 'mcp_token_revoke'
+  | 'passkey_create'
+  | 'passkey_delete';
 
 /**
  * Types of entities that can be audited
@@ -58,7 +62,7 @@ export type AuditEntityType =
   | 'category'
   | 'account'
   | 'budget'
-  | 'api_key'
+  | 'mcp_token'
   | 'passkey'
   | 'recurring_template'
   | 'recurring_occurrence'

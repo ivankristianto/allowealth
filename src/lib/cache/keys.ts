@@ -66,8 +66,8 @@ export const CacheKeys = {
   layout: (workspaceId: string, userId: string): string =>
     `${PREFIX}:layout:${workspaceId}:${userId}`,
 
-  /** API key auth context: cache:apikey:{keyHash} */
-  apiKey: (keyHash: string): string => `${PREFIX}:apikey:${keyHash}`,
+  /** MCP OAuth token auth context: cache:mcptoken:{tokenHash} */
+  mcpToken: (tokenHash: string): string => `${PREFIX}:mcptoken:${tokenHash}`,
 
   /** All accounts: cache:accounts:{workspaceId}:{filtersHash} */
   accounts: (workspaceId: string, filtersHash: string): string =>

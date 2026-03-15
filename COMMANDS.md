@@ -311,6 +311,7 @@ Aliases provide shorter commands that map to resource operations.
 | `bun run aw db seed --transactions=5000`  | Add 5,000 extra transactions                |
 | `bun run aw db seed --benchmark`          | Seed with ~10k transactions (12 months)     |
 | `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset |
+| `bun run aw db seed-oauth-clients`        | Seed MCP OAuth clients for Connected Apps   |
 | `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed     |
 | `bun run aw db empty`                     | Truncate all data (preserve schema)         |
 | `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB           |
@@ -431,11 +432,10 @@ When `DEMO_MODE=true`, the app shows a warning banner on every page and disables
 
 ### Admin & Security
 
-| Command                                                                            | Description                                     |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin                     |
-| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key                                |
-| `bun run aw admin generate-email-key`                                              | Generate encryption key for email functionality |
+| Command                                                         | Description                                     |
+| --------------------------------------------------------------- | ----------------------------------------------- |
+| `bun run aw admin create-super-admin --email admin@example.com` | Promote user to super admin                     |
+| `bun run aw admin generate-email-key`                           | Generate encryption key for email functionality |
 
 ### Deploy
 
@@ -451,6 +451,8 @@ When `DEMO_MODE=true`, the app shows a warning banner on every page and disables
 | ---------------------- | ------------------- |
 | `bun run aw mcp start` | Start MCP server    |
 | `bun run aw release`   | Interactive release |
+
+To connect an MCP client, first seed the OAuth clients with `bun run aw db seed-oauth-clients`. Then sign in to Allowealth, open **Security → Connected Apps**, click **Connect** for your client, approve the request, and copy the one-time `ALLOWEALTH_ACCESS_TOKEN`.
 
 ## Testing
 

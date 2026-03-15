@@ -525,28 +525,48 @@ CREATE INDEX IF NOT EXISTS `recurring_occurrences_ws_status_due_date_idx` ON `re
 CREATE UNIQUE INDEX IF NOT EXISTS `recurring_occurrences_template_occurrence_unique` ON `recurring_occurrences` (`template_id`,`occurrence_number`);
 
 -- ============================================
--- API KEYS & AUDIT LOGS
+-- OAUTH & AUDIT LOGS
 -- ============================================
-CREATE TABLE IF NOT EXISTS `api_keys` (
-  `id` text PRIMARY KEY NOT NULL,
-  `workspace_id` text NOT NULL,
-  `user_id` text NOT NULL,
-  `name` text NOT NULL,
-  `key_hash` text NOT NULL,
-  `key_prefix` text NOT NULL,
-  `last_used_at` integer,
-  `expires_at` integer,
-  `created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
-  `deleted_at` integer,
-  FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+CREATE TABLE IF NOT EXISTS `oauthApplication` (
+  `id` TEXT PRIMARY KEY NOT NULL,
+  `clientId` TEXT NOT NULL,
+  `clientSecret` TEXT,
+  `name` TEXT NOT NULL,
+  `icon` TEXT,
+  `metadata` TEXT,
+  `type` TEXT NOT NULL DEFAULT 'web',
+  `disabled` INTEGER DEFAULT 0,
+  `redirectUrls` TEXT NOT NULL,
+  `userId` TEXT,
+  `createdAt` INTEGER NOT NULL,
+  `updatedAt` INTEGER NOT NULL
 );
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthApplication_clientId_idx` ON `oauthApplication` (`clientId`);
 
-CREATE INDEX IF NOT EXISTS `api_keys_workspace_id_idx` ON `api_keys` (`workspace_id`);
-CREATE INDEX IF NOT EXISTS `api_keys_user_id_idx` ON `api_keys` (`user_id`);
-CREATE INDEX IF NOT EXISTS `api_keys_key_prefix_idx` ON `api_keys` (`key_prefix`);
-CREATE INDEX IF NOT EXISTS `api_keys_prefix_deleted_idx` ON `api_keys` (`key_prefix`,`deleted_at`);
-CREATE INDEX IF NOT EXISTS `api_keys_ws_user_deleted_idx` ON `api_keys` (`workspace_id`,`user_id`,`deleted_at`);
+CREATE TABLE IF NOT EXISTS `oauthAccessToken` (
+  `id` TEXT PRIMARY KEY NOT NULL,
+  `accessToken` TEXT NOT NULL,
+  `refreshToken` TEXT NOT NULL,
+  `accessTokenExpiresAt` INTEGER NOT NULL,
+  `refreshTokenExpiresAt` INTEGER NOT NULL,
+  `clientId` TEXT NOT NULL,
+  `userId` TEXT,
+  `scopes` TEXT NOT NULL,
+  `createdAt` INTEGER NOT NULL,
+  `updatedAt` INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthAccessToken_accessToken_idx` ON `oauthAccessToken` (`accessToken`);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthAccessToken_refreshToken_idx` ON `oauthAccessToken` (`refreshToken`);
+
+CREATE TABLE IF NOT EXISTS `oauthConsent` (
+  `id` TEXT PRIMARY KEY NOT NULL,
+  `clientId` TEXT NOT NULL,
+  `userId` TEXT NOT NULL,
+  `scopes` TEXT NOT NULL,
+  `consentGiven` INTEGER NOT NULL,
+  `createdAt` INTEGER NOT NULL,
+  `updatedAt` INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS `audit_logs` (
   `id` text PRIMARY KEY NOT NULL,

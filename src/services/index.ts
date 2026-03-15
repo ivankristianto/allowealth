@@ -30,7 +30,6 @@ import { RecurringForecastService } from './recurring-forecast.service';
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceMetaService } from './workspace-meta.service';
 import { WorkspaceInvitationService } from './workspace-invitation.service';
-import { ApiKeyService } from './api-key.service';
 import { EmailService } from './email';
 import { EmailVerificationService } from './email-verification.service';
 import { SuperAdminService } from './super-admin.service';
@@ -55,7 +54,6 @@ export * from './workspace.service';
 export * from './workspace-meta.service';
 export * from './workspace-invitation.service';
 export * from './service-errors';
-export * from './api-key.service';
 export * from './email';
 export * from './email-verification.service';
 export * from './super-admin.service';
@@ -80,7 +78,6 @@ export const recurringForecastService = new RecurringForecastService(db);
 export const workspaceService = new WorkspaceService(db);
 export const workspaceMetaService = new WorkspaceMetaService(db);
 export const workspaceInvitationService = new WorkspaceInvitationService(db);
-export const apiKeyService = new ApiKeyService(db);
 export const emailService = new EmailService();
 export const emailVerificationService = new EmailVerificationService(
   db,

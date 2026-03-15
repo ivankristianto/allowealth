@@ -284,6 +284,51 @@ export default defineCommand({
         exec('bun', seedArgs);
       },
     }),
+    'seed-oauth-clients': defineCommand({
+      meta: {
+        name: 'seed-oauth-clients',
+        description: 'Upsert pre-registered MCP OAuth clients',
+      },
+      async run() {
+        const { db, getActiveSchema } = await import('@/db');
+        const { nanoid } = await import('nanoid');
+        const { getSeededMcpOAuthClients } = await import('@/lib/mcp-oauth');
+
+        const schema = getActiveSchema();
+        const clients = getSeededMcpOAuthClients();
+
+        for (const client of clients) {
+          const now = new Date();
+
+          await db
+            .insert(schema.oauthApplication)
+            .values({
+              id: nanoid(),
+              clientId: client.clientId,
+              name: client.name,
+              type: client.type,
+              redirectUrls: client.redirectUrls,
+              disabled: false,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .onConflictDoUpdate({
+              target: schema.oauthApplication.clientId,
+              set: {
+                name: client.name,
+                type: client.type,
+                redirectUrls: client.redirectUrls,
+                disabled: false,
+                updatedAt: now,
+              },
+            });
+
+          console.log(`  ✓  Upserted: ${client.name}`);
+        }
+
+        console.log('\n✅ OAuth clients seeded.\n');
+      },
+    }),
     reset: defineCommand({
       meta: { name: 'reset', description: 'Delete SQLite DB, push schema, and seed (dev only)' },
       args: {
@@ -393,104 +438,6 @@ export default defineCommand({
 
         backupToPath(target, outputPath);
         console.log(`✅ Backup created: ${outputPath}`);
-      },
-    }),
-    prune: defineCommand({
-      meta: { name: 'prune', description: 'Prune old data from the database' },
-      subCommands: {
-        'audit-logs': defineCommand({
-          meta: {
-            name: 'audit-logs',
-            description: 'Delete audit log entries older than the retention period',
-          },
-          args: {
-            target: targetArg,
-            days: {
-              type: 'string',
-              description:
-                'Retention period in days. Overrides AUDIT_LOG_RETENTION_DAYS env var (default: 30)',
-            },
-            'dry-run': {
-              type: 'boolean',
-              description: 'Preview deletions without executing',
-              default: false,
-            },
-            force: {
-              type: 'boolean',
-              description: 'Skip confirmation prompt',
-              default: false,
-            },
-          },
-          async run({ args }) {
-            const { resolveTarget } = await import('../lib/target');
-            await resolveTarget(args);
-
-            const daysRaw =
-              (args.days as string | undefined) ?? process.env.AUDIT_LOG_RETENTION_DAYS ?? '30';
-            const days = parseInt(daysRaw, 10);
-
-            if (!Number.isFinite(days) || days < 1) {
-              console.error('❌ Retention period must be at least 1 day.');
-              process.exit(1);
-            }
-
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - days);
-
-            const { db, auditLogs } = await import('@/db');
-            const { lt, sql } = await import('drizzle-orm');
-
-            const [countResult] = await (db as any)
-              .select({ count: sql<number>`count(*)` })
-              .from(auditLogs)
-              .where(lt(auditLogs.created_at, cutoff));
-
-            const count = Number(countResult?.count ?? 0);
-            const entriesLabel = count === 1 ? 'entry' : 'entries';
-            const daysLabel = days === 1 ? 'day' : 'days';
-
-            console.log(
-              `Found ${count} audit log ${entriesLabel} older than ${days} ${daysLabel} (before ${cutoff.toISOString()}).`
-            );
-
-            if (args['dry-run']) {
-              console.log('\n✅ Dry-run completed. No entries were deleted.');
-              return;
-            }
-
-            if (count === 0) {
-              console.log('Nothing to prune.');
-              return;
-            }
-
-            if (!args.force) {
-              const readline = await import('readline');
-              const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout,
-              });
-              const answer = await new Promise<string>((resolveAnswer) => {
-                rl.question(
-                  `Delete ${count} audit log ${entriesLabel}? Type "yes" or "y" to confirm: `,
-                  (value) => {
-                    rl.close();
-                    resolveAnswer(value.trim().toLowerCase());
-                  }
-                );
-              });
-              if (answer !== 'yes' && answer !== 'y') {
-                console.log('Aborted.');
-                return;
-              }
-            }
-
-            await db.delete(auditLogs).where(lt(auditLogs.created_at, cutoff));
-
-            console.log(
-              `✅ Deleted ${count} audit log ${entriesLabel} older than ${days} ${daysLabel}.`
-            );
-          },
-        }),
       },
     }),
     restore: defineCommand({
@@ -629,6 +576,126 @@ export default defineCommand({
         }
 
         console.log(`\n✅ Restore completed from ${basename(selectedFile)}.`);
+      },
+    }),
+    prune: defineCommand({
+      meta: { name: 'prune', description: 'Prune old data from the database' },
+      subCommands: {
+        'audit-logs': defineCommand({
+          meta: {
+            name: 'audit-logs',
+            description: 'Delete audit log entries older than the retention period',
+          },
+          args: {
+            target: targetArg,
+            days: {
+              type: 'string',
+              description:
+                'Retention period in days. Overrides AUDIT_LOG_RETENTION_DAYS env var (default: 30)',
+            },
+            'dry-run': {
+              type: 'boolean',
+              description: 'Preview deletions without executing',
+              default: false,
+            },
+            force: {
+              type: 'boolean',
+              description: 'Skip confirmation prompt',
+              default: false,
+            },
+          },
+          async run({ args }) {
+            const { resolveTarget } = await import('../lib/target');
+            await resolveTarget(args);
+
+            const daysRaw =
+              (args.days as string | undefined) ?? process.env.AUDIT_LOG_RETENTION_DAYS ?? '30';
+            const days = parseInt(daysRaw, 10);
+
+            if (!Number.isFinite(days) || days < 1) {
+              console.error('❌ Retention period must be at least 1 day.');
+              process.exit(1);
+            }
+
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+
+            const { db, auditLogs } = await import('@/db');
+            const { lt, sql, inArray } = await import('drizzle-orm');
+
+            const [countResult] = await (db as any)
+              .select({ count: sql<number>`count(*)` })
+              .from(auditLogs)
+              .where(lt(auditLogs.created_at, cutoff));
+
+            const count = Number(countResult?.count ?? 0);
+            const entriesLabel = count === 1 ? 'entry' : 'entries';
+            const daysLabel = days === 1 ? 'day' : 'days';
+
+            console.log(
+              `Found ${count} audit log ${entriesLabel} older than ${days} ${daysLabel} (before ${cutoff.toISOString()}).`
+            );
+
+            if (args['dry-run']) {
+              console.log('\n✅ Dry-run completed. No entries were deleted.');
+              return;
+            }
+
+            if (count === 0) {
+              console.log('Nothing to prune.');
+              return;
+            }
+
+            if (!args.force) {
+              const readline = await import('readline');
+              const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout,
+              });
+              const answer = await new Promise<string>((resolveAnswer) => {
+                rl.question(
+                  `Delete ${count} audit log ${entriesLabel}? Type "yes" or "y" to confirm: `,
+                  (value) => {
+                    rl.close();
+                    resolveAnswer(value.trim().toLowerCase());
+                  }
+                );
+              });
+
+              if (answer !== 'yes' && answer !== 'y') {
+                console.log('Aborted.');
+                return;
+              }
+            }
+
+            // Select IDs to delete (for batching if needed)
+            const entriesToDelete = await (db as any)
+              .select({ id: auditLogs.id })
+              .from(auditLogs)
+              .where(lt(auditLogs.created_at, cutoff));
+
+            const ids = entriesToDelete.map((e: { id: string }) => e.id);
+
+            if (ids.length === 0) {
+              console.log('Nothing to prune.');
+              return;
+            }
+
+            // Delete in batches of 1000
+            const BATCH_SIZE = 1000;
+            let deleted = 0;
+
+            for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+              const batch = ids.slice(i, i + BATCH_SIZE);
+              const result = await (db as any)
+                .delete(auditLogs)
+                .where(inArray(auditLogs.id, batch));
+              deleted += result?.changes ?? batch.length;
+            }
+
+            console.log(`✅ Pruned ${deleted} audit log ${deleted === 1 ? 'entry' : 'entries'}.`);
+          },
+        }),
       },
     }),
   },

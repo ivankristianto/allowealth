@@ -378,24 +378,30 @@ Allowealth includes an MCP (Model Context Protocol) server that lets AI assistan
 ### Quick Start
 
 ```bash
-# 1. Create an API key
-bun run cli:create-api-key -- \
-  --workspace-id <id> --user-id <id> --name "Claude Desktop"
+# 1. Seed the MCP OAuth clients
+bun run aw db seed-oauth-clients
 
-# 2. Configure your MCP client (stdio example for Claude Desktop)
+# 2. Start the app
+bun run dev
+
+# 3. In Allowealth, open Security > Connected Apps
+#    Click Connect for your MCP client, approve the request,
+#    and copy the displayed ALLOWEALTH_ACCESS_TOKEN
+
+# 4. Configure your MCP client (stdio example for Claude Desktop)
 # Add to ~/Library/Application Support/Claude/claude_desktop_config.json:
 {
   "mcpServers": {
     "allowealth": {
       "command": "bun",
-      "args": ["run", "/path/to/allowealth/mcp-server/src/index.ts"],
-      "env": { "ALLOWEALTH_API_KEY": "aw_..." }
+      "args": ["run", "/path/to/allowealth/apps/mcp/src/index.ts"],
+      "env": { "ALLOWEALTH_ACCESS_TOKEN": "your_copied_token" }
     }
   }
 }
 ```
 
-For HTTP transport setup and full documentation, see [`mcp-server/README.md`](mcp-server/README.md).
+For HTTP transport setup and full documentation, see [`apps/mcp/README.md`](apps/mcp/README.md).
 
 ## E2E Testing
 

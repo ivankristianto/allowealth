@@ -54,6 +54,7 @@ test-results/
 
 # Markdown files with embedded code that Prettier misparses as JSX
 docs/plans/
+docs/superpowers/
 specs/
 
 # Docs site MDX files

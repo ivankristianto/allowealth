@@ -7,41 +7,63 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import SecurityConnectedAccountsCard from '@/components/molecules/SecurityConnectedAccountsCard.astro';
+import SecurityConnectedAppsCard from '@/components/molecules/SecurityConnectedAppsCard.astro';
 import SecurityMfaCard from '@/components/molecules/SecurityMfaCard.astro';
 import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.astro';
-import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astro';
 import SecuritySessionsCard from '@/components/molecules/SecuritySessionsCard.astro';
 import SecurityRecentUserActivitiesCard from '@/components/molecules/SecurityRecentUserActivitiesCard.astro';
-import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
-import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import MfaSetupModal from '@/components/organisms/MfaSetupModal.astro';
 import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
-import { apiKeyService, auditLogService } from '@/services';
-import type { SecurityEvent } from '@/services/audit-log.service';
 import { SessionManagementService } from '@/services/session-management.service';
+import { auditLogService } from '@/services';
+import type { SecurityEvent } from '@/services/audit-log.service';
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { isDemoMode } from '@/lib/demo-mode';
-import { db } from '@/db';
+import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
+import { db, getActiveSchema } from '@/db';
 import { account as authAccount, twoFactor, passkey as passkeyTable } from '@/db/schema/sqlite';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { logError } from '@/lib/utils';
 
 const currentPath = '/security';
+const redirectUri = getMcpOAuthRedirectUri();
 
-// Fetch API keys for the current user
 const user = Astro.locals.user;
-let apiKeys: Array<{
-  id: string;
-  name: string;
-  key_prefix: string;
-  last_used_at: Date | null;
-  created_at: Date;
-  expires_at: Date | null;
+const schema = getActiveSchema();
+
+let connectedApps: Array<{
+  tokenId: string;
+  clientName: string;
+  clientId: string;
+  createdAt: Date;
+  accessTokenExpiresAt: Date;
 }> = [];
-if (user?.id && user?.workspaceId) {
-  apiKeys = await apiKeyService.list(user.workspaceId, user.id);
+
+if (user?.id) {
+  const tokens = await db
+    .select({
+      id: schema.oauthAccessToken.id,
+      clientId: schema.oauthAccessToken.clientId,
+      createdAt: schema.oauthAccessToken.createdAt,
+      accessTokenExpiresAt: schema.oauthAccessToken.accessTokenExpiresAt,
+    })
+    .from(schema.oauthAccessToken)
+    .where(
+      and(
+        eq(schema.oauthAccessToken.userId, user.id),
+        gt(schema.oauthAccessToken.accessTokenExpiresAt, new Date())
+      )
+    );
+
+  connectedApps = tokens.map((token) => ({
+    tokenId: token.id,
+    clientName: getMcpOAuthClientName(token.clientId),
+    clientId: token.clientId,
+    createdAt: token.createdAt,
+    accessTokenExpiresAt: token.accessTokenExpiresAt,
+  }));
 }
 
 let connectedAccounts: Array<{
@@ -172,13 +194,11 @@ const demoMode = isDemoMode();
         )
       }
       <SecurityPasskeysCard passkeys={passkeys} demoMode={demoMode} />
-      <SecurityApiKeysCard keys={apiKeys} />
+      <SecurityConnectedAppsCard apps={connectedApps} redirectUri={redirectUri} />
       <SecurityRecentUserActivitiesCard events={securityEvents} />
     </div>
   </div>
 
-  <GenerateApiKeyModal />
-  <MCPSetupInstructionsModal />
   <MfaSetupModal />
   <MfaConfirmModal />
   <MfaBackupCodesModal />
