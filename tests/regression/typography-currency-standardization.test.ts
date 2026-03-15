@@ -60,6 +60,14 @@ describe('typography and currency standardization', () => {
 
     expect(content).toContain("import { formatCurrency } from '@/lib/formatting/currency';");
     expect(content).toContain('? formatCurrency(entry.newValue.amount, entry.newValue.currency)');
+    expect(content).toContain('const formatFieldValue = (');
+    expect(content).toContain('record?: Record<string, unknown> | null');
+    expect(content).toContain(
+      "if (field === 'amount' && (typeof value === 'string' || typeof value === 'number')) {"
+    );
+    expect(content).toContain('return currency ? formatCurrency(value, currency) : String(value);');
+    expect(content).toContain('formatFieldValue(field, entry.oldValue?.[field], entry.oldValue)');
+    expect(content).toContain('formatFieldValue(field, entry.newValue[field], entry.newValue)');
     expect(content).not.toContain('? `${entry.newValue.currency} ${entry.newValue.amount}`');
   });
 
