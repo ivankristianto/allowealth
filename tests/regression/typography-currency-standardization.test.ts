@@ -74,4 +74,28 @@ describe('typography and currency standardization', () => {
       "aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction?.currency}`}"
     );
   });
+
+  it('formats recurring confirmation modal original amounts with formatCurrency', () => {
+    const recurringPage = read('src/components/organisms/RecurringPage.client.ts');
+    const recurringWidget = read('src/components/organisms/RecurringBillsWidget.client.ts');
+
+    expect(recurringPage).toContain(
+      "import { formatCurrency } from '@/lib/formatting/currency-client';"
+    );
+    expect(recurringWidget).toContain(
+      "import { formatCurrency } from '@/lib/formatting/currency-client';"
+    );
+    expect(recurringPage).toContain(
+      'originalAmount.textContent = `Original: ${formatCurrency(parseFloat(occurrence.templateAmount) || 0, confirmCurrency)}`;'
+    );
+    expect(recurringWidget).toContain(
+      'originalAmount.textContent = `Original: ${formatCurrency(parseFloat(occurrence.templateAmount) || 0, confirmCurrency)}`;'
+    );
+    expect(recurringPage).not.toContain(
+      'originalAmount.textContent = `Original: ${formatAmountForDisplay(occurrence.templateAmount, confirmCurrency)} ${occurrence.currency}`;'
+    );
+    expect(recurringWidget).not.toContain(
+      'originalAmount.textContent = `Original: ${formatAmountForDisplay(occurrence.templateAmount, confirmCurrency)} ${occurrence.currency}`;'
+    );
+  });
 });
