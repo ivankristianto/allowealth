@@ -165,10 +165,19 @@ const endLabel = formatFullDate(periodEnd);
                         {row.variance > 0 ? '+' : ''}
                         {formatCurrency(row.variance, row.currency)}
                       </span>
-                      <span class={`${badge} bg-warning/10 text-warning`}>
-                        <TriangleAlert size={11} class="stroke-current" aria-hidden="true" />
-                        Gap
-                      </span>
+                      <div
+                        class="tooltip tooltip-left"
+                        data-tip={
+                          row.variance > 0
+                            ? 'Add missing income transactions or adjust account balances to close this gap.'
+                            : 'Record missing expense transactions or adjust account balances to close this gap.'
+                        }
+                      >
+                        <span class={`${badge} bg-warning/10 text-warning cursor-help`}>
+                          <TriangleAlert size={11} class="stroke-current" aria-hidden="true" />
+                          Gap
+                        </span>
+                      </div>
                     </>
                   )}
                 </div>
@@ -179,7 +188,7 @@ const endLabel = formatFullDate(periodEnd);
       </div>
 
       {/* Consolidated calculation notes — once for all currencies */}
-      <div class="mt-4 text-xs leading-relaxed text-base-content/40">
+      <div class="mt-4 text-xs leading-relaxed text-base-content/60">
         <p>
           Variance = Balance Change − Net Flow. Excludes debt accounts (credit cards, loans) — debt
           repayments reduce both assets and liabilities, which would mask real variances.
