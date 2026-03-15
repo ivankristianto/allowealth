@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 describe('accounts reconciliation page wiring', () => {
   it('uses a reconciliation-specific account set so current-month math includes inactive accounts', () => {
-    const page = readFileSync('src/pages/accounts/index.astro', 'utf8');
+    const page = readFileSync(resolve(__dirname, '../pages/accounts/index.astro'), 'utf8');
 
     expect(page).toContain('let reconciliationAccounts: AccountOutput[];');
     expect(page).toContain('const [rawAccounts, rawReconciliationAccounts] = await Promise.all([');

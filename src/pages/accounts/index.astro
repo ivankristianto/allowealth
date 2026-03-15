@@ -284,6 +284,8 @@ const reconciliation =
     ? []
     : await (async () => {
         const [startSnapshots, txSummaries] = await Promise.all([
+          // filters is passed as-is; getSnapshotForMonth always adds
+          // includeInactive: true internally so closed accounts are included.
           accountService.getSnapshotForMonth(
             user.workspaceId,
             selectedYear,

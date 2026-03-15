@@ -26,6 +26,7 @@ const hasActivity = reconciliation.some(
 const card = 'bg-base-100 border border-base-300 rounded-card shadow-sm p-5 lg:p-6';
 const badge =
   'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider';
+const varianceAmount = 'tabular-nums text-xs font-bold';
 ---
 
 {
@@ -107,7 +108,7 @@ const badge =
                 <div class="flex items-center gap-2">
                   {row.isBalanced ? (
                     <>
-                      <span class="tabular-nums text-xs font-bold text-success">
+                      <span class={`${varianceAmount} text-success`}>
                         {formatCurrency(0, row.currency)}
                       </span>
                       <span class={`${badge} bg-success/10 text-success`}>
@@ -117,7 +118,7 @@ const badge =
                     </>
                   ) : (
                     <>
-                      <span class="tabular-nums text-xs font-bold text-warning">
+                      <span class={`${varianceAmount} text-warning`}>
                         {row.variance > 0 ? '+' : ''}
                         {formatCurrency(row.variance, row.currency)}
                       </span>
