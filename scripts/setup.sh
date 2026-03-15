@@ -38,13 +38,13 @@ if [ "$WORKTREE_MODE" = true ]; then
     fi
     echo -e "${GREEN}✓ Current branch: ${CURRENT_BRANCH}${NC}"
 
-    # Set DEV_HOST to {branch}.expenses.local (uncomment and set the value)
+    # Set DEV_HOST to {branch}.allowealth.local (uncomment and set the value)
     if [ -f .env ]; then
         # Update DEV_HOST line - handle both commented and uncommented versions
-        sed -i.bak "s/^# DEV_HOST=.*/DEV_HOST=${CURRENT_BRANCH}.expenses.local/" .env
-        sed -i.bak "s/^DEV_HOST=.*/DEV_HOST=${CURRENT_BRANCH}.expenses.local/" .env
+        sed -i.bak "s/^# DEV_HOST=.*/DEV_HOST=${CURRENT_BRANCH}.allowealth.local/" .env
+        sed -i.bak "s/^DEV_HOST=.*/DEV_HOST=${CURRENT_BRANCH}.allowealth.local/" .env
         rm -f .env.bak
-        echo -e "${GREEN}✓ Set DEV_HOST=${CURRENT_BRANCH}.expenses.local${NC}"
+        echo -e "${GREEN}✓ Set DEV_HOST=${CURRENT_BRANCH}.allowealth.local${NC}"
 
         # Find an available port between 4322-4310 (descending)
         echo -e "${YELLOW}Finding available port (4322-4310)...${NC}"

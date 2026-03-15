@@ -393,11 +393,11 @@ AUDIT_LOG_RETENTION_DAYS=60 bun run aw db prune audit-logs
 
 **Options:**
 
-| Flag        | Description                                                                      | Default                           |
-| ----------- | -------------------------------------------------------------------------------- | --------------------------------- |
+| Flag        | Description                                                                       | Default                          |
+| ----------- | --------------------------------------------------------------------------------- | -------------------------------- |
 | `--days`    | Retention period in days. Minimum 1. Overrides `AUDIT_LOG_RETENTION_DAYS` env var | `AUDIT_LOG_RETENTION_DAYS` or 30 |
-| `--dry-run` | Preview deletions without executing                                              | `false`                           |
-| `--force`   | Skip confirmation prompt                                                         | `false`                           |
+| `--dry-run` | Preview deletions without executing                                               | `false`                          |
+| `--force`   | Skip confirmation prompt                                                          | `false`                          |
 
 **Behavior:**
 

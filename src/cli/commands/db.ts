@@ -426,9 +426,7 @@ export default defineCommand({
             await resolveTarget(args);
 
             const daysRaw =
-              (args.days as string | undefined) ??
-              process.env.AUDIT_LOG_RETENTION_DAYS ??
-              '30';
+              (args.days as string | undefined) ?? process.env.AUDIT_LOG_RETENTION_DAYS ?? '30';
             const days = parseInt(daysRaw, 10);
 
             if (!Number.isFinite(days) || days < 1) {
