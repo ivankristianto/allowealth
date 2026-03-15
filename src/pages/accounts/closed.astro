@@ -8,6 +8,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountReopenModal from '@components/organisms/AccountReopenModal.astro';
+import Button from '@/components/atoms/Button.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
 import { ArrowLeft, RotateCcw, Clock } from '@lucide/astro';
 import { accountService, accountCategoryService } from '@/services';
@@ -116,9 +117,11 @@ const formatClosedDate = (date: Date | null): string => {
                       {/* Reopen button (admin only) */}
                       {isAdmin && (
                         <div class="tooltip tooltip-bottom" data-tip="Reopen account">
-                          <button
+                          <Button
                             type="button"
-                            class="btn btn-ghost btn-sm gap-1.5 text-accent hover:bg-accent/10 rounded-xl"
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-xl border-0 gap-1.5 text-accent hover:bg-accent/10 hover:text-accent"
                             aria-label={`Reopen ${account.name}`}
                             data-reopen-account={account.id}
                             data-account-name={account.name}
@@ -129,7 +132,7 @@ const formatClosedDate = (date: Date | null): string => {
                           >
                             <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
                             <span class="hidden sm:inline">Reopen</span>
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>

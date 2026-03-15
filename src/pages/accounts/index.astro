@@ -22,6 +22,7 @@ import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueMod
 import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
+import Button from '@/components/atoms/Button.astro';
 import { CalendarDays, Info, ListPlus, Plus } from '@lucide/astro';
 import {
   accountService,
@@ -532,15 +533,16 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
               </div>
             ) : (
               <div class="flex justify-center mt-4">
-                <button
+                <Button
                   type="button"
-                  class="btn btn-accent gap-2 rounded-2xl"
+                  variant="primary"
+                  className="gap-2"
                   data-add-account-btn
                   data-add-first-account-btn
                   data-default-category-id={defaultCategoryId}
                 >
                   Add Your First Account
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -623,14 +625,16 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
         </div>
 
         {/* Add Row button */}
-        <button
+        <Button
           type="button"
-          class="btn btn-ghost btn-sm rounded-lg sm:rounded-xl min-h-[44px] gap-2 self-start"
+          variant="ghost"
+          size="sm"
+          className="self-start rounded-lg border-0 gap-2 min-h-[44px] sm:rounded-xl"
           data-bulk-add-row
         >
           <Plus size={16} class="stroke-current" aria-hidden="true" />
           Add Row
-        </button>
+        </Button>
 
         {/* Error */}
         <div
@@ -642,21 +646,23 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
 
         {/* Actions */}
         <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost rounded-2xl w-full sm:w-auto sm:min-w-28 min-h-[44px] font-bold"
+            variant="ghost"
+            className="w-full min-h-[44px] border-0 font-bold sm:min-w-28 sm:w-auto"
             data-bulk-accounts-cancel
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            class="btn btn-accent rounded-2xl w-full sm:w-auto sm:min-w-48 min-h-[44px] font-bold"
+            variant="primary"
+            className="w-full min-h-[44px] font-bold sm:min-w-48 sm:w-auto"
             data-bulk-accounts-submit
             data-testid="bulk-accounts-submit-btn"
           >
             <span data-bulk-accounts-submit-text>Create 1 Account</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

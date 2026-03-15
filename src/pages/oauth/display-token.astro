@@ -1,5 +1,6 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import Button from '@/components/atoms/Button.astro';
 
 const code = Astro.url.searchParams.get('code');
 const state = Astro.url.searchParams.get('state');
@@ -48,9 +49,9 @@ Astro.response.headers.set('Expires', '0');
               value=""
               class="input input-bordered join-item font-mono text-xs flex-1 min-w-0"
             />
-            <button type="button" id="copy-token-button" class="btn btn-primary join-item">
+            <Button type="button" variant="primary" id="copy-token-button" className="join-item">
               Copy
-            </button>
+            </Button>
           </div>
 
           <p class="text-base-content/50 text-xs text-center">

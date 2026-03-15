@@ -279,16 +279,19 @@ const invitationErrorMessage =
                   required
                   className="rounded-full py-4 pl-6 h-14 text-base font-bold border border-base-300 pr-12"
                 />
-                <button
+                <Button
                   type="button"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-circle btn-sm"
+                  variant="ghost"
+                  size="sm"
+                  shape="circle"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 border-0"
                   aria-label="Toggle password visibility"
                   data-toggle-password="confirm-password"
                   tabindex="-1"
                 >
                   <Eye size={20} class="stroke-current" data-eye-icon />
                   <EyeOff size={20} class="stroke-current hidden" data-eye-off-icon />
-                </button>
+                </Button>
               </div>
             </div>
 

@@ -7,6 +7,7 @@
  */
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
+import Button from '@/components/atoms/Button.astro';
 import AdminUserTable from '@/components/organisms/AdminUserTable.astro';
 import { superAdminService } from '@/services';
 import { Search, SlidersHorizontal, X } from '@lucide/astro';
@@ -149,9 +150,13 @@ function buildQueryString(pageNum: number): string {
                 ))
               }
             </select>
-            <button type="submit" class="btn btn-accent rounded-lg sm:rounded-xl lg:col-span-1">
+            <Button
+              type="submit"
+              variant="primary"
+              className="rounded-lg sm:rounded-xl lg:col-span-1"
+            >
               Search
-            </button>
+            </Button>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             {
@@ -184,9 +189,14 @@ function buildQueryString(pageNum: number): string {
         <nav aria-label="Pagination">
           <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
             {isFirstPage ? (
-              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+              <Button
+                variant="ghost"
+                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+                type="button"
+                disabled
+              >
                 Previous
-              </button>
+              </Button>
             ) : (
               <a
                 href={buildQueryString(Math.max(1, page - 1))}
@@ -212,9 +222,14 @@ function buildQueryString(pageNum: number): string {
               Page {page} of {totalPages}
             </div>
             {isLastPage ? (
-              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+              <Button
+                variant="ghost"
+                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+                type="button"
+                disabled
+              >
                 Next
-              </button>
+              </Button>
             ) : (
               <a
                 href={buildQueryString(Math.min(totalPages, page + 1))}
