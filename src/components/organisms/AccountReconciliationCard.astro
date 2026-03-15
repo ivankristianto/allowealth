@@ -168,8 +168,14 @@ const endLabel = formatFullDate(periodEnd);
               </div>
             </div>
 
-            {/* Variance calculation note */}
-            <p class="pt-1 text-xs text-base-content/30">Variance = Balance Change − Net Flow</p>
+            {/* Calculation notes */}
+            <div class="mt-3 space-y-1 border-t border-base-300/50 pt-3 text-xs leading-relaxed text-base-content/50">
+              <p>Variance = Balance Change − Net Flow.</p>
+              <p>
+                Excludes debt accounts (credit cards, loans). Debt repayments reduce both assets and
+                liabilities, which would mask real variances.
+              </p>
+            </div>
           </div>
         </div>
       ))}
