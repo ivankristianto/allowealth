@@ -20,8 +20,14 @@ import {
   calculateAccountTotalsByCurrency,
   calculateDebtTotalsByCurrency,
   calculateGroupTotalsByCurrency,
+  calculateReconciliation,
 } from './account';
-import type { AccountOutput } from '@/lib/types/account';
+import type {
+  AccountOutput,
+  AccountClass,
+  Currency,
+  ReconciliationCurrencyRow,
+} from '@/lib/types/account';
 
 // Helper to create mock account
 const createMockAccount = (overrides: Partial<AccountOutput> = {}): AccountOutput => ({
@@ -463,5 +469,151 @@ describe('Account Utils - groupAccountsByClass', () => {
     const result = groupAccountsByClass(accounts);
     expect(result.non_liquid).toHaveLength(0);
     expect(result.debt).toHaveLength(0);
+  });
+});
+
+describe('calculateReconciliation', () => {
+  const makeSnapshot = (
+    currency: Currency,
+    balance: string,
+    account_class: AccountClass = 'liquid'
+  ) => ({ currency, balance, account_class });
+
+  it('returns balanced row when net flow equals balance change', () => {
+    const result: ReconciliationCurrencyRow[] = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '7000000')],
+      endAccounts: [makeSnapshot('IDR', '10000000')],
+      transactionSummaries: [{ currency: 'IDR', income: 5000000, expenses: 2000000 }],
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].income).toBe(5000000);
+    expect(result[0].expenses).toBe(2000000);
+    expect(result[0].netFlow).toBe(3000000);
+    expect(result[0].startBalance).toBe(7000000);
+    expect(result[0].endBalance).toBe(10000000);
+    expect(result[0].balanceChange).toBe(3000000);
+    expect(result[0].variance).toBe(0);
+    expect(result[0].isBalanced).toBe(true);
+  });
+
+  it('returns gap row when balance changed more than transactions explain', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '7000000')],
+      endAccounts: [makeSnapshot('IDR', '11500000')],
+      transactionSummaries: [{ currency: 'IDR', income: 5000000, expenses: 2000000 }],
+    });
+
+    expect(result[0].variance).toBe(1500000);
+    expect(result[0].isBalanced).toBe(false);
+  });
+
+  it('excludes debt accounts from balance change calculation', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [
+        makeSnapshot('IDR', '7000000', 'liquid'),
+        makeSnapshot('IDR', '2000000', 'debt'),
+      ],
+      endAccounts: [
+        makeSnapshot('IDR', '10000000', 'liquid'),
+        makeSnapshot('IDR', '1500000', 'debt'),
+      ],
+      transactionSummaries: [{ currency: 'IDR', income: 5000000, expenses: 2000000 }],
+    });
+
+    expect(result[0].balanceChange).toBe(3000000);
+    expect(result[0].isBalanced).toBe(true);
+  });
+
+  it('returns all-zero row for a period with no transactions and no balance change', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '5000000')],
+      endAccounts: [makeSnapshot('IDR', '5000000')],
+      transactionSummaries: [{ currency: 'IDR', income: 0, expenses: 0 }],
+    });
+
+    expect(result[0].income).toBe(0);
+    expect(result[0].expenses).toBe(0);
+    expect(result[0].netFlow).toBe(0);
+    expect(result[0].balanceChange).toBe(0);
+    expect(result[0].variance).toBe(0);
+    expect(result[0].isBalanced).toBe(true);
+  });
+
+  it('shows gap when balance changed but no transactions recorded', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '5000000')],
+      endAccounts: [makeSnapshot('IDR', '6000000')],
+      transactionSummaries: [{ currency: 'IDR', income: 0, expenses: 0 }],
+    });
+
+    expect(result[0].balanceChange).toBe(1000000);
+    expect(result[0].variance).toBe(1000000);
+    expect(result[0].isBalanced).toBe(false);
+  });
+
+  it('treats missing currency in transaction summaries as zero income and expenses', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '5000000')],
+      endAccounts: [makeSnapshot('IDR', '6000000')],
+      transactionSummaries: [],
+    });
+
+    expect(result[0].income).toBe(0);
+    expect(result[0].expenses).toBe(0);
+    expect(result[0].balanceChange).toBe(1000000);
+    expect(result[0].variance).toBe(1000000);
+    expect(result[0].isBalanced).toBe(false);
+  });
+
+  it('handles multiple currencies independently', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR', 'USD'],
+      startSnapshots: [makeSnapshot('IDR', '7000000'), makeSnapshot('USD', '100')],
+      endAccounts: [makeSnapshot('IDR', '10000000'), makeSnapshot('USD', '150')],
+      transactionSummaries: [
+        { currency: 'IDR', income: 5000000, expenses: 2000000 },
+        { currency: 'USD', income: 100, expenses: 50 },
+      ],
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].currency).toBe('IDR');
+    expect(result[0].isBalanced).toBe(true);
+    expect(result[1].currency).toBe('USD');
+    expect(result[1].isBalanced).toBe(true);
+  });
+
+  it('uses 0.01 epsilon for isBalanced to handle floating point', () => {
+    const result = calculateReconciliation({
+      currencies: ['USD'],
+      startSnapshots: [makeSnapshot('USD', '100.00')],
+      endAccounts: [makeSnapshot('USD', '150.005')],
+      transactionSummaries: [{ currency: 'USD', income: 100, expenses: 50 }],
+    });
+
+    expect(result[0].isBalanced).toBe(true);
+  });
+
+  it('treats empty or invalid balance strings as 0 without producing NaN', () => {
+    const result = calculateReconciliation({
+      currencies: ['IDR'],
+      startSnapshots: [makeSnapshot('IDR', '')],
+      endAccounts: [makeSnapshot('IDR', 'invalid')],
+      transactionSummaries: [{ currency: 'IDR', income: 0, expenses: 0 }],
+    });
+
+    expect(result[0].startBalance).toBe(0);
+    expect(result[0].endBalance).toBe(0);
+    expect(result[0].balanceChange).toBe(0);
+    expect(result[0].variance).toBe(0);
+    expect(Number.isNaN(result[0].variance)).toBe(false);
+    expect(result[0].isBalanced).toBe(true);
   });
 });

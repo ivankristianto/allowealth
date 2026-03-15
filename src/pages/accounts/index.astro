@@ -9,6 +9,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountPortfolioSummary from '@components/organisms/AccountPortfolioSummary.astro';
+import AccountReconciliationCard from '@components/organisms/AccountReconciliationCard.astro';
 import AccountActions from '@components/organisms/AccountActions.astro';
 import ActionFilterBar from '@components/organisms/ActionFilterBar.astro';
 import AccountGroupCard from '@components/organisms/AccountGroupCard.astro';
@@ -25,6 +26,7 @@ import { CalendarDays, Info, ListPlus, Plus } from '@lucide/astro';
 import {
   accountService,
   accountCategoryService,
+  transactionService,
   workspaceMetaService,
   workspaceService,
 } from '@/services';
@@ -39,6 +41,7 @@ import {
   calculateDebtTotalsByCurrency,
   groupAccountsByClass,
   calculateGroupTotalsByCurrency,
+  calculateReconciliation,
 } from '@/lib/utils/account';
 
 const user = Astro.locals.user!;
@@ -111,6 +114,8 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
   year: 'numeric',
 });
 const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+const periodStartDate = new Date(selectedYear, selectedMonth - 1, 1);
+const periodEndDate = new Date(selectedYear, selectedMonth, 0, 23, 59, 59, 999);
 const currentMonthUrl = new URL(url);
 currentMonthUrl.searchParams.delete('year');
 currentMonthUrl.searchParams.delete('month');
@@ -177,6 +182,7 @@ const defaultCategoryId =
   '';
 // Fetch accounts - use snapshot for historical views, current data for present
 let accounts: AccountOutput[];
+let reconciliationAccounts: AccountOutput[];
 
 if (!isViewingCurrentMonth) {
   // Historical view: get snapshot for the selected month
@@ -211,9 +217,17 @@ if (!isViewingCurrentMonth) {
       updated_at: snapshot.updated_at,
     };
   });
+  reconciliationAccounts = accounts;
 } else {
   // Current view: use latest balance
-  const rawAccounts = await accountService.findAll(user.workspaceId, filters, Astro.locals.perf);
+  const [rawAccounts, rawReconciliationAccounts] = await Promise.all([
+    accountService.findAll(user.workspaceId, filters, Astro.locals.perf),
+    accountService.findAll(
+      user.workspaceId,
+      { ...filters, includeInactive: true },
+      Astro.locals.perf
+    ),
+  ]);
   accounts = rawAccounts.map((account) => {
     const categoryName = account.category_id
       ? categoriesById.get(account.category_id)?.name || null
@@ -238,7 +252,81 @@ if (!isViewingCurrentMonth) {
       updated_at: account.updated_at,
     };
   });
+  reconciliationAccounts = rawReconciliationAccounts.map((account) => {
+    const categoryName = account.category_id
+      ? categoriesById.get(account.category_id)?.name || null
+      : formatAccountType(account.type);
+
+    return {
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      account_class: account.account_class,
+      category_id: account.category_id,
+      category_name: categoryName,
+      balance: account.balance,
+      initial_balance: account.initial_balance || null,
+      currency: account.currency,
+      status: account.status ?? 'active',
+      closed_at: account.closed_at ?? null,
+      closed_by_user_id: account.closed_by_user_id ?? null,
+      created_by_user_id: account.created_by_user_id,
+      last_updated: account.last_updated,
+      created_at: account.created_at,
+      updated_at: account.updated_at,
+    };
+  });
 }
+
+const reconciliationAccountIds = reconciliationAccounts.map((account) => account.id);
+const reconciliation =
+  reconciliationAccountIds.length === 0
+    ? []
+    : await (async () => {
+        const [startSnapshots, txSummaries] = await Promise.all([
+          // filters is passed as-is; getSnapshotForMonth always adds
+          // includeInactive: true internally so closed accounts are included.
+          accountService.getSnapshotForMonth(
+            user.workspaceId,
+            selectedYear,
+            selectedMonth - 1,
+            filters,
+            Astro.locals.perf
+          ),
+          Promise.all(
+            orderedWorkspaceCurrencies.map((currency) =>
+              transactionService
+                .getMonthSummary(
+                  {
+                    workspace_id: user.workspaceId,
+                    created_by_user_id: ownerUserId,
+                    currency,
+                    account_ids: reconciliationAccountIds,
+                    start_date: periodStartDate,
+                    end_date: isViewingCurrentMonth ? now : periodEndDate,
+                  },
+                  Astro.locals.perf
+                )
+                .then((summary) => ({ currency, ...summary }))
+            )
+          ),
+        ]);
+
+        return calculateReconciliation({
+          currencies: orderedWorkspaceCurrencies,
+          startSnapshots: startSnapshots.map((snapshot) => ({
+            currency: snapshot.currency,
+            balance: snapshot.snapshot_balance,
+            account_class: snapshot.account_class ?? deriveAccountClass(snapshot.type),
+          })),
+          endAccounts: reconciliationAccounts.map((account) => ({
+            currency: account.currency,
+            balance: account.balance,
+            account_class: account.account_class,
+          })),
+          transactionSummaries: txSummaries,
+        });
+      })();
 
 // Calculate portfolio totals and allocation
 // @TODO: Wire with backend - Consider moving calculations to service layer
@@ -345,6 +433,13 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             loading={false}
             latestUpdate={latestUpdate}
             isHistoricalView={!isViewingCurrentMonth}
+          />
+
+          <AccountReconciliationCard
+            reconciliation={reconciliation}
+            periodLabel={currentMonthDisplay}
+            periodStart={new Date(selectedYear, selectedMonth - 1, 0)}
+            periodEnd={isViewingCurrentMonth ? now : periodEndDate}
           />
 
           {/* Action Buttons - after allocation, before filter */}
