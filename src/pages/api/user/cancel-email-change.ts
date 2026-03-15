@@ -5,7 +5,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { emailVerificationService } from '@/services';
+import { emailVerificationService, securityActivityService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
@@ -22,6 +22,12 @@ export const POST: APIRoute = async (context) => {
     }
 
     await emailVerificationService.clearPendingEmailAndTokens(auth.userId);
+
+    await securityActivityService.logEvent({
+      type: 'email_change_cancelled',
+      userId: auth.userId,
+      oldValue: { pendingEmail },
+    });
 
     return successResponse({ message: 'Pending email change cancelled' });
   } catch (error) {

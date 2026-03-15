@@ -1,12 +1,20 @@
-import { afterEach, describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it, mock } from 'bun:test';
 import { resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 
 let resetAuthInstance: (() => void) | null = null;
+const logEventMock = mock(() => Promise.resolve());
+
+(mock as any).module('@/services/security-activity.service', () => ({
+  securityActivityService: {
+    logEvent: logEventMock,
+  },
+}));
 
 afterEach(() => {
   setTestEnv(null);
   resetCacheManager();
+  logEventMock.mockClear();
   // Reset the lazy auth instance to ensure clean state between tests
   if (resetAuthInstance) {
     resetAuthInstance();
@@ -31,6 +39,29 @@ describe('better-auth server config', () => {
 
     const mod = await importFreshServer();
     expect(mod.auth).toBeDefined();
+  });
+
+  it('logs sign-in and sign-out through Better Auth session hooks', async () => {
+    setTestEnv({
+      NODE_ENV: 'test',
+      BETTER_AUTH_SECRET: 'test-better-auth-secret',
+      GOOGLE_CLIENT_ID: 'test-google-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
+    });
+
+    const mod = await importFreshServer();
+    const sessionHooks = mod.auth.options.databaseHooks?.session;
+
+    expect(sessionHooks?.create?.after).toBeDefined();
+    expect(sessionHooks?.delete?.after).toBeDefined();
+
+    await sessionHooks?.create?.after?.({ userId: 'user-1' }, { path: '/sign-in/email' } as any);
+    await sessionHooks?.delete?.after?.({ userId: 'user-1' }, { path: '/sign-out' } as any);
+    await sessionHooks?.delete?.after?.({ userId: 'user-1' }, { path: '/revoke-session' } as any);
+
+    expect(logEventMock).toHaveBeenNthCalledWith(1, { type: 'login', userId: 'user-1' });
+    expect(logEventMock).toHaveBeenNthCalledWith(2, { type: 'logout', userId: 'user-1' });
+    expect(logEventMock).toHaveBeenCalledTimes(2);
   });
 
   it('enables the captcha plugin when TURNSTILE_SECRET_KEY is configured', async () => {

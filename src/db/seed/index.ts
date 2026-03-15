@@ -42,12 +42,14 @@ import {
   account,
   session as betterAuthSession,
   verification,
+  passkey,
   twoFactor,
 } from '@/db/schema';
 
 // Domain seeders
 import { seedWorkspace } from './domains/workspace';
 import { seedUsers, type SeededUsers } from './domains/users';
+import { seedPasskeys } from './domains/security';
 import { seedCategories, seedAccountCategories } from './domains/categories';
 import { seedBudgets } from './domains/budgets';
 import {
@@ -249,6 +251,7 @@ async function clearAllTables() {
     await db.delete(categories);
     await db.delete(userMeta);
     // Better Auth tables (must be deleted before app users due to FK relationships)
+    await db.delete(passkey);
     await db.delete(twoFactor);
     await db.delete(account);
     await db.delete(betterAuthSession);
@@ -323,6 +326,7 @@ async function seed() {
     // Seed in dependency order
     const workspaceId = await seedWorkspace();
     const { adminUserId, memberUserId }: SeededUsers = await seedUsers(workspaceId);
+    await seedPasskeys(adminUserId, memberUserId);
     const categoryMap = await seedCategories(workspaceId, adminUserId);
     const accountCategoryMap = await seedAccountCategories(workspaceId, adminUserId);
 

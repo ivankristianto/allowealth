@@ -9,7 +9,7 @@ import {
   validateBody,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
-import { userMetaService } from '@/services';
+import { userMetaService, securityActivityService } from '@/services';
 import { UserMetaServiceError } from '@/services/service-errors';
 
 const updateThemeSchema = object({
@@ -30,6 +30,12 @@ export const PUT: APIRoute = async (context) => {
 
     const { theme } = validation.data;
     await userMetaService.setUserMeta(auth.userId, USER_META_KEYS.THEME, theme);
+
+    await securityActivityService.logEvent({
+      type: 'theme_changed',
+      userId: auth.userId,
+      newValue: { theme },
+    });
 
     return successResponse({ theme });
   } catch (error) {

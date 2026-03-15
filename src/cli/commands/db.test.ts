@@ -81,9 +81,11 @@ describe('db command', () => {
       };
     };
 
-    expect(command.subCommands.prune.subCommands['audit-logs'].args.target).toBeDefined();
-    expect(command.subCommands.prune.subCommands['audit-logs'].args.days).toBeDefined();
-    expect(command.subCommands.prune.subCommands['audit-logs'].args['dry-run']).toBeDefined();
-    expect(command.subCommands.prune.subCommands['audit-logs'].args.force).toBeDefined();
+    const auditLogsArgs = command.subCommands.prune.subCommands['audit-logs'].args;
+
+    expect(auditLogsArgs.target).toBeDefined();
+    expect(auditLogsArgs.days).toBeDefined();
+    expect(auditLogsArgs['dry-run']).toBeDefined();
+    expect(auditLogsArgs.force).toBeDefined();
   });
 });

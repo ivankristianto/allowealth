@@ -45,6 +45,8 @@ const ACTION_LABELS: Record<string, string> = {
   restore: 'Restored',
   login: 'Signed In',
   logout: 'Signed Out',
+  session_revoke: 'Session Revoked',
+  session_revoke_other: 'Other Sessions Revoked',
   password_change: 'Password Changed',
   member_invite: 'Member Invited',
   member_remove: 'Member Removed',
@@ -73,6 +75,8 @@ const ENTITY_LABELS: Record<string, string> = {
   category: 'Category',
   account: 'Account',
   budget: 'Budget',
+  api_key: 'API Key',
+  passkey: 'Passkey',
   recurring_template: 'Recurring Transaction',
   recurring_occurrence: 'Recurring Occurrence',
   user: 'User',
@@ -203,7 +207,12 @@ function actionBadgeClass(action: string): string {
   if (action.includes('delete') || action === 'admin_deactivate') return 'badge-error';
   if (action.includes('create') || action === 'login' || action === 'admin_reactivate')
     return 'badge-success';
-  if (action.includes('archive') || action.includes('disable') || action.includes('pause'))
+  if (
+    action.includes('archive') ||
+    action.includes('disable') ||
+    action.includes('pause') ||
+    action.includes('revoke')
+  )
     return 'badge-warning';
   return 'badge-info';
 }
