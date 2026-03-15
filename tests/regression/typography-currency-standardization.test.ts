@@ -44,4 +44,14 @@ describe('typography and currency standardization', () => {
       expect(read(filePath)).not.toContain('tabular-nums');
     }
   });
+
+  it('formats budget import preview amounts with the shared currency formatter', () => {
+    const content = read('src/components/organisms/BudgetImportModal.astro');
+
+    expect(content).toContain("import { formatCurrency } from '@/lib/formatting/currency-client';");
+    expect(content).toContain(
+      "class=\"text-right\">${formatCurrency(parseFloat(row.budget_amount) || 0, container.querySelector<HTMLInputElement>('[data-import-currency]')?.value || 'IDR')}"
+    );
+    expect(content).not.toContain('text-right font-mono');
+  });
 });
