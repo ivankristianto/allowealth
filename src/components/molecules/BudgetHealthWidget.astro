@@ -120,7 +120,7 @@ const getProgressBarColor = (percentage: number): string => {
         <div class={`text-2xl font-bold ${getStatusColor(data.status)}`}>
           {data.alertCount}
         </div>
-        <div class="text-sm text-base-content/60">
+        <div class="text-sm text-neutral">
           alert{data.alertCount !== 1 ? 's' : ''}
         </div>
       </div>
@@ -141,7 +141,7 @@ const getProgressBarColor = (percentage: number): string => {
   {
     data.alerts.length > 0 ? (
       <div class="mb-4">
-        <h4 class="text-sm font-medium text-base-content/60 mb-2">Categories needing attention:</h4>
+        <h3 class="text-sm font-medium text-neutral mb-2">Categories needing attention:</h3>
         <ul class="space-y-3" role="list">
           {data.alerts.map((alert) => (
             <li class="p-3 bg-base-100/80 rounded-lg border border-base-300 hover:border-current/30 transition-colors">
@@ -162,7 +162,7 @@ const getProgressBarColor = (percentage: number): string => {
               </div>
 
               <div class="flex items-center justify-between text-sm mb-2">
-                <span class="text-base-content/60">
+                <span class="text-neutral">
                   {formatCurrency(alert.spentAmount, 'IDR')} of{' '}
                   {formatCurrency(alert.budgetAmount, 'IDR')}
                 </span>
@@ -193,9 +193,7 @@ const getProgressBarColor = (percentage: number): string => {
       <div class="mb-4 p-4 bg-base-100/80 rounded-lg text-center">
         <Check size={24} class="stroke-current text-success mx-auto mb-2" aria-hidden="true" />
         <p class="text-sm font-medium text-success">All budgets healthy!</p>
-        <p class="text-xs text-base-content/60 mt-1">
-          You're on track with all your spending categories.
-        </p>
+        <p class="text-xs text-neutral mt-1">You're on track with all your spending categories.</p>
       </div>
     )
   }
