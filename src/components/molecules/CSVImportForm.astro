@@ -38,6 +38,7 @@ import {
   TriangleAlert,
   Upload,
 } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 
 export interface Props {
   action: string;
@@ -155,24 +156,25 @@ const { action } = Astro.props;
 
     <!-- Actions -->
     <div class="card-actions justify-end gap-2 pt-4 border-t border-base-300">
-      <button
+      <Button
         id="reset-button"
         type="button"
-        class="btn btn-ghost rounded-xl"
+        variant="ghost"
+        className="border-0"
         aria-label="Choose different file"
       >
         <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
         Choose Different File
-      </button>
-      <button
+      </Button>
+      <Button
         id="proceed-to-mapping-button"
         type="button"
-        class="btn btn-accent rounded-2xl"
+        variant="primary"
         aria-label="Proceed to column mapping"
       >
         <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
         Map Columns
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -217,33 +219,34 @@ const { action } = Astro.props;
 
     <!-- Mapping Actions -->
     <div class="card-actions justify-end gap-2 pt-4 border-t border-base-300">
-      <button
+      <Button
         id="back-to-preview-button"
         type="button"
-        class="btn btn-ghost rounded-xl"
+        variant="ghost"
+        className="border-0"
         aria-label="Back to file preview"
       >
         <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back to Preview
-      </button>
-      <button
+      </Button>
+      <Button
         id="auto-map-button"
         type="button"
-        class="btn btn-outline rounded-xl"
+        variant="outline"
         aria-label="Auto-detect column mappings"
       >
         <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
         Auto-Detect
-      </button>
-      <button
+      </Button>
+      <Button
         id="confirm-import-button"
         type="button"
-        class="btn btn-accent rounded-2xl"
+        variant="primary"
         aria-label="Confirm mapping and start import"
       >
         <Check size={16} class="stroke-current" aria-hidden="true" />
         Import Transactions
-      </button>
+      </Button>
     </div>
 
     <!-- Validation Message -->
@@ -310,15 +313,15 @@ const { action } = Astro.props;
 
         <!-- Actions -->
         <div class="card-actions justify-end mt-4 pt-4 border-t border-base-300">
-          <button
+          <Button
             id="import-another-button"
             type="button"
-            class="btn btn-accent rounded-2xl"
+            variant="primary"
             aria-label="Import another file"
           >
             <Plus size={16} class="stroke-current" aria-hidden="true" />
             Import Another File
-          </button>
+          </Button>
           <a href="/transactions" class="btn btn-outline rounded-xl">
             <List size={16} class="stroke-current" aria-hidden="true" />
             View All Transactions

@@ -20,6 +20,7 @@
  */
 
 import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Eye, User } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
 
@@ -144,9 +145,11 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         {/* Update Balance pencil (primary action) */}
         {
           !isHistoricalView && (
-            <button
+            <Button
               type="button"
-              class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              variant="ghost"
+              shape="square"
+              className="min-h-[44px] min-w-[44px] rounded-md border-0 text-base-content/40 hover:text-accent hover:bg-accent/10"
               aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
               data-update-value-account={id}
               data-account-name={name}
@@ -155,7 +158,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
               data-testid="account-update-value-btn"
             >
               <Pencil size={12} class="stroke-current" aria-hidden="true" />
-            </button>
+            </Button>
           )
         }
       </div>
@@ -354,9 +357,11 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
           </p>
           {
             !isHistoricalView && (
-              <button
+              <Button
                 type="button"
-                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                variant="ghost"
+                shape="square"
+                className="min-h-[44px] min-w-[44px] rounded-md border-0 text-base-content/40 hover:text-accent hover:bg-accent/10"
                 aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
                 data-update-value-account={id}
                 data-account-name={name}
@@ -365,7 +370,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
                 data-testid="account-update-value-btn"
               >
                 <Pencil size={14} class="stroke-current" aria-hidden="true" />
-              </button>
+              </Button>
             )
           }
         </div>

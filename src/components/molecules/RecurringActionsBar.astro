@@ -1,5 +1,6 @@
 ---
 import { Plus } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import ActionBar from './ActionBar.astro';
 import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 
@@ -8,19 +9,27 @@ export interface Props {
 }
 
 const { className = '' } = Astro.props;
+
+const recurringActionClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 ---
 
 <ActionBar className={className} ariaLabel="Recurring actions" edgeBleed>
   <div slot="primary" class="flex items-center">
-    <button
+    <Button
       type="button"
-      class={accentGhostBtn}
+      variant="ghost"
+      size="sm"
+      className={recurringActionClassName}
       data-open-recurring-template
       aria-label="Create new recurring transaction"
     >
       <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
       <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
       <span class="text-xs md:text-sm">New Recurring</span>
-    </button>
+    </Button>
   </div>
 </ActionBar>
