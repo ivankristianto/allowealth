@@ -70,7 +70,7 @@ describe('Task 7 button migration', () => {
     expect(drilldownPartial).toContain('<form method="dialog"');
 
     const drilldownModal = read('src/components/organisms/CategoryDrillDownModal.astro');
-    expect(buttonCount(drilldownModal)).toBe(3);
+    expect(buttonCount(drilldownModal)).toBe(1);
     expect(drilldownModal).toContain('data-nav-prev');
     expect(drilldownModal).toContain('data-nav-next');
     expect(drilldownModal).toContain('<form method="dialog">');

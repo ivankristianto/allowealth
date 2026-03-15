@@ -8,6 +8,7 @@
  * @param {string} id - Modal ID
  */
 
+import Button from '@/components/atoms/Button.astro';
 import Modal from '../molecules/Modal.astro';
 
 export interface Props {
@@ -27,6 +28,33 @@ const { id } = Astro.props;
 
       {/* Content container - will be populated with server-rendered HTML */}
       <div data-drilldown-content class="hidden"></div>
+
+      <div
+        class="sticky bottom-0 z-10 -mx-6 -mb-6 hidden border-t border-base-300 bg-base-100/90 px-6 pb-4 pt-3 backdrop-blur-sm"
+        data-modal-nav
+      >
+        <div class="flex items-center justify-between">
+          <Button
+            type="button"
+            variant="ghost"
+            className="gap-2 border-0 font-bold"
+            data-nav-prev
+            aria-label="Previous category"
+          >
+            ← Prev
+          </Button>
+          <span class="text-xs font-bold text-base-content/40" data-nav-counter></span>
+          <Button
+            type="button"
+            variant="ghost"
+            className="gap-2 border-0 font-bold"
+            data-nav-next
+            aria-label="Next category"
+          >
+            Next →
+          </Button>
+        </div>
+      </div>
     </div>
   </Modal>
 </div>
@@ -148,9 +176,9 @@ const { id } = Astro.props;
       }
 
       /**
-       * Inject prev/next nav buttons into content
+       * Sync prev/next nav buttons rendered in the modal source.
        */
-      function injectNavButtons(): void {
+      function syncNavButtons(): void {
         if (!contentContainer || !currentData) return;
         const categories = getOrderedCategories();
         const currentIndex = categories.findIndex((c) => c.categoryId === currentData!.categoryId);
@@ -158,51 +186,19 @@ const { id } = Astro.props;
 
         const hasPrev = currentIndex > 0;
         const hasNext = currentIndex < categories.length - 1;
+        const nav = container.querySelector<HTMLElement>('[data-modal-nav]');
+        const prevButton = container.querySelector<HTMLButtonElement>('[data-nav-prev]');
+        const nextButton = container.querySelector<HTMLButtonElement>('[data-nav-next]');
+        const counter = container.querySelector<HTMLElement>('[data-nav-counter]');
+        if (!nav || !prevButton || !nextButton || !counter) return;
 
-        // Only add nav if there are multiple categories
-        if (categories.length <= 1) return;
-
-        // Inject nav as direct child of modal-box for reliable sticky positioning.
-        // modal-box is the scroll container; sticky bottom-0 keeps nav visible during scroll.
-        const modalBox = modal.querySelector('.modal-box');
-        if (!modalBox) return;
-
-        // Remove existing nav if any (from modal-box, not contentContainer)
-        modalBox.querySelector('[data-modal-nav]')?.remove();
-
-        const nav = document.createElement('div');
-        nav.className =
-          'sticky bottom-0 z-10 -mx-6 -mb-6 border-t border-base-300 bg-base-100/90 px-6 pb-4 pt-3 backdrop-blur-sm';
-        nav.dataset.modalNav = '';
-
-        const navRow = document.createElement('div');
-        navRow.className = 'flex items-center justify-between';
-
-        const createNavButton = (label: string, direction: 'prev' | 'next', hidden: boolean) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = `btn btn-ghost rounded-2xl font-bold gap-2 ${hidden ? 'invisible' : ''}`;
-          button.dataset[`nav${direction === 'prev' ? 'Prev' : 'Next'}`] = '';
-          button.setAttribute(
-            'aria-label',
-            direction === 'prev' ? 'Previous category' : 'Next category'
-          );
-          button.textContent = label;
-          button.addEventListener('click', () => navigateToCategory(direction));
-          return button;
-        };
-
-        const counter = document.createElement('span');
-        counter.className = 'text-xs font-bold text-base-content/40';
+        const shouldShowNav = categories.length > 1;
+        nav.classList.toggle('hidden', !shouldShowNav);
+        prevButton.classList.toggle('invisible', !hasPrev);
+        nextButton.classList.toggle('invisible', !hasNext);
         counter.textContent = `${currentIndex + 1} / ${categories.length}`;
-
-        navRow.append(
-          createNavButton('← Prev', 'prev', !hasPrev),
-          counter,
-          createNavButton('Next →', 'next', !hasNext)
-        );
-        nav.append(navRow);
-        modalBox.append(nav);
+        prevButton.onclick = () => navigateToCategory('prev');
+        nextButton.onclick = () => navigateToCategory('next');
       }
 
       const handleOpenDrillDown = (async (e: CustomEvent<CategoryDrillDownData>) => {
@@ -234,7 +230,7 @@ const { id } = Astro.props;
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');
           syncPaginationStateFromContent();
-          injectNavButtons();
+          syncNavButtons();
         } catch (error) {
           // Silently ignore aborted requests — a newer navigation superseded this one
           if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -292,7 +288,7 @@ const { id } = Astro.props;
           loadingContainer?.classList.add('hidden');
           contentContainer?.classList.remove('hidden');
           syncPaginationStateFromContent();
-          injectNavButtons();
+          syncNavButtons();
         } catch (error) {
           if (error instanceof DOMException && error.name === 'AbortError') return;
           console.error('Error paginating category drilldown:', error);

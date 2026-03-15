@@ -68,13 +68,12 @@ const {
 
 const isDisabled = disabled || loading;
 
-// Base classes - focus ring uses accent color for theme-aware consistency
-// rounded-2xl (1rem) follows design system borderRadius.2xl
+// Base classes - focus ring uses accent color for theme-aware consistency.
 // NOTE: Do NOT use @apply with DaisyUI component classes in globals.css.
 // Tailwind v4 + DaisyUI v5 @apply expands btn styles at a late position in the CSS,
 // causing --btn-fg to override btn-accent's --btn-fg due to source order cascade.
 const baseClasses =
-  'btn inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
+  'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
 // Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Allowealth v1.0.0
 const variantClasses: Record<string, string> = {
@@ -102,7 +101,7 @@ const sizeClasses: Record<string, string> = {
 };
 
 const shapeClasses: Record<string, string> = {
-  default: '',
+  default: 'rounded-2xl',
   square: 'btn-square',
   circle: 'btn-circle',
 };
