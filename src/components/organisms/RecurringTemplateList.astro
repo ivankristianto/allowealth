@@ -1,4 +1,5 @@
 ---
+import Button from '@/components/atoms/Button.astro';
 import { EllipsisVertical, Pause, Play, Ban, Pencil, Info } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import RecurringTemplateFilterBar from '@/components/molecules/RecurringTemplateFilterBar.astro';
@@ -120,14 +121,17 @@ function daySuffix(day: number): string {
                   </div>
 
                   <div class="dropdown dropdown-end">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
+                      shape="square"
                       tabindex={0}
-                      class="btn btn-ghost btn-sm btn-square h-11 min-h-11 w-11 min-w-11 rounded-lg"
+                      className="h-11 min-h-11 w-11 min-w-11 rounded-lg border-0"
                       aria-label={`Actions for ${template.name}`}
                     >
                       <EllipsisVertical size={14} aria-hidden="true" />
-                    </button>
+                    </Button>
                     <ul
                       tabindex={0}
                       class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
@@ -284,14 +288,17 @@ function daySuffix(day: number): string {
                     </td>
                     <td>
                       <div class="dropdown dropdown-end">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
+                          shape="square"
                           tabindex={0}
-                          class="btn btn-ghost btn-sm btn-square h-11 min-h-11 w-11 min-w-11 rounded-lg"
+                          className="h-11 min-h-11 w-11 min-w-11 rounded-lg border-0"
                           aria-label={`Actions for ${template.name}`}
                         >
                           <EllipsisVertical size={14} aria-hidden="true" />
-                        </button>
+                        </Button>
                         <ul
                           tabindex={0}
                           class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"

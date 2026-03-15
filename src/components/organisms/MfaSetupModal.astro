@@ -9,6 +9,7 @@
  */
 
 import Modal from '@/components/molecules/Modal.astro';
+import Button from '@/components/atoms/Button.astro';
 import { ShieldCheck } from '@lucide/astro';
 
 export interface Props {
@@ -56,21 +57,23 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         <div class="hidden alert alert-error text-sm" data-mfa-password-error role="alert"></div>
 
         <div class="flex items-center gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            variant="ghost"
+            className="flex-1 border-0 font-semibold"
             data-mfa-cancel-setup
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="flex-[2] btn btn-accent rounded-2xl"
+            variant="primary"
+            className="flex-[2]"
             data-mfa-start
             data-testid="mfa-start-btn"
           >
             Continue
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -101,9 +104,9 @@ const { id = 'mfa-setup-modal' } = Astro.props;
           </p>
           <code class="font-mono text-sm break-all" data-manual-code></code>
         </div>
-        <button type="button" class="btn btn-outline w-full rounded-2xl" data-mfa-continue>
+        <Button type="button" variant="outline" className="w-full" data-mfa-continue>
           I have scanned this code
-        </button>
+        </Button>
       </div>
 
       <form data-step="verify" class="hidden space-y-4">
@@ -127,21 +130,23 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         <div class="hidden alert alert-error text-sm" data-mfa-error role="alert"></div>
 
         <div class="flex items-center gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            variant="ghost"
+            className="flex-1 border-0 font-semibold"
             data-mfa-cancel
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="flex-[2] btn btn-accent rounded-2xl"
+            variant="primary"
+            className="flex-[2]"
             data-mfa-verify-btn
             data-testid="mfa-verify-btn"
           >
             Verify & Enable
-          </button>
+          </Button>
         </div>
       </form>
     </div>
