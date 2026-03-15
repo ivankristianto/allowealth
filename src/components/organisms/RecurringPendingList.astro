@@ -59,7 +59,7 @@ import Button from '@/components/atoms/Button.astro';
 
 <section class="space-y-3" data-testid="recurring-pending-section">
   <div class="flex flex-wrap items-center gap-2">
-    <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/70">Upcoming Queue</h3>
+    <h3 class="text-xs font-bold uppercase tracking-widest text-neutral">Upcoming Queue</h3>
     <Button
       type="button"
       variant="success"
@@ -178,7 +178,7 @@ import Button from '@/components/atoms/Button.astro';
                     </td>
                     <td>
                       <div class="space-y-1">
-                        <p class="text-sm font-semibold tabular-nums">{dueLabel}</p>
+                        <p class="text-sm font-semibold">{dueLabel}</p>
                         <p
                           class:list={[
                             'text-xs font-semibold',
@@ -196,7 +196,7 @@ import Button from '@/components/atoms/Button.astro';
                     <td>
                       <p
                         class:list={[
-                          'text-sm font-bold tabular-nums',
+                          'text-sm font-bold',
                           isExpense ? 'text-error' : 'text-success',
                         ]}
                       >

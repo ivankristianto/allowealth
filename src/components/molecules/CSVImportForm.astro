@@ -121,7 +121,7 @@ const { action } = Astro.props;
     <div id="file-info" class="alert alert-success" role="alert" aria-live="polite">
       <Check size={16} class="shrink-0" aria-hidden="true" />
       <div>
-        <h4 class="font-bold">File Parsed Successfully</h4>
+        <h3 class="font-bold">File Parsed Successfully</h3>
         <p id="file-info-text" class="text-sm"></p>
       </div>
     </div>
@@ -183,7 +183,7 @@ const { action } = Astro.props;
     <div class="alert alert-info">
       <Info size={16} class="shrink-0" aria-hidden="true" />
       <div>
-        <h4 class="font-bold">Step 2: Map CSV Columns to Fields</h4>
+        <h3 class="font-bold">Step 2: Map CSV Columns to Fields</h3>
         <p class="text-sm">
           Select which CSV column corresponds to each required field. We've suggested mappings based
           on your column names.
@@ -258,7 +258,7 @@ const { action } = Astro.props;
     <div class="alert alert-info" role="status" aria-live="polite">
       <span class="loading loading-spinner loading-primary"></span>
       <div>
-        <h4 class="font-bold">Importing Transactions...</h4>
+        <h3 class="font-bold">Importing Transactions...</h3>
         <p class="text-sm">Please wait while we process your CSV file.</p>
       </div>
     </div>
@@ -297,7 +297,7 @@ const { action } = Astro.props;
 
         <!-- Error Details (if any) -->
         <div id="error-details-section" class="hidden mt-4">
-          <h4 class="font-semibold mb-2">Error Details</h4>
+          <h3 class="font-semibold mb-2">Error Details</h3>
           <div class="overflow-x-auto border rounded-lg max-h-60">
             <table class="table table-sm table-zebra" aria-label="Import error details">
               <thead>

@@ -105,10 +105,7 @@ function daySuffix(day: number): string {
                     </div>
 
                     <p
-                      class:list={[
-                        'text-sm font-bold tabular-nums',
-                        isExpense ? 'text-error' : 'text-success',
-                      ]}
+                      class:list={['text-sm font-bold', isExpense ? 'text-error' : 'text-success']}
                     >
                       {formatCurrency(template.amount, template.currency)}
                     </p>
@@ -269,7 +266,7 @@ function daySuffix(day: number): string {
                     <td>
                       <span
                         class:list={[
-                          'text-sm font-bold tabular-nums',
+                          'text-sm font-bold',
                           isExpense ? 'text-error' : 'text-success',
                         ]}
                       >

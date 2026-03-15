@@ -27,7 +27,7 @@ const isNetPositive = netNum >= 0;
       </p>
       <TrendingUp size={16} class="shrink-0 stroke-success" aria-hidden="true" />
     </div>
-    <p class="mt-2 text-xl font-bold tabular-nums text-success">
+    <p class="mt-2 text-xl font-bold text-success">
       {formatCurrency(incomeNum.toFixed(2), currency)}
     </p>
   </div>
@@ -39,7 +39,7 @@ const isNetPositive = netNum >= 0;
       </p>
       <TrendingDown size={16} class="shrink-0 stroke-error" aria-hidden="true" />
     </div>
-    <p class="mt-2 text-xl font-bold tabular-nums text-error">
+    <p class="mt-2 text-xl font-bold text-error">
       {formatCurrency((-Math.abs(expenseNum)).toFixed(2), currency)}
     </p>
   </div>
@@ -55,12 +55,7 @@ const isNetPositive = netNum >= 0;
         aria-hidden="true"
       />
     </div>
-    <p
-      class:list={[
-        'mt-2 text-xl font-bold tabular-nums',
-        isNetPositive ? 'text-info' : 'text-error',
-      ]}
-    >
+    <p class:list={['mt-2 text-xl font-bold', isNetPositive ? 'text-info' : 'text-error']}>
       {formatCurrency(netNum.toFixed(2), currency)}
     </p>
   </div>

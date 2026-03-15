@@ -195,7 +195,7 @@ function initTransactionDrawer(): void {
       li.appendChild(contentDiv);
 
       const amountDiv = document.createElement('div');
-      amountDiv.className = `font-bold text-xs whitespace-nowrap tabular-nums ${data.type === 'expense' ? 'text-error' : 'text-success'}`;
+      amountDiv.className = `font-bold text-xs whitespace-nowrap ${data.type === 'expense' ? 'text-error' : 'text-success'}`;
       amountDiv.innerText = `${data.type === 'expense' ? '-' : '+'} ${formatMoney(data.amount, data.currency)}`;
       li.appendChild(amountDiv);
 

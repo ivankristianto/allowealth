@@ -105,7 +105,7 @@ const getMemberColor = (name: string) => {
                       <span class="font-semibold">{member.userName}</span>
                     </div>
                   </td>
-                  <td class="text-right text-success font-medium tabular-nums">
+                  <td class="text-right text-success font-medium">
                     {formatCurrency(income, currency)}
                   </td>
                   <td class="text-right hidden sm:table-cell">
@@ -113,13 +113,13 @@ const getMemberColor = (name: string) => {
                       <div class="w-16 h-1.5 rounded-full bg-base-200 overflow-hidden">
                         <div class="h-full bg-success/60 rounded-full" style={`width: ${share}%`} />
                       </div>
-                      <span class="text-xs font-medium text-base-content/60 w-10 text-right tabular-nums">
+                      <span class="text-xs font-medium text-base-content/60 w-10 text-right">
                         {share.toFixed(0)}%
                       </span>
                     </div>
                   </td>
                   <td class="text-right">
-                    <span class="text-base-content/60 tabular-nums">{member.transactionCount}</span>
+                    <span class="text-base-content/60">{member.transactionCount}</span>
                   </td>
                 </tr>
               );
@@ -139,13 +139,13 @@ const getMemberColor = (name: string) => {
                   <span>Total</span>
                 </div>
               </td>
-              <td class="text-right text-success font-bold tabular-nums">
+              <td class="text-right text-success font-bold">
                 {formatCurrency(totalIncomeNum, currency)}
               </td>
               <td class="text-right hidden sm:table-cell">
                 <span class="text-xs font-medium text-base-content/40">100%</span>
               </td>
-              <td class="text-right font-bold tabular-nums">{totalTxns}</td>
+              <td class="text-right font-bold">{totalTxns}</td>
             </tr>
           </tfoot>
         )

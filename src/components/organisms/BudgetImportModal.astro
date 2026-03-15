@@ -145,6 +145,7 @@ const { id, month, year, currency } = Astro.props;
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
 
   const initializedContainers = new WeakSet<Element>();
 
@@ -283,7 +284,7 @@ const { id, month, year, currency } = Astro.props;
               previewBody.innerHTML = parsedRows
                 .map(
                   (row) =>
-                    `<tr><td>${escapeHtml(row.budget_name)}</td><td class="text-right font-mono">${escapeHtml(row.budget_amount)}</td></tr>`
+                    `<tr><td>${escapeHtml(row.budget_name)}</td><td class="text-right">${formatCurrency(parseFloat(row.budget_amount) || 0, container.querySelector<HTMLInputElement>('[data-import-currency]')?.value || 'IDR')}</td></tr>`
                 )
                 .join('');
             }

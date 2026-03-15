@@ -247,9 +247,9 @@ const cardClasses = [
             <IconComponent size={20} class="stroke-current hidden md:block" aria-hidden="true" />
           </IconBadge>
           <div>
-            <h3 class="font-bold text-sm md:text-base text-base-content tracking-tight leading-none">
+            <h2 class="font-bold text-sm md:text-base text-base-content tracking-tight leading-none">
               {categoryName}
-            </h3>
+            </h2>
             <span
               class="inline-block mt-1 md:mt-2"
               data-status-badge
@@ -330,7 +330,7 @@ const cardClasses = [
               Spent{' '}
             </StatLabel>
             <p
-              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none"
+              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-neutral leading-none"
               data-testid="budget-spent"
             >
               {formatCurrency(spent, currency)}
@@ -350,6 +350,7 @@ const cardClasses = [
             size="sm"
             animate={true}
             className="md:h-3"
+            ariaLabel={`${categoryName} budget: ${Math.round(percentageUsed)}% used`}
           />
         </div>
 

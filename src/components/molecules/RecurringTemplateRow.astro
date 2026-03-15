@@ -62,7 +62,12 @@ const frequencyLabel = formatRecurringFrequencyLabel(
         {
           template.is_installment && template.total_occurrences && (
             <div class="mt-1.5 flex items-center gap-2">
-              <ProgressBar value={installmentProgress} size="sm" className="w-16" />
+              <ProgressBar
+                value={installmentProgress}
+                size="sm"
+                className="w-16"
+                ariaLabel={`${template.name} installment progress: ${Math.round(installmentProgress)}%`}
+              />
               <span class="text-xs text-base-content/50 font-medium">
                 {template.confirmedCount}/{template.total_occurrences}
               </span>

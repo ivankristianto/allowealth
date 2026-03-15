@@ -6,6 +6,7 @@ import {
   stripAmountFormatting,
   formatAmountForDisplay,
 } from '@/lib/formatting/amount-input';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import {
@@ -412,7 +413,7 @@ function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLEle
   }
 
   if (originalAmount) {
-    originalAmount.textContent = `Original: ${formatAmountForDisplay(occurrence.templateAmount, confirmCurrency)} ${occurrence.currency}`;
+    originalAmount.textContent = `Original: ${formatCurrency(parseFloat(occurrence.templateAmount) || 0, confirmCurrency)}`;
     originalAmount.classList.add('hidden');
   }
 
