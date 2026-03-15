@@ -15,6 +15,7 @@
  * @param {string} className - Additional CSS classes
  */
 
+import Button from '@/components/atoms/Button.astro';
 import { X } from '@lucide/astro';
 
 interface Props {
@@ -84,14 +85,17 @@ const resolvedAriaLabel = title ? undefined : ariaLabel || 'Drawer';
             </h2>
           )
         }
-        <button
+        <Button
           type="button"
-          class="btn btn-sm btn-circle btn-ghost hover:bg-accent/10 hover:text-accent"
+          variant="ghost"
+          size="sm"
+          shape="circle"
+          className="border-0 hover:bg-accent/10 hover:text-accent"
           aria-label="Close drawer"
           data-close-drawer
         >
           <X size={20} class="stroke-current" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
 
       <!-- Content -->
