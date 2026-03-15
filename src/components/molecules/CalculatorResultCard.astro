@@ -46,12 +46,12 @@ const numericValue = typeof value === 'string' ? parseFloat(value) : value;
 
 <div id={id} class={['p-6 rounded-card border', cardClass].join(' ')}>
   <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80">{label}</p>
-  <h4 class="text-2xl font-bold">
+  <h2 class="text-2xl font-bold">
     <Currency
       amount={numericValue}
       currency={currency}
       size="xl"
       variant={variant === 'success' ? 'positive' : 'default'}
     />
-  </h4>
+  </h2>
 </div>

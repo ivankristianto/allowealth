@@ -141,7 +141,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
                 >{spentFormatted}</span
               >
               <span
-                class="text-sm @sm:text-base text-base-content/60 font-medium tracking-normal whitespace-nowrap"
+                class="text-sm @sm:text-base text-neutral font-medium tracking-normal whitespace-nowrap"
                 >/ {budgetFormatted}</span
               >
             </div>
@@ -150,14 +150,19 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
       </div>
 
       <div class="space-y-2">
-        <ProgressBar value={percentage} status={progressBarStatus} size="md" />
+        <ProgressBar
+          value={percentage}
+          status={progressBarStatus}
+          size="md"
+          ariaLabel="Monthly budget usage"
+        />
         <div class="flex justify-between items-center text-sm">
-          <span class="text-base-content/60">Budget Used</span>
+          <span class="text-neutral">Budget Used</span>
           <span class="font-semibold text-base-content">{percentageRounded}%</span>
         </div>
       </div>
 
-      <p class="text-base font-medium text-base-content/60">
+      <p class="text-base font-medium text-neutral">
         {remainingLabel}:{' '}
         <span class="font-bold text-base-content">{remainingFormatted}</span>
       </p>
@@ -183,7 +188,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
             {netSavings < 0 ? '-' : ''}
             {netSavingsFormatted}
           </p>
-          <p class="text-xs font-medium text-base-content/60 mt-0.5">
+          <p class="text-xs font-medium text-neutral mt-0.5">
             {Math.abs(Math.round(savingsPercentage))}% of income
           </p>
         </div>
