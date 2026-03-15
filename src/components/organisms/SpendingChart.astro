@@ -62,6 +62,7 @@ const serializedColors = JSON.stringify(DEFAULT_COLORS);
 
 // Generate unique ID for this chart instance
 const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <Card
@@ -147,10 +148,11 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
             aria-label="Spending categories. Use arrow keys to navigate, Enter or Space to view details."
           >
             {data.slice(0, 5).map((item, index) => (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 data-category-index={index}
-                class="spending-chart-legend-item flex items-center justify-between p-2.5 @xs:p-3.5 rounded-xl @xs:rounded-2xl transition-all border border-transparent hover:bg-base-200/50 hover:shadow-sm cursor-pointer opacity-80 hover:opacity-100 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                className="spending-chart-legend-item h-auto w-full justify-between rounded-xl border border-transparent p-2.5 text-left opacity-80 hover:border-transparent hover:bg-base-200/50 hover:shadow-sm hover:opacity-100 @xs:rounded-2xl @xs:p-3.5"
                 aria-pressed="false"
                 aria-label={`${item.category}: ${item.percentage}%. Click to view details.${item.category === 'Other' && Array.isArray(item.otherCategoryNames) && item.otherCategoryNames.length > 0 ? ` Includes: ${item.otherCategoryNames.join(', ')}.` : ''}`}
               >
@@ -184,7 +186,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
                 <span class="text-sm @xs:text-base font-bold text-base-content">
                   {item.percentage}%
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

@@ -19,6 +19,7 @@ export interface Props {
 }
 
 const { id } = Astro.props;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -123,21 +124,23 @@ const { id } = Astro.props;
 
         {/* Actions */}
         <div class="flex gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200"
+            variant="ghost"
+            className="flex-1 h-14 font-bold border-0"
             data-cancel-update-value
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="btn btn-warning flex-1 h-14 rounded-2xl font-bold"
+            variant="warning"
+            className="flex-1 h-14 font-bold"
             data-submit-update-value
             data-testid="update-value-submit-btn"
           >
             Update Value
-          </button>
+          </Button>
         </div>
       </form>
     </div>

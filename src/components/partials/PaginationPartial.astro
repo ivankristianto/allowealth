@@ -23,6 +23,7 @@ const start = (page - 1) * limit + 1;
 const end = Math.min(page * limit, total);
 const showPagination = total > limit;
 const paginationCurrentClass = `inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 font-medium text-base-content ${tokenClasses.textSm}`;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -44,26 +45,30 @@ const paginationCurrentClass = `inline-flex items-center justify-center min-h-[4
     )
   }
   <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-    <button
-      class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"
+    <Button
+      variant="ghost"
+      size="sm"
+      className="min-h-[44px] min-w-[44px] rounded-2xl bg-base-100 text-base-content hover:border-accent sm:min-w-0"
       disabled={page <= 1}
       data-pagination-prev
       aria-label="Previous page"
     >
       Previous
-    </button>
+    </Button>
 
     <span class={paginationCurrentClass} data-pagination-current>
       {page} / {totalPages}
     </span>
 
-    <button
-      class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"
+    <Button
+      variant="ghost"
+      size="sm"
+      className="min-h-[44px] min-w-[44px] rounded-2xl bg-base-100 text-base-content hover:border-accent sm:min-w-0"
       disabled={page >= totalPages}
       data-pagination-next
       aria-label="Next page"
     >
       Next
-    </button>
+    </Button>
   </div>
 </div>

@@ -64,6 +64,7 @@ const categoryOptions = categories.length
       value: category.legacyType,
       label: category.name,
     }));
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -126,13 +127,15 @@ const categoryOptions = categories.length
               Account Category
             </label>
             {/* P3: TODO - Implement custom category creation feature */}
-            <button
+            <Button
               type="button"
-              class="text-xs font-bold text-accent uppercase tracking-widest hover:underline"
+              variant="ghost"
+              size="xs"
+              className="h-auto min-h-0 border-0 bg-transparent px-0 py-0 text-xs font-bold text-accent uppercase tracking-widest hover:bg-transparent hover:underline"
               data-toggle-custom-type
             >
               Create New Category
-            </button>
+            </Button>
           </div>
 
           {/* Select dropdown (default) */}
@@ -240,21 +243,23 @@ const categoryOptions = categories.length
 
         {/* Actions */}
         <div class="flex gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            variant="ghost"
+            className="flex-1 h-14 font-bold border-0"
             data-cancel-account-form
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="btn btn-accent flex-1 h-14 rounded-2xl font-bold"
+            variant="primary"
+            className="flex-1 h-14 font-bold"
             data-submit-account-form
             data-testid="account-submit-btn"
           >
             {submitLabel}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

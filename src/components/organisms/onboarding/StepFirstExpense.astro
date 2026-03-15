@@ -33,6 +33,7 @@ const today = new Date().toISOString().split('T')[0];
 
 // Default to first account's currency
 const defaultAccount = accounts[0];
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="space-y-6">
@@ -141,20 +142,22 @@ const defaultAccount = accounts[0];
         Back
       </a>
       <div class="flex gap-2">
-        <button
+        <Button
           type="button"
           id="onboarding-skip-expense"
-          class="btn btn-outline min-h-[44px] rounded-lg border-base-300 px-4 sm:rounded-xl"
+          variant="outline"
+          className="min-h-[44px] rounded-lg border-base-300 px-4 text-base-content hover:border-base-300 hover:bg-base-200 hover:text-base-content sm:rounded-xl"
         >
           Skip for now
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
-          class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
+          variant="primary"
+          className="min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
         >
           Complete setup
           <CircleCheckBig size={16} class="stroke-current" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
     </div>
   </form>

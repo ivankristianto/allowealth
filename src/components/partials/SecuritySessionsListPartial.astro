@@ -28,6 +28,7 @@ function formatRelativeDate(date: Date): string {
   if (diffDays < 30) return `${diffDays}d ago`;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
+import Button from '@/components/atoms/Button.astro';
 ---
 
 {
@@ -61,16 +62,19 @@ function formatRelativeDate(date: Date): string {
             </div>
           </div>
           {!session.isCurrent && (
-            <button
+            <Button
               type="button"
-              class="btn btn-ghost btn-sm text-error rounded-xl"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              className="rounded-xl border-0 text-error"
               data-revoke-session
               data-session-id={session.id}
               data-session-label={session.deviceLabel}
               aria-label={`Revoke ${session.deviceLabel}`}
             >
               <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-            </button>
+            </Button>
           )}
         </div>
       ))}

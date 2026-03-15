@@ -69,6 +69,7 @@ const bannerClasses = [
 ]
   .filter(Boolean)
   .join(' ');
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <aside class={bannerClasses} role="complementary" aria-label="Budget advice" data-advice-banner>
@@ -109,27 +110,31 @@ const bannerClasses = [
         {ctaText}
       </a>
     ) : (
-      <button
+      <Button
         type="button"
-        class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap w-full sm:w-auto shrink-0"
+        variant="primary"
+        className="gap-2 whitespace-nowrap w-full sm:w-auto shrink-0"
         data-execute-reallocation
       >
         {ctaText}
-      </button>
+      </Button>
     )
   }
 
   {/* Dismiss Button */}
   {
     dismissible && (
-      <button
+      <Button
         type="button"
-        class="absolute top-3 right-3 p-1 text-base-content/40 hover:text-base-content/60 transition-colors rounded-lg hover:bg-base-200/50"
+        variant="ghost"
+        size="sm"
+        shape="square"
+        className="absolute top-3 right-3 rounded-lg border-0 text-base-content/40 hover:bg-base-200/50 hover:text-base-content/60"
         aria-label="Dismiss advice"
         data-dismiss-advice
       >
         <X size={18} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
     )
   }
 </aside>

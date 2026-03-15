@@ -31,6 +31,7 @@ const primaryCurrency = currencies[0];
 
 // Account types suitable for onboarding (most common ones)
 const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet', 'credit_card'];
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="space-y-6">
@@ -146,13 +147,14 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
     >
     </div>
 
-    <button
+    <Button
       type="submit"
-      class="btn btn-outline min-h-[44px] w-full gap-2 rounded-lg border-base-300 sm:rounded-xl"
+      variant="outline"
+      className="min-h-[44px] w-full gap-2 rounded-lg border-base-300 text-base-content hover:border-base-300 hover:bg-base-200 hover:text-base-content sm:rounded-xl"
     >
       <Plus size={16} class="stroke-current" aria-hidden="true" />
       Add account
-    </button>
+    </Button>
   </form>
 
   <p class="text-sm leading-relaxed text-base-content/60">
@@ -167,15 +169,16 @@ const onboardingAccountTypes: AccountType[] = ['bank_account', 'cash', 'e_wallet
       <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
       Back
     </a>
-    <button
+    <Button
       type="button"
       id="onboarding-accounts-continue"
-      class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
+      variant="primary"
+      className="min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
       disabled={accounts.length === 0}
     >
       Continue
       <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
-    </button>
+    </Button>
   </div>
 </div>
 

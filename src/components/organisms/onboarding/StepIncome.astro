@@ -17,6 +17,7 @@ export interface Props {
 }
 
 const { currencies, currentIncome } = Astro.props;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="space-y-6">
@@ -77,10 +78,14 @@ const { currencies, currentIncome } = Astro.props;
         <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back
       </a>
-      <button type="submit" class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl">
+      <Button
+        type="submit"
+        variant="primary"
+        className="min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
+      >
         Continue
         <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
     </div>
   </form>
 </div>

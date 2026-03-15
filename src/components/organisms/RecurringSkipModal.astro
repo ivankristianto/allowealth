@@ -1,6 +1,7 @@
 ---
 import Modal from '@/components/molecules/Modal.astro';
 import { CircleMinus } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <Modal
@@ -60,22 +61,24 @@ import { CircleMinus } from '@lucide/astro';
     </div>
 
     <div class="flex gap-4 pt-2">
-      <button
+      <Button
         type="button"
-        class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        variant="ghost"
+        className="flex-1 h-14 font-bold border-0"
         data-confirm-cancel
       >
         Cancel
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class="btn btn-warning flex-1 h-14 rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        variant="warning"
+        className="flex-1 h-14 font-bold"
         data-confirm-action
         data-loading-text="Skipping..."
         data-testid="skip-confirm-btn"
       >
         Skip
-      </button>
+      </Button>
     </div>
   </form>
 </Modal>

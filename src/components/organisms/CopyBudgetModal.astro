@@ -30,6 +30,7 @@ const { id, sourceMonth, sourceYear, targetMonth, targetYear, budgetCount } = As
 
 const sourceMonthName = getMonthName(sourceMonth);
 const targetMonthName = getMonthName(targetMonth);
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -101,21 +102,23 @@ const targetMonthName = getMonthName(targetMonth);
 
       {/* Actions */}
       <div class="flex items-center gap-4 pt-4">
-        <button
+        <Button
           type="button"
-          class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+          variant="ghost"
+          className="flex-1 h-auto border-0 py-4 font-bold text-base-content/60 transition-colors hover:bg-base-200"
           data-cancel-copy
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          class="flex-[2] btn btn-accent py-4 rounded-2xl font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+          variant="primary"
+          className="flex-[2] h-auto py-4 font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl"
           data-confirm-copy
           disabled={budgetCount === 0}
         >
           Copy Budgets
-        </button>
+        </Button>
       </div>
     </div>
   </Modal>

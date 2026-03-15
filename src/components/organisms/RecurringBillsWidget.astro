@@ -171,6 +171,7 @@ const queueRows: QueueRow[] = sortedPending.slice(0, 5).map((occurrence) => {
 });
 
 const widgetClass = [className, '!p-0', 'overflow-hidden'].filter(Boolean).join(' ');
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <DashboardWidget
@@ -254,15 +255,18 @@ const widgetClass = [className, '!p-0', 'overflow-hidden'].filter(Boolean).join(
                       <div class="shrink-0 flex h-11 w-11 items-start justify-end">
                         {row.canAct ? (
                           <div class="dropdown dropdown-end">
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="xs"
+                              shape="square"
                               tabindex={0}
-                              class="btn btn-ghost btn-xs btn-square rounded-lg h-11 w-11"
+                              className="h-11 w-11 rounded-lg border-0"
                               aria-label={`Actions for ${row.occurrence.templateName}`}
                               aria-haspopup="menu"
                             >
                               <EllipsisVertical size={14} aria-hidden="true" />
-                            </button>
+                            </Button>
                             <ul
                               tabindex={0}
                               class="dropdown-content z-40 menu w-36 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"

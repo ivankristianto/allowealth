@@ -99,6 +99,7 @@ const remainingColorClass = !hasBudget
       : progressStatus === 'warning'
         ? 'text-warning'
         : 'text-success';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -210,24 +211,28 @@ const remainingColorClass = !hasBudget
         of {total}
       </span>
       <div class="flex gap-2">
-        <button
+        <Button
           type="button"
-          class={`btn btn-xs btn-ghost rounded-xl ${offset > 0 ? '' : 'btn-disabled'}`}
+          variant="ghost"
+          size="xs"
+          className="rounded-xl border-0"
           data-drilldown-page="prev"
           disabled={offset <= 0}
           aria-label="Previous drilldown page"
         >
           Prev
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          class={`btn btn-xs btn-ghost rounded-xl ${hasMore ? '' : 'btn-disabled'}`}
+          variant="ghost"
+          size="xs"
+          className="rounded-xl border-0"
           data-drilldown-page="next"
           disabled={!hasMore}
           aria-label="Next drilldown page"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   </div>

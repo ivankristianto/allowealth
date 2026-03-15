@@ -105,6 +105,7 @@ const cardClasses = [
 ]
   .filter(Boolean)
   .join(' ');
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="@container">
@@ -229,14 +230,16 @@ const cardClasses = [
                         </span>
                       )}
                     </p>
-                    <button
+                    <Button
                       type="button"
-                      class="text-xs font-bold text-accent hover:text-accent/80 transition-colors uppercase tracking-wider"
+                      variant="ghost"
+                      size="xs"
+                      className="h-auto min-h-0 border-0 bg-transparent px-0 py-0 text-xs font-bold uppercase tracking-wider text-accent hover:bg-transparent hover:text-accent/80"
                       data-overbudget-filter-toggle
                       aria-pressed="false"
                     >
                       Show overbudget only
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <p class="text-xs font-bold text-success leading-tight">
