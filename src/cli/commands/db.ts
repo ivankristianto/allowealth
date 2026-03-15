@@ -621,7 +621,7 @@ export default defineCommand({
             cutoff.setDate(cutoff.getDate() - days);
 
             const { db, auditLogs } = await import('@/db');
-            const { lt, sql } = await import('drizzle-orm');
+            const { lt, sql, inArray } = await import('drizzle-orm');
 
             const [countResult] = await (db as any)
               .select({ count: sql<number>`count(*)` })
@@ -668,8 +668,6 @@ export default defineCommand({
               }
             }
 
-            const { eq, and } = await import('drizzle-orm');
-
             // Select IDs to delete (for batching if needed)
             const entriesToDelete = await (db as any)
               .select({ id: auditLogs.id })
@@ -691,7 +689,7 @@ export default defineCommand({
               const batch = ids.slice(i, i + BATCH_SIZE);
               const result = await (db as any)
                 .delete(auditLogs)
-                .where(and(lt(auditLogs.created_at, cutoff), eq(auditLogs.id, batch[0])));
+                .where(inArray(auditLogs.id, batch));
               deleted += result?.changes ?? batch.length;
             }
 
