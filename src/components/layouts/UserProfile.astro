@@ -9,8 +9,6 @@
  */
 
 import { User, Shield, LogOut, ChevronDown, Sun, Moon, Monitor, Contrast } from '@lucide/astro';
-import Button from '@/components/atoms/Button.astro';
-
 import type { AuthUser as UserType } from '@/lib/auth/types';
 
 interface Props {
@@ -33,9 +31,9 @@ const getUserInitials = () => {
   class="p-5 border-t border-base-300 relative group-data-[sidebar-collapsed=true]:p-3 mt-auto shrink-0 bg-base-100"
   data-profile-dropdown
 >
-  <Button
-    variant="ghost"
-    className="w-full justify-start gap-3 p-4 bg-base-200/80 dark:bg-base-200/50 hover:bg-base-200 text-left group border-base-300 dark:border-base-300/50 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0 group-data-[sidebar-collapsed=true]:p-2"
+  <button
+    type="button"
+    class="w-full flex items-center gap-3 px-6 py-4 bg-base-200/80 dark:bg-base-200/50 rounded-2xl border border-base-300 dark:border-base-300/50 transition-all hover:bg-base-200 text-left group cursor-pointer group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0 group-data-[sidebar-collapsed=true]:p-2"
     data-profile-button
     aria-expanded="false"
     aria-haspopup="menu"
@@ -58,7 +56,7 @@ const getUserInitials = () => {
       data-profile-chevron
       aria-hidden="true"
     />
-  </Button>
+  </button>
 
   <!-- User Menu Dropdown -->
   <div
