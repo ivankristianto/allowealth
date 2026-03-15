@@ -124,7 +124,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                       </div>
                     </th>
                     {monthKeys.map((key) => (
-                      <td class="min-w-40 px-4 py-5 text-right text-sm font-medium tabular-nums whitespace-nowrap">
+                      <td class="min-w-40 px-4 py-5 text-right text-sm font-medium whitespace-nowrap">
                         {row.months[key] != null ? (
                           <span>
                             {formatSignedAmount(row.months[key]!, row.templateType, row.currency)}
@@ -157,7 +157,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                         Income
                       </th>
                       {monthKeys.map((key) => (
-                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-medium tabular-nums text-success whitespace-nowrap">
+                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-medium text-success whitespace-nowrap">
                           {total.months[key]
                             ? formatCurrency(total.months[key].income, total.currency)
                             : '—'}
@@ -172,7 +172,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                         Expense
                       </th>
                       {monthKeys.map((key) => (
-                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-medium tabular-nums text-error whitespace-nowrap">
+                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-medium text-error whitespace-nowrap">
                           {total.months[key]
                             ? formatNegativeAmount(total.months[key].expense, total.currency)
                             : '—'}
@@ -187,7 +187,7 @@ function formatNegativeAmount(amount: string, currency: string): string {
                         Net
                       </th>
                       {monthKeys.map((key) => (
-                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-bold tabular-nums text-info whitespace-nowrap">
+                        <td class="min-w-40 bg-base-100 px-4 py-3 text-right text-sm font-bold text-info whitespace-nowrap">
                           {total.months[key]
                             ? formatCurrency(total.months[key].net, total.currency)
                             : '—'}

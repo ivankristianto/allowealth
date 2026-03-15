@@ -77,41 +77,21 @@ const isCompact = variant === 'compact';
             <div class="flex items-baseline gap-1.5">
               {group.relativeLabel ? (
                 <>
-                  <span
-                    class:list={[
-                      'font-bold text-base-content tracking-wide',
-                      isCompact ? 'text-xs' : 'text-xs',
-                    ]}
-                  >
+                  <span class:list={['font-bold text-base-content tracking-wide', 'text-xs']}>
                     {group.relativeLabel}
                   </span>
-                  <span
-                    class:list={[
-                      'text-base-content/50 font-medium',
-                      isCompact ? 'text-xs' : 'text-xs',
-                    ]}
-                  >
+                  <span class:list={['text-base-content/50 font-medium', 'text-xs']}>
                     {group.fullDate}
                   </span>
                 </>
               ) : (
-                <span
-                  class:list={[
-                    'font-bold text-base-content tracking-wide',
-                    isCompact ? 'text-xs' : 'text-xs',
-                  ]}
-                >
+                <span class:list={['font-bold text-base-content tracking-wide', 'text-xs']}>
                   {group.fullDate}
                 </span>
               )}
             </div>
             {showCount && group.transactions.length > 0 && (
-              <span
-                class:list={[
-                  'font-medium text-base-content/40 tabular-nums',
-                  isCompact ? 'text-xs' : 'text-xs',
-                ]}
-              >
+              <span class:list={['font-medium text-base-content/40', 'text-xs']}>
                 {group.transactions.length}{' '}
                 {group.transactions.length === 1 ? 'transaction' : 'transactions'}
               </span>

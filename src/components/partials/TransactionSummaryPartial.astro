@@ -45,7 +45,7 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
     <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
       Income
     </span>
-    <span class="text-sm font-bold text-success tabular-nums">
+    <span class="text-sm font-bold text-success">
       {formatCurrency(monthlyIncome, currency)}
     </span>
   </div>
@@ -60,7 +60,7 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
     <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
       Expenses
     </span>
-    <span class="text-sm font-bold text-error tabular-nums">
+    <span class="text-sm font-bold text-error">
       {formatCurrency(monthlyExpenses, currency)}
     </span>
   </div>
@@ -79,7 +79,7 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
     <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
       Savings
     </span>
-    <span class={`text-sm font-bold tabular-nums ${netSavingsClass}`}>
+    <span class={`text-sm font-bold ${netSavingsClass}`}>
       {formatCurrency(netSavings, currency)}
     </span>
   </div>
