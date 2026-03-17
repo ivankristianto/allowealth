@@ -5,11 +5,12 @@ import {
   RefreshCw,
   Donut,
   Wallet,
-  ChartBar,
+  BarChart2,
   TrendingUp,
   Calculator,
   Settings,
   ClipboardList,
+  ExternalLink,
 } from '@lucide/astro';
 
 interface Props {
@@ -18,25 +19,49 @@ interface Props {
 
 const { currentPath = '/' } = Astro.props;
 
-interface UserNavItem {
+interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
-  badge?: string;
   external?: boolean;
 }
 
-const userNavItems: UserNavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/transactions', label: 'Transactions', icon: Receipt },
-  { href: '/recurring', label: 'Recurring', icon: RefreshCw },
-  { href: '/budget', label: 'Budget', icon: Donut },
-  { href: '/accounts', label: 'Accounts', icon: Wallet },
-  { href: '/reports', label: 'Reports', icon: ChartBar },
-  { href: '/forecast', label: 'Forecast', icon: TrendingUp },
-  { href: '/calculators', label: 'Calculators', icon: Calculator },
-  { href: 'https://docs.allowealth.io', label: 'Docs', icon: ClipboardList, external: true },
+interface NavGroup {
+  label?: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+  },
+  {
+    label: 'Track',
+    items: [
+      { href: '/transactions', label: 'Transactions', icon: Receipt },
+      { href: '/recurring', label: 'Recurring', icon: RefreshCw },
+      { href: '/accounts', label: 'Accounts', icon: Wallet },
+    ],
+  },
+  {
+    label: 'Plan',
+    items: [
+      { href: '/budget', label: 'Budget', icon: Donut },
+      { href: '/forecast', label: 'Forecast', icon: TrendingUp },
+    ],
+  },
+  {
+    label: 'Analyze',
+    items: [
+      { href: '/reports', label: 'Reports', icon: BarChart2 },
+      { href: '/calculators', label: 'Calculators', icon: Calculator },
+    ],
+  },
+];
+
+const utilityItems: NavItem[] = [
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: 'https://docs.allowealth.io', label: 'Docs', icon: ClipboardList, external: true },
 ];
 
 const isActive = (href: string) => {
@@ -47,47 +72,111 @@ const isActive = (href: string) => {
       currentPath.startsWith('/settings')
     );
   }
-
   if (currentPath === href) return true;
   return currentPath.startsWith(href + '/');
 };
 ---
 
 {
-  userNavItems.map((item) => {
+  navGroups.map((group, groupIndex) => (
+    <>
+      {groupIndex > 0 && (
+        <li role="presentation" aria-hidden="true">
+          <hr class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1" />
+        </li>
+      )}
+      {group.label && (
+        <li role="presentation">
+          <span
+            aria-hidden="true"
+            class="block px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-base-content/30 group-data-[sidebar-collapsed=true]:hidden"
+          >
+            {group.label}
+          </span>
+        </li>
+      )}
+      {group.items.map((item) => {
+        const active = isActive(item.href);
+        return (
+          <li class="shrink-0">
+            <a
+              href={item.href}
+              data-nav-href={item.href}
+              rel={item.external ? 'noopener noreferrer' : undefined}
+              target={item.external ? '_blank' : undefined}
+              title={item.label}
+              aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
+              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+                active
+                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+              aria-current={!item.external && active ? 'page' : undefined}
+            >
+              <item.icon
+                size={22}
+                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-accent' : ''}`}
+                aria-hidden="true"
+              />
+              <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
+              <span
+                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
+                data-nav-dot
+                aria-hidden="true"
+              />
+            </a>
+          </li>
+        );
+      })}
+    </>
+  ))
+}
+
+{/* Utility zone: Settings + Docs */}
+<li role="presentation" aria-hidden="true">
+  <hr class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1" />
+</li>
+{
+  utilityItems.map((item) => {
     const active = isActive(item.href);
+    const isDocs = item.external;
     return (
       <li class="shrink-0">
         <a
           href={item.href}
           data-nav-href={item.href}
           rel={item.external ? 'noopener noreferrer' : undefined}
+          target={item.external ? '_blank' : undefined}
           title={item.label}
-          aria-label={item.label}
+          aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
           class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
-            active
-              ? 'bg-accent/10 text-accent font-bold border-accent/20'
-              : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+            isDocs
+              ? 'text-base-content/40 hover:text-base-content/60 font-medium border-transparent'
+              : active
+                ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
           } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
           aria-current={!item.external && active ? 'page' : undefined}
         >
           <item.icon
             size={22}
-            class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
-              active ? 'text-accent' : ''
-            }`}
+            class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active && !isDocs ? 'text-accent' : ''}`}
             aria-hidden="true"
           />
           <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
-          <span
-            class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
-            data-nav-dot
-            aria-hidden="true"
-          />
-          {item.badge && (
-            <span class="badge badge-sm badge-accent group-data-[sidebar-collapsed=true]:hidden">
-              {item.badge}
-            </span>
+          {isDocs && (
+            <ExternalLink
+              size={12}
+              class="ml-auto shrink-0 group-data-[sidebar-collapsed=true]:hidden"
+              aria-hidden="true"
+            />
+          )}
+          {!isDocs && (
+            <span
+              class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
+              data-nav-dot
+              aria-hidden="true"
+            />
           )}
         </a>
       </li>
