@@ -3,6 +3,13 @@
  * Centralized content for public landing pages
  */
 
+import type { ImageMetadata } from 'astro';
+import dashboardImg from '@/assets/screenshots/dashboard.jpg';
+import transactionsImg from '@/assets/screenshots/transactions.jpg';
+import budgetImg from '@/assets/screenshots/budget.jpg';
+import accountsImg from '@/assets/screenshots/accounts.jpg';
+import reportsImg from '@/assets/screenshots/reports.jpg';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -43,7 +50,7 @@ export interface ShowcaseItem {
   description: string;
   features: string[];
   featureIconColor: string;
-  imageUrl: string;
+  image: ImageMetadata;
   imageAlt: string;
   gradientClass: string; // Gradient overlay class
   reverse?: boolean; // Alternate layout direction
@@ -155,7 +162,7 @@ export const showcaseItems: ShowcaseItem[] = [
       'See household or group spending, account totals, and budget health in one shared view, without the admin work.',
     features: ['Shared monthly overview', 'Group account totals', 'Shared budget health'],
     featureIconColor: 'text-primary',
-    imageUrl: '/screenshots/dashboard.jpg',
+    image: dashboardImg,
     imageAlt: 'allowealth Dashboard',
     gradientClass: 'from-primary/20 to-transparent',
   },
@@ -171,7 +178,7 @@ export const showcaseItems: ShowcaseItem[] = [
       'Record income and expenses as a household or community. No more guessing who paid for what. Import easily from your bank.',
     features: ['Log shared expenses', 'Filter by month or category', 'Import bank statements'],
     featureIconColor: 'text-accent',
-    imageUrl: '/screenshots/transactions.jpg',
+    image: transactionsImg,
     imageAlt: 'allowealth Transactions',
     gradientClass: 'from-accent/20 to-transparent',
     reverse: true,
@@ -188,7 +195,7 @@ export const showcaseItems: ShowcaseItem[] = [
       'Set limits by category and get alerts before you overspend. Plan each month together and stay accountable.',
     features: ['Category limits with alerts', 'Monthly budget planning', 'Copy budgets forward'],
     featureIconColor: 'text-success',
-    imageUrl: '/screenshots/budget.jpg',
+    image: budgetImg,
     imageAlt: 'allowealth Budget Planning',
     gradientClass: 'from-success/20 to-transparent',
   },
@@ -208,7 +215,7 @@ export const showcaseItems: ShowcaseItem[] = [
       'Recurring transactions',
     ],
     featureIconColor: 'text-warning',
-    imageUrl: '/screenshots/accounts.jpg',
+    image: accountsImg,
     imageAlt: 'allowealth Account Management',
     gradientClass: 'from-warning/20 to-transparent',
     reverse: true,
@@ -225,7 +232,7 @@ export const showcaseItems: ShowcaseItem[] = [
       'Clear spending trends, category breakdowns, and month-over-month analysis. Export and share anytime.',
     features: ['Spending trends by category', 'Monthly and yearly analysis', 'Export and share'],
     featureIconColor: 'text-info',
-    imageUrl: '/screenshots/reports.jpg',
+    image: reportsImg,
     imageAlt: 'allowealth Financial Reports',
     gradientClass: 'from-info/20 to-transparent',
   },
