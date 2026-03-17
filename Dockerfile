@@ -53,9 +53,9 @@ ENV DATABASE_URL=/data/allowealth.db
 
 EXPOSE 3000
 
-# Health check: wget follows the 302 redirect to the login page (returns 200)
-# --spider mode avoids downloading the full response body
+# Health check: Bun fetch follows the 302 redirect to the login page (returns 200)
+# The inline script exits non-zero if the app is unreachable or responds unsuccessfully
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget --spider -q http://localhost:3000/ || exit 1
+  CMD bun --eval "const response = await fetch('http://localhost:3000/'); if (!response.ok) { throw new Error('Healthcheck failed'); }"
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
