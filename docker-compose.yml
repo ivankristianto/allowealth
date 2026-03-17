@@ -1,7 +1,8 @@
 # Allowealth Docker Compose — self-hosted deployment
 # Usage:
 #   cp .env.docker.example .env
-#   # Edit .env — set PUBLIC_URL and BETTER_AUTH_SECRET at minimum
+#   # Edit .env — set every required production value from .env.docker.example
+#   # Optional: set ALLOWEALTH_VERSION to pin the image tag for this deployment
 #   docker compose up -d
 #
 # To update:
@@ -9,7 +10,7 @@
 
 services:
   app:
-    image: ghcr.io/ivankristianto/allowealth:latest
+    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION:-latest}
     ports:
       - '3000:3000'
     volumes:

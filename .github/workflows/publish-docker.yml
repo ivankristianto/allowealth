@@ -6,7 +6,7 @@ on:
     tags:
       - 'v*.*.*'
 
-  # Allow manual dispatch from the GitHub UI (useful for re-publishing a tag)
+  # Allow manual dispatch from the GitHub UI for version-tag refs only; branch refs fail validation
   workflow_dispatch:
 
 jobs:

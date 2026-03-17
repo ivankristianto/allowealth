@@ -87,18 +87,21 @@ Run Allowealth as a Docker container for a self-contained deployment with automa
 ### Quick start
 
 ```bash
-# 1. Pull the latest image
-docker pull ghcr.io/ivankristianto/allowealth:latest
+# 1. Pick one released version and use it for the image, compose file, and env template
+export ALLOWEALTH_VERSION=v0.22.3
 
-# 2. Get docker-compose.yml
-curl -o docker-compose.yml https://raw.githubusercontent.com/ivankristianto/allowealth/main/docker-compose.yml
+# 2. Pull that exact image
+docker pull ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION}
+
+# 3. Get the matching docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/docker-compose.yml
 # or: clone/download the repository and copy docker-compose.yml from the repository root
 
-# 3. Create your environment file
-curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/main/.env.docker.example
+# 4. Get the matching environment template
+curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/.env.docker.example
 # or: copy the .env.docker.example file from the repository root
 
-# 4. Edit .env — set at minimum:
+# 5. Edit .env — set every required production value:
 #   PUBLIC_URL=https://your-domain.com
 #   BETTER_AUTH_SECRET=<long-random-string>
 #   EMAIL_ENCRYPTION_KEY=<base64-32-bytes>
@@ -108,7 +111,7 @@ curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/main/.e
 #   PUBLIC_TURNSTILE_SITE_KEY=<cloudflare-turnstile-site-key>
 #   TURNSTILE_SECRET_KEY=<cloudflare-turnstile-secret-key>
 
-# 5. Start the container
+# 6. Start the container
 docker compose up -d
 ```
 
@@ -145,11 +148,15 @@ SQLite lives at `/data/allowealth.db` inside the container, backed by a named Do
 **Backup:**
 
 ```bash
+docker compose stop app
 docker run --rm \
   --volumes-from $(docker compose ps -q app) \
   -v $(pwd):/backup \
   busybox tar czf /backup/allowealth-backup-$(date +%Y%m%d).tar.gz /data
+docker compose start app
 ```
+
+Stop the app before creating the tar archive. Allowealth uses SQLite WAL mode, so a live tar backup can miss the latest database state.
 
 **Restore:**
 
