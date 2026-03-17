@@ -47,16 +47,18 @@ function getIcon(iconName: keyof typeof iconMap) {
   {
     tabs.map((tab) => {
       const IconComponent = getIcon(tab.icon);
+      const isActive = activeTab === tab.id;
       return (
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === tab.id ? 'true' : 'false'}
+          aria-selected={isActive ? 'true' : 'false'}
           aria-controls={`${tab.id}-panel`}
           id={`${tab.id}-tab`}
+          tabindex={isActive ? 0 : -1}
           class={[
             'tab flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl transition-all',
-            activeTab === tab.id
+            isActive
               ? 'bg-base-100 shadow-md text-primary tab-active'
               : 'text-base-content/60 hover:text-primary',
           ].join(' ')}
@@ -71,37 +73,95 @@ function getIcon(iconName: keyof typeof iconMap) {
 </div>
 
 <script>
-  // Tab switching logic
-  const tabsContainer = document.querySelector('[data-tabs]');
-  const tabs = tabsContainer?.querySelectorAll('[data-tab-id]');
+  // Tab switching logic with roving tabindex for WCAG 2.1 AA keyboard navigation
+  function initTabSwitcher(tabsContainer: Element): void {
+    const tabs = Array.from(tabsContainer.querySelectorAll<HTMLElement>('[data-tab-id]'));
+    if (tabs.length === 0) return;
 
-  tabs?.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const tabId = tab.getAttribute('data-tab-id');
-      if (!tabId) return;
-
-      // Update tab styles
-      tabs.forEach((t) => {
-        const isActive = t === tab;
-        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    function setActiveTab(activeTab: HTMLElement): void {
+      tabs.forEach((tab) => {
+        const isActive = tab === activeTab;
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        tab.setAttribute('tabindex', isActive ? '0' : '-1');
         if (isActive) {
-          t.classList.add('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
-          t.classList.remove('text-base-content/60', 'hover:text-primary');
+          tab.classList.add('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
+          tab.classList.remove('text-base-content/60', 'hover:text-primary');
         } else {
-          t.classList.remove('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
-          t.classList.add('text-base-content/60', 'hover:text-primary');
+          tab.classList.remove('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
+          tab.classList.add('text-base-content/60', 'hover:text-primary');
         }
       });
+    }
 
-      // Emit custom event for panel updates
-      tabsContainer?.dispatchEvent(
+    tabsContainer.addEventListener('click', (e: Event) => {
+      const target = (e.target as Element).closest<HTMLElement>('[data-tab-id]');
+      if (!target) return;
+
+      const tabId = target.getAttribute('data-tab-id');
+      if (!tabId) return;
+
+      setActiveTab(target);
+      target.focus();
+
+      tabsContainer.dispatchEvent(
         new CustomEvent('tab-change', {
           detail: { tabId },
           bubbles: true,
         })
       );
     });
-  });
+
+    // Roving tabindex: arrow key navigation between tabs
+    tabsContainer.addEventListener('keydown', (e: Event) => {
+      const keyEvent = e as KeyboardEvent;
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(keyEvent.key)) return;
+
+      const currentIndex = tabs.findIndex(
+        (tab) => tab.getAttribute('tabindex') === '0' || tab === document.activeElement
+      );
+      if (currentIndex === -1) return;
+
+      let nextIndex: number;
+      if (keyEvent.key === 'ArrowRight') {
+        nextIndex = (currentIndex + 1) % tabs.length;
+      } else if (keyEvent.key === 'ArrowLeft') {
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      } else if (keyEvent.key === 'Home') {
+        nextIndex = 0;
+      } else {
+        nextIndex = tabs.length - 1;
+      }
+
+      const nextTab = tabs[nextIndex];
+      if (!nextTab) return;
+
+      keyEvent.preventDefault();
+      setActiveTab(nextTab);
+      nextTab.focus();
+
+      const tabId = nextTab.getAttribute('data-tab-id');
+      if (tabId) {
+        tabsContainer.dispatchEvent(
+          new CustomEvent('tab-change', {
+            detail: { tabId },
+            bubbles: true,
+          })
+        );
+      }
+    });
+  }
+
+  // Initialize on page load and after Astro view transitions
+  function setupTabSwitchers(): void {
+    document.querySelectorAll('[data-tabs]').forEach(initTabSwitcher);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupTabSwitchers, { once: true });
+  } else {
+    setupTabSwitchers();
+  }
+  document.addEventListener('astro:page-load', setupTabSwitchers);
 </script>
 
 <style>

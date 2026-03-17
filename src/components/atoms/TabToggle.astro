@@ -26,6 +26,10 @@ export interface Props {
   className?: string;
   /** When true, skip navigate() and dispatch 'tab-toggle-change' event for client-side filtering */
   clientFilter?: boolean;
+  /** ID of the panel controlled by option 1's tab button (for aria-controls) */
+  option1Controls?: string;
+  /** ID of the panel controlled by option 2's tab button (for aria-controls) */
+  option2Controls?: string;
 }
 
 const {
@@ -37,6 +41,8 @@ const {
   name = 'tab-toggle',
   className = '',
   clientFilter = false,
+  option1Controls,
+  option2Controls,
 } = Astro.props;
 ---
 
@@ -57,6 +63,8 @@ const {
     data-tab-value={option1Value}
     role="tab"
     aria-selected={activeTab === option1Value ? 'true' : 'false'}
+    tabindex={activeTab === option1Value ? 0 : -1}
+    {...(option1Controls ? { 'aria-controls': option1Controls } : {})}
     data-active={activeTab === option1Value}
     data-testid={`type-filter-${option1Value}`}
   >
@@ -72,6 +80,8 @@ const {
     data-tab-value={option2Value}
     role="tab"
     aria-selected={activeTab === option2Value ? 'true' : 'false'}
+    tabindex={activeTab === option2Value ? 0 : -1}
+    {...(option2Controls ? { 'aria-controls': option2Controls } : {})}
     data-active={activeTab === option2Value}
     data-testid={`type-filter-${option2Value}`}
   >
@@ -105,10 +115,12 @@ const {
 
     // Client-filter mode: update visual state + dispatch event, no server round-trip
     if (container.hasAttribute('data-client-filter')) {
-      // Update active tab visual state
+      // Update active tab visual state and roving tabindex
       container.querySelectorAll('button[data-tab-value]').forEach((btn) => {
         const isActive = btn.getAttribute('data-tab-value') === value;
         btn.setAttribute('data-active', String(isActive));
+        btn.setAttribute('aria-selected', String(isActive));
+        btn.setAttribute('tabindex', isActive ? '0' : '-1');
         // Swap active/inactive classes
         ACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, isActive));
         INACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, !isActive));
@@ -128,5 +140,64 @@ const {
     const url = new URL(window.location.href);
     url.searchParams.set(name, value);
     navigate(url.toString());
+  });
+
+  // Roving tabindex: arrow key navigation for all tab-toggle containers
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    const target = e.target as Element | null;
+    if (!target) return;
+
+    const button = target.closest<HTMLElement>('[data-tab-toggle] button[data-tab-value]');
+    if (!button) return;
+
+    const container = button.closest('[data-tab-toggle]');
+    if (!container) return;
+
+    if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLElement>('button[data-tab-value]')
+    );
+    const currentIndex = buttons.indexOf(button);
+    if (currentIndex === -1) return;
+
+    const nextIndex =
+      e.key === 'ArrowRight'
+        ? (currentIndex + 1) % buttons.length
+        : (currentIndex - 1 + buttons.length) % buttons.length;
+
+    const nextButton = buttons[nextIndex];
+    if (!nextButton) return;
+
+    e.preventDefault();
+    nextButton.focus();
+
+    // In client-filter mode, auto-activate the focused tab
+    if (container.hasAttribute('data-client-filter')) {
+      const value = nextButton.getAttribute('data-tab-value');
+      const name = container.getAttribute('data-name');
+      if (!value || !name) return;
+
+      container.querySelectorAll('button[data-tab-value]').forEach((btn) => {
+        const isActive = btn === nextButton;
+        btn.setAttribute('data-active', String(isActive));
+        btn.setAttribute('aria-selected', String(isActive));
+        btn.setAttribute('tabindex', isActive ? '0' : '-1');
+        ACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, isActive));
+        INACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, !isActive));
+      });
+
+      const url = new URL(window.location.href);
+      url.searchParams.set(name, value);
+      window.history.replaceState({}, '', url.toString());
+      document.dispatchEvent(new CustomEvent('tab-toggle-change', { detail: { name, value } }));
+    } else {
+      // For non-client-filter mode (navigate-on-click), just update tabindex without navigating
+      const activeValue = nextButton.getAttribute('data-tab-value') ?? '';
+      container.querySelectorAll<HTMLElement>('button[data-tab-value]').forEach((btn) => {
+        const isActive = btn.getAttribute('data-tab-value') === activeValue;
+        btn.setAttribute('tabindex', isActive ? '0' : '-1');
+      });
+    }
   });
 </script>

@@ -38,11 +38,9 @@ const frequencyLabel = formatRecurringFrequencyLabel(
 ---
 
 <tr
-  class:list={[
-    'border-b border-base-300 last:border-b-0 hover:bg-base-200/50 transition-colors duration-150',
-    template.status === 'paused' && 'opacity-60',
-  ]}
+  class="border-b border-base-300 last:border-b-0 hover:bg-base-200/50 transition-colors duration-150"
   data-testid="recurring-template-row"
+  aria-label={template.status === 'paused' ? `${template.name} (Paused)` : undefined}
 >
   <td class="py-3.5 px-4">
     <div class="flex items-center gap-2.5 min-w-0">

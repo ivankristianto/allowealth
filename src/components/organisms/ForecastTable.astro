@@ -69,10 +69,8 @@ function formatNegativeAmount(amount: string, currency: string): string {
               <tbody class="divide-y divide-base-300">
                 {rows.map((row) => (
                   <tr
-                    class:list={[
-                      'group transition-colors hover:bg-base-200/30',
-                      row.status === 'paused' && 'opacity-50',
-                    ]}
+                    class="group transition-colors hover:bg-base-200/30"
+                    aria-label={row.status === 'paused' ? `${row.templateName} (Paused)` : undefined}
                   >
                     <th
                       scope="row"

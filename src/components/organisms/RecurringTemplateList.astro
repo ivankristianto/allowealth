@@ -73,11 +73,9 @@ function daySuffix(day: number): string {
 
             return (
               <article
-                class:list={[
-                  'rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm',
-                  template.status === 'paused' && 'opacity-70',
-                ]}
+                class="rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm"
                 data-testid="recurring-template-row"
+                aria-label={template.status === 'paused' ? `${template.name} (Paused)` : undefined}
               >
                 <div class="flex items-start gap-2.5">
                   <div class="min-w-0 flex-1 space-y-2">
@@ -237,8 +235,8 @@ function daySuffix(day: number): string {
 
                 return (
                   <tr
-                    class:list={[template.status === 'paused' && 'opacity-70']}
                     data-testid="recurring-template-row"
+                    aria-label={template.status === 'paused' ? `${template.name} (Paused)` : undefined}
                   >
                     <td>
                       <div class="flex flex-wrap items-center gap-1.5">
