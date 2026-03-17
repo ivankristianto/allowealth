@@ -1,0 +1,71 @@
+name: Publish Docker Image
+
+on:
+  push:
+    # Trigger on version tags: v1.0.0, v1.2.3, etc.
+    tags:
+      - 'v*.*.*'
+
+  # Allow manual dispatch from the GitHub UI (useful for re-publishing a tag)
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    name: Build and Push to GHCR
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Required to push packages to ghcr.io
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          # GITHUB_TOKEN is automatically provided — no extra secrets needed
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/allowealth
+          tags: |
+            # Tag with the exact version including v prefix: ghcr.io/ivankristianto/allowealth:v1.0.0
+            # pattern={{version}} strips the v; pattern=v{{version}} preserves it
+            type=semver,pattern=v{{version}}
+            # Also tag as latest
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # amd64 only for initial release; add linux/arm64 later via QEMU
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Use GitHub Actions cache to speed up layer rebuilds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deployment Summary
+        run: |
+          echo "## Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }} — ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
