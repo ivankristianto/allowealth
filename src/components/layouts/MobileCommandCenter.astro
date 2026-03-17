@@ -392,6 +392,54 @@ const isActive = (href: string) => {
         </div>
       )
     }
+
+    {/* Admin user section - unchanged */}
+    {
+      isSuperAdmin && (
+        <div class="mx-4 sm:mx-5 mb-6 p-4 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10">
+              {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-base-content truncate">{user?.name || 'User'}</p>
+              <p class="text-xs text-base-content/50 truncate">{user?.email || ''}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <a
+              href="/profile"
+              class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
+            >
+              <User size={16} aria-hidden="true" />
+              Profile
+            </a>
+            <a
+              href="/security"
+              class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
+            >
+              <Shield size={16} aria-hidden="true" />
+              Security
+            </a>
+            <a
+              href="/settings"
+              class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
+            >
+              <Settings size={16} aria-hidden="true" />
+              Settings
+            </a>
+            <Button
+              variant="ghost"
+              className="logout-btn px-3 py-3 min-h-11 rounded-xl border-0 bg-error/10 text-error hover:bg-error/20 text-sm font-medium"
+            >
+              <LogOut size={16} aria-hidden="true" />
+              Sign out
+            </Button>
+          </div>
+        </div>
+      )
+    }
   </div>
 
   {/* Backdrop Overlay */}
