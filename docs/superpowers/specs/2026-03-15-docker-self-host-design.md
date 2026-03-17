@@ -36,6 +36,7 @@ Three stages:
 FROM oven/bun:1 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
+COPY patches/ ./patches/
 RUN bun install --frozen-lockfile
 ```
 
@@ -78,7 +79,7 @@ ENV DATABASE_URL=/data/allowealth.db
 
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:3000/ > /dev/null || exit 1
+  CMD wget --spider http://localhost:3000/ || exit 1
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 ```

@@ -475,12 +475,11 @@ jobs:
 
 - [ ] **Step 2: Validate YAML syntax**
 
-```bash
-# Using Python (available everywhere):
-python3 -c "import yaml; yaml.safe_load(open('.github/workflows/publish-docker.yml'))" && echo "YAML valid"
-```
+Push to GitHub — the workflow parser catches YAML syntax errors on `git push`. Alternatively, use `yamllint` if installed locally:
 
-Expected: `YAML valid` printed with no errors.
+```bash
+yamllint .github/workflows/publish-docker.yml
+```
 
 - [ ] **Step 3: Confirm the workflow uses correct action versions**
 
@@ -659,10 +658,10 @@ If the container is healthy but unreachable, check your firewall rules and that 
 - [ ] **Step 3: Run the Astro docs check**
 
 ```bash
-bun run --cwd apps/docs check
+bun run docs:check
 ```
 
-Expected: 0 errors, 0 warnings. (If the docs project doesn't have a `check` script, run `bun run docs:build` instead to verify the page builds without error.)
+Expected: 0 errors, 0 warnings.
 
 - [ ] **Step 4: Commit**
 
