@@ -1,0 +1,40 @@
+# Dependencies (rebuilt during image build)
+node_modules/
+
+# Git history
+.git/
+.gitignore
+
+# Local database files
+db/
+
+# Previous build output
+dist/
+
+# Documentation and marketing apps (not needed at build time)
+apps/docs/
+apps/site/
+
+# NOTE: apps/mcp/ must NOT be excluded — imported by astro.config.ts as @mcp-server
+# NOTE: patches/ must NOT be excluded — Bun applies patches during bun install
+
+# Environment files (injected at runtime via docker-compose env_file)
+.env
+.env.*
+!.env.docker.example
+
+# Editor and OS files
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Test files
+playwright-report/
+test-results/
+e2e/
+
+# Misc
+*.md
+!README.md
