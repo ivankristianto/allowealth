@@ -81,6 +81,7 @@ Run Allowealth as a Docker container for a self-contained deployment with automa
 
 - [Docker Engine 24+](https://docs.docker.com/engine/install/)
 - [Docker Compose v2](https://docs.docker.com/compose/install/) (`docker compose` — note: no hyphen)
+- The published Docker images currently support `linux/amd64` only.
 - Google OAuth credentials for your production domain
 - Cloudflare Turnstile site and secret keys for your production domain
 
