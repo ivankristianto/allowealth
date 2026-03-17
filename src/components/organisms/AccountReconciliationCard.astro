@@ -37,6 +37,7 @@ function formatFullDate(date: Date): string {
 
 const startLabel = formatFullDate(periodStart);
 const endLabel = formatFullDate(periodEnd);
+import Button from '@/components/atoms/Button.astro';
 ---
 
 {
@@ -137,13 +138,16 @@ const endLabel = formatFullDate(periodEnd);
                           : 'Balances dropped more than transactions explain. Check for missing expenses or manual balance adjustments.'
                       }
                     >
-                      <button
+                      <Button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-full text-base-content/30 transition-colors hover:text-base-content/60"
+                        variant="ghost"
+                        size="xs"
+                        shape="circle"
+                        className="border-0 bg-transparent text-base-content/30 hover:bg-transparent hover:text-base-content/60"
                         aria-label="What does this variance mean?"
                       >
                         <Info size={13} class="stroke-current" aria-hidden="true" />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>

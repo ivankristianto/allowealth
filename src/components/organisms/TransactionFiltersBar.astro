@@ -8,6 +8,7 @@
 
 import { ChevronDown, Tag, RotateCcw, Users, Wallet } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
+import Button from '@/components/atoms/Button.astro';
 import SearchInput from '@/components/atoms/SearchInput.astro';
 import MultiSelectDropdown from '@/components/molecules/MultiSelectDropdown.astro';
 
@@ -114,16 +115,18 @@ const mainSearchInputClass = [
       data-filter-search
     />
 
-    <button
+    <Button
       type="button"
-      class={`btn btn-ghost btn-sm gap-1 sm:gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-lg sm:rounded-xl transition-colors shrink-0 min-h-[44px] ${hasActiveFilters ? '' : 'hidden'}`}
+      variant="ghost"
+      size="sm"
+      className={`gap-1 sm:gap-2 rounded-lg sm:rounded-xl border-0 shrink-0 min-h-[44px] text-base-content/60 hover:text-primary hover:bg-primary/10 ${hasActiveFilters ? '' : 'hidden'}`}
       aria-label="Reset filters"
       data-reset-filters
       data-current-month={currentMonth}
     >
       <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
       <span class="text-xs sm:text-sm">Reset</span>
-    </button>
+    </Button>
   </div>
 
   {/* Row 2: Type filter + Category + Account + Member */}
@@ -136,9 +139,10 @@ const mainSearchInputClass = [
       id="type-filter-group"
       data-filter-type-group
     >
-      <button
+      <Button
         type="button"
-        class={`px-3 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        variant="ghost"
+        className={`px-3 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] rounded-lg sm:rounded-xl border-0 text-xs font-bold ${
           typeFilter === 'expense'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
@@ -148,10 +152,11 @@ const mainSearchInputClass = [
         aria-pressed={typeFilter === 'expense'}
       >
         Expenses
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class={`px-3 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        variant="ghost"
+        className={`px-3 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] rounded-lg sm:rounded-xl border-0 text-xs font-bold ${
           typeFilter === 'income'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
@@ -161,7 +166,7 @@ const mainSearchInputClass = [
         aria-pressed={typeFilter === 'income'}
       >
         Income
-      </button>
+      </Button>
     </div>
 
     {
@@ -231,10 +236,11 @@ const mainSearchInputClass = [
       showMemberFilter && members.length > 0 && (
         <div class="dropdown dropdown-end" id="member-dropdown">
           <input type="hidden" name="user_id" id="member-filter" value={userId} />
-          <button
+          <Button
             type="button"
+            variant="ghost"
             tabindex={0}
-            class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[160px]"
+            className="min-w-[160px] gap-2 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-xs font-bold text-base-content shadow-sm hover:border-base-content/30 hover:bg-base-100"
             aria-label="Filter by member"
             aria-haspopup="listbox"
             data-member-trigger
@@ -250,7 +256,7 @@ const mainSearchInputClass = [
               class="stroke-current text-base-content/40 shrink-0"
               aria-hidden="true"
             />
-          </button>
+          </Button>
           <ul
             tabindex={0}
             class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-56 border border-base-300 mt-2"

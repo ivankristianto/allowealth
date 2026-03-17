@@ -35,6 +35,7 @@ const title = isEditMode ? 'Edit Category' : 'Add Category';
 const subtitle = isEditMode
   ? 'Update the category details.'
   : 'Create a new category for your accounts or liabilities.';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div data-account-category-modal-container data-id={id} data-mode={mode}>
@@ -131,16 +132,22 @@ const subtitle = isEditMode
 
         <!-- Actions -->
         <div class="flex gap-4 pt-4">
-          <button type="button" class="flex-1 btn btn-ghost h-14 rounded-2xl font-bold" data-cancel>
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex-1 h-14 font-bold border-0"
+            data-cancel
+          >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="flex-[2] btn btn-accent h-14 rounded-2xl font-bold"
+            variant="primary"
+            className="flex-[2] h-14 font-bold"
             data-testid="account-category-submit-btn"
           >
             <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
-          </button>
+          </Button>
         </div>
       </form>
     </div>

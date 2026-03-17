@@ -83,15 +83,17 @@ const { redirectTo = '' } = Astro.props;
 
     <div class="divider text-xs text-base-content/40 uppercase">or</div>
 
-    <button
+    <Button
       id="toggle-backup-code"
       type="button"
-      class="btn btn-ghost btn-sm rounded-xl w-full gap-2"
+      variant="ghost"
+      size="sm"
+      className="w-full gap-2 border-0"
       data-testid="toggle-backup-btn"
     >
       <KeyRound size={16} class="stroke-current" aria-hidden="true" />
       <span data-toggle-text>Use a backup code instead</span>
-    </button>
+    </Button>
 
     <div class="text-center text-sm pt-4 border-t border-base-300">
       <a

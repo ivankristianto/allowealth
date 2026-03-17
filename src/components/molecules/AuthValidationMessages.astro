@@ -7,6 +7,7 @@
  * Uses Lucide icons from @lucide/astro for consistent, accessible icons
  */
 
+import Button from '@/components/atoms/Button.astro';
 import { TriangleAlert, CircleX, Lock, CircleOff, CircleCheck, X } from '@lucide/astro';
 
 interface Props {
@@ -77,9 +78,15 @@ const IconComponent = iconMap[type] || CircleCheck;
   <span>{displayMessage}</span>
   {
     dismissible && (
-      <button class="btn btn-sm btn-circle btn-ghost" aria-label="Dismiss message">
+      <Button
+        variant="ghost"
+        size="sm"
+        shape="circle"
+        className="border-0"
+        aria-label="Dismiss message"
+      >
         <X size={16} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
     )
   }
 </div>

@@ -69,22 +69,25 @@ const hasNoBackupCodes = backupCodesRemaining === 0;
                 </p>
               </div>
               <div class="flex gap-2 shrink-0">
-                <button
+                <Button
                   type="button"
-                  class="btn btn-outline btn-sm rounded-xl"
+                  variant="outline"
+                  size="sm"
                   data-action="regenerate-backup-codes"
                   data-testid="regenerate-backup-btn"
                 >
                   Regenerate Codes
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  class="btn btn-outline btn-error btn-sm rounded-xl"
+                  variant="danger"
+                  size="sm"
+                  className="btn-outline"
                   data-action="disable-mfa"
                   data-testid="disable-mfa-btn"
                 >
                   Disable
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -11,6 +11,7 @@
  */
 
 import { Plus, Settings, ArrowRightLeft, ListPlus } from '@lucide/astro';
+import Button from '@components/atoms/Button.astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
 import ActionExpandable from '@components/molecules/ActionExpandable.astro';
 import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
@@ -30,6 +31,18 @@ const {
 } = Astro.props;
 
 const hasExpandableActions = !isHistoricalView || closedCount > 0;
+
+const actionGhostClassName = ghostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
+
+const actionAccentGhostClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 ---
 
 <ActionBar className={className} ariaLabel="Account actions" edgeBleed>
@@ -54,9 +67,11 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
         {
           !isHistoricalView && (
             <div class="tooltip tooltip-bottom" data-tip="Transfer between accounts">
-              <button
+              <Button
                 type="button"
-                class={ghostBtn}
+                variant="ghost"
+                size="sm"
+                className={actionGhostClassName}
                 aria-label="Transfer between accounts"
                 data-transfer-btn
                 data-testid="account-transfer-btn"
@@ -68,7 +83,7 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
                   aria-hidden="true"
                 />
                 <span class="hidden md:inline text-sm">Transfer</span>
-              </button>
+              </Button>
             </div>
           )
         }
@@ -81,9 +96,11 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
             {/* Bulk Add */}
             {!isHistoricalView && (
               <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
-                <button
+                <Button
                   type="button"
-                  class={ghostBtn}
+                  variant="ghost"
+                  size="sm"
+                  className={actionGhostClassName}
                   aria-label="Bulk add accounts"
                   data-bulk-add-accounts-btn
                   data-testid="bulk-add-accounts-btn"
@@ -91,7 +108,7 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
                   <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
                   <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
                   <span class="text-xs md:text-sm">Bulk</span>
-                </button>
+                </Button>
               </div>
             )}
 
@@ -118,9 +135,11 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
   {
     isHistoricalView ? (
       <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account (disabled)">
-        <button
+        <Button
           type="button"
-          class={`${accentGhostBtn} opacity-40 cursor-not-allowed`}
+          variant="ghost"
+          size="sm"
+          className={`${actionAccentGhostClassName} opacity-40 pointer-events-none`}
           disabled
           aria-label="Add new account (disabled for historical view)"
           data-testid="add-account-btn"
@@ -129,13 +148,15 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
           <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
           <span class="hidden sm:inline">New Account</span>
           <span class="sm:hidden">New</span>
-        </button>
+        </Button>
       </div>
     ) : (
       <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account">
-        <button
+        <Button
           type="button"
-          class={accentGhostBtn}
+          variant="ghost"
+          size="sm"
+          className={actionAccentGhostClassName}
           aria-label="Add new account"
           data-add-account-btn
           data-default-category-id={defaultCategoryId}
@@ -145,7 +166,7 @@ const hasExpandableActions = !isHistoricalView || closedCount > 0;
           <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
           <span class="hidden sm:inline">New Account</span>
           <span class="sm:hidden">New</span>
-        </button>
+        </Button>
       </div>
     )
   }

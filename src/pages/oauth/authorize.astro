@@ -1,5 +1,6 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import Button from '@/components/atoms/Button.astro';
 import { db, getActiveSchema } from '@/db';
 import { eq } from 'drizzle-orm';
 
@@ -43,13 +44,13 @@ if (clientId) {
           <form method="POST" action="/api/auth/oauth2/consent" class="flex-1">
             <input type="hidden" name="accept" value="false" />
             <input type="hidden" name="consent_code" value={consentCode} />
-            <button type="submit" class="btn btn-outline w-full">Deny</button>
+            <Button type="submit" variant="outline" className="w-full">Deny</Button>
           </form>
 
           <form method="POST" action="/api/auth/oauth2/consent" class="flex-1">
             <input type="hidden" name="accept" value="true" />
             <input type="hidden" name="consent_code" value={consentCode} />
-            <button type="submit" class="btn btn-primary w-full">Authorize</button>
+            <Button type="submit" variant="primary" className="w-full">Authorize</Button>
           </form>
         </div>
       </div>

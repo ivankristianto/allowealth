@@ -129,6 +129,7 @@ const metricCard =
 const allocationCard = 'bg-base-100 border border-base-300 rounded-card shadow-sm p-5 lg:p-6';
 
 const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
+import Button from '@/components/atoms/Button.astro';
 ---
 
 {
@@ -241,13 +242,16 @@ const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
               class="tooltip tooltip-bottom"
               data-tip="Total accounts minus total debt. Positive means accounts exceed liabilities."
             >
-              <button
+              <Button
                 type="button"
-                class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors"
+                variant="ghost"
+                size="xs"
+                shape="circle"
+                className="border-0 bg-transparent text-base-content/30 hover:bg-transparent hover:text-base-content/60"
                 aria-label="What is net worth? Total accounts minus total debt."
               >
                 <Info size={14} class="stroke-current" aria-hidden="true" />
-              </button>
+              </Button>
             </div>
           </div>
           <div class="space-y-1.5">

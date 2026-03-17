@@ -17,6 +17,7 @@
  */
 
 import Modal from './Modal.astro';
+import Button from '@/components/atoms/Button.astro';
 import { Trash2 } from '@lucide/astro';
 
 export interface Props {
@@ -52,10 +53,13 @@ const iconVariants: Record<NonNullable<Props['iconVariant']>, string> = {
   info: 'bg-info/10 text-info',
 };
 
-const confirmVariants: Record<NonNullable<Props['confirmVariant']>, string> = {
-  error: 'btn-error',
-  warning: 'btn-warning',
-  success: 'btn-success',
+const buttonVariantMap: Record<
+  NonNullable<Props['confirmVariant']>,
+  'danger' | 'warning' | 'success'
+> = {
+  error: 'danger',
+  warning: 'warning',
+  success: 'success',
 };
 ---
 
@@ -96,26 +100,24 @@ const confirmVariants: Record<NonNullable<Props['confirmVariant']>, string> = {
     </div>
 
     <div class="flex gap-4 pt-2">
-      <button
+      <Button
         type="button"
-        class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        variant="ghost"
+        className="flex-1 h-14 font-bold border-0"
         data-confirm-cancel
       >
         {cancelLabel}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class:list={[
-          'btn flex-1 h-14 rounded-2xl font-bold',
-          confirmVariants[confirmVariant],
-          'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent',
-        ]}
+        variant={buttonVariantMap[confirmVariant]}
+        className="flex-1 h-14 font-bold"
         data-confirm-action
         data-loading-text={confirmLoadingLabel}
         data-testid={confirmTestId || undefined}
       >
         {confirmLabel}
-      </button>
+      </Button>
     </div>
   </div>
 </Modal>

@@ -8,6 +8,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
+import Button from '@/components/atoms/Button.astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
 import AccountCategoryModal from '@/components/organisms/AccountCategoryModal.astro';
 import AccountCategoryDeleteDialog from '@/components/organisms/AccountCategoryDeleteDialog.astro';
@@ -24,6 +25,12 @@ const typeFilter = (url.searchParams.get('type') as 'account' | 'liability') || 
 const searchQuery = url.searchParams.get('search') || '';
 
 const categories = await accountCategoryService.findAll(user.workspaceId);
+
+const actionAccentGhostClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 const accounts = await accountService.findAll(user.workspaceId);
 const accountCountByCategory = new Map<string, number>();
 
@@ -82,9 +89,11 @@ if (searchQuery) {
         <span class="text-xs md:text-sm">Back</span>
       </a>
 
-      <button
+      <Button
         slot="primary"
-        class={accentGhostBtn}
+        variant="ghost"
+        size="sm"
+        className={actionAccentGhostClassName}
         data-action="create-account-category"
         data-testid="create-account-category-btn"
         aria-label="Create account category"
@@ -92,7 +101,7 @@ if (searchQuery) {
         <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
         <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
         <span class="text-xs md:text-sm">Add Category</span>
-      </button>
+      </Button>
     </ActionBar>
 
     <!-- Filters -->

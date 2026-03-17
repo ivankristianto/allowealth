@@ -11,6 +11,7 @@ import { categoryService } from '@/services';
 import ActionBar from '@components/molecules/ActionBar.astro';
 import { Plus, Search, Pencil, Trash2, ListPlus, ArrowLeft } from '@lucide/astro';
 import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
+import Button from '@/components/atoms/Button.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
 import CategoryModal from '@/components/organisms/CategoryModal.astro';
 import CategoryDeleteDialog from '@/components/organisms/CategoryDeleteDialog.astro';
@@ -21,6 +22,18 @@ const currentPath = '/budget/categories';
 
 // Fetch active categories only
 const allCategories = await categoryService.findAll(user.workspaceId, { is_active: true });
+
+const actionGhostClassName = ghostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
+
+const actionAccentGhostClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 
 // Get filters from query params
 const url = new URL(Astro.url);
@@ -63,8 +76,10 @@ if (searchQuery) {
         <span class="text-xs md:text-sm">Back</span>
       </a>
 
-      <button
-        class={ghostBtn}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={actionGhostClassName}
         data-action="bulk-add-categories"
         data-type={typeFilter}
         data-testid="bulk-add-btn"
@@ -73,11 +88,13 @@ if (searchQuery) {
         <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
         <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
         <span class="text-xs md:text-sm">Bulk Add</span>
-      </button>
+      </Button>
 
-      <button
+      <Button
         slot="primary"
-        class={accentGhostBtn}
+        variant="ghost"
+        size="sm"
+        className={actionAccentGhostClassName}
         data-action="create-category"
         data-type={typeFilter}
         data-testid="create-category-btn"
@@ -86,7 +103,7 @@ if (searchQuery) {
         <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
         <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
         <span class="text-xs md:text-sm">Create Category</span>
-      </button>
+      </Button>
     </ActionBar>
 
     <!-- Search and Filters -->
@@ -201,21 +218,25 @@ if (searchQuery) {
                       </td>
                       <td class="px-8 py-5 text-right">
                         <div class="flex items-center justify-end gap-2">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             title="Edit category"
-                            class="min-h-11 min-w-11 p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            className="min-h-11 min-w-11 border-0 rounded-xl p-2 text-base-content/30 hover:bg-primary/10 hover:text-primary focus:ring-primary"
                             data-action="edit"
                             data-category-id={category.id}
                             aria-label={`Edit ${category.name} category`}
                             data-testid="category-edit-btn"
                           >
                             <Pencil size={18} class="stroke-current" aria-hidden="true" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             title="Delete category"
-                            class="min-h-11 min-w-11 p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2"
+                            className="min-h-11 min-w-11 border-0 rounded-xl p-2 text-base-content/30 hover:bg-error/10 hover:text-error focus:ring-error"
                             data-action="delete"
                             data-category-id={category.id}
                             data-category-name={category.name}
@@ -225,7 +246,7 @@ if (searchQuery) {
                             data-testid="category-delete-btn"
                           >
                             <Trash2 size={18} class="stroke-current" aria-hidden="true" />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -315,21 +336,23 @@ if (searchQuery) {
 
         <!-- Actions -->
         <div class="grid grid-cols-3 gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="col-span-1 btn btn-ghost h-14 rounded-2xl font-bold"
+            variant="ghost"
+            className="col-span-1 h-14 border-0 font-bold"
             data-bulk-cancel
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            class="col-span-2 btn btn-accent h-14 rounded-2xl font-bold"
+            variant="primary"
+            className="col-span-2 h-14 font-bold"
             data-bulk-submit
             data-testid="bulk-submit-btn"
           >
             <span data-bulk-submit-text>Create Categories</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -27,6 +27,7 @@ import {
   Users,
   Activity,
 } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import type { AuthUser as UserType } from '@/lib/auth/types';
 
 interface Props {
@@ -55,9 +56,9 @@ const isActive = (href: string) => {
     class="command-bar absolute bottom-4 inset-x-4 bg-linear-to-b from-base-100 to-base-200/90 backdrop-blur-xl rounded-2xl shadow-xl border border-base-300/60 p-2 flex items-center justify-between"
   >
     {/* Menu Button - More visible background */}
-    <button
-      type="button"
-      class="command-menu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 transition-colors border border-base-content/10"
+    <Button
+      variant="ghost"
+      className="command-menu-btn px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 border-base-content/10"
       aria-label="Open navigation"
       aria-controls="command-sheet"
       aria-expanded="false"
@@ -65,7 +66,7 @@ const isActive = (href: string) => {
     >
       <Menu size={20} aria-hidden="true" />
       <span class="font-semibold text-sm">Menu</span>
-    </button>
+    </Button>
 
     {/* Quick Actions - Increased spacing and touch targets */}
     <div class="flex items-center gap-2">
@@ -89,14 +90,15 @@ const isActive = (href: string) => {
               <Wallet size={20} aria-hidden="true" />
             </a>
 
-            <button
-              type="button"
-              class="ml-2 w-11 h-11 rounded-full bg-base-100 flex items-center justify-center shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 active:scale-95 transition-all border border-base-300"
+            <Button
+              variant="ghost"
+              shape="circle"
+              className="ml-2 w-11 h-11 rounded-full bg-base-100 shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 border-base-300"
               data-open-transaction-drawer
               aria-label="New transaction"
             >
               <img src="/favicon.svg" alt="" class="w-8 h-8 rounded-full" aria-hidden="true" />
-            </button>
+            </Button>
           </>
         ) : (
           <a
@@ -138,14 +140,14 @@ const isActive = (href: string) => {
           <span class="text-xs text-base-content/50">Quick access to all features</span>
         </div>
       </div>
-      <button
-        type="button"
-        class="command-close-btn p-3 rounded-xl bg-base-200 text-base-content/60 hover:text-base-content hover:bg-base-300 active:scale-95 transition-all"
+      <Button
+        variant="ghost"
+        className="command-close-btn p-3 rounded-xl border-0 bg-base-200 text-base-content/60 hover:text-base-content hover:bg-base-300"
         data-menu-close
         aria-label="Close navigation menu"
       >
         <X size={20} aria-hidden="true" />
-      </button>
+      </Button>
     </div>
 
     {/* Main Navigation Grid - Improved active states */}
@@ -285,16 +287,16 @@ const isActive = (href: string) => {
     {
       !isSuperAdmin && (
         <div class="px-4 sm:px-5 pb-3">
-          <button
-            type="button"
-            class="more-menu-btn w-full flex items-center justify-center gap-2 px-4 py-3.5 min-h-11 rounded-xl border-2 border-dashed border-base-300 text-base-content/60 hover:border-base-400 hover:text-base-content hover:bg-base-200/50 transition-all"
+          <Button
+            variant="ghost"
+            className="more-menu-btn w-full px-4 py-3.5 min-h-11 rounded-xl border-2 border-dashed border-base-300 text-base-content/60 hover:border-base-400 hover:text-base-content hover:bg-base-200/50"
             data-more-menu-btn
             aria-expanded="false"
             aria-controls="more-menu-content"
           >
             <span class="text-sm font-medium">More Options</span>
             <ChevronDown size={18} class="transition-transform duration-300" data-chevron-icon />
-          </button>
+          </Button>
         </div>
       )
     }
@@ -383,13 +385,13 @@ const isActive = (href: string) => {
           <Settings size={16} aria-hidden="true" />
           Settings
         </a>
-        <button
-          type="button"
-          class="logout-btn flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-error/10 text-error hover:bg-error/20 transition-all active:scale-95 text-sm font-medium"
+        <Button
+          variant="ghost"
+          className="logout-btn px-3 py-3 min-h-11 rounded-xl border-0 bg-error/10 text-error hover:bg-error/20 text-sm font-medium"
         >
           <LogOut size={16} aria-hidden="true" />
           Sign out
-        </button>
+        </Button>
       </div>
     </div>
   </div>

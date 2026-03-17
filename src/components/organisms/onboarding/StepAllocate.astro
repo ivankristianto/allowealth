@@ -40,6 +40,7 @@ for (const cat of categories) {
     defaultAmounts.set(cat.id, amount.toString());
   }
 }
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="space-y-6" data-onboarding-allocate data-allocation-total={totalIncome.toString()}>
@@ -105,13 +106,14 @@ for (const cat of categories) {
           required
         />
       </div>
-      <button
+      <Button
         type="submit"
-        class="btn btn-outline min-h-[44px] gap-2 rounded-lg border-base-300 sm:rounded-xl"
+        variant="outline"
+        className="min-h-[44px] gap-2 rounded-lg border-base-300 text-base-content hover:border-base-300 hover:bg-base-200 hover:text-base-content sm:rounded-xl"
       >
         <Plus size={16} class="stroke-current" aria-hidden="true" />
         Add category
-      </button>
+      </Button>
     </form>
   </div>
 
@@ -132,9 +134,12 @@ for (const cat of categories) {
             data-testid={`budget-input-${cat.id}`}
           />
           <div class="flex justify-end gap-1.5 sm:justify-start">
-            <button
+            <Button
               type="button"
-              class="btn btn-ghost btn-square btn-sm rounded-lg"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              className="rounded-lg border-0"
               data-category-action="rename"
               data-category-id={cat.id}
               data-category-name={cat.name}
@@ -142,10 +147,13 @@ for (const cat of categories) {
               title={`Rename ${cat.name}`}
             >
               <Pencil size={14} class="stroke-current" aria-hidden="true" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              class="btn btn-ghost btn-square btn-sm rounded-lg text-error hover:bg-error/10"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              className="rounded-lg border-0 text-error hover:bg-error/10"
               data-category-action="delete"
               data-category-id={cat.id}
               data-category-name={cat.name}
@@ -153,7 +161,7 @@ for (const cat of categories) {
               title={`Delete ${cat.name}`}
             >
               <Trash2 size={14} class="stroke-current" aria-hidden="true" />
-            </button>
+            </Button>
           </div>
         </div>
       ))
@@ -183,10 +191,14 @@ for (const cat of categories) {
         <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back
       </a>
-      <button type="submit" class="btn btn-accent min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl">
+      <Button
+        type="submit"
+        variant="primary"
+        className="min-h-[44px] gap-2 rounded-lg px-6 sm:rounded-xl"
+      >
         Continue
         <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
     </div>
   </form>
 
@@ -230,20 +242,22 @@ for (const cat of categories) {
         </div>
 
         <div class="flex gap-3 pt-1">
-          <button
+          <Button
             type="button"
             id="onboarding-rename-category-cancel"
-            class="btn btn-ghost min-h-[44px] flex-1 rounded-lg sm:rounded-xl"
+            variant="ghost"
+            className="min-h-[44px] flex-1 rounded-lg border-0 sm:rounded-xl"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             id="onboarding-rename-category-submit"
-            class="btn btn-accent min-h-[44px] flex-1 rounded-lg sm:rounded-xl"
+            variant="primary"
+            className="min-h-[44px] flex-1 rounded-lg sm:rounded-xl"
           >
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </div>

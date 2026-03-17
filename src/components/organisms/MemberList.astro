@@ -10,6 +10,7 @@
  * @param {boolean} isAdmin - Whether current user is admin
  */
 
+import Button from '@/components/atoms/Button.astro';
 import { Trash2, User, Crown, ShieldCheck } from '@lucide/astro';
 
 export interface Member {
@@ -103,16 +104,19 @@ function getInitials(name: string): string {
 
               {/* Remove button (admin only, not for self) */}
               {isAdmin && member.id !== currentUserId && member.role !== 'super_admin' && (
-                <button
+                <Button
                   type="button"
-                  class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10 rounded-xl"
+                  variant="ghost"
+                  size="sm"
+                  shape="square"
+                  className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
                   aria-label={`Remove ${member.name} from workspace`}
                   data-remove-member
                   data-member-id={member.id}
                   data-member-name={member.name}
                 >
                   <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-                </button>
+                </Button>
               )}
             </div>
           </li>
@@ -134,14 +138,9 @@ function getInitials(name: string): string {
       <form method="dialog">
         <button class="btn btn-ghost rounded-2xl">Cancel</button>
       </form>
-      <button
-        type="button"
-        class="btn btn-error rounded-2xl"
-        data-confirm-remove
-        data-removing-member-id=""
-      >
+      <Button type="button" variant="danger" data-confirm-remove data-removing-member-id="">
         Remove Member
-      </button>
+      </Button>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop">

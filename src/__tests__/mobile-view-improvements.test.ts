@@ -161,7 +161,7 @@ describe('mobile view improvements', () => {
 
     expect(reportSelector).toContain('compactMobile');
     expect(periodNavigator).toContain('compactMobile');
-    expect(periodNavigator).toContain('btn-sm');
+    expect(periodNavigator).toContain("size={compactMobile ? 'sm' : 'md'}");
     expect(periodNavigator).toContain('min-w-[96px]');
   });
 

@@ -17,6 +17,7 @@
  */
 
 import { Plus, Tags, Download, Upload } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import ActionBar from './ActionBar.astro';
 import ActionExpandable from './ActionExpandable.astro';
 import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
@@ -42,6 +43,18 @@ const {
   copyActionTooltip = '',
   className = '',
 } = Astro.props;
+
+const actionGhostClassName = ghostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
+
+const actionAccentGhostClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 ---
 
 <ActionBar
@@ -72,9 +85,11 @@ const {
               class="tooltip tooltip-bottom"
               data-tip={disableCopyAction ? copyActionTooltip : 'Copy budget'}
             >
-              <button
+              <Button
                 type="button"
-                class={ghostBtn}
+                variant="ghost"
+                size="sm"
+                className={actionGhostClassName}
                 disabled={disableCopyAction}
                 title={disableCopyAction ? copyActionTooltip : undefined}
                 data-action-id="copy-budget"
@@ -114,7 +129,7 @@ const {
                   <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                 </svg>
                 <span class="text-xs md:text-sm">Copy</span>
-              </button>
+              </Button>
             </div>
           )
         }
@@ -124,9 +139,11 @@ const {
       <div slot="expandable" class="flex items-center gap-1 md:gap-2">
         {/* Import */}
         <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
-          <button
+          <Button
             type="button"
-            class={ghostBtn}
+            variant="ghost"
+            size="sm"
+            className={actionGhostClassName}
             aria-label="Import budgets from CSV"
             data-budget-import-btn
             data-testid="budget-import-btn"
@@ -134,14 +151,16 @@ const {
             <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
             <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
             <span>Import</span>
-          </button>
+          </Button>
         </div>
 
         {/* Export */}
         <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
-          <button
+          <Button
             type="button"
-            class={ghostBtn}
+            variant="ghost"
+            size="sm"
+            className={actionGhostClassName}
             aria-label="Export budgets to CSV"
             data-budget-export-btn
             data-testid="budget-export-btn"
@@ -149,7 +168,7 @@ const {
             <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
             <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
             <span>Export</span>
-          </button>
+          </Button>
         </div>
 
         {/* Initialize All */}
@@ -159,9 +178,11 @@ const {
               class="tooltip tooltip-bottom"
               data-tip="Initialize all categories with default budgets"
             >
-              <button
+              <Button
                 type="button"
-                class={ghostBtn}
+                variant="ghost"
+                size="sm"
+                className={actionGhostClassName}
                 data-action-id="initialize-budgets"
                 data-testid="initialize-budgets-btn"
                 aria-label="Initialize all budgets"
@@ -197,7 +218,7 @@ const {
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 <span class="text-xs md:text-sm">Initialize All</span>
-              </button>
+              </Button>
             </div>
           )
         }
@@ -207,9 +228,11 @@ const {
 
   {/* Primary Action - New Budget */}
   <div slot="primary" class="tooltip tooltip-bottom" data-tip="Set new budget">
-    <button
+    <Button
       type="button"
-      class={accentGhostBtn}
+      variant="ghost"
+      size="sm"
+      className={actionAccentGhostClassName}
       id="set-new-budget-btn"
       data-testid="set-new-budget-btn"
       data-target-modal="set-new-budget-modal"
@@ -219,7 +242,7 @@ const {
       <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
       <span class="hidden sm:inline">New Budget</span>
       <span class="sm:hidden">New</span>
-    </button>
+    </Button>
   </div>
 </ActionBar>
 

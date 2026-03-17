@@ -64,6 +64,7 @@ const categoriesWithPercentage = categories.map((cat) => {
     color: cat.color || getCategoryColor(cat.name),
   };
 });
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -194,8 +195,10 @@ const categoriesWithPercentage = categories.map((cat) => {
                     {/* Action */}
                     {range === 'monthly' && (
                       <td class="px-6 md:px-8 py-5 md:py-6 text-right">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           data-view-details
                           data-category-id={cat.id}
                           data-category-name={cat.name}
@@ -203,12 +206,12 @@ const categoriesWithPercentage = categories.map((cat) => {
                           data-category-color={cat.color}
                           data-spent={cat.spent}
                           data-budget-limit={cat.budgetLimit}
-                          class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 md:px-4 py-3 md:py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                          className="gap-1.5 rounded-xl border-0 px-3 py-2 text-xs font-bold uppercase tracking-widest text-base-content/40 hover:bg-base-200/50 hover:text-base-content md:px-4 md:py-2"
                           aria-label={`View detailed breakdown for ${cat.name}`}
                         >
                           <Eye size={12} class="stroke-current" aria-hidden="true" />
                           <span>Details</span>
-                        </button>
+                        </Button>
                       </td>
                     )}
                   </tr>

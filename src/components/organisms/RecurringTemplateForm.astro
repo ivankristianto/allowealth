@@ -1,5 +1,6 @@
 ---
 import Drawer from '@/components/molecules/Drawer.astro';
+import Button from '@/components/atoms/Button.astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import { CircleMinus, CirclePlus, CalendarClock, ChevronDown } from '@lucide/astro';
 import type { Currency } from '@/lib/constants/currency';
@@ -79,31 +80,51 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         >Schedule</span
       >
       <div class="flex flex-wrap gap-1.5" data-frequency-presets>
-        <button
+        <Button
           type="button"
-          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
-          data-frequency-preset="weekly-1">Weekly</button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 rounded-lg sm:rounded-xl border-0"
+          data-frequency-preset="weekly-1"
         >
-        <button
+          Weekly
+        </Button>
+        <Button
           type="button"
-          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-active btn-accent rounded-2xl"
-          data-frequency-preset="monthly-1">Monthly</button
+          variant="primary"
+          size="sm"
+          className="min-h-11 rounded-lg sm:rounded-xl btn-active"
+          data-frequency-preset="monthly-1"
         >
-        <button
+          Monthly
+        </Button>
+        <Button
           type="button"
-          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
-          data-frequency-preset="monthly-3">Quarterly</button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 rounded-lg sm:rounded-xl border-0"
+          data-frequency-preset="monthly-3"
         >
-        <button
+          Quarterly
+        </Button>
+        <Button
           type="button"
-          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
-          data-frequency-preset="monthly-6">Semi-annual</button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 rounded-lg sm:rounded-xl border-0"
+          data-frequency-preset="monthly-6"
         >
-        <button
+          Semi-annual
+        </Button>
+        <Button
           type="button"
-          class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl"
-          data-frequency-preset="monthly-12">Annual</button
+          variant="ghost"
+          size="sm"
+          className="min-h-11 rounded-lg sm:rounded-xl border-0"
+          data-frequency-preset="monthly-12"
         >
+          Annual
+        </Button>
       </div>
       <div class="grid grid-cols-[1fr_auto_auto] items-end gap-2">
         <div class="form-control">
@@ -425,21 +446,23 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       data-recurring-actions
     >
       <div class="flex gap-3">
-        <button
+        <Button
           type="button"
-          class="btn btn-ghost h-12 flex-1 rounded-lg text-sm font-bold sm:rounded-xl"
+          variant="ghost"
+          className="h-12 flex-1 rounded-lg border-0 text-sm font-bold sm:rounded-xl"
           data-template-form-cancel
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
-          class="btn btn-accent h-12 flex-[1.6] rounded-lg text-sm font-bold sm:rounded-xl"
+          variant="primary"
+          className="h-12 flex-[1.6] rounded-lg text-sm font-bold sm:rounded-xl"
           data-template-form-submit
           data-default-label="Save recurring"
         >
           Save recurring
-        </button>
+        </Button>
       </div>
     </div>
   </form>

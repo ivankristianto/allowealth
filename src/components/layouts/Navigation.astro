@@ -10,6 +10,7 @@
  */
 
 import { X, ChevronLeft, User as UserIcon, Shield, LogOut } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import type { AuthUser as User } from '@/lib/auth/types';
 import UserProfile from './UserProfile.astro';
 import UserNav from './UserNav.astro';
@@ -56,21 +57,23 @@ const isSuperAdmin = user?.role === 'super_admin';
       <img src="/favicon.svg" alt="" class="w-8 h-8" aria-hidden="true" />
       <span class="text-xl font-bold tracking-tight text-base-content">allowealth</span>
     </a>
-    <button
-      type="button"
-      class="btn btn-circle btn-ghost rounded-lg min-h-11 min-w-11"
+    <Button
+      variant="ghost"
+      shape="circle"
+      className="rounded-lg min-h-11 min-w-11 border-0"
       data-drawer-close
       aria-label="Close menu"
       aria-controls="drawer-toggle"
     >
       <X size={22} class="stroke-current" />
-    </button>
+    </Button>
   </div>
 
   <!-- Floating Collapse Toggle -->
-  <button
-    type="button"
-    class="hidden lg:flex absolute -right-5 top-[55px] w-10 h-10 bg-base-100 border border-base-300 rounded-full items-center justify-center shadow-xl text-base-content/60 hover:text-accent transition-all hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 z-50"
+  <Button
+    variant="ghost"
+    shape="circle"
+    className="hidden lg:flex absolute -right-5 top-[55px] w-10 h-10 rounded-full bg-base-100 border-base-300 shadow-xl text-base-content/60 hover:text-accent hover:scale-110 z-50"
     data-sidebar-toggle
     aria-pressed="false"
     aria-label="Collapse sidebar"
@@ -81,7 +84,7 @@ const isSuperAdmin = user?.role === 'super_admin';
       class="stroke-current transition-transform duration-300 group-data-[sidebar-collapsed=true]:rotate-180"
       aria-hidden="true"
     />
-  </button>
+  </Button>
 
   <!-- Brand Logo Section (desktop only - mobile has it in the header above) -->
   <div
@@ -147,14 +150,14 @@ const isSuperAdmin = user?.role === 'super_admin';
       </a>
     </li>
     <li class="lg:hidden">
-      <button
-        type="button"
-        class="w-full flex items-center gap-3 py-3 px-5 rounded-xl hover:bg-error/10 transition-colors text-error/70 hover:text-error text-left"
+      <Button
+        variant="ghost"
+        className="w-full justify-start gap-3 px-5 py-3 rounded-xl border-0 text-left text-error/70 hover:bg-error/10 hover:text-error"
         data-mobile-logout-button
       >
         <LogOut size={20} class="stroke-current" aria-hidden="true" />
         <span class="font-medium">Sign out</span>
-      </button>
+      </Button>
     </li>
   </ul>
 

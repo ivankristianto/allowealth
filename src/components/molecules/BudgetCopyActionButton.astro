@@ -11,6 +11,7 @@
  */
 
 import { Copy } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import { COPY_BUDGET_TO_NEXT_MONTH_LABEL } from '@/lib/utils/budget-copy';
 
 export interface Props {
@@ -28,7 +29,7 @@ const {
 } = Astro.props;
 
 const ghostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+  'md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4 border-0';
 ---
 
 {
@@ -37,9 +38,13 @@ const ghostBtn =
       class:list={['tooltip tooltip-bottom', className].filter(Boolean)}
       data-tip={disableCopyAction ? copyActionTooltip : COPY_BUDGET_TO_NEXT_MONTH_LABEL}
     >
-      <button
+      <Button
         type="button"
-        class:list={[ghostBtn, disableCopyAction && 'opacity-30 cursor-not-allowed']}
+        variant="ghost"
+        size="sm"
+        className={[ghostBtn, disableCopyAction && 'opacity-30 pointer-events-none']
+          .filter(Boolean)
+          .join(' ')}
         id="copy-budget-btn"
         data-target-modal="copy-budget-modal"
         aria-label={COPY_BUDGET_TO_NEXT_MONTH_LABEL}
@@ -51,7 +56,7 @@ const ghostBtn =
         <Copy size={16} class="stroke-current md:hidden" aria-hidden="true" />
         <Copy size={18} class="stroke-current hidden md:block" aria-hidden="true" />
         <span class="text-xs sm:text-sm">Copy</span>
-      </button>
+      </Button>
     </div>
   )
 }

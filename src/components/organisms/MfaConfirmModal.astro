@@ -17,6 +17,7 @@ export interface Props {
 }
 
 const { id = 'mfa-confirm-modal' } = Astro.props;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div data-mfa-confirm-modal-container data-id={id}>
@@ -57,21 +58,23 @@ const { id = 'mfa-confirm-modal' } = Astro.props;
         <div class="hidden alert alert-error text-sm" data-confirm-error role="alert"></div>
 
         <div class="flex items-center gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            variant="ghost"
+            className="flex-1 font-semibold border-0"
             data-confirm-cancel
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="flex-[2] btn btn-accent rounded-2xl"
+            variant="primary"
+            className="flex-[2]"
             data-confirm-submit
             data-testid="mfa-confirm-submit"
           >
             Confirm
-          </button>
+          </Button>
         </div>
       </form>
     </div>

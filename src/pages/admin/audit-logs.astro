@@ -8,6 +8,7 @@
 
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
+import Button from '@/components/atoms/Button.astro';
 import { db, auditLogs, users, workspaces } from '@/db';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { ClipboardList, Search, SlidersHorizontal, X } from '@lucide/astro';
@@ -428,9 +429,13 @@ const pageNumbers = Array.from(
               }
             </select>
 
-            <button type="submit" class="btn btn-accent rounded-lg sm:rounded-xl xl:col-span-1">
+            <Button
+              type="submit"
+              variant="primary"
+              className="rounded-lg sm:rounded-xl xl:col-span-1"
+            >
               Search
-            </button>
+            </Button>
           </div>
 
           {
@@ -536,9 +541,14 @@ const pageNumbers = Array.from(
         <nav aria-label="Pagination">
           <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
             {isFirstPage ? (
-              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+              <Button
+                variant="ghost"
+                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+                type="button"
+                disabled
+              >
                 Previous
-              </button>
+              </Button>
             ) : (
               <a
                 href={buildQueryString(Math.max(1, page - 1))}
@@ -569,9 +579,14 @@ const pageNumbers = Array.from(
             </div>
 
             {isLastPage ? (
-              <button class="btn rounded-lg sm:rounded-xl min-h-11" type="button" disabled>
+              <Button
+                variant="ghost"
+                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+                type="button"
+                disabled
+              >
                 Next
-              </button>
+              </Button>
             ) : (
               <a
                 href={buildQueryString(Math.min(totalPages, page + 1))}

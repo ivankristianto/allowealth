@@ -11,6 +11,7 @@
  */
 
 import { Bell, Plus } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="relative" data-notification-dropdown-container>
@@ -36,14 +37,15 @@ import { Bell, Plus } from '@lucide/astro';
   >
     <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
       <span class="font-bold text-base text-base-content/60">Notifications</span>
-      <button
+      <Button
         type="button"
+        variant="ghost"
         data-close-notifications
-        class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
+        className="border-0 text-sm font-bold text-accent hover:bg-transparent hover:text-accent hover:underline"
         aria-label="Close notifications"
       >
         Close
-      </button>
+      </Button>
     </div>
 
     <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
@@ -88,13 +90,14 @@ import { Bell, Plus } from '@lucide/astro';
       </div>
     </div>
 
-    <button
+    <Button
       type="button"
-      class="w-full py-4 text-sm font-bold text-base-content/60 hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+      variant="ghost"
+      className="w-full border-0 py-4 text-sm font-bold tracking-wide text-base-content/60 hover:bg-base-200"
       aria-label="View all notification history"
     >
       View all history
-    </button>
+    </Button>
   </div>
 </div>
 

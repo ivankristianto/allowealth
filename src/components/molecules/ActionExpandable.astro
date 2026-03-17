@@ -17,6 +17,7 @@
  */
 
 import { ChevronRight, ChevronLeft } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 
 export interface Props {
   className?: string;
@@ -63,9 +64,11 @@ const expandId = `expandable-${crypto.randomUUID()}`;
       </div>
 
       {/* Toggle button with animation */}
-      <button
+      <Button
         type="button"
-        class="action-expandable__toggle btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl"
+        variant="ghost"
+        size="sm"
+        className="action-expandable__toggle md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl border-0"
         data-expandable-toggle
         data-expand-label={expandLabel}
         data-collapse-label={collapseLabel}
@@ -87,7 +90,7 @@ const expandId = `expandable-${crypto.randomUUID()}`;
           data-toggle-chevron-left
           aria-hidden="true"
         />
-      </button>
+      </Button>
     </div>
   ) : hasAlwaysVisible ? (
     <slot name="always-visible" />

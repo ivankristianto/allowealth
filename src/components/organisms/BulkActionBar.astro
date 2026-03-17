@@ -6,6 +6,7 @@
  * Includes actions for category change, account change, and delete.
  */
 
+import Button from '@/components/atoms/Button.astro';
 import { X, FolderPen, CreditCard, Trash2 } from '@lucide/astro';
 
 export interface Props {
@@ -27,30 +28,35 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
 >
   <div class="bg-base-100 border-t border-base-300 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 flex-wrap">
-      <button
+      <Button
         type="button"
-        class="btn btn-ghost btn-sm btn-square rounded-xl"
+        variant="ghost"
+        size="sm"
+        shape="square"
+        className="rounded-xl border-0"
         data-bulk-clear
         aria-label="Clear selection"
       >
         <X size={18} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
 
       <span class="text-sm font-bold text-base-content" data-bulk-selected-count>0 selected</span>
 
       <div class="flex-1"></div>
 
       <div class="dropdown dropdown-top dropdown-end">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           tabindex={0}
-          class="btn btn-sm btn-outline gap-2 rounded-lg sm:rounded-xl"
+          className="gap-2 rounded-lg sm:rounded-xl"
           aria-haspopup="listbox"
           aria-label="Change category for selected transactions"
         >
           <FolderPen size={16} class="stroke-current" aria-hidden="true" />
           <span class="hidden sm:inline">Category</span>
-        </button>
+        </Button>
         <div
           tabindex={0}
           class="dropdown-content z-50 p-3 shadow-lg bg-base-100 rounded-2xl w-72 border border-base-300 mb-2"
@@ -103,16 +109,18 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
       </div>
 
       <div class="dropdown dropdown-top dropdown-end">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           tabindex={0}
-          class="btn btn-sm btn-outline gap-2 rounded-lg sm:rounded-xl"
+          className="gap-2 rounded-lg sm:rounded-xl"
           aria-haspopup="listbox"
           aria-label="Change account for selected transactions"
         >
           <CreditCard size={16} class="stroke-current" aria-hidden="true" />
           <span class="hidden sm:inline">Account</span>
-        </button>
+        </Button>
         <div
           tabindex={0}
           class="dropdown-content z-50 p-3 shadow-lg bg-base-100 rounded-2xl w-72 border border-base-300 mb-2"
@@ -137,15 +145,17 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
-        class="btn btn-sm btn-error btn-outline gap-2 rounded-lg sm:rounded-xl"
+        variant="danger"
+        size="sm"
+        className="btn-outline gap-2 rounded-lg sm:rounded-xl"
         data-bulk-action="delete"
         aria-label="Delete selected transactions"
       >
         <Trash2 size={16} class="stroke-current" aria-hidden="true" />
         <span class="hidden sm:inline">Delete</span>
-      </button>
+      </Button>
     </div>
   </div>
 </div>
