@@ -101,7 +101,7 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/ivankristianto/allo
 curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/.env.docker.example
 # or: copy the .env.docker.example file from the repository root
 
-# 5. Edit .env — set every required production value:
+# 5. Edit .env — keep ALLOWEALTH_VERSION pinned there, then set every required production value:
 #   PUBLIC_URL=https://your-domain.com
 #   BETTER_AUTH_SECRET=<long-random-string>
 #   EMAIL_ENCRYPTION_KEY=<base64-32-bytes>
@@ -116,6 +116,7 @@ docker compose up -d
 ```
 
 The container runs database migrations automatically on every start. Check logs with `docker compose logs -f app`.
+Keep `ALLOWEALTH_VERSION` in `.env` until you intentionally upgrade. That way, later `docker compose pull` runs stay pinned to the same release.
 
 ### Environment variables
 
@@ -150,9 +151,9 @@ SQLite lives at `/data/allowealth.db` inside the container, backed by a named Do
 ```bash
 docker compose stop app
 docker run --rm \
-  --volumes-from $(docker compose ps -q app) \
-  -v $(pwd):/backup \
-  busybox tar czf /backup/allowealth-backup-$(date +%Y%m%d).tar.gz /data
+  -v allowealth-data:/data \
+  -v "$(pwd)":/backup \
+  busybox sh -c 'tar czf /backup/allowealth-backup-$(date +%Y%m%d).tar.gz -C / data'
 docker compose start app
 ```
 
@@ -163,8 +164,8 @@ Stop the app before creating the tar archive. Allowealth uses SQLite WAL mode, s
 ```bash
 docker compose stop app
 docker run --rm \
-  --volumes-from $(docker compose ps -q app) \
-  -v $(pwd):/backup \
+  -v allowealth-data:/data \
+  -v "$(pwd)":/backup \
   busybox tar xzf /backup/allowealth-backup-YYYYMMDD.tar.gz -C /
 docker compose start app
 ```
@@ -197,6 +198,7 @@ Caddy and Traefik work equally well. Set `PUBLIC_URL` to the final HTTPS origin 
 ### Updates
 
 ```bash
+vi .env  # update ALLOWEALTH_VERSION when you want to move to a newer release
 docker compose pull
 docker compose up -d
 ```
