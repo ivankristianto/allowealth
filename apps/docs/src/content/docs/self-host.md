@@ -90,11 +90,15 @@ Run Allowealth as a Docker container for a self-contained deployment with automa
 # 1. Pull the latest image
 docker pull ghcr.io/ivankristianto/allowealth:latest
 
-# 2. Create your environment file
+# 2. Get docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/ivankristianto/allowealth/main/docker-compose.yml
+# or: clone/download the repository and copy docker-compose.yml from the repository root
+
+# 3. Create your environment file
 curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/main/.env.docker.example
 # or: copy the .env.docker.example file from the repository root
 
-# 3. Edit .env — set at minimum:
+# 4. Edit .env — set at minimum:
 #   PUBLIC_URL=https://your-domain.com
 #   BETTER_AUTH_SECRET=<long-random-string>
 #   EMAIL_ENCRYPTION_KEY=<base64-32-bytes>
@@ -104,7 +108,7 @@ curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/main/.e
 #   PUBLIC_TURNSTILE_SITE_KEY=<cloudflare-turnstile-site-key>
 #   TURNSTILE_SECRET_KEY=<cloudflare-turnstile-secret-key>
 
-# 4. Start the container
+# 5. Start the container
 docker compose up -d
 ```
 
@@ -206,7 +210,7 @@ To run migrations manually and inspect the output:
 
 ```bash
 docker compose stop app
-docker compose run --rm app bunx drizzle-kit migrate
+docker compose run --rm --entrypoint bunx app drizzle-kit migrate
 ```
 
 Fix the issue, then restart:
