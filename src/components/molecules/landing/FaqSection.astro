@@ -6,6 +6,7 @@
  */
 
 import { faqItems } from '@/lib/landing-content';
+import Button from '@/components/atoms/Button.astro';
 import { Plus } from '@lucide/astro';
 ---
 
@@ -50,8 +51,9 @@ import { Plus } from '@lucide/astro';
       {
         faqItems.map((item, index) => (
           <article class="faq-item group opacity-0 translate-y-8 rounded-3xl bg-base-200/50 border border-base-300/50 hover:border-accent/30 hover:bg-base-200 transition-colors duration-300 overflow-hidden">
-            <button
-              class="faq-button flex w-full items-center justify-between p-6 sm:p-8 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-base-100 rounded-3xl"
+            <Button
+              variant="ghost"
+              className="faq-button w-full justify-between rounded-3xl border-0 bg-transparent p-6 text-left hover:bg-transparent sm:p-8 focus:ring-offset-base-100"
               aria-expanded="false"
               aria-controls={`faq-answer-${index}`}
               id={`faq-question-${index}`}
@@ -66,7 +68,7 @@ import { Plus } from '@lucide/astro';
                   aria-hidden="true"
                 />
               </div>
-            </button>
+            </Button>
             <div
               id={`faq-answer-${index}`}
               role="region"

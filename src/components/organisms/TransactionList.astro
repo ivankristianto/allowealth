@@ -83,6 +83,7 @@ const buildDirectExportUrl = () => {
 };
 
 const dateGroups = groupTransactionsByDate(transactions);
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="space-y-6">
@@ -191,14 +192,16 @@ const dateGroups = groupTransactionsByDate(transactions);
                       <span class="hidden sm:inline">Previous</span>
                     </a>
                   ) : (
-                    <button
-                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0 rounded-xl"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[44px] min-w-[44px] rounded-xl border-base-300 bg-base-100 text-base-content hover:border-base-300 hover:bg-base-200 hover:text-base-content sm:min-w-0"
                       disabled
                       aria-label="Previous page"
                     >
                       <ChevronLeft size={20} class="stroke-current" aria-hidden="true" />
                       <span class="hidden sm:inline">Previous</span>
-                    </button>
+                    </Button>
                   )}
 
                   {/* Page indicator */}
@@ -217,14 +220,16 @@ const dateGroups = groupTransactionsByDate(transactions);
                       <ChevronRight size={20} class="stroke-current" aria-hidden="true" />
                     </a>
                   ) : (
-                    <button
-                      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0 rounded-xl"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[44px] min-w-[44px] rounded-xl border-base-300 bg-base-100 text-base-content hover:border-base-300 hover:bg-base-200 hover:text-base-content sm:min-w-0"
                       disabled
                       aria-label="Next page"
                     >
                       <span class="hidden sm:inline">Next</span>
                       <ChevronRight size={20} class="stroke-current" aria-hidden="true" />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

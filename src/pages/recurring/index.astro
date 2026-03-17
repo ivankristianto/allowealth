@@ -9,6 +9,7 @@ import RecurringTemplateForm from '@/components/organisms/RecurringTemplateForm.
 import RecurringConfirmModal from '@/components/organisms/RecurringConfirmModal.astro';
 import RecurringSkipModal from '@/components/organisms/RecurringSkipModal.astro';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
+import Button from '@/components/atoms/Button.astro';
 import { CalendarDays, Info, List, Plus, TrendingUp } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
 import { accentGhostBtn } from '@/lib/ui/action-button-classes';
@@ -142,6 +143,24 @@ const infoButtonClass =
 const commandCenterHelpId = 'recurring-command-center-help';
 const actionInboxHelpId = 'recurring-action-inbox-help';
 const templatesHelpId = 'recurring-templates-help';
+
+const recurringViewButtonClassName = viewButtonClass
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
+
+const recurringInfoButtonClassName = infoButtonClass
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm', 'btn-square'].includes(className))
+  .concat('border-0')
+  .join(' ');
+
+const recurringActionClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 ---
 
 <ProtectedLayout title="Recurring" currentPath="/recurring" subtitle={selectedMonthLabel}>
@@ -170,14 +189,17 @@ const templatesHelpId = 'recurring-templates-help';
           <div class="flex items-center gap-1.5">
             <h1 class="text-lg font-bold text-base-content sm:text-xl">Recurring Payments</h1>
             <div class="dropdown">
-              <button
+              <Button
                 type="button"
-                class={infoButtonClass}
+                variant="ghost"
+                size="sm"
+                shape="square"
+                className={recurringInfoButtonClassName}
                 aria-label="About recurring payments"
                 aria-describedby={commandCenterHelpId}
               >
                 <Info size={14} class="stroke-current" aria-hidden="true" />
-              </button>
+              </Button>
               <div
                 id={commandCenterHelpId}
                 role="tooltip"
@@ -219,14 +241,17 @@ const templatesHelpId = 'recurring-templates-help';
                 {actionInboxTitle}
               </h2>
               <div class="dropdown">
-                <button
+                <Button
                   type="button"
-                  class={infoButtonClass}
+                  variant="ghost"
+                  size="sm"
+                  shape="square"
+                  className={recurringInfoButtonClassName}
                   aria-label="About upcoming items"
                   aria-describedby={actionInboxHelpId}
                 >
                   <Info size={14} class="stroke-current" aria-hidden="true" />
-                </button>
+                </Button>
                 <div
                   id={actionInboxHelpId}
                   role="tooltip"
@@ -248,26 +273,34 @@ const templatesHelpId = 'recurring-templates-help';
             role="group"
             aria-label="Action inbox mode"
           >
-            <button
+            <Button
               type="button"
-              class:list={[viewButtonClass, view === 'list' && 'btn-active']}
+              variant="ghost"
+              size="sm"
+              className={[recurringViewButtonClassName, view === 'list' && 'btn-active']
+                .filter(Boolean)
+                .join(' ')}
               data-recurring-view="list"
               aria-label="Queue mode"
               aria-pressed={view === 'list'}
             >
               <List size={16} class="stroke-current" aria-hidden="true" />
               Queue
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              class:list={[viewButtonClass, view === 'calendar' && 'btn-active']}
+              variant="ghost"
+              size="sm"
+              className={[recurringViewButtonClassName, view === 'calendar' && 'btn-active']
+                .filter(Boolean)
+                .join(' ')}
               data-recurring-view="calendar"
               aria-label="Calendar mode"
               aria-pressed={view === 'calendar'}
             >
               <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
               Calendar
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -315,14 +348,17 @@ const templatesHelpId = 'recurring-templates-help';
                 Your Recurring Transactions
               </h2>
               <div class="dropdown dropdown-end">
-                <button
+                <Button
                   type="button"
-                  class={infoButtonClass}
+                  variant="ghost"
+                  size="sm"
+                  shape="square"
+                  className={recurringInfoButtonClassName}
                   aria-label="About your recurring transactions"
                   aria-describedby={templatesHelpId}
                 >
                   <Info size={14} class="stroke-current" aria-hidden="true" />
-                </button>
+                </Button>
                 <div
                   id={templatesHelpId}
                   role="tooltip"
@@ -339,16 +375,18 @@ const templatesHelpId = 'recurring-templates-help';
               View and manage all your recurring payments.
             </p>
           </div>
-          <button
+          <Button
             type="button"
-            class={accentGhostBtn}
+            variant="ghost"
+            size="sm"
+            className={recurringActionClassName}
             data-open-recurring-template
             aria-label="Create new recurring transaction"
           >
             <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
             <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
             <span class="text-xs md:text-sm">New Recurring</span>
-          </button>
+          </Button>
         </div>
 
         <div class="mt-4" id="recurring-template-list-container">

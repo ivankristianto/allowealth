@@ -309,9 +309,11 @@ const cardClasses = [
               >
                 {formatCurrency(budget, currency)}
               </p>
-              <button
+              <Button
                 type="button"
-                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                variant="ghost"
+                shape="square"
+                className="min-h-[44px] min-w-[44px] rounded-md border-0 text-base-content/40 hover:text-accent hover:bg-accent/10"
                 data-budget-editable={categoryId}
                 data-budget-raw={budget}
                 data-testid="budget-edit-btn"
@@ -319,7 +321,7 @@ const cardClasses = [
               >
                 <Pencil size={12} class="stroke-current md:hidden" aria-hidden="true" />
                 <Pencil size={14} class="stroke-current hidden md:block" aria-hidden="true" />
-              </button>
+              </Button>
             </div>
           </div>
           <div class="text-right">

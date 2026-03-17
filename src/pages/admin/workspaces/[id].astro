@@ -7,6 +7,7 @@
  */
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
+import Button from '@/components/atoms/Button.astro';
 import AdminWorkspaceStats from '@/components/molecules/AdminWorkspaceStats.astro';
 import AdminWorkspaceMemberList from '@/components/molecules/AdminWorkspaceMemberList.astro';
 import { superAdminService } from '@/services';
@@ -60,23 +61,25 @@ try {
         <div class="flex gap-2">
           {
             workspace.status === 'active' && (
-              <button
-                class="btn btn-warning rounded-lg sm:rounded-xl min-h-11"
+              <Button
+                variant="warning"
+                className="rounded-lg sm:rounded-xl min-h-11"
                 data-archive-btn
                 data-workspace-id={workspace.id}
               >
                 Archive
-              </button>
+              </Button>
             )
           }
-          <button
-            class="btn btn-error rounded-lg sm:rounded-xl min-h-11"
+          <Button
+            variant="danger"
+            className="rounded-lg sm:rounded-xl min-h-11"
             data-delete-btn
             data-workspace-id={workspace.id}
             data-workspace-name={workspace.name}
           >
             Delete
-          </button>
+          </Button>
         </div>
       </div>
     </Card>
@@ -153,9 +156,7 @@ try {
         <form method="dialog">
           <button class="btn btn-ghost rounded-2xl">Cancel</button>
         </form>
-        <button class="btn btn-error rounded-2xl" data-confirm-delete disabled>
-          Delete Workspace
-        </button>
+        <Button variant="danger" data-confirm-delete disabled> Delete Workspace </Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

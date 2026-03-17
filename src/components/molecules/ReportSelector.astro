@@ -14,6 +14,7 @@
  */
 
 import PeriodicSelector from '@/components/molecules/PeriodicSelector.astro';
+import Button from '@/components/atoms/Button.astro';
 
 export interface PeriodOption {
   key: string;
@@ -60,9 +61,10 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
     aria-label="Select report range"
     data-range-toggle-group
   >
-    <button
+    <Button
       type="button"
-      class={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[40px] sm:min-h-[44px] text-xs sm:text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+      variant="ghost"
+      className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[40px] sm:min-h-[44px] rounded-lg sm:rounded-xl border-0 text-xs sm:text-xs font-bold ${
         selectedRange === 'monthly'
           ? 'bg-base-100 shadow text-primary'
           : 'text-base-content/50 hover:text-base-content/70'
@@ -71,10 +73,11 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
       aria-pressed={selectedRange === 'monthly'}
     >
       Monthly
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
-      class={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[40px] sm:min-h-[44px] text-xs sm:text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+      variant="ghost"
+      className={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[40px] sm:min-h-[44px] rounded-lg sm:rounded-xl border-0 text-xs sm:text-xs font-bold ${
         selectedRange === 'yearly'
           ? 'bg-base-100 shadow text-primary'
           : 'text-base-content/50 hover:text-base-content/70'
@@ -83,7 +86,7 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
       aria-pressed={selectedRange === 'yearly'}
     >
       Yearly
-    </button>
+    </Button>
   </div>
 
   <!-- Period Selector: PeriodNavigator for monthly/yearly -->

@@ -27,6 +27,7 @@ import {
   Check,
   Plus,
 } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 
 export interface Props {
   title: string;
@@ -93,23 +94,15 @@ const IconComponent = iconName ? iconMap[iconName] : null;
   {
     actionLabel && (
       <div>
-        {actionHref ? (
-          <a
-            href={actionHref}
-            class={['btn btn-accent btn-sm rounded-xl', actionClassName].filter(Boolean).join(' ')}
-            {...actionAttributes}
-          >
-            {actionLabel}
-          </a>
-        ) : (
-          <button
-            type="button"
-            class={['btn btn-accent btn-sm rounded-xl', actionClassName].filter(Boolean).join(' ')}
-            {...actionAttributes}
-          >
-            {actionLabel}
-          </button>
-        )}
+        <Button
+          variant="primary"
+          size="sm"
+          href={actionHref || undefined}
+          className={actionClassName}
+          {...actionAttributes}
+        >
+          {actionLabel}
+        </Button>
       </div>
     )
   }

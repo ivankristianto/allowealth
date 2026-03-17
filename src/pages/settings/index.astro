@@ -9,6 +9,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import Label from '@/components/atoms/Label.astro';
 import Card from '@/components/atoms/Card.astro';
+import Button from '@/components/atoms/Button.astro';
 import MemberList from '@/components/organisms/MemberList.astro';
 import InviteMemberModal from '@/components/organisms/InviteMemberModal.astro';
 import { isDemoMode } from '@/lib/demo-mode';
@@ -455,14 +456,16 @@ const dataActions = [
                   </p>
                   {
                     isAdmin && !demoMode && (
-                      <button
+                      <Button
                         type="button"
-                        class="btn btn-ghost btn-sm rounded-xl gap-2"
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-xl border-0"
                         onclick="openInviteMemberModal()"
                       >
                         <UserPlus size={16} class="stroke-current" aria-hidden="true" />
                         Invite Member
-                      </button>
+                      </Button>
                     )
                   }
                 </div>
@@ -511,16 +514,19 @@ const dataActions = [
                               <span class="badge badge-warning badge-outline">
                                 {invitation.role}
                               </span>
-                              <button
+                              <Button
                                 type="button"
-                                class="btn btn-ghost btn-sm btn-square rounded-xl text-error hover:bg-error/10"
+                                variant="ghost"
+                                size="sm"
+                                shape="square"
+                                className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
                                 aria-label={`Cancel invitation to ${invitation.email}`}
                                 data-cancel-invitation
                                 data-invitation-id={invitation.id}
                                 data-invitation-email={invitation.email}
                               >
                                 <X size={16} class="stroke-current" aria-hidden="true" />
-                              </button>
+                              </Button>
                             </div>
                           </li>
                         ))}
@@ -621,9 +627,10 @@ const dataActions = [
                   <div class="flex flex-col gap-3">
                     {
                       dataActions.map((action) => (
-                        <button
+                        <Button
                           type="button"
-                          class="flex w-full items-center justify-between rounded-box border border-base-300 bg-base-100 p-4 text-left hover:bg-base-200 opacity-50 cursor-not-allowed"
+                          variant="ghost"
+                          className="h-auto w-full justify-between rounded-box bg-base-100 p-4 text-left"
                           disabled
                         >
                           <div class="space-y-1">
@@ -637,7 +644,7 @@ const dataActions = [
                             class="stroke-current text-error"
                             aria-hidden="true"
                           />
-                        </button>
+                        </Button>
                       ))
                     }
                   </div>
@@ -651,14 +658,15 @@ const dataActions = [
 
           {/* Bottom Save Button (visible after scrolling through form) */}
           <div class="border-t border-base-300 pt-6 mt-2">
-            <button
+            <Button
               type="button"
-              class="btn btn-accent w-full h-14 rounded-2xl gap-2 font-bold shadow-sm"
+              variant="primary"
+              className="h-14 w-full gap-2 font-bold shadow-sm"
               id="save-settings-btn-bottom"
             >
               <Save size={18} class="stroke-current" aria-hidden="true" />
               Save Changes
-            </button>
+            </Button>
           </div>
         </Card>
       </article>
@@ -682,14 +690,14 @@ const dataActions = [
         <form method="dialog">
           <button class="btn btn-ghost rounded-2xl">Keep Invitation</button>
         </form>
-        <button
+        <Button
           type="button"
-          class="btn btn-warning rounded-2xl"
+          variant="warning"
           data-confirm-cancel-invitation
           data-canceling-invitation-id=""
         >
           Cancel Invitation
-        </button>
+        </Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

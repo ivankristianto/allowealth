@@ -8,6 +8,7 @@
  */
 
 import { Upload, Download, ScanLine } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import ActionBar from './ActionBar.astro';
 import ActionExpandable from './ActionExpandable.astro';
 import { ghostBtn } from '@/lib/ui/action-button-classes';
@@ -17,6 +18,12 @@ export interface Props {
 }
 
 const { className = '' } = Astro.props;
+
+const transactionActionClassName = ghostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm'].includes(className))
+  .concat('border-0')
+  .join(' ');
 ---
 
 <ActionBar className={className} ariaLabel="Transaction actions" edgeBleed>
@@ -25,9 +32,11 @@ const { className = '' } = Astro.props;
       {/* Always visible: Import */}
       <div slot="always-visible" class="flex items-center gap-1 md:gap-2">
         <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
-          <button
+          <Button
             type="button"
-            class={ghostBtn}
+            variant="ghost"
+            size="sm"
+            className={transactionActionClassName}
             data-import-csv-button
             aria-label="Import CSV"
             data-transaction-actions-bar
@@ -35,7 +44,7 @@ const { className = '' } = Astro.props;
             <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
             <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
             <span class="text-xs md:text-sm">Import</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -43,18 +52,27 @@ const { className = '' } = Astro.props;
       <div slot="expandable" class="flex items-center gap-1 md:gap-2">
         {/* Export CSV */}
         <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
-          <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={transactionActionClassName}
+            data-export-csv-button
+            aria-label="Export CSV"
+          >
             <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
             <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
             <span class="text-xs md:text-sm">Export</span>
-          </button>
+          </Button>
         </div>
 
         {/* Scan Receipt */}
         <div class="tooltip tooltip-bottom" data-tip="Scan receipt (coming soon)">
-          <button
+          <Button
             type="button"
-            class={ghostBtn}
+            variant="ghost"
+            size="sm"
+            className={transactionActionClassName}
             data-action-id="scan-receipt"
             data-testid="scan-receipt-btn"
             aria-label="Scan receipt"
@@ -62,7 +80,7 @@ const { className = '' } = Astro.props;
             <ScanLine size={16} class="stroke-current md:hidden" aria-hidden="true" />
             <ScanLine size={18} class="stroke-current hidden md:block" aria-hidden="true" />
             <span class="text-xs md:text-sm">Scan</span>
-          </button>
+          </Button>
         </div>
       </div>
     </ActionExpandable>

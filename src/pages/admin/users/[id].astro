@@ -7,6 +7,7 @@
  */
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
+import Button from '@/components/atoms/Button.astro';
 import { superAdminService } from '@/services';
 import type { UserDetailed } from '@/services/super-admin.service';
 import { SuperAdminServiceError } from '@/services/service-errors';
@@ -91,22 +92,24 @@ const isSuperAdmin = user.role === 'super_admin';
           !isSuperAdmin && (
             <div class="flex gap-2">
               {isDeactivated ? (
-                <button
-                  class="btn btn-success rounded-lg sm:rounded-xl min-h-11"
+                <Button
+                  variant="success"
+                  className="rounded-lg sm:rounded-xl min-h-11"
                   data-reactivate-btn
                   data-user-id={user.id}
                 >
                   Reactivate
-                </button>
+                </Button>
               ) : (
-                <button
-                  class="btn btn-warning rounded-lg sm:rounded-xl min-h-11"
+                <Button
+                  variant="warning"
+                  className="rounded-lg sm:rounded-xl min-h-11"
                   data-deactivate-btn
                   data-user-id={user.id}
                   data-user-name={user.name}
                 >
                   Deactivate
-                </button>
+                </Button>
               )}
             </div>
           )
@@ -186,13 +189,14 @@ const isSuperAdmin = user.role === 'super_admin';
                   Member
                 </option>
               </select>
-              <button
-                class="btn btn-accent rounded-lg sm:rounded-xl min-h-11"
+              <Button
+                variant="primary"
+                className="rounded-lg sm:rounded-xl min-h-11"
                 data-save-role-btn
                 disabled
               >
                 Save Role
-              </button>
+              </Button>
             </div>
           </Card>
         </section>
@@ -221,7 +225,7 @@ const isSuperAdmin = user.role === 'super_admin';
         <form method="dialog">
           <button class="btn btn-ghost rounded-2xl">Cancel</button>
         </form>
-        <button class="btn btn-warning rounded-2xl" data-confirm-deactivate>Deactivate</button>
+        <Button variant="warning" data-confirm-deactivate>Deactivate</Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

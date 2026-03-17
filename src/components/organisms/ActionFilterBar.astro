@@ -44,14 +44,16 @@ const currentOwnerName = isPersonalView
   : userId
     ? members.find((m) => m.id === userId)?.name || 'All Accounts'
     : 'All Accounts';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class:list={['flex flex-col sm:flex-row gap-3 w-full', className]}>
   <div class="dropdown dropdown-start sm:dropdown-end">
-    <button
+    <Button
       type="button"
+      variant="ghost"
       tabindex={0}
-      class="flex min-w-40 items-center justify-between gap-2 rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm font-semibold text-base-content shadow-sm transition-colors hover:border-base-content/30"
+      className="min-w-40 h-auto justify-between rounded-xl bg-base-100 px-4 py-3 text-sm font-semibold shadow-sm hover:border-base-content/30 hover:bg-base-100"
       aria-label="Filter by account owner"
       aria-haspopup="menu"
     >
@@ -64,7 +66,7 @@ const currentOwnerName = isPersonalView
         class="stroke-current text-base-content/40 shrink-0"
         aria-hidden="true"
       />
-    </button>
+    </Button>
     <ul
       tabindex={0}
       class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-56 border border-base-300 mt-2"
@@ -130,14 +132,17 @@ const currentOwnerName = isPersonalView
     />
     {
       searchValue && (
-        <button
+        <Button
           type="button"
-          class="btn btn-circle btn-ghost btn-xs absolute right-3 top-1/2 h-11 min-h-11 w-11 min-w-11 -translate-y-1/2 rounded-lg"
+          variant="ghost"
+          size="xs"
+          shape="circle"
+          className="absolute right-3 top-1/2 h-11 min-h-11 w-11 min-w-11 -translate-y-1/2 rounded-lg border-0"
           aria-label="Clear search"
           data-clear-search
         >
           <X size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
-        </button>
+        </Button>
       )
     }
   </div>

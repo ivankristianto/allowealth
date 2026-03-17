@@ -66,16 +66,17 @@ const showNewTransactionButton = user != null && user.role !== 'super_admin';
     <div class="flex items-center gap-3">
       {
         showMenuToggle && (
-          <button
-            type="button"
-            class="btn btn-square btn-ghost rounded-lg min-h-11 min-w-11 lg:hidden"
+          <Button
+            variant="ghost"
+            shape="square"
+            className="rounded-lg min-h-11 min-w-11 lg:hidden border-0"
             data-drawer-open
             aria-label="Open menu"
             aria-controls="drawer-toggle"
             aria-expanded="false"
           >
             <Menu size={24} class="stroke-current" aria-hidden="true" />
-          </button>
+          </Button>
         )
       }
       <div>

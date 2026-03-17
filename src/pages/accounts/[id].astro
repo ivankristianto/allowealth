@@ -8,6 +8,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
+import Button from '@/components/atoms/Button.astro';
 import { accountService, transactionService, workspaceService } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import {
@@ -220,9 +221,11 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
             </p>
             {
               isCurrentMonth && (
-                <button
+                <Button
                   type="button"
-                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-[44px] min-w-[44px] rounded-md border-0 text-base-content/40 hover:bg-accent/10 hover:text-accent"
                   aria-label={`Update ${account.name} balance`}
                   data-update-value-account={account.id}
                   data-account-name={account.name}
@@ -231,7 +234,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
                   data-testid="account-update-value-btn"
                 >
                   <Pencil size={14} class="stroke-current" aria-hidden="true" />
-                </button>
+                </Button>
               )
             }
           </div>
@@ -504,14 +507,16 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
                 ))}
               </select>
             </div>
-            <button
+            <Button
               type="button"
-              class="btn btn-outline btn-sm h-12 rounded-xl px-6 font-bold"
+              variant="outline"
+              size="sm"
+              className="h-12 rounded-xl px-6 font-bold"
               data-transfer-owner-btn
               disabled
             >
               Transfer
-            </button>
+            </Button>
           </div>
 
           {/* Confirmation area (hidden by default) */}
@@ -523,20 +528,24 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
               Are you sure you want to transfer ownership of this account?
             </p>
             <div class="flex gap-2">
-              <button
+              <Button
                 type="button"
-                class="btn btn-warning btn-sm rounded-xl font-bold"
+                variant="warning"
+                size="sm"
+                className="rounded-xl font-bold"
                 data-transfer-confirm-btn
               >
                 Yes, Transfer
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                class="btn btn-ghost btn-sm rounded-xl"
+                variant="ghost"
+                size="sm"
+                className="rounded-xl border-0"
                 data-transfer-cancel-btn
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>

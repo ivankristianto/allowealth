@@ -26,6 +26,7 @@ const { monthlyIncome, monthlyExpenses, transactionCount, currency } = Astro.pro
 
 const netSavings = monthlyIncome - monthlyExpenses;
 const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 {/* Mobile compact cards */}
@@ -127,14 +128,16 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
   >
     <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
     <div slot="details" class="flex items-center gap-1.5 text-xs text-base-content/40">
-      <button
+      <Button
         type="button"
-        class="tooltip tooltip-bottom inline-flex items-center bg-transparent border-0 p-0 cursor-help"
+        variant="ghost"
+        size="xs"
+        className="tooltip tooltip-bottom h-auto min-h-0 border-0 bg-transparent p-0 cursor-help hover:bg-transparent"
         data-tip="Income minus expenses. Negative means you spent more than you earned this period."
         aria-label="Income minus expenses. Negative means you spent more than you earned this period."
       >
         <Info size={14} class="stroke-current" aria-hidden="true" />
-      </button>
+      </Button>
       {netSavings < 0 && <span class="text-error/60 font-medium">Spending exceeded income</span>}
     </div>
   </StatCard>

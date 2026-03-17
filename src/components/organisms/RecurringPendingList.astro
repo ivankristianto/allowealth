@@ -54,27 +54,32 @@ const queueRows = occurrences.map((occurrence) => {
     payload: JSON.stringify(occurrence),
   };
 });
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <section class="space-y-3" data-testid="recurring-pending-section">
   <div class="flex flex-wrap items-center gap-2">
     <h3 class="text-xs font-bold uppercase tracking-widest text-neutral">Upcoming Queue</h3>
-    <button
+    <Button
       type="button"
-      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-success/40 text-success rounded-xl"
+      variant="success"
+      size="sm"
+      className="btn-outline min-h-11 rounded-lg sm:rounded-xl border-success/40 text-success"
       data-pending-filter="income"
       aria-pressed="false"
     >
       Income {incomeCount}
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
-      class="btn btn-sm min-h-11 rounded-lg sm:rounded-xl btn-outline border-error/40 text-error rounded-xl"
+      variant="danger"
+      size="sm"
+      className="btn-outline min-h-11 rounded-lg sm:rounded-xl border-error/40 text-error"
       data-pending-filter="expense"
       aria-pressed="false"
     >
       Expenses {expenseCount}
-    </button>
+    </Button>
   </div>
 
   {
@@ -207,26 +212,30 @@ const queueRows = occurrences.map((occurrence) => {
                     <td>
                       {canAct ? (
                         <div class="flex flex-wrap items-center gap-2">
-                          <button
+                          <Button
                             type="button"
-                            class="btn btn-sm h-11 min-h-11 rounded-lg sm:rounded-xl btn-accent rounded-xl"
+                            variant="primary"
+                            size="sm"
+                            className="h-11 min-h-11 rounded-lg sm:rounded-xl"
                             data-open-confirm-modal
                             data-occurrence={row.payload}
                             aria-label={`Confirm ${occurrence.templateName}`}
                           >
                             <CircleCheckBig size={14} aria-hidden="true" />
                             Confirm
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
-                            class="btn btn-sm h-11 min-h-11 rounded-lg sm:rounded-xl btn-outline btn-warning rounded-xl"
+                            variant="warning"
+                            size="sm"
+                            className="btn-outline h-11 min-h-11 rounded-lg sm:rounded-xl"
                             data-open-skip-modal
                             data-occurrence={row.payload}
                             aria-label={`Skip ${occurrence.templateName}`}
                           >
                             <CircleMinus size={14} aria-hidden="true" />
                             Skip
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <div class="inline-flex items-center gap-1.5 text-xs text-base-content/70">

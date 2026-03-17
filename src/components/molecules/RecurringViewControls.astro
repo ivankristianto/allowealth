@@ -1,4 +1,5 @@
 ---
+import Button from '@/components/atoms/Button.astro';
 import { CalendarDays, List } from '@lucide/astro';
 
 export interface Props {
@@ -18,9 +19,13 @@ const { view, className = '' } = Astro.props;
     class="flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1"
     role="group"
   >
-    <button
+    <Button
       type="button"
-      class:list={['btn btn-sm btn-ghost h-9 min-h-0 rounded-lg', view === 'list' && 'btn-active']}
+      variant="ghost"
+      size="sm"
+      className={['h-9 min-h-0 rounded-lg border-0', view === 'list' && 'btn-active']
+        .filter(Boolean)
+        .join(' ')}
       data-recurring-view="list"
       data-recurring-view-toggle
       aria-label="List view"
@@ -29,13 +34,14 @@ const { view, className = '' } = Astro.props;
     >
       <List size={16} class="stroke-current" aria-hidden="true" />
       <span class="hidden sm:inline">List</span>
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
-      class:list={[
-        'btn btn-sm btn-ghost h-9 min-h-0 rounded-lg',
-        view === 'calendar' && 'btn-active',
-      ]}
+      variant="ghost"
+      size="sm"
+      className={['h-9 min-h-0 rounded-lg border-0', view === 'calendar' && 'btn-active']
+        .filter(Boolean)
+        .join(' ')}
       data-recurring-view="calendar"
       data-recurring-view-toggle
       aria-label="Calendar view"
@@ -44,6 +50,6 @@ const { view, className = '' } = Astro.props;
     >
       <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
       <span class="hidden sm:inline">Calendar</span>
-    </button>
+    </Button>
   </div>
 </div>

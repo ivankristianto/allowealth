@@ -12,6 +12,7 @@
  * @param {string} className - Additional CSS classes
  */
 
+import Button from '@/components/atoms/Button.astro';
 import { TriangleAlert, Info, CircleX, X } from '@lucide/astro';
 
 export interface Props {
@@ -108,16 +109,21 @@ const bannerClasses = [
     </div>
 
     <!-- Dismissible button (client-side) -->
-    <button
-      class:list={[
-        'text-base-content/50 hover:text-base-content transition-colors p-1 -mr-1 -mt-1 shrink-0',
+    <Button
+      variant="ghost"
+      size="xs"
+      shape="circle"
+      className={[
+        'border-0 bg-transparent p-1 -mr-1 -mt-1 shrink-0 text-base-content/50 hover:bg-transparent hover:text-base-content',
         !dismissible && 'hidden',
-      ]}
+      ]
+        .filter(Boolean)
+        .join(' ')}
       aria-label="Dismiss alert"
       data-dismiss="alert"
     >
       <X size={16} class="stroke-current" aria-hidden="true" />
-    </button>
+    </Button>
   </div>
 </div>
 

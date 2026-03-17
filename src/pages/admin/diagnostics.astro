@@ -11,6 +11,7 @@
 
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import DiagnosticsDisplay from '@/components/organisms/DiagnosticsDisplay.astro';
+import Button from '@/components/atoms/Button.astro';
 import { DiagnosticsService } from '@/services/diagnostics.service';
 import { db } from '@/db';
 import { CircleAlert, RefreshCw } from '@lucide/astro';
@@ -31,16 +32,17 @@ try {
 ---
 
 <AdminLayout title="Diagnostics" currentPath="/admin/diagnostics" subtitle="System health overview">
-  <button
+  <Button
     id="refresh-diagnostics"
     slot="header"
-    class="btn btn-outline rounded-lg sm:rounded-xl min-h-11"
+    variant="outline"
+    className="rounded-lg sm:rounded-xl min-h-11"
     type="button"
     aria-label="Refresh diagnostics"
   >
     <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
     Refresh
-  </button>
+  </Button>
 
   <div
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"

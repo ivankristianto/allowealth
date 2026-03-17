@@ -85,15 +85,17 @@ const { passkeys, demoMode = false } = Astro.props;
               </div>
             </div>
             {!demoMode && (
-              <button
+              <Button
                 type="button"
-                class="btn btn-ghost btn-sm rounded-xl text-error"
+                variant="ghost"
+                size="sm"
+                className="border-0 text-error hover:text-error"
                 aria-label="Remove passkey"
                 data-action="delete-passkey"
                 data-passkey-id={passkey.id}
               >
                 <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-              </button>
+              </Button>
             )}
           </div>
         ))
@@ -113,14 +115,15 @@ const { passkeys, demoMode = false } = Astro.props;
         <form method="dialog">
           <button class="btn btn-ghost btn-sm rounded-xl">Cancel</button>
         </form>
-        <button
+        <Button
           type="button"
-          class="btn btn-error btn-sm rounded-xl"
+          variant="danger"
+          size="sm"
           data-confirm-delete-passkey
           data-deleting-passkey-id=""
         >
           Remove
-        </button>
+        </Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

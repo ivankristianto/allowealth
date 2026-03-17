@@ -50,6 +50,7 @@ const activeFilterLabels: string[] = [];
 if (appliedFilters.sourceType) activeFilterLabels.push(`Source: ${appliedFilters.sourceType}`);
 if (appliedFilters.userId) activeFilterLabels.push('Filtered by member');
 if (appliedFilters.categoryId) activeFilterLabels.push('Filtered by category');
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div
@@ -148,24 +149,28 @@ if (appliedFilters.categoryId) activeFilterLabels.push('Filtered by category');
           Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
         </p>
         <div class="flex gap-2">
-          <button
-            class="btn btn-sm btn-ghost rounded-lg"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-lg border-0"
             data-history-page="prev"
             disabled={!hasPrev}
             aria-label="Previous page"
           >
             <ChevronLeft class="w-4 h-4" />
             Prev
-          </button>
-          <button
-            class="btn btn-sm btn-ghost rounded-lg"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-lg border-0"
             data-history-page="next"
             disabled={!hasNext}
             aria-label="Next page"
           >
             Next
             <ChevronRight class="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     )

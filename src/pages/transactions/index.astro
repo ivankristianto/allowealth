@@ -15,6 +15,7 @@ import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.
 import BulkActionBar from '@/components/organisms/BulkActionBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
+import Button from '@/components/atoms/Button.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
@@ -432,14 +433,16 @@ perf?.recordMilestone('preRender.elapsed');
             transactions
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <button
-              class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-[44px] min-w-[44px] bg-base-100 hover:border-accent sm:min-w-0"
               disabled={page <= 1}
               data-pagination-prev
               aria-label="Previous page"
             >
               Previous
-            </button>
+            </Button>
 
             <span
               class:list={[paginationCurrentClass, tokenClasses.textSm]}
@@ -448,14 +451,16 @@ perf?.recordMilestone('preRender.elapsed');
               {page} / {Math.ceil(total / pageSize)}
             </span>
 
-            <button
-              class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-[44px] min-w-[44px] bg-base-100 hover:border-accent sm:min-w-0"
               disabled={page >= Math.ceil(total / pageSize)}
               data-pagination-next
               aria-label="Next page"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>

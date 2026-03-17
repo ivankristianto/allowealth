@@ -49,6 +49,7 @@ const subtitle = isEditMode
 // Icon styling based on mode
 const iconBgClass = 'bg-accent/10';
 const iconColorClass = 'text-accent';
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div data-category-modal-container data-id={id} data-mode={mode} data-testid="category-modal">
@@ -268,20 +269,22 @@ const iconColorClass = 'text-accent';
 
         <!-- Actions -->
         <div class="grid grid-cols-3 gap-4 pt-4">
-          <button
+          <Button
             type="button"
-            class="col-span-1 btn btn-ghost h-14 rounded-2xl font-bold"
+            variant="ghost"
+            className="col-span-1 h-14 font-bold border-0"
             data-cancel
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            class="col-span-2 btn btn-accent h-14 rounded-2xl font-bold"
+            variant="primary"
+            className="col-span-2 h-14 font-bold"
             data-testid="category-submit-btn"
           >
             <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
-          </button>
+          </Button>
         </div>
       </form>
     </div>

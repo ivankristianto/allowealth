@@ -13,6 +13,7 @@
  */
 
 import { CircleX, X } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 
 export interface Props {
   title?: string;
@@ -54,9 +55,14 @@ const hasTitle = title && variant !== 'inline';
         <div class="text-xs">{message}</div>
       </div>
       {dismissible && (
-        <button class="btn btn-sm btn-ghost" type="button" aria-label="Dismiss">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="border-0 bg-transparent hover:bg-transparent"
+          aria-label="Dismiss"
+        >
           <X size={16} class="stroke-current" aria-hidden="true" />
-        </button>
+        </Button>
       )}
     </div>
   )

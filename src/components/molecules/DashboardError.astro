@@ -64,14 +64,15 @@ const {
       <div class="flex gap-3 flex-wrap justify-center">
         {
           showRetry && (
-            <button
+            <Button
               type="button"
+              variant="primary"
               data-action="reload-page"
-              class="btn btn-accent rounded-lg sm:rounded-xl flex items-center gap-2"
+              className="rounded-lg sm:rounded-xl"
             >
               <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
               Try Again
-            </button>
+            </Button>
           )
         }
 

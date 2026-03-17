@@ -9,6 +9,7 @@
  */
 
 import Modal from '../molecules/Modal.astro';
+import Button from '@/components/atoms/Button.astro';
 import Input from '../atoms/Input.astro';
 import FormField from '../molecules/FormField.astro';
 import { CreditCard } from '@lucide/astro';
@@ -87,16 +88,17 @@ const { id } = Astro.props;
 
         <!-- Actions -->
         <div class="flex gap-4 pt-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            variant="ghost"
+            className="flex-1 h-14 font-bold border-0"
             data-close-modal
           >
             Cancel
-          </button>
-          <button type="submit" class="btn btn-accent flex-[2] h-14 rounded-2xl font-bold">
+          </Button>
+          <Button type="submit" variant="primary" className="flex-[2] h-14 font-bold">
             Save Payment Method
-          </button>
+          </Button>
         </div>
       </form>
     </div>

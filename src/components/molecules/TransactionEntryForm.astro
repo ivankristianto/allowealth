@@ -301,14 +301,10 @@ const defaultDatePick =
                 {cat.name}
               </button>
             ))}
-            <button
+            <Button
               type="button"
-              class:list={[
-                'px-3 py-1.5 rounded-full cursor-pointer transition-all',
-                'text-xs font-semibold',
-                'bg-base-300/60 text-base-content/50 hover:bg-base-300 hover:text-base-content/70',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
-              ]}
+              variant="ghost"
+              className="rounded-full border-0 bg-base-300/60 px-3 py-1.5 text-xs font-semibold text-base-content/50 hover:bg-base-300 hover:text-base-content/70"
               data-category-toggle
               aria-expanded={selectedInHidden ? 'true' : 'false'}
               aria-label={
@@ -318,7 +314,7 @@ const defaultDatePick =
               }
             >
               {selectedInHidden ? 'Less' : `+${hiddenCategories.length} more`}
-            </button>
+            </Button>
           </>
         )
       }
@@ -356,28 +352,36 @@ const defaultDatePick =
       >Date</span
     >
     <div class="grid grid-cols-3 gap-1" data-date-picks>
-      <button
+      <Button
         type="button"
-        class:list={[
-          'btn btn-sm rounded-lg text-xs font-semibold',
-          defaultDatePick === 'today' ? 'btn-accent text-accent-content' : 'btn-ghost',
-        ]}
+        variant={defaultDatePick === 'today' ? 'primary' : 'ghost'}
+        size="sm"
+        className={[
+          'rounded-lg text-xs font-semibold',
+          defaultDatePick === 'today' ? '' : 'border-0',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         data-date-pick="today"
         aria-pressed={defaultDatePick === 'today' ? 'true' : 'false'}
       >
         Today
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class:list={[
-          'btn btn-sm rounded-lg text-xs font-semibold',
-          defaultDatePick === 'yesterday' ? 'btn-accent text-accent-content' : 'btn-ghost',
-        ]}
+        variant={defaultDatePick === 'yesterday' ? 'primary' : 'ghost'}
+        size="sm"
+        className={[
+          'rounded-lg text-xs font-semibold',
+          defaultDatePick === 'yesterday' ? '' : 'border-0',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         data-date-pick="yesterday"
         aria-pressed={defaultDatePick === 'yesterday' ? 'true' : 'false'}
       >
         Yesterday
-      </button>
+      </Button>
       <label
         class:list={[
           'btn btn-sm rounded-lg relative overflow-hidden text-xs font-semibold gap-1',

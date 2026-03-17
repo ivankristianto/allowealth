@@ -44,6 +44,7 @@ const serializedData = JSON.stringify(data)
   .replace(/&/g, '\\u0026');
 
 const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 11)}`;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <Card
@@ -61,13 +62,16 @@ const chartId = `forecast-cashflow-chart-${Math.random().toString(36).slice(2, 1
           class="tooltip tooltip-right"
           data-tip={`Shows your projected monthly income (green bars), expenses (red bars), and net cashflow (blue line) based on your ${tooltipQualifier} transactions.`}
         >
-          <button
+          <Button
             type="button"
-            class="text-base-content/30 hover:text-base-content/60 transition-colors"
+            variant="ghost"
+            size="xs"
+            shape="circle"
+            className="border-0 bg-transparent text-base-content/30 hover:bg-transparent hover:text-base-content/60"
             aria-label="What is cashflow forecast?"
           >
             <Info size={16} class="stroke-current" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
       </div>
       <p class="text-xs text-base-content/50">{chartSubtitle}</p>

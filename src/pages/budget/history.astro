@@ -15,6 +15,7 @@ import YearToggle from '@/components/molecules/YearToggle.astro';
 import { budgetService, workspaceMetaService, type MonthlyBudgetHistory } from '@/services';
 import { isValidCurrency } from '@/lib/constants/currency';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
+import Button from '@/components/atoms/Button.astro';
 import { CircleX, History as HistoryIcon } from '@lucide/astro';
 
 const user = Astro.locals.user!;
@@ -159,19 +160,23 @@ const ssrData = {
           <div class="flex bg-base-200 p-1 rounded-xl shrink-0">
             {
               [3, 6, 12].map((range) => (
-                <button
+                <Button
                   type="button"
-                  class:list={[
-                    'px-3 py-2.5 min-h-11 text-xs font-bold rounded-lg transition-all',
+                  variant="ghost"
+                  size="sm"
+                  className={[
+                    'min-h-11 rounded-lg border-0 px-3 py-2.5 text-xs font-bold transition-all',
                     range === 6
-                      ? 'bg-base-100 shadow text-primary'
+                      ? 'bg-base-100 text-primary shadow'
                       : 'text-base-content/50 hover:text-base-content/70',
-                  ]}
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   data-month-range={range}
                   aria-pressed={range === 6 ? 'true' : 'false'}
                 >
                   {range}mo
-                </button>
+                </Button>
               ))
             }
           </div>

@@ -50,6 +50,7 @@ const statusChipClasses: Record<string, string> = {
   confirmed: 'border-success/30 bg-success/5',
   skipped: 'border-base-300 bg-base-200/50',
 };
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="space-y-4" data-recurring-calendar>
@@ -174,22 +175,26 @@ const statusChipClasses: Record<string, string> = {
                           </div>
                           {canAct && (
                             <div class="flex items-center gap-1 pt-0.5">
-                              <button
+                              <Button
                                 type="button"
-                                class="btn btn-xs btn-accent flex-1 min-h-6 rounded-lg font-semibold"
+                                variant="primary"
+                                size="xs"
+                                className="flex-1 min-h-6 rounded-lg font-semibold"
                                 data-open-confirm-modal
                                 data-occurrence={payload}
                               >
                                 Confirm
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 type="button"
-                                class="btn btn-xs btn-outline btn-warning flex-1 min-h-6 rounded-lg font-semibold"
+                                variant="warning"
+                                size="xs"
+                                className="btn-outline flex-1 min-h-6 rounded-lg font-semibold"
                                 data-open-skip-modal
                                 data-occurrence={payload}
                               >
                                 Skip
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -275,22 +280,26 @@ const statusChipClasses: Record<string, string> = {
                         </div>
                         {canAct && (
                           <div class="grid grid-cols-2 gap-2">
-                            <button
+                            <Button
                               type="button"
-                              class="btn btn-sm btn-accent min-h-10 rounded-xl font-semibold"
+                              variant="primary"
+                              size="sm"
+                              className="min-h-10 rounded-xl font-semibold"
                               data-open-confirm-modal
                               data-occurrence={payload}
                             >
                               Confirm
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
-                              class="btn btn-sm btn-outline btn-warning min-h-10 rounded-xl font-semibold"
+                              variant="warning"
+                              size="sm"
+                              className="btn-outline min-h-10 rounded-xl font-semibold"
                               data-open-skip-modal
                               data-occurrence={payload}
                             >
                               Skip
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>

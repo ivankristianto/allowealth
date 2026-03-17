@@ -1,5 +1,6 @@
 ---
 import { CircleAlert, CircleCheckBig, CircleMinus, CirclePlus } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import { formatCurrency } from '@/lib/formatting';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
@@ -90,24 +91,26 @@ const installmentLabel =
     {
       canAct ? (
         <div class="grid grid-cols-1 gap-2 sm:ml-auto sm:max-w-sm sm:grid-cols-2">
-          <button
+          <Button
             type="button"
-            class="btn btn-accent h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
+            variant="primary"
+            className="h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
             data-open-confirm-modal
             data-occurrence={occurrencePayload}
           >
             <CircleCheckBig size={14} aria-hidden="true" />
             Confirm
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            class="btn btn-outline btn-warning h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
+            variant="warning"
+            className="btn-outline h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
             data-open-skip-modal
             data-occurrence={occurrencePayload}
           >
             <CircleMinus size={14} aria-hidden="true" />
             Skip
-          </button>
+          </Button>
         </div>
       ) : (
         <p class="text-xs text-base-content/70">

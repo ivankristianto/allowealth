@@ -14,6 +14,7 @@
  */
 
 import { Moon, Sun } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 
 interface Props {
   /** Button size: 'sm' for header, 'md' for floating (default) */
@@ -40,13 +41,15 @@ const config = sizeClasses[size];
 ---
 
 <div class:list={['theme-toggle-wrapper', className]}>
-  <button
-    type="button"
+  <Button
+    variant="ghost"
     data-theme-toggle
-    class:list={[
-      'bg-base-100 border border-base-300 flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group text-base-content hover:bg-base-100',
+    className={[
+      'group bg-base-100 border-base-300 text-base-content hover:bg-base-100 active:scale-95',
       config.button,
-    ]}
+    ]
+      .filter(Boolean)
+      .join(' ')}
     aria-label="Toggle dark mode"
     title="Toggle dark mode"
   >
@@ -62,7 +65,7 @@ const config = sizeClasses[size];
       class="stroke-current theme-icon-dark hidden transition-transform duration-200 group-hover:rotate-12"
       aria-hidden="true"
     />
-  </button>
+  </Button>
 </div>
 
 <style>

@@ -18,6 +18,7 @@ export interface Props {
 }
 
 const { id } = Astro.props;
+import Button from '@/components/atoms/Button.astro';
 ---
 
 <div data-account-history-modal-container data-id={id}>
@@ -77,20 +78,24 @@ const { id } = Astro.props;
             Performance History
           </h3>
           <div class="flex bg-base-100 p-1 rounded-xl shadow-sm border border-base-300/50">
-            <button
+            <Button
               type="button"
-              class="px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all text-base-content/50"
+              variant="ghost"
+              size="sm"
+              className="rounded-lg border-0 bg-transparent px-4 text-xs font-bold uppercase tracking-widest text-base-content/50 hover:bg-transparent"
               data-timeframe="weekly"
             >
               7 Days
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              class="px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all bg-accent text-white shadow-sm"
+              variant="ghost"
+              size="sm"
+              className="rounded-lg border-0 bg-accent px-4 text-xs font-bold uppercase tracking-widest text-white shadow-sm hover:bg-accent"
               data-timeframe="monthly"
             >
               30 Days
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -465,14 +470,19 @@ const { id } = Astro.props;
         }
 
         // Update timeframe buttons
+        // NOTE: baseClasses duplicates Button.astro internals because client-side JS
+        // cannot use Astro components. If Button.astro base classes change, update here too.
         if (weeklyBtn && monthlyBtn) {
-          const activeClasses = 'bg-accent text-white shadow-sm';
-          const inactiveClasses = 'text-base-content/50';
+          const baseClasses =
+            'btn btn-sm inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent cursor-pointer rounded-lg border-0 px-4 text-xs font-bold uppercase tracking-widest';
+          const activeClasses = 'bg-accent text-white shadow-sm hover:bg-accent';
+          const inactiveClasses =
+            'btn-ghost bg-transparent text-base-content/50 hover:bg-transparent';
 
-          weeklyBtn.className = `px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all ${
+          weeklyBtn.className = `${baseClasses} ${
             timeframe === 'weekly' ? activeClasses : inactiveClasses
           }`;
-          monthlyBtn.className = `px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all ${
+          monthlyBtn.className = `${baseClasses} ${
             timeframe === 'monthly' ? activeClasses : inactiveClasses
           }`;
         }
