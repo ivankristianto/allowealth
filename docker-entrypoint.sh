@@ -15,7 +15,10 @@ if [ -f "$DB_PATH" ]; then
 
   # Keep only the 5 most recent pre-migration backups to avoid disk bloat
   for suffix in "" "-wal" "-shm"; do
-    ls -t "${DB_PATH}${suffix}.pre-migration-"* 2>/dev/null | tail -n +6 | xargs -r rm -f
+    files=$(ls -t "${DB_PATH}${suffix}.pre-migration-"* 2>/dev/null | tail -n +6)
+    if [ -n "$files" ]; then
+      echo "$files" | while read -r f; do rm -f "$f"; done
+    fi
   done
 fi
 

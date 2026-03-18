@@ -10,8 +10,8 @@
 
 services:
   app:
-    # ALLOWEALTH_VERSION must be set in .env — no default to prevent accidental updates
-    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION}
+    # ALLOWEALTH_VERSION must be set — compose fails fast with clear error if missing
+    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION:?ALLOWEALTH_VERSION is required. Set it in .env (e.g., ALLOWEALTH_VERSION=v0.22.3)}
     ports:
       - '3000:3000'
     volumes:

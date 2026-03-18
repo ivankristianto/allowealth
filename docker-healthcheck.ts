@@ -8,7 +8,11 @@ const port = process.env.PORT ?? '3000';
 const url = `http://localhost:${port}/`;
 
 try {
-  const response = await fetch(url, { redirect: 'follow' });
+  // 5 second timeout to fail fast on hanging connections
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  const response = await fetch(url, { redirect: 'follow', signal: controller.signal });
+  clearTimeout(timeout);
 
   if (!response.ok) {
     console.error(`Health check failed: ${response.status} ${response.statusText}`);
