@@ -64,7 +64,7 @@ const {
     role="tab"
     aria-selected={activeTab === option1Value ? 'true' : 'false'}
     tabindex={activeTab === option1Value ? 0 : -1}
-    {...(option1Controls ? { 'aria-controls': option1Controls } : {})}
+    {...option1Controls ? { 'aria-controls': option1Controls } : {}}
     data-active={activeTab === option1Value}
     data-testid={`type-filter-${option1Value}`}
   >
@@ -81,7 +81,7 @@ const {
     role="tab"
     aria-selected={activeTab === option2Value ? 'true' : 'false'}
     tabindex={activeTab === option2Value ? 0 : -1}
-    {...(option2Controls ? { 'aria-controls': option2Controls } : {})}
+    {...option2Controls ? { 'aria-controls': option2Controls } : {}}
     data-active={activeTab === option2Value}
     data-testid={`type-filter-${option2Value}`}
   >
@@ -153,18 +153,23 @@ const {
     const container = button.closest('[data-tab-toggle]');
     if (!container) return;
 
-    if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
 
-    const buttons = Array.from(
-      container.querySelectorAll<HTMLElement>('button[data-tab-value]')
-    );
+    const buttons = Array.from(container.querySelectorAll<HTMLElement>('button[data-tab-value]'));
     const currentIndex = buttons.indexOf(button);
     if (currentIndex === -1) return;
 
-    const nextIndex =
-      e.key === 'ArrowRight'
-        ? (currentIndex + 1) % buttons.length
-        : (currentIndex - 1 + buttons.length) % buttons.length;
+    let nextIndex: number;
+    if (e.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % buttons.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    } else if (e.key === 'Home') {
+      nextIndex = 0;
+    } else {
+      // End
+      nextIndex = buttons.length - 1;
+    }
 
     const nextButton = buttons[nextIndex];
     if (!nextButton) return;
