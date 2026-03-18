@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const readSource = () =>
   readFileSync('apps/site/src/components/molecules/landing/HeroSection.astro', 'utf8');
 
-describe('HeroSection', () => {
+describe('site hero animations', () => {
   it('keeps the entrance animation classes in place', () => {
     const source = readSource();
 

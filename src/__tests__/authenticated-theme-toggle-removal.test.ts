@@ -5,7 +5,7 @@ describe('authenticated theme toggle removal', () => {
   it('removes ThemeToggle from authenticated layouts and keeps it in PublicLayout', () => {
     const headerSource = readFileSync('src/components/layouts/Header.astro', 'utf8');
     const mainLayoutSource = readFileSync('src/layouts/MainLayout.astro', 'utf8');
-    const publicLayoutSource = readFileSync('src/layouts/PublicLayout.astro', 'utf8');
+    const publicLayoutSource = readFileSync('apps/site/src/layouts/PublicLayout.astro', 'utf8');
 
     expect(headerSource).not.toContain("import ThemeToggle from '../atoms/ThemeToggle.astro';");
     expect(headerSource).not.toContain('<ThemeToggle size="sm" className="lg:hidden" />');
