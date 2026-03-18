@@ -1,15 +1,15 @@
 ---
 import {
-  LayoutDashboard,
-  Receipt,
-  RefreshCw,
-  Donut,
-  Wallet,
-  BarChart2,
+  LayoutGrid,
+  DollarSign,
+  Repeat,
+  Landmark,
+  CircleGauge,
+  ChartColumn,
   TrendingUp,
   Calculator,
-  Settings,
-  ClipboardList,
+  Settings2,
+  FileText,
   ExternalLink,
 } from '@lucide/astro';
 
@@ -22,7 +22,7 @@ const { currentPath = '/' } = Astro.props;
 interface NavItem {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof LayoutGrid;
   external?: boolean;
 }
 
@@ -33,35 +33,35 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutGrid }],
   },
   {
     label: 'Track',
     items: [
-      { href: '/transactions', label: 'Transactions', icon: Receipt },
-      { href: '/recurring', label: 'Recurring', icon: RefreshCw },
-      { href: '/accounts', label: 'Accounts', icon: Wallet },
+      { href: '/transactions', label: 'Transactions', icon: DollarSign },
+      { href: '/recurring', label: 'Recurring', icon: Repeat },
+      { href: '/accounts', label: 'Accounts', icon: Landmark },
     ],
   },
   {
     label: 'Plan',
     items: [
-      { href: '/budget', label: 'Budget', icon: Donut },
+      { href: '/budget', label: 'Budget', icon: CircleGauge },
       { href: '/forecast', label: 'Forecast', icon: TrendingUp },
     ],
   },
   {
     label: 'Analyze',
     items: [
-      { href: '/reports', label: 'Reports', icon: BarChart2 },
+      { href: '/reports', label: 'Reports', icon: ChartColumn },
       { href: '/calculators', label: 'Calculators', icon: Calculator },
     ],
   },
 ];
 
 const utilityItems: NavItem[] = [
-  { href: '/settings', label: 'Settings', icon: Settings },
-  { href: 'https://docs.allowealth.io', label: 'Docs', icon: ClipboardList, external: true },
+  { href: '/settings', label: 'Settings', icon: Settings2 },
+  { href: 'https://docs.allowealth.io', label: 'Docs', icon: FileText, external: true },
 ];
 
 const isActive = (href: string) => {
@@ -89,7 +89,7 @@ const isActive = (href: string) => {
         <li role="presentation">
           <span
             aria-hidden="true"
-            class="block px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-base-content/30 group-data-[sidebar-collapsed=true]:hidden"
+            class="block px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-widest text-base-content/60 group-data-[sidebar-collapsed=true]:hidden"
           >
             {group.label}
           </span>
@@ -151,7 +151,7 @@ const isActive = (href: string) => {
           aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
           class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
             isDocs
-              ? 'text-base-content/40 hover:text-base-content/60 font-medium border-transparent'
+              ? 'text-base-content/60 hover:text-base-content/80 font-medium border-transparent'
               : active
                 ? 'bg-accent/10 text-accent font-bold border-accent/20'
                 : 'text-base-content/60 hover:text-base-content font-medium border-transparent'

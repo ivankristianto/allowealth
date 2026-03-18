@@ -52,9 +52,20 @@ describe('UserNav', () => {
 
       expect(renderBlock).toContain('{group.label}');
       expect(renderBlock).toContain('group-data-[sidebar-collapsed=true]:hidden');
+      expect(renderBlock).toContain(
+        'text-xs font-semibold uppercase tracking-widest text-base-content/60'
+      );
     });
 
     it('keeps the grouped nav data declarations intact', () => {
+      expect(source).toContain('LayoutGrid');
+      expect(source).toContain('DollarSign');
+      expect(source).toContain('Repeat');
+      expect(source).toContain('Landmark');
+      expect(source).toContain('CircleGauge');
+      expect(source).toContain('ChartColumn');
+      expect(source).toContain('FileText');
+      expect(source).toContain('Settings2');
       expect(source).toContain("label: 'Track'");
       expect(source).toContain("label: 'Plan'");
       expect(source).toContain("label: 'Analyze'");
