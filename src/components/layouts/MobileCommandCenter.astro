@@ -48,72 +48,72 @@ const isActive = (href: string) => {
 };
 ---
 
-<nav
-  class="mobile-command-center fixed inset-x-0 bottom-0 z-50 lg:hidden"
-  aria-label="Mobile navigation"
->
-  {/* Collapsed Bar */}
-  <div
-    class="command-bar absolute bottom-4 inset-x-4 bg-linear-to-b from-base-100 to-base-200/90 backdrop-blur-xl rounded-2xl shadow-xl border border-base-300/60 p-2 flex items-center justify-between"
-  >
-    {/* Menu Button - More visible background */}
-    <Button
-      variant="ghost"
-      className="px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 border-base-content/10"
-      aria-label="Open navigation"
-      aria-controls="command-sheet"
-      aria-expanded="false"
-      data-menu-toggle
+<div class="mobile-command-center lg:hidden">
+  <nav class="fixed inset-x-0 bottom-0 z-50" aria-label="Mobile navigation">
+    {/* Collapsed Bar */}
+    <div
+      class="command-bar absolute bottom-4 inset-x-4 bg-linear-to-b from-base-100 to-base-200/90 backdrop-blur-xl rounded-2xl shadow-xl border border-base-300/60 p-2 flex items-center justify-between"
+      data-command-bar
     >
-      <Menu size={20} aria-hidden="true" />
-      <span class="font-semibold text-sm">Menu</span>
-    </Button>
+      {/* Menu Button - More visible background */}
+      <Button
+        variant="ghost"
+        className="px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 border-base-content/10"
+        aria-label="Open navigation"
+        aria-controls="command-sheet"
+        aria-expanded="false"
+        data-menu-toggle
+      >
+        <Menu size={20} aria-hidden="true" />
+        <span class="font-semibold text-sm">Menu</span>
+      </Button>
 
-    {/* Quick Actions - Increased spacing and touch targets */}
-    <div class="flex items-center gap-2">
-      {
-        !isSuperAdmin ? (
-          <>
-            <a
-              href="/transactions"
-              class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
-              aria-label="Transactions"
-              aria-current={isActive('/transactions') ? 'page' : undefined}
-            >
-              <DollarSign size={20} aria-hidden="true" />
-            </a>
-            <a
-              href="/accounts"
-              class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
-              aria-label="Accounts"
-              aria-current={isActive('/accounts') ? 'page' : undefined}
-            >
-              <Landmark size={20} aria-hidden="true" />
-            </a>
+      {/* Quick Actions - Increased spacing and touch targets */}
+      <div class="flex items-center gap-2">
+        {
+          !isSuperAdmin ? (
+            <>
+              <a
+                href="/transactions"
+                class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
+                aria-label="Transactions"
+                aria-current={isActive('/transactions') ? 'page' : undefined}
+              >
+                <DollarSign size={20} aria-hidden="true" />
+              </a>
+              <a
+                href="/accounts"
+                class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
+                aria-label="Accounts"
+                aria-current={isActive('/accounts') ? 'page' : undefined}
+              >
+                <Landmark size={20} aria-hidden="true" />
+              </a>
 
-            <Button
-              variant="ghost"
-              shape="circle"
-              className="ml-2 w-11 h-11 rounded-full bg-base-100 shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 border-base-300"
-              data-open-transaction-drawer
-              aria-label="New transaction"
+              <Button
+                variant="ghost"
+                shape="circle"
+                className="ml-2 w-11 h-11 rounded-full bg-base-100 shadow-lg shadow-base-content/20 hover:shadow-base-content/30 hover:scale-105 border-base-300"
+                data-open-transaction-drawer
+                aria-label="New transaction"
+              >
+                <img src="/favicon.svg" alt="" class="w-8 h-8 rounded-full" aria-hidden="true" />
+              </Button>
+            </>
+          ) : (
+            <a
+              href="/admin"
+              class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
+              aria-label="Admin Dashboard"
+              aria-current={isActive('/admin') ? 'page' : undefined}
             >
-              <img src="/favicon.svg" alt="" class="w-8 h-8 rounded-full" aria-hidden="true" />
-            </Button>
-          </>
-        ) : (
-          <a
-            href="/admin"
-            class={`flex items-center justify-center min-h-11 min-w-11 rounded-xl transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent/15 text-accent shadow-sm' : 'text-base-content/50 hover:text-base-content hover:bg-base-200'}`}
-            aria-label="Admin Dashboard"
-            aria-current={isActive('/admin') ? 'page' : undefined}
-          >
-            <ShieldCheck size={20} aria-hidden="true" />
-          </a>
-        )
-      }
+              <ShieldCheck size={20} aria-hidden="true" />
+            </a>
+          )
+        }
+      </div>
     </div>
-  </div>
+  </nav>
 
   {/* Full Menu Sheet */}
   <div
@@ -133,6 +133,7 @@ const isActive = (href: string) => {
       <div class="flex items-center gap-3">
         <div
           class="w-11 h-11 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10 shrink-0"
+          aria-hidden="true"
         >
           {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
         </div>
@@ -175,10 +176,7 @@ const isActive = (href: string) => {
 
           {/* Track */}
           <div>
-            <p
-              class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
-              aria-hidden="true"
-            >
+            <p class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60">
               Track
             </p>
             <div class="grid grid-cols-3 gap-2">
@@ -223,10 +221,7 @@ const isActive = (href: string) => {
 
           {/* Plan */}
           <div>
-            <p
-              class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
-              aria-hidden="true"
-            >
+            <p class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60">
               Plan
             </p>
             <div class="grid grid-cols-2 gap-2">
@@ -259,10 +254,7 @@ const isActive = (href: string) => {
 
           {/* Analyze */}
           <div>
-            <p
-              class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
-              aria-hidden="true"
-            >
+            <p class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60">
               Analyze
             </p>
             <div class="grid grid-cols-2 gap-2">
@@ -411,7 +403,10 @@ const isActive = (href: string) => {
       isSuperAdmin && (
         <div class="mx-3 sm:mx-5 mb-4 p-3 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50">
           <div class="flex items-center gap-3 mb-3">
-            <div class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10">
+            <div
+              class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10"
+              aria-hidden="true"
+            >
               {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
             </div>
             <div class="flex-1 min-w-0">
@@ -463,7 +458,7 @@ const isActive = (href: string) => {
     aria-hidden="true"
   >
   </div>
-</nav>
+</div>
 
 <script>
   import { performLogout } from '@/lib/utils/client';
@@ -486,6 +481,7 @@ const isActive = (href: string) => {
     const { signal } = controller;
     navControllers.set(commandCenter, controller);
 
+    const commandBar = commandCenter.querySelector('[data-command-bar]');
     const menuToggle = commandCenter.querySelector('[data-menu-toggle]');
     const menuClose = commandCenter.querySelector('[data-menu-close]');
     const sheet = commandCenter.querySelector('[data-command-sheet]');
@@ -515,6 +511,7 @@ const isActive = (href: string) => {
       sheet.classList.add('translate-y-0');
       sheet.removeAttribute('inert');
       sheet.removeAttribute('aria-hidden');
+      commandBar?.setAttribute('inert', '');
       backdrop.classList.remove('opacity-0', 'pointer-events-none');
       backdrop.classList.add('opacity-100', 'pointer-events-auto');
       document.body.style.overflow = 'hidden';
@@ -534,6 +531,7 @@ const isActive = (href: string) => {
       sheet.classList.remove('translate-y-0');
       sheet.setAttribute('inert', '');
       sheet.setAttribute('aria-hidden', 'true');
+      commandBar?.removeAttribute('inert');
       backdrop.classList.add('opacity-0', 'pointer-events-none');
       backdrop.classList.remove('opacity-100', 'pointer-events-auto');
       document.body.style.overflow = '';

@@ -37,9 +37,8 @@ const isSuperAdmin = user?.role === 'super_admin';
 // - Inactive state: text-base-content/60, transparent bg
 ---
 
-<aside
+<nav
   class="bg-base-100 w-64 min-w-64 h-full border-r border-base-300 flex flex-col transition-[width,min-width] duration-300 ease-out lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative lg:pb-0"
-  role="navigation"
   aria-label="Main navigation"
   transition:persist="main-nav"
 >
@@ -75,7 +74,7 @@ const isSuperAdmin = user?.role === 'super_admin';
     shape="circle"
     className="hidden lg:flex absolute -right-5 top-[55px] w-10 h-10 rounded-full bg-base-100 border-base-300 shadow-xl text-base-content/60 hover:text-accent hover:scale-110 z-50"
     data-sidebar-toggle
-    aria-pressed="false"
+    aria-expanded="true"
     aria-label="Collapse sidebar"
     title="Collapse sidebar"
   >
@@ -154,6 +153,7 @@ const isSuperAdmin = user?.role === 'super_admin';
         variant="ghost"
         className="w-full justify-start gap-3 px-5 py-3 rounded-xl border-0 text-left text-error/70 hover:bg-error/10 hover:text-error"
         data-mobile-logout-button
+        aria-label={`Sign out ${user?.name || 'account'}`}
       >
         <LogOut size={20} class="stroke-current" aria-hidden="true" />
         <span class="font-medium">Sign out</span>
@@ -165,6 +165,6 @@ const isSuperAdmin = user?.role === 'super_admin';
   <div class="hidden lg:block mt-auto">
     <UserProfile user={user} />
   </div>
-</aside>
+</nav>
 
 <script src="./Navigation.client.ts"></script>
