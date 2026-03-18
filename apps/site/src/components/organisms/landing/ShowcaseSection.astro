@@ -6,6 +6,7 @@
  * Each row has text content and an image.
  */
 
+import { Image } from 'astro:assets';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -82,14 +83,13 @@ const iconMap: Record<string, typeof LayoutDashboard> = {
             {/* Image */}
             <div class="flex-1 w-full group">
               <figure class="relative p-2 sm:p-3 bg-base-200/40 rounded-3xl sm:rounded-4xl border border-base-300 shadow-2xl overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
-                <img
-                  src={item.imageUrl}
+                <Image
+                  src={item.image}
                   alt={item.imageAlt}
                   class="w-full h-auto rounded-2xl sm:rounded-3xl grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
                   loading={index === 0 ? 'eager' : 'lazy'}
-                  width="1200"
-                  height="800"
-                  crossorigin="anonymous"
+                  widths={[400, 800, 1148]}
+                  sizes="(max-width: 640px) 400px, (max-width: 1024px) 800px, 1148px"
                 />
                 <div
                   class={`absolute inset-0 bg-gradient-to-${isReverse ? 'bl' : 'tr'} ${item.gradientClass} pointer-events-none rounded-2xl sm:rounded-3xl`}

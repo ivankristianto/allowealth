@@ -38,7 +38,6 @@ function initSidebarCollapse(signal: AbortSignal) {
   const applyCollapsedState = () => {
     root.setAttribute('data-sidebar-collapsed', isCollapsed ? 'true' : 'false');
     toggles.forEach((toggle) => {
-      toggle.setAttribute('aria-pressed', isCollapsed ? 'true' : 'false');
       toggle.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
       toggle.setAttribute('title', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
       toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
