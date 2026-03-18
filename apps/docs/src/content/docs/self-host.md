@@ -81,15 +81,20 @@ Run Allowealth as a Docker container for a self-contained deployment with automa
 
 - [Docker Engine 24+](https://docs.docker.com/engine/install/)
 - [Docker Compose v2](https://docs.docker.com/compose/install/) (`docker compose` — note: no hyphen)
-- The published Docker images currently support `linux/amd64` only.
+- **Architecture**: The published Docker images support `linux/amd64` only (ARM64 support is planned)
 - Google OAuth credentials for your production domain
 - Cloudflare Turnstile site and secret keys for your production domain
 
 ### Quick start
 
+:::caution[Architecture Support]
+Docker images currently support **linux/amd64 only**. ARM64 systems (Apple Silicon, Raspberry Pi, AWS Graviton) cannot run these images. Support for additional architectures is planned for a future release.
+:::
+
 ```bash
 # 1. Pick one released version and use it for the image, compose file, and env template
-export ALLOWEALTH_VERSION=v0.22.3
+#    Check https://github.com/ivankristianto/allowealth/releases for the latest version
+export ALLOWEALTH_VERSION=v0.22.3  # Replace with latest version
 
 # 2. Pull that exact image
 docker pull ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION}

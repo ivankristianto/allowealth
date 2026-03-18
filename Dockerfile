@@ -36,8 +36,9 @@ COPY --from=build --chown=allowealth:allowealth /app/package.json ./package.json
 COPY --from=build --chown=allowealth:allowealth /app/drizzle ./drizzle
 COPY --from=build --chown=allowealth:allowealth /app/drizzle.config.ts ./drizzle.config.ts
 
-# Copy entrypoint script
+# Copy entrypoint and healthcheck scripts
 COPY --chown=allowealth:allowealth docker-entrypoint.sh /docker-entrypoint.sh
+COPY --chown=allowealth:allowealth docker-healthcheck.ts /docker-healthcheck.ts
 RUN chmod +x /docker-entrypoint.sh
 
 # Create the SQLite data directory (volume is mounted here by docker-compose)
@@ -53,9 +54,9 @@ ENV DATABASE_URL=/data/allowealth.db
 
 EXPOSE 3000
 
-# Health check: Bun fetch follows the 302 redirect to the login page (returns 200)
-# The inline script reads process.env.PORT at runtime and reports the URL/status on failure
+# Health check: Verify the app responds with 200 OK
+# The healthcheck script reads process.env.PORT at runtime and follows redirects
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD bun --eval "const port = process.env.PORT ?? '3000'; const url = 'http://localhost:' + port + '/'; let response; try { response = await fetch(url); } catch (error) { throw new Error('Healthcheck failed for ' + url + ': ' + (error instanceof Error ? error.message : String(error))); } if (!response.ok) { throw new Error('Healthcheck failed for ' + url + ': ' + response.status + ' ' + response.statusText); }"
+  CMD bun /docker-healthcheck.ts
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

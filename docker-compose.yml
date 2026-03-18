@@ -2,7 +2,7 @@
 # Usage:
 #   cp .env.docker.example .env
 #   # Edit .env — set every required production value from .env.docker.example
-#   # Optional: set ALLOWEALTH_VERSION to pin the image tag for this deployment
+#   # Required: set ALLOWEALTH_VERSION to pin the image tag (e.g., v0.22.3)
 #   docker compose up -d
 #
 # To update:
@@ -10,7 +10,8 @@
 
 services:
   app:
-    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION:-latest}
+    # ALLOWEALTH_VERSION must be set in .env — no default to prevent accidental updates
+    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION}
     ports:
       - '3000:3000'
     volumes:
