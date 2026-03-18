@@ -40,12 +40,15 @@ describe('MobileCommandCenter', () => {
       const analyzeSection = source.split('/* Analyze */')[1] ?? '';
       const userLinksSection = source.split('/* User links */')[1] ?? '';
 
+      expect(trackSection).toContain('pointer-events-none select-none');
       expect(trackSection).toContain('text-xs font-semibold uppercase tracking-widest');
       expect(trackSection).toContain('text-base-content/60');
       expect(trackSection).toContain('Track');
+      expect(planSection).toContain('pointer-events-none select-none');
       expect(planSection).toContain('text-xs font-semibold uppercase tracking-widest');
       expect(planSection).toContain('text-base-content/60');
       expect(planSection).toContain('Plan');
+      expect(analyzeSection).toContain('pointer-events-none select-none');
       expect(analyzeSection).toContain('text-xs font-semibold uppercase tracking-widest');
       expect(analyzeSection).toContain('text-base-content/60');
       expect(analyzeSection).toContain('Analyze');

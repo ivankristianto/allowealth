@@ -52,6 +52,7 @@ describe('UserNav', () => {
 
       expect(renderBlock).toContain('{group.label}');
       expect(renderBlock).toContain('group-data-[sidebar-collapsed=true]:hidden');
+      expect(renderBlock).toContain('pointer-events-none block select-none');
       expect(renderBlock).toContain(
         'text-xs font-semibold uppercase tracking-widest text-base-content/60'
       );
