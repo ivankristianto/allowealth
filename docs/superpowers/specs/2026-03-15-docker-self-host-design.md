@@ -60,18 +60,16 @@ Runs `DEPLOY_TARGET=node astro build`, which uses the `@astrojs/node` adapter in
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 allowealth \
- && adduser --system --uid 1001 --ingroup allowealth allowealth
+# Use the non-root user provided by the official Bun image
+USER bun
 
-COPY --from=build --chown=allowealth:allowealth /app/dist ./dist
-COPY --from=build --chown=allowealth:allowealth /app/node_modules ./node_modules
-COPY --from=build --chown=allowealth:allowealth /app/package.json ./package.json
-COPY --from=build --chown=allowealth:allowealth /app/drizzle ./drizzle
-COPY --from=build --chown=allowealth:allowealth /app/drizzle.config.ts ./drizzle.config.ts
-COPY --chown=allowealth:allowealth docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh && mkdir -p /data && chown allowealth:allowealth /data
-
-USER allowealth
+COPY --from=build --chown=bun:bun /app/dist ./dist
+COPY --from=build --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=build --chown=bun:bun /app/package.json ./package.json
+COPY --from=build --chown=bun:bun /app/drizzle ./drizzle
+COPY --from=build --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
+COPY --chown=bun:bun docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && mkdir -p /data && chown bun:bun /data
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -84,7 +82,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 ENTRYPOINT ["/docker-entrypoint.sh"]
 ```
 
-The slim runtime image includes only `dist/`, `node_modules/`, migration files (`drizzle/` + `drizzle.config.ts`), and the entrypoint script. Runs as non-root user `allowealth`. SQLite database lives at `/data/allowealth.db` — a named volume is mounted there by compose.
+The slim runtime image includes only `dist/`, `node_modules/`, migration files (`drizzle/` + `drizzle.config.ts`), and the entrypoint script. Runs as the Bun image's built-in non-root user `bun`. SQLite database lives at `/data/allowealth.db` — a named volume is mounted there by compose.
 
 `HEALTHCHECK` uses `wget` (available in the slim image) to check the app root. No custom health endpoint needed.
 
