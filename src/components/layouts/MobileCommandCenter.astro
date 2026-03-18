@@ -6,22 +6,23 @@
  */
 
 import {
-  ArrowLeftRight,
-  Wallet,
-  Donut,
-  BarChart2,
+  LayoutGrid,
+  DollarSign,
+  Repeat,
+  Landmark,
+  CircleGauge,
+  ChartColumn,
   Menu,
   X,
   User,
   Shield,
   LogOut,
-  Settings,
-  House,
-  RefreshCw,
+  Settings2,
   TrendingUp,
   Calculator,
-  ClipboardList,
+  FileText,
   ExternalLink,
+  ClipboardList,
   ShieldCheck,
   Building2,
   Users,
@@ -48,7 +49,7 @@ const isActive = (href: string) => {
 ---
 
 <nav
-  class="mobile-command-center fixed inset-x-0 bottom-0 z-[var(--z-fixed)] lg:hidden"
+  class="mobile-command-center fixed inset-x-0 bottom-0 z-50 lg:hidden"
   aria-label="Mobile navigation"
 >
   {/* Collapsed Bar */}
@@ -58,7 +59,7 @@ const isActive = (href: string) => {
     {/* Menu Button - More visible background */}
     <Button
       variant="ghost"
-      className="command-menu-btn px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 border-base-content/10"
+      className="px-4 py-2.5 rounded-xl bg-base-300 text-base-content hover:bg-base-300/80 border-base-content/10"
       aria-label="Open navigation"
       aria-controls="command-sheet"
       aria-expanded="false"
@@ -79,7 +80,7 @@ const isActive = (href: string) => {
               aria-label="Transactions"
               aria-current={isActive('/transactions') ? 'page' : undefined}
             >
-              <ArrowLeftRight size={20} aria-hidden="true" />
+              <DollarSign size={20} aria-hidden="true" />
             </a>
             <a
               href="/accounts"
@@ -87,7 +88,7 @@ const isActive = (href: string) => {
               aria-label="Accounts"
               aria-current={isActive('/accounts') ? 'page' : undefined}
             >
-              <Wallet size={20} aria-hidden="true" />
+              <Landmark size={20} aria-hidden="true" />
             </a>
 
             <Button
@@ -117,7 +118,7 @@ const isActive = (href: string) => {
   {/* Full Menu Sheet */}
   <div
     id="command-sheet"
-    class="command-sheet fixed left-0 right-0 bottom-0 bg-base-100 rounded-t-4xl shadow-xl transform translate-y-full transition-transform duration-300 ease-out z-[var(--z-modal)] overflow-y-auto overscroll-contain max-h-[85vh] pb-[env(safe-area-inset-bottom)]"
+    class="command-sheet fixed left-0 right-0 bottom-0 max-h-[85vh] bg-base-100 rounded-t-4xl shadow-xl transform translate-y-full transition-transform duration-300 ease-out z-50 overflow-hidden pb-[env(safe-area-inset-bottom)]"
     data-command-sheet
     role="dialog"
     aria-label="Navigation menu"
@@ -126,7 +127,9 @@ const isActive = (href: string) => {
     inert
   >
     {/* User Card Header */}
-    <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-base-content/8">
+    <div
+      class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-base-content/10"
+    >
       <div class="flex items-center gap-3">
         <div
           class="w-11 h-11 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10 shrink-0"
@@ -142,7 +145,7 @@ const isActive = (href: string) => {
       </div>
       <Button
         variant="ghost"
-        className="command-close-btn p-3 rounded-xl border-0 bg-base-200 text-base-content/60 hover:text-base-content hover:bg-base-300"
+        className="p-3 rounded-xl border-0 bg-base-200 text-base-content/70 hover:text-base-content hover:bg-base-300"
         data-menu-close
         aria-label="Close navigation menu"
       >
@@ -153,7 +156,7 @@ const isActive = (href: string) => {
     {/* Main Navigation - grouped (user) */}
     {
       !isSuperAdmin && (
-        <div class="p-4 sm:p-5 space-y-4">
+        <div class="px-3 py-3 sm:px-5 space-y-3">
           {/* Dashboard */}
           <div>
             <a
@@ -161,7 +164,11 @@ const isActive = (href: string) => {
               class={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all active:scale-95 ${isActive('/dashboard') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
               aria-current={isActive('/dashboard') ? 'page' : undefined}
             >
-              <House size={22} stroke-width={isActive('/dashboard') ? 2.5 : 2} aria-hidden="true" />
+              <LayoutGrid
+                size={20}
+                stroke-width={isActive('/dashboard') ? 2.5 : 2}
+                aria-hidden="true"
+              />
               <span class="text-sm font-semibold">Dashboard</span>
             </a>
           </div>
@@ -169,47 +176,47 @@ const isActive = (href: string) => {
           {/* Track */}
           <div>
             <p
-              class="text-[10px] font-semibold uppercase tracking-widest text-base-content/30 px-1 mb-2"
+              class="px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
               aria-hidden="true"
             >
               Track
             </p>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-3 gap-2">
               <a
                 href="/transactions"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/transactions') ? 'page' : undefined}
               >
-                <ArrowLeftRight
-                  size={22}
+                <DollarSign
+                  size={20}
                   stroke-width={isActive('/transactions') ? 2.5 : 2}
                   aria-hidden="true"
                 />
-                <span class="text-xs font-semibold">Transactions</span>
+                <span class="text-xs font-semibold leading-tight">Transactions</span>
               </a>
               <a
                 href="/recurring"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/recurring') ? 'page' : undefined}
               >
-                <RefreshCw
-                  size={22}
+                <Repeat
+                  size={20}
                   stroke-width={isActive('/recurring') ? 2.5 : 2}
                   aria-hidden="true"
                 />
-                <span class="text-xs font-semibold">Recurring</span>
+                <span class="text-xs font-semibold leading-tight">Recurring</span>
               </a>
               <a
                 href="/accounts"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/accounts') ? 'page' : undefined}
               >
-                <Wallet
-                  size={22}
+                <Landmark
+                  size={20}
                   stroke-width={isActive('/accounts') ? 2.5 : 2}
                   aria-hidden="true"
                 />
-                <span class="text-xs font-semibold">Accounts</span>
+                <span class="text-xs font-semibold leading-tight">Accounts</span>
               </a>
             </div>
           </div>
@@ -217,31 +224,35 @@ const isActive = (href: string) => {
           {/* Plan */}
           <div>
             <p
-              class="text-[10px] font-semibold uppercase tracking-widest text-base-content/30 px-1 mb-2"
+              class="px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
               aria-hidden="true"
             >
               Plan
             </p>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-2">
               <a
                 href="/budget"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/budget') ? 'page' : undefined}
               >
-                <Donut size={22} stroke-width={isActive('/budget') ? 2.5 : 2} aria-hidden="true" />
-                <span class="text-xs font-semibold">Budget</span>
+                <CircleGauge
+                  size={20}
+                  stroke-width={isActive('/budget') ? 2.5 : 2}
+                  aria-hidden="true"
+                />
+                <span class="text-xs font-semibold leading-tight">Budget</span>
               </a>
               <a
                 href="/forecast"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/forecast') ? 'page' : undefined}
               >
                 <TrendingUp
-                  size={22}
+                  size={20}
                   stroke-width={isActive('/forecast') ? 2.5 : 2}
                   aria-hidden="true"
                 />
-                <span class="text-xs font-semibold">Forecast</span>
+                <span class="text-xs font-semibold leading-tight">Forecast</span>
               </a>
             </div>
           </div>
@@ -249,35 +260,35 @@ const isActive = (href: string) => {
           {/* Analyze */}
           <div>
             <p
-              class="text-[10px] font-semibold uppercase tracking-widest text-base-content/30 px-1 mb-2"
+              class="px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
               aria-hidden="true"
             >
               Analyze
             </p>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-2">
               <a
                 href="/reports"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/reports') ? 'page' : undefined}
               >
-                <BarChart2
-                  size={22}
+                <ChartColumn
+                  size={20}
                   stroke-width={isActive('/reports') ? 2.5 : 2}
                   aria-hidden="true"
                 />
-                <span class="text-xs font-semibold">Reports</span>
+                <span class="text-xs font-semibold leading-tight">Reports</span>
               </a>
               <a
                 href="/calculators"
-                class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
                 aria-current={isActive('/calculators') ? 'page' : undefined}
               >
                 <Calculator
-                  size={22}
+                  size={20}
                   stroke-width={isActive('/calculators') ? 2.5 : 2}
                   aria-hidden="true"
                 />
-                <span class="text-xs font-semibold">Calculators</span>
+                <span class="text-xs font-semibold leading-tight">Calculators</span>
               </a>
             </div>
           </div>
@@ -288,58 +299,58 @@ const isActive = (href: string) => {
     {/* Admin navigation - unchanged, just wrapped in its own container */}
     {
       isSuperAdmin && (
-        <div class="p-4 sm:p-5 grid grid-cols-3 gap-3">
+        <div class="px-3 py-3 sm:px-5 grid grid-cols-2 gap-2">
           <a
             href="/admin"
-            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
             aria-current={isActive('/admin') ? 'page' : undefined}
           >
-            <ShieldCheck size={22} stroke-width={isActive('/admin') ? 2.5 : 2} aria-hidden="true" />
-            <span class="text-xs font-semibold">Dashboard</span>
+            <ShieldCheck size={20} stroke-width={isActive('/admin') ? 2.5 : 2} aria-hidden="true" />
+            <span class="text-xs font-semibold leading-tight">Dashboard</span>
           </a>
           <a
             href="/admin/workspaces"
-            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/workspaces') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/workspaces') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
             aria-current={isActive('/admin/workspaces') ? 'page' : undefined}
           >
             <Building2
-              size={22}
+              size={20}
               stroke-width={isActive('/admin/workspaces') ? 2.5 : 2}
               aria-hidden="true"
             />
-            <span class="text-xs font-semibold">Workspaces</span>
+            <span class="text-xs font-semibold leading-tight">Workspaces</span>
           </a>
           <a
             href="/admin/users"
-            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/users') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/users') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
             aria-current={isActive('/admin/users') ? 'page' : undefined}
           >
-            <Users size={22} stroke-width={isActive('/admin/users') ? 2.5 : 2} aria-hidden="true" />
-            <span class="text-xs font-semibold">Users</span>
+            <Users size={20} stroke-width={isActive('/admin/users') ? 2.5 : 2} aria-hidden="true" />
+            <span class="text-xs font-semibold leading-tight">Users</span>
           </a>
           <a
             href="/admin/audit-logs"
-            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/audit-logs') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/audit-logs') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
             aria-current={isActive('/admin/audit-logs') ? 'page' : undefined}
           >
             <ClipboardList
-              size={22}
+              size={20}
               stroke-width={isActive('/admin/audit-logs') ? 2.5 : 2}
               aria-hidden="true"
             />
-            <span class="text-xs font-semibold">Audit Logs</span>
+            <span class="text-xs font-semibold leading-tight">Audit Logs</span>
           </a>
           <a
             href="/admin/diagnostics"
-            class={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all active:scale-95 ${isActive('/admin/diagnostics') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/diagnostics') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
             aria-current={isActive('/admin/diagnostics') ? 'page' : undefined}
           >
             <Activity
-              size={22}
+              size={20}
               stroke-width={isActive('/admin/diagnostics') ? 2.5 : 2}
               aria-hidden="true"
             />
-            <span class="text-xs font-semibold">Diagnostics</span>
+            <span class="text-xs font-semibold leading-tight">Diagnostics</span>
           </a>
         </div>
       )
@@ -348,47 +359,49 @@ const isActive = (href: string) => {
     {/* User links */}
     {
       !isSuperAdmin && (
-        <div class="mx-4 sm:mx-5 mb-6 mt-2 border-t border-base-content/8 pt-3 space-y-1">
-          <a
-            href="/profile"
-            class="flex items-center gap-3 px-4 py-3 min-h-11 rounded-xl text-base-content/70 hover:bg-base-200 hover:text-base-content transition-all active:scale-95 text-sm font-medium"
-          >
-            <User size={18} aria-hidden="true" />
-            Profile
-          </a>
-          <a
-            href="/security"
-            class="flex items-center gap-3 px-4 py-3 min-h-11 rounded-xl text-base-content/70 hover:bg-base-200 hover:text-base-content transition-all active:scale-95 text-sm font-medium"
-          >
-            <Shield size={18} aria-hidden="true" />
-            Security
-          </a>
-          <a
-            href="/settings"
-            class="flex items-center gap-3 px-4 py-3 min-h-11 rounded-xl text-base-content/70 hover:bg-base-200 hover:text-base-content transition-all active:scale-95 text-sm font-medium"
-          >
-            <Settings size={18} aria-hidden="true" />
-            Settings
-          </a>
-          <hr class="border-base-content/8 mx-2" aria-hidden="true" />
-          <a
-            href="https://docs.allowealth.io"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-3 px-4 py-3 min-h-11 rounded-xl text-base-content/40 hover:text-base-content/60 hover:bg-base-200 transition-all active:scale-95 text-sm font-medium"
-            aria-label="Documentation (opens in new tab)"
-          >
-            <ExternalLink size={18} aria-hidden="true" />
-            Documentation
-          </a>
-          <hr class="border-base-content/8 mx-2" aria-hidden="true" />
-          <Button
-            variant="ghost"
-            className="logout-btn w-full justify-start gap-3 px-4 py-3 min-h-11 rounded-xl border-0 text-error hover:bg-error/10 text-sm font-medium"
-          >
-            <LogOut size={18} aria-hidden="true" />
-            Sign out
-          </Button>
+        <div class="mx-3 sm:mx-5 mb-4 mt-1 border-t border-base-300 pt-3">
+          <div class="grid grid-cols-2 gap-2">
+            <a
+              href="/profile"
+              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
+            >
+              <User size={16} aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate">Profile</span>
+            </a>
+            <a
+              href="/security"
+              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
+            >
+              <Shield size={16} aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate">Security</span>
+            </a>
+            <a
+              href="/settings"
+              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
+            >
+              <Settings2 size={16} aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate">Settings</span>
+            </a>
+            <a
+              href="https://docs.allowealth.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/65 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
+              aria-label="Documentation (opens in new tab)"
+            >
+              <FileText size={16} aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate">Documentation</span>
+              <ExternalLink size={12} aria-hidden="true" />
+            </a>
+            <Button
+              variant="ghost"
+              className="col-span-2 w-full justify-start gap-2 rounded-2xl border-0 bg-error/10 px-3 py-3 min-h-11 text-sm font-medium text-error hover:bg-error/15"
+              data-logout-button
+            >
+              <LogOut size={16} aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate">Sign out</span>
+            </Button>
+          </div>
         </div>
       )
     }
@@ -396,8 +409,8 @@ const isActive = (href: string) => {
     {/* Admin user section - unchanged */}
     {
       isSuperAdmin && (
-        <div class="mx-4 sm:mx-5 mb-6 p-4 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50">
-          <div class="flex items-center gap-3 mb-4">
+        <div class="mx-3 sm:mx-5 mb-4 p-3 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50">
+          <div class="flex items-center gap-3 mb-3">
             <div class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10">
               {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
             </div>
@@ -410,31 +423,32 @@ const isActive = (href: string) => {
           <div class="grid grid-cols-2 gap-2">
             <a
               href="/profile"
-              class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
+              class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
             >
               <User size={16} aria-hidden="true" />
-              Profile
+              <span class="min-w-0 flex-1 truncate text-center">Profile</span>
             </a>
             <a
               href="/security"
-              class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
+              class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
             >
               <Shield size={16} aria-hidden="true" />
-              Security
+              <span class="min-w-0 flex-1 truncate text-center">Security</span>
             </a>
             <a
               href="/settings"
-              class="flex items-center justify-center gap-2 px-3 py-3 min-h-11 rounded-xl bg-base-100 text-base-content/80 hover:bg-base-300/50 hover:text-base-content transition-all active:scale-95 text-sm font-medium border border-base-300/50"
+              class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
             >
-              <Settings size={16} aria-hidden="true" />
-              Settings
+              <Settings2 size={16} aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate text-center">Settings</span>
             </a>
             <Button
               variant="ghost"
-              className="logout-btn px-3 py-3 min-h-11 rounded-xl border-0 bg-error/10 text-error hover:bg-error/20 text-sm font-medium"
+              className="col-span-2 w-full justify-start gap-2 rounded-2xl border-0 bg-error/10 px-3 py-3 min-h-11 text-sm font-medium text-error hover:bg-error/20"
+              data-logout-button
             >
               <LogOut size={16} aria-hidden="true" />
-              Sign out
+              <span class="min-w-0 flex-1 truncate text-center">Sign out</span>
             </Button>
           </div>
         </div>
@@ -444,7 +458,7 @@ const isActive = (href: string) => {
 
   {/* Backdrop Overlay */}
   <div
-    class="command-backdrop fixed inset-0 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-[var(--z-modal-backdrop)]"
+    class="command-backdrop fixed inset-0 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-40"
     data-command-backdrop
     aria-hidden="true"
   >
@@ -476,7 +490,7 @@ const isActive = (href: string) => {
     const menuClose = commandCenter.querySelector('[data-menu-close]');
     const sheet = commandCenter.querySelector('[data-command-sheet]');
     const backdrop = commandCenter.querySelector('[data-command-backdrop]');
-    const logoutBtn = commandCenter.querySelector('.logout-btn');
+    const logoutBtn = commandCenter.querySelector('[data-logout-button]');
 
     if (!(sheet instanceof HTMLElement)) return;
     if (!(backdrop instanceof HTMLElement)) return;
