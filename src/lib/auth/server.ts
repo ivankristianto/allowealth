@@ -14,7 +14,7 @@ import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
-const AUTH_SESSION_COOKIE_BASE = 'better-auth.session_token';
+const AUTH_SESSION_COOKIE_BASE = 'allowealth.session_token';
 const AUTH_LOGIN_PATHS = new Set(['/passkey/verify-authentication']);
 
 export function getSessionCookieName(): string {
@@ -204,6 +204,7 @@ function createAuthInstance() {
       customRules: AUTH_RATE_LIMIT_RULES,
     },
     advanced: {
+      cookiePrefix: 'allowealth',
       ipAddress: {
         ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'],
       },

@@ -12,7 +12,7 @@ const authHandlerMock = mock(async (request: Request) =>
     handler: authHandlerMock,
   },
   AUTH_PATH_PREFIX: '/api/auth',
-  getSessionCookieName: () => 'better-auth.session_token',
+  getSessionCookieName: () => 'allowealth.session_token',
   getAuthBaseURL: () =>
     process.env.PUBLIC_URL ??
     `http://${process.env.DEV_HOST ?? 'localhost'}:${process.env.PORT ?? '4321'}`,

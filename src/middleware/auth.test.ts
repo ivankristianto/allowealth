@@ -12,7 +12,7 @@ const getSessionMock = mock(async () => null);
     },
   },
   AUTH_PATH_PREFIX: '/api/auth',
-  getSessionCookieName: () => 'better-auth.session_token',
+  getSessionCookieName: () => 'allowealth.session_token',
   getAuthBaseURL: () =>
     process.env.PUBLIC_URL ??
     `http://${process.env.DEV_HOST ?? 'localhost'}:${process.env.PORT ?? '4321'}`,
@@ -42,7 +42,7 @@ function createContext(pathname: string, cookieValue?: string): MockContext {
   const cookies = new Map<string, string>();
 
   if (cookieValue) {
-    cookies.set('better-auth.session_token', cookieValue);
+    cookies.set('allowealth.session_token', cookieValue);
   }
 
   return {
@@ -53,7 +53,7 @@ function createContext(pathname: string, cookieValue?: string): MockContext {
       serverTimings: undefined,
     },
     request: new Request(`http://localhost${pathname}`, {
-      headers: cookieValue ? { cookie: `better-auth.session_token=${cookieValue}` } : {},
+      headers: cookieValue ? { cookie: `allowealth.session_token=${cookieValue}` } : {},
     }),
     url: new URL(`http://localhost${pathname}`),
     cookies: {
@@ -171,7 +171,7 @@ describe('authentication middleware', () => {
     expect(response.status).toBe(200);
     expect(context.locals.user).toBeNull();
     expect(context.locals.session).toBeNull();
-    expect(context.cookies.delete).toHaveBeenCalledWith('better-auth.session_token', { path: '/' });
+    expect(context.cookies.delete).toHaveBeenCalledWith('allowealth.session_token', { path: '/' });
   });
 
   test('deletes stale session cookies when better-auth returns no session', async () => {
@@ -185,6 +185,6 @@ describe('authentication middleware', () => {
     expect(response.status).toBe(200);
     expect(context.locals.user).toBeNull();
     expect(context.locals.session).toBeNull();
-    expect(context.cookies.delete).toHaveBeenCalledWith('better-auth.session_token', { path: '/' });
+    expect(context.cookies.delete).toHaveBeenCalledWith('allowealth.session_token', { path: '/' });
   });
 });
