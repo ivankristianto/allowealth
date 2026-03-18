@@ -73,11 +73,11 @@ function daySuffix(day: number): string {
 
             return (
               <article
-                class:list={[
-                  'rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm',
-                  template.status === 'paused' && 'opacity-70',
-                ]}
+                class="rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm"
                 data-testid="recurring-template-row"
+                {...(template.status === 'paused'
+                  ? { 'aria-describedby': `desc-${template.id}` }
+                  : {})}
               >
                 <div class="flex items-start gap-2.5">
                   <div class="min-w-0 flex-1 space-y-2">
@@ -158,6 +158,9 @@ function daySuffix(day: number): string {
                         </li>
                       ) : template.status === 'paused' ? (
                         <li>
+                          <span id={`desc-${template.id}`} class="sr-only">
+                            Excluded from totals while paused
+                          </span>
                           <button
                             type="button"
                             class="rounded-xl"
@@ -237,8 +240,10 @@ function daySuffix(day: number): string {
 
                 return (
                   <tr
-                    class:list={[template.status === 'paused' && 'opacity-70']}
                     data-testid="recurring-template-row"
+                    {...(template.status === 'paused'
+                      ? { 'aria-describedby': `status-${template.id}` }
+                      : {})}
                   >
                     <td>
                       <div class="flex flex-wrap items-center gap-1.5">
@@ -325,6 +330,9 @@ function daySuffix(day: number): string {
                             </li>
                           ) : template.status === 'paused' ? (
                             <li>
+                              <span id={`desc-${template.id}`} class="sr-only">
+                                Excluded from totals while paused
+                              </span>
                               <button
                                 type="button"
                                 class="rounded-xl"

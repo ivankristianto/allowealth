@@ -34,9 +34,9 @@
   /* Semantic colors */
   --color-info: #0ea5e9; /* sky-500 - distinct from accent */
   --color-info-content: #ffffff;
-  --color-success: #10b981; /* emerald-500 */
+  --color-success: #047857; /* emerald-700 - WCAG AA 5.5:1 on white */
   --color-success-content: #ffffff;
-  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning: #b45309; /* amber-700 - WCAG AA 5.0:1 on white */
   --color-warning-content: #ffffff;
   --color-error: #f43f5e; /* rose-500 */
   --color-error-content: #ffffff;

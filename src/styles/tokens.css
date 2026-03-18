@@ -7,8 +7,8 @@
  * Color Semantics (Allowealth v1.1.0 - Forest Green):
  * - primary: slate-900 (#0f172a) - headings, primary text, secondary buttons
  * - accent: forest-700 (#15803d) - CTAs, interactive elements, WCAG AA compliant
- * - success: emerald-500 (#10b981) - positive status, confirmations
- * - warning: amber-500 (#f59e0b) - budget alerts, caution states
+ * - success: emerald-700 (#047857) - positive status, confirmations - WCAG AA 5.5:1 on white
+ * - warning: amber-700 (#b45309) - budget alerts, caution states - WCAG AA 5.0:1 on white
  * - error: rose-500 (#f43f5e) - over budget, destructive actions
  * - info: sky-500 (#0ea5e9) - informational messages (distinct from accent)
  */
@@ -29,9 +29,9 @@
   --color-accent-hover: #166534; /* forest-800 */
   --color-accent-content: #ffffff;
 
-  /* Warning: Budget alerts (yellow/orange) */
-  --color-warning: #f59e0b; /* amber-500 */
-  --color-warning-hover: #d97706; /* amber-600 */
+  /* Warning: Budget alerts (yellow/orange) - WCAG AA 5.0:1 on white */
+  --color-warning: #b45309; /* amber-700 */
+  --color-warning-hover: #92400e; /* amber-800 */
   --color-warning-light: #fef3c7; /* amber-100 */
 
   /* Error: Over budget (rose - from styles.json) */
@@ -39,9 +39,9 @@
   --color-error-hover: #e11d48; /* rose-600 */
   --color-error-light: #ffe4e6; /* rose-100 */
 
-  /* Success: Confirmations (emerald) */
-  --color-success: #10b981; /* emerald-500 */
-  --color-success-hover: #059669; /* emerald-600 */
+  /* Success: Confirmations (emerald) - WCAG AA 5.5:1 on white */
+  --color-success: #047857; /* emerald-700 */
+  --color-success-hover: #065f46; /* emerald-800 */
 
   /* Info: Neutral information (sky - distinct from forest accent) */
   --color-info: #0ea5e9; /* sky-500 */
@@ -102,7 +102,7 @@
 
   /* Status indicators */
   --color-status-ok: #22c55e; /* Green - under 80% */
-  --color-status-warning: #f59e0b; /* Yellow - 80-99% */
+  --color-status-warning: #b45309; /* Amber-700 - 80-99% - WCAG AA 5.0:1 on white */
   --color-status-danger: #f43f5e; /* Rose - over 100% */
 
   /* ========================================

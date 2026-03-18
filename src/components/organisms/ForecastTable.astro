@@ -69,10 +69,10 @@ function formatNegativeAmount(amount: string, currency: string): string {
               <tbody class="divide-y divide-base-300">
                 {rows.map((row) => (
                   <tr
-                    class:list={[
-                      'group transition-colors hover:bg-base-200/30',
-                      row.status === 'paused' && 'opacity-50',
-                    ]}
+                    class="group transition-colors hover:bg-base-200/30"
+                    {...(row.status === 'paused'
+                      ? { 'aria-describedby': `status-${row.templateId}` }
+                      : {})}
                   >
                     <th
                       scope="row"
@@ -96,10 +96,15 @@ function formatNegativeAmount(amount: string, currency: string): string {
                             </span>
                             {row.status === 'paused' && (
                               <div
+                                id={`status-${row.templateId}`}
                                 class="tooltip tooltip-right"
                                 data-tip="Excluded from totals while paused"
                               >
-                                <span class="badge badge-ghost badge-xs whitespace-nowrap cursor-help">
+                                <span class="sr-only">Excluded from totals while paused</span>
+                                <span
+                                  class="badge badge-ghost badge-xs whitespace-nowrap cursor-help"
+                                  aria-hidden="true"
+                                >
                                   Paused
                                 </span>
                               </div>
