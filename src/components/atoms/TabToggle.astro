@@ -197,12 +197,24 @@ const {
       window.history.replaceState({}, '', url.toString());
       document.dispatchEvent(new CustomEvent('tab-toggle-change', { detail: { name, value } }));
     } else {
-      // For non-client-filter mode (navigate-on-click), just update tabindex without navigating
-      const activeValue = nextButton.getAttribute('data-tab-value') ?? '';
+      // For non-client-filter mode (navigate-on-click), sync visual state and activate
       container.querySelectorAll<HTMLElement>('button[data-tab-value]').forEach((btn) => {
-        const isActive = btn.getAttribute('data-tab-value') === activeValue;
+        const isActive = btn === nextButton;
+        btn.setAttribute('data-active', String(isActive));
+        btn.setAttribute('aria-selected', String(isActive));
         btn.setAttribute('tabindex', isActive ? '0' : '-1');
+        ACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, isActive));
+        INACTIVE_CLASSES.forEach((c) => btn.classList.toggle(c, !isActive));
       });
+
+      // Navigate to the selected tab
+      const value = nextButton.getAttribute('data-tab-value');
+      const name = container.getAttribute('data-name');
+      if (value && name) {
+        const url = new URL(window.location.href);
+        url.searchParams.set(name, value);
+        navigate(url.toString());
+      }
     }
   });
 </script>

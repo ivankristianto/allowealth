@@ -100,7 +100,11 @@ function formatNegativeAmount(amount: string, currency: string): string {
                                 class="tooltip tooltip-right"
                                 data-tip="Excluded from totals while paused"
                               >
-                                <span class="badge badge-ghost badge-xs whitespace-nowrap cursor-help">
+                                <span class="sr-only">Excluded from totals while paused</span>
+                                <span
+                                  class="badge badge-ghost badge-xs whitespace-nowrap cursor-help"
+                                  aria-hidden="true"
+                                >
                                   Paused
                                 </span>
                               </div>

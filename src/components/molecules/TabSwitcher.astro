@@ -153,7 +153,12 @@ function getIcon(iconName: keyof typeof iconMap) {
 
   // Initialize on page load and after Astro view transitions
   function setupTabSwitchers(): void {
-    document.querySelectorAll('[data-tabs]').forEach(initTabSwitcher);
+    document.querySelectorAll('[data-tabs]').forEach((container) => {
+      // Skip already initialized containers to prevent duplicate listeners
+      if (container.hasAttribute('data-tabs-initialized')) return;
+      container.setAttribute('data-tabs-initialized', '');
+      initTabSwitcher(container);
+    });
   }
 
   if (document.readyState === 'loading') {

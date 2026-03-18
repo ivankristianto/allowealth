@@ -76,7 +76,7 @@ function daySuffix(day: number): string {
                 class="rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm"
                 data-testid="recurring-template-row"
                 {...(template.status === 'paused'
-                  ? { 'aria-describedby': `status-${template.id}` }
+                  ? { 'aria-describedby': `desc-${template.id}` }
                   : {})}
               >
                 <div class="flex items-start gap-2.5">
@@ -158,8 +158,10 @@ function daySuffix(day: number): string {
                         </li>
                       ) : template.status === 'paused' ? (
                         <li>
+                          <span id={`desc-${template.id}`} class="sr-only">
+                            Excluded from totals while paused
+                          </span>
                           <button
-                            id={`status-${template.id}`}
                             type="button"
                             class="rounded-xl"
                             data-template-action="resume"
@@ -328,8 +330,10 @@ function daySuffix(day: number): string {
                             </li>
                           ) : template.status === 'paused' ? (
                             <li>
+                              <span id={`desc-${template.id}`} class="sr-only">
+                                Excluded from totals while paused
+                              </span>
                               <button
-                                id={`status-${template.id}`}
                                 type="button"
                                 class="rounded-xl"
                                 data-template-action="resume"
