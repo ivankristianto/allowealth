@@ -84,22 +84,24 @@ const config = sizeClasses[size];
   }
 </style>
 
-<script is:inline>
+<script>
+  type Theme = 'light' | 'dark';
+
   const THEME_STORAGE_KEY = 'theme';
   const THEME_ATTRIBUTE = 'data-theme';
   const TOGGLE_SELECTOR = '[data-theme-toggle]';
   const INIT_ATTRIBUTE = 'data-theme-toggle-init';
-  let controller = null;
+  let controller: AbortController | null = null;
 
   function initThemeToggle() {
     controller?.abort();
     controller = new AbortController();
-    const signal = controller.signal;
+    const { signal } = controller;
 
     const toggles = document.querySelectorAll(TOGGLE_SELECTOR);
     if (toggles.length === 0) return;
 
-    function getCurrentTheme() {
+    function getCurrentTheme(): Theme {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
       if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
 
@@ -110,7 +112,7 @@ const config = sizeClasses[size];
       return 'light';
     }
 
-    function updateAllToggles(theme) {
+    function updateAllToggles(theme: Theme) {
       toggles.forEach((toggle) => {
         toggle.setAttribute(
           'aria-label',
@@ -119,7 +121,7 @@ const config = sizeClasses[size];
       });
     }
 
-    function setTheme(theme) {
+    function setTheme(theme: Theme) {
       document.documentElement.setAttribute(THEME_ATTRIBUTE, theme);
       localStorage.setItem(THEME_STORAGE_KEY, theme);
       updateAllToggles(theme);

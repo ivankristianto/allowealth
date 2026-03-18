@@ -44,57 +44,15 @@ const canonicalURL = canonical ?? Astro.url.origin + Astro.url.pathname;
     <meta name="twitter:image" content={ogImage} />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Inline theme init to prevent FOUC without a render-blocking external request -->
-    <script is:inline>
-      (function () {
-        function applyTheme() {
-          const html = document.documentElement;
-          const themePreference = html.getAttribute('data-theme-preference');
-
-          if (themePreference === 'system') {
-            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-              html.setAttribute('data-theme', 'dark');
-              return;
-            }
-            html.setAttribute('data-theme', 'light');
-            return;
-          }
-
-          if (themePreference === 'light' || themePreference === 'dark') {
-            html.setAttribute('data-theme', themePreference);
-            return;
-          }
-
-          let savedTheme = null;
-          try {
-            savedTheme = localStorage.getItem('theme');
-          } catch (_) {
-            // localStorage may be unavailable (e.g. private browsing restrictions)
-          }
-          if (savedTheme === 'light' || savedTheme === 'dark') {
-            html.setAttribute('data-theme', savedTheme);
-            return;
-          }
-
-          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            html.setAttribute('data-theme', 'dark');
-            return;
-          }
-
-          html.setAttribute('data-theme', 'light');
-        }
-
-        applyTheme();
-        document.addEventListener('astro:after-swap', applyTheme);
-      })();
-    </script>
-    <!-- Async font loading to avoid render-blocking Google Fonts request -->
+    <!-- External theme init preserves CSP and applies the saved theme before paint -->
+    <script is:inline defer src="/scripts/theme-init.js"></script>
+    <!-- Standard font stylesheet keeps the markup CSP-safe -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="preload"
-      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      as="style"
       onload="this.onload=null;this.rel='stylesheet'"
     />
     <noscript>
