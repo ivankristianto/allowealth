@@ -86,7 +86,7 @@ const isActive = (href: string) => {
         </li>
       )}
       {group.label && (
-        <li role="presentation">
+        <li role="presentation" aria-hidden="true">
           <span class="pointer-events-none block select-none px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-widest text-base-content/60 group-data-[sidebar-collapsed=true]:hidden">
             {group.label}
           </span>
@@ -148,7 +148,7 @@ const isActive = (href: string) => {
           aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
           class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
             isDocs
-              ? 'text-base-content/60 hover:text-base-content/80 font-medium border-transparent'
+              ? 'text-base-content/40 hover:text-base-content/80 font-medium border-transparent'
               : active
                 ? 'bg-accent/10 text-accent font-bold border-accent/20'
                 : 'text-base-content/60 hover:text-base-content font-medium border-transparent'

@@ -118,7 +118,7 @@ const isActive = (href: string) => {
   {/* Full Menu Sheet */}
   <div
     id="command-sheet"
-    class="command-sheet fixed left-0 right-0 bottom-0 max-h-[85vh] bg-base-100 rounded-t-4xl shadow-xl transform translate-y-full transition-transform duration-300 ease-out z-50 overflow-hidden pb-[env(safe-area-inset-bottom)]"
+    class="command-sheet fixed left-0 right-0 bottom-0 max-h-[85vh] bg-base-100 rounded-t-4xl shadow-xl transform translate-y-full transition-transform duration-300 ease-out z-50 overflow-hidden pb-[env(safe-area-inset-bottom)] flex flex-col"
     data-command-sheet
     role="dialog"
     aria-label="Navigation menu"
@@ -154,301 +154,321 @@ const isActive = (href: string) => {
       </Button>
     </div>
 
-    {/* Main Navigation - grouped (user) */}
-    {
-      !isSuperAdmin && (
-        <div class="px-3 py-3 sm:px-5 space-y-3">
-          {/* Dashboard */}
-          <div>
+    {/* Scrollable content */}
+    <div class="overflow-y-auto overscroll-contain flex-1">
+      {/* Main Navigation - grouped (user) */}
+      {
+        !isSuperAdmin && (
+          <div class="px-3 py-3 sm:px-5 space-y-3">
+            {/* Dashboard */}
+            <div>
+              <a
+                href="/dashboard"
+                class={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all active:scale-95 ${isActive('/dashboard') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                aria-current={isActive('/dashboard') ? 'page' : undefined}
+              >
+                <LayoutGrid
+                  size={20}
+                  stroke-width={isActive('/dashboard') ? 2.5 : 2}
+                  aria-hidden="true"
+                />
+                <span class="text-sm font-semibold">Dashboard</span>
+              </a>
+            </div>
+
+            {/* Track */}
+            <div>
+              <p
+                class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
+                aria-hidden="true"
+              >
+                Track
+              </p>
+              <div class="grid grid-cols-3 gap-2">
+                <a
+                  href="/transactions"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/transactions') ? 'page' : undefined}
+                >
+                  <DollarSign
+                    size={20}
+                    stroke-width={isActive('/transactions') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Transactions</span>
+                </a>
+                <a
+                  href="/recurring"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/recurring') ? 'page' : undefined}
+                >
+                  <Repeat
+                    size={20}
+                    stroke-width={isActive('/recurring') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Recurring</span>
+                </a>
+                <a
+                  href="/accounts"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/accounts') ? 'page' : undefined}
+                >
+                  <Landmark
+                    size={20}
+                    stroke-width={isActive('/accounts') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Accounts</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Plan */}
+            <div>
+              <p
+                class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
+                aria-hidden="true"
+              >
+                Plan
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <a
+                  href="/budget"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/budget') ? 'page' : undefined}
+                >
+                  <CircleGauge
+                    size={20}
+                    stroke-width={isActive('/budget') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Budget</span>
+                </a>
+                <a
+                  href="/forecast"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/forecast') ? 'page' : undefined}
+                >
+                  <TrendingUp
+                    size={20}
+                    stroke-width={isActive('/forecast') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Forecast</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Analyze */}
+            <div>
+              <p
+                class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60"
+                aria-hidden="true"
+              >
+                Analyze
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <a
+                  href="/reports"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/reports') ? 'page' : undefined}
+                >
+                  <ChartColumn
+                    size={20}
+                    stroke-width={isActive('/reports') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Reports</span>
+                </a>
+                <a
+                  href="/calculators"
+                  class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+                  aria-current={isActive('/calculators') ? 'page' : undefined}
+                >
+                  <Calculator
+                    size={20}
+                    stroke-width={isActive('/calculators') ? 2.5 : 2}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs font-semibold leading-tight">Calculators</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Admin navigation - unchanged, just wrapped in its own container */}
+      {
+        isSuperAdmin && (
+          <div class="px-3 py-3 sm:px-5 grid grid-cols-2 gap-2">
             <a
-              href="/dashboard"
-              class={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all active:scale-95 ${isActive('/dashboard') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-              aria-current={isActive('/dashboard') ? 'page' : undefined}
+              href="/admin"
+              class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin') ? 'page' : undefined}
             >
-              <LayoutGrid
+              <ShieldCheck
                 size={20}
-                stroke-width={isActive('/dashboard') ? 2.5 : 2}
+                stroke-width={isActive('/admin') ? 2.5 : 2}
                 aria-hidden="true"
               />
-              <span class="text-sm font-semibold">Dashboard</span>
+              <span class="text-xs font-semibold leading-tight">Dashboard</span>
+            </a>
+            <a
+              href="/admin/workspaces"
+              class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/workspaces') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/workspaces') ? 'page' : undefined}
+            >
+              <Building2
+                size={20}
+                stroke-width={isActive('/admin/workspaces') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold leading-tight">Workspaces</span>
+            </a>
+            <a
+              href="/admin/users"
+              class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/users') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/users') ? 'page' : undefined}
+            >
+              <Users
+                size={20}
+                stroke-width={isActive('/admin/users') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold leading-tight">Users</span>
+            </a>
+            <a
+              href="/admin/audit-logs"
+              class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/audit-logs') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/audit-logs') ? 'page' : undefined}
+            >
+              <ClipboardList
+                size={20}
+                stroke-width={isActive('/admin/audit-logs') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold leading-tight">Audit Logs</span>
+            </a>
+            <a
+              href="/admin/diagnostics"
+              class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/diagnostics') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
+              aria-current={isActive('/admin/diagnostics') ? 'page' : undefined}
+            >
+              <Activity
+                size={20}
+                stroke-width={isActive('/admin/diagnostics') ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span class="text-xs font-semibold leading-tight">Diagnostics</span>
             </a>
           </div>
+        )
+      }
 
-          {/* Track */}
-          <div>
-            <p class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60">
-              Track
-            </p>
-            <div class="grid grid-cols-3 gap-2">
-              <a
-                href="/transactions"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/transactions') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/transactions') ? 'page' : undefined}
-              >
-                <DollarSign
-                  size={20}
-                  stroke-width={isActive('/transactions') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Transactions</span>
-              </a>
-              <a
-                href="/recurring"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/recurring') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/recurring') ? 'page' : undefined}
-              >
-                <Repeat
-                  size={20}
-                  stroke-width={isActive('/recurring') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Recurring</span>
-              </a>
-              <a
-                href="/accounts"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/accounts') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/accounts') ? 'page' : undefined}
-              >
-                <Landmark
-                  size={20}
-                  stroke-width={isActive('/accounts') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Accounts</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Plan */}
-          <div>
-            <p class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60">
-              Plan
-            </p>
+      {/* User links */}
+      {
+        !isSuperAdmin && (
+          <div class="mx-3 sm:mx-5 mb-4 mt-1 border-t border-base-300 pt-3">
             <div class="grid grid-cols-2 gap-2">
               <a
-                href="/budget"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/budget') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/budget') ? 'page' : undefined}
+                href="/profile"
+                class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
               >
-                <CircleGauge
-                  size={20}
-                  stroke-width={isActive('/budget') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Budget</span>
+                <User size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate">Profile</span>
               </a>
               <a
-                href="/forecast"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/forecast') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/forecast') ? 'page' : undefined}
+                href="/security"
+                class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
               >
-                <TrendingUp
-                  size={20}
-                  stroke-width={isActive('/forecast') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Forecast</span>
+                <Shield size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate">Security</span>
               </a>
+              <a
+                href="/settings"
+                class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
+              >
+                <Settings2 size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate">Settings</span>
+              </a>
+              <a
+                href="https://docs.allowealth.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/65 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
+                aria-label="Documentation (opens in new tab)"
+              >
+                <FileText size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate">Documentation</span>
+                <ExternalLink size={12} aria-hidden="true" />
+              </a>
+              <Button
+                variant="ghost"
+                className="col-span-2 w-full justify-start gap-2 rounded-2xl border-0 bg-error/10 px-3 py-3 min-h-11 text-sm font-medium text-error hover:bg-error/15"
+                data-logout-button
+              >
+                <LogOut size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate">Sign out</span>
+              </Button>
             </div>
           </div>
+        )
+      }
 
-          {/* Analyze */}
-          <div>
-            <p class="pointer-events-none select-none px-1 mb-1.5 text-xs font-semibold uppercase tracking-widest text-base-content/60">
-              Analyze
-            </p>
+      {/* Admin user section - unchanged */}
+      {
+        isSuperAdmin && (
+          <div class="mx-3 sm:mx-5 mb-4 p-3 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50">
+            <div class="flex items-center gap-3 mb-3">
+              <div
+                class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10"
+                aria-hidden="true"
+              >
+                {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-base-content truncate">{user?.name || 'User'}</p>
+                <p class="text-xs text-base-content/50 truncate">{user?.email || ''}</p>
+              </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-2">
               <a
-                href="/reports"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/reports') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/reports') ? 'page' : undefined}
+                href="/profile"
+                class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
               >
-                <ChartColumn
-                  size={20}
-                  stroke-width={isActive('/reports') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Reports</span>
+                <User size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate text-center">Profile</span>
               </a>
               <a
-                href="/calculators"
-                class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/calculators') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-                aria-current={isActive('/calculators') ? 'page' : undefined}
+                href="/security"
+                class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
               >
-                <Calculator
-                  size={20}
-                  stroke-width={isActive('/calculators') ? 2.5 : 2}
-                  aria-hidden="true"
-                />
-                <span class="text-xs font-semibold leading-tight">Calculators</span>
+                <Shield size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate text-center">Security</span>
               </a>
+              <a
+                href="/settings"
+                class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
+              >
+                <Settings2 size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate text-center">Settings</span>
+              </a>
+              <Button
+                variant="ghost"
+                className="col-span-2 w-full justify-start gap-2 rounded-2xl border-0 bg-error/10 px-3 py-3 min-h-11 text-sm font-medium text-error hover:bg-error/20"
+                data-logout-button
+              >
+                <LogOut size={16} aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate text-center">Sign out</span>
+              </Button>
             </div>
           </div>
-        </div>
-      )
-    }
-
-    {/* Admin navigation - unchanged, just wrapped in its own container */}
-    {
-      isSuperAdmin && (
-        <div class="px-3 py-3 sm:px-5 grid grid-cols-2 gap-2">
-          <a
-            href="/admin"
-            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-            aria-current={isActive('/admin') ? 'page' : undefined}
-          >
-            <ShieldCheck size={20} stroke-width={isActive('/admin') ? 2.5 : 2} aria-hidden="true" />
-            <span class="text-xs font-semibold leading-tight">Dashboard</span>
-          </a>
-          <a
-            href="/admin/workspaces"
-            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/workspaces') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-            aria-current={isActive('/admin/workspaces') ? 'page' : undefined}
-          >
-            <Building2
-              size={20}
-              stroke-width={isActive('/admin/workspaces') ? 2.5 : 2}
-              aria-hidden="true"
-            />
-            <span class="text-xs font-semibold leading-tight">Workspaces</span>
-          </a>
-          <a
-            href="/admin/users"
-            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/users') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-            aria-current={isActive('/admin/users') ? 'page' : undefined}
-          >
-            <Users size={20} stroke-width={isActive('/admin/users') ? 2.5 : 2} aria-hidden="true" />
-            <span class="text-xs font-semibold leading-tight">Users</span>
-          </a>
-          <a
-            href="/admin/audit-logs"
-            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/audit-logs') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-            aria-current={isActive('/admin/audit-logs') ? 'page' : undefined}
-          >
-            <ClipboardList
-              size={20}
-              stroke-width={isActive('/admin/audit-logs') ? 2.5 : 2}
-              aria-hidden="true"
-            />
-            <span class="text-xs font-semibold leading-tight">Audit Logs</span>
-          </a>
-          <a
-            href="/admin/diagnostics"
-            class={`flex flex-col items-center gap-2 rounded-2xl p-3 text-center transition-all active:scale-95 ${isActive('/admin/diagnostics') ? 'bg-accent text-accent-content shadow-md shadow-accent/20' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'}`}
-            aria-current={isActive('/admin/diagnostics') ? 'page' : undefined}
-          >
-            <Activity
-              size={20}
-              stroke-width={isActive('/admin/diagnostics') ? 2.5 : 2}
-              aria-hidden="true"
-            />
-            <span class="text-xs font-semibold leading-tight">Diagnostics</span>
-          </a>
-        </div>
-      )
-    }
-
-    {/* User links */}
-    {
-      !isSuperAdmin && (
-        <div class="mx-3 sm:mx-5 mb-4 mt-1 border-t border-base-300 pt-3">
-          <div class="grid grid-cols-2 gap-2">
-            <a
-              href="/profile"
-              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
-            >
-              <User size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate">Profile</span>
-            </a>
-            <a
-              href="/security"
-              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
-            >
-              <Shield size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate">Security</span>
-            </a>
-            <a
-              href="/settings"
-              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
-            >
-              <Settings2 size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate">Settings</span>
-            </a>
-            <a
-              href="https://docs.allowealth.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center gap-2 rounded-2xl bg-base-200 px-3 py-3 min-h-11 text-sm font-medium text-base-content/65 transition-all active:scale-95 hover:bg-base-300 hover:text-base-content"
-              aria-label="Documentation (opens in new tab)"
-            >
-              <FileText size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate">Documentation</span>
-              <ExternalLink size={12} aria-hidden="true" />
-            </a>
-            <Button
-              variant="ghost"
-              className="col-span-2 w-full justify-start gap-2 rounded-2xl border-0 bg-error/10 px-3 py-3 min-h-11 text-sm font-medium text-error hover:bg-error/15"
-              data-logout-button
-            >
-              <LogOut size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate">Sign out</span>
-            </Button>
-          </div>
-        </div>
-      )
-    }
-
-    {/* Admin user section - unchanged */}
-    {
-      isSuperAdmin && (
-        <div class="mx-3 sm:mx-5 mb-4 p-3 bg-linear-to-br from-base-200 to-base-100 rounded-2xl border border-base-300/50">
-          <div class="flex items-center gap-3 mb-3">
-            <div
-              class="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent/10"
-              aria-hidden="true"
-            >
-              {user?.name ? user.name.substring(0, 2).toUpperCase() : '--'}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-semibold text-base-content truncate">{user?.name || 'User'}</p>
-              <p class="text-xs text-base-content/50 truncate">{user?.email || ''}</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <a
-              href="/profile"
-              class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
-            >
-              <User size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate text-center">Profile</span>
-            </a>
-            <a
-              href="/security"
-              class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
-            >
-              <Shield size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate text-center">Security</span>
-            </a>
-            <a
-              href="/settings"
-              class="flex items-center justify-center gap-2 rounded-2xl border border-base-300/50 bg-base-100 px-3 py-3 min-h-11 text-sm font-medium text-base-content/80 transition-all active:scale-95 hover:bg-base-300/50 hover:text-base-content"
-            >
-              <Settings2 size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate text-center">Settings</span>
-            </a>
-            <Button
-              variant="ghost"
-              className="col-span-2 w-full justify-start gap-2 rounded-2xl border-0 bg-error/10 px-3 py-3 min-h-11 text-sm font-medium text-error hover:bg-error/20"
-              data-logout-button
-            >
-              <LogOut size={16} aria-hidden="true" />
-              <span class="min-w-0 flex-1 truncate text-center">Sign out</span>
-            </Button>
-          </div>
-        </div>
-      )
-    }
+        )
+      }
+    </div>{/* end scrollable content */}
   </div>
 
   {/* Backdrop Overlay */}
