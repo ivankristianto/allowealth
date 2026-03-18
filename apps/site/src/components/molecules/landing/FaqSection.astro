@@ -122,119 +122,138 @@ import { Plus } from '@lucide/astro';
 </section>
 
 <script>
-  import { animate } from 'motion/mini';
-
   // Wait for the DOM to be fully loaded
   document.addEventListener('DOMContentLoaded', () => {
-    // 1. Entrance Animations
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const faqSection = document.getElementById('faq');
+    if (!faqSection) return;
 
-    if (!prefersReducedMotion) {
-      // Header animation
-      const header = document.querySelector('.faq-header');
-      if (header) {
-        animate(
-          header,
-          { opacity: [0, 1], y: [32, 0] },
-          { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-        );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          observer.disconnect();
+          initFaq();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(faqSection);
+
+    async function initFaq() {
+      const { animate } = await import('motion/mini');
+
+      // 1. Entrance Animations
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!prefersReducedMotion) {
+        // Header animation
+        const header = document.querySelector('.faq-header');
+        if (header) {
+          animate(
+            header,
+            { opacity: [0, 1], y: [32, 0] },
+            { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+          );
+        }
+
+        // Staggered list animation
+        const items = document.querySelectorAll('.faq-item');
+        items.forEach((item, index) => {
+          animate(
+            item,
+            { opacity: [0, 1], y: [32, 0] },
+            { duration: 0.8, delay: 0.1 + index * 0.1, ease: [0.16, 1, 0.3, 1] }
+          );
+        });
+
+        // Footer animation
+        const footer = document.querySelector('.faq-footer');
+        if (footer) {
+          animate(footer, { opacity: [0, 1] }, { duration: 1, delay: 0.6 });
+        }
+      } else {
+        // Fallback for reduced motion
+        document.querySelectorAll('.opacity-0').forEach((el) => {
+          el.classList.remove('opacity-0', 'translate-y-8');
+        });
       }
 
-      // Staggered list animation
-      const items = document.querySelectorAll('.faq-item');
-      items.forEach((item, index) => {
-        animate(
-          item,
-          { opacity: [0, 1], y: [32, 0] },
-          { duration: 0.8, delay: 0.1 + index * 0.1, ease: [0.16, 1, 0.3, 1] }
-        );
-      });
+      // 2. Accordion Logic
+      const faqButtons = document.querySelectorAll('.faq-button');
 
-      // Footer animation
-      const footer = document.querySelector('.faq-footer');
-      if (footer) {
-        animate(footer, { opacity: [0, 1] }, { duration: 1, delay: 0.6 });
-      }
-    } else {
-      // Fallback for reduced motion
-      document.querySelectorAll('.opacity-0').forEach((el) => {
-        el.classList.remove('opacity-0', 'translate-y-8');
-      });
-    }
+      faqButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const isExpanded = button.getAttribute('aria-expanded') === 'true';
+          const content = button.nextElementSibling as HTMLElement;
+          const icon = button.querySelector('.faq-icon') as HTMLElement;
+          const iconWrapper = button.querySelector('.faq-icon-wrapper') as HTMLElement;
 
-    // 2. Accordion Logic
-    const faqButtons = document.querySelectorAll('.faq-button');
+          // Close all other accordions
+          faqButtons.forEach((otherButton) => {
+            if (otherButton !== button && otherButton.getAttribute('aria-expanded') === 'true') {
+              const otherContent = otherButton.nextElementSibling as HTMLElement;
+              const otherIcon = otherButton.querySelector('.faq-icon') as HTMLElement;
+              const otherIconWrapper = otherButton.querySelector(
+                '.faq-icon-wrapper'
+              ) as HTMLElement;
 
-    faqButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const isExpanded = button.getAttribute('aria-expanded') === 'true';
-        const content = button.nextElementSibling as HTMLElement;
-        const icon = button.querySelector('.faq-icon') as HTMLElement;
-        const iconWrapper = button.querySelector('.faq-icon-wrapper') as HTMLElement;
+              otherButton.setAttribute('aria-expanded', 'false');
+              otherIcon.style.transform = 'rotate(0deg)';
+              otherIconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
+              otherIconWrapper.classList.add('bg-base-100', 'text-base-content/60');
 
-        // Close all other accordions
-        faqButtons.forEach((otherButton) => {
-          if (otherButton !== button && otherButton.getAttribute('aria-expanded') === 'true') {
-            const otherContent = otherButton.nextElementSibling as HTMLElement;
-            const otherIcon = otherButton.querySelector('.faq-icon') as HTMLElement;
-            const otherIconWrapper = otherButton.querySelector('.faq-icon-wrapper') as HTMLElement;
+              animate(
+                otherContent,
+                { height: [otherContent.scrollHeight + 'px', '0px'], opacity: [1, 0] },
+                { duration: 0.3, ease: [0.32, 0.72, 0, 1] }
+              ).then(() => {
+                otherContent.classList.add('hidden');
+              });
+            }
+          });
 
-            otherButton.setAttribute('aria-expanded', 'false');
-            otherIcon.style.transform = 'rotate(0deg)';
-            otherIconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
-            otherIconWrapper.classList.add('bg-base-100', 'text-base-content/60');
+          // Toggle current accordion
+          if (!isExpanded) {
+            // Open
+            button.setAttribute('aria-expanded', 'true');
+            content.classList.remove('hidden');
 
+            // Animate icon
+            icon.style.transform = 'rotate(45deg)';
+            iconWrapper.classList.remove('bg-base-100', 'text-base-content/60');
+            iconWrapper.classList.add('bg-accent', 'text-white', 'border-accent');
+
+            // Animate content height
+            const height = content.scrollHeight;
             animate(
-              otherContent,
-              { height: [otherContent.scrollHeight + 'px', '0px'], opacity: [1, 0] },
+              content,
+              { height: ['0px', height + 'px'], opacity: [0, 1] },
+              { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
+            ).then(() => {
+              content.style.height = 'auto'; // Reset to auto after animation
+            });
+          } else {
+            // Close
+            button.setAttribute('aria-expanded', 'false');
+
+            // Animate icon
+            icon.style.transform = 'rotate(0deg)';
+            iconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
+            iconWrapper.classList.add('bg-base-100', 'text-base-content/60');
+
+            // Animate content height
+            const height = content.scrollHeight;
+            animate(
+              content,
+              { height: [height + 'px', '0px'], opacity: [1, 0] },
               { duration: 0.3, ease: [0.32, 0.72, 0, 1] }
             ).then(() => {
-              otherContent.classList.add('hidden');
+              content.classList.add('hidden');
             });
           }
         });
-
-        // Toggle current accordion
-        if (!isExpanded) {
-          // Open
-          button.setAttribute('aria-expanded', 'true');
-          content.classList.remove('hidden');
-
-          // Animate icon
-          icon.style.transform = 'rotate(45deg)';
-          iconWrapper.classList.remove('bg-base-100', 'text-base-content/60');
-          iconWrapper.classList.add('bg-accent', 'text-white', 'border-accent');
-
-          // Animate content height
-          const height = content.scrollHeight;
-          animate(
-            content,
-            { height: ['0px', height + 'px'], opacity: [0, 1] },
-            { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
-          ).then(() => {
-            content.style.height = 'auto'; // Reset to auto after animation
-          });
-        } else {
-          // Close
-          button.setAttribute('aria-expanded', 'false');
-
-          // Animate icon
-          icon.style.transform = 'rotate(0deg)';
-          iconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
-          iconWrapper.classList.add('bg-base-100', 'text-base-content/60');
-
-          // Animate content height
-          const height = content.scrollHeight;
-          animate(
-            content,
-            { height: [height + 'px', '0px'], opacity: [1, 0] },
-            { duration: 0.3, ease: [0.32, 0.72, 0, 1] }
-          ).then(() => {
-            content.classList.add('hidden');
-          });
-        }
       });
-    });
+    }
   });
 </script>
 

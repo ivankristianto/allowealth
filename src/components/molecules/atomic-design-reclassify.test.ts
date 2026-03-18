@@ -35,16 +35,6 @@ const reclassifiedComponents = [
     newPath: [moleculeRoot, 'BudgetActions.astro'].join('/'),
   },
   {
-    name: 'HeroSection',
-    oldPath: [legacyRoot, 'landing', 'HeroSection.astro'].join('/'),
-    newPath: [moleculeRoot, 'landing', 'HeroSection.astro'].join('/'),
-  },
-  {
-    name: 'FeaturesGrid',
-    oldPath: [legacyRoot, 'landing', 'FeaturesGrid.astro'].join('/'),
-    newPath: [moleculeRoot, 'landing', 'FeaturesGrid.astro'].join('/'),
-  },
-  {
     name: 'RecentTransactionsList',
     oldPath: [legacyRoot, 'RecentTransactionsList.astro'].join('/'),
     newPath: [moleculeRoot, 'RecentTransactionsList.astro'].join('/'),

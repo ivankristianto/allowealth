@@ -35,46 +35,46 @@ Component patterns for atoms, molecules, and organisms.
 
 ### Molecules
 
-| Component                     | Path                                                           | Purpose                  |
-| ----------------------------- | -------------------------------------------------------------- | ------------------------ |
-| AllocationBar                 | `src/components/molecules/AllocationBar.astro`                 | Allocation bar chart     |
-| AccountForm                   | `src/components/molecules/AccountForm.astro`                   | Account form fields      |
-| AccountItemRow                | `src/components/molecules/AccountItemRow.astro`                | Account row display      |
-| AccountPageHeader             | `src/components/molecules/AccountPageHeader.astro`             | Account page header      |
-| AuthValidationMessages        | `src/components/molecules/AuthValidationMessages.astro`        | Auth error summary       |
-| BudgetActions                 | `src/components/molecules/BudgetActions.astro`                 | Budget action buttons    |
-| BudgetAlertBanner             | `src/components/molecules/BudgetAlertBanner.astro`             | Budget alert banner      |
-| BudgetHealthWidget            | `src/components/molecules/BudgetHealthWidget.astro`            | Budget health card       |
-| CalculatorResultCard          | `src/components/molecules/CalculatorResultCard.astro`          | Calculator result card   |
-| CashFlowItem                  | `src/components/molecules/CashFlowItem.astro`                  | Cash flow row            |
-| ConfirmationModal             | `src/components/molecules/ConfirmationModal.astro`             | Confirmation dialog      |
-| CSVImportForm                 | `src/components/molecules/CSVImportForm.astro`                 | CSV import form          |
-| DashboardError                | `src/components/molecules/DashboardError.astro`                | Dashboard error block    |
-| ForgotPasswordForm            | `src/components/molecules/ForgotPasswordForm.astro`            | Password reset form      |
-| FormField                     | `src/components/molecules/FormField.astro`                     | Label + input wrapper    |
-| GrowthScheduleTable           | `src/components/molecules/GrowthScheduleTable.astro`           | Forecast schedule table  |
-| FeaturesGrid                  | `src/components/molecules/landing/FeaturesGrid.astro`          | Landing feature grid     |
-| HeroSection                   | `src/components/molecules/landing/HeroSection.astro`           | Landing hero section     |
-| LoginForm                     | `src/components/molecules/LoginForm.astro`                     | Login form               |
-| Modal                         | `src/components/molecules/Modal.astro`                         | Base modal               |
-| NotificationDropdown          | `src/components/molecules/NotificationDropdown.astro`          | Notification menu        |
-| NotificationItem              | `src/components/molecules/NotificationItem.astro`              | Notification row         |
-| PasswordChangeForm            | `src/components/molecules/PasswordChangeForm.astro`            | Change password form     |
-| PeriodNavigator               | `src/components/molecules/PeriodNavigator.astro`               | Period navigation        |
-| QuickActions                  | `src/components/molecules/QuickActions.astro`                  | Quick actions panel      |
-| RecentTransactionsList        | `src/components/molecules/RecentTransactionsList.astro`        | Recent transactions list |
-| RegistrationForm              | `src/components/molecules/RegistrationForm.astro`              | Signup form              |
-| ReportSelector                | `src/components/molecules/ReportSelector.astro`                | Report period selector   |
-| SecurityConnectedAccountsCard | `src/components/molecules/SecurityConnectedAccountsCard.astro` | Connected accounts card  |
-| SecurityMfaCard               | `src/components/molecules/SecurityMfaCard.astro`               | MFA card                 |
-| SecurityPasskeysCard          | `src/components/molecules/SecurityPasskeysCard.astro`          | Passkeys card            |
-| TabSwitcher                   | `src/components/molecules/TabSwitcher.astro`                   | Tab switcher             |
-| ToastContainer                | `src/components/molecules/ToastContainer.astro`                | Toast container          |
-| TransactionActionsBar         | `src/components/molecules/TransactionActionsBar.astro`         | Transaction action bar   |
-| TransactionCard               | `src/components/molecules/TransactionCard.astro`               | Transaction display      |
-| TransactionEntryForm          | `src/components/molecules/TransactionEntryForm.astro`          | Transaction form         |
-| TransactionFilters            | `src/components/molecules/TransactionFilters.astro`            | Filter controls          |
-| YearToggle                    | `src/components/molecules/YearToggle.astro`                    | Year toggle              |
+| Component                     | Path                                                            | Purpose                  |
+| ----------------------------- | --------------------------------------------------------------- | ------------------------ |
+| AllocationBar                 | `src/components/molecules/AllocationBar.astro`                  | Allocation bar chart     |
+| AccountForm                   | `src/components/molecules/AccountForm.astro`                    | Account form fields      |
+| AccountItemRow                | `src/components/molecules/AccountItemRow.astro`                 | Account row display      |
+| AccountPageHeader             | `src/components/molecules/AccountPageHeader.astro`              | Account page header      |
+| AuthValidationMessages        | `src/components/molecules/AuthValidationMessages.astro`         | Auth error summary       |
+| BudgetActions                 | `src/components/molecules/BudgetActions.astro`                  | Budget action buttons    |
+| BudgetAlertBanner             | `src/components/molecules/BudgetAlertBanner.astro`              | Budget alert banner      |
+| BudgetHealthWidget            | `src/components/molecules/BudgetHealthWidget.astro`             | Budget health card       |
+| CalculatorResultCard          | `src/components/molecules/CalculatorResultCard.astro`           | Calculator result card   |
+| CashFlowItem                  | `src/components/molecules/CashFlowItem.astro`                   | Cash flow row            |
+| ConfirmationModal             | `src/components/molecules/ConfirmationModal.astro`              | Confirmation dialog      |
+| CSVImportForm                 | `src/components/molecules/CSVImportForm.astro`                  | CSV import form          |
+| DashboardError                | `src/components/molecules/DashboardError.astro`                 | Dashboard error block    |
+| ForgotPasswordForm            | `src/components/molecules/ForgotPasswordForm.astro`             | Password reset form      |
+| FormField                     | `src/components/molecules/FormField.astro`                      | Label + input wrapper    |
+| GrowthScheduleTable           | `src/components/molecules/GrowthScheduleTable.astro`            | Forecast schedule table  |
+| FeaturesGrid                  | `apps/site/src/components/molecules/landing/FeaturesGrid.astro` | Landing feature grid     |
+| HeroSection                   | `apps/site/src/components/molecules/landing/HeroSection.astro`  | Landing hero section     |
+| LoginForm                     | `src/components/molecules/LoginForm.astro`                      | Login form               |
+| Modal                         | `src/components/molecules/Modal.astro`                          | Base modal               |
+| NotificationDropdown          | `src/components/molecules/NotificationDropdown.astro`           | Notification menu        |
+| NotificationItem              | `src/components/molecules/NotificationItem.astro`               | Notification row         |
+| PasswordChangeForm            | `src/components/molecules/PasswordChangeForm.astro`             | Change password form     |
+| PeriodNavigator               | `src/components/molecules/PeriodNavigator.astro`                | Period navigation        |
+| QuickActions                  | `src/components/molecules/QuickActions.astro`                   | Quick actions panel      |
+| RecentTransactionsList        | `src/components/molecules/RecentTransactionsList.astro`         | Recent transactions list |
+| RegistrationForm              | `src/components/molecules/RegistrationForm.astro`               | Signup form              |
+| ReportSelector                | `src/components/molecules/ReportSelector.astro`                 | Report period selector   |
+| SecurityConnectedAccountsCard | `src/components/molecules/SecurityConnectedAccountsCard.astro`  | Connected accounts card  |
+| SecurityMfaCard               | `src/components/molecules/SecurityMfaCard.astro`                | MFA card                 |
+| SecurityPasskeysCard          | `src/components/molecules/SecurityPasskeysCard.astro`           | Passkeys card            |
+| TabSwitcher                   | `src/components/molecules/TabSwitcher.astro`                    | Tab switcher             |
+| ToastContainer                | `src/components/molecules/ToastContainer.astro`                 | Toast container          |
+| TransactionActionsBar         | `src/components/molecules/TransactionActionsBar.astro`          | Transaction action bar   |
+| TransactionCard               | `src/components/molecules/TransactionCard.astro`                | Transaction display      |
+| TransactionEntryForm          | `src/components/molecules/TransactionEntryForm.astro`           | Transaction form         |
+| TransactionFilters            | `src/components/molecules/TransactionFilters.astro`             | Filter controls          |
+| YearToggle                    | `src/components/molecules/YearToggle.astro`                     | Year toggle              |
 
 ### Organisms
 
