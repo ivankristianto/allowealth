@@ -1,21 +1,58 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 function read(path: string): string {
   return readFileSync(path, 'utf-8');
 }
 
+function collectSourceFiles(directory: string): string[] {
+  return readDirectory(directory);
+}
+
+function readDirectory(directory: string): string[] {
+  const dirEntries = readdirSync(directory, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of dirEntries) {
+    if (entry.name === '__tests__' || entry.name === 'node_modules') continue;
+
+    const entryPath = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...readDirectory(entryPath));
+    } else if (/(?:\.(?:astro|css|ts|tsx|js|jsx|mjs|cjs))$/.test(entry.name)) {
+      files.push(entryPath);
+    }
+  }
+
+  return files;
+}
+
+function findBlurOccurrences(filePath: string): Array<{ file: string; value: string }> {
+  const content = read(filePath);
+  const matches = content.matchAll(
+    /backdrop-blur-(?:sm|md|lg|xl|2xl|3xl)|blur-\[(?:\d{2,})px\]|blur-(?:sm|md|lg|xl|2xl|3xl)/g
+  );
+
+  return Array.from(matches, (match) => ({
+    file: relative(process.cwd(), filePath),
+    value: match[0],
+  }));
+}
+
 describe('mobile blur performance policy', () => {
   test('keeps persistent surfaces free of disallowed blur', () => {
-    const header = read('src/components/layouts/Header.astro');
-    const mobileNavigation = read('src/components/layouts/MobileNavigation.astro');
-    const mobileCommandCenter = read('src/components/layouts/MobileCommandCenter.astro');
+    const blurOccurrences = collectSourceFiles('src')
+      .flatMap(findBlurOccurrences)
+      .sort((left, right) =>
+        `${left.file}:${left.value}`.localeCompare(`${right.file}:${right.value}`)
+      );
 
-    expect(header).not.toMatch(/backdrop-blur-(xl|2xl|3xl)/);
-    expect(mobileNavigation).not.toMatch(/backdrop-blur-(xl|2xl|3xl)/);
-    expect(mobileCommandCenter).not.toMatch(/backdrop-blur-(xl|2xl|3xl)/);
-    expect(mobileCommandCenter).not.toMatch(/\bblur-\[(\d{3,})px\]/);
-    expect(mobileCommandCenter).not.toMatch(/\bblur-(?:lg|xl|2xl|3xl)\b/);
+    expect(blurOccurrences).toEqual([
+      { file: 'src/components/molecules/Drawer.astro', value: 'backdrop-blur-sm' },
+      { file: 'src/components/molecules/Modal.astro', value: 'backdrop-blur-md' },
+      { file: 'src/components/organisms/CategoryDrillDownModal.astro', value: 'backdrop-blur-sm' },
+    ]);
   });
 
   test('keeps allowed transient overlays within the small blur policy', () => {
@@ -33,6 +70,6 @@ describe('mobile blur performance policy', () => {
 
     expect(designSystem).toContain('## CSS Blur Performance (iOS Safari)');
     expect(designSystem).toContain('### Verification');
-    expect(designSystem).toContain('grep -r "backdrop-blur\\|blur-" src/');
+    expect(designSystem).toContain('grep -r "backdrop-blur\\|blur-" .');
   });
 });
