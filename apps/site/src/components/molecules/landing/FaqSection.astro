@@ -14,12 +14,12 @@ import { Plus } from '@lucide/astro';
   class="relative z-10 px-6 py-24 sm:py-32 bg-base-100 overflow-hidden"
   aria-labelledby="faq-title"
 >
-  <!-- Background decoration -->
-  <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
-    <div
-      class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/5 blur-[120px] rounded-[100%]"
-    >
-    </div>
+  <!-- Background decoration — lightweight radial, no blur compositing -->
+  <div
+    class="absolute inset-0 pointer-events-none"
+    style="background: radial-gradient(ellipse 60% 40% at 50% 0%, color-mix(in srgb, var(--color-accent) 5%, transparent) 0%, transparent 70%);"
+    aria-hidden="true"
+  >
   </div>
 
   <div class="relative max-w-4xl mx-auto">

@@ -323,3 +323,51 @@ For detailed patterns, see `design-system/` directory:
 - `06-data-visualization.md` - Charts, currency
 - `07-patterns.md` - Page layouts
 - `08-animations.md` - Animation patterns
+
+## CSS Blur Performance (iOS Safari)
+
+iOS Safari uses **software rendering** for large CSS blur radii instead of GPU acceleration. This causes severe slowdowns — first load 2-3s, reload 30s+ — on iPhone. Chrome, Firefox, and macOS Safari are unaffected.
+
+**Root cause:** `blur()` and `backdrop-blur-*` on fixed-position or always-visible elements force the compositor to maintain GPU layers continuously. On reload, all resources arrive simultaneously, overwhelming iOS Safari's limited GPU memory.
+
+### Rules
+
+- ✅ **Use `radial-gradient` instead of blur blobs** — `blur-[100px]` on a solid-color div = soft gradient; replace with `radial-gradient(ellipse ..., color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 70%)` — zero GPU cost, same visual
+- ✅ **Use solid/near-opaque backgrounds on fixed elements** — replace `bg-base-100/80 backdrop-blur-xl` with `bg-base-100/95` on fixed headers/navbars; the visual difference is invisible, the performance gain is massive
+- ✅ **`backdrop-blur-sm`/`backdrop-blur-md` on transient overlays is acceptable** — modal/drawer backdrops that are only shown momentarily are fine; the 8-12px radius doesn't trigger the iOS software fallback
+- ❌ **`backdrop-blur-xl` or larger on `fixed` elements** — any element that is always visible (header, mobile nav, navbar) must not use backdrop-blur; this is the worst case: large radius + persistent layer + fixed position
+- ❌ **`blur-[100px]` or larger on decorative blobs** — replace with `radial-gradient`; never use CSS `blur()` filter for ambient glow effects
+- ❌ **`backdrop-blur-2xl` on mobile nav** — mobile nav is always visible on iPhone, making this a permanent GPU compositing layer on the device where iOS Safari performance matters most
+
+### Severity Guide
+
+| Usage                                   | Verdict    | Reason                                         |
+| --------------------------------------- | ---------- | ---------------------------------------------- |
+| `backdrop-blur-sm` on modal overlay     | ✅ OK      | Transient, small radius (8px)                  |
+| `backdrop-blur-md` on drawer            | ✅ OK      | Transient, small radius (12px)                 |
+| `backdrop-blur-xl` on fixed header      | ❌ Remove  | Always-on, large radius (24px)                 |
+| `backdrop-blur-2xl` on fixed mobile nav | ❌ Remove  | Always-on, largest radius (40px), worst device |
+| `blur-[120px]` on decorative div        | ❌ Replace | Use `radial-gradient` instead                  |
+| `blur-3xl` on fixed background blob     | ❌ Remove  | Fixed position = permanent compositing layer   |
+
+### Replacement Patterns
+
+```html
+<!-- BEFORE: blur blob (expensive) -->
+<div class="absolute w-[70%] h-[70%] bg-accent/10 blur-[140px] rounded-full" />
+
+<!-- AFTER: radial-gradient (free) -->
+<div
+  class="absolute inset-0 pointer-events-none"
+  style="background: radial-gradient(ellipse 70% 70% at 20% 20%, color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 70%);"
+  aria-hidden="true"
+/>
+```
+
+```html
+<!-- BEFORE: backdrop-blur on fixed element -->
+<header class="fixed ... bg-base-100/80 backdrop-blur-xl">
+  <!-- AFTER: solid near-opaque background -->
+  <header class="fixed ... bg-base-100/95"></header>
+</header>
+```

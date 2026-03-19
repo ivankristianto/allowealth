@@ -55,10 +55,11 @@ const iconMap: Record<string, typeof Globe> = {
                   : 'bg-base-100 border border-base-300 shadow-sm'
               }`}
             >
-              {/* Glow effect for dark cards */}
+              {/* Glow effect for dark cards — radial gradient, no blur compositing */}
               {isDark && (
                 <div
-                  class="absolute top-0 right-0 w-64 h-64 bg-accent/20 blur-[100px] pointer-events-none"
+                  class="absolute inset-0 pointer-events-none"
+                  style="background: radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 15%, transparent) 0%, transparent 60%);"
                   aria-hidden="true"
                 />
               )}

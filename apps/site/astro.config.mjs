@@ -7,7 +7,7 @@ export default defineConfig({
   site: 'https://allowealth.io',
   output: 'static',
   build: {
-    inlineStylesheets: 'always',
+    inlineStylesheets: 'auto',
   },
   integrations: [sitemap()],
   vite: {
