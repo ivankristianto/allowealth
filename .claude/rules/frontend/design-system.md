@@ -353,7 +353,7 @@ iOS Safari uses **software rendering** for large CSS blur radii instead of GPU a
 Run this repo-wide audit to inspect blur usage:
 
 ```bash
-grep -r "backdrop-blur\|blur-" . --exclude-dir=node_modules --exclude-dir=.git
+grep -r "backdrop-blur\|blur-" src/ --exclude-dir=node_modules
 ```
 
 ### Rules

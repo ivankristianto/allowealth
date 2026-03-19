@@ -31,7 +31,7 @@ function readDirectory(directory: string): string[] {
 function findBlurOccurrences(filePath: string): Array<{ file: string; value: string }> {
   const content = read(filePath);
   const matches = content.matchAll(
-    /backdrop-blur-(?:sm|md|lg|xl|2xl|3xl)|blur-\[(?:\d{2,})px\]|blur-(?:sm|md|lg|xl|2xl|3xl)/g
+    /backdrop-blur-(?:sm|md|lg|xl|2xl|3xl)|backdrop-blur-\[[^\]]+\]|blur-(?:sm|md|lg|xl|2xl|3xl)|blur-\[[^\]]+\]|\bblur\([^\)]+\)/g
   );
 
   return Array.from(matches, (match) => ({
@@ -70,6 +70,8 @@ describe('mobile blur performance policy', () => {
 
     expect(designSystem).toContain('## CSS Blur Performance (iOS Safari)');
     expect(designSystem).toContain('### Verification');
-    expect(designSystem).toContain('grep -r "backdrop-blur\\|blur-" .');
+    expect(designSystem).toContain(
+      'grep -r "backdrop-blur\\|blur-" src/ --exclude-dir=node_modules'
+    );
   });
 });
