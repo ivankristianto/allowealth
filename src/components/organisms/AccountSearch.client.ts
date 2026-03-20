@@ -11,9 +11,35 @@ const DEBOUNCE_MS = 150;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let controller: AbortController | null = null;
 
-function filterAccounts(query: string): void {
+function findViewScope(input: HTMLElement): ParentNode {
+  let current: HTMLElement | null = input;
+
+  while (current) {
+    const hasCardView = !!current.querySelector('[data-view="card"]');
+    const hasTableView = !!current.querySelector('[data-view="table"]');
+
+    if (hasCardView && hasTableView) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return document;
+}
+
+function getActiveView(scope: ParentNode): HTMLElement | null {
+  const views = Array.from(scope.querySelectorAll<HTMLElement>('[data-view]'));
+  return views.find((view) => !view.classList.contains('hidden')) || null;
+}
+
+function filterAccounts(query: string, input: HTMLInputElement): void {
   const normalizedQuery = query.trim().toLowerCase();
-  const rows = document.querySelectorAll<HTMLElement>('[data-account-row]');
+  const scope = findViewScope(input);
+  const activeView = getActiveView(scope) || document;
+  const rows = activeView.querySelectorAll<HTMLElement>(
+    '[data-account-row], [data-account-table-row]'
+  );
   let visibleCount = 0;
 
   rows.forEach((row) => {
@@ -37,7 +63,7 @@ function filterAccounts(query: string): void {
   });
 
   // Toggle "no results" message
-  const noResultsEl = document.querySelector<HTMLElement>('[data-account-search-no-results]');
+  const noResultsEl = scope.querySelector<HTMLElement>('[data-account-search-no-results]');
   if (noResultsEl) {
     noResultsEl.classList.toggle('hidden', !(visibleCount === 0 && normalizedQuery));
   }
@@ -56,7 +82,7 @@ function initAccountSearch(): void {
     () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        filterAccounts(input.value);
+        filterAccounts(input.value, input);
       }, DEBOUNCE_MS);
     },
     { signal }
@@ -69,7 +95,7 @@ function initAccountSearch(): void {
       if (e.key === 'Escape' && input.value) {
         e.preventDefault();
         input.value = '';
-        filterAccounts('');
+        filterAccounts('', input);
       }
     },
     { signal }

@@ -11,8 +11,9 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountPortfolioSummary from '@components/organisms/AccountPortfolioSummary.astro';
 import AccountReconciliationCard from '@components/organisms/AccountReconciliationCard.astro';
 import AccountActions from '@components/organisms/AccountActions.astro';
-import ActionFilterBar from '@components/organisms/ActionFilterBar.astro';
+import AccountTable from '@/components/organisms/AccountTable.astro';
 import AccountGroupCard from '@components/organisms/AccountGroupCard.astro';
+import AccountFilterControls from '@/components/molecules/AccountFilterControls.astro';
 import AccountItemRow from '@components/molecules/AccountItemRow.astro';
 import AccountFormModal from '@components/organisms/AccountFormModal.astro';
 import AccountTransferModal from '@components/organisms/AccountTransferModal.astro';
@@ -279,6 +280,11 @@ if (!isViewingCurrentMonth) {
   });
 }
 
+const accountsWithDisplay = accounts.map((account) => ({
+  ...account,
+  owner_name: memberNamesById.get(account.created_by_user_id),
+}));
+
 const reconciliationAccountIds = reconciliationAccounts.map((account) => account.id);
 const reconciliation =
   reconciliationAccountIds.length === 0
@@ -353,9 +359,9 @@ const latestUpdate = accounts.reduce<Date | null>((latest, account) => {
   return !latest || updated > latest ? updated : latest;
 }, null);
 
-// Group accounts by account class for display (Liquid → Non-Liquid → Debt)
+// Group accounts by account class for display (Liquid -> Debt -> Non-Liquid)
 const accountsByClass = groupAccountsByClass(accounts);
-const CLASS_ORDER: AccountClass[] = ['liquid', 'non_liquid', 'debt'];
+const CLASS_ORDER: AccountClass[] = ['liquid', 'debt', 'non_liquid'];
 const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0).map((cls) => ({
   groupKey: cls,
   label: ACCOUNT_CLASS_LABELS[cls],
@@ -451,7 +457,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           />
 
           {/* Filter Bar */}
-          <ActionFilterBar
+          <AccountFilterControls
             searchValue={searchParams.search || ''}
             members={workspaceMembers.map((member) => ({ id: member.id, name: member.name }))}
             userId={ownerUserId || ''}
@@ -461,45 +467,56 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           />
 
           {/* Account Groups */}
-          <div class="space-y-6">
-            {sortedGroups.map((group) => {
-              const groupTotals = calculateGroupTotalsByCurrency(
-                group.accounts,
-                orderedWorkspaceCurrencies
-              );
+          <div data-view="card">
+            <div class="space-y-6">
+              {sortedGroups.map((group) => {
+                const groupTotals = calculateGroupTotalsByCurrency(
+                  group.accounts,
+                  orderedWorkspaceCurrencies
+                );
 
-              return (
-                <AccountGroupCard
-                  type={group.label}
-                  accountClass={group.groupKey}
-                  count={group.accounts.length}
-                  totals={groupTotals}
-                  groupId={group.groupKey}
-                  isDebt={group.groupKey === 'debt'}
-                  defaultExpanded={true}
-                >
-                  {group.accounts.map((account) => (
-                    <AccountItemRow
-                      id={account.id}
-                      name={account.name}
-                      type={account.type}
-                      accountClass={account.account_class}
-                      categoryId={account.category_id}
-                      categoryName={account.category_name}
-                      currency={account.currency}
-                      balance={parseFloat(account.balance)}
-                      initialBalance={
-                        account.initial_balance ? parseFloat(account.initial_balance) : undefined
-                      }
-                      ownerUserId={account.created_by_user_id}
-                      ownerName={memberNamesById.get(account.created_by_user_id)}
-                      lastUpdated={account.last_updated}
-                      isHistoricalView={!isViewingCurrentMonth}
-                    />
-                  ))}
-                </AccountGroupCard>
-              );
-            })}
+                return (
+                  <AccountGroupCard
+                    type={group.label}
+                    accountClass={group.groupKey}
+                    count={group.accounts.length}
+                    totals={groupTotals}
+                    groupId={group.groupKey}
+                    isDebt={group.groupKey === 'debt'}
+                    defaultExpanded={true}
+                  >
+                    {group.accounts.map((account) => (
+                      <AccountItemRow
+                        id={account.id}
+                        name={account.name}
+                        type={account.type}
+                        accountClass={account.account_class}
+                        categoryId={account.category_id}
+                        categoryName={account.category_name}
+                        currency={account.currency}
+                        balance={parseFloat(account.balance)}
+                        initialBalance={
+                          account.initial_balance ? parseFloat(account.initial_balance) : undefined
+                        }
+                        ownerUserId={account.created_by_user_id}
+                        ownerName={memberNamesById.get(account.created_by_user_id)}
+                        lastUpdated={account.last_updated}
+                        isHistoricalView={!isViewingCurrentMonth}
+                      />
+                    ))}
+                  </AccountGroupCard>
+                );
+              })}
+            </div>
+          </div>
+
+          <div data-view="table" class="hidden">
+            <AccountTable
+              accounts={accountsWithDisplay}
+              primaryCurrency={orderedWorkspaceCurrencies[0] || 'IDR'}
+              currencyOrder={orderedWorkspaceCurrencies}
+              isHistoricalView={!isViewingCurrentMonth}
+            />
           </div>
 
           {/* No results message (hidden by default, shown by client script) */}
@@ -676,6 +693,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   import { initInlineHistory } from '@/components/molecules/AccountInlineHistory.client';
   import { initAccountSearch } from '@/components/organisms/AccountSearch.client';
+  import { initAccountsTableClient } from '@/components/organisms/accounts-table.client';
   import { initBulkAddAccounts } from './bulk-add-accounts.client';
 
   const firstAccountButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
@@ -757,6 +775,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
   function init() {
     initInlineHistory();
     initAccountSearch();
+    initAccountsTableClient();
     initFirstAccountButton();
     initAccountPeriodSelector();
     initBulkAddAccounts();
