@@ -24,4 +24,10 @@ describe('AccountTableRow', () => {
     expect(content).toContain('data-account-category-name={categoryLabel}');
     expect(content).toContain('href={`/accounts/${id}`}');
   });
+
+  it('renders the actions cell only for non-historical view', () => {
+    const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
+
+    expect(content).toContain('{!isHistoricalView && <td class="px-4 py-4 text-right md:px-6">');
+  });
 });
