@@ -1,0 +1,214 @@
+---
+/**
+ * AccountTableRow Component
+ *
+ * Single account rendered as a table row (<tr>) inside AccountTable.
+ * Shows: name, type, category, owner, balance, last updated, actions.
+ *
+ * Mirrors AccountItemRow data but in columnar format.
+ * Non-matching currency rows get reduced opacity when dimmed.
+ */
+
+import { TrendingUp, Pencil, Ellipsis, PowerOff, Eye } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
+import { formatCurrency } from '@/lib/formatting';
+import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  id: string;
+  name: string;
+  type: AccountType;
+  accountClass?: string;
+  ownerUserId?: string;
+  ownerName?: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  currency: Currency;
+  balance: number;
+  initialBalance?: number;
+  lastUpdated: Date;
+  isHistoricalView?: boolean;
+  isDimmed?: boolean;
+}
+
+const {
+  id,
+  name,
+  type,
+  accountClass,
+  ownerUserId = '',
+  ownerName,
+  categoryId = null,
+  categoryName = null,
+  currency,
+  balance,
+  lastUpdated,
+  isHistoricalView = false,
+  isDimmed = false,
+} = Astro.props;
+
+const typeLabel = ACCOUNT_TYPE_LABELS[type] || type;
+const categoryLabel = categoryName || typeLabel;
+const isDebt = accountClass === 'debt';
+const displayBalance = isDebt ? -balance : balance;
+const formattedBalance = formatCurrency(displayBalance, currency);
+const lastUpdatedDate = new Date(lastUpdated);
+const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
+  month: 'short',
+  day: 'numeric',
+});
+---
+
+<tr
+  class:list={[
+    'group border-b border-base-300 transition-colors hover:border-base-content/20 hover:bg-base-200/30',
+    isDimmed && 'opacity-50',
+  ]}
+  data-account-table-row={id}
+  data-account-name={name.toLowerCase()}
+  data-sort-balance={Math.abs(balance)}
+  data-sort-name={name.toLowerCase()}
+  data-sort-type={typeLabel.toLowerCase()}
+  data-sort-category={(categoryName || '').toLowerCase()}
+  data-sort-owner={(ownerName || '').toLowerCase()}
+  data-sort-updated={lastUpdatedDate.getTime()}
+>
+  <td class="px-4 py-4 pl-6 text-sm font-semibold text-base-content md:px-6 md:pl-8">
+    <a
+      href={`/accounts/${id}`}
+      class="transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+    >
+      {name}
+    </a>
+  </td>
+
+  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{typeLabel}</td>
+
+  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{categoryName || '—'}</td>
+
+  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{ownerName || '—'}</td>
+
+  <td
+    class:list={[
+      'px-4 py-4 text-right text-sm font-semibold tabular-nums md:px-6',
+      isDebt ? 'text-error' : 'text-base-content',
+    ]}
+    data-testid="account-balance"
+  >
+    {formattedBalance}
+  </td>
+
+  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{formattedDate}</td>
+
+  <td class="px-4 py-4 text-right md:px-6">
+    {
+      !isHistoricalView && (
+        <div class="inline-flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-accent/10 hover:text-accent"
+            aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
+            data-update-value-account={id}
+            data-account-name={name}
+            data-account-currency={currency}
+            data-account-balance={balance}
+            data-testid="account-update-value-btn"
+          >
+            <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+            aria-label={`Edit ${name} details`}
+            data-edit-account={id}
+            data-account-name={name}
+            data-account-type={type}
+            data-account-category-id={categoryId || ''}
+            data-account-category-name={categoryLabel}
+            data-account-owner-id={ownerUserId}
+            data-account-currency={currency}
+            data-account-balance={balance}
+            data-testid="account-edit-btn"
+          >
+            <Pencil size={16} class="stroke-current" aria-hidden="true" />
+          </Button>
+
+          <div class="dropdown dropdown-end" data-dropdown-menu>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+              tabindex={0}
+              aria-label={`More actions for ${name}`}
+              aria-haspopup="menu"
+            >
+              <Ellipsis size={16} class="stroke-current" aria-hidden="true" />
+            </Button>
+
+            <ul
+              tabindex={0}
+              class="dropdown-content z-50 menu w-48 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+              role="menu"
+            >
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 rounded-xl"
+                  aria-label={`View ${name} timeline`}
+                  data-history-account={id}
+                  data-account-name={name}
+                  data-account-type={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-history-btn"
+                >
+                  <Eye size={16} class="stroke-current" aria-hidden="true" />
+                  View Timeline
+                </button>
+              </li>
+              <li role="none">
+                <a
+                  href={`/accounts/${id}`}
+                  role="menuitem"
+                  class="flex items-center gap-2 rounded-xl"
+                  aria-label={`View ${name} details`}
+                >
+                  <Eye size={16} class="stroke-current" aria-hidden="true" />
+                  Details
+                </a>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 rounded-xl text-warning"
+                  aria-label={`Deactivate ${name}`}
+                  data-close-account={id}
+                  data-account-name={name}
+                  data-account-type={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-close-btn"
+                >
+                  <PowerOff size={16} class="stroke-current" aria-hidden="true" />
+                  Deactivate
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )
+    }
+  </td>
+</tr>
