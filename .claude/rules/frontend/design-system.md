@@ -330,6 +330,32 @@ iOS Safari uses **software rendering** for large CSS blur radii instead of GPU a
 
 **Root cause:** `blur()` and `backdrop-blur-*` on fixed-position or always-visible elements force the compositor to maintain GPU layers continuously. On reload, all resources arrive simultaneously, overwhelming iOS Safari's limited GPU memory.
 
+### Allowed
+
+- `backdrop-blur-md` on modal backdrops
+- `backdrop-blur-sm` on drawer backdrops
+- `backdrop-blur-sm` on the category drill-down modal nav strip
+
+### Disallowed
+
+- `backdrop-blur-xl` or larger on fixed or always-visible elements
+- Decorative `blur-*` blobs used as ambient glow
+- Any permanent mobile compositor layer created by blur on a persistent surface
+
+### Replacement Patterns
+
+- Replace blur blobs with `radial-gradient` on a solid/transparent layer
+- Replace `bg-base-100/80 backdrop-blur-xl` with `bg-base-100/95` on fixed headers and navbars
+- Replace persistent blur backdrops outside the allowed transient overlays with solid or near-opaque backgrounds
+
+### Verification
+
+Run this repo-wide audit to inspect blur usage:
+
+```bash
+grep -r "backdrop-blur\|blur-" src/ --exclude-dir=node_modules
+```
+
 ### Rules
 
 - ✅ **Use `radial-gradient` instead of blur blobs** — `blur-[100px]` on a solid-color div = soft gradient; replace with `radial-gradient(ellipse ..., color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 70%)` — zero GPU cost, same visual

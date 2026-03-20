@@ -238,16 +238,6 @@ body {
   border-left: var(--sidebar-active-border);
 }
 
-/* Glass effect - using glass tokens */
-.glass-effect {
-  backdrop-filter: blur(var(--glass-blur));
-  background: var(--glass-bg-light);
-}
-
-[data-theme='dark'] .glass-effect {
-  background: var(--glass-bg-dark);
-}
-
 /* Mobile bottom navigation utilities */
 .mobile-nav-surface {
   background: var(--mobile-nav-surface-bg);
