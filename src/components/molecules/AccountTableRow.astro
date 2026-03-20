@@ -51,7 +51,7 @@ const {
 const typeLabel = ACCOUNT_TYPE_LABELS[type] || type;
 const categoryLabel = categoryName || typeLabel;
 const isDebt = accountClass === 'debt';
-const displayBalance = isDebt ? -balance : balance;
+const displayBalance = isDebt ? -Math.abs(balance) : balance;
 const formattedBalance = formatCurrency(displayBalance, currency);
 const lastUpdatedDate = new Date(lastUpdated);
 const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {

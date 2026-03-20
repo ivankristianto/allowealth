@@ -33,4 +33,10 @@ describe('AccountTableRow', () => {
       '{ !isHistoricalView && ( <td class="px-4 py-4 text-right md:px-6">'
     );
   });
+
+  it('renders debt display from a negative absolute value', () => {
+    const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
+
+    expect(content).toContain('const displayBalance = isDebt ? -Math.abs(balance) : balance;');
+  });
 });

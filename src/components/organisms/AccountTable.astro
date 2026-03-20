@@ -85,6 +85,10 @@ function formatShortDate(value: Date): string {
   });
 }
 
+function formatGroupTotal(amount: number, currency: Currency, groupClass: AccountClass): string {
+  return formatCurrency(groupClass === 'debt' ? -Math.abs(amount) : amount, currency);
+}
+
 const accountsByClass = groupAccountsByClass(accounts);
 const allocationByClass = calculateClassAllocation(accounts, primaryCurrency);
 
@@ -225,7 +229,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                                       : `${group.colors.text} opacity-70`
                                   }
                                 >
-                                  {formatCurrency(total.amount, total.currency)}
+                                  {formatGroupTotal(total.amount, total.currency, group.classKey)}
                                 </span>
                               ))}
                               {group.allocation.percentage > 0 && (
@@ -233,6 +237,9 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                                   class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${group.colors.badgeBg} ${group.colors.badgeText}`}
                                 >
                                   {group.allocation.percentage}% of {primaryCurrency}
+                                  {group.allocation.onTarget && (
+                                    <span aria-hidden="true">&check;</span>
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -285,6 +292,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                       class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badgeBg} ${group.colors.badgeText}`}
                     >
                       {group.allocation.percentage}% of {primaryCurrency}
+                      {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
                     </span>
                   )}
                 </div>
@@ -294,7 +302,9 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                     {group.accounts.length} {group.accounts.length === 1 ? 'account' : 'accounts'}
                   </span>
                   {group.totals.map((total) => (
-                    <span class="opacity-90">{formatCurrency(total.amount, total.currency)}</span>
+                    <span class="opacity-90">
+                      {formatGroupTotal(total.amount, total.currency, group.classKey)}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -303,7 +313,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                 const rawBalance = Number.parseFloat(account.balance || '0');
                 const balance = Number.isFinite(rawBalance) ? rawBalance : 0;
                 const isDebt = account.account_class === 'debt';
-                const displayBalance = isDebt ? -balance : balance;
+                const displayBalance = isDebt ? -Math.abs(balance) : balance;
                 const isDimmed = account.currency !== primaryCurrency;
                 const typeLabel = ACCOUNT_TYPE_LABELS[account.type] || account.type;
                 const categoryLabel = account.category_name || typeLabel;
