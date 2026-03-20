@@ -67,7 +67,7 @@ function getDefaultViewMode(toggle: HTMLElement): ViewMode {
 
 function reapplyActiveSearch(scope: ParentNode): void {
   const searchInput = scope.querySelector<HTMLInputElement>('[data-account-search]');
-  if (!searchInput || !searchInput.value.trim()) return;
+  if (!searchInput) return;
 
   searchInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
@@ -207,7 +207,7 @@ function getNextSortState(column: SortColumn): SortState {
 
   return {
     column,
-    direction: column === 'balance' || column === 'updated' ? 'desc' : 'asc',
+    direction: column === 'balance' ? 'desc' : 'asc',
   };
 }
 

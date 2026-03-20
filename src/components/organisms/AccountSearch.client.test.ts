@@ -168,4 +168,43 @@ describe('AccountSearch client behavior', () => {
     expect(cardSavingsRow.classList.contains('hidden')).toBe(false);
     expect(cardCheckingRow.classList.contains('hidden')).toBe(true);
   });
+
+  it('restores hidden table rows after clearing search in another view', async () => {
+    initAccountSearch();
+    initAccountsTableClient();
+
+    const input = document.querySelector('[data-account-search]') as HTMLInputElement | null;
+    const cardButton = document.querySelector(
+      '[data-view-mode="card"]'
+    ) as HTMLButtonElement | null;
+    const tableButton = document.querySelector(
+      '[data-view-mode="table"]'
+    ) as HTMLButtonElement | null;
+    const savingsRow = document.querySelector('[data-account-table-row="table-1"]');
+    const brokerageRow = document.querySelector('[data-account-table-row="table-2"]');
+
+    if (!input || !cardButton || !tableButton || !savingsRow || !brokerageRow) {
+      throw new Error('Expected search and view toggle DOM to be present');
+    }
+
+    input.value = 'sav';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await waitForDebounce();
+
+    expect(savingsRow.classList.contains('hidden')).toBe(false);
+    expect(brokerageRow.classList.contains('hidden')).toBe(true);
+
+    cardButton.click();
+    await waitForDebounce();
+
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await waitForDebounce();
+
+    tableButton.click();
+    await waitForDebounce();
+
+    expect(savingsRow.classList.contains('hidden')).toBe(false);
+    expect(brokerageRow.classList.contains('hidden')).toBe(false);
+  });
 });

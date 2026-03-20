@@ -58,6 +58,21 @@ describe('accounts table view integration wiring', () => {
     expect(normalizedPageSource).toContain('<div data-view="table" class="hidden"> <AccountTable');
   });
 
+  it('passes the table primary currency through active filters before workspace fallback', () => {
+    const pageSource = read('src/pages/accounts/index.astro');
+    const normalizedPageSource = normalize(pageSource);
+    const expectedPrimaryCurrency = normalize(`
+      primaryCurrency={
+        filters.currency ?? allocationCurrency ?? orderedWorkspaceCurrencies[0] ?? 'IDR'
+      }
+    `);
+
+    expect(normalizedPageSource).toContain(expectedPrimaryCurrency);
+    expect(normalizedPageSource).not.toContain(
+      "primaryCurrency={orderedWorkspaceCurrencies[0] || 'IDR'}"
+    );
+  });
+
   it('persists the selected view mode and rebinds table behavior across Astro page transitions', () => {
     const clientSource = read('src/components/organisms/accounts-table.client.ts');
 

@@ -513,7 +513,9 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           <div data-view="table" class="hidden">
             <AccountTable
               accounts={accountsWithDisplay}
-              primaryCurrency={orderedWorkspaceCurrencies[0] || 'IDR'}
+              primaryCurrency={
+                filters.currency ?? allocationCurrency ?? orderedWorkspaceCurrencies[0] ?? 'IDR'
+              }
               currencyOrder={orderedWorkspaceCurrencies}
               isHistoricalView={!isViewingCurrentMonth}
             />
