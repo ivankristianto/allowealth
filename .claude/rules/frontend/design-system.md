@@ -332,8 +332,8 @@ iOS Safari uses **software rendering** for large CSS blur radii instead of GPU a
 
 ### Allowed
 
-- `backdrop-blur-sm` on modal backdrops
-- `backdrop-blur-md` on drawer backdrops
+- `backdrop-blur-md` on modal backdrops
+- `backdrop-blur-sm` on drawer backdrops
 - `backdrop-blur-sm` on the category drill-down modal nav strip
 
 ### Disallowed

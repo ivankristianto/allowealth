@@ -334,11 +334,6 @@
    * EFFECT TOKENS (from styles.json)
    * ======================================== */
 
-  /* Glass effect */
-  --glass-blur: 12px;
-  --glass-bg-light: rgb(255 255 255 / 0.8);
-  --glass-bg-dark: rgb(17 24 39 / 0.8);
-
   /* Gradients */
   --gradient-accent-glow: radial-gradient(circle, rgb(21 128 61 / 0.1) 0%, transparent 70%);
 
