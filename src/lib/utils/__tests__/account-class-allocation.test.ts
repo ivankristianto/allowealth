@@ -153,6 +153,59 @@ describe('calculateClassAllocation', () => {
     expect(result.debt.percentage).toBe(0);
   });
 
+  it('skips accounts with NaN balances', () => {
+    const accounts = [
+      makeAccount({ id: '1', account_class: 'liquid', balance: '100', currency: 'USD' }),
+      makeAccount({
+        id: '2',
+        account_class: 'non_liquid',
+        balance: 'not-a-number',
+        currency: 'USD',
+        type: 'stock',
+      }),
+      makeAccount({
+        id: '3',
+        account_class: 'debt',
+        balance: '-10',
+        currency: 'USD',
+        type: 'loan',
+      }),
+    ];
+
+    const result = calculateClassAllocation(accounts, 'USD');
+
+    expect(result.liquid.percentage).toBe(100);
+    expect(result.non_liquid.percentage).toBe(0);
+    expect(result.debt.percentage).toBe(10);
+  });
+
+  it('ignores negative liquid and non-liquid balances in non-debt totals', () => {
+    const accounts = [
+      makeAccount({ id: '1', account_class: 'liquid', balance: '100', currency: 'USD' }),
+      makeAccount({ id: '2', account_class: 'liquid', balance: '-50', currency: 'USD' }),
+      makeAccount({
+        id: '3',
+        account_class: 'non_liquid',
+        balance: '100',
+        currency: 'USD',
+        type: 'stock',
+      }),
+      makeAccount({
+        id: '4',
+        account_class: 'non_liquid',
+        balance: '-75',
+        currency: 'USD',
+        type: 'stock',
+      }),
+    ];
+
+    const result = calculateClassAllocation(accounts, 'USD');
+
+    expect(result.liquid.percentage).toBe(50);
+    expect(result.non_liquid.percentage).toBe(50);
+    expect(result.debt.percentage).toBe(0);
+  });
+
   it('returns zero percentage for zero-balance accounts', () => {
     const accounts = [
       makeAccount({ id: '1', account_class: 'liquid', balance: '0', currency: 'USD' }),
