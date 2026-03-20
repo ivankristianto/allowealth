@@ -65,6 +65,13 @@ function getDefaultViewMode(toggle: HTMLElement): ViewMode {
   return defaultView === 'table' ? 'table' : 'card';
 }
 
+function reapplyActiveSearch(scope: ParentNode): void {
+  const searchInput = scope.querySelector<HTMLInputElement>('[data-account-search]');
+  if (!searchInput || !searchInput.value.trim()) return;
+
+  searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function applyViewMode(toggle: HTMLElement, mode: ViewMode): void {
   const scope = findViewScope(toggle);
   const cardView = getViewContainer(scope, 'card');
@@ -85,6 +92,7 @@ function applyViewMode(toggle: HTMLElement, mode: ViewMode): void {
   });
 
   writeStoredViewMode(mode);
+  reapplyActiveSearch(scope);
 }
 
 function getInitialViewMode(toggle: HTMLElement): ViewMode {
