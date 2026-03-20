@@ -1,0 +1,129 @@
+---
+import { LayoutGrid, List } from '@lucide/astro';
+import ActionFilterBar from '@/components/organisms/ActionFilterBar.astro';
+
+export interface Props {
+  searchValue?: string;
+  members?: Array<{ id: string; name: string }>;
+  userId?: string;
+  currentUserId?: string;
+  currentSearchParams?: string;
+  baseUrl?: string;
+  defaultView?: 'card' | 'table';
+}
+
+const {
+  searchValue = '',
+  members = [],
+  userId = '',
+  currentUserId = '',
+  currentSearchParams = '',
+  baseUrl = '/accounts',
+  defaultView = 'card',
+} = Astro.props;
+
+const viewToggleClass =
+  'flex h-11 items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1';
+
+const toggleButtonClass = 'btn btn-ghost btn-sm h-full min-h-0 min-w-11 flex-1 rounded-lg border-0';
+---
+
+<div
+  class="flex w-full flex-col gap-3 lg:flex-row lg:items-start"
+  data-account-filter-controls
+  data-default-view={defaultView}
+>
+  <div class="min-w-0 flex-1">
+    <ActionFilterBar
+      searchValue={searchValue}
+      members={members}
+      userId={userId}
+      currentUserId={currentUserId}
+      currentSearchParams={currentSearchParams}
+      baseUrl={baseUrl}
+      className="w-full"
+    />
+  </div>
+
+  <div class={viewToggleClass} data-view-toggle>
+    <button
+      type="button"
+      class:list={[toggleButtonClass, defaultView === 'card' && 'btn-active']}
+      data-view-mode="card"
+      aria-label="Card view"
+      aria-pressed={defaultView === 'card' ? 'true' : 'false'}
+      title="Card view"
+    >
+      <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
+    </button>
+    <button
+      type="button"
+      class:list={[toggleButtonClass, defaultView === 'table' && 'btn-active']}
+      data-view-mode="table"
+      aria-label="Table view"
+      aria-pressed={defaultView === 'table' ? 'true' : 'false'}
+      title="Table view"
+    >
+      <List size={16} class="stroke-current" aria-hidden="true" />
+    </button>
+  </div>
+</div>
+
+<script>
+  let accountViewToggleController: AbortController | null = null;
+
+  function initAccountViewToggle() {
+    accountViewToggleController?.abort();
+    accountViewToggleController = new AbortController();
+    const { signal } = accountViewToggleController;
+
+    const controls = document.querySelector<HTMLElement>('[data-account-filter-controls]');
+    const viewToggle = controls?.querySelector<HTMLElement>('[data-view-toggle]');
+    if (!controls || !viewToggle) return;
+
+    const applyViewMode = (mode: 'card' | 'table') => {
+      const cardView = document.querySelector<HTMLElement>('[data-view="card"]');
+      const tableView = document.querySelector<HTMLElement>('[data-view="table"]');
+
+      if (mode === 'table') {
+        cardView?.classList.add('hidden');
+        tableView?.classList.remove('hidden');
+      } else {
+        cardView?.classList.remove('hidden');
+        tableView?.classList.add('hidden');
+      }
+
+      viewToggle.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+        const isActive = button.dataset.viewMode === mode;
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        button.classList.toggle('btn-active', isActive);
+      });
+    };
+
+    const defaultMode = controls.dataset.defaultView === 'table' ? 'table' : 'card';
+    const savedMode = localStorage.getItem('account-view-mode');
+    const initialMode = savedMode === 'table' || savedMode === 'card' ? savedMode : defaultMode;
+
+    applyViewMode(initialMode);
+
+    viewToggle.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.addEventListener(
+        'click',
+        () => {
+          const mode = button.dataset.viewMode === 'table' ? 'table' : 'card';
+          applyViewMode(mode);
+          localStorage.setItem('account-view-mode', mode);
+        },
+        { signal }
+      );
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAccountViewToggle, { once: true });
+  } else {
+    initAccountViewToggle();
+  }
+
+  document.addEventListener('astro:page-load', initAccountViewToggle);
+</script>
