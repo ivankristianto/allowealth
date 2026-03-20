@@ -105,6 +105,11 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
     colors: GROUP_COLORS[classKey],
   })
 );
+
+const sortableHeaderButtonClass =
+  'inline-flex w-full items-center gap-2 rounded-md text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:text-base-content/70';
+
+const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} justify-end text-right`;
 ---
 
 {
@@ -132,11 +137,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                       data-sort-key="name"
                       aria-sort="none"
                     >
-                      <button
-                        type="button"
-                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
-                        data-sort-button
-                      >
+                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
                         <span>Account</span>
                         <span class="text-base-content/20" data-sort-indicator="name">
                           ^v
@@ -148,11 +149,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                       data-sort-key="type"
                       aria-sort="none"
                     >
-                      <button
-                        type="button"
-                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
-                        data-sort-button
-                      >
+                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
                         <span>Type</span>
                         <span class="text-base-content/20" data-sort-indicator="type">
                           ^v
@@ -164,11 +161,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                       data-sort-key="category"
                       aria-sort="none"
                     >
-                      <button
-                        type="button"
-                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
-                        data-sort-button
-                      >
+                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
                         <span>Category</span>
                         <span class="text-base-content/20" data-sort-indicator="category">
                           ^v
@@ -180,11 +173,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                       data-sort-key="owner"
                       aria-sort="none"
                     >
-                      <button
-                        type="button"
-                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
-                        data-sort-button
-                      >
+                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
                         <span>Owner</span>
                         <span class="text-base-content/20" data-sort-indicator="owner">
                           ^v
@@ -198,7 +187,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                     >
                       <button
                         type="button"
-                        class="inline-flex w-full items-center justify-end gap-2 text-right focus:outline-none focus-visible:text-base-content/70"
+                        class={sortableHeaderButtonRightAlignedClass}
                         data-sort-button
                       >
                         <span>Balance</span>
@@ -212,11 +201,7 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                       data-sort-key="updated"
                       aria-sort="none"
                     >
-                      <button
-                        type="button"
-                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
-                        data-sort-button
-                      >
+                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
                         <span>Updated</span>
                         <span class="text-base-content/20" data-sort-indicator="updated">
                           ^v
@@ -346,7 +331,10 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                 const displayBalance = isDebt ? -Math.abs(balance) : balance;
                 const isDimmed = account.currency !== primaryCurrency;
                 const typeLabel = ACCOUNT_TYPE_LABELS[account.type] || account.type;
-                const categoryLabel = account.category_name || typeLabel;
+                const categoryLabel = account.category_name?.trim() || null;
+                const secondaryMeta = [categoryLabel, account.owner_name]
+                  .filter(Boolean)
+                  .join(' | ');
                 const formattedDate = formatShortDate(new Date(account.last_updated));
 
                 return (
@@ -364,10 +352,9 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                           {account.name}
                         </a>
                         <div class="mt-1 text-xs text-base-content/60">{typeLabel}</div>
-                        <div class="mt-1 text-xs text-base-content/50">
-                          {categoryLabel}
-                          {account.owner_name && ` | ${account.owner_name}`}
-                        </div>
+                        {secondaryMeta && (
+                          <div class="mt-1 text-xs text-base-content/50">{secondaryMeta}</div>
+                        )}
                       </div>
 
                       {!isHistoricalView && (
