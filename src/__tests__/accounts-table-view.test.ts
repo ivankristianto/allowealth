@@ -73,6 +73,22 @@ describe('accounts table view integration wiring', () => {
     );
   });
 
+  it('keeps uncategorized table rows nullable while preserving per-account type metadata', () => {
+    const pageSource = read('src/pages/accounts/index.astro');
+    const normalizedPageSource = normalize(pageSource);
+
+    expect(normalizedPageSource).toContain(
+      normalize(`
+        const accountsWithDisplay = accounts.map((account) => ({
+          ...account,
+          category_name: account.category_id ? account.category_name : null,
+          owner_name: memberNamesById.get(account.created_by_user_id),
+        }));
+      `)
+    );
+    expect(pageSource).toContain(': formatAccountType(account.type);');
+  });
+
   it('persists the selected view mode and rebinds table behavior across Astro page transitions', () => {
     const clientSource = read('src/components/organisms/accounts-table.client.ts');
 

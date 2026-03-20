@@ -128,70 +128,100 @@ const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length
                 <thead>
                   <tr class="border-b border-base-300 bg-base-200/50">
                     <th
-                      class="cursor-pointer px-4 py-4 pl-6 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6 md:pl-8"
+                      class="px-4 py-4 pl-6 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6 md:pl-8"
                       data-sort-key="name"
+                      aria-sort="none"
                     >
-                      <span class="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
+                        data-sort-button
+                      >
                         <span>Account</span>
                         <span class="text-base-content/20" data-sort-indicator="name">
                           ^v
                         </span>
-                      </span>
+                      </button>
                     </th>
                     <th
-                      class="cursor-pointer px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
+                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
                       data-sort-key="type"
+                      aria-sort="none"
                     >
-                      <span class="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
+                        data-sort-button
+                      >
                         <span>Type</span>
                         <span class="text-base-content/20" data-sort-indicator="type">
                           ^v
                         </span>
-                      </span>
+                      </button>
                     </th>
                     <th
-                      class="cursor-pointer px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
+                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
                       data-sort-key="category"
+                      aria-sort="none"
                     >
-                      <span class="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
+                        data-sort-button
+                      >
                         <span>Category</span>
                         <span class="text-base-content/20" data-sort-indicator="category">
                           ^v
                         </span>
-                      </span>
+                      </button>
                     </th>
                     <th
-                      class="cursor-pointer px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
+                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
                       data-sort-key="owner"
+                      aria-sort="none"
                     >
-                      <span class="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
+                        data-sort-button
+                      >
                         <span>Owner</span>
                         <span class="text-base-content/20" data-sort-indicator="owner">
                           ^v
                         </span>
-                      </span>
+                      </button>
                     </th>
                     <th
-                      class="cursor-pointer px-4 py-4 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
+                      class="px-4 py-4 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
                       data-sort-key="balance"
+                      aria-sort="none"
                     >
-                      <span class="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex w-full items-center justify-end gap-2 text-right focus:outline-none focus-visible:text-base-content/70"
+                        data-sort-button
+                      >
                         <span>Balance</span>
                         <span class="text-base-content/20" data-sort-indicator="balance">
                           ^v
                         </span>
-                      </span>
+                      </button>
                     </th>
                     <th
-                      class="cursor-pointer px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
+                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
                       data-sort-key="updated"
+                      aria-sort="none"
                     >
-                      <span class="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex w-full items-center gap-2 text-left focus:outline-none focus-visible:text-base-content/70"
+                        data-sort-button
+                      >
                         <span>Updated</span>
                         <span class="text-base-content/20" data-sort-indicator="updated">
                           ^v
                         </span>
-                      </span>
+                      </button>
                     </th>
                     <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6">
                       Actions
