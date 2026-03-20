@@ -1,5 +1,6 @@
 ---
 import { LayoutGrid, List } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 import ActionFilterBar from '@/components/organisms/ActionFilterBar.astro';
 
 export interface Props {
@@ -24,8 +25,6 @@ const {
 
 const viewToggleClass =
   'flex h-11 items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1';
-
-const toggleButtonClass = 'btn btn-ghost btn-sm h-full min-h-0 min-w-11 flex-1 rounded-lg border-0';
 ---
 
 <div
@@ -46,25 +45,39 @@ const toggleButtonClass = 'btn btn-ghost btn-sm h-full min-h-0 min-w-11 flex-1 r
   </div>
 
   <div class={viewToggleClass} data-view-toggle>
-    <button
+    <Button
       type="button"
-      class:list={[toggleButtonClass, defaultView === 'card' && 'btn-active']}
+      variant="ghost"
+      size="sm"
+      className={[
+        'h-full min-h-0 min-w-11 flex-1 rounded-lg border-0',
+        defaultView === 'card' && 'btn-active',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-view-mode="card"
       aria-label="Card view"
       aria-pressed={defaultView === 'card' ? 'true' : 'false'}
       title="Card view"
     >
       <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
-    </button>
-    <button
+    </Button>
+    <Button
       type="button"
-      class:list={[toggleButtonClass, defaultView === 'table' && 'btn-active']}
+      variant="ghost"
+      size="sm"
+      className={[
+        'h-full min-h-0 min-w-11 flex-1 rounded-lg border-0',
+        defaultView === 'table' && 'btn-active',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-view-mode="table"
       aria-label="Table view"
       aria-pressed={defaultView === 'table' ? 'true' : 'false'}
       title="Table view"
     >
       <List size={16} class="stroke-current" aria-hidden="true" />
-    </button>
+    </Button>
   </div>
 </div>
