@@ -22,6 +22,16 @@ function expectInAscendingOrder(source: string, markers: string[]) {
   }
 }
 
+function readDiagnosticsSummarySource() {
+  const source = readTemplate('src/components/organisms/DiagnosticsDisplay.astro');
+  const startIndex = source.indexOf('data-testid="diagnostics-summary"');
+  const endIndex = source.indexOf('</section>', startIndex);
+
+  expect(startIndex).toBeGreaterThanOrEqual(0);
+  expect(endIndex).toBeGreaterThan(startIndex);
+  return source.slice(startIndex, endIndex + '</section>'.length);
+}
+
 describe('settings page refinement regressions', () => {
   it('uses the approved max-w-6xl shell width', () => {
     const source = read('src/pages/settings/index.astro');
@@ -117,6 +127,34 @@ describe('diagnostics layout refinement regressions', () => {
     expect(source).toContain('Cache');
     expect(source).toContain('Environment Variables');
     expect(source).toContain('Last updated:');
+  });
+
+  it('locks the console summary redesign structure', () => {
+    const source = readDiagnosticsSummarySource();
+
+    expect(source).toContain('data-testid="diagnostics-summary"');
+    expect(source).not.toContain('flex h-12 w-12 items-center justify-center rounded-2xl');
+    expect(source).not.toMatch(/class="[^"]*\bbadge\b[^"]*"/);
+    expect(source).not.toMatch(/class=\{[^}]*badge[^}]*\}/);
+    expectInAscendingOrder(source, [
+      'data-summary-marker="runtime"',
+      'data-summary-marker="data-layer"',
+      'data-summary-marker="caching"',
+    ]);
+    expectInAscendingOrder(source, ['Runtime', 'data-summary-value="runtime"', 'Environment']);
+    expectInAscendingOrder(source, ['Data Layer', 'Driver']);
+    expectInAscendingOrder(source, ['Caching', 'Enabled']);
+  });
+
+  it('renders the summary content in the readout order', () => {
+    const source = readDiagnosticsSummarySource();
+
+    expectInAscendingOrder(source, [
+      'Runtime',
+      'data-summary-value="runtime"',
+      'Environment',
+      'App Version',
+    ]);
   });
 
   it('renders summary-first diagnostics structure in the approved order', () => {
