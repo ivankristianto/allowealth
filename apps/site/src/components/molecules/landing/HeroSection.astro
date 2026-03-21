@@ -37,11 +37,15 @@ const { typingHeadlines } = heroContent;
       class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.9] mb-6 sm:mb-10"
     >
       <span
-        class="hero-typing-text block"
+        class="hero-typing-wrapper block"
         data-headlines={JSON.stringify(typingHeadlines)}
-        style="min-height: 2.4em; contain: layout;"
+        style="min-height: 2em; contain: layout;"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label="Animated headline"
       >
-        {typingHeadlines[0]}
+        <span class="hero-typing-text">{typingHeadlines[0]}</span>
+        <span class="typing-cursor" aria-hidden="true">|</span>
       </span>
       <span class="text-accent">{heroContent.titleSuffix}</span>
     </h1>
@@ -82,82 +86,127 @@ const { typingHeadlines } = heroContent;
 <script>
   // Typing animation for hero headline
   document.addEventListener('DOMContentLoaded', () => {
-    const typingElement = document.querySelector('.hero-typing-text') as HTMLElement | null;
-    if (!typingElement) return;
+    // Respect user's motion preferences
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
 
-    const headlines = JSON.parse(typingElement.dataset.headlines || '[]');
-    if (headlines.length === 0) return;
+    const wrapper = document.querySelector('.hero-typing-wrapper') as HTMLElement | null;
+    const typingElement = wrapper?.querySelector('.hero-typing-text') as HTMLElement | null;
+
+    if (!wrapper || !typingElement) return;
+
+    const headlines = JSON.parse(wrapper.dataset.headlines || '[]');
+    if (!Array.isArray(headlines) || headlines.length === 0) return;
 
     let currentIndex = 0;
     let isTyping = true;
-    let currentText = '';
     let charIndex = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isActive = true;
 
     const TYPING_SPEED = 60; // ms per character
     const DELETING_SPEED = 40; // ms per character
     const PAUSE_AFTER_TYPE = 3000; // ms to pause after typing
     const PAUSE_AFTER_DELETE = 500; // ms to pause after deleting
 
+    function cleanup() {
+      isActive = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
+    function scheduleNext(callback: () => void, delay: number) {
+      if (!isActive) return;
+      timeoutId = setTimeout(() => {
+        if (isActive) callback();
+      }, delay);
+    }
+
     function type() {
+      if (!isActive) return;
+
       const fullText = headlines[currentIndex];
 
       if (isTyping) {
         // Typing forward
         if (charIndex < fullText.length) {
-          currentText = fullText.slice(0, charIndex + 1);
-          typingElement.textContent = currentText;
+          typingElement.textContent = fullText.slice(0, charIndex + 1);
           charIndex++;
-          setTimeout(type, TYPING_SPEED);
+          scheduleNext(type, TYPING_SPEED);
         } else {
           // Finished typing, pause before deleting
           isTyping = false;
-          setTimeout(type, PAUSE_AFTER_TYPE);
+          scheduleNext(type, PAUSE_AFTER_TYPE);
         }
       } else {
         // Deleting backward
         if (charIndex > 0) {
-          currentText = fullText.slice(0, charIndex - 1);
-          typingElement.textContent = currentText;
+          typingElement.textContent = fullText.slice(0, charIndex - 1);
           charIndex--;
-          setTimeout(type, DELETING_SPEED);
+          scheduleNext(type, DELETING_SPEED);
         } else {
           // Finished deleting, move to next headline
           currentIndex = (currentIndex + 1) % headlines.length;
           isTyping = true;
-          setTimeout(type, PAUSE_AFTER_DELETE);
+          scheduleNext(type, PAUSE_AFTER_DELETE);
         }
       }
     }
 
+    // Cleanup on page hide/unload
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        cleanup();
+      } else {
+        // Resume animation when page becomes visible again
+        isActive = true;
+        type();
+      }
+    });
+
     // Start the typing animation
-    // Small delay before starting
-    setTimeout(type, 800);
+    scheduleNext(type, 800);
   });
 </script>
 
 <style>
-  /* Prevent layout shifts during typing animation */
-  .hero-typing-text {
+  /* Wrapper for typing animation */
+  .hero-typing-wrapper {
     text-wrap: balance;
     word-break: normal;
     overflow-wrap: break-word;
   }
 
+  /* Blinking cursor */
+  .typing-cursor {
+    animation: blink 1s step-end infinite;
+    color: var(--color-accent);
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
   /* Ensure consistent height across breakpoints */
   @media (max-width: 639px) {
-    .hero-typing-text {
+    .hero-typing-wrapper {
       min-height: 2.4em;
     }
   }
 
   @media (min-width: 640px) and (max-width: 767px) {
-    .hero-typing-text {
+    .hero-typing-wrapper {
       min-height: 2.2em;
     }
   }
 
   @media (min-width: 768px) {
-    .hero-typing-text {
+    .hero-typing-wrapper {
       min-height: 2em;
     }
   }
