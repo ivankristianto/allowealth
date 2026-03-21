@@ -38,6 +38,9 @@ Upgrade all three Astro projects in the monorepo from Astro 5.16.15 to Astro 6.0
 | `eslint-plugin-astro` | root devDependencies | `^1.5.0` | `^1.6.0` |
 | `@astrojs/starlight` | apps/docs | `^0.32.0` | `^0.38.2` |
 | `prettier-plugin-astro` | root devDependencies | `^0.14.1` | unchanged |
+| `@astrojs/sitemap` | apps/docs + apps/site | `^3.6.0 / ^3.7.1` | check peer deps at `bun install` |
+
+> Note: `@astrojs/vercel` and `@astrojs/netlify` are dynamically imported in `astro.config.ts` but are not installed (not in `package.json`). The `build:vercel` and `build:netlify` targets are not tested in this upgrade.
 
 ## Astro 6 Breaking Changes
 
@@ -51,18 +54,22 @@ Astro 6 requires:
 
 `patches/astro@5.16.15.patch` patches `dist/container/index.js` to guard against `import.meta.url` throwing in the Cloudflare Workers runtime. This patch is removed as part of the upgrade.
 
-If the Cloudflare Workers build (`bun run build:cloudflare`) fails with the same error, a new patch targeting `astro@6.0.8` is created.
+If the Cloudflare Workers build (`bun run build:cloudflare`) fails with the same error, a new patch targeting `astro@6.0.8` is created. To locate the target: search for `hrefRoot` or `import.meta.url` in the Astro 6 dist (`node_modules/astro/dist/`) to find the equivalent patching location.
 
 ## CSP Integration
 
 Astro 6 introduces `security: { csp: true }` which automatically hashes all page scripts and styles and generates appropriate headers — no per-request nonce injection required.
 
 **Plan:**
-1. Add `security: { csp: true }` to `astro.config.ts`
+1. Add `security: { csp: true }` to `astro.config.ts` (main SSR app only)
 2. Leave existing custom nonce middleware and `public/_headers` CSP entries in place
 3. Add `// TODO(ALL-62): evaluate removing custom nonce middleware once Astro 6 CSP is validated` at relevant locations
 
-**Why not remove custom code now:** The existing nonce implementation is tested and working. Astro 6's CSP hashing is a different model (hash-based vs. nonce-based). Both can coexist; validation and cleanup is a follow-up task.
+**CSP applies to main SSR app only.** `apps/docs` and `apps/site` use `output: 'static'` — Astro 6 CSP for static output emits `<meta http-equiv>` tags rather than response headers. Neither sub-app has a custom CSP today, so no CSP config is added to them in this upgrade.
+
+**Header precedence note:** Astro 6's hash-based CSP and the existing nonce-based middleware generate separate `Content-Security-Policy` headers. In the SSR app the custom middleware (`security-headers.ts`) sets the header on the response after Astro renders — meaning the middleware header wins and Astro's hash header is overwritten. This makes `security: { csp: true }` effectively a no-op for the SSR app until the custom code is removed. The flag is added now to document intent and enable testing; the TODO comments track the cleanup.
+
+**Why not remove custom code now:** The existing nonce implementation is tested and working. Switching to hash-based CSP requires validating that no inline scripts use runtime-generated content that can't be statically hashed. That validation is a follow-up task.
 
 ## Execution Order
 
