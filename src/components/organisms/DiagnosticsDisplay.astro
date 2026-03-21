@@ -71,6 +71,28 @@ function iconTextClass(variant: StatusVariant): string {
   return `h-3.5 w-3.5 stroke-current ${map[variant]}`;
 }
 
+function summaryMarkerClass(variant: StatusVariant): string {
+  const map = {
+    success: 'bg-success',
+    error: 'bg-error',
+    warning: 'bg-warning',
+    neutral: 'bg-base-content/30',
+  };
+
+  return `h-2 w-2 rounded-full ${map[variant]}`;
+}
+
+function summaryGlyphClass(variant: StatusVariant): string {
+  const map = {
+    success: 'text-success/80',
+    error: 'text-error/80',
+    warning: 'text-warning/80',
+    neutral: 'text-base-content/35',
+  };
+
+  return `h-4 w-4 stroke-current ${map[variant]}`;
+}
+
 const cacheStatusMap: Record<string, { variant: StatusVariant; text: string }> = {
   healthy: { variant: 'success', text: 'Healthy' },
   error: { variant: 'error', text: 'Error' },
@@ -89,76 +111,155 @@ const configurationStatus =
     : data.configuration.warnings.length > 0
       ? { variant: 'warning' as const, text: 'Review warnings' }
       : { variant: 'success' as const, text: 'Healthy' };
+
+const runtimeSummaryVariant: StatusVariant = 'neutral';
+const databaseMode = data.database.isD1 ? 'D1' : 'Local';
 ---
 
 <section data-testid="diagnostics-summary" class="grid grid-cols-1 gap-4 xl:grid-cols-3">
   <Card padding="lg">
-    <div class="flex items-start gap-4">
-      <div
-        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span data-summary-marker="runtime" class={summaryMarkerClass(runtimeSummaryVariant)}
+            ></span>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">
+              Runtime
+            </p>
+          </div>
+        </div>
+        <Server size={14} class={summaryGlyphClass(runtimeSummaryVariant)} aria-hidden="true" />
+      </div>
+
+      <p
+        data-summary-value="runtime"
+        class="mt-5 text-3xl font-semibold tracking-tight text-base-content"
       >
-        <Server size={22} class="stroke-current" aria-hidden="true" />
-      </div>
-      <div class="space-y-2">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">
-            Runtime
-          </p>
-          <p class="mt-1 text-lg font-semibold text-base-content">{data.runtime.runtime}</p>
+        {data.runtime.runtime}
+      </p>
+
+      <dl class="mt-5">
+        <div
+          class="flex items-start justify-between gap-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0"
+        >
+          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+            Environment
+          </dt>
+          <dd class="text-right text-sm font-medium text-base-content">
+            {data.runtime.environment}
+          </dd>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="badge badge-outline">{data.runtime.environment}</span>
-          {data.runtime.region && <span class="badge badge-neutral">{data.runtime.region}</span>}
+
+        <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
+          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+            App Version
+          </dt>
+          <dd class="text-right font-mono text-sm text-base-content">v{APP_VERSION}</dd>
         </div>
-      </div>
+
+        {
+          data.runtime.region && (
+            <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
+              <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+                Region
+              </dt>
+              <dd class="text-right font-mono text-sm text-base-content">{data.runtime.region}</dd>
+            </div>
+          )
+        }
+      </dl>
     </div>
   </Card>
 
   <Card padding="lg">
-    <div class="flex items-start gap-4">
-      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-info/10 text-info">
-        <DataLayerGlyph size={22} class="stroke-current" aria-hidden="true" />
-      </div>
-      <div class="space-y-2">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">
-            Data Layer
-          </p>
-          <p class="mt-1 text-lg font-semibold text-base-content">{connStatus.text}</p>
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span data-summary-marker="data-layer" class={summaryMarkerClass(connStatus.variant)}
+            ></span>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">
+              Data Layer
+            </p>
+          </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class={badgeClass(connStatus.variant)}>
-            {data.database.isD1 ? 'D1' : data.database.dialect}
-          </span>
-          {
-            data.database.queryMetrics && (
-              <span class="badge badge-neutral">
-                {data.database.queryMetrics.totalQueries} queries checked
-              </span>
-            )
-          }
-        </div>
+        <DataLayerGlyph
+          size={14}
+          class={summaryGlyphClass(connStatus.variant)}
+          aria-hidden="true"
+        />
       </div>
+
+      <p class="mt-5 text-3xl font-semibold tracking-tight text-base-content">{connStatus.text}</p>
+
+      <dl class="mt-5">
+        <div
+          class="flex items-start justify-between gap-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0"
+        >
+          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+            Driver
+          </dt>
+          <dd class="text-right text-sm font-medium text-base-content">{data.database.dialect}</dd>
+        </div>
+
+        <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
+          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">Mode</dt>
+          <dd class="text-right text-sm font-medium text-base-content">{databaseMode}</dd>
+        </div>
+
+        {
+          data.database.queryMetrics && (
+            <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
+              <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+                Queries
+              </dt>
+              <dd class="text-right text-sm font-medium text-base-content">
+                {data.database.queryMetrics.totalQueries} checked
+              </dd>
+            </div>
+          )
+        }
+      </dl>
     </div>
   </Card>
 
   <Card padding="lg">
-    <div class="flex items-start gap-4">
-      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-        <Activity size={22} class="stroke-current" aria-hidden="true" />
-      </div>
-      <div class="space-y-2">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">
-            Caching
-          </p>
-          <p class="mt-1 text-lg font-semibold text-base-content">{cacheStatus.text}</p>
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span data-summary-marker="caching" class={summaryMarkerClass(cacheStatus.variant)}
+            ></span>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45">
+              Caching
+            </p>
+          </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class={badgeClass(cacheStatus.variant)}>{data.cache.driver}</span>
-          <span class="badge badge-neutral">{data.cache.isEnabled ? 'Enabled' : 'Disabled'}</span>
-        </div>
+        <Activity size={14} class={summaryGlyphClass(cacheStatus.variant)} aria-hidden="true" />
       </div>
+
+      <p class="mt-5 text-3xl font-semibold tracking-tight text-base-content">{cacheStatus.text}</p>
+
+      <dl class="mt-5">
+        <div
+          class="flex items-start justify-between gap-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0"
+        >
+          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+            Driver
+          </dt>
+          <dd class="text-right text-sm font-medium text-base-content">{data.cache.driver}</dd>
+        </div>
+
+        <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
+          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
+            Enabled
+          </dt>
+          <dd class="text-right text-sm font-medium text-base-content">
+            {data.cache.isEnabled ? 'Yes' : 'No'}
+          </dd>
+        </div>
+      </dl>
     </div>
   </Card>
 </section>
