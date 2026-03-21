@@ -8,9 +8,13 @@
  * Part of the Interactive Page Architecture pattern.
  * See: docs/architecture/002-interactive-pages.md
  *
- * @param {HistoryEntry[]} entries - Array of history entries
+ * @param {HistoryEntry[]} entries - Array of history entries (newest-first)
  * @param {string} accountId - Account ID for the "View all history" link
+ * @param {Currency} currency - Account currency for balance formatting
  */
+
+import { formatCurrency } from '@/lib/formatting';
+import type { Currency } from '@/lib/constants/currency';
 
 export interface HistoryEntry {
   id: string;
@@ -22,11 +26,11 @@ export interface HistoryEntry {
 export interface Props {
   entries: HistoryEntry[];
   accountId: string;
+  currency: Currency;
 }
 
-const { entries, accountId } = Astro.props;
+const { entries, accountId, currency } = Astro.props;
 
-// Helper to format date
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
@@ -36,26 +40,75 @@ function formatDate(dateString: string): string {
   });
 }
 
-// Helper to calculate change and determine styling
+// Sparkline: only computed when we have 2+ entries
+const showSparkline = entries.length >= 2;
+
+// Balances in oldest-first order for SVG left→right plotting
+const balancesOldestFirst = entries.map((e) => parseFloat(e.balance)).reverse();
+
+// SVG coordinate computation (viewBox 0 0 100 44)
+const sparklinePoints = (() => {
+  if (!showSparkline) return '';
+  const n = balancesOldestFirst.length;
+  const min = Math.min(...balancesOldestFirst);
+  const max = Math.max(...balancesOldestFirst);
+  const range = max - min;
+  return balancesOldestFirst
+    .map((bal, i) => {
+      const x = (i / (n - 1)) * 100;
+      const y = range === 0 ? 22 : 42 - ((bal - min) / range) * 40;
+      return `${x},${y}`;
+    })
+    .join(' ');
+})();
+
+// Area fill path: close below the polyline to y=44
+const sparklineArea = (() => {
+  if (!showSparkline || balancesOldestFirst.length < 2) return '';
+  const n = balancesOldestFirst.length;
+  const min = Math.min(...balancesOldestFirst);
+  const max = Math.max(...balancesOldestFirst);
+  const range = max - min;
+  const pts = balancesOldestFirst.map((bal, i) => {
+    const x = (i / (n - 1)) * 100;
+    const y = range === 0 ? 22 : 42 - ((bal - min) / range) * 40;
+    return `${x},${y}`;
+  });
+  const firstX = pts[0].split(',')[0];
+  const lastX = pts[pts.length - 1].split(',')[0];
+  return `M${firstX},44 ${pts.map((p) => `L${p}`).join(' ')} L${lastX},44 Z`;
+})();
+
+// Growth annotation
+const oldestBalance = balancesOldestFirst[0] ?? 0;
+const newestBalance = balancesOldestFirst[balancesOldestFirst.length - 1] ?? 0;
+const showGrowthAnnotation = showSparkline && oldestBalance !== 0;
+const growthPercent = showGrowthAnnotation
+  ? ((newestBalance - oldestBalance) / oldestBalance) * 100
+  : 0;
+const growthFormatted = `${growthPercent >= 0 ? '+' : ''}${growthPercent.toFixed(1)}%`;
+const growthClass = growthPercent >= 0 ? 'text-success' : 'text-error';
+const oldestDateLabel =
+  entries.length > 0 ? formatDate(entries[entries.length - 1].recorded_at) : '';
+
+// Per-row change and % calculation
 function calculateChange(balance: number, prevBalance: number, isLastEntry: boolean) {
   if (isLastEntry) {
-    return {
-      change: 0,
-      display: '—',
-      className: 'text-base-content/50',
-    };
+    return { display: '—', className: 'text-base-content/50', percent: '—' };
   }
 
   const change = balance - prevBalance;
   const changeClass =
     change > 0 ? 'text-success' : change < 0 ? 'text-error' : 'text-base-content/50';
   const changePrefix = change > 0 ? '+' : '';
+  const changeDisplay = changePrefix + change.toLocaleString();
 
-  return {
-    change,
-    display: changePrefix + change.toLocaleString(),
-    className: changeClass,
-  };
+  const percentDisplay =
+    prevBalance === 0
+      ? '—'
+      : `${change >= 0 ? '+' : ''}${((change / Math.abs(prevBalance)) * 100).toFixed(1)}%`;
+
+  return { display: changeDisplay, className: changeClass, percent: percentDisplay };
 }
 ---
 
@@ -64,13 +117,49 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
     <p class="px-4 py-2 text-xs text-base-content/50">No history entries yet.</p>
   ) : (
     <>
+      {showSparkline && (
+        <div class="px-6 pt-3 pb-1 md:px-8">
+          <svg
+            width="100%"
+            height="44"
+            viewBox="0 0 100 44"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d={sparklineArea} fill="#16a34a" fill-opacity="0.12" />
+            <polyline
+              points={sparklinePoints}
+              fill="none"
+              stroke="#16a34a"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            />
+            {(() => {
+              const lastPoint = sparklinePoints.split(' ').pop() ?? '100,22';
+              const [cx, cy] = lastPoint.split(',');
+              return <circle cx={cx} cy={cy} r="2" fill="#16a34a" />;
+            })()}
+          </svg>
+          {showGrowthAnnotation && (
+            <div class="flex justify-between text-xs mt-0.5">
+              <span class="text-base-content/40">{oldestDateLabel}</span>
+              <span class={growthClass + ' font-semibold'}>
+                {growthFormatted} ({entries.length} entries)
+              </span>
+              <span class="text-base-content/40">Now</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <table class="w-full border-collapse text-left">
         <thead class="sr-only">
           <tr>
             <th scope="col">Date</th>
             <th scope="col">Balance</th>
             <th scope="col">Change</th>
-            <th scope="col">Notes</th>
+            <th scope="col">%</th>
           </tr>
         </thead>
         <tbody>
@@ -86,15 +175,15 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
               <tr class="border-b border-base-300/50 last:border-b-0">
                 <td class="py-1.5 pl-6 pr-2 text-xs text-base-content/50 md:pl-8">{date}</td>
                 <td class="py-1.5 px-2 text-xs font-semibold tabular-nums text-base-content text-right">
-                  {balance.toLocaleString()}
+                  {formatCurrency(balance, currency)}
                 </td>
                 <td
                   class={`py-1.5 px-2 text-xs font-semibold tabular-nums text-right ${changeData.className}`}
                 >
                   {changeData.display}
                 </td>
-                <td class="py-1.5 pl-2 pr-4 text-xs text-base-content/40 md:pr-6">
-                  {entry.notes || '—'}
+                <td class="py-1.5 pl-2 pr-4 text-xs text-base-content/40 text-right md:pr-6">
+                  {changeData.percent}
                 </td>
               </tr>
             );

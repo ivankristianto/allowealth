@@ -47,7 +47,7 @@ describe('AccountHistoryPartial', () => {
   });
 
   it('skips growth annotation when oldestBalance is zero', () => {
-    expect(content).toContain('oldestBalance === 0');
+    expect(content).toContain('oldestBalance !== 0');
   });
 
   it('renders growth annotation with period labels', () => {
