@@ -63,13 +63,11 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
   <!-- Backdrop with blur effect -->
   {
     backdropClose && (
-      <form
-        method="dialog"
+      <div
         class="modal-backdrop backdrop-blur-md bg-base-content/20"
         data-modal-backdrop
-      >
-        <button tabindex="-1">Close</button>
-      </form>
+        aria-hidden="true"
+      />
     )
   }
 
