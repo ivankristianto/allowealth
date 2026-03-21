@@ -91,12 +91,12 @@ const { id } = Astro.props;
           <Button
             type="button"
             variant="ghost"
-            className="flex-1 h-14 font-bold border-0"
+            className="flex-1 h-14 rounded-2xl border-0 font-bold"
             data-close-modal
           >
             Cancel
           </Button>
-          <Button type="submit" variant="primary" className="flex-[2] h-14 font-bold">
+          <Button type="submit" variant="primary" className="flex-[2] h-14 rounded-2xl font-bold">
             Save Payment Method
           </Button>
         </div>
@@ -184,7 +184,7 @@ const { id } = Astro.props;
           // Success
           addToast(isEdit ? 'Payment method updated!' : 'Payment method created!', 'success');
           form.reset();
-          modal.classList.remove('modal-open');
+          modal.close();
 
           // Reload page to show updated data
           window.location.reload();
@@ -225,7 +225,7 @@ const { id } = Astro.props;
         }
 
         errorEl?.classList.add('hidden');
-        modal.classList.add('modal-open');
+        if (!modal.open) modal.showModal();
       };
     });
   }

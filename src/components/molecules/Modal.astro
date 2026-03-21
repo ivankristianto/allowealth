@@ -23,7 +23,6 @@ interface Props {
   id: string;
   title?: string;
   ariaLabel?: string;
-  open?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   closable?: boolean;
   backdropClose?: boolean;
@@ -34,7 +33,6 @@ const {
   id,
   title = '',
   ariaLabel,
-  open = false,
   size = 'md',
   closable = true,
   backdropClose = true,
@@ -58,7 +56,7 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
   id={id}
   aria-labelledby={titleId}
   aria-label={resolvedAriaLabel}
-  class:list={['modal', open && 'modal-open', className]}
+  class:list={['modal', className]}
   data-modal
   data-backdrop-close={backdropClose ? 'true' : 'false'}
 >
@@ -122,90 +120,71 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
     MODAL_INITIAL_Y_OFFSET,
   } from '@/lib/animations';
 
-  // Track which modals have been initialized to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
 
   function initModal(modal: HTMLDialogElement) {
-    // Skip if already initialized
     if (initializedModals.has(modal)) return;
     initializedModals.add(modal);
 
     const backdropClose = modal.dataset.backdropClose === 'true';
-
-    // Check if user prefers reduced motion for accessibility
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let prefersReducedMotion = motionQuery.matches;
-
-    // Listen for runtime motion preference changes
-    const handleMotionPreferenceChange = (e: MediaQueryListEvent) => {
+    motionQuery.addEventListener('change', (e) => {
       prefersReducedMotion = e.matches;
-    };
-    motionQuery.addEventListener('change', handleMotionPreferenceChange);
+    });
 
-    // Get backdrop and content elements
     const getBackdrop = () => modal.querySelector('[data-modal-backdrop]') as HTMLElement | null;
     const getContent = () => modal.querySelector('[data-modal-content]') as HTMLElement | null;
 
-    // Track animation state to prevent overlapping animations
     let isAnimating = false;
 
-    // Animate backdrop enter
     const animateBackdropIn = async () => {
       const backdrop = getBackdrop();
       if (!backdrop) return;
-
       if (prefersReducedMotion) {
         backdrop.style.opacity = '1';
-      } else {
-        await animate(backdrop, { opacity: [0, 1] }, MODAL_ANIMATION_CONFIG.backdrop.options);
+        return;
       }
+      await animate(backdrop, { opacity: [0, 1] }, MODAL_ANIMATION_CONFIG.backdrop.options);
     };
 
-    // Animate content enter
     const animateContentIn = async () => {
       const content = getContent();
       if (!content) return;
-
       if (prefersReducedMotion) {
         content.style.opacity = '1';
         content.style.transform = '';
-      } else {
-        await animate(
-          content,
-          MODAL_ANIMATION_CONFIG.content.enter.keyframes,
-          MODAL_ANIMATION_CONFIG.content.enter.options
-        );
+        return;
       }
+      await animate(
+        content,
+        MODAL_ANIMATION_CONFIG.content.enter.keyframes,
+        MODAL_ANIMATION_CONFIG.content.enter.options
+      );
     };
 
-    // Animate content exit
     const animateContentOut = async () => {
       const content = getContent();
       if (!content) return;
-
       if (prefersReducedMotion) {
         content.style.opacity = '0';
         content.style.transform = `scale(${MODAL_INITIAL_SCALE}) translateY(${MODAL_INITIAL_Y_OFFSET}px)`;
-      } else {
-        await animate(
-          content,
-          MODAL_ANIMATION_CONFIG.content.exit.keyframes,
-          MODAL_ANIMATION_CONFIG.content.exit.options
-        );
+        return;
       }
+      await animate(
+        content,
+        MODAL_ANIMATION_CONFIG.content.exit.keyframes,
+        MODAL_ANIMATION_CONFIG.content.exit.options
+      );
     };
 
-    // Handle modal show (when modal opens)
     const handleShow = async () => {
       if (isAnimating) return;
       isAnimating = true;
 
-      // Set initial states before animation
       const backdrop = getBackdrop();
       const content = getContent();
-
       if (prefersReducedMotion) {
-        // Show immediately without animation
         if (backdrop) backdrop.style.opacity = '1';
         if (content) {
           content.style.opacity = '1';
@@ -217,41 +196,30 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
           content.style.opacity = '0';
           content.style.transform = `scale(${MODAL_INITIAL_SCALE}) translateY(${MODAL_INITIAL_Y_OFFSET}px)`;
         }
-
-        // Run both animations (they start simultaneously)
         await Promise.all([animateBackdropIn(), animateContentIn()]);
       }
 
       isAnimating = false;
     };
 
-    // Handle modal close (when modal closes)
     const handleClose = async (event: Event) => {
       if (isAnimating) return;
       isAnimating = true;
-
-      // Prevent default to allow animation to complete
       event.preventDefault();
 
       if (prefersReducedMotion) {
-        // Close immediately without animation
         modal.close();
       } else {
-        // Only animate content exit, backdrop closes instantly (no blur transition)
         await animateContentOut();
-
-        // Close the modal after animation completes
         modal.close();
       }
 
       isAnimating = false;
     };
 
-    // Listen for close event to reset modal state
     modal.addEventListener('close', () => {
       const backdrop = getBackdrop();
       const content = getContent();
-
       if (backdrop) backdrop.style.opacity = '';
       if (content) {
         content.style.opacity = '';
@@ -259,24 +227,20 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
       }
     });
 
-    // Listen for click events on the dialog to trigger show animation
-    // (using a mutation observer to detect when modal-open class is added)
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const isOpen = modal.classList.contains('modal-open');
-
-          if (isOpen && !isAnimating) {
-            // Modal is opening (modal-open class is the source of truth)
-            requestAnimationFrame(() => handleShow());
-          }
-        }
-      });
+    modal.addEventListener('toggle', (e) => {
+      const toggleEvent = e as unknown as { newState: string };
+      if (toggleEvent.newState === 'open' && !isAnimating) {
+        requestAnimationFrame(() => handleShow());
+      }
     });
 
-    observer.observe(modal, { attributes: true });
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.open && !isAnimating) {
+        e.preventDefault();
+        void handleClose(e);
+      }
+    });
 
-    // Handle backdrop click to close with animation
     if (backdropClose) {
       modal.addEventListener('click', (e) => {
         const rect = modal.getBoundingClientRect();
@@ -287,50 +251,30 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
           e.clientX <= rect.left + rect.width;
 
         if (!isInDialog && modal.open && !isAnimating) {
-          handleClose(e);
+          void handleClose(e);
         }
       });
     }
 
-    // Intercept form submissions (close button clicks)
     const closeForms = modal.querySelectorAll('form[method="dialog"]');
     closeForms.forEach((closeForm) => {
       closeForm.addEventListener('submit', (e: Event) => {
         if (modal.open && !isAnimating) {
-          handleClose(e);
+          void handleClose(e);
         }
       });
     });
-
-    // Cleanup
-    const cleanup = () => {
-      observer.disconnect();
-      motionQuery.removeEventListener('change', handleMotionPreferenceChange);
-    };
-
-    // Cleanup when modal is removed from DOM
-    const removalObserver = new MutationObserver(() => {
-      if (!document.contains(modal)) {
-        cleanup();
-        removalObserver.disconnect();
-      }
-    });
-
-    removalObserver.observe(document.body, { childList: true, subtree: true });
   }
 
-  // Initialize all modals on the page
   function initAllModals() {
     document.querySelectorAll<HTMLDialogElement>('dialog[data-modal]').forEach(initModal);
   }
 
-  // Initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAllModals);
   } else {
     initAllModals();
   }
 
-  // Re-initialize on Astro page transitions
   document.addEventListener('astro:page-load', initAllModals);
 </script>

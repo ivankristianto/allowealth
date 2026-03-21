@@ -25,7 +25,6 @@ import {
 export interface Props {
   id: string;
   mode?: 'create' | 'edit';
-  open?: boolean;
   values?: {
     id?: string;
     name?: string;
@@ -38,7 +37,7 @@ export interface Props {
   errors?: Record<string, string>;
 }
 
-const { id, mode = 'create', open = false, values = {}, errors = {} } = Astro.props;
+const { id, mode = 'create', values = {}, errors = {} } = Astro.props;
 
 const isEditMode = mode === 'edit';
 const title = isEditMode ? 'Edit Category' : 'Add Category';
@@ -53,7 +52,7 @@ import Button from '@/components/atoms/Button.astro';
 ---
 
 <div data-category-modal-container data-id={id} data-mode={mode} data-testid="category-modal">
-  <Modal id={id} open={open} size="md" closable={false} backdropClose={true}>
+  <Modal id={id} size="md" closable={false} backdropClose={true}>
     <!-- Custom header with icon -->
     <div slot="default" class="flex flex-col gap-6">
       <!-- Header section -->
@@ -272,7 +271,7 @@ import Button from '@/components/atoms/Button.astro';
           <Button
             type="button"
             variant="ghost"
-            className="col-span-1 h-14 font-bold border-0"
+            className="col-span-1 h-14 rounded-2xl border-0 font-bold"
             data-cancel
           >
             Cancel
@@ -280,7 +279,7 @@ import Button from '@/components/atoms/Button.astro';
           <Button
             type="submit"
             variant="primary"
-            className="col-span-2 h-14 font-bold"
+            className="col-span-2 h-14 rounded-2xl font-bold"
             data-testid="category-submit-btn"
           >
             <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
