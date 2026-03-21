@@ -206,6 +206,11 @@ const groupedSectionClass = 'rounded-3xl border border-base-300 bg-base-200/40 p
 const sectionEyebrowClass =
   'text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45';
 const sectionTitleClass = 'text-lg font-semibold text-base-content';
+const inviteMemberButtonClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm', 'md:btn-md'].includes(className))
+  .concat('border-0')
+  .join(' ');
 ---
 
 <ProtectedLayout title="Settings" currentPath={currentPath} subtitle="Manage your preferences">
@@ -257,7 +262,7 @@ const sectionTitleClass = 'text-lg font-semibold text-base-content';
                     <span class="min-w-0 flex-1">{item.label}</span>
                     <span
                       class:list={[
-                        'rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em]',
+                        'rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.18em]',
                         item.id === activeSection
                           ? 'bg-accent/15 text-accent'
                           : 'bg-base-200 text-base-content/40',
@@ -537,7 +542,9 @@ const sectionTitleClass = 'text-lg font-semibold text-base-content';
                       isAdmin && !demoMode && (
                         <Button
                           type="button"
-                          className={`${accentGhostBtn} w-full sm:w-auto`}
+                          variant="ghost"
+                          size="sm"
+                          className={`${inviteMemberButtonClassName} w-full sm:w-auto`}
                           onclick="document.getElementById('invite-member-modal')?.showModal()"
                         >
                           <UserPlus size={16} class="stroke-current" aria-hidden="true" />
@@ -762,8 +769,10 @@ const sectionTitleClass = 'text-lg font-semibold text-base-content';
                           are kept.
                         </p>
                       </div>
-                      <div class="alert alert-warning py-3 text-sm">
-                        <Info size={16} class="shrink-0" aria-hidden="true" />
+                      <div
+                        class="alert border border-accent/20 bg-accent/10 py-3 text-sm text-base-content"
+                      >
+                        <Info size={16} class="shrink-0 text-accent" aria-hidden="true" />
                         <span>This cannot be undone.</span>
                       </div>
                       <div

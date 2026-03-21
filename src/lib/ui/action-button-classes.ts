@@ -12,4 +12,4 @@ export const ghostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-11 min-w-11 gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
 
 export const accentGhostBtn =
-  'btn btn-ghost btn-sm md:btn-md min-h-11 min-w-11 gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
+  'btn btn-ghost btn-sm md:btn-md min-h-11 min-w-11 gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 active:bg-accent active:text-accent-content px-2 md:px-4 font-semibold';

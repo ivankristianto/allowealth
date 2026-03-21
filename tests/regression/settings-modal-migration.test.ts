@@ -71,6 +71,16 @@ describe('invite member modal refinement regressions', () => {
 
     expect(source).toContain('ariaLabel="Invite member"');
   });
+
+  it('uses an accent ghost action style with explicit active-state contrast', () => {
+    const actionClassSource = read('src/lib/ui/action-button-classes.ts');
+    const settingsSource = read('src/pages/settings/index.astro');
+
+    expect(actionClassSource).toContain('active:bg-accent');
+    expect(actionClassSource).toContain('active:text-accent-content');
+    expect(settingsSource).toContain('const inviteMemberButtonClassName = accentGhostBtn');
+    expect(settingsSource).toContain('variant="ghost"');
+  });
 });
 
 describe('diagnostics layout refinement regressions', () => {
@@ -105,6 +115,16 @@ describe('diagnostics layout refinement regressions', () => {
     expect(source).toContain('<footer');
     expect(source.indexOf('Last updated:')).toBeGreaterThan(
       source.indexOf('Environment Variables')
+    );
+  });
+});
+
+describe('settings data tab refinement regressions', () => {
+  it('uses accent-tinted warning styling for the clear-history callout', () => {
+    const source = read('src/pages/settings/index.astro');
+
+    expect(source).toContain(
+      'class="alert border border-accent/20 bg-accent/10 py-3 text-sm text-base-content"'
     );
   });
 });
