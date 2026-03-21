@@ -127,9 +127,19 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
     const backdropClose = modal.dataset.backdropClose === 'true';
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let prefersReducedMotion = motionQuery.matches;
-    motionQuery.addEventListener('change', (e) => {
-      prefersReducedMotion = e.matches;
-    });
+
+    const abortController = new AbortController();
+    const { signal } = abortController;
+
+    motionQuery.addEventListener(
+      'change',
+      (e) => {
+        prefersReducedMotion = e.matches;
+      },
+      { signal }
+    );
+
+    document.addEventListener('astro:before-swap', () => abortController.abort(), { once: true });
 
     const getBackdrop = () => modal.querySelector('[data-modal-backdrop]') as HTMLElement | null;
     const getContent = () => modal.querySelector('[data-modal-content]') as HTMLElement | null;
@@ -241,14 +251,16 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
 
     if (backdropClose) {
       modal.addEventListener('click', (e) => {
-        const rect = modal.getBoundingClientRect();
-        const isInDialog =
+        const content = getContent();
+        if (!content) return;
+        const rect = content.getBoundingClientRect();
+        const isInContent =
           rect.top <= e.clientY &&
           e.clientY <= rect.top + rect.height &&
           rect.left <= e.clientX &&
           e.clientX <= rect.left + rect.width;
 
-        if (!isInDialog && modal.open && !isAnimating) {
+        if (!isInContent && modal.open && !isAnimating) {
           void handleClose(e);
         }
       });

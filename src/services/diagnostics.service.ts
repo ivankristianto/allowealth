@@ -161,7 +161,7 @@ export class DiagnosticsService {
       vars.push({
         name,
         value: value || '(not set)',
-        isSet: value !== undefined,
+        isSet: Boolean(value),
         isSensitive: false,
       });
     }

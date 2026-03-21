@@ -27,8 +27,8 @@ Improve the settings page by fixing design system inconsistencies, rewriting the
 
 **InviteMemberModal rewrite:**
 
-- Use `closable={true}` so Modal renders the X close button.
-- Replace the cancel button with `<form method="dialog">` wrapping a ghost button, so Modal's animation interceptor handles the close. Move form reset and error/success message hide logic from the cancel click handler into the modal's `close` event listener, so cleanup runs regardless of how the modal is dismissed (X button, Escape, or Cancel).
+- Use `closable={false}` so Modal does not render the X close button (only Cancel, Escape key, and programmatic close are allowed).
+- Replace the cancel button with `<form method="dialog">` wrapping a ghost button, so Modal's animation interceptor handles the close. Move form reset and error/success message hide logic from the cancel click handler into the modal's `close` event listener, so cleanup runs regardless of how the modal is dismissed (Escape, Cancel, or programmatic close after success).
 - Replace the success-path `modal.classList.remove('modal-open')` with `modal.close()`.
 - Replace the actions row layout from `flex` with `grid grid-cols-3`: Cancel button is `col-span-1`, Send Invitation button is `col-span-2`. This satisfies the design system grid pattern requirement.
 - Remove the `window.openInviteMemberModal` global function — call `modal.showModal()` directly from the settings page script.
