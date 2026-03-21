@@ -46,11 +46,13 @@ export const GET: APIRoute = async (context) => {
 
     // Check if HTML rendering is requested
     if (render.wantsHtml()) {
+      const account = await accountService.findByIdIncludingClosed(id, auth.workspaceId);
       const container = await AstroContainer.create();
       const html = await container.renderToString(AccountHistoryPartial, {
         props: {
           entries: history,
           accountId: id,
+          currency: account.currency,
         },
       });
       return render.html(html);
