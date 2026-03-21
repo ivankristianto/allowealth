@@ -47,6 +47,9 @@ export const GET: APIRoute = async (context) => {
     // Check if HTML rendering is requested
     if (render.wantsHtml()) {
       const account = await accountService.findByIdIncludingClosed(id, auth.workspaceId);
+      if (!account) {
+        return render.error('Account not found', 404);
+      }
       const container = await AstroContainer.create();
       const html = await container.renderToString(AccountHistoryPartial, {
         props: {
