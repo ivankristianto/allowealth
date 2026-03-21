@@ -1,0 +1,275 @@
+---
+/**
+ * AccountTableRow Component
+ *
+ * Single account rendered as a table row (<tr>) inside AccountTable.
+ * Shows: name, type, category, owner, balance, last updated, actions.
+ *
+ * Mirrors AccountItemRow data but in columnar format.
+ * Non-matching currency rows get reduced opacity when dimmed.
+ */
+
+import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Clock } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
+import { formatCurrency } from '@/lib/formatting';
+import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  id: string;
+  name: string;
+  type: AccountType;
+  accountClass?: string;
+  ownerUserId?: string;
+  ownerName?: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  currency: Currency;
+  balance: number;
+  initialBalance?: number;
+  lastUpdated: Date;
+  isHistoricalView?: boolean;
+  isDimmed?: boolean;
+}
+
+const {
+  id,
+  name,
+  type,
+  accountClass,
+  ownerUserId = '',
+  ownerName,
+  categoryId = null,
+  categoryName = null,
+  currency,
+  balance,
+  lastUpdated,
+  isHistoricalView = false,
+  isDimmed = false,
+} = Astro.props;
+
+const typeLabel = ACCOUNT_TYPE_LABELS[type] || type;
+const categoryLabel = categoryName || typeLabel;
+const isDebt = accountClass === 'debt';
+const displayBalance = isDebt ? -Math.abs(balance) : balance;
+const formattedBalance = formatCurrency(displayBalance, currency);
+const lastUpdatedDate = new Date(lastUpdated);
+const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
+  month: 'short',
+  day: 'numeric',
+});
+const historyContainerId = `account-table-history-${id}`;
+const totalColumns = isHistoricalView ? 6 : 7;
+const mobileCategoryLabel = categoryName?.trim() || null;
+const mobileSecondaryMeta = [mobileCategoryLabel, ownerName].filter(Boolean).join(' | ');
+---
+
+<tr
+  class:list={[
+    'group border-b border-base-300 transition-colors hover:border-base-content/20 hover:bg-base-200/30',
+    !isHistoricalView && 'cursor-pointer',
+    isDimmed && 'opacity-50',
+  ]}
+  data-account-table-row={id}
+  data-account-row={!isHistoricalView ? id : undefined}
+  data-account-id={id}
+  data-account-name={name.toLowerCase()}
+  data-sort-balance={Math.abs(balance)}
+  data-sort-name={name.toLowerCase()}
+  data-sort-type={typeLabel.toLowerCase()}
+  data-sort-category={(categoryName || '').toLowerCase()}
+  data-sort-owner={(ownerName || '').toLowerCase()}
+  data-sort-updated={lastUpdatedDate.getTime()}
+>
+  <td class="px-2 py-2.5 pl-3 text-sm font-semibold text-base-content md:px-3 md:pl-5">
+    <div class="flex items-start gap-1.5">
+      {
+        !isHistoricalView && (
+          <button
+            type="button"
+            class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-transparent text-base-content/60 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
+            data-inline-history-toggle
+            data-account-id={id}
+            aria-controls={historyContainerId}
+            aria-expanded="false"
+            aria-label={`Toggle value history for ${name}`}
+          >
+            <ChevronDown
+              size={14}
+              class="stroke-base-content/30 transition-transform duration-200"
+              aria-hidden="true"
+              data-expand-chevron={id}
+            />
+          </button>
+        )
+      }
+      <div class="min-w-0 flex-1">
+        <a
+          href={`/accounts/${id}`}
+          class="block truncate transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
+          {name}
+        </a>
+        {
+          mobileSecondaryMeta && (
+            <div class="mt-1 truncate text-xs text-base-content/50 md:hidden">
+              {mobileSecondaryMeta}
+            </div>
+          )
+        }
+      </div>
+    </div>
+  </td>
+
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
+    <span class="block truncate">{typeLabel}</span>
+  </td>
+
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
+    <span class="block truncate">{categoryName || '—'}</span>
+  </td>
+
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
+    <span class="block truncate">{ownerName || '—'}</span>
+  </td>
+
+  <td
+    class:list={[
+      'px-2 py-2.5 text-right text-sm font-semibold tabular-nums md:px-3',
+      isDebt ? 'text-error' : 'text-base-content',
+    ]}
+    data-testid="account-balance"
+  >
+    <span class="block truncate">{formattedBalance}</span>
+  </td>
+
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
+    {formattedDate}
+  </td>
+
+  <td class="px-2 py-2.5 text-right text-xs text-base-content/50 md:hidden"
+    >Updated {formattedDate}</td
+  >
+
+  {
+    !isHistoricalView && (
+      <td class="px-2 py-2.5 text-right md:px-3">
+        <div class="inline-flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-accent/10 hover:text-accent"
+            aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
+            data-update-value-account={id}
+            data-account-name={name}
+            data-account-currency={currency}
+            data-account-balance={balance}
+            data-testid="account-update-value-btn"
+          >
+            <TrendingUp size={15} class="stroke-current" aria-hidden="true" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+            aria-label={`Edit ${name} details`}
+            data-edit-account={id}
+            data-account-name={name}
+            data-account-type={type}
+            data-account-category-id={categoryId || ''}
+            data-account-category-name={categoryLabel}
+            data-account-owner-id={ownerUserId}
+            data-account-currency={currency}
+            data-account-balance={balance}
+            data-testid="account-edit-btn"
+          >
+            <Pencil size={15} class="stroke-current" aria-hidden="true" />
+          </Button>
+
+          <div class="dropdown dropdown-end" data-dropdown-menu>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              shape="square"
+              className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+              tabindex={0}
+              aria-label={`More actions for ${name}`}
+              aria-haspopup="menu"
+            >
+              <Ellipsis size={15} class="stroke-current" aria-hidden="true" />
+            </Button>
+
+            <ul
+              tabindex={0}
+              class="dropdown-content z-50 menu w-48 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+              role="menu"
+            >
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 rounded-xl"
+                  aria-label={`View ${name} timeline`}
+                  data-history-account={id}
+                  data-account-name={name}
+                  data-account-type={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-history-btn"
+                >
+                  <Clock size={16} class="stroke-current" aria-hidden="true" />
+                  View Timeline
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 rounded-xl text-warning"
+                  aria-label={`Deactivate ${name}`}
+                  data-close-account={id}
+                  data-account-name={name}
+                  data-account-type={categoryLabel}
+                  data-account-currency={currency}
+                  data-account-balance={balance}
+                  data-testid="account-close-btn"
+                >
+                  <PowerOff size={16} class="stroke-current" aria-hidden="true" />
+                  Deactivate
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </td>
+    )
+  }
+</tr>
+
+{
+  !isHistoricalView && (
+    <tr
+      id={historyContainerId}
+      class="hidden bg-base-200/40"
+      data-history-wrapper
+      data-account-id={id}
+    >
+      <td colspan={totalColumns} class="p-0">
+        <div
+          class="border-l-2 border-base-300 bg-base-200/30"
+          data-history-container
+          data-account-id={id}
+          role="region"
+          aria-label={`Value history for ${name}`}
+          aria-live="polite"
+        />
+      </td>
+    </tr>
+  )
+}

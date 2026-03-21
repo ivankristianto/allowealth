@@ -41,7 +41,7 @@ export interface SocialLink {
 
 export interface ShowcaseItem {
   id: string;
-  icon: string; // Lucide icon name
+  spotIllustration: 'dashboard' | 'transactions' | 'budget' | 'accounts' | 'reports';
   iconColor: string; // DaisyUI color class
   iconBg: string; // DaisyUI background class
   title: string;
@@ -58,7 +58,7 @@ export interface ShowcaseItem {
 
 export interface FeatureGridItem {
   id: string;
-  icon: string; // Lucide icon name
+  spotIllustration: 'fast' | 'secure' | 'multicultural' | 'households' | 'opensource' | 'forecast';
   iconColor: string;
   iconBg: string;
   title: string;
@@ -155,7 +155,7 @@ export const legalLinks: FooterLink[] = [
 export const showcaseItems: ShowcaseItem[] = [
   {
     id: 'dashboard',
-    icon: 'LayoutDashboard',
+    spotIllustration: 'dashboard',
     iconColor: 'text-primary',
     iconBg: 'bg-primary/10',
     title: 'Shared clarity',
@@ -171,7 +171,7 @@ export const showcaseItems: ShowcaseItem[] = [
   },
   {
     id: 'transactions',
-    icon: 'ArrowLeftRight',
+    spotIllustration: 'transactions',
     iconColor: 'text-accent',
     iconBg: 'bg-accent/10',
     title: 'Track spending',
@@ -188,7 +188,7 @@ export const showcaseItems: ShowcaseItem[] = [
   },
   {
     id: 'budget',
-    icon: 'PiggyBank',
+    spotIllustration: 'budget',
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
     title: 'Plan your month,',
@@ -204,7 +204,7 @@ export const showcaseItems: ShowcaseItem[] = [
   },
   {
     id: 'accounts',
-    icon: 'Landmark',
+    spotIllustration: 'accounts',
     iconColor: 'text-warning',
     iconBg: 'bg-warning/10',
     title: 'All your accounts,',
@@ -225,7 +225,7 @@ export const showcaseItems: ShowcaseItem[] = [
   },
   {
     id: 'reports',
-    icon: 'ChartColumn',
+    spotIllustration: 'reports',
     iconColor: 'text-info',
     iconBg: 'bg-info/10',
     title: 'See the',
@@ -248,7 +248,7 @@ export const showcaseItems: ShowcaseItem[] = [
 export const featureGridItems: FeatureGridItem[] = [
   {
     id: 'fast',
-    icon: 'Zap',
+    spotIllustration: 'fast',
     iconColor: 'text-white',
     iconBg: 'bg-white/10',
     title: 'Fast',
@@ -259,7 +259,7 @@ export const featureGridItems: FeatureGridItem[] = [
   },
   {
     id: 'secure',
-    icon: 'Shield',
+    spotIllustration: 'secure',
     iconColor: 'text-warning',
     iconBg: 'bg-warning/10',
     title: 'Secure',
@@ -269,7 +269,7 @@ export const featureGridItems: FeatureGridItem[] = [
   },
   {
     id: 'multi-currency',
-    icon: 'Globe',
+    spotIllustration: 'multicultural',
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
     title: 'Multi-Currency',
@@ -279,7 +279,7 @@ export const featureGridItems: FeatureGridItem[] = [
   },
   {
     id: 'for-everyone',
-    icon: 'Users',
+    spotIllustration: 'households',
     iconColor: 'text-primary',
     iconBg: 'bg-primary/10',
     title: 'Built for Households & Communities',
@@ -291,7 +291,7 @@ export const featureGridItems: FeatureGridItem[] = [
   },
   {
     id: 'open-source',
-    icon: 'Lock',
+    spotIllustration: 'opensource',
     iconColor: 'text-accent',
     iconBg: 'bg-accent/10',
     title: 'You Own Your Data',
@@ -301,7 +301,7 @@ export const featureGridItems: FeatureGridItem[] = [
   },
   {
     id: 'forecast',
-    icon: 'TrendingUp',
+    spotIllustration: 'forecast',
     iconColor: 'text-success',
     iconBg: 'bg-success/10',
     title: 'Forecast',
@@ -319,27 +319,27 @@ export const faqItems: FaqItem[] = [
   {
     question: 'How is Allowealth different from a spreadsheet?',
     answer:
-      'Spreadsheets are powerful but high-maintenance. Allowealth gives you a structured, mobile-friendly workspace designed specifically for money. It handles multi-currency, recurring transactions, and shared access much more elegantly than a row of cells.',
+      'Spreadsheets are powerful but a pain to maintain. One wrong formula and your entire budget is toast. Allowealth handles the boring stuff—currency conversions, recurring transactions, shared access—so you can focus on actually managing your money instead of debugging formulas.',
   },
   {
     question: 'Can I manage money with my partner or group?',
     answer:
-      'Yes! Allowealth is built for collaboration. You can invite your partner, family members, or community leads to a shared workspace where everyone can see the same data in real-time.',
+      "Absolutely! That's literally what we're built for. Invite your partner, roommates, or family. Everyone sees the same numbers in real-time, so no more 'Wait, did you pay the electric bill?' text chains at midnight.",
   },
   {
     question: 'Is my financial data secure?',
     answer:
-      'Security is our priority. Your data is encrypted, and we never sell your information. For maximum privacy, you can also choose to self-host Allowealth on your own infrastructure.',
+      "Yes. Your data is encrypted, and we don't sell your info to advertisers (because that's creepy). Want maximum privacy? Self-host it on your own server. Your data, your rules—always.",
   },
   {
     question: 'Do I have to pay to use Allowealth?',
     answer:
-      'The core version of Allowealth is free and open-source. You can self-host it for free forever. We offer a hosted SaaS version for a small monthly fee if you prefer convenience, automatic backups, and managed updates.',
+      "Nope! The core app is free and open-source. Self-host it forever at zero cost. We do offer a hosted version for a small monthly fee if you'd rather we handle the technical stuff. Your choice.",
   },
   {
     question: 'What currencies do you support?',
     answer:
-      'Allowealth supports all major global currencies, including IDR, USD, EUR, and more. You can track accounts in different currencies and see your total net worth in your preferred base currency.',
+      'All the major ones—IDR, USD, EUR, GBP, JPY, and more. Track accounts in different currencies and see your total net worth converted to whatever currency you prefer. No more mental math required.',
   },
 ];
 
@@ -349,15 +349,18 @@ export const faqItems: FaqItem[] = [
 
 export const heroContent = {
   badge: 'For Households & Communities',
-  title: 'Know where every dollar goes.',
-  titleHighlightPrefix: 'Own where ',
-  titleHighlight: "you're headed.",
+  typingHeadlines: [
+    'Where did all the money go?',
+    'Who paid for groceries again?',
+    'Are we even close to budget?',
+  ],
+  titleSuffix: 'Now you know.',
   description:
-    'Stop guessing where it all went. Allowealth gives households and families a clear, shared view of their money — so you can plan with confidence, not anxiety.',
-  ctaGuest: 'Try the Demo',
+    'Stop playing detective with your own bank account. Allowealth shows you exactly where your household money goes—so you can stop worrying and start planning.',
+  ctaGuest: 'See it in action',
   ctaGuestHref: DEMO_URL,
   ctaLoggedIn: 'Go to Dashboard',
-  ctaSecondary: 'Your data, your rules',
+  ctaSecondary: 'Self-host for free',
   ctaSecondaryHref: SELF_HOST_DOCS_URL,
 };
 
@@ -367,6 +370,6 @@ export const heroContent = {
 
 export const brandContent = {
   name: 'allowealth',
-  tagline: 'A shared money operating system for households and small communities.',
-  copyright: `© ${new Date().getFullYear()} allowealth. Allow your wealth to grow`,
+  tagline: "Stop guessing where your money went. Start knowing where it's going.",
+  copyright: `© ${new Date().getFullYear()} allowealth. Built for households who actually want to see their money.`,
 };

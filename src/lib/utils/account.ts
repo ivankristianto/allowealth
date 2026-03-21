@@ -320,6 +320,63 @@ export function calculateGroupTotalsByCurrency(
   );
 }
 
+export interface ClassAllocationResult {
+  percentage: number;
+  onTarget: boolean;
+}
+
+export function calculateClassAllocation(
+  accounts: AccountOutput[],
+  currency: Currency
+): Record<AccountClass, ClassAllocationResult> {
+  let liquidTotal = 0;
+  let nonLiquidTotal = 0;
+  let debtTotal = 0;
+
+  for (const account of accounts) {
+    if (account.currency !== currency) continue;
+
+    const balance = parseFloat(account.balance || '0');
+    if (isNaN(balance)) continue;
+
+    if (account.account_class === 'debt') {
+      debtTotal += Math.abs(balance);
+      continue;
+    }
+
+    if (balance <= 0) continue;
+
+    if (account.account_class === 'liquid') {
+      liquidTotal += balance;
+      continue;
+    }
+
+    nonLiquidTotal += balance;
+  }
+
+  const nonDebtTotal = liquidTotal + nonLiquidTotal;
+
+  const liquidPercentage = nonDebtTotal > 0 ? Math.round((liquidTotal / nonDebtTotal) * 100) : 0;
+  const nonLiquidPercentage =
+    nonDebtTotal > 0 ? Math.round((nonLiquidTotal / nonDebtTotal) * 100) : 0;
+  const debtPercentage = nonDebtTotal > 0 ? Math.round((debtTotal / nonDebtTotal) * 100) : 0;
+
+  return {
+    liquid: {
+      percentage: liquidPercentage,
+      onTarget: liquidPercentage >= 30,
+    },
+    non_liquid: {
+      percentage: nonLiquidPercentage,
+      onTarget: true,
+    },
+    debt: {
+      percentage: debtPercentage,
+      onTarget: debtPercentage <= 10,
+    },
+  };
+}
+
 export function calculateGroupTotals(accounts: AccountOutput[]): AccountGroupTotals {
   return accounts.reduce(
     (acc, account) => {

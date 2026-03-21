@@ -39,7 +39,7 @@ describe('deployment topology', () => {
       .sort();
     const headersFile = readFileSync('apps/site/public/_headers', 'utf-8');
 
-    expect(pages).toEqual(['index.astro', 'privacy.astro', 'terms.astro']);
+    expect(pages).toEqual(['404.astro', 'index.astro', 'privacy.astro', 'terms.astro']);
     expect(pages).not.toContain('login.astro');
     expect(pages).not.toContain('dashboard.astro');
 
