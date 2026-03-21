@@ -13,25 +13,9 @@ import {
   calculateGroupTotalsByCurrency,
   groupAccountsByClass,
 } from '@/lib/utils/account';
-import {
-  ACCOUNT_CLASS_LABELS,
-  ACCOUNT_TYPE_LABELS,
-  type AccountClass,
-  type AccountOutput,
-} from '@/lib/types/account';
+import { ACCOUNT_CLASS_LABELS, type AccountClass, type AccountOutput } from '@/lib/types/account';
 import type { Currency } from '@/lib/constants/currency';
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  Ellipsis,
-  Eye,
-  Pencil,
-  PowerOff,
-  TrendingUp,
-  Wallet,
-} from '@lucide/astro';
-import Button from '@/components/atoms/Button.astro';
+import { ChevronDown, ChevronUp, ChevronsUpDown, Wallet } from '@lucide/astro';
 
 const ACCOUNT_CLASS_SUBTITLES: Record<AccountClass, string> = {
   liquid: 'Cash & equivalents',
@@ -93,13 +77,6 @@ const {
   isHistoricalView = false,
 } = Astro.props;
 
-function formatShortDate(value: Date): string {
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 function formatGroupTotal(amount: number, currency: Currency, groupClass: AccountClass): string {
   return formatCurrency(groupClass === 'debt' ? -Math.abs(amount) : amount, currency);
 }
@@ -141,7 +118,7 @@ const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} just
   ) : (
     <div class="rounded-card border border-base-300 bg-base-100 shadow-sm" data-account-table>
       <div class="overflow-hidden">
-        <div class="hidden overflow-x-auto md:block">
+        <div class="overflow-x-auto">
           <table class="w-full border-collapse text-left">
             <thead>
               <tr class="border-b border-base-300 bg-base-200/50">
@@ -345,247 +322,6 @@ const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} just
               ))}
             </tbody>
           </table>
-        </div>
-
-        <div class="md:hidden">
-          {groups.map((group) => (
-            <>
-              <div
-                class={`border-b border-base-300 px-3 py-3 ${group.colors.band}`}
-                data-group-header={group.classKey}
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex items-start gap-3">
-                    <span class={`mt-0.5 h-8 w-1 rounded-full ${group.colors.rail}`} />
-                    <div>
-                      <div
-                        class={`text-sm font-bold uppercase tracking-widest ${group.colors.label}`}
-                      >
-                        {group.label}
-                      </div>
-                      <div class={`mt-0.5 text-xs ${group.colors.meta}`}>{group.subtitle}</div>
-                    </div>
-                  </div>
-
-                  {group.allocation.percentage > 0 && (
-                    <span
-                      class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badge}`}
-                    >
-                      {group.allocation.percentage}% of {primaryCurrency}
-                      {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
-                    </span>
-                  )}
-                </div>
-
-                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-base-content/70">
-                  <span>
-                    {group.accounts.length} {group.accounts.length === 1 ? 'account' : 'accounts'}
-                  </span>
-                  {group.totals.map((total) => (
-                    <span>{formatGroupTotal(total.amount, total.currency, group.classKey)}</span>
-                  ))}
-                </div>
-              </div>
-
-              {group.accounts.map((account) => {
-                const rawBalance = Number.parseFloat(account.balance || '0');
-                const balance = Number.isFinite(rawBalance) ? rawBalance : 0;
-                const isDebt = account.account_class === 'debt';
-                const displayBalance = isDebt ? -Math.abs(balance) : balance;
-                const isDimmed = account.currency !== primaryCurrency;
-                const typeLabel = ACCOUNT_TYPE_LABELS[account.type] || account.type;
-                const categoryLabel = account.category_name?.trim() || null;
-                const secondaryMeta = [categoryLabel, account.owner_name]
-                  .filter(Boolean)
-                  .join(' | ');
-                const formattedDate = formatShortDate(new Date(account.last_updated));
-
-                return (
-                  <div
-                    class:list={['border-b border-base-300 px-3 py-3', isDimmed && 'opacity-50']}
-                    data-account-table-row={account.id}
-                    data-account-name={account.name.toLowerCase()}
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0 flex-1">
-                        <a
-                          href={`/accounts/${account.id}`}
-                          class="block truncate text-sm font-semibold text-base-content underline decoration-base-content/20 underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
-                        >
-                          {account.name}
-                        </a>
-                        <div class="mt-1 text-xs text-base-content/60">{typeLabel}</div>
-                        {secondaryMeta && (
-                          <div class="mt-1 text-xs text-base-content/50">{secondaryMeta}</div>
-                        )}
-                      </div>
-
-                      {!isHistoricalView && (
-                        <div class="dropdown dropdown-end shrink-0" data-dropdown-menu>
-                          <button
-                            type="button"
-                            tabindex={0}
-                            class="btn btn-ghost btn-xs btn-square min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
-                            aria-label={`Actions for ${account.name}`}
-                            aria-haspopup="menu"
-                          >
-                            <Ellipsis size={16} class="stroke-current" aria-hidden="true" />
-                          </button>
-
-                          <ul
-                            tabindex={0}
-                            class="dropdown-content z-50 menu w-48 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
-                            role="menu"
-                          >
-                            <li role="none">
-                              <button
-                                type="button"
-                                role="menuitem"
-                                class="flex items-center gap-2 rounded-xl"
-                                aria-label={`Update ${account.name} balance`}
-                                data-update-value-account={account.id}
-                                data-account-name={account.name}
-                                data-account-currency={account.currency}
-                                data-account-balance={balance}
-                                data-testid="account-update-value-btn"
-                              >
-                                <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
-                                Update Balance
-                              </button>
-                            </li>
-                            <li role="none">
-                              <button
-                                type="button"
-                                role="menuitem"
-                                class="flex items-center gap-2 rounded-xl"
-                                aria-label={`Edit ${account.name} details`}
-                                data-edit-account={account.id}
-                                data-account-name={account.name}
-                                data-account-type={account.type}
-                                data-account-category-id={account.category_id || ''}
-                                data-account-category-name={categoryLabel}
-                                data-account-owner-id={account.created_by_user_id || ''}
-                                data-account-currency={account.currency}
-                                data-account-balance={balance}
-                                data-testid="account-edit-btn"
-                              >
-                                <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                                Edit Details
-                              </button>
-                            </li>
-                            <li role="none">
-                              <button
-                                type="button"
-                                role="menuitem"
-                                class="flex items-center gap-2 rounded-xl"
-                                aria-label={`View ${account.name} timeline`}
-                                data-history-account={account.id}
-                                data-account-name={account.name}
-                                data-account-type={categoryLabel}
-                                data-account-currency={account.currency}
-                                data-account-balance={balance}
-                                data-testid="account-history-btn"
-                              >
-                                <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
-                                View Timeline
-                              </button>
-                            </li>
-                            <li role="none">
-                              <a
-                                href={`/accounts/${account.id}`}
-                                role="menuitem"
-                                class="flex items-center gap-2 rounded-xl"
-                                aria-label={`View ${account.name} details`}
-                              >
-                                <Eye size={16} class="stroke-current" aria-hidden="true" />
-                                Details
-                              </a>
-                            </li>
-                            <li role="none">
-                              <button
-                                type="button"
-                                role="menuitem"
-                                class="flex items-center gap-2 rounded-xl text-warning"
-                                aria-label={`Deactivate ${account.name}`}
-                                data-close-account={account.id}
-                                data-account-name={account.name}
-                                data-account-type={categoryLabel}
-                                data-account-currency={account.currency}
-                                data-account-balance={balance}
-                                data-testid="account-close-btn"
-                              >
-                                <PowerOff size={16} class="stroke-current" aria-hidden="true" />
-                                Deactivate
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    <div class="mt-3 flex items-center justify-between gap-3">
-                      <div>
-                        <div
-                          class:list={[
-                            'text-sm font-semibold tabular-nums',
-                            isDebt ? 'text-error' : 'text-base-content',
-                          ]}
-                        >
-                          {formatCurrency(displayBalance, account.currency)}
-                        </div>
-                        <div class="mt-1 text-xs text-base-content/50">Updated {formattedDate}</div>
-                      </div>
-
-                      {isHistoricalView && (
-                        <a
-                          href={`/accounts/${account.id}`}
-                          class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-widest text-base-content/50 transition-colors hover:bg-base-200 hover:text-accent"
-                          aria-label={`View ${account.name} details`}
-                        >
-                          <Eye size={14} class="stroke-current" aria-hidden="true" />
-                          Details
-                        </a>
-                      )}
-
-                      {!isHistoricalView && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="min-h-10 rounded-xl px-3 text-xs font-bold uppercase tracking-widest text-base-content/60 hover:border-accent/30 hover:bg-accent/10 hover:text-accent"
-                          aria-label={`Toggle inline history for ${account.name}`}
-                          aria-controls={`account-table-mobile-history-${account.id}`}
-                          aria-expanded="false"
-                          data-inline-history-toggle
-                          data-history-account={account.id}
-                        >
-                          History
-                        </Button>
-                      )}
-                    </div>
-
-                    {!isHistoricalView && (
-                      <div
-                        id={`account-table-mobile-history-${account.id}`}
-                        class="hidden"
-                        data-history-wrapper
-                        data-account-id={account.id}
-                      >
-                        <div
-                          class="mt-3 border-l-2 border-base-300 bg-base-200/30"
-                          data-history-container
-                          data-account-id={account.id}
-                          role="region"
-                          aria-label={`Value history for ${account.name}`}
-                          aria-live="polite"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          ))}
         </div>
       </div>
     </div>

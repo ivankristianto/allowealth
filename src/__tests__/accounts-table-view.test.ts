@@ -13,7 +13,7 @@ describe('accounts table view integration wiring', () => {
       "const CLASS_ORDER: AccountClass[] = ['liquid', 'debt', 'non_liquid'];"
     );
     expect(tableSource).toContain('data-group-header={group.classKey}');
-    expect(tableSource).toContain('data-account-table-row={account.id}');
+    expect(tableSource).toContain('<AccountTableRow');
   });
 
   it('exposes all row sort attributes used by the table client', () => {

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
-const normalize = (value: string) => value.replace(/\s+/g, ' ');
-
 describe('AccountTable', () => {
   it('renders debt group totals as negative values', () => {
     const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
@@ -23,14 +21,14 @@ describe('AccountTable', () => {
     expect(content).toContain('text-info');
   });
 
-  it('includes on-target badge markers in desktop and mobile allocation badges', () => {
+  it('includes on-target badge markers in allocation badges', () => {
     const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
 
     expect(content).toContain('&check;');
     expect(content).toContain('{group.allocation.onTarget &&');
 
     const onTargetMatches = content.match(/group\.allocation\.onTarget/g) ?? [];
-    expect(onTargetMatches.length).toBeGreaterThanOrEqual(2);
+    expect(onTargetMatches.length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders sortable desktop headers as real buttons while keeping sort metadata on the header cells', () => {
@@ -65,35 +63,10 @@ describe('AccountTable', () => {
     expect(content).toContain('focus-visible:outline-accent');
   });
 
-  it('renders mobile secondary metadata with an optional category instead of falling back to type', () => {
-    const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
-    const normalized = normalize(content);
-
-    expect(content).not.toContain('const categoryLabel = account.category_name || typeLabel;');
-    expect(normalized).toContain(
-      normalize(`
-        const categoryLabel = account.category_name?.trim() || null;
-        const secondaryMeta = [categoryLabel, account.owner_name]
-          .filter(Boolean)
-          .join(' | ');
-      `)
-    );
-    expect(normalized).toContain(
-      normalize(`
-        {secondaryMeta && (
-          <div class="mt-1 text-xs text-base-content/50">{secondaryMeta}</div>
-        )}
-      `)
-    );
-  });
-
-  it('renders inline history controls for mobile table cards', () => {
+  it('does not render a separate mobile card fallback', () => {
     const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
 
-    expect(content).toContain('data-inline-history-toggle');
-    expect(content).toContain('account-table-mobile-history-');
-    expect(content).toContain('data-history-wrapper');
-    expect(content).toContain('aria-controls={`account-table-mobile-history-${account.id}`}');
-    expect(content).toContain('id={`account-table-mobile-history-${account.id}`}');
+    expect(content).not.toContain('md:hidden');
+    expect(content).not.toContain('account-table-mobile-history-');
   });
 });
