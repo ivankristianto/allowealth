@@ -103,7 +103,7 @@ const buttonVariantMap: Record<
       <Button
         type="button"
         variant="ghost"
-        className="flex-1 h-14 font-bold border-0"
+        className="flex-1 h-14 rounded-2xl border-0 font-bold"
         data-confirm-cancel
       >
         {cancelLabel}
@@ -111,7 +111,7 @@ const buttonVariantMap: Record<
       <Button
         type="button"
         variant={buttonVariantMap[confirmVariant]}
-        className="flex-1 h-14 font-bold"
+        className="flex-1 h-14 rounded-2xl font-bold"
         data-confirm-action
         data-loading-text={confirmLoadingLabel}
         data-testid={confirmTestId || undefined}

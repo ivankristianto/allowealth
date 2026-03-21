@@ -22,16 +22,12 @@ const { id } = Astro.props;
 ---
 
 <div data-invite-member-modal data-id={id}>
-  <Modal id={id} size="md" closable={false} backdropClose={true}>
-    <div slot="default" class="flex flex-col gap-6">
-      <!-- Header section -->
+  <Modal id={id} size="md" closable={false} backdropClose={true} ariaLabel="Invite member">
+    <div class="flex flex-col gap-6">
       <div class="flex items-center gap-4">
-        <!-- Icon -->
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
+        <div class="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center">
           <UserPlus size={24} class="stroke-current text-accent" aria-hidden="true" />
         </div>
-
-        <!-- Title and description -->
         <div class="flex-1">
           <h2
             class="text-2xl font-bold tracking-tight text-primary leading-none"
@@ -45,7 +41,6 @@ const { id } = Astro.props;
         </div>
       </div>
 
-      <!-- Form -->
       <form id={`${id}-form`} data-invite-form class="flex flex-col gap-5">
         <div class="form-control">
           <Label htmlFor={`${id}-email`} required>Email Address</Label>
@@ -76,7 +71,6 @@ const { id } = Astro.props;
           </p>
         </div>
 
-        <!-- Error message -->
         <div
           id={`${id}-error`}
           class="hidden alert alert-error text-sm rounded-2xl"
@@ -86,7 +80,6 @@ const { id } = Astro.props;
         >
         </div>
 
-        <!-- Success message -->
         <div
           id={`${id}-success`}
           class="hidden alert alert-success text-sm rounded-2xl"
@@ -95,22 +88,28 @@ const { id } = Astro.props;
           data-form-success
         >
         </div>
-
-        <!-- Actions -->
-        <div class="flex gap-4 pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            className="flex-1 h-14 font-bold border-0"
-            data-close-modal
-          >
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" className="flex-[2] h-14 font-bold">
-            Send Invitation
-          </Button>
-        </div>
       </form>
+    </div>
+
+    <div slot="actions" class="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2">
+      <form method="dialog">
+        <Button
+          type="submit"
+          variant="ghost"
+          className="h-14 w-full rounded-2xl border-0 font-bold"
+        >
+          Cancel
+        </Button>
+      </form>
+      <Button
+        type="submit"
+        variant="primary"
+        form={`${id}-form`}
+        className="h-14 w-full rounded-2xl font-bold"
+        data-form-submit
+      >
+        Send Invitation
+      </Button>
     </div>
   </Modal>
 </div>
@@ -118,8 +117,8 @@ const { id } = Astro.props;
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { setButtonLoading } from '@/lib/client-utils';
 
-  // Track initialized containers
   const initializedContainers = new WeakSet<Element>();
 
   function initInviteMemberModals() {
@@ -132,36 +131,26 @@ const { id } = Astro.props;
 
       const modal = document.getElementById(id) as HTMLDialogElement | null;
       const form = container.querySelector('[data-invite-form]') as HTMLFormElement | null;
-      const errorEl = container.querySelector('[data-form-error]');
-      const successEl = container.querySelector('[data-form-success]');
+      const errorEl = container.querySelector('[data-form-error]') as HTMLElement | null;
+      const successEl = container.querySelector('[data-form-success]') as HTMLElement | null;
 
       if (!modal || !form) return;
 
-      // Handle cancel button
-      const cancelBtn = container.querySelector('[data-close-modal]');
-      cancelBtn?.addEventListener('click', () => {
+      modal.addEventListener('close', () => {
         form.reset();
         errorEl?.classList.add('hidden');
         successEl?.classList.add('hidden');
-        modal.close();
       });
 
-      // Handle form submission
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-        const originalText = submitBtn?.textContent || 'Send Invitation';
+        const submitBtn = modal.querySelector('[data-form-submit]') as HTMLButtonElement | null;
 
-        // Clear messages
         errorEl?.classList.add('hidden');
         successEl?.classList.add('hidden');
 
-        // Show loading state
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Sending...';
-        }
+        if (submitBtn) setButtonLoading(submitBtn, true);
 
         try {
           const formData = new FormData(form);
@@ -171,10 +160,7 @@ const { id } = Astro.props;
           const response = await fetch('/api/workspace/invitations', {
             method: 'POST',
             credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...getCsrfHeaders(),
-            },
+            headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
             body: JSON.stringify({ email, role }),
           });
 
@@ -184,24 +170,17 @@ const { id } = Astro.props;
             throw new Error(result.error?.message || 'Failed to send invitation');
           }
 
-          // Success
           if (successEl) {
-            successEl.textContent = `Invitation sent to ${email}! They will receive an email with instructions to join.`;
+            successEl.textContent = `Invitation sent to ${email}!`;
             successEl.classList.remove('hidden');
           }
-          addToast('Invitation sent successfully!', 'success');
 
-          // Reset form but keep modal open to show success
+          addToast('Invitation sent successfully!', 'success');
           form.reset();
 
-          // Dispatch event to refresh invitations list
           document.dispatchEvent(new CustomEvent('invitation:created'));
 
-          // Close modal after a delay
-          setTimeout(() => {
-            successEl?.classList.add('hidden');
-            modal.classList.remove('modal-open');
-          }, 2000);
+          setTimeout(() => modal.close(), 2000);
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Failed to send invitation';
           if (errorEl) {
@@ -209,30 +188,17 @@ const { id } = Astro.props;
             errorEl.classList.remove('hidden');
           }
         } finally {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-          }
+          if (submitBtn) setButtonLoading(submitBtn, false);
         }
       });
-
-      // Expose function to open modal
-      (window as any).openInviteMemberModal = () => {
-        form.reset();
-        errorEl?.classList.add('hidden');
-        successEl?.classList.add('hidden');
-        modal.classList.add('modal-open');
-      };
     });
   }
 
-  // Initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initInviteMemberModals);
   } else {
     initInviteMemberModals();
   }
 
-  // Re-initialize on Astro page transitions
   document.addEventListener('astro:page-load', initInviteMemberModals);
 </script>

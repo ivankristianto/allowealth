@@ -22,6 +22,8 @@ import { getDatabaseConfig } from '@/db/config';
 export class DiagnosticsService {
   constructor(private db: IDatabase) {}
 
+  private static readonly HIDDEN_ENV_VARS = new Set(['DATABASE_URL', 'UPSTASH_REDIS_REST_URL']);
+
   /**
    * Get runtime environment information
    */
@@ -127,7 +129,7 @@ export class DiagnosticsService {
   }
 
   /**
-   * Get environment variables (sanitized)
+   * Get environment variables (insensitive only)
    */
   getEnvironmentVariables(): EnvironmentVariable[] {
     const vars: EnvironmentVariable[] = [];
@@ -150,18 +152,17 @@ export class DiagnosticsService {
     for (const name of varsToShow) {
       const value = getEnv(name);
       const isSensitive = SENSITIVE_PATTERNS.some((pattern) => pattern.test(name));
-      const isDatabaseUrl = name === 'DATABASE_URL';
+      const shouldHide = isSensitive || DiagnosticsService.HIDDEN_ENV_VARS.has(name);
+
+      if (shouldHide) {
+        continue;
+      }
 
       vars.push({
         name,
-        value:
-          isDatabaseUrl && value
-            ? this.sanitizeDbUrl(value)
-            : isSensitive && value
-              ? this.maskValue(value)
-              : value || '(not set)',
-        isSet: value !== undefined,
-        isSensitive: isSensitive || isDatabaseUrl,
+        value: value || '(not set)',
+        isSet: Boolean(value),
+        isSensitive: false,
       });
     }
 
@@ -272,15 +273,5 @@ export class DiagnosticsService {
     } catch {
       return url;
     }
-  }
-
-  /**
-   * Mask sensitive value (show first and last 4 chars)
-   */
-  private maskValue(value: string): string {
-    if (value.length <= 8) {
-      return '***';
-    }
-    return `${value.substring(0, 4)}...${value.substring(value.length - 4)}`;
   }
 }
