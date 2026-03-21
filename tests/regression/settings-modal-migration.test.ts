@@ -4,6 +4,12 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
+const readTemplate = (path: string) => {
+  const source = read(path);
+  const parts = source.split('---');
+
+  return parts.length >= 3 ? parts.slice(2).join('---') : source;
+};
 
 function expectInAscendingOrder(source: string, markers: string[]) {
   let previousIndex = -1;
@@ -80,7 +86,7 @@ describe('diagnostics layout refinement regressions', () => {
   });
 
   it('renders summary-first diagnostics structure in the approved order', () => {
-    const source = read('src/components/organisms/DiagnosticsDisplay.astro');
+    const source = readTemplate('src/components/organisms/DiagnosticsDisplay.astro');
 
     expectInAscendingOrder(source, [
       'data-testid="diagnostics-summary"',
