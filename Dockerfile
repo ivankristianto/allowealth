@@ -4,6 +4,9 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
+# better-sqlite3 requires node-gyp → python3 + make + g++ for native compilation
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 COPY package.json bun.lock ./
 # patches/ is applied automatically by bun install (patchedDependencies in package.json)
 COPY patches/ ./patches/
