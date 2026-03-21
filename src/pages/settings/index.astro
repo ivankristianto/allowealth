@@ -203,8 +203,7 @@ const notificationSettings = [
 ];
 
 const groupedSectionClass = 'rounded-3xl border border-base-300 bg-base-200/40 p-5 sm:p-6';
-const sectionEyebrowClass =
-  'text-xs font-semibold uppercase tracking-[0.18em] text-base-content/45';
+const sectionEyebrowClass = 'text-xs font-semibold uppercase tracking-widest text-base-content/45';
 const sectionTitleClass = 'text-lg font-semibold text-base-content';
 const inviteMemberButtonClassName = accentGhostBtn
   .split(' ')
@@ -262,7 +261,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                     <span class="min-w-0 flex-1">{item.label}</span>
                     <span
                       class:list={[
-                        'rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.18em]',
+                        'rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-widest',
                         item.id === activeSection
                           ? 'bg-accent/15 text-accent'
                           : 'bg-base-200 text-base-content/40',
@@ -302,7 +301,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                 <div class="divider my-0"></div>
 
                 <form id="workspace-settings-form" class="flex flex-col gap-5">
-                  <div class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                  <div class="grid gap-5 xl:grid-cols-2">
                     <section
                       class={groupedSectionClass}
                       aria-labelledby="settings-general-identity"
