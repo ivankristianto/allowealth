@@ -3,6 +3,8 @@
 ## Session Behavior
 
 - ✅ Follow implementation order: UI → Service → API → CLI → Seeder
+- ✅ **Create GitHub issues, not Linear tickets** — GitHub is the source of truth; Linear syncs externally; always use `gh issue create` or the `github-issue-creation` skill
+- ❌ **Create Linear issues when asked to create a ticket** — use GitHub instead
 - ✅ Run quality gates before committing (lint, stylelint, format, typecheck)
 - ✅ Update OpenAPI docs when modifying API endpoints
 - ✅ Update `COMMANDS.md` when adding or modifying `package.json` scripts or CLI tools
