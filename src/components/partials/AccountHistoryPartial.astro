@@ -61,27 +61,19 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
 
 {
   entries.length === 0 ? (
-    <p class="text-sm text-base-content/60 text-center py-2">No history entries yet.</p>
+    <p class="px-4 py-2 text-xs text-base-content/50">No history entries yet.</p>
   ) : (
     <>
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-base-200/50 border-b border-base-300">
-            <th class="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-base-content/40 uppercase tracking-widest w-1/5">
-              Date
-            </th>
-            <th class="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right w-1/4">
-              Balance
-            </th>
-            <th class="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right w-1/4">
-              Change
-            </th>
-            <th class="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-base-content/40 uppercase tracking-widest">
-              Notes
-            </th>
+      <table class="w-full border-collapse text-left">
+        <thead class="sr-only">
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Balance</th>
+            <th scope="col">Change</th>
+            <th scope="col">Notes</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-base-300">
+        <tbody>
           {entries.map((entry, i) => {
             const balance = parseFloat(entry.balance);
             const prevBalance =
@@ -91,17 +83,17 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
             const date = formatDate(entry.recorded_at);
 
             return (
-              <tr class="group hover:bg-base-200/30 transition-colors">
-                <td class="px-4 md:px-6 py-3 md:py-4 text-sm text-base-content">{date}</td>
-                <td class="px-4 md:px-6 py-3 md:py-4 text-sm text-right font-bold text-base-content">
+              <tr class="border-b border-base-300/50 last:border-b-0">
+                <td class="py-1.5 pl-6 pr-2 text-xs text-base-content/50 md:pl-8">{date}</td>
+                <td class="py-1.5 px-2 text-xs font-semibold tabular-nums text-base-content text-right">
                   {balance.toLocaleString()}
                 </td>
                 <td
-                  class={`px-4 md:px-6 py-3 md:py-4 text-sm text-right font-bold ${changeData.className}`}
+                  class={`py-1.5 px-2 text-xs font-semibold tabular-nums text-right ${changeData.className}`}
                 >
                   {changeData.display}
                 </td>
-                <td class="px-4 md:px-6 py-3 md:py-4 text-sm text-base-content/60">
+                <td class="py-1.5 pl-2 pr-4 text-xs text-base-content/40 md:pr-6">
                   {entry.notes || '—'}
                 </td>
               </tr>
@@ -109,9 +101,9 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
           })}
         </tbody>
       </table>
-      <div class="text-center mt-2">
-        <a href={`/accounts/history/${accountId}`} class="link link-accent text-sm">
-          View all history
+      <div class="py-1.5 pl-6 md:pl-8">
+        <a href={`/accounts/history/${accountId}`} class="text-xs text-accent hover:underline">
+          View all history &rarr;
         </a>
       </div>
     </>

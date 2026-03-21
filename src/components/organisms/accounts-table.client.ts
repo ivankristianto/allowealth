@@ -1,5 +1,5 @@
 const VIEW_STORAGE_KEY = 'accounts-view-mode';
-const NEUTRAL_SORT_INDICATOR = '^v';
+const SORT_ICON_TYPES = ['neutral', 'asc', 'desc'] as const;
 
 type ViewMode = 'card' | 'table';
 type SortColumn = 'name' | 'type' | 'category' | 'owner' | 'balance' | 'updated';
@@ -134,12 +134,13 @@ function updateSortIndicators(table: HTMLElement, sort: SortState): void {
   table.querySelectorAll<HTMLElement>('[data-sort-indicator]').forEach((indicator) => {
     const indicatorColumn = indicator.dataset.sortIndicator;
     const isActive = indicatorColumn === sort.column;
+    const activeIcon = isActive ? sort.direction : 'neutral';
 
-    indicator.textContent = isActive
-      ? sort.direction === 'asc'
-        ? '^'
-        : 'v'
-      : NEUTRAL_SORT_INDICATOR;
+    for (const iconType of SORT_ICON_TYPES) {
+      const icon = indicator.querySelector<HTMLElement>(`[data-sort-icon="${iconType}"]`);
+      if (icon) icon.classList.toggle('hidden', iconType !== activeIcon);
+    }
+
     indicator.classList.toggle('text-base-content/20', !isActive);
     indicator.classList.toggle('text-base-content/60', isActive);
   });

@@ -43,10 +43,18 @@ describe('accounts-table client sorting', () => {
               <thead>
                 <tr>
                   <th data-sort-key="balance" aria-sort="none">
-                    <span data-sort-indicator="balance">^v</span>
+                    <span data-sort-indicator="balance">
+                      <svg data-sort-icon="neutral"></svg>
+                      <svg data-sort-icon="asc" class="hidden"></svg>
+                      <svg data-sort-icon="desc" class="hidden"></svg>
+                    </span>
                   </th>
                   <th data-sort-key="updated" aria-sort="none">
-                    <span data-sort-indicator="updated">^v</span>
+                    <span data-sort-indicator="updated">
+                      <svg data-sort-icon="neutral"></svg>
+                      <svg data-sort-icon="asc" class="hidden"></svg>
+                      <svg data-sort-icon="desc" class="hidden"></svg>
+                    </span>
                   </th>
                 </tr>
               </thead>
@@ -116,6 +124,51 @@ describe('accounts-table client sorting', () => {
 
     expect(getRowOrder()).toEqual(['mid', 'high', 'low']);
     expect(updatedHeader.getAttribute('aria-sort')).toBe('ascending');
+  });
+
+  it('shows the correct sort icon for the active column', () => {
+    initAccountsTableClient();
+
+    const balanceIndicator = document.querySelector('[data-sort-indicator="balance"]')!;
+    const updatedIndicator = document.querySelector('[data-sort-indicator="updated"]')!;
+
+    // Balance is default sort (descending) - desc icon visible, others hidden
+    expect(
+      balanceIndicator.querySelector('[data-sort-icon="neutral"]')!.classList.contains('hidden')
+    ).toBe(true);
+    expect(
+      balanceIndicator.querySelector('[data-sort-icon="desc"]')!.classList.contains('hidden')
+    ).toBe(false);
+    expect(
+      balanceIndicator.querySelector('[data-sort-icon="asc"]')!.classList.contains('hidden')
+    ).toBe(true);
+
+    // Updated is not active - neutral icon visible
+    expect(
+      updatedIndicator.querySelector('[data-sort-icon="neutral"]')!.classList.contains('hidden')
+    ).toBe(false);
+    expect(
+      updatedIndicator.querySelector('[data-sort-icon="asc"]')!.classList.contains('hidden')
+    ).toBe(true);
+    expect(
+      updatedIndicator.querySelector('[data-sort-icon="desc"]')!.classList.contains('hidden')
+    ).toBe(true);
+
+    // Click updated - should show asc icon
+    document
+      .querySelector('[data-sort-key="updated"]')!
+      .dispatchEvent(new Event('click', { bubbles: true }));
+    expect(
+      updatedIndicator.querySelector('[data-sort-icon="asc"]')!.classList.contains('hidden')
+    ).toBe(false);
+    expect(
+      updatedIndicator.querySelector('[data-sort-icon="neutral"]')!.classList.contains('hidden')
+    ).toBe(true);
+
+    // Balance should revert to neutral
+    expect(
+      balanceIndicator.querySelector('[data-sort-icon="neutral"]')!.classList.contains('hidden')
+    ).toBe(false);
   });
 
   it('keeps companion history rows attached to their sorted account rows', () => {

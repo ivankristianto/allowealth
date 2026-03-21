@@ -47,12 +47,12 @@ describe('AccountTable', () => {
     expect(content).toContain('data-sort-indicator="updated"');
   });
 
-  it('lets the desktop table scroll horizontally instead of forcing fixed column compression', () => {
+  it('uses a fluid table width without fixed min-width to avoid horizontal scroll', () => {
     const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
 
-    expect(content).toContain('overflow-x-auto');
+    expect(content).toContain('w-full border-collapse');
     expect(content).not.toContain('table-fixed');
-    expect(content).toContain('min-w-[');
+    expect(content).not.toContain('min-w-[');
   });
 
   it('uses visible focus styles on sortable header buttons instead of suppressing outlines', () => {

@@ -9,7 +9,7 @@
  * Non-matching currency rows get reduced opacity when dimmed.
  */
 
-import { TrendingUp, Pencil, Ellipsis, PowerOff, Eye } from '@lucide/astro';
+import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Clock } from '@lucide/astro';
 import Button from '@/components/atoms/Button.astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
@@ -64,10 +64,11 @@ const totalColumns = isHistoricalView ? 6 : 7;
 
 <tr
   class:list={[
-    'group border-b border-base-300 transition-colors hover:border-base-content/20 hover:bg-base-200/30',
+    'group cursor-pointer border-b border-base-300 transition-colors hover:border-base-content/20 hover:bg-base-200/30',
     isDimmed && 'opacity-50',
   ]}
   data-account-table-row={id}
+  data-account-row={id}
   data-account-id={id}
   data-account-name={name.toLowerCase()}
   data-sort-balance={Math.abs(balance)}
@@ -76,31 +77,41 @@ const totalColumns = isHistoricalView ? 6 : 7;
   data-sort-category={(categoryName || '').toLowerCase()}
   data-sort-owner={(ownerName || '').toLowerCase()}
   data-sort-updated={lastUpdatedDate.getTime()}
+  aria-controls={historyContainerId}
+  aria-expanded="false"
 >
-  <td class="px-3 py-4 pl-4 text-sm font-semibold text-base-content md:px-4 md:pl-6">
-    <a
-      href={`/accounts/${id}`}
-      class="block truncate transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
-    >
-      {name}
-    </a>
+  <td class="px-2 py-2.5 pl-3 text-sm font-semibold text-base-content md:px-3 md:pl-5">
+    <div class="flex items-center gap-1.5">
+      <ChevronDown
+        size={14}
+        class="shrink-0 stroke-base-content/30 transition-transform duration-200"
+        aria-hidden="true"
+        data-expand-chevron={id}
+      />
+      <a
+        href={`/accounts/${id}`}
+        class="block truncate transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+      >
+        {name}
+      </a>
+    </div>
   </td>
 
-  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">
+  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">
     <span class="block truncate">{typeLabel}</span>
   </td>
 
-  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">
+  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">
     <span class="block truncate">{categoryName || '—'}</span>
   </td>
 
-  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">
+  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">
     <span class="block truncate">{ownerName || '—'}</span>
   </td>
 
   <td
     class:list={[
-      'px-3 py-4 text-right text-sm font-semibold tabular-nums md:px-4',
+      'px-2 py-2.5 text-right text-sm font-semibold tabular-nums md:px-3',
       isDebt ? 'text-error' : 'text-base-content',
     ]}
     data-testid="account-balance"
@@ -108,18 +119,18 @@ const totalColumns = isHistoricalView ? 6 : 7;
     <span class="block truncate">{formattedBalance}</span>
   </td>
 
-  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">{formattedDate}</td>
+  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">{formattedDate}</td>
 
   {
     !isHistoricalView && (
-      <td class="px-3 py-4 text-right md:px-4">
-        <div class="inline-flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+      <td class="px-2 py-2.5 text-right md:px-3">
+        <div class="inline-flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             shape="square"
-            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-accent/10 hover:text-accent"
+            className="min-h-9 min-w-9 rounded-lg border-0 text-base-content/50 hover:bg-accent/10 hover:text-accent"
             aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
             data-update-value-account={id}
             data-account-name={name}
@@ -127,7 +138,7 @@ const totalColumns = isHistoricalView ? 6 : 7;
             data-account-balance={balance}
             data-testid="account-update-value-btn"
           >
-            <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
+            <TrendingUp size={15} class="stroke-current" aria-hidden="true" />
           </Button>
 
           <Button
@@ -135,7 +146,7 @@ const totalColumns = isHistoricalView ? 6 : 7;
             variant="ghost"
             size="sm"
             shape="square"
-            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+            className="min-h-9 min-w-9 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
             aria-label={`Edit ${name} details`}
             data-edit-account={id}
             data-account-name={name}
@@ -147,21 +158,7 @@ const totalColumns = isHistoricalView ? 6 : 7;
             data-account-balance={balance}
             data-testid="account-edit-btn"
           >
-            <Pencil size={16} class="stroke-current" aria-hidden="true" />
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="min-h-9 rounded-lg border-0 px-2.5 text-[11px] font-semibold tracking-[0.16em] text-base-content/55 hover:bg-base-200 hover:text-base-content"
-            aria-label={`Toggle inline history for ${name}`}
-            aria-controls={historyContainerId}
-            aria-expanded="false"
-            data-inline-history-toggle
-            data-history-account={id}
-          >
-            History
+            <Pencil size={15} class="stroke-current" aria-hidden="true" />
           </Button>
 
           <div class="dropdown dropdown-end" data-dropdown-menu>
@@ -170,12 +167,12 @@ const totalColumns = isHistoricalView ? 6 : 7;
               variant="ghost"
               size="sm"
               shape="square"
-              className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+              className="min-h-9 min-w-9 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
               tabindex={0}
               aria-label={`More actions for ${name}`}
               aria-haspopup="menu"
             >
-              <Ellipsis size={16} class="stroke-current" aria-hidden="true" />
+              <Ellipsis size={15} class="stroke-current" aria-hidden="true" />
             </Button>
 
             <ul
@@ -196,20 +193,9 @@ const totalColumns = isHistoricalView ? 6 : 7;
                   data-account-balance={balance}
                   data-testid="account-history-btn"
                 >
-                  <Eye size={16} class="stroke-current" aria-hidden="true" />
+                  <Clock size={16} class="stroke-current" aria-hidden="true" />
                   View Timeline
                 </button>
-              </li>
-              <li role="none">
-                <a
-                  href={`/accounts/${id}`}
-                  role="menuitem"
-                  class="flex items-center gap-2 rounded-xl"
-                  aria-label={`View ${name} details`}
-                >
-                  <Eye size={16} class="stroke-current" aria-hidden="true" />
-                  Details
-                </a>
               </li>
               <li role="none">
                 <button
@@ -244,9 +230,9 @@ const totalColumns = isHistoricalView ? 6 : 7;
       data-history-wrapper
       data-account-id={id}
     >
-      <td colspan={totalColumns} class="px-3 pb-4 pt-0 md:px-4">
+      <td colspan={totalColumns} class="p-0">
         <div
-          class="rounded-2xl border border-base-300 bg-base-100 p-4"
+          class="border-l-2 border-base-300 bg-base-200/30"
           data-history-container
           data-account-id={id}
           role="region"

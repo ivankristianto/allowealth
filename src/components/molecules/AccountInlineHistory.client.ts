@@ -105,20 +105,24 @@ export function initInlineHistory() {
     initializedRows.add(row);
 
     const accountId = row.dataset.accountId;
-    const historyContainerId = accountId ? `account-history-${accountId}` : undefined;
+    const isTableRow = row.tagName === 'TR';
 
-    row.classList.add('cursor-pointer');
-    row.tabIndex = 0;
-    row.setAttribute('role', 'button');
-    row.setAttribute('aria-expanded', 'false');
-    row.setAttribute('aria-label', `Toggle ${row.dataset.accountName || 'account'} history`);
-    if (historyContainerId) {
-      row.setAttribute('aria-controls', historyContainerId);
-      // Set matching id on the history container
-      const container = document.querySelector(
-        `[data-history-container][data-account-id="${CSS.escape(accountId!)}"]`
-      );
-      if (container) container.id = historyContainerId;
+    // For non-table rows, set up ARIA attributes and cursor
+    if (!isTableRow) {
+      const historyContainerId = accountId ? `account-history-${accountId}` : undefined;
+
+      row.classList.add('cursor-pointer');
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-expanded', 'false');
+      row.setAttribute('aria-label', `Toggle ${row.dataset.accountName || 'account'} history`);
+      if (historyContainerId) {
+        row.setAttribute('aria-controls', historyContainerId);
+        const container = document.querySelector(
+          `[data-history-container][data-account-id="${CSS.escape(accountId!)}"]`
+        );
+        if (container) container.id = historyContainerId;
+      }
     }
 
     row.addEventListener('click', (e) => {
