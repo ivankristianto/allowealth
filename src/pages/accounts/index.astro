@@ -468,7 +468,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           />
 
           {/* Account Groups */}
-          <div data-view="card">
+          <div data-view="card" class="hidden">
             <div class="space-y-6">
               {sortedGroups.map((group) => {
                 const groupTotals = calculateGroupTotalsByCurrency(
@@ -511,7 +511,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
             </div>
           </div>
 
-          <div data-view="table" class="hidden">
+          <div data-view="table">
             <AccountTable
               accounts={accountsWithDisplay}
               primaryCurrency={

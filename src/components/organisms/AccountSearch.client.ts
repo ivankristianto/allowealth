@@ -33,6 +33,25 @@ function getActiveView(scope: ParentNode): HTMLElement | null {
   return views.find((view) => !view.classList.contains('hidden')) || null;
 }
 
+function getHistoryWrapperForRow(row: HTMLElement): HTMLElement | null {
+  if (row.hasAttribute('data-account-table-row')) {
+    const nextRow = row.nextElementSibling as HTMLElement | null;
+    if (nextRow?.matches('[data-history-wrapper]')) {
+      return nextRow;
+    }
+  }
+
+  const accountId =
+    row.getAttribute('data-account-row') || row.getAttribute('data-account-id') || null;
+  if (!accountId) return null;
+
+  const historyContainer = row.querySelector<HTMLElement>(
+    `[data-history-container][data-account-id="${CSS.escape(accountId)}"]`
+  );
+
+  return historyContainer?.closest<HTMLElement>('[data-history-wrapper]') ?? null;
+}
+
 function filterAccounts(query: string, input: HTMLInputElement): void {
   const normalizedQuery = query.trim().toLowerCase();
   const scope = findViewScope(input);
@@ -48,15 +67,11 @@ function filterAccounts(query: string, input: HTMLInputElement): void {
 
     row.classList.toggle('hidden', !matches);
 
-    // Also hide/show the inline history container that follows the row
-    const accountId = row.getAttribute('data-account-row');
-    if (accountId) {
-      const historyContainer = row.parentElement?.querySelector<HTMLElement>(
-        `[data-history-container][data-account-id="${CSS.escape(accountId)}"]`
-      );
-      if (historyContainer) {
-        historyContainer.classList.toggle('hidden', !matches);
-      }
+    // Hide any paired inline-history row when the account is filtered out.
+    // Matching rows keep their existing hidden state so the toggle remains authoritative.
+    if (!matches) {
+      const historyWrapper = getHistoryWrapperForRow(row);
+      historyWrapper?.classList.add('hidden');
     }
 
     if (matches) visibleCount++;

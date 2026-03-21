@@ -53,8 +53,11 @@ describe('accounts-table client sorting', () => {
               <tbody>
                 <tr data-group-header="liquid"></tr>
                 <tr data-account-table-row="high" data-sort-balance="100" data-sort-updated="200"></tr>
+                <tr data-history-wrapper="high-history" data-account-id="high"></tr>
                 <tr data-account-table-row="mid" data-sort-balance="50" data-sort-updated="100"></tr>
+                <tr data-history-wrapper="mid-history" data-account-id="mid"></tr>
                 <tr data-account-table-row="low" data-sort-balance="10" data-sort-updated="300"></tr>
+                <tr data-history-wrapper="low-history" data-account-id="low"></tr>
               </tbody>
             </table>
           </div>
@@ -81,6 +84,17 @@ describe('accounts-table client sorting', () => {
     );
   }
 
+  function getTableSequence(): string[] {
+    return Array.from(document.querySelectorAll('tbody tr')).map((row) => {
+      return (
+        row.getAttribute('data-account-table-row') ||
+        row.getAttribute('data-history-wrapper') ||
+        row.getAttribute('data-group-header') ||
+        ''
+      );
+    });
+  }
+
   it('applies balance descending as the default table sort on init', () => {
     initAccountsTableClient();
 
@@ -102,5 +116,26 @@ describe('accounts-table client sorting', () => {
 
     expect(getRowOrder()).toEqual(['mid', 'high', 'low']);
     expect(updatedHeader.getAttribute('aria-sort')).toBe('ascending');
+  });
+
+  it('keeps companion history rows attached to their sorted account rows', () => {
+    initAccountsTableClient();
+
+    const updatedHeader = document.querySelector('[data-sort-key="updated"]');
+    if (!updatedHeader) {
+      throw new Error('Expected updated sort header');
+    }
+
+    updatedHeader.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(getTableSequence()).toEqual([
+      'liquid',
+      'mid',
+      'mid-history',
+      'high',
+      'high-history',
+      'low',
+      'low-history',
+    ]);
   });
 });

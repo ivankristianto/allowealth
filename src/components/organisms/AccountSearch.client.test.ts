@@ -67,6 +67,11 @@ describe('AccountSearch client behavior', () => {
                 data-sort-balance="100"
                 data-sort-updated="100"
               ></tr>
+              <tr class="hidden" data-history-wrapper data-account-id="table-1">
+                <td>
+                  <div data-history-container data-account-id="table-1"></div>
+                </td>
+              </tr>
               <tr
                 data-account-table-row="table-2"
                 data-account-name="brokerage"
@@ -77,6 +82,11 @@ describe('AccountSearch client behavior', () => {
                 data-sort-balance="50"
                 data-sort-updated="50"
               ></tr>
+              <tr class="hidden" data-history-wrapper data-account-id="table-2">
+                <td>
+                  <div data-history-container data-account-id="table-2"></div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -111,9 +121,22 @@ describe('AccountSearch client behavior', () => {
     const input = document.querySelector('[data-account-search]') as HTMLInputElement | null;
     const savingsRow = document.querySelector('[data-account-table-row="table-1"]');
     const brokerageRow = document.querySelector('[data-account-table-row="table-2"]');
+    const savingsHistory = document.querySelector(
+      '[data-history-wrapper][data-account-id="table-1"]'
+    );
+    const brokerageHistory = document.querySelector(
+      '[data-history-wrapper][data-account-id="table-2"]'
+    );
     const cardRow = document.querySelector('[data-account-row="card-1"]');
 
-    if (!input || !savingsRow || !brokerageRow || !cardRow) {
+    if (
+      !input ||
+      !savingsRow ||
+      !brokerageRow ||
+      !savingsHistory ||
+      !brokerageHistory ||
+      !cardRow
+    ) {
       throw new Error('Expected search DOM to be present');
     }
 
@@ -123,6 +146,10 @@ describe('AccountSearch client behavior', () => {
 
     expect(savingsRow.classList.contains('hidden')).toBe(false);
     expect(brokerageRow.classList.contains('hidden')).toBe(true);
+    // History wrappers start hidden and search never force-shows them;
+    // non-matching rows get hidden added, matching rows keep existing state.
+    expect(savingsHistory.classList.contains('hidden')).toBe(true);
+    expect(brokerageHistory.classList.contains('hidden')).toBe(true);
     expect(cardRow.classList.contains('hidden')).toBe(false);
   });
 
@@ -182,8 +209,22 @@ describe('AccountSearch client behavior', () => {
     ) as HTMLButtonElement | null;
     const savingsRow = document.querySelector('[data-account-table-row="table-1"]');
     const brokerageRow = document.querySelector('[data-account-table-row="table-2"]');
+    const savingsHistory = document.querySelector(
+      '[data-history-wrapper][data-account-id="table-1"]'
+    );
+    const brokerageHistory = document.querySelector(
+      '[data-history-wrapper][data-account-id="table-2"]'
+    );
 
-    if (!input || !cardButton || !tableButton || !savingsRow || !brokerageRow) {
+    if (
+      !input ||
+      !cardButton ||
+      !tableButton ||
+      !savingsRow ||
+      !brokerageRow ||
+      !savingsHistory ||
+      !brokerageHistory
+    ) {
       throw new Error('Expected search and view toggle DOM to be present');
     }
 
@@ -193,6 +234,9 @@ describe('AccountSearch client behavior', () => {
 
     expect(savingsRow.classList.contains('hidden')).toBe(false);
     expect(brokerageRow.classList.contains('hidden')).toBe(true);
+    // History wrappers start hidden; search never force-shows them
+    expect(savingsHistory.classList.contains('hidden')).toBe(true);
+    expect(brokerageHistory.classList.contains('hidden')).toBe(true);
 
     cardButton.click();
     await waitForDebounce();
@@ -206,5 +250,8 @@ describe('AccountSearch client behavior', () => {
 
     expect(savingsRow.classList.contains('hidden')).toBe(false);
     expect(brokerageRow.classList.contains('hidden')).toBe(false);
+    // History wrappers remain hidden — only the inline-history toggle shows them
+    expect(savingsHistory.classList.contains('hidden')).toBe(true);
+    expect(brokerageHistory.classList.contains('hidden')).toBe(true);
   });
 });

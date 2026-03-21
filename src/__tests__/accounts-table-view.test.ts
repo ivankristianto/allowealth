@@ -36,6 +36,7 @@ describe('accounts table view integration wiring', () => {
   it('renders accessible view toggle controls for card and table modes', () => {
     const controlsSource = read('src/components/molecules/AccountFilterControls.astro');
 
+    expect(controlsSource).toContain("defaultView = 'table'");
     expect(controlsSource).toContain('data-view-toggle');
     expect(controlsSource).toContain('data-view-mode="card"');
     expect(controlsSource).toContain('data-view-mode="table"');
@@ -55,7 +56,11 @@ describe('accounts table view integration wiring', () => {
       "import { initAccountsTableClient } from '@/components/organisms/accounts-table.client';"
     );
     expect(pageSource).toContain('initAccountsTableClient();');
-    expect(normalizedPageSource).toContain('<div data-view="table" class="hidden"> <AccountTable');
+    expect(normalizedPageSource).toContain('<div data-view="card" class="hidden">');
+    expect(normalizedPageSource).toContain('<div data-view="table"> <AccountTable');
+    expect(normalizedPageSource).not.toContain(
+      '<div data-view="table" class="hidden"> <AccountTable'
+    );
   });
 
   it('passes the table primary currency through active filters before workspace fallback', () => {

@@ -1,47 +1,83 @@
 import { csrfFetch } from '@/lib/csrf-client';
 
-let activeAccountId: string | null = null;
+let activeControl: HTMLElement | null = null;
 const initializedRows = new WeakSet<Element>();
+const initializedInlineHistoryButtons = new WeakSet<Element>();
 
-function setExpandedState(accountId: string, expanded: boolean) {
+function getControlAccountId(control: HTMLElement): string | null {
+  return (
+    control.getAttribute('data-history-account') ||
+    control.getAttribute('data-account-row') ||
+    control.getAttribute('data-account-id')
+  );
+}
+
+function getControlledContainer(control: HTMLElement): HTMLElement | null {
+  const containerId = control.getAttribute('aria-controls');
+  if (!containerId) return null;
+
+  const controlledElement = document.getElementById(containerId);
+  if (!controlledElement) return null;
+
+  if (controlledElement.hasAttribute('data-history-wrapper')) {
+    return controlledElement.querySelector<HTMLElement>('[data-history-container]');
+  }
+
+  return controlledElement;
+}
+
+function getHistoryWrapper(container: HTMLElement): HTMLElement {
+  return container.closest<HTMLElement>('[data-history-wrapper]') || container;
+}
+
+function setExpandedState(control: HTMLElement, expanded: boolean) {
+  control.setAttribute('aria-expanded', String(expanded));
+
+  const accountId = getControlAccountId(control);
+  if (!accountId || !control.hasAttribute('data-account-row')) return;
+
   document
     .querySelectorAll<HTMLElement>(`[data-expand-chevron="${CSS.escape(accountId)}"]`)
     .forEach((chevron) => {
       chevron.classList.toggle('rotate-180', expanded);
     });
-  const row = document.querySelector<HTMLElement>(`[data-account-row="${CSS.escape(accountId)}"]`);
-  if (row) row.setAttribute('aria-expanded', String(expanded));
 }
 
-async function toggleHistory(accountId: string) {
-  const container = document.querySelector(
-    `[data-history-container][data-account-id="${CSS.escape(accountId)}"]`
-  ) as HTMLElement;
+function collapseHistory(control: HTMLElement): void {
+  const container = getControlledContainer(control);
   if (!container) return;
 
+  const wrapper = getHistoryWrapper(container);
+  wrapper.classList.add('hidden');
+  setExpandedState(control, false);
+}
+
+async function toggleHistory(control: HTMLElement) {
+  const accountId = getControlAccountId(control);
+  const container = getControlledContainer(control);
+
+  if (!accountId || !container) return;
+
+  const wrapper = getHistoryWrapper(container);
+
   // Toggle: collapse if same account clicked again
-  if (activeAccountId === accountId) {
-    container.classList.add('hidden');
-    setExpandedState(accountId, false);
-    activeAccountId = null;
+  if (activeControl === control) {
+    collapseHistory(control);
+    activeControl = null;
     return;
   }
 
   // Collapse previous
-  if (activeAccountId) {
-    const prev = document.querySelector(
-      `[data-history-container][data-account-id="${CSS.escape(activeAccountId)}"]`
-    ) as HTMLElement;
-    if (prev) prev.classList.add('hidden');
-    setExpandedState(activeAccountId, false);
+  if (activeControl) {
+    collapseHistory(activeControl);
   }
 
   // Show loading skeleton
   container.innerHTML =
     '<div class="flex justify-center py-4"><span class="loading loading-spinner loading-md"></span></div>';
-  container.classList.remove('hidden');
-  setExpandedState(accountId, true);
-  activeAccountId = accountId;
+  wrapper.classList.remove('hidden');
+  setExpandedState(control, true);
+  activeControl = control;
 
   try {
     // Fetch server-rendered HTML
@@ -58,10 +94,10 @@ async function toggleHistory(accountId: string) {
 
 export function initInlineHistory() {
   // Reset stale state from previous page navigations
-  if (activeAccountId) {
-    setExpandedState(activeAccountId, false);
+  if (activeControl) {
+    collapseHistory(activeControl);
   }
-  activeAccountId = null;
+  activeControl = null;
 
   // Row click/keyboard to toggle history (skip if clicking buttons/links/dropdown menus)
   document.querySelectorAll<HTMLElement>('[data-account-row]').forEach((row) => {
@@ -90,7 +126,7 @@ export function initInlineHistory() {
       // Don't toggle if clicking a button, link, dropdown menu, or within one
       if (target.closest('button, a, [data-dropdown-menu]')) return;
 
-      if (accountId) toggleHistory(accountId);
+      toggleHistory(row);
     });
 
     row.addEventListener('keydown', (e) => {
@@ -104,19 +140,30 @@ export function initInlineHistory() {
 
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (accountId) toggleHistory(accountId);
+        toggleHistory(row);
       } else if (e.key === 'Escape') {
-        if (accountId && activeAccountId === accountId) toggleHistory(accountId);
+        if (activeControl === row) toggleHistory(row);
       }
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-inline-history-toggle]').forEach((button) => {
+    if (initializedInlineHistoryButtons.has(button)) return;
+    initializedInlineHistoryButtons.add(button);
+
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleHistory(button);
     });
   });
 }
 
 function cleanupInlineHistoryState(): void {
-  if (activeAccountId) {
-    setExpandedState(activeAccountId, false);
+  if (activeControl) {
+    collapseHistory(activeControl);
   }
-  activeAccountId = null;
+  activeControl = null;
 }
 
 document.addEventListener('astro:page-load', initInlineHistory);

@@ -58,6 +58,8 @@ const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
   month: 'short',
   day: 'numeric',
 });
+const historyContainerId = `account-table-history-${id}`;
+const totalColumns = isHistoricalView ? 6 : 7;
 ---
 
 <tr
@@ -66,6 +68,7 @@ const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
     isDimmed && 'opacity-50',
   ]}
   data-account-table-row={id}
+  data-account-id={id}
   data-account-name={name.toLowerCase()}
   data-sort-balance={Math.abs(balance)}
   data-sort-name={name.toLowerCase()}
@@ -74,36 +77,42 @@ const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
   data-sort-owner={(ownerName || '').toLowerCase()}
   data-sort-updated={lastUpdatedDate.getTime()}
 >
-  <td class="px-4 py-4 pl-6 text-sm font-semibold text-base-content md:px-6 md:pl-8">
+  <td class="px-3 py-4 pl-4 text-sm font-semibold text-base-content md:px-4 md:pl-6">
     <a
       href={`/accounts/${id}`}
-      class="transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+      class="block truncate transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
     >
       {name}
     </a>
   </td>
 
-  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{typeLabel}</td>
+  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">
+    <span class="block truncate">{typeLabel}</span>
+  </td>
 
-  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{categoryName || '—'}</td>
+  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">
+    <span class="block truncate">{categoryName || '—'}</span>
+  </td>
 
-  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{ownerName || '—'}</td>
+  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">
+    <span class="block truncate">{ownerName || '—'}</span>
+  </td>
 
   <td
     class:list={[
-      'px-4 py-4 text-right text-sm font-semibold tabular-nums md:px-6',
+      'px-3 py-4 text-right text-sm font-semibold tabular-nums md:px-4',
       isDebt ? 'text-error' : 'text-base-content',
     ]}
     data-testid="account-balance"
   >
-    {formattedBalance}
+    <span class="block truncate">{formattedBalance}</span>
   </td>
 
-  <td class="px-4 py-4 text-sm text-base-content/70 md:px-6">{formattedDate}</td>
+  <td class="px-3 py-4 text-sm text-base-content/70 md:px-4">{formattedDate}</td>
 
   {
     !isHistoricalView && (
-      <td class="px-4 py-4 text-right md:px-6">
+      <td class="px-3 py-4 text-right md:px-4">
         <div class="inline-flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
           <Button
             type="button"
@@ -139,6 +148,20 @@ const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
             data-testid="account-edit-btn"
           >
             <Pencil size={16} class="stroke-current" aria-hidden="true" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-9 rounded-lg border-0 px-2.5 text-[11px] font-semibold tracking-[0.16em] text-base-content/55 hover:bg-base-200 hover:text-base-content"
+            aria-label={`Toggle inline history for ${name}`}
+            aria-controls={historyContainerId}
+            aria-expanded="false"
+            data-inline-history-toggle
+            data-history-account={id}
+          >
+            History
           </Button>
 
           <div class="dropdown dropdown-end" data-dropdown-menu>
@@ -212,3 +235,25 @@ const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
     )
   }
 </tr>
+
+{
+  !isHistoricalView && (
+    <tr
+      id={historyContainerId}
+      class="hidden bg-base-200/40"
+      data-history-wrapper
+      data-account-id={id}
+    >
+      <td colspan={totalColumns} class="px-3 pb-4 pt-0 md:px-4">
+        <div
+          class="rounded-2xl border border-base-300 bg-base-100 p-4"
+          data-history-container
+          data-account-id={id}
+          role="region"
+          aria-label={`Value history for ${name}`}
+          aria-live="polite"
+        />
+      </td>
+    </tr>
+  )
+}

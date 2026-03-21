@@ -21,6 +21,7 @@ import {
 } from '@/lib/types/account';
 import type { Currency } from '@/lib/constants/currency';
 import { Ellipsis, Eye, Pencil, PowerOff, TrendingUp, Wallet } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
 
 const ACCOUNT_CLASS_SUBTITLES: Record<AccountClass, string> = {
   liquid: 'Cash & equivalents',
@@ -33,29 +34,33 @@ const CLASS_ORDER: AccountClass[] = ['liquid', 'debt', 'non_liquid'];
 const GROUP_COLORS: Record<
   AccountClass,
   {
-    bgGradient: string;
-    text: string;
-    badgeBg: string;
-    badgeText: string;
+    band: string;
+    rail: string;
+    label: string;
+    meta: string;
+    badge: string;
   }
 > = {
   liquid: {
-    bgGradient: 'bg-gradient-to-r from-[#1e3a2f] to-[#1a2e28]',
-    text: 'text-[#b7e4c7]',
-    badgeBg: 'bg-[#2d6a4f]',
-    badgeText: 'text-[#b7e4c7]',
+    band: 'bg-base-200/70',
+    rail: 'bg-accent/20',
+    label: 'text-accent',
+    meta: 'text-base-content/60',
+    badge: 'border border-accent/20 bg-accent/10 text-accent',
   },
   debt: {
-    bgGradient: 'bg-gradient-to-r from-[#2d1a22] to-[#251520]',
-    text: 'text-[#f4a5b5]',
-    badgeBg: 'bg-[#6b2737]',
-    badgeText: 'text-[#f4a5b5]',
+    band: 'bg-base-200/70',
+    rail: 'bg-warning/20',
+    label: 'text-warning',
+    meta: 'text-base-content/60',
+    badge: 'border border-warning/20 bg-warning/10 text-warning',
   },
   non_liquid: {
-    bgGradient: 'bg-gradient-to-r from-[#1a2d40] to-[#162538]',
-    text: 'text-[#a9d6e5]',
-    badgeBg: 'bg-[#1b4965]',
-    badgeText: 'text-[#a9d6e5]',
+    band: 'bg-base-200/70',
+    rail: 'bg-info/20',
+    label: 'text-info',
+    meta: 'text-base-content/60',
+    badge: 'border border-info/20 bg-info/10 text-info',
   },
 };
 
@@ -126,185 +131,184 @@ const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} just
   ) : (
     <div class="rounded-card border border-base-300 bg-base-100 shadow-sm" data-account-table>
       <div class="overflow-hidden">
-        <div class="hidden md:block">
-          <div class="table-scroll-hint">
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse text-left">
-                <thead>
-                  <tr class="border-b border-base-300 bg-base-200/50">
-                    <th
-                      class="px-4 py-4 pl-6 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6 md:pl-8"
-                      data-sort-key="name"
-                      aria-sort="none"
-                    >
-                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                        <span>Account</span>
-                        <span class="text-base-content/20" data-sort-indicator="name">
-                          ^v
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
-                      data-sort-key="type"
-                      aria-sort="none"
-                    >
-                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                        <span>Type</span>
-                        <span class="text-base-content/20" data-sort-indicator="type">
-                          ^v
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
-                      data-sort-key="category"
-                      aria-sort="none"
-                    >
-                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                        <span>Category</span>
-                        <span class="text-base-content/20" data-sort-indicator="category">
-                          ^v
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
-                      data-sort-key="owner"
-                      aria-sort="none"
-                    >
-                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                        <span>Owner</span>
-                        <span class="text-base-content/20" data-sort-indicator="owner">
-                          ^v
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      class="px-4 py-4 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
-                      data-sort-key="balance"
-                      aria-sort="none"
-                    >
-                      <button
-                        type="button"
-                        class={sortableHeaderButtonRightAlignedClass}
-                        data-sort-button
-                      >
-                        <span>Balance</span>
-                        <span class="text-base-content/20" data-sort-indicator="balance">
-                          ^v
-                        </span>
-                      </button>
-                    </th>
-                    <th
-                      class="px-4 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6"
-                      data-sort-key="updated"
-                      aria-sort="none"
-                    >
-                      <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                        <span>Updated</span>
-                        <span class="text-base-content/20" data-sort-indicator="updated">
-                          ^v
-                        </span>
-                      </button>
-                    </th>
-                    <th class="px-4 py-4 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-6">
-                      Actions
-                    </th>
+        <div class="hidden overflow-x-auto md:block">
+          <table class="min-w-[1120px] w-full border-collapse text-left">
+            <thead>
+              <tr class="border-b border-base-300 bg-base-200/50">
+                <th
+                  class="px-3 py-4 pl-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4 md:pl-6"
+                  data-sort-key="name"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Account</span>
+                    <span class="text-base-content/20" data-sort-indicator="name">
+                      ^v
+                    </span>
+                  </button>
+                </th>
+                <th
+                  class="px-3 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4"
+                  data-sort-key="type"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Type</span>
+                    <span class="text-base-content/20" data-sort-indicator="type">
+                      ^v
+                    </span>
+                  </button>
+                </th>
+                <th
+                  class="px-3 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4"
+                  data-sort-key="category"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Category</span>
+                    <span class="text-base-content/20" data-sort-indicator="category">
+                      ^v
+                    </span>
+                  </button>
+                </th>
+                <th
+                  class="px-3 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4"
+                  data-sort-key="owner"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Owner</span>
+                    <span class="text-base-content/20" data-sort-indicator="owner">
+                      ^v
+                    </span>
+                  </button>
+                </th>
+                <th
+                  class="px-3 py-4 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4"
+                  data-sort-key="balance"
+                  aria-sort="none"
+                >
+                  <button
+                    type="button"
+                    class={sortableHeaderButtonRightAlignedClass}
+                    data-sort-button
+                  >
+                    <span>Balance</span>
+                    <span class="text-base-content/20" data-sort-indicator="balance">
+                      ^v
+                    </span>
+                  </button>
+                </th>
+                <th
+                  class="px-3 py-4 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4"
+                  data-sort-key="updated"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Updated</span>
+                    <span class="text-base-content/20" data-sort-indicator="updated">
+                      ^v
+                    </span>
+                  </button>
+                </th>
+                <th class="px-3 py-4 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-4">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {groups.map((group) => (
+                <>
+                  <tr
+                    class={`border-y border-base-300 ${group.colors.band}`}
+                    data-group-header={group.classKey}
+                  >
+                    <td colspan={7} class="px-3 py-3 md:px-4">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2.5">
+                          <span class={`h-7 w-1 rounded-full ${group.colors.rail}`} />
+                          <span
+                            class={`text-sm font-bold uppercase tracking-widest ${group.colors.label}`}
+                          >
+                            {group.label}
+                          </span>
+                          <span class={`text-xs ${group.colors.meta}`}>{group.subtitle}</span>
+                          <span
+                            class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badge}`}
+                          >
+                            {group.accounts.length}{' '}
+                            {group.accounts.length === 1 ? 'account' : 'accounts'}
+                          </span>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
+                          {group.totals.map((total, index) => (
+                            <span
+                              class={index === 0 ? 'text-base-content' : 'text-base-content/60'}
+                            >
+                              {formatGroupTotal(total.amount, total.currency, group.classKey)}
+                            </span>
+                          ))}
+                          {group.allocation.percentage > 0 && (
+                            <span
+                              class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${group.colors.badge}`}
+                            >
+                              {group.allocation.percentage}% of {primaryCurrency}
+                              {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
 
-                <tbody>
-                  {groups.map((group) => (
-                    <>
-                      <tr class={group.colors.bgGradient} data-group-header={group.classKey}>
-                        <td colspan={7} class="px-4 py-3 md:px-6">
-                          <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div class="flex flex-wrap items-center gap-2.5">
-                              <span class={`text-sm font-bold ${group.colors.text}`}>
-                                {group.label}
-                              </span>
-                              <span class={`text-xs ${group.colors.text} opacity-60`}>
-                                {group.subtitle}
-                              </span>
-                              <span
-                                class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badgeBg} ${group.colors.badgeText}`}
-                              >
-                                {group.accounts.length}{' '}
-                                {group.accounts.length === 1 ? 'account' : 'accounts'}
-                              </span>
-                            </div>
-
-                            <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
-                              {group.totals.map((total, index) => (
-                                <span
-                                  class={
-                                    index === 0
-                                      ? group.colors.text
-                                      : `${group.colors.text} opacity-70`
-                                  }
-                                >
-                                  {formatGroupTotal(total.amount, total.currency, group.classKey)}
-                                </span>
-                              ))}
-                              {group.allocation.percentage > 0 && (
-                                <span
-                                  class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${group.colors.badgeBg} ${group.colors.badgeText}`}
-                                >
-                                  {group.allocation.percentage}% of {primaryCurrency}
-                                  {group.allocation.onTarget && (
-                                    <span aria-hidden="true">&check;</span>
-                                  )}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {group.accounts.map((account) => (
-                        <AccountTableRow
-                          id={account.id}
-                          name={account.name}
-                          type={account.type}
-                          accountClass={account.account_class}
-                          ownerUserId={account.created_by_user_id}
-                          ownerName={account.owner_name}
-                          categoryId={account.category_id}
-                          categoryName={account.category_name}
-                          currency={account.currency}
-                          balance={Number.parseFloat(account.balance || '0')}
-                          lastUpdated={new Date(account.last_updated)}
-                          isHistoricalView={isHistoricalView}
-                          isDimmed={account.currency !== primaryCurrency}
-                        />
-                      ))}
-                    </>
+                  {group.accounts.map((account) => (
+                    <AccountTableRow
+                      id={account.id}
+                      name={account.name}
+                      type={account.type}
+                      accountClass={account.account_class}
+                      ownerUserId={account.created_by_user_id}
+                      ownerName={account.owner_name}
+                      categoryId={account.category_id}
+                      categoryName={account.category_name}
+                      currency={account.currency}
+                      balance={Number.parseFloat(account.balance || '0')}
+                      lastUpdated={new Date(account.last_updated)}
+                      isHistoricalView={isHistoricalView}
+                      isDimmed={account.currency !== primaryCurrency}
+                    />
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div class="md:hidden">
           {groups.map((group) => (
             <>
               <div
-                class={`border-b border-base-300 px-3 py-3 ${group.colors.bgGradient}`}
+                class={`border-b border-base-300 px-3 py-3 ${group.colors.band}`}
                 data-group-header={group.classKey}
               >
                 <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <div class={`text-sm font-bold ${group.colors.text}`}>{group.label}</div>
-                    <div class={`mt-0.5 text-xs ${group.colors.text} opacity-70`}>
-                      {group.subtitle}
+                  <div class="flex items-start gap-3">
+                    <span class={`mt-0.5 h-8 w-1 rounded-full ${group.colors.rail}`} />
+                    <div>
+                      <div
+                        class={`text-sm font-bold uppercase tracking-widest ${group.colors.label}`}
+                      >
+                        {group.label}
+                      </div>
+                      <div class={`mt-0.5 text-xs ${group.colors.meta}`}>{group.subtitle}</div>
                     </div>
                   </div>
 
                   {group.allocation.percentage > 0 && (
                     <span
-                      class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badgeBg} ${group.colors.badgeText}`}
+                      class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badge}`}
                     >
                       {group.allocation.percentage}% of {primaryCurrency}
                       {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
@@ -312,14 +316,12 @@ const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} just
                   )}
                 </div>
 
-                <div class={`mt-2 flex flex-wrap items-center gap-2 text-xs ${group.colors.text}`}>
-                  <span class="opacity-80">
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-base-content/70">
+                  <span>
                     {group.accounts.length} {group.accounts.length === 1 ? 'account' : 'accounts'}
                   </span>
                   {group.totals.map((total) => (
-                    <span class="opacity-90">
-                      {formatGroupTotal(total.amount, total.currency, group.classKey)}
-                    </span>
+                    <span>{formatGroupTotal(total.amount, total.currency, group.classKey)}</span>
                   ))}
                 </div>
               </div>
@@ -483,7 +485,41 @@ const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} just
                           Details
                         </a>
                       )}
+
+                      {!isHistoricalView && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="min-h-10 rounded-xl px-3 text-xs font-bold uppercase tracking-widest text-base-content/60 hover:border-accent/30 hover:bg-accent/10 hover:text-accent"
+                          aria-label={`Toggle inline history for ${account.name}`}
+                          aria-controls={`account-table-mobile-history-${account.id}`}
+                          aria-expanded="false"
+                          data-inline-history-toggle
+                          data-history-account={account.id}
+                        >
+                          History
+                        </Button>
+                      )}
                     </div>
+
+                    {!isHistoricalView && (
+                      <div
+                        id={`account-table-mobile-history-${account.id}`}
+                        class="hidden"
+                        data-history-wrapper
+                        data-account-id={account.id}
+                      >
+                        <div
+                          class="mt-3 rounded-2xl border border-base-300 bg-base-200/60 p-4"
+                          data-history-container
+                          data-account-id={account.id}
+                          role="region"
+                          aria-label={`Value history for ${account.name}`}
+                          aria-live="polite"
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}

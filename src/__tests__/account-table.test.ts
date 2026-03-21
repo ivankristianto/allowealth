@@ -12,6 +12,17 @@ describe('AccountTable', () => {
     );
   });
 
+  it('uses design-system semantic classes for group headers instead of hardcoded hex gradients', () => {
+    const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
+
+    expect(content).not.toContain('from-[#');
+    expect(content).not.toContain('to-[#');
+    expect(content).toContain('bg-base-200/70');
+    expect(content).toContain('text-accent');
+    expect(content).toContain('text-warning');
+    expect(content).toContain('text-info');
+  });
+
   it('includes on-target badge markers in desktop and mobile allocation badges', () => {
     const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
 
@@ -34,6 +45,14 @@ describe('AccountTable', () => {
     expect(content).toContain('data-sort-button');
     expect(content).toContain('data-sort-indicator="name"');
     expect(content).toContain('data-sort-indicator="updated"');
+  });
+
+  it('lets the desktop table scroll horizontally instead of forcing fixed column compression', () => {
+    const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
+
+    expect(content).toContain('overflow-x-auto');
+    expect(content).not.toContain('table-fixed');
+    expect(content).toContain('min-w-[');
   });
 
   it('uses visible focus styles on sortable header buttons instead of suppressing outlines', () => {
@@ -66,5 +85,15 @@ describe('AccountTable', () => {
         )}
       `)
     );
+  });
+
+  it('renders inline history controls for mobile table cards', () => {
+    const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
+
+    expect(content).toContain('data-inline-history-toggle');
+    expect(content).toContain('account-table-mobile-history-');
+    expect(content).toContain('data-history-wrapper');
+    expect(content).toContain('aria-controls={`account-table-mobile-history-${account.id}`}');
+    expect(content).toContain('id={`account-table-mobile-history-${account.id}`}');
   });
 });

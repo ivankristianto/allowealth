@@ -175,22 +175,42 @@ function sortTableGroups(table: HTMLElement, sort: SortState): void {
     }
 
     index += 1;
-    const groupRows: HTMLTableRowElement[] = [];
+    const groupRows: Array<{
+      row: HTMLTableRowElement;
+      historyWrapper?: HTMLTableRowElement;
+    }> = [];
 
     while (index < rows.length && !rows[index]?.hasAttribute('data-group-header')) {
       const candidateRow = rows[index];
       if (candidateRow?.hasAttribute('data-account-table-row')) {
-        groupRows.push(candidateRow);
+        const historyWrapper = rows[index + 1];
+        const candidateAccountId = candidateRow.getAttribute('data-account-table-row');
+        const matchingWrapper =
+          historyWrapper?.hasAttribute('data-history-wrapper') &&
+          historyWrapper.getAttribute('data-account-id') === candidateAccountId
+            ? historyWrapper
+            : undefined;
+
+        groupRows.push({ row: candidateRow, historyWrapper: matchingWrapper });
+
+        if (matchingWrapper) {
+          index += 1;
+        }
       }
       index += 1;
     }
 
-    const sortedRows = [...groupRows].sort((left, right) => compareRows(left, right, sort));
+    const sortedRows = [...groupRows].sort((left, right) => compareRows(left.row, right.row, sort));
     let insertAfter: ChildNode | null = headerRow;
 
-    for (const row of sortedRows) {
-      tbody.insertBefore(row, insertAfter?.nextSibling ?? null);
-      insertAfter = row;
+    for (const entry of sortedRows) {
+      tbody.insertBefore(entry.row, insertAfter?.nextSibling ?? null);
+      insertAfter = entry.row;
+
+      if (entry.historyWrapper) {
+        tbody.insertBefore(entry.historyWrapper, insertAfter?.nextSibling ?? null);
+        insertAfter = entry.historyWrapper;
+      }
     }
   }
 
