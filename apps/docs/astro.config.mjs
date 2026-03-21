@@ -15,6 +15,12 @@ export default defineConfig({
       },
       favicon: '/favicon.svg',
       customCss: ['./src/styles/brand.css'],
+      social: {
+        github: 'https://github.com/ivankristianto/allowealth',
+      },
+      components: {
+        SocialIcons: './src/components/SocialIcons.astro',
+      },
       sidebar: [
         { slug: 'getting-started' },
         { slug: 'self-host' },
