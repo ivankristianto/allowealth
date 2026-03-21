@@ -93,6 +93,15 @@ function summaryGlyphClass(variant: StatusVariant): string {
   return `h-4 w-4 stroke-current ${map[variant]}`;
 }
 
+const summaryReadoutRowClass =
+  'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0';
+const summaryReadoutLabelClass =
+  'min-w-0 text-xs font-medium uppercase leading-6 tracking-[0.12em] text-base-content/55';
+const summaryReadoutValueClass =
+  'min-w-0 break-words text-right text-sm font-medium leading-6 text-base-content';
+const summaryReadoutMonoValueClass =
+  'min-w-0 break-words text-right font-mono text-sm leading-6 text-base-content';
+
 const cacheStatusMap: Record<string, { variant: StatusVariant; text: string }> = {
   healthy: { variant: 'success', text: 'Healthy' },
   error: { variant: 'error', text: 'Error' },
@@ -114,6 +123,7 @@ const configurationStatus =
 
 const runtimeSummaryVariant: StatusVariant = 'neutral';
 const databaseDriverLabel = data.database.isD1 ? 'D1' : data.database.dialect;
+const databasePlatformLabel = data.database.isD1 ? 'Cloudflare D1' : 'Local SQLite';
 ---
 
 <section data-testid="diagnostics-summary" class="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -140,31 +150,21 @@ const databaseDriverLabel = data.database.isD1 ? 'D1' : data.database.dialect;
       </p>
 
       <dl class="mt-5">
-        <div
-          class="flex items-start justify-between gap-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0"
-        >
-          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-            Environment
-          </dt>
-          <dd class="text-right text-sm font-medium text-base-content">
-            {data.runtime.environment}
-          </dd>
+        <div class={summaryReadoutRowClass}>
+          <dt class={summaryReadoutLabelClass}>Environment</dt>
+          <dd class={summaryReadoutValueClass}>{data.runtime.environment}</dd>
         </div>
 
-        <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
-          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-            App Version
-          </dt>
-          <dd class="text-right font-mono text-sm text-base-content">v{APP_VERSION}</dd>
+        <div class={summaryReadoutRowClass}>
+          <dt class={summaryReadoutLabelClass}>App Version</dt>
+          <dd class={summaryReadoutMonoValueClass}>v{APP_VERSION}</dd>
         </div>
 
         {
           data.runtime.region && (
-            <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
-              <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-                Region
-              </dt>
-              <dd class="text-right font-mono text-sm text-base-content">{data.runtime.region}</dd>
+            <div class={summaryReadoutRowClass}>
+              <dt class={summaryReadoutLabelClass}>Region</dt>
+              <dd class={summaryReadoutMonoValueClass}>{data.runtime.region}</dd>
             </div>
           )
         }
@@ -194,22 +194,21 @@ const databaseDriverLabel = data.database.isD1 ? 'D1' : data.database.dialect;
       <p class="mt-5 text-3xl font-semibold tracking-tight text-base-content">{connStatus.text}</p>
 
       <dl class="mt-5">
-        <div
-          class="flex items-start justify-between gap-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0"
-        >
-          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-            Driver
-          </dt>
-          <dd class="text-right text-sm font-medium text-base-content">{databaseDriverLabel}</dd>
+        <div class={summaryReadoutRowClass}>
+          <dt class={summaryReadoutLabelClass}>Driver</dt>
+          <dd class={summaryReadoutValueClass}>{databaseDriverLabel}</dd>
+        </div>
+
+        <div class={summaryReadoutRowClass}>
+          <dt class={summaryReadoutLabelClass}>Platform</dt>
+          <dd class={summaryReadoutValueClass}>{databasePlatformLabel}</dd>
         </div>
 
         {
           data.database.queryMetrics && (
-            <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
-              <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-                Queries
-              </dt>
-              <dd class="text-right text-sm font-medium text-base-content">
+            <div class={summaryReadoutRowClass}>
+              <dt class={summaryReadoutLabelClass}>Queries</dt>
+              <dd class={summaryReadoutValueClass}>
                 {data.database.queryMetrics.totalQueries} checked
               </dd>
             </div>
@@ -237,22 +236,14 @@ const databaseDriverLabel = data.database.isD1 ? 'D1' : data.database.dialect;
       <p class="mt-5 text-3xl font-semibold tracking-tight text-base-content">{cacheStatus.text}</p>
 
       <dl class="mt-5">
-        <div
-          class="flex items-start justify-between gap-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0"
-        >
-          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-            Driver
-          </dt>
-          <dd class="text-right text-sm font-medium text-base-content">{data.cache.driver}</dd>
+        <div class={summaryReadoutRowClass}>
+          <dt class={summaryReadoutLabelClass}>Driver</dt>
+          <dd class={summaryReadoutValueClass}>{data.cache.driver}</dd>
         </div>
 
-        <div class="flex items-start justify-between gap-4 border-t border-base-200 py-3">
-          <dt class="text-xs font-medium uppercase tracking-[0.12em] text-base-content/55">
-            Enabled
-          </dt>
-          <dd class="text-right text-sm font-medium text-base-content">
-            {data.cache.isEnabled ? 'Yes' : 'No'}
-          </dd>
+        <div class={summaryReadoutRowClass}>
+          <dt class={summaryReadoutLabelClass}>Enabled</dt>
+          <dd class={summaryReadoutValueClass}>{data.cache.isEnabled ? 'Yes' : 'No'}</dd>
         </div>
       </dl>
     </div>

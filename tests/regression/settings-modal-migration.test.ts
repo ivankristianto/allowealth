@@ -136,13 +136,15 @@ describe('diagnostics layout refinement regressions', () => {
     expect(source).not.toContain('flex h-12 w-12 items-center justify-center rounded-2xl');
     expect(source).not.toMatch(/class="[^"]*\bbadge\b[^"]*"/);
     expect(source).not.toMatch(/class=\{[^}]*badge[^}]*\}/);
+    expect(source).toContain('class={summaryReadoutRowClass}');
+    expect(source).toContain('class={summaryReadoutValueClass}');
     expectInAscendingOrder(source, [
       'data-summary-marker="runtime"',
       'data-summary-marker="data-layer"',
       'data-summary-marker="caching"',
     ]);
     expectInAscendingOrder(source, ['Runtime', 'data-summary-value="runtime"', 'Environment']);
-    expectInAscendingOrder(source, ['Data Layer', 'Driver']);
+    expectInAscendingOrder(source, ['Data Layer', 'Driver', 'Platform']);
     expectInAscendingOrder(source, ['Caching', 'Enabled']);
   });
 
@@ -155,6 +157,24 @@ describe('diagnostics layout refinement regressions', () => {
       'Environment',
       'App Version',
     ]);
+    expectInAscendingOrder(source, ['Data Layer', 'Driver', 'Platform']);
+  });
+
+  it('keeps a platform detail row even when query metrics are absent', () => {
+    const source = read('src/components/organisms/DiagnosticsDisplay.astro');
+
+    expect(source).toContain(
+      "const summaryReadoutRowClass =\n  'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0';"
+    );
+    expect(source).toContain(
+      "const summaryReadoutValueClass =\n  'min-w-0 break-words text-right text-sm font-medium leading-6 text-base-content';"
+    );
+    expect(source).toContain(
+      "const databasePlatformLabel = data.database.isD1 ? 'Cloudflare D1' : 'Local SQLite';"
+    );
+    expect(source).toContain('<dt class={summaryReadoutLabelClass}>Platform</dt>');
+    expect(source).toContain('<dd class={summaryReadoutValueClass}>{databasePlatformLabel}</dd>');
+    expect(source).toContain('data.database.queryMetrics && (');
   });
 
   it('renders summary-first diagnostics structure in the approved order', () => {
