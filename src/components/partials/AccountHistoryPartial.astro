@@ -84,7 +84,7 @@ const oldestBalance = balancesOldestFirst[0] ?? 0;
 const newestBalance = balancesOldestFirst[balancesOldestFirst.length - 1] ?? 0;
 const showGrowthAnnotation = showSparkline && oldestBalance !== 0;
 const growthPercent = showGrowthAnnotation
-  ? ((newestBalance - oldestBalance) / oldestBalance) * 100
+  ? ((newestBalance - oldestBalance) / Math.abs(oldestBalance)) * 100
   : 0;
 const growthFormatted = `${growthPercent >= 0 ? '+' : ''}${growthPercent.toFixed(1)}%`;
 const growthClass = growthPercent >= 0 ? 'text-success' : 'text-error';

@@ -34,7 +34,7 @@ function setExpandedState(control: HTMLElement, expanded: boolean) {
   control.setAttribute('aria-expanded', String(expanded));
 
   const accountId = getControlAccountId(control);
-  if (!accountId || !control.hasAttribute('data-account-row')) return;
+  if (!accountId) return;
 
   document
     .querySelectorAll<HTMLElement>(`[data-expand-chevron="${CSS.escape(accountId)}"]`)
@@ -130,25 +130,33 @@ export function initInlineHistory() {
       // Don't toggle if clicking a button, link, dropdown menu, or within one
       if (target.closest('button, a, [data-dropdown-menu]')) return;
 
-      toggleHistory(row);
-    });
-
-    row.addEventListener('keydown', (e) => {
-      const target = e.target as HTMLElement;
-      // Don't toggle if key event originated from a child interactive element
-      if (
-        target !== row &&
-        target.closest('button, a, input, select, textarea, [data-dropdown-menu]')
-      )
-        return;
-
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
+      if (isTableRow) {
+        // Table rows delegate to the dedicated toggle button for consistent state tracking
+        const toggleBtn = row.querySelector<HTMLElement>('[data-inline-history-toggle]');
+        if (toggleBtn) toggleHistory(toggleBtn);
+      } else {
         toggleHistory(row);
-      } else if (e.key === 'Escape') {
-        if (activeControl === row) toggleHistory(row);
       }
     });
+
+    if (!isTableRow) {
+      row.addEventListener('keydown', (e) => {
+        const target = e.target as HTMLElement;
+        // Don't toggle if key event originated from a child interactive element
+        if (
+          target !== row &&
+          target.closest('button, a, input, select, textarea, [data-dropdown-menu]')
+        )
+          return;
+
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleHistory(row);
+        } else if (e.key === 'Escape') {
+          if (activeControl === row) toggleHistory(row);
+        }
+      });
+    }
   });
 
   document.querySelectorAll<HTMLElement>('[data-inline-history-toggle]').forEach((button) => {

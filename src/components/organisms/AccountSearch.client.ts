@@ -34,6 +34,7 @@ function getActiveView(scope: ParentNode): HTMLElement | null {
 }
 
 function getHistoryWrapperForRow(row: HTMLElement): HTMLElement | null {
+  // Table rows: history wrapper is the next sibling <tr data-history-wrapper>
   if (row.hasAttribute('data-account-table-row')) {
     const nextRow = row.nextElementSibling as HTMLElement | null;
     if (nextRow?.matches('[data-history-wrapper]')) {
@@ -45,11 +46,15 @@ function getHistoryWrapperForRow(row: HTMLElement): HTMLElement | null {
     row.getAttribute('data-account-row') || row.getAttribute('data-account-id') || null;
   if (!accountId) return null;
 
-  const historyContainer = row.querySelector<HTMLElement>(
-    `[data-history-container][data-account-id="${CSS.escape(accountId)}"]`
-  );
+  // Card rows: history container is a sibling element, not a child
+  const nextSibling = row.nextElementSibling as HTMLElement | null;
+  if (
+    nextSibling?.matches(`[data-history-container][data-account-id="${CSS.escape(accountId)}"]`)
+  ) {
+    return nextSibling;
+  }
 
-  return historyContainer?.closest<HTMLElement>('[data-history-wrapper]') ?? null;
+  return null;
 }
 
 function filterAccounts(query: string, input: HTMLInputElement): void {

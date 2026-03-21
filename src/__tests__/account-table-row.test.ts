@@ -28,7 +28,7 @@ describe('AccountTableRow', () => {
   it('renders clickable row with accordion history wrapper', () => {
     const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
 
-    expect(content).toContain('data-account-row={id}');
+    expect(content).toContain('data-account-row={!isHistoricalView ? id : undefined}');
     expect(content).toContain('aria-controls={historyContainerId}');
     expect(content).toContain('aria-expanded="false"');
     expect(content).toContain('cursor-pointer');
@@ -39,11 +39,12 @@ describe('AccountTableRow', () => {
     expect(content).toContain('data-history-container');
   });
 
-  it('uses account name link for navigation instead of separate detail button', () => {
+  it('uses account name link for navigation and a dedicated toggle button for inline history', () => {
     const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
 
     expect(content).toContain('href={`/accounts/${id}`}');
-    expect(content).not.toContain('data-inline-history-toggle');
+    expect(content).toContain('data-inline-history-toggle');
+    expect(content).toContain(`aria-label={\`Toggle value history for \${name}\`}`);
     expect(content).not.toContain('data-testid="account-detail-btn"');
   });
 
