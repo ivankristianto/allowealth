@@ -747,6 +747,49 @@ const inviteMemberButtonClassName = accentGhostBtn
                 </header>
                 <div class="divider my-0"></div>
 
+                <section class={groupedSectionClass} aria-labelledby="settings-data-backup">
+                  <div
+                    class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="space-y-1">
+                      <p class={sectionEyebrowClass}>Backup & Restore</p>
+                      <h3 id="settings-data-backup" class={sectionTitleClass}>
+                        Recovery tools on the roadmap
+                      </h3>
+                    </div>
+                    <span class="badge badge-neutral badge-lg">Coming soon</span>
+                  </div>
+                  <div
+                    class="flex flex-col gap-3 rounded-3xl border border-base-300 bg-base-100/60 p-6 opacity-60"
+                  >
+                    <p class="text-sm text-base-content/60">
+                      Backup and restore stay intentionally inactive until export and restore flows
+                      are implemented end to end.
+                    </p>
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                      <Button type="button" variant="outline" size="sm" disabled className="flex-1">
+                        <Database size={14} class="stroke-current" aria-hidden="true" />
+                        Download Backup
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" disabled className="flex-1">
+                        <RotateCcw size={14} class="stroke-current" aria-hidden="true" />
+                        Restore from Backup
+                      </Button>
+                    </div>
+                    <p class="text-xs text-base-content/50">
+                      Backup & restore is tracked in
+                      <a
+                        href="https://github.com/ivankristianto/allowealth/issues/351"
+                        class="link link-hover"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        issue #351
+                      </a>.
+                    </p>
+                  </div>
+                </section>
+
                 <section class={groupedSectionClass} aria-labelledby="settings-data-danger">
                   <div class="mb-5 space-y-1">
                     <p class={sectionEyebrowClass}>Danger Zone</p>
@@ -822,49 +865,6 @@ const inviteMemberButtonClassName = accentGhostBtn
                         </Button>
                       </div>
                     </div>
-                  </div>
-                </section>
-
-                <section class={groupedSectionClass} aria-labelledby="settings-data-backup">
-                  <div
-                    class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="space-y-1">
-                      <p class={sectionEyebrowClass}>Backup & Restore</p>
-                      <h3 id="settings-data-backup" class={sectionTitleClass}>
-                        Recovery tools on the roadmap
-                      </h3>
-                    </div>
-                    <span class="badge badge-neutral badge-lg">Coming soon</span>
-                  </div>
-                  <div
-                    class="flex flex-col gap-3 rounded-3xl border border-base-300 bg-base-100/60 p-6 opacity-60"
-                  >
-                    <p class="text-sm text-base-content/60">
-                      Backup and restore stay intentionally inactive until export and restore flows
-                      are implemented end to end.
-                    </p>
-                    <div class="flex flex-col gap-3 sm:flex-row">
-                      <Button type="button" variant="outline" size="sm" disabled className="flex-1">
-                        <Database size={14} class="stroke-current" aria-hidden="true" />
-                        Download Backup
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" disabled className="flex-1">
-                        <RotateCcw size={14} class="stroke-current" aria-hidden="true" />
-                        Restore from Backup
-                      </Button>
-                    </div>
-                    <p class="text-xs text-base-content/50">
-                      Backup & restore is tracked in
-                      <a
-                        href="https://github.com/ivankristianto/allowealth/issues/351"
-                        class="link link-hover"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        issue #351
-                      </a>.
-                    </p>
                   </div>
                 </section>
               </div>
@@ -948,7 +948,7 @@ const inviteMemberButtonClassName = accentGhostBtn
   <Modal
     id="clear-history-modal"
     size="sm"
-    closable={true}
+    closable={false}
     backdropClose={true}
     ariaLabel="Clear transaction history"
   >
@@ -970,7 +970,7 @@ const inviteMemberButtonClassName = accentGhostBtn
   <Modal
     id="factory-reset-modal"
     size="sm"
-    closable={true}
+    closable={false}
     backdropClose={false}
     ariaLabel="Factory reset"
   >

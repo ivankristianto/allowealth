@@ -51,6 +51,14 @@ describe('settings page refinement regressions', () => {
     expect(source).toContain('data-open-modal="clear-history-modal"');
     expect(source).toContain('data-open-modal="factory-reset-modal"');
   });
+
+  it('renders backup and restore before the danger zone in the data tab', () => {
+    const source = readTemplate('src/pages/settings/index.astro');
+
+    expect(source.indexOf('Backup & Restore')).toBeGreaterThanOrEqual(0);
+    expect(source.indexOf('Danger Zone')).toBeGreaterThanOrEqual(0);
+    expect(source.indexOf('Backup & Restore')).toBeLessThan(source.indexOf('Danger Zone'));
+  });
 });
 
 describe('invite member modal refinement regressions', () => {
@@ -80,6 +88,22 @@ describe('invite member modal refinement regressions', () => {
     expect(actionClassSource).toContain('active:text-accent-content');
     expect(settingsSource).toContain('const inviteMemberButtonClassName = accentGhostBtn');
     expect(settingsSource).toContain('variant="ghost"');
+  });
+});
+
+describe('settings destructive modal regressions', () => {
+  it('removes the top-right close button from the clear history modal', () => {
+    const source = read('src/pages/settings/index.astro');
+
+    expect(source).toContain('id="clear-history-modal"');
+    expect(source).toContain('closable={false}');
+  });
+
+  it('removes the top-right close button from the factory reset modal', () => {
+    const source = read('src/pages/settings/index.astro');
+
+    expect(source).toContain('id="factory-reset-modal"');
+    expect(source).toContain('closable={false}');
   });
 });
 
@@ -116,6 +140,13 @@ describe('diagnostics layout refinement regressions', () => {
     expect(source.indexOf('Last updated:')).toBeGreaterThan(
       source.indexOf('Environment Variables')
     );
+  });
+
+  it('shows the app version and changelog link in the runtime diagnostics block', () => {
+    const source = read('src/components/organisms/DiagnosticsDisplay.astro');
+
+    expect(source).toContain('App Version');
+    expect(source).toContain('https://docs.allowealth.io/changelog/');
   });
 });
 
