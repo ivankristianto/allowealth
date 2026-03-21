@@ -4,15 +4,14 @@
  *
  * Glass-effect navigation bar for public landing pages.
  * Shows logo, nav links (desktop only), and CTA button.
- *
- * TODO: P2 - Add mobile navigation menu (hamburger dropdown or drawer)
- * for access to Features and Documentation links on mobile devices.
  */
 
 import { brandContent } from '@/lib/landing-content';
+import { Menu, X, ExternalLink } from '@lucide/astro';
 
 const navLinks = [
   { label: 'Features', href: '/#features' },
+  { label: 'Demo', href: 'https://demo.allowealth.io', external: true },
   { label: 'Documentation', href: 'https://docs.allowealth.io', external: true },
 ];
 ---
@@ -61,28 +60,150 @@ const navLinks = [
               class="text-sm font-bold text-base-content/60 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded inline-flex items-center gap-1"
             >
               {link.label}
-              {link.external && (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="opacity-50"
-                  aria-hidden="true"
-                >
-                  <path d="M7 7h10v10" />
-                  <path d="M7 17 17 7" />
-                </svg>
-              )}
+              {link.external && <ExternalLink size={12} class="opacity-50" aria-hidden="true" />}
             </a>
           </li>
         ))
       }
     </ul>
+
+    <!-- Mobile Menu Button -->
+    <button
+      id="mobile-menu-button"
+      class="lg:hidden p-2 rounded-xl text-base-content/60 hover:text-base-content hover:bg-base-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      aria-label="Toggle navigation menu"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <Menu size={24} class="menu-icon-open" aria-hidden="true" />
+      <X size={24} class="menu-icon-close hidden" aria-hidden="true" />
+    </button>
+  </div>
+
+  <!-- Mobile Menu Overlay -->
+  <div
+    id="mobile-menu"
+    class="lg:hidden fixed inset-x-4 top-[88px] z-40 opacity-0 invisible transition-all duration-300 ease-out"
+    role="dialog"
+    aria-label="Mobile navigation menu"
+  >
+    <div
+      class="bg-base-100/98 backdrop-blur-xl border border-base-300/30 rounded-3xl shadow-premium-lg p-6"
+    >
+      <ul class="space-y-1">
+        {
+          navLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                target={link.external ? '_blank' : undefined}
+                rel={link.external ? 'noopener noreferrer' : undefined}
+                class="flex items-center justify-between px-4 py-4 text-base font-bold text-base-content hover:bg-base-200/50 rounded-2xl transition-colors"
+              >
+                <span>{link.label}</span>
+                {link.external ? (
+                  <ExternalLink size={18} class="text-base-content/40" aria-hidden="true" />
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="text-base-content/40"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                )}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <!-- Mobile Menu Backdrop -->
+  <div
+    id="mobile-menu-backdrop"
+    class="lg:hidden fixed inset-0 bg-base-100/50 backdrop-blur-sm z-30 opacity-0 invisible transition-opacity duration-300"
+    aria-hidden="true"
+  >
   </div>
 </nav>
+
+<script>
+  // Mobile menu toggle functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const menuButtonEl = document.getElementById('mobile-menu-button');
+    const mobileMenuEl = document.getElementById('mobile-menu');
+    const backdropEl = document.getElementById('mobile-menu-backdrop');
+
+    if (!menuButtonEl || !mobileMenuEl || !backdropEl) return;
+
+    // After the null check, cast to non-null types
+    const menuButton = menuButtonEl;
+    const mobileMenu = mobileMenuEl;
+    const backdrop = backdropEl;
+
+    const menuIconOpen = menuButton.querySelector('.menu-icon-open');
+    const menuIconClose = menuButton.querySelector('.menu-icon-close');
+    let isOpen = false;
+
+    function toggleMenu() {
+      isOpen = !isOpen;
+
+      if (isOpen) {
+        // Open menu
+        mobileMenu.classList.remove('opacity-0', 'invisible');
+        mobileMenu.classList.add('opacity-100', 'visible');
+        backdrop.classList.remove('opacity-0', 'invisible');
+        backdrop.classList.add('opacity-100', 'visible');
+        menuIconOpen?.classList.add('hidden');
+        menuIconClose?.classList.remove('hidden');
+        menuButton.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      } else {
+        // Close menu
+        mobileMenu.classList.add('opacity-0', 'invisible');
+        mobileMenu.classList.remove('opacity-100', 'visible');
+        backdrop.classList.add('opacity-0', 'invisible');
+        backdrop.classList.remove('opacity-100', 'visible');
+        menuIconOpen?.classList.remove('hidden');
+        menuIconClose?.classList.add('hidden');
+        menuButton.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+    }
+
+    // Toggle on button click
+    menuButton.addEventListener('click', toggleMenu);
+
+    // Close on backdrop click
+    backdrop.addEventListener('click', () => {
+      if (isOpen) toggleMenu();
+    });
+
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        toggleMenu();
+      }
+    });
+
+    // Close menu when clicking a link (for anchor links)
+    mobileMenu.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        if (isOpen && !link.getAttribute('target')) {
+          toggleMenu();
+        }
+      });
+    });
+  });
+</script>

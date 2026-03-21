@@ -7,24 +7,9 @@
  */
 
 import { Image } from 'astro:assets';
-import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  PiggyBank,
-  Landmark,
-  ChartColumn,
-  BadgeCheck,
-} from '@lucide/astro';
+import { BadgeCheck } from '@lucide/astro';
 import { showcaseItems } from '@/lib/landing-content';
-
-// Map icon names to components
-const iconMap: Record<string, typeof LayoutDashboard> = {
-  LayoutDashboard,
-  ArrowLeftRight,
-  PiggyBank,
-  Landmark,
-  ChartColumn,
-};
+import SpotIllustrations from '@/components/atoms/SpotIllustrations.astro';
 ---
 
 <section id="showcase" class="relative z-10 py-16 sm:py-32 px-6" aria-labelledby="showcase-title">
@@ -33,7 +18,6 @@ const iconMap: Record<string, typeof LayoutDashboard> = {
   <div class="max-w-7xl mx-auto space-y-16 sm:space-y-32">
     {
       showcaseItems.map((item, index) => {
-        const IconComponent = iconMap[item.icon];
         const isReverse = item.reverse;
 
         return (
@@ -48,9 +32,7 @@ const iconMap: Record<string, typeof LayoutDashboard> = {
               <div
                 class={`w-12 h-12 sm:w-14 sm:h-14 ${item.iconBg} ${item.iconColor} rounded-2xl flex items-center justify-center`}
               >
-                {IconComponent && (
-                  <IconComponent size={28} class="stroke-current" aria-hidden="true" />
-                )}
+                <SpotIllustrations name={item.spotIllustration} class="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
 
               {/* Title */}
