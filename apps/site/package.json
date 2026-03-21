@@ -12,15 +12,15 @@
     "@astrojs/sitemap": "^3.7.1",
     "@lucide/astro": "^0.562.0",
     "@tailwindcss/vite": "^4.1.18",
-    "astro": "5.16.15",
+    "astro": "6.0.8",
     "daisyui": "^5.5.14",
     "motion": "^12.29.2",
     "tailwindcss": "^4.1.18",
     "wrangler": "^4.70.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.6",
-    "@astrojs/ts-plugin": "^1.10.6",
+    "@astrojs/check": "^0.9.8",
+    "@astrojs/ts-plugin": "^1.10.7",
     "@tailwindcss/typography": "^0.5.19",
     "typescript": "^5.9.3"
   }
