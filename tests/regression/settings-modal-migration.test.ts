@@ -136,6 +136,7 @@ describe('diagnostics layout refinement regressions', () => {
     expect(source).not.toContain('flex h-12 w-12 items-center justify-center rounded-2xl');
     expect(source).not.toMatch(/class="[^"]*\bbadge\b[^"]*"/);
     expect(source).not.toMatch(/class=\{[^}]*badge[^}]*\}/);
+    expect(source).toContain('<Card padding="lg" className="@container">');
     expect(source).toContain('class={summaryReadoutRowClass}');
     expect(source).toContain('class={summaryReadoutValueClass}');
     expectInAscendingOrder(source, [
@@ -164,10 +165,10 @@ describe('diagnostics layout refinement regressions', () => {
     const source = read('src/components/organisms/DiagnosticsDisplay.astro');
 
     expect(source).toContain(
-      "const summaryReadoutRowClass =\n  'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-4 border-t border-base-200 py-3 first:border-t-0 first:pt-0';"
+      "const summaryReadoutRowClass =\n  'grid grid-cols-1 gap-y-1 border-t border-base-200 py-3 first:border-t-0 first:pt-0 @2xl:grid-cols-[auto_minmax(0,1fr)] @2xl:items-start @2xl:gap-x-4 @2xl:gap-y-0';"
     );
     expect(source).toContain(
-      "const summaryReadoutValueClass =\n  'min-w-0 break-words text-right text-sm font-medium leading-6 text-base-content';"
+      "const summaryReadoutValueClass =\n  'min-w-0 break-words text-left text-sm font-medium leading-6 text-base-content @2xl:text-right';"
     );
     expect(source).toContain(
       "const databasePlatformLabel = data.database.isD1 ? 'Cloudflare D1' : 'Local SQLite';"
