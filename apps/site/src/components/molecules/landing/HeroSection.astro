@@ -2,12 +2,14 @@
 /**
  * HeroSection Component
  *
- * Landing page hero with badge, headline, description, and dual CTAs.
+ * Landing page hero with animated typing headline, badge, description, and CTAs.
  */
 
 import { Sparkles, ArrowRight } from '@lucide/astro';
 import { heroContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
+
+const { typingHeadlines } = heroContent;
 ---
 
 <header class="relative z-10 pt-36 sm:pt-48 pb-16 sm:pb-32 px-6 overflow-hidden">
@@ -20,7 +22,7 @@ import Button from '@/components/atoms/Button.astro';
   </div>
 
   <div class="relative max-w-7xl mx-auto text-center">
-    <!-- AI Badge -->
+    <!-- Badge -->
     <div
       class="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full mb-8 sm:mb-12"
     >
@@ -30,17 +32,22 @@ import Button from '@/components/atoms/Button.astro';
       </span>
     </div>
 
-    <!-- Main Headline -->
+    <!-- Main Headline with Typing Animation -->
     <h1
-      class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.85] mb-6 sm:mb-10"
+      class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.9] mb-6 sm:mb-10"
     >
-      {heroContent.title}
-      <br class="hidden lg:block" />
-      <span class="italic"
-        >{heroContent.titleHighlightPrefix}<span class="text-accent"
-          >{heroContent.titleHighlight}</span
-        ></span
+      <span
+        class="hero-typing-wrapper block"
+        data-headlines={JSON.stringify(typingHeadlines)}
+        style="min-height: 2em; contain: layout;"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label="Animated headline"
       >
+        <span class="hero-typing-text">{typingHeadlines[0]}</span>
+        <span class="typing-cursor" aria-hidden="true">|</span>
+      </span>
+      <span class="text-accent">{heroContent.titleSuffix}</span>
     </h1>
 
     <!-- Description -->
@@ -76,46 +83,131 @@ import Button from '@/components/atoms/Button.astro';
   </div>
 </header>
 
+<script>
+  // Typing animation for hero headline
+  document.addEventListener('DOMContentLoaded', () => {
+    // Respect user's motion preferences
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const wrapper = document.querySelector('.hero-typing-wrapper') as HTMLElement | null;
+    const typingElement = wrapper?.querySelector('.hero-typing-text') as HTMLElement | null;
+
+    if (!wrapper || !typingElement) return;
+
+    const headlines = JSON.parse(wrapper.dataset.headlines || '[]');
+    if (!Array.isArray(headlines) || headlines.length === 0) return;
+
+    let currentIndex = 0;
+    let isTyping = true;
+    let charIndex = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isActive = true;
+
+    const TYPING_SPEED = 60; // ms per character
+    const DELETING_SPEED = 40; // ms per character
+    const PAUSE_AFTER_TYPE = 3000; // ms to pause after typing
+    const PAUSE_AFTER_DELETE = 500; // ms to pause after deleting
+
+    function cleanup() {
+      isActive = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
+    function scheduleNext(callback: () => void, delay: number) {
+      if (!isActive) return;
+      timeoutId = setTimeout(() => {
+        if (isActive) callback();
+      }, delay);
+    }
+
+    function type() {
+      if (!isActive) return;
+
+      const fullText = headlines[currentIndex];
+
+      if (isTyping) {
+        // Typing forward
+        if (charIndex < fullText.length) {
+          typingElement.textContent = fullText.slice(0, charIndex + 1);
+          charIndex++;
+          scheduleNext(type, TYPING_SPEED);
+        } else {
+          // Finished typing, pause before deleting
+          isTyping = false;
+          scheduleNext(type, PAUSE_AFTER_TYPE);
+        }
+      } else {
+        // Deleting backward
+        if (charIndex > 0) {
+          typingElement.textContent = fullText.slice(0, charIndex - 1);
+          charIndex--;
+          scheduleNext(type, DELETING_SPEED);
+        } else {
+          // Finished deleting, move to next headline
+          currentIndex = (currentIndex + 1) % headlines.length;
+          isTyping = true;
+          scheduleNext(type, PAUSE_AFTER_DELETE);
+        }
+      }
+    }
+
+    // Cleanup on page hide/unload
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        cleanup();
+      } else {
+        // Resume animation when page becomes visible again
+        isActive = true;
+        type();
+      }
+    });
+
+    // Start the typing animation
+    scheduleNext(type, 800);
+  });
+</script>
+
 <style>
-  /* Entrance animations */
-  @keyframes fade-in-down {
-    from {
+  /* Wrapper for typing animation */
+  .hero-typing-wrapper {
+    text-wrap: balance;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  /* Blinking cursor */
+  .typing-cursor {
+    animation: blink 1s step-end infinite;
+    color: var(--color-accent);
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    50% {
       opacity: 0;
-      transform: translateY(-16px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
     }
   }
 
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(32px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+  /* Ensure consistent height across breakpoints */
+  @media (max-width: 639px) {
+    .hero-typing-wrapper {
+      min-height: 2.4em;
     }
   }
 
-  /* Apply animations only when user prefers motion */
-  @media (prefers-reduced-motion: no-preference) {
-    .animate-fade-in-down {
-      animation: fade-in-down 0.7s ease-out both;
+  @media (min-width: 640px) and (max-width: 767px) {
+    .hero-typing-wrapper {
+      min-height: 2.2em;
     }
+  }
 
-    .animate-fade-in-up {
-      animation: fade-in-up 0.7s ease-out both;
-    }
-
-    .animate-fade-in-up-delay {
-      animation: fade-in-up 1s ease-out 0.2s both;
-    }
-
-    .animate-fade-in-up-delay-2 {
-      animation: fade-in-up 1s ease-out 0.4s both;
+  @media (min-width: 768px) {
+    .hero-typing-wrapper {
+      min-height: 2em;
     }
   }
 </style>

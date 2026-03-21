@@ -1,0 +1,132 @@
+---
+/**
+ * UseCaseStories Component
+ *
+ * Real-world scenarios showing how different users benefit from Allowealth.
+ * Adds personality and helps visitors see themselves in the product.
+ */
+
+import { Heart, Users, Home, Wallet } from '@lucide/astro';
+
+interface UseCase {
+  icon: string;
+  title: string;
+  scenario: string;
+  painPoint: string;
+  solution: string;
+  quote: string;
+  avatar: string;
+}
+
+const useCases: UseCase[] = [
+  {
+    icon: 'Heart',
+    title: 'The Newlyweds',
+    scenario: 'Just moved in together, merging finances for the first time.',
+    painPoint: 'Constantly asking "Did you pay the electricity bill?" and wondering who owes what.',
+    solution: 'One shared dashboard shows every transaction. No more awkward money talks.',
+    quote: "We stopped arguing about money in month two. That's worth everything.",
+    avatar: 'couple',
+  },
+  {
+    icon: 'Users',
+    title: 'The Roommate Squad',
+    scenario: 'Four friends sharing a house, splitting rent, utilities, and group dinners.',
+    painPoint: 'Group chat is a mess of "You owe me $23" messages. Someone always forgets to pay.',
+    solution: 'Track shared expenses in real-time. Everyone sees who paid what, instantly.',
+    quote: 'No more "I thought YOU were buying toilet paper." We can actually see it all.',
+    avatar: 'friends',
+  },
+  {
+    icon: 'Home',
+    title: 'The Young Family',
+    scenario: 'New parents juggling daycare costs, medical bills, and a mortgage.',
+    painPoint: 'Month-end panic: "Where did $800 go?" Spreadsheets are too much work.',
+    solution: 'Automatic categorization and spending alerts. Finally, visibility into the chaos.',
+    quote: 'I actually know if we can afford that weekend trip without checking three bank apps.',
+    avatar: 'family',
+  },
+  {
+    icon: 'Wallet',
+    title: 'The Solo Planner',
+    scenario: 'Living alone, managing all bills solo, trying to save for big goals.',
+    painPoint: 'Good intentions but no system. Money disappears and savings goals feel impossible.',
+    solution: 'Budgets that actually stick. See your progress toward goals every single day.',
+    quote:
+      "I hit my savings goal for the first time ever. Didn't even feel like I was depriving myself.",
+    avatar: 'solo',
+  },
+];
+---
+
+<section
+  id="stories"
+  class="relative z-10 py-16 sm:py-32 px-6 bg-base-200/30"
+  aria-labelledby="stories-title"
+>
+  <div class="max-w-7xl mx-auto">
+    <!-- Section Header -->
+    <header class="text-center mb-12 sm:mb-20">
+      <div
+        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-sm font-medium text-accent mb-6"
+      >
+        <Users size={16} aria-hidden="true" />
+        Real Stories
+      </div>
+      <h2
+        id="stories-title"
+        class="text-3xl sm:text-4xl md:text-6xl font-bold text-base-content tracking-tighter mb-4"
+      >
+        Who's using Allowealth?
+      </h2>
+      <p class="text-base-content/60 text-base sm:text-lg font-medium max-w-xl mx-auto">
+        Real scenarios from real people. See how different households stay on the same page.
+      </p>
+    </header>
+
+    <!-- Use Case Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+      {
+        useCases.map((useCase) => (
+          <article class="group relative bg-base-100 rounded-3xl p-6 sm:p-8 border border-base-300/50 hover:border-accent/30 hover:shadow-premium-lg transition-all duration-300">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              {useCase.icon === 'Heart' && <Heart size={28} aria-hidden="true" />}
+              {useCase.icon === 'Users' && <Users size={28} aria-hidden="true" />}
+              {useCase.icon === 'Home' && <Home size={28} aria-hidden="true" />}
+              {useCase.icon === 'Wallet' && <Wallet size={28} aria-hidden="true" />}
+            </div>
+
+            <div class="space-y-4">
+              <h3 class="text-2xl sm:text-3xl font-bold text-base-content">{useCase.title}</h3>
+
+              <div class="space-y-3">
+                <p class="text-base-content/80 leading-relaxed">
+                  <span class="font-semibold text-base-content">The situation:</span>{' '}
+                  {useCase.scenario}
+                </p>
+
+                <div class="flex items-start gap-3 p-4 bg-error/5 rounded-2xl border border-error/10">
+                  <span class="text-error font-bold text-sm shrink-0 mt-0.5">The problem:</span>
+                  <p class="text-base-content/70 text-sm leading-relaxed">{useCase.painPoint}</p>
+                </div>
+
+                <div class="flex items-start gap-3 p-4 bg-success/5 rounded-2xl border border-success/10">
+                  <span class="text-success font-bold text-sm shrink-0 mt-0.5">The fix:</span>
+                  <p class="text-base-content/70 text-sm leading-relaxed">{useCase.solution}</p>
+                </div>
+              </div>
+
+              <blockquote class="pt-4 border-t border-base-300/50">
+                <p class="text-base-content/80 text-base sm:text-lg italic leading-relaxed">
+                  "{useCase.quote}"
+                </p>
+              </blockquote>
+            </div>
+
+            <div class="absolute bottom-0 left-6 right-6 h-1 bg-accent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
