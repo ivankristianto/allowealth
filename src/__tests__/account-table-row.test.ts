@@ -56,6 +56,25 @@ describe('AccountTableRow', () => {
     );
   });
 
+  it('keeps mobile rows compact with inline metadata for hidden columns', () => {
+    const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
+
+    expect(content).toContain(
+      'class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3"'
+    );
+    expect(content).toContain('md:hidden');
+    expect(content).toContain('const mobileCategoryLabel = categoryName?.trim() || null;');
+    expect(content).toContain('const mobileSecondaryMeta = [mobileCategoryLabel, ownerName]');
+    expect(content).toContain('Updated {formattedDate}');
+  });
+
+  it('preserves 44px action targets for table row controls', () => {
+    const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
+
+    expect(content).toContain('min-h-11 min-w-11');
+    expect(content).not.toContain('min-h-9 min-w-9');
+  });
+
   it('renders debt display from a negative absolute value', () => {
     const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
 

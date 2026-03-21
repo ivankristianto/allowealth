@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
+const normalize = (value: string) => value.replace(/\s+/g, ' ');
+
 describe('AccountTable', () => {
   it('renders debt group totals as negative values', () => {
     const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
@@ -68,5 +70,43 @@ describe('AccountTable', () => {
 
     expect(content).not.toContain('md:hidden');
     expect(content).not.toContain('account-table-mobile-history-');
+  });
+
+  it('hides secondary headers on mobile so balance and actions stay reachable without horizontal scrolling', () => {
+    const content = readFileSync('src/components/organisms/AccountTable.astro', 'utf8');
+    const normalized = normalize(content);
+
+    expect(normalized).toContain(
+      normalize(`
+        <th
+          scope="col"
+          class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+          data-sort-key="type"
+      `)
+    );
+    expect(normalized).toContain(
+      normalize(`
+        <th
+          scope="col"
+          class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+          data-sort-key="category"
+      `)
+    );
+    expect(normalized).toContain(
+      normalize(`
+        <th
+          scope="col"
+          class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+          data-sort-key="owner"
+      `)
+    );
+    expect(normalized).toContain(
+      normalize(`
+        <th
+          scope="col"
+          class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+          data-sort-key="updated"
+      `)
+    );
   });
 });

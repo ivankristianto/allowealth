@@ -60,6 +60,8 @@ const formattedDate = lastUpdatedDate.toLocaleDateString('en-US', {
 });
 const historyContainerId = `account-table-history-${id}`;
 const totalColumns = isHistoricalView ? 6 : 7;
+const mobileCategoryLabel = categoryName?.trim() || null;
+const mobileSecondaryMeta = [mobileCategoryLabel, ownerName].filter(Boolean).join(' | ');
 ---
 
 <tr
@@ -81,31 +83,40 @@ const totalColumns = isHistoricalView ? 6 : 7;
   aria-expanded="false"
 >
   <td class="px-2 py-2.5 pl-3 text-sm font-semibold text-base-content md:px-3 md:pl-5">
-    <div class="flex items-center gap-1.5">
+    <div class="flex items-start gap-1.5">
       <ChevronDown
         size={14}
-        class="shrink-0 stroke-base-content/30 transition-transform duration-200"
+        class="mt-0.5 shrink-0 stroke-base-content/30 transition-transform duration-200"
         aria-hidden="true"
         data-expand-chevron={id}
       />
-      <a
-        href={`/accounts/${id}`}
-        class="block truncate transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
-      >
-        {name}
-      </a>
+      <div class="min-w-0 flex-1">
+        <a
+          href={`/accounts/${id}`}
+          class="block truncate transition-colors hover:text-accent underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
+          {name}
+        </a>
+        {
+          mobileSecondaryMeta && (
+            <div class="mt-1 truncate text-xs text-base-content/50 md:hidden">
+              {mobileSecondaryMeta}
+            </div>
+          )
+        }
+      </div>
     </div>
   </td>
 
-  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
     <span class="block truncate">{typeLabel}</span>
   </td>
 
-  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
     <span class="block truncate">{categoryName || '—'}</span>
   </td>
 
-  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
     <span class="block truncate">{ownerName || '—'}</span>
   </td>
 
@@ -119,7 +130,13 @@ const totalColumns = isHistoricalView ? 6 : 7;
     <span class="block truncate">{formattedBalance}</span>
   </td>
 
-  <td class="px-2 py-2.5 text-sm text-base-content/70 md:px-3">{formattedDate}</td>
+  <td class="hidden px-2 py-2.5 text-sm text-base-content/70 md:table-cell md:px-3">
+    {formattedDate}
+  </td>
+
+  <td class="px-2 py-2.5 text-right text-xs text-base-content/50 md:hidden"
+    >Updated {formattedDate}</td
+  >
 
   {
     !isHistoricalView && (
@@ -130,7 +147,7 @@ const totalColumns = isHistoricalView ? 6 : 7;
             variant="ghost"
             size="sm"
             shape="square"
-            className="min-h-9 min-w-9 rounded-lg border-0 text-base-content/50 hover:bg-accent/10 hover:text-accent"
+            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-accent/10 hover:text-accent"
             aria-label={`Update ${name} balance: ${formatCurrency(balance, currency)}`}
             data-update-value-account={id}
             data-account-name={name}
@@ -146,7 +163,7 @@ const totalColumns = isHistoricalView ? 6 : 7;
             variant="ghost"
             size="sm"
             shape="square"
-            className="min-h-9 min-w-9 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+            className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
             aria-label={`Edit ${name} details`}
             data-edit-account={id}
             data-account-name={name}
@@ -167,7 +184,7 @@ const totalColumns = isHistoricalView ? 6 : 7;
               variant="ghost"
               size="sm"
               shape="square"
-              className="min-h-9 min-w-9 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
+              className="min-h-11 min-w-11 rounded-lg border-0 text-base-content/50 hover:bg-base-200 hover:text-base-content"
               tabindex={0}
               aria-label={`More actions for ${name}`}
               aria-haspopup="menu"
