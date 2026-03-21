@@ -1,0 +1,329 @@
+---
+/**
+ * AccountTable Component
+ *
+ * Table view for accounts grouped by class with inline header rows.
+ * Group order: Liquid -> Debt -> Non-Liquid.
+ */
+
+import AccountTableRow from '@/components/molecules/AccountTableRow.astro';
+import { formatCurrency } from '@/lib/formatting';
+import {
+  calculateClassAllocation,
+  calculateGroupTotalsByCurrency,
+  groupAccountsByClass,
+} from '@/lib/utils/account';
+import { ACCOUNT_CLASS_LABELS, type AccountClass, type AccountOutput } from '@/lib/types/account';
+import type { Currency } from '@/lib/constants/currency';
+import { ChevronDown, ChevronUp, ChevronsUpDown, Wallet } from '@lucide/astro';
+
+const ACCOUNT_CLASS_SUBTITLES: Record<AccountClass, string> = {
+  liquid: 'Cash & equivalents',
+  debt: 'Liabilities & loans',
+  non_liquid: 'Investments & holdings',
+};
+
+const CLASS_ORDER: AccountClass[] = ['liquid', 'debt', 'non_liquid'];
+
+const GROUP_COLORS: Record<
+  AccountClass,
+  {
+    band: string;
+    rail: string;
+    label: string;
+    meta: string;
+    badge: string;
+  }
+> = {
+  liquid: {
+    band: 'bg-base-200/70',
+    rail: 'bg-accent/20',
+    label: 'text-accent',
+    meta: 'text-base-content/60',
+    badge: 'border border-accent/20 bg-accent/10 text-accent',
+  },
+  debt: {
+    band: 'bg-base-200/70',
+    rail: 'bg-warning/20',
+    label: 'text-warning',
+    meta: 'text-base-content/60',
+    badge: 'border border-warning/20 bg-warning/10 text-warning',
+  },
+  non_liquid: {
+    band: 'bg-base-200/70',
+    rail: 'bg-info/20',
+    label: 'text-info',
+    meta: 'text-base-content/60',
+    badge: 'border border-info/20 bg-info/10 text-info',
+  },
+};
+
+export interface AccountWithDisplay extends AccountOutput {
+  owner_name?: string;
+  category_name?: string | null;
+}
+
+export interface Props {
+  accounts: AccountWithDisplay[];
+  primaryCurrency: Currency;
+  currencyOrder: Currency[];
+  isHistoricalView?: boolean;
+}
+
+const {
+  accounts = [],
+  primaryCurrency,
+  currencyOrder = [],
+  isHistoricalView = false,
+} = Astro.props;
+
+function formatGroupTotal(amount: number, currency: Currency, groupClass: AccountClass): string {
+  return formatCurrency(groupClass === 'debt' ? -Math.abs(amount) : amount, currency);
+}
+
+const accountsByClass = groupAccountsByClass(accounts);
+const allocationByClass = calculateClassAllocation(accounts, primaryCurrency);
+
+const groups = CLASS_ORDER.filter((classKey) => accountsByClass[classKey].length > 0).map(
+  (classKey) => ({
+    classKey,
+    label: ACCOUNT_CLASS_LABELS[classKey],
+    subtitle: ACCOUNT_CLASS_SUBTITLES[classKey],
+    accounts: accountsByClass[classKey],
+    totals: calculateGroupTotalsByCurrency(accountsByClass[classKey], currencyOrder).filter(
+      (total) => total.amount > 0
+    ),
+    allocation: allocationByClass[classKey],
+    colors: GROUP_COLORS[classKey],
+  })
+);
+
+const sortableHeaderButtonClass =
+  'inline-flex w-full items-center gap-2 rounded-md text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:text-base-content/70';
+
+const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} justify-end text-right`;
+---
+
+{
+  groups.length === 0 ? (
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-base-200">
+        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
+      </div>
+      <h2 class="mb-2 text-lg font-bold text-base-content">No accounts found</h2>
+      <p class="max-w-sm text-sm text-neutral">
+        Add your first account to start tracking your portfolio.
+      </p>
+    </div>
+  ) : (
+    <div class="rounded-card border border-base-300 bg-base-100 shadow-sm" data-account-table>
+      <div class="overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left">
+            <thead>
+              <tr class="border-b border-base-300 bg-base-200/50">
+                <th
+                  scope="col"
+                  class="px-2 py-2.5 pl-3 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3 md:pl-5"
+                  data-sort-key="name"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Account</span>
+                    <span class="inline-flex text-base-content/20" data-sort-indicator="name">
+                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                      <ChevronDown
+                        size={14}
+                        data-sort-icon="desc"
+                        class="hidden"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                  data-sort-key="type"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Type</span>
+                    <span class="inline-flex text-base-content/20" data-sort-indicator="type">
+                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                      <ChevronDown
+                        size={14}
+                        data-sort-icon="desc"
+                        class="hidden"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                  data-sort-key="category"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Category</span>
+                    <span class="inline-flex text-base-content/20" data-sort-indicator="category">
+                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                      <ChevronDown
+                        size={14}
+                        data-sort-icon="desc"
+                        class="hidden"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                  data-sort-key="owner"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Owner</span>
+                    <span class="inline-flex text-base-content/20" data-sort-indicator="owner">
+                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                      <ChevronDown
+                        size={14}
+                        data-sort-icon="desc"
+                        class="hidden"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  class="px-2 py-2.5 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3"
+                  data-sort-key="balance"
+                  aria-sort="none"
+                >
+                  <button
+                    type="button"
+                    class={sortableHeaderButtonRightAlignedClass}
+                    data-sort-button
+                  >
+                    <span>Balance</span>
+                    <span class="inline-flex text-base-content/20" data-sort-indicator="balance">
+                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                      <ChevronDown
+                        size={14}
+                        data-sort-icon="desc"
+                        class="hidden"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                  data-sort-key="updated"
+                  aria-sort="none"
+                >
+                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                    <span>Updated</span>
+                    <span class="inline-flex text-base-content/20" data-sort-indicator="updated">
+                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                      <ChevronDown
+                        size={14}
+                        data-sort-icon="desc"
+                        class="hidden"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  class="px-2 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3"
+                >
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {groups.map((group) => (
+                <>
+                  <tr
+                    class={`border-y border-base-300 ${group.colors.band}`}
+                    data-group-header={group.classKey}
+                  >
+                    <td colspan={7} class="px-2 py-2.5 md:px-3">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap items-center gap-2.5">
+                          <span class={`h-7 w-1 rounded-full ${group.colors.rail}`} />
+                          <span
+                            class={`text-sm font-bold uppercase tracking-widest ${group.colors.label}`}
+                          >
+                            {group.label}
+                          </span>
+                          <span class={`text-xs ${group.colors.meta}`}>{group.subtitle}</span>
+                          <span
+                            class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badge}`}
+                          >
+                            {group.accounts.length}{' '}
+                            {group.accounts.length === 1 ? 'account' : 'accounts'}
+                          </span>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
+                          {group.totals.map((total, index) => (
+                            <span
+                              class={index === 0 ? 'text-base-content' : 'text-base-content/60'}
+                            >
+                              {formatGroupTotal(total.amount, total.currency, group.classKey)}
+                            </span>
+                          ))}
+                          {group.allocation.percentage > 0 && (
+                            <span
+                              class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${group.colors.badge}`}
+                            >
+                              {group.allocation.percentage}% of {primaryCurrency}
+                              {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {group.accounts.map((account) => (
+                    <AccountTableRow
+                      id={account.id}
+                      name={account.name}
+                      type={account.type}
+                      accountClass={account.account_class}
+                      ownerUserId={account.created_by_user_id}
+                      ownerName={account.owner_name}
+                      categoryId={account.category_id}
+                      categoryName={account.category_name}
+                      currency={account.currency}
+                      balance={Number.parseFloat(account.balance || '0')}
+                      lastUpdated={new Date(account.last_updated)}
+                      isHistoricalView={isHistoricalView}
+                      isDimmed={account.currency !== primaryCurrency}
+                    />
+                  ))}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}

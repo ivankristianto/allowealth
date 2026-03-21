@@ -1,0 +1,83 @@
+---
+import { LayoutGrid, List } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
+import ActionFilterBar from '@/components/organisms/ActionFilterBar.astro';
+
+export interface Props {
+  searchValue?: string;
+  members?: Array<{ id: string; name: string }>;
+  userId?: string;
+  currentUserId?: string;
+  currentSearchParams?: string;
+  baseUrl?: string;
+  defaultView?: 'card' | 'table';
+}
+
+const {
+  searchValue = '',
+  members = [],
+  userId = '',
+  currentUserId = '',
+  currentSearchParams = '',
+  baseUrl = '/accounts',
+  defaultView = 'table',
+} = Astro.props;
+
+const viewToggleClass =
+  'flex h-11 items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1';
+---
+
+<div
+  class="flex w-full flex-col gap-3 lg:flex-row lg:items-start"
+  data-account-filter-controls
+  data-default-view={defaultView}
+>
+  <div class="min-w-0 flex-1">
+    <ActionFilterBar
+      searchValue={searchValue}
+      members={members}
+      userId={userId}
+      currentUserId={currentUserId}
+      currentSearchParams={currentSearchParams}
+      baseUrl={baseUrl}
+      className="w-full"
+    />
+  </div>
+
+  <div class={viewToggleClass} data-view-toggle>
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className={[
+        'h-full min-h-0 min-w-11 flex-1 rounded-lg border-0',
+        defaultView === 'card' && 'btn-active',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      data-view-mode="card"
+      aria-label="Card view"
+      aria-pressed={defaultView === 'card' ? 'true' : 'false'}
+      title="Card view"
+    >
+      <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
+    </Button>
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className={[
+        'h-full min-h-0 min-w-11 flex-1 rounded-lg border-0',
+        defaultView === 'table' && 'btn-active',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      data-view-mode="table"
+      aria-label="Table view"
+      aria-pressed={defaultView === 'table' ? 'true' : 'false'}
+      title="Table view"
+    >
+      <List size={16} class="stroke-current" aria-hidden="true" />
+    </Button>
+  </div>
+</div>
