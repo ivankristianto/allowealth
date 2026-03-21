@@ -281,7 +281,7 @@ const { id } = Astro.props;
 
 <div data-invite-member-modal data-id={id}>
   <Modal id={id} size="md" closable={true} backdropClose={true}>
-    <div slot="default" class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <!-- Header section -->
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
@@ -654,7 +654,7 @@ Replace with:
     backdropClose={true}
     ariaLabel="Cancel invitation"
   >
-    <div slot="default" data-cancel-invitation-modal>
+    <div data-cancel-invitation-modal>
       <h3 class="font-bold text-lg text-warning mb-2">Cancel Invitation</h3>
       <p class="text-base-content/70">
         Are you sure you want to cancel the invitation to <span
@@ -880,7 +880,7 @@ Below the `<InviteMemberModal>` and the cancel-invitation `<Modal>`, add two new
 ```astro
   {/* Clear Transaction History Confirmation Modal */}
   <Modal id="clear-history-modal" size="sm" closable={true} backdropClose={true} ariaLabel="Clear transaction history">
-    <div slot="default">
+    <div>
       <h3 class="font-bold text-lg text-warning mb-2">Clear Transaction History</h3>
       <p class="text-base-content/70">
         Are you sure? All transactions will be permanently deleted. Accounts, budgets, and categories are kept. This cannot be undone.
@@ -898,7 +898,7 @@ Below the `<InviteMemberModal>` and the cancel-invitation `<Modal>`, add two new
 
   {/* Factory Reset Confirmation Modal */}
   <Modal id="factory-reset-modal" size="sm" closable={true} backdropClose={false} ariaLabel="Factory reset">
-    <div slot="default">
+    <div>
       <h3 class="font-bold text-lg text-error mb-2">Factory Reset</h3>
       <p class="text-base-content/70 mb-4">
         This will delete all transactions, accounts, budgets, categories, and workspace settings. Members are kept. This is irreversible.
