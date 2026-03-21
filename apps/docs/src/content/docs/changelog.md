@@ -14,6 +14,64 @@ audience:
 
 All notable changes to Allowealth are documented here.
 
+## [Unreleased] - 2026-03-21
+
+### Fixed
+
+- **Docker build:** Install python3 and build tools for better-sqlite3 native compilation.
+- **Mobile blur:** Tightened blur policy and audited performance issues.
+- **Accessibility:** WCAG 2.1 AA compliance — improved color contrast and opacity status indicators.
+
+### Performance
+
+- **iOS Safari blur:** Replaced CSS blur with radial gradients to fix performance issues.
+
+### Documentation
+
+- Added mobile blur performance implementation plan and regression tests.
+- Added iOS Safari blur cleanup specification.
+
+### Changed
+
+- **Public layout:** Simplified gradients and removed background animations.
+- **Workflow:** Added GitHub issues preference rule (GitHub over Linear for issue tracking).
+
+## [0.24.1] - 2026-03-19
+
+### Added
+
+- **Theme toggle:** Dark/light mode switch with improved accessibility and keyboard navigation.
+
+### Changed
+
+- **Theme initialization:** Moved to external module with analytics tracking.
+- **Session cookie:** Renamed to `allowealth.session_token` for clarity.
+
+## [0.24.0] - 2026-03-18
+
+### Fixed
+
+- **Docker security:** Run container as bun user instead of root.
+- **Navigation:** Restored public hero animations and expanded route coverage.
+
+### Added
+
+- **Docker self-hosting:** Design specification and implementation plan for self-hosted deployments.
+
+### Removed
+
+- Deleted outdated screenshot assets and marketing site copywriting.
+
+### Performance
+
+- **Landing page:** Optimized Largest Contentful Paint (LCP) and screenshot loading.
+
+## [0.23.0] - 2026-03-17
+
+### Performance
+
+- **Landing page:** Optimized Largest Contentful Paint (LCP) and improved screenshot loading performance.
+
 ## [Unreleased] - 2026-03-10
 
 ### Changed
