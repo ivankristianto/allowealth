@@ -182,17 +182,21 @@ console.log('Budget created:', budgetId); // Unstructured
 
 ## Content Security Policy
 
-```typescript
-// ❌ Wrong: unsafe-inline
-'script-src': ["'self'", "'unsafe-inline'"],
+Astro 6 can generate hash-based CSP for SSR pages with `security: { csp: true }`. This repo still has a nonce middleware in `src/middleware/security-headers.ts` that overwrites the response header, so that middleware is the runtime source of truth today. Static Pages output still needs its own static CSP strategy; it cannot depend on per-request nonces.
 
-// ✅ Correct: Inject nonces into Astro-generated scripts
+```typescript
+// Astro 6 native hash-based CSP (config-driven)
+'script-src': ["'self'", "'sha256-...'"],
+
+// Current runtime policy (middleware wins)
 'script-src': ["'self'", `'nonce-${nonce}'`],
 ```
 
 **Rules:**
 
-- ❌ **Use `script-src 'unsafe-inline'` for CSP** - inject nonces into Astro-generated scripts
+- ✅ **Use `security: { csp: true }` for Astro 6 SSR pages** - it hashes Astro-generated scripts and styles
+- ✅ **Keep nonce middleware until the SSR app no longer needs it** - response headers from middleware take precedence
+- ❌ **Use `script-src 'unsafe-inline'` for CSP** - prefer hashes or nonces, not unsafe inline
 
 ## Common Deployment Issues
 

@@ -16,6 +16,8 @@
 |---|---|
 | `package.json` | Bump `astro`, `@astrojs/cloudflare`, `@astrojs/node`, `@astrojs/check`, `@astrojs/ts-plugin`, `eslint-plugin-astro`; remove `patchedDependencies` block |
 | `apps/docs/package.json` | Bump `astro`, `@astrojs/starlight`, `@astrojs/check` |
+| `apps/docs/astro.config.mjs` | Review Starlight `social` config shape for 0.38 |
+| `apps/docs/src/env.d.ts` | Keep Starlight virtual types reference current |
 | `apps/site/package.json` | Bump `astro`, `@astrojs/check`, `@astrojs/ts-plugin` |
 | `patches/astro@5.16.15.patch` | Delete |
 | `astro.config.ts` | Add `security: { csp: true }` |
@@ -69,10 +71,12 @@ Delete these lines from `package.json`:
 
 ---
 
-## Task 2: Bump packages in sub-apps
+## Task 2: Bump packages and Starlight config in sub-apps
 
 **Files:**
 - Modify: `apps/docs/package.json`
+- Modify: `apps/docs/astro.config.mjs`
+- Modify: `apps/docs/src/env.d.ts`
 - Modify: `apps/site/package.json`
 
 - [ ] **Step 1: Update `apps/docs/package.json`**
@@ -97,7 +101,13 @@ to:
 "@astrojs/check": "^0.9.8",
 ```
 
-- [ ] **Step 2: Update `apps/site/package.json`**
+- [ ] **Step 2: Update Starlight 0.38 follow-up files**
+
+In `apps/docs/astro.config.mjs`, review the `social` config shape and update it to the Starlight 0.38 format used by the current docs branch.
+
+In `apps/docs/src/env.d.ts`, keep the Starlight virtual types reference so the docs app typechecks cleanly.
+
+- [ ] **Step 3: Update `apps/site/package.json`**
 
 Change:
 ```json
@@ -169,7 +179,7 @@ export default defineConfig({
 
 - [ ] **Step 2: Add TODO comment to `src/middleware/security-headers.ts`**
 
-Add the following comment block at line 81, before the `// ---------- Middleware ----------` section comment:
+Insert the following comment block before the `// ---------- Middleware ----------` section comment:
 
 ```ts
 // TODO(ALL-62): Astro 6 security.csp is enabled in astro.config.ts (hash-based).

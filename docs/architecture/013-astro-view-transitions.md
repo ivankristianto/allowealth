@@ -10,11 +10,13 @@ Page navigations cause a white flash and full page reload, making the app feel l
 
 ### CSP Compatibility
 
-The project uses nonce-based CSP via HTTP headers. Analysis confirms compatibility:
+Astro 6 enables hash-based CSP in the main SSR app, but the existing nonce middleware still writes the live HTTP header. Analysis confirms compatibility:
 
 1. All `is:inline` scripts are on auth pages which use `data-astro-reload` (hard reload = fresh CSP header)
 2. The theme script in BaseLayout runs once on initial hard load; `<html>` persists across soft navigations
 3. All other scripts are Vite-bundled module scripts, allowed by `script-src: 'self'`
+
+The middleware header currently wins at runtime, so the nonce-based policy remains active until the cleanup lands.
 
 ## Decision
 

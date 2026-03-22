@@ -65,7 +65,9 @@ Astro 6 introduces `security: { csp: true }` which automatically hashes all page
 2. Leave existing custom nonce middleware and `public/_headers` CSP entries in place
 3. Add `// TODO(ALL-62): evaluate removing custom nonce middleware once Astro 6 CSP is validated` at relevant locations
 
-**CSP applies to main SSR app only.** `apps/docs` and `apps/site` use `output: 'static'` — Astro 6 CSP for static output emits `<meta http-equiv>` tags rather than response headers. Neither sub-app has a custom CSP today, so no CSP config is added to them in this upgrade.
+**CSP applies to main SSR app only.** `apps/docs` and `apps/site` use `output: 'static'` — Astro 6 CSP for static output emits `<meta http-equiv>` tags rather than response headers. `apps/site` already ships its own static CSP via `public/_headers`; `apps/docs` does not, so no new CSP config is added there in this upgrade.
+
+**Docs app follow-up:** Starlight 0.38 also requires reviewing `apps/docs/astro.config.mjs` for the `social` config shape and keeping `apps/docs/src/env.d.ts` pointed at Starlight's virtual types.
 
 **Header precedence note:** Astro 6's hash-based CSP and the existing nonce-based middleware generate separate `Content-Security-Policy` headers. In the SSR app the custom middleware (`security-headers.ts`) sets the header on the response after Astro renders — meaning the middleware header wins and Astro's hash header is overwritten. This makes `security: { csp: true }` effectively a no-op for the SSR app until the custom code is removed. The flag is added now to document intent and enable testing; the TODO comments track the cleanup.
 

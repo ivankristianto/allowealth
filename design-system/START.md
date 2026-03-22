@@ -1,6 +1,6 @@
 # Design System
 
-**Version:** 1.2.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.2.0 | **Framework:** Astro 6.x + Tailwind v4 + DaisyUI v5
 
 ## Quick Start
 

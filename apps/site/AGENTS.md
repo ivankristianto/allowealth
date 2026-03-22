@@ -8,7 +8,7 @@ This is the static marketing site for Allowealth, deployed to Cloudflare Pages a
 
 | Category   | Technology                   |
 | ---------- | ---------------------------- |
-| Framework  | Astro 5.x (static output)    |
+| Framework  | Astro 6.x (static output)    |
 | Styling    | Tailwind CSS v4 + DaisyUI v5 |
 | Icons      | @lucide/astro                |
 | Animations | motion (client-side)         |

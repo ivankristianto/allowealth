@@ -12,6 +12,8 @@ All project rules and memory are now in `.claude/`:
 
 See `.claude/README.md` for full structure and documentation.
 
+Current baseline: Astro 6 across the main app, docs site, and marketing site.
+
 ## For New Agents
 
 1. Read `.claude/rules/principles.md` - core principles
