@@ -15,25 +15,30 @@
 
 /**
  * Cached reference to the cloudflare:workers env object.
- * `undefined` means we haven't probed yet; `null` means not available.
+ * `null` means not available in current runtime.
  */
-let cfEnv: Record<string, unknown> | null | undefined;
+let cfEnv: Record<string, unknown> | null = null;
 
 /**
- * Lazily resolve the cloudflare:workers env object.
- * Returns the env record in workerd, or null outside of it.
+ * Resolve cloudflare:workers env at module init.
+ *
+ * We intentionally use ESM import (not `require`) because workerd does not
+ * support CommonJS `require`.
  */
-function getCfEnv(): Record<string, unknown> | null {
-  if (cfEnv !== undefined) return cfEnv;
-
+await (async () => {
   try {
-    // `cloudflare:workers` is a built-in module in workerd.
-    // Outside workerd (Bun CLI, Node.js) this require will throw.
-    const mod = require('cloudflare:workers');
+    const moduleName = 'cloudflare:workers';
+    const mod = (await import(moduleName)) as { env?: Record<string, unknown> };
     cfEnv = mod.env ?? null;
   } catch {
     cfEnv = null;
   }
+})();
+
+/**
+ * Return cached cloudflare:workers env.
+ */
+function getCfEnv(): Record<string, unknown> | null {
   return cfEnv;
 }
 
