@@ -15,13 +15,9 @@ export default defineConfig({
       },
       favicon: '/favicon.svg',
       customCss: ['./src/styles/brand.css'],
-      social: [
-        {
-          icon: 'github',
-          label: 'GitHub',
-          href: 'https://github.com/ivankristianto/allowealth',
-        },
-      ],
+      social: {
+        github: 'https://github.com/ivankristianto/allowealth',
+      },
       components: {
         SocialIcons: './src/components/SocialIcons.astro',
       },

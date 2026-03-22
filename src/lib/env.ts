@@ -3,18 +3,39 @@
  *
  * Provides unified access to environment variables across different runtimes.
  *
- * In Cloudflare Workers, secrets and vars are only accessible via request context
- * (Astro.locals.runtime.env), not via import.meta.env at module load time.
+ * In Cloudflare Workers / workerd, env vars are accessed via
+ * `import { env } from 'cloudflare:workers'` (available since adapter v13 / Astro 6).
  *
- * This utility allows middleware to set the runtime env on first request,
- * and provides a unified getter that checks runtime env first, then falls back
- * to import.meta.env for local development.
+ * Fallback chain (first defined value wins):
+ * 1. Test overrides (unit tests)
+ * 2. cloudflare:workers env (Workers + workerd dev)
+ * 3. process.env (Bun CLI, Node.js)
+ * 4. import.meta.env (Vite build-time vars)
  */
 
 /**
- * Runtime environment holder for Cloudflare Workers
+ * Cached reference to the cloudflare:workers env object.
+ * `undefined` means we haven't probed yet; `null` means not available.
  */
-let runtimeEnv: Record<string, string | undefined> | null = null;
+let cfEnv: Record<string, unknown> | null | undefined;
+
+/**
+ * Lazily resolve the cloudflare:workers env object.
+ * Returns the env record in workerd, or null outside of it.
+ */
+function getCfEnv(): Record<string, unknown> | null {
+  if (cfEnv !== undefined) return cfEnv;
+
+  try {
+    // `cloudflare:workers` is a built-in module in workerd.
+    // Outside workerd (Bun CLI, Node.js) this require will throw.
+    const mod = require('cloudflare:workers');
+    cfEnv = mod.env ?? null;
+  } catch {
+    cfEnv = null;
+  }
+  return cfEnv;
+}
 
 /**
  * Test-only overrides for environment variables
@@ -23,23 +44,11 @@ let runtimeEnv: Record<string, string | undefined> | null = null;
 let testOverrides: Record<string, string | undefined> | null = null;
 
 /**
- * Set the runtime environment (call from middleware on first request)
- *
- * This is needed for Cloudflare Workers where secrets and vars are passed via
- * the runtime context, not available at module initialization.
- */
-export function setRuntimeEnv(env: Record<string, string | undefined>): void {
-  if (!runtimeEnv) {
-    runtimeEnv = env;
-  }
-}
-
-/**
  * Get an environment variable from available sources
  *
  * Priority:
  * 1. Test overrides (for unit tests)
- * 2. Runtime env (Cloudflare Workers secrets/vars)
+ * 2. cloudflare:workers env (Cloudflare Workers / workerd dev)
  * 3. process.env (Node.js/Bun runtime - loaded via --env-file)
  * 4. import.meta.env (build-time env vars from Vite)
  *
@@ -52,13 +61,16 @@ export function getEnv(key: string): string | undefined {
     return testOverrides[key];
   }
 
-  // Check runtime env (Cloudflare Workers)
-  if (runtimeEnv?.[key] !== undefined) {
-    return runtimeEnv[key];
+  // Check cloudflare:workers env (Workers + workerd dev)
+  const cf = getCfEnv();
+  if (cf) {
+    const val = cf[key];
+    if (val !== undefined && typeof val === 'string') {
+      return val;
+    }
   }
 
   // Check process.env (Node.js/Bun runtime)
-  // This handles env vars loaded via `bun --env-file` or Node.js environment
   if (typeof process !== 'undefined' && process.env?.[key] !== undefined) {
     return process.env[key];
   }
@@ -85,6 +97,16 @@ export function requireEnv(key: string): string {
     throw new Error(`Required environment variable ${key} is not set`);
   }
   return value;
+}
+
+/**
+ * Get a cloudflare:workers env binding by key (may be a non-string object like D1Database).
+ * Returns undefined outside of workerd or if the binding is not set.
+ */
+export function getBinding<T = unknown>(key: string): T | undefined {
+  const cf = getCfEnv();
+  if (!cf) return undefined;
+  return cf[key] as T | undefined;
 }
 
 /**

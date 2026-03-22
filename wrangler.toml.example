@@ -13,7 +13,7 @@
 
 account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
 name = "YOUR_WORKER_NAME"
-main = "dist/_worker.js/index.js"
+main = "@astrojs/cloudflare/entrypoints/server"
 compatibility_date = "2026-02-01"
 compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
 

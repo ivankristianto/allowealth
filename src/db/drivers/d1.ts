@@ -7,10 +7,14 @@
  * D1 is SQLite-compatible and runs at the edge without connection management.
  * No TCP sockets, no subrequest overhead - direct API calls to D1.
  *
+ * The D1 binding is retrieved directly from `cloudflare:workers` env via
+ * `getBinding('DB')` — no middleware needed to pass it through.
+ *
  * @see https://developers.cloudflare.com/d1/
  */
 
 import { drizzle } from 'drizzle-orm/d1';
+import { getBinding } from '@/lib/env';
 import type { DatabaseDriver, PreparedStatement, RunResult } from '../driver';
 
 /**
@@ -37,23 +41,9 @@ export interface D1Result {
   };
 }
 
-/**
- * Module-level D1 binding storage
- *
- * Stores the D1 binding for the current request. Set by middleware,
- * read by createDatabase() in db/index.ts. Avoids smuggling an object
- * through the string-based env API.
- */
-let d1BindingRef: D1Binding | null = null;
-
-/** Set the D1 binding for the current request */
-export function setD1Binding(binding: D1Binding | null): void {
-  d1BindingRef = binding;
-}
-
-/** Get the current D1 binding */
+/** Get the current D1 binding from cloudflare:workers env */
 export function getD1Binding(): D1Binding | null {
-  return d1BindingRef;
+  return getBinding<D1Binding>('DB') ?? null;
 }
 
 /**
@@ -124,5 +114,8 @@ export function createD1Database<T extends Record<string, unknown>>(
   d1Binding: D1Binding,
   schema: T
 ) {
-  return drizzle(d1Binding, { schema });
+  // drizzle() expects D1Database from @cloudflare/workers-types, but we use
+  // our own D1Binding interface to avoid pulling in the full workers-types
+  // package (which conflicts with bun-types DOM globals in tsconfig).
+  return drizzle(d1Binding as any, { schema });
 }

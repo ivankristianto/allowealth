@@ -1,8 +1,5 @@
-import { getEnv } from '@/lib/env';
+import { getBinding, getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
-
-// Re-export setRuntimeEnv for middleware to use
-export { setRuntimeEnv } from '@/lib/env';
 
 const log = createLogger('database');
 
@@ -15,12 +12,8 @@ export interface DatabaseConfig {
 }
 
 /**
- * Get the DATABASE_URL from available sources
- *
- * Priority:
- * 1. Runtime env (Cloudflare Workers secrets)
- * 2. import.meta.env (build-time env vars)
- * 3. Fallback to SQLite dev database
+ * Get the DATABASE_URL via getEnv() (checks cloudflare:workers,
+ * process.env, import.meta.env) with SQLite dev fallback.
  */
 function getDatabaseUrl(): string {
   const url = getEnv('DATABASE_URL');
@@ -42,7 +35,8 @@ function getDatabaseUrl(): string {
 }
 
 export function getDatabaseConfig(): DatabaseConfig {
-  const isD1 = getEnv('D1_ENABLED') === 'true';
+  // Detect D1: check for the DB binding (workerd) or D1_ENABLED env var (CLI)
+  const isD1 = getBinding('DB') != null || getEnv('D1_ENABLED') === 'true';
 
   if (isD1) {
     return {

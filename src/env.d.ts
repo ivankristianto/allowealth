@@ -4,6 +4,24 @@ import type { AuthSession, AuthUser } from '@/lib/auth/types';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 import type { PerfCollector } from '@/lib/perf';
 
+/**
+ * Cloudflare Workers environment bindings.
+ *
+ * Extends the `Cloudflare.Env` interface so that
+ * `import { env } from 'cloudflare:workers'` is typed.
+ *
+ * String vars come from wrangler.toml [vars] and `wrangler secret put`.
+ * The DB binding is a D1Database object, not a string.
+ */
+declare namespace Cloudflare {
+  interface Env extends ImportMetaEnv {
+    /** Cloudflare D1 database binding (configured in wrangler.toml) */
+    DB?: D1Database;
+    /** Cloudflare Workers static assets binding */
+    ASSETS?: Fetcher;
+  }
+}
+
 declare global {
   type Currency = import('@/lib/constants/currency').Currency;
 

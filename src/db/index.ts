@@ -11,7 +11,7 @@
  * - SQLite-compatible, no connection management needed
  *
  * The driver is selected automatically based on configuration:
- * - D1_ENABLED=true -> D1 binding (Cloudflare Workers)
+ * - D1 binding present (cloudflare:workers env.DB) or D1_ENABLED=true -> D1
  * - Otherwise -> SQLite
  *
  * @see https://bun.sh/docs/api/sqlite
@@ -131,7 +131,7 @@ function getRequire() {
  * Create the Drizzle database instance
  *
  * Automatically selects the correct driver:
- * - D1_ENABLED=true -> D1 binding via drizzle-orm/d1 (Cloudflare Workers)
+ * - D1 binding present or D1_ENABLED=true -> D1 via drizzle-orm/d1
  * - Otherwise -> bun:sqlite driver
  */
 function createDatabase(): Database {
@@ -163,7 +163,7 @@ function createDatabase(): Database {
       }
 
       throw new Error(
-        'D1_ENABLED is set but no D1 driver is available. ' +
+        'D1 is configured but no D1 driver is available. ' +
           'Use --target d1 or --target d1-local, or run in Cloudflare Workers.'
       );
     }

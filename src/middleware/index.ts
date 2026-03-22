@@ -8,7 +8,6 @@
  */
 
 import { sequence } from 'astro:middleware';
-import { runtimeEnv } from './runtime-env';
 import { database } from './database';
 import { perfDebug } from './perf-debug';
 import { securityHeaders } from './security-headers';
@@ -17,7 +16,6 @@ import { csrf } from './csrf';
 import { routeGuard } from './route-guard';
 
 export const onRequest = sequence(
-  runtimeEnv,
   database,
   perfDebug,
   securityHeaders,

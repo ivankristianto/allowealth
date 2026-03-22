@@ -5,7 +5,7 @@ import { getEnv } from '@/lib/env';
  *
  * IMPORTANT: Call only at SSR request time (inside Astro frontmatter or API
  * handlers), never at module load time. On Cloudflare Workers, runtime env is
- * not available until after the runtimeEnv middleware has run.
+ * not available at module load time in all contexts.
  */
 export function isDemoMode(): boolean {
   return getEnv('DEMO_MODE') === 'true';
