@@ -37,11 +37,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build for Cloudflare Workers
-        run: bun run build:cloudflare
-        env:
-          NODE_ENV: production
-
       - name: Generate wrangler.toml
         run: |
           cat > wrangler.toml << WRANGLER_EOF
@@ -87,6 +82,11 @@ jobs:
           PUBLIC_URL: ${{ vars.PUBLIC_URL }}
           PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
           CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+
+      - name: Build for Cloudflare Workers
+        run: bun run build:cloudflare
+        env:
+          NODE_ENV: production
 
       - name: Get deployment metadata
         id: metadata
