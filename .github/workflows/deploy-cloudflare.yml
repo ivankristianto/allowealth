@@ -57,6 +57,7 @@ jobs:
           CACHE_DRIVER = "upstash"
           PERF_DEBUG = "true"
           LOG_LEVEL = "warn"
+          DEMO_MODE = "true"
           EMAIL_MODE = "real"
           EMAIL_PROVIDER = "resend"
           EMAIL_SENDER_NAME = "Allowealth"
