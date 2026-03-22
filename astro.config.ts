@@ -1,4 +1,5 @@
-import { defineConfig, type AstroIntegration } from 'astro/config';
+import { defineConfig } from 'astro/config';
+import type { AstroIntegration } from 'astro';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
@@ -31,14 +32,7 @@ async function getAdapter(): Promise<AstroIntegration> {
   switch (DEPLOY_TARGET) {
     case 'cloudflare': {
       const cloudflare = await import('@astrojs/cloudflare');
-      return cloudflare.default({
-        platformProxy: {
-          enabled: true,
-        },
-        // Externalize Bun-specific modules that don't exist in Workers runtime
-        // Workers use D1 in production; Bun SQLite drivers are for local development only
-        wasmModuleImports: true,
-      });
+      return cloudflare.default({});
     }
     case 'vercel': {
       const vercel = await import('@astrojs/vercel');
@@ -65,6 +59,9 @@ export default defineConfig({
   },
   output: 'server',
   adapter,
+  security: {
+    csp: true,
+  },
   prefetch: {
     prefetchAll: false,
     defaultStrategy: 'hover',

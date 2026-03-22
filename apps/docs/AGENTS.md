@@ -2,13 +2,13 @@
 
 ## Overview
 
-This is the documentation site for Allowealth, deployed to Cloudflare Pages at `docs.allowealth.io`. It uses Astro with the Starlight documentation theme.
+This is the documentation site for Allowealth, deployed to Cloudflare Pages at `docs.allowealth.io`. It uses Astro 6 with the Starlight documentation theme.
 
 ## Tech Stack
 
 | Category      | Technology                     |
 | ------------- | ------------------------------ |
-| Framework     | Astro 5.x (static output)      |
+| Framework     | Astro 6.x (static output)      |
 | Theme         | @astrojs/starlight             |
 | Styling       | Custom CSS (Starlight + brand) |
 | Sitemap       | @astrojs/sitemap               |

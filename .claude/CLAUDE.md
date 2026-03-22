@@ -5,7 +5,7 @@ Personal and family financial application for expense tracking, budgeting, accou
 ## Tech Stack
 
 - **Runtime:** Bun 1.x (dev) / Cloudflare Workers (prod)
-- **Framework:** Astro 5.x (file-based routing)
+- **Framework:** Astro 6.x (file-based routing)
 - **Styling:** Tailwind CSS v4 + DaisyUI v5
 - **Components:** Astro components (server-side)
 - **State Management:** Nano Stores (client-side reactive state)
@@ -14,6 +14,10 @@ Personal and family financial application for expense tracking, budgeting, accou
 - **Auth:** Better Auth
 - **Cache:** CacheManager + Upstash Redis (prod) / Memory (dev)
 - **Logging:** Structured consola loggers
+
+## Astro 6 Note
+
+The main SSR app enables `security: { csp: true }`, but `src/middleware/security-headers.ts` still writes the runtime CSP header until the nonce path is removed.
 
 ## ADR Quick Reference
 
