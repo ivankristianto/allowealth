@@ -8,8 +8,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 COPY package.json bun.lock ./
-# patches/ is applied automatically by bun install (patchedDependencies in package.json)
-COPY patches/ ./patches/
 RUN bun install --frozen-lockfile
 
 # ─── Stage 2: Build ──────────────────────────────────────────────────────────

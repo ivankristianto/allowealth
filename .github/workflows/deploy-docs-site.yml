@@ -37,8 +37,10 @@ jobs:
 
       - name: Deploy docs to Cloudflare
         uses: cloudflare/wrangler-action@v3
+        env:
+          COMMIT_SHA: ${{ github.sha }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/docs
-          command: pages deploy
+          command: pages deploy --commit-message="$COMMIT_SHA"
