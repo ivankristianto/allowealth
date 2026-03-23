@@ -15,17 +15,20 @@
 
 /**
  * Cached reference to the cloudflare:workers env object.
- * `null` means not available in current runtime.
+ * `undefined` = not yet resolved, `null` = resolved but unavailable.
  */
-let cfEnv: Record<string, unknown> | null = null;
+let cfEnv: Record<string, unknown> | null | undefined = undefined;
 
 /**
- * Resolve cloudflare:workers env at module init.
+ * Resolve cloudflare:workers env lazily (no top-level await).
  *
- * We intentionally use ESM import (not `require`) because workerd does not
- * support CommonJS `require`.
+ * Removing top-level await keeps this module synchronous so that Bun's
+ * `require()` can load any file that imports it. The async probe fires
+ * immediately but doesn't block module loading. In Workers the promise
+ * settles before the first request; in Bun `cloudflare:workers` doesn't
+ * exist so it resolves to null almost instantly.
  */
-await (async () => {
+(async () => {
   try {
     const moduleName = 'cloudflare:workers';
     const mod = (await import(moduleName)) as { env?: Record<string, unknown> };
@@ -37,9 +40,10 @@ await (async () => {
 
 /**
  * Return cached cloudflare:workers env.
+ * Returns null if not yet resolved (falls through to process.env).
  */
 function getCfEnv(): Record<string, unknown> | null {
-  return cfEnv;
+  return cfEnv ?? null;
 }
 
 /**
