@@ -4,9 +4,6 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
-# better-sqlite3 requires node-gyp → python3 + make + g++ for native compilation
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
-
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
@@ -24,17 +21,18 @@ RUN bun run build:node
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app
 
-# Use the non-root user provided by the official Bun image
-USER bun
+# Use root for image filesystem setup; drop privileges before runtime
+USER root
 
 # Copy only what is needed to run the server
 COPY --from=build --chown=bun:bun /app/dist ./dist
 COPY --from=build --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=build --chown=bun:bun /app/package.json ./package.json
 
-# Copy migration files (drizzle-kit migrate reads these at runtime)
+# Copy migration files (Bun SQLite migrator reads these at runtime)
 COPY --from=build --chown=bun:bun /app/drizzle ./drizzle
 COPY --from=build --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=build --chown=bun:bun /app/src/db/migrate.ts ./src/db/migrate.ts
 
 # Copy entrypoint and healthcheck scripts
 COPY --chown=bun:bun docker-entrypoint.sh /docker-entrypoint.sh
@@ -44,6 +42,9 @@ RUN chmod +x /docker-entrypoint.sh
 # Create the SQLite data directory (volume is mounted here by docker-compose)
 # chown here sets the image layer ownership; Docker preserves this into named volumes on first init
 RUN mkdir -p /data && chown bun:bun /data
+
+# Use the non-root user provided by the official Bun image
+USER bun
 
 # Runtime defaults (overridden via env_file or environment in docker-compose)
 ENV NODE_ENV=production

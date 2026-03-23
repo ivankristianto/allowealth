@@ -219,7 +219,7 @@ export default defineCommand({
           const { migrateD1 } = await import('../lib/d1-migrate');
           await migrateD1({ local: isD1Local() });
         } else {
-          exec('drizzle-kit', ['migrate']);
+          exec('bun', ['run', 'src/db/migrate.ts']);
         }
       },
     }),

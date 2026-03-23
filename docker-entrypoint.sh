@@ -23,7 +23,7 @@ if [ -f "$DB_PATH" ]; then
 fi
 
 echo "Running database migrations..."
-bunx drizzle-kit migrate
+bun run src/db/migrate.ts
 
 echo "Starting Allowealth..."
 exec bun ./dist/server/entry.mjs
