@@ -8,9 +8,10 @@ const mockModule = (mock as any).module;
 const mockIsMigrationApplied = mock(() => true as boolean);
 const mockHasUsers = mock(() => true as boolean);
 const mockRunSqliteMigrations = mock(() => {});
-const mockResetDb = mock(() => {});
 
-// Mock modules before importing the middleware
+// Mock only detection and migrate modules — NOT @/db.
+// Mocking @/db leaks across the process (bun mock.module is global)
+// and breaks other tests like seed.integration.test.ts that import `db`.
 mockModule('@/lib/installer/detection', () => ({
   isMigrationApplied: mockIsMigrationApplied,
   hasUsers: mockHasUsers,
@@ -18,11 +19,6 @@ mockModule('@/lib/installer/detection', () => ({
 
 mockModule('@/db/migrate', () => ({
   runSqliteMigrations: mockRunSqliteMigrations,
-}));
-
-mockModule('@/db', () => ({
-  getDb: () => ({}),
-  resetDb: mockResetDb,
 }));
 
 // Import after mocks
@@ -47,7 +43,6 @@ describe('installer middleware', () => {
     mockHasUsers.mockReset();
     mockHasUsers.mockReturnValue(true);
     mockRunSqliteMigrations.mockReset();
-    mockResetDb.mockReset();
     next.mockClear();
     resetInstallerFlag();
   });
@@ -73,7 +68,6 @@ describe('installer middleware', () => {
     const ctx = createMockContext('/');
     const response = await installerGuard(ctx, next);
     expect(mockRunSqliteMigrations).toHaveBeenCalledTimes(1);
-    expect(mockResetDb).toHaveBeenCalledTimes(1);
     expect(response).toBeInstanceOf(Response);
     expect((response as Response).headers.get('Location')).toBe('/installer');
   });
