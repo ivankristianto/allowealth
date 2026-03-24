@@ -35,9 +35,9 @@ The middleware runs two checks on every request:
 
 The middleware skips these paths entirely (no detection queries):
 
-- `/installer` and `/api/installer/setup` (installer routes)
 - `/_astro/`, `/favicon.svg`, and other static assets
-- `/api/auth/*` (Better Auth internals)
+
+Note: `/installer` is **not** excluded. The middleware must evaluate it to enforce the redirect-to-login behavior after setup completes. The `/api/installer/setup` endpoint is also not excluded — the middleware allows it through only when no users exist (same logic as the `/installer` page).
 
 ### Performance
 
@@ -46,6 +46,10 @@ After initial setup, both checks are cheap single-row queries. An in-memory flag
 ### Auto-migration
 
 When `isMigrationApplied()` returns `false`, the middleware calls `runSqliteMigrations()` from `src/db/migrate.ts` inline. This runs once on the first request and is idempotent — Drizzle's migrator skips already-applied migrations.
+
+After migrations complete, the middleware calls `resetDb()` to discard the per-request DB singleton. This ensures subsequent queries use a fresh connection that sees the newly created tables.
+
+If `runSqliteMigrations()` throws (e.g., corrupt DB, permission error), the middleware returns a 500 error page with the migration error message. The next request retries automatically.
 
 ## Installer Page (`/installer`)
 
