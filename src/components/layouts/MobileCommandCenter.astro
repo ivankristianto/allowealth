@@ -516,6 +516,7 @@ const isActive = (href: string) => {
     const sheet = commandCenter.querySelector('[data-command-sheet]');
     const backdrop = commandCenter.querySelector('[data-command-backdrop]');
     const logoutBtn = commandCenter.querySelector('[data-logout-button]');
+    const dragHandle = commandCenter.querySelector('[data-drag-handle]');
 
     if (!(sheet instanceof HTMLElement)) return;
     if (!(backdrop instanceof HTMLElement)) return;
@@ -523,6 +524,79 @@ const isActive = (href: string) => {
 
     // Store last focused element to restore focus on close
     let lastFocusedElement: HTMLElement | null = null;
+
+    // Swipe-to-dismiss state
+    let dragStartY = 0;
+    let dragStartTime = 0;
+    let isDragging = false;
+
+    if (dragHandle instanceof HTMLElement) {
+      // touchstart: record start position, disable CSS transition for real-time tracking
+      dragHandle.addEventListener(
+        'touchstart',
+        (e) => {
+          dragStartY = e.touches[0].clientY;
+          dragStartTime = Date.now();
+          isDragging = true;
+          sheet.style.transition = 'none';
+        },
+        { passive: true, signal }
+      );
+
+      // touchmove: translate sheet and fade backdrop proportionally (downward only)
+      dragHandle.addEventListener(
+        'touchmove',
+        (e) => {
+          if (!isDragging) return;
+          const deltaY = Math.max(0, e.touches[0].clientY - dragStartY);
+          sheet.style.transform = `translateY(${deltaY}px)`;
+          const progress = deltaY / sheet.offsetHeight;
+          backdrop.style.opacity = String(0.5 * (1 - progress));
+        },
+        { passive: true, signal }
+      );
+
+      // touchend: dismiss if past threshold, otherwise snap back
+      dragHandle.addEventListener(
+        'touchend',
+        (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+
+          const deltaY = Math.max(0, e.changedTouches[0].clientY - dragStartY);
+          const velocity = deltaY / (Date.now() - dragStartTime); // px/ms
+
+          const DISTANCE_THRESHOLD = sheet.offsetHeight * 0.25;
+          const VELOCITY_THRESHOLD = 0.4; // px/ms
+
+          // Restore CSS transition before either animation
+          sheet.style.transition = '';
+
+          if (deltaY >= DISTANCE_THRESHOLD || velocity >= VELOCITY_THRESHOLD) {
+            // closeSheet() clears sheet.style.transform and backdrop.style.opacity internally
+            closeSheet();
+          } else {
+            // Snap back: clearing inline styles lets CSS transition return to translate-y-0
+            sheet.style.transform = '';
+            backdrop.style.opacity = '';
+          }
+        },
+        { signal }
+      );
+
+      // touchcancel: OS interrupted the touch (e.g. incoming call) — snap back cleanly
+      dragHandle.addEventListener(
+        'touchcancel',
+        () => {
+          if (!isDragging) return;
+          isDragging = false;
+          sheet.style.transition = '';
+          sheet.style.transform = '';
+          backdrop.style.opacity = '';
+        },
+        { signal }
+      );
+    }
 
     const getFocusableElements = () => {
       return Array.from(
