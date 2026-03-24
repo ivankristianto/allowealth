@@ -126,6 +126,15 @@ const isActive = (href: string) => {
     aria-hidden="true"
     inert
   >
+    {/* Drag handle — touch target for swipe-to-dismiss */}
+    <div
+      class="flex justify-center items-center py-3 touch-none"
+      data-drag-handle
+      aria-hidden="true"
+    >
+      <div class="w-9 h-1 rounded-full bg-base-content/30"></div>
+    </div>
+
     {/* User Card Header */}
     <div
       class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-base-content/10"
