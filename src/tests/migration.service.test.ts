@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { EXPECTED_MIGRATION_COUNT } from '@/db/migration-constants';
 
 /**
@@ -30,6 +30,11 @@ mock.module('@/db', () => ({
 const { MigrationService } = await import('@/services/migration.service');
 
 describe('MigrationService.isMigrationPending', () => {
+  beforeEach(() => {
+    mockCount = EXPECTED_MIGRATION_COUNT;
+    MigrationService._resetCache();
+  });
+
   it('returns false when applied count equals expected', async () => {
     mockCount = EXPECTED_MIGRATION_COUNT;
     const result = await MigrationService.isMigrationPending();
@@ -47,9 +52,22 @@ describe('MigrationService.isMigrationPending', () => {
     const result = await MigrationService.isMigrationPending();
     expect(result).toBe(true);
   });
+
+  it('uses cached result after not-pending', async () => {
+    mockCount = EXPECTED_MIGRATION_COUNT;
+    await MigrationService.isMigrationPending(); // caches _notPending = true
+    mockCount = EXPECTED_MIGRATION_COUNT - 1; // simulate change (shouldn't matter)
+    const result = await MigrationService.isMigrationPending();
+    expect(result).toBe(false); // still cached as not pending
+  });
 });
 
 describe('MigrationService.getStatus', () => {
+  beforeEach(() => {
+    mockCount = EXPECTED_MIGRATION_COUNT;
+    MigrationService._resetCache();
+  });
+
   it('returns pending, applied, and expected counts', async () => {
     mockCount = 1;
     const status = await MigrationService.getStatus();

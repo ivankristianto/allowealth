@@ -27,14 +27,32 @@ export interface MigrationResult {
 
 export class MigrationService {
   /**
+   * In-memory cache: once migrations are confirmed up-to-date, skip the
+   * COUNT query on subsequent requests. Migrations only add rows, so once
+   * not-pending it stays not-pending until the process restarts (new deploy).
+   * Reset by runMigrations() so the next request re-checks.
+   */
+  private static _notPending = false;
+
+  /** @internal Reset the in-memory cache — for tests only. */
+  static _resetCache(): void {
+    this._notPending = false;
+  }
+
+  /**
    * Check if there are pending migrations.
    *
    * Queries __drizzle_migrations for applied count and compares against
    * EXPECTED_MIGRATION_COUNT. Returns true (pending) if the table doesn't
    * exist yet (fresh DB) or if applied count < expected.
+   *
+   * Result is cached in-memory: once not-pending, the query is skipped on
+   * subsequent requests for the lifetime of the process.
    */
   static async isMigrationPending(): Promise<boolean> {
+    if (this._notPending) return false;
     const status = await this.getStatus();
+    if (!status.pending) this._notPending = true;
     return status.pending;
   }
 
@@ -88,6 +106,8 @@ export class MigrationService {
       // Dynamic import keeps bun:sqlite out of the Workers module graph
       const { runSqliteMigrations } = await import('@/db/migrate');
       runSqliteMigrations();
+      // Reset cache so the next request re-verifies from the DB
+      this._notPending = false;
       return { success: true };
     } catch (error) {
       return {

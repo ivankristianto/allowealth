@@ -72,6 +72,12 @@ describe('migrationGuard — passlist', () => {
     const res = await migrationGuard(ctx, next);
     expect((res as Response).status).toBe(200);
   });
+
+  it('does NOT passlist /upgrade-other (exact match only)', async () => {
+    const ctx = makeContext('/upgrade-other', 'member');
+    const res = await migrationGuard(ctx, next);
+    expect((res as Response).status).toBe(503);
+  });
 });
 
 describe('migrationGuard — pending', () => {
@@ -108,6 +114,12 @@ describe('migrationGuard — pending', () => {
     const ctx = makeContext('/dashboard', 'member');
     const res = await migrationGuard(ctx, next);
     expect((res as Response).headers.get('retry-after')).toBe('60');
+  });
+
+  it('503 response includes Cache-Control no-store header', async () => {
+    const ctx = makeContext('/dashboard', 'member');
+    const res = await migrationGuard(ctx, next);
+    expect((res as Response).headers.get('cache-control')).toBe('no-store');
   });
 
   it('503 response is HTML with maintenance message', async () => {

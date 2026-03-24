@@ -20,16 +20,21 @@ import { MigrationService } from '@/services/migration.service';
  * The upgrade page and its API endpoints must pass through so the admin
  * can reach the UI and trigger/poll the migration.
  */
-const PASSLIST = [
+const PASSLIST_EXACT = [
   '/upgrade',
   '/api/admin/upgrade/run',
   '/api/admin/upgrade/status',
-  '/_astro/',
   '/favicon.ico',
 ];
 
+/** Prefix-matched paths (e.g. static asset directories). */
+const PASSLIST_PREFIX = ['/_astro/'];
+
 function isPasslisted(pathname: string): boolean {
-  return PASSLIST.some((entry) => pathname === entry || pathname.startsWith(entry));
+  return (
+    PASSLIST_EXACT.includes(pathname) ||
+    PASSLIST_PREFIX.some((prefix) => pathname.startsWith(prefix))
+  );
 }
 
 function maintenancePage(): Response {
@@ -74,6 +79,7 @@ function maintenancePage(): Response {
     status: 503,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
       'Retry-After': '60',
     },
   });

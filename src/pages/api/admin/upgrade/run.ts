@@ -21,23 +21,15 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Super admin access required', 403, 'SUPER_ADMIN_REQUIRED');
     }
 
-    const deployTarget = process.env.DEPLOY_TARGET;
-    const isWorkersTarget =
-      deployTarget === 'cloudflare' || deployTarget === 'vercel' || deployTarget === 'netlify';
-
-    if (isWorkersTarget) {
-      return errorResponse(
-        'Web-triggered migrations are not supported in this deployment. Run: bun run db:migrate',
-        501,
-        'NOT_IMPLEMENTED'
-      );
-    }
-
     const result = await MigrationService.runMigrations();
 
     if (!result.success) {
       logError('Migration run failed', result.error);
-      return errorResponse(result.error ?? 'Migration failed', 500, 'MIGRATION_RUN_ERROR');
+      // Workers deployments return a specific message; surface as 501
+      const isNotSupported = result.error?.includes('not supported in this deployment');
+      const status = isNotSupported ? 501 : 500;
+      const code = isNotSupported ? 'NOT_IMPLEMENTED' : 'MIGRATION_RUN_ERROR';
+      return errorResponse(result.error ?? 'Migration failed', status, code);
     }
 
     return successResponse({ success: true });
