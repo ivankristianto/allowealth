@@ -57,7 +57,7 @@ export const EXPECTED_MIGRATION_COUNT = 2; // update when adding migrations
 
 This constant is in its own file — **not** in `migrate.ts` — because `migrate.ts` imports `bun:sqlite` at the module level, which would break Cloudflare Workers if imported by the middleware chain. `migration-constants.ts` has zero runtime dependencies and is safe to import anywhere.
 
-A `bun:test` unit test asserts this constant equals the actual `_journal.json` entry count. Forgetting to update it causes a test failure. The constant approach is used rather than reading the journal file at runtime because the journal file may not be accessible in bundled Workers deployments.
+A `bun:test` unit test asserts this constant equals the actual `drizzle/sqlite/meta/_journal.json` entry count. Forgetting to update it causes a test failure. The constant approach is used rather than reading the journal file at runtime because the journal file may not be accessible in bundled Workers deployments.
 
 ### `MigrationService` (`src/services/migration.service.ts`)
 
@@ -69,7 +69,7 @@ This method is Workers-safe: it only uses the Drizzle `db` instance passed in an
 
 **`runMigrations(): Promise<{ success: boolean; error?: string }>`**
 
-Calls `runSqliteMigrations()` for Bun deployments. Guards against Workers via `DEPLOY_TARGET` check. Returns `{ success: false, error: 'Use CLI for D1 migrations' }` for non-Bun targets (caller returns HTTP 501).
+Calls `runSqliteMigrations()` for Bun deployments. Guards against Workers by checking `process.env.DEPLOY_TARGET` — when the value is `'cloudflare'`, `'vercel'`, or `'netlify'` (i.e., anything other than `'node'` or unset), returns `{ success: false, error: 'Use CLI for D1 migrations' }` (caller returns HTTP 501). This mirrors the existing `DEPLOY_TARGET` convention used in `astro.config.ts`.
 
 ---
 
@@ -79,10 +79,13 @@ Calls `runSqliteMigrations()` for Bun deployments. Guards against Workers via `D
 
 ### Passlist (always skip the check)
 
+The following paths skip the migration pending check entirely (prefix match):
+
 - `/upgrade`
-- `/api/admin/upgrade/` (status and run endpoints — must pass through during upgrade)
+- `/api/admin/upgrade/run` (explicit — must pass through during the upgrade)
+- `/api/admin/upgrade/status` (explicit — must pass through during the upgrade)
 - `/_astro/`
-- `/favicon.*`
+- `/favicon.ico`
 
 ### Logic
 
@@ -97,12 +100,11 @@ The null check on `context.locals.user` is explicit — unauthenticated users fa
 
 ### Maintenance HTML (503 response)
 
-A minimal self-contained page using `BaseLayout` styling tokens. Content:
+A minimal self-contained HTML page. Inline a `<style>` block with only the CSS needed (background color, centered layout, text color) using the app's CSS custom properties (e.g., `--color-base-100`, `--color-base-content`). No external stylesheets, no DaisyUI class dependencies, no JavaScript. Content:
 
 - App name
 - "Undergoing scheduled maintenance" heading
 - "The application is being upgraded. Please check back shortly."
-- No DaisyUI component dependencies
 
 ---
 
@@ -119,10 +121,11 @@ If `context.locals.user?.role !== 'super_admin'`, redirect to `/login`. Defense-
 
 | State | Trigger | Content |
 |---|---|---|
-| **Idle** | Page load, migration pending | "Database upgrade required" heading, description, "Run Upgrade" button |
+| **Idle** | Page load, `pending: true` | "Database upgrade required" heading, description, "Run Upgrade" button |
 | **Running** | After button click | Spinner, "Running migrations…", button disabled |
-| **Success** | API returns `{ success: true }` | Green checkmark, "Upgrade complete", countdown to `/admin` redirect (3 s) |
-| **Error** | API returns `{ success: false }` | Red alert, error message, collapsible `<pre>` with SQL details, "Retry" button |
+| **Success** | POST resolves `{ success: true }` | Green checkmark, "Upgrade complete", countdown to `/admin` redirect (3 s) |
+| **Error** | POST resolves `{ success: false }` | Red alert, error message, collapsible `<pre>` with SQL details, "Retry" button |
+| **Up to date** | Page load, `pending: false` | "Nothing to upgrade" message, link to `/admin` |
 
 On page load, the client calls `GET /api/admin/upgrade/status`. If `pending: false`, the page shows a "Nothing to upgrade" state and offers a link to `/admin`.
 
@@ -138,7 +141,9 @@ The Running state is client-side only (active while awaiting the `POST /api/admi
 
 ### `POST /api/admin/upgrade/run`
 
-**Auth:** `requireSuperAdmin`
+**Auth:** `requireSuperAdmin` — existing helper in `src/lib/auth/requireAuth.ts`. Returns 403 JSON if the user is not `super_admin`.
+
+**CSRF:** The `/upgrade` page fetch must include the CSRF token. The existing CSRF middleware uses a cookie-to-header double-submit pattern; the client reads the `csrf-token` cookie and sends it as the `x-csrf-token` request header on the POST.
 
 **Response — success:**
 ```json
@@ -160,11 +165,16 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 
 ### `GET /api/admin/upgrade/status`
 
-**Auth:** `requireSuperAdmin`
+**Auth:** `requireSuperAdmin` — existing helper in `src/lib/auth/requireAuth.ts`.
 
-**Response:**
+**Response — pending:**
 ```json
 { "pending": true, "applied": 1, "expected": 2 }
+```
+
+**Response — up to date:**
+```json
+{ "pending": false, "applied": 2, "expected": 2 }
 ```
 
 ---
@@ -185,7 +195,7 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 
 ### Unit tests
 
-- `EXPECTED_MIGRATION_COUNT` matches `_journal.json` entry count (enforces constant stays current)
+- `EXPECTED_MIGRATION_COUNT` matches `drizzle/sqlite/meta/_journal.json` entry count (enforces constant stays current)
 - `MigrationService.isMigrationPending()`:
   - Returns `false` when applied count equals expected
   - Returns `true` when applied count is less than expected
@@ -216,10 +226,9 @@ Request → database → auth → migrationGuard (COUNT = expected → next()) �
 
 ```
 Request → migrationGuard → 302 /upgrade
-/upgrade loads → GET /api/admin/upgrade/status → { pending: true }
-Admin clicks "Run Upgrade" → POST /api/admin/upgrade/run → runSqliteMigrations()
-Poll → GET /api/admin/upgrade/status → { pending: false }
-Success state → 3 s → redirect /admin
+/upgrade loads → GET /api/admin/upgrade/status → { pending: true } → Idle state
+Admin clicks "Run Upgrade" → POST /api/admin/upgrade/run (blocks) → runSqliteMigrations()
+POST resolves { success: true } → Success state → 3 s → redirect /admin
 ```
 
 ### Migrations pending — non-admin
