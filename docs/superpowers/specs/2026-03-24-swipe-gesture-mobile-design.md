@@ -63,16 +63,18 @@ All changes go inside the existing `initMobileNav()` function in `MobileCommandC
 const dragHandle = commandCenter.querySelector('[data-drag-handle]');
 ```
 
-**Three touch handlers on `dragHandle`:**
+**Four touch handlers on `dragHandle`:**
 
-**`touchstart`** — record the starting position and time; strip the CSS transition so the sheet can track the finger without animation lag:
+**`touchstart`** — record the starting position and time; set the dragging flag; strip the CSS transition so the sheet tracks the finger without animation lag:
 ```ts
 let dragStartY = 0;
 let dragStartTime = 0;
+let isDragging = false;
 
 dragHandle.addEventListener('touchstart', (e) => {
   dragStartY = e.touches[0].clientY;
   dragStartTime = Date.now();
+  isDragging = true;
   sheet.style.transition = 'none';
 }, { passive: true, signal });
 ```
@@ -80,6 +82,7 @@ dragHandle.addEventListener('touchstart', (e) => {
 **`touchmove`** — compute `deltaY` (clamped to ≥ 0 so the sheet can only move down, not up); apply inline `translateY`; fade the backdrop proportionally:
 ```ts
 dragHandle.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
   const deltaY = Math.max(0, e.touches[0].clientY - dragStartY);
   sheet.style.transform = `translateY(${deltaY}px)`;
   const progress = deltaY / sheet.offsetHeight;
@@ -87,9 +90,12 @@ dragHandle.addEventListener('touchmove', (e) => {
 }, { passive: true, signal });
 ```
 
-**`touchend`** — evaluate distance and velocity against thresholds; either dismiss or snap back:
+**`touchend`** — evaluate distance and velocity against thresholds; either dismiss or snap back. In the dismiss branch, do **not** clear the inline transform before calling `closeSheet()` — `closeSheet()` clears it internally, preventing a visual snap-back-then-slide-down artifact:
 ```ts
 dragHandle.addEventListener('touchend', (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+
   const deltaY = Math.max(0, e.changedTouches[0].clientY - dragStartY);
   const velocity = deltaY / (Date.now() - dragStartTime); // px/ms
 
@@ -100,25 +106,36 @@ dragHandle.addEventListener('touchend', (e) => {
   sheet.style.transition = '';
 
   if (deltaY >= DISTANCE_THRESHOLD || velocity >= VELOCITY_THRESHOLD) {
-    sheet.style.transform = ''; // clear inline, let closeSheet() take over
-    closeSheet();
+    closeSheet(); // closeSheet() clears sheet.style.transform and backdrop.style.opacity internally
   } else {
     sheet.style.transform = ''; // snap back via CSS transition
-    backdrop.style.opacity = ''; // restore backdrop
+    backdrop.style.opacity = ''; // restore backdrop class-managed state
   }
 }, { signal });
 ```
 
-**Cleanup** — add `sheet.style.transform = ''` and `backdrop.style.opacity = ''` to the top of the existing `closeSheet()` and `openSheet()` functions to guard against stale inline styles if the sheet is closed by another mechanism mid-drag.
+**`touchcancel`** — fires when the OS interrupts the touch (incoming call, notification). Perform the same snap-back as the below-threshold branch to avoid leaving the sheet in a broken partial-drag state:
+```ts
+dragHandle.addEventListener('touchcancel', () => {
+  if (!isDragging) return;
+  isDragging = false;
+  sheet.style.transition = '';
+  sheet.style.transform = '';
+  backdrop.style.opacity = '';
+}, { signal });
+```
+
+**Cleanup** — add `sheet.style.transform = ''` and `backdrop.style.opacity = ''` at the top of the existing `closeSheet()` function. This clears any inline styles from a mid-drag dismiss so that `closeSheet()`'s class-based animation starts from a clean state, and ensures `backdrop.style.opacity` does not override the class-managed opacity on close. Add `sheet.style.transform = ''` and `backdrop.style.opacity = ''` to `openSheet()` as well, in case the sheet is opened by another mechanism (e.g., `data-menu-toggle`) while a drag is in progress.
 
 ### Gesture States
 
 | State | CSS transition | Sheet transform | Backdrop |
 |---|---|---|---|
-| At rest (open) | active | `translateY(0)` via class | 50% opacity |
-| Dragging | removed | inline `translateY(Npx)` | scales 50% → 0% |
-| Snap back | restored | inline cleared → class wins | restored to 50% |
-| Dismissed | restored | inline cleared → `closeSheet()` applies `translate-y-full` | 0% via `closeSheet()` |
+| At rest (open) | active | `translateY(0)` via class | 50% opacity via class |
+| Dragging | removed | inline `translateY(Npx)` | inline, scales 50% → 0% |
+| Snap back | restored | inline cleared → class wins | inline cleared → class restored |
+| Dismissed | restored | `closeSheet()` clears inline, then applies `translate-y-full` | `closeSheet()` clears inline, then class fades to 0% |
+| Cancelled (OS interrupt) | restored | inline cleared → class wins | inline cleared → class restored |
 
 ### Thresholds
 
@@ -161,5 +178,5 @@ Gesture behavior (touch events, thresholds, animation) requires browser-based te
 
 | File | Change |
 |---|---|
-| `src/components/layouts/MobileCommandCenter.astro` | Add drag handle HTML + three touch event handlers in `initMobileNav()` |
+| `src/components/layouts/MobileCommandCenter.astro` | Add drag handle HTML + four touch event handlers in `initMobileNav()` |
 | `src/components/layouts/MobileCommandCenter.test.ts` | Add structural test for `data-drag-handle` |
