@@ -31,7 +31,7 @@ let cfEnv: Record<string, unknown> | null | undefined = undefined;
 (async () => {
   try {
     const moduleName = 'cloudflare:workers';
-    const mod = (await import(moduleName)) as { env?: Record<string, unknown> };
+    const mod = (await import(/* @vite-ignore */ moduleName)) as { env?: Record<string, unknown> };
     cfEnv = mod.env ?? null;
   } catch {
     cfEnv = null;
