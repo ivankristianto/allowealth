@@ -43,10 +43,10 @@ export class MigrationService {
    */
   static async getStatus(): Promise<MigrationStatus> {
     try {
-      const result = db.get<{ count: number }>(
+      const rows = db.all<{ count: number }>(
         sql`SELECT COUNT(*) as count FROM __drizzle_migrations`
       );
-      const applied = Number(result?.count ?? 0);
+      const applied = Number(rows[0]?.count ?? 0);
       return {
         pending: applied < EXPECTED_MIGRATION_COUNT,
         applied,

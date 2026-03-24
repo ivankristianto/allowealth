@@ -17,11 +17,11 @@ const { mock } = await import('bun:test');
 // @ts-expect-error -- mock.module is a bun:test runtime API not yet in TS definitions
 mock.module('@/db', () => ({
   db: {
-    get: () => {
+    all: () => {
       if (mockCount === 'error') {
         throw new Error('no such table: __drizzle_migrations');
       }
-      return { count: mockCount };
+      return [{ count: mockCount }];
     },
   },
 }));
