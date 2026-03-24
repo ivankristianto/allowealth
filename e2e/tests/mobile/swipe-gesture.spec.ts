@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Fast swipe — all touch events dispatched synchronously in a single evaluate call.
- * Elapsed time ≈ 0 ms → velocity is extremely high → triggers velocity threshold.
- * Use for dismiss-via-velocity tests or large-deltaY distance-threshold tests.
+ * With the zero-elapsed guard (`elapsed > 0 ? … : 0`), velocity is 0 when all events
+ * fire in the same JS turn.  Only the distance threshold can trigger dismissal.
+ * Use for distance-threshold tests with large deltaY.
  */
 async function swipeDragHandle(
   page: import('@playwright/test').Page,
@@ -142,12 +143,110 @@ async function slowSwipeDragHandle(
 }
 
 /**
+ * Flick swipe — short real delays between events so velocity is measurable
+ * and exceeds the 0.4 px/ms threshold.
+ * Example: deltaY=50px in ~30ms total → velocity ≈ 1.67 px/ms.
+ * Use for velocity-threshold dismiss tests with small deltaY.
+ */
+async function flickSwipeDragHandle(
+  page: import('@playwright/test').Page,
+  deltaY: number
+): Promise<void> {
+  // 1) touchstart
+  await page.evaluate(() => {
+    const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
+    if (!handle) throw new Error('[data-drag-handle] not found');
+    const rect = handle.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+    const t = new Touch({
+      identifier: 1,
+      target: handle,
+      clientX: cx,
+      clientY: startY,
+      radiusX: 1,
+      radiusY: 1,
+      force: 1,
+      rotationAngle: 0,
+    });
+    handle.dispatchEvent(
+      new TouchEvent('touchstart', {
+        bubbles: true,
+        cancelable: true,
+        touches: [t],
+        changedTouches: [t],
+      })
+    );
+  });
+
+  // 2) short pause — enough to register elapsed time but short enough for high velocity
+  await page.waitForTimeout(50);
+
+  // 3) touchmove + touchend in quick succession
+  await page.evaluate((dy: number) => {
+    const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
+    if (!handle) throw new Error('[data-drag-handle] not found');
+    const rect = handle.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+
+    const mkTouch = (x: number, y: number) =>
+      new Touch({
+        identifier: 1,
+        target: handle,
+        clientX: x,
+        clientY: y,
+        radiusX: 1,
+        radiusY: 1,
+        force: 1,
+        rotationAngle: 0,
+      });
+
+    const fire = (type: string, y: number, touches: Touch[]) =>
+      handle.dispatchEvent(
+        new TouchEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          touches,
+          changedTouches: [mkTouch(cx, y)],
+        })
+      );
+
+    fire('touchmove', startY + Math.floor(dy * 0.5), [mkTouch(cx, startY + Math.floor(dy * 0.5))]);
+    fire('touchend', startY + dy, []);
+  }, deltaY);
+}
+
+/**
  * Opens the command sheet by clicking the menu toggle button.
- * Waits until the sheet is visible (inert attribute removed).
+ * Waits until the sheet is visible and the open animation has finished.
  */
 async function openSheet(page: import('@playwright/test').Page): Promise<void> {
   await page.click('[data-menu-toggle]');
   await page.waitForSelector('[data-command-sheet]:not([inert])', { timeout: 3000 });
+  // Wait for the CSS open animation to fully complete.
+  // The sheet slides up — we detect completion when the drag handle's top
+  // position stabilises across two animation frames.
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const handle = document.querySelector('[data-drag-handle]');
+        if (!handle) return resolve(false);
+
+        let prevTop = handle.getBoundingClientRect().top;
+        const check = () => {
+          const top = handle.getBoundingClientRect().top;
+          if (Math.abs(top - prevTop) < 0.5) {
+            resolve(true);
+          } else {
+            prevTop = top;
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      }),
+    { timeout: 2000 }
+  );
 }
 
 test.describe('Mobile Command Center — swipe gesture', () => {
@@ -211,10 +310,10 @@ test.describe('Mobile Command Center — swipe gesture', () => {
     const sheet = page.locator('[data-command-sheet]');
     await expect(sheet).not.toHaveAttribute('inert');
 
-    // Dispatch touchstart and touchend in the same evaluate call so elapsed ≈ 0ms.
-    // With deltaY = 30px and elapsed ≈ 0ms, velocity >> 0.4 px/ms threshold.
-    // Distance 30px is well below the ~181px distance threshold — only velocity triggers dismiss.
-    await swipeDragHandle(page, 30);
+    // flickSwipeDragHandle dispatches touchstart, waits ~50ms, then touchmove + touchend.
+    // With deltaY = 100px and elapsed ≈ 50ms, velocity ≈ 2 px/ms >> 0.4 px/ms threshold.
+    // Distance 100px is well below the ~181px distance threshold — only velocity triggers dismiss.
+    await flickSwipeDragHandle(page, 100);
 
     await expect(sheet).toHaveAttribute('inert', '', { timeout: 1000 });
   });

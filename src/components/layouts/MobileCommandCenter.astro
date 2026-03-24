@@ -564,7 +564,8 @@ const isActive = (href: string) => {
           isDragging = false;
 
           const deltaY = Math.max(0, e.changedTouches[0].clientY - dragStartY);
-          const velocity = deltaY / (Date.now() - dragStartTime); // px/ms
+          const elapsed = Date.now() - dragStartTime;
+          const velocity = elapsed > 0 ? deltaY / elapsed : 0; // px/ms
 
           const DISTANCE_THRESHOLD = sheet.offsetHeight * 0.25;
           const VELOCITY_THRESHOLD = 0.4; // px/ms
