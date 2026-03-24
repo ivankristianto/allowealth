@@ -28,7 +28,8 @@ Database migrations after a deployment currently require CLI access (`bun run db
 
 | File | Change |
 |---|---|
-| `src/db/migrate.ts` | Export `EXPECTED_MIGRATION_COUNT` constant |
+| `src/db/migration-constants.ts` | New — exports `EXPECTED_MIGRATION_COUNT` (Workers-safe, no `bun:sqlite` import) |
+| `src/db/migrate.ts` | No change to existing exports; constant moved to `migration-constants.ts` |
 | `src/services/migration.service.ts` | New — `isMigrationPending()`, `runMigrations()` |
 | `src/middleware/migration-guard.ts` | New — intercepts requests when migrations pending |
 | `src/middleware/index.ts` | Insert `migrationGuard` between `csrf` and `routeGuard` |
@@ -48,19 +49,23 @@ database → perfDebug → securityHeaders → authentication → csrf → migra
 
 ### `EXPECTED_MIGRATION_COUNT` constant
 
-`src/db/migrate.ts` exports:
+**File:** `src/db/migration-constants.ts` (new, separate from `migrate.ts`)
 
 ```ts
 export const EXPECTED_MIGRATION_COUNT = 2; // update when adding migrations
 ```
 
-A `bun:test` unit test asserts this constant equals the actual `_journal.json` entry count. Forgetting to update it causes a test failure.
+This constant is in its own file — **not** in `migrate.ts` — because `migrate.ts` imports `bun:sqlite` at the module level, which would break Cloudflare Workers if imported by the middleware chain. `migration-constants.ts` has zero runtime dependencies and is safe to import anywhere.
+
+A `bun:test` unit test asserts this constant equals the actual `_journal.json` entry count. Forgetting to update it causes a test failure. The constant approach is used rather than reading the journal file at runtime because the journal file may not be accessible in bundled Workers deployments.
 
 ### `MigrationService` (`src/services/migration.service.ts`)
 
 **`isMigrationPending(db): Promise<boolean>`**
 
-Queries `SELECT COUNT(*) FROM __drizzle_migrations` and compares against `EXPECTED_MIGRATION_COUNT`. Returns `true` if applied count is less than expected. If the table does not exist (fresh or corrupt DB), catches the error and returns `true` — treats a missing table as pending.
+Queries `SELECT COUNT(*) FROM __drizzle_migrations` and compares against `EXPECTED_MIGRATION_COUNT` (imported from `src/db/migration-constants.ts`). Returns `true` if applied count is less than expected. If the table does not exist (fresh or corrupt DB), catches the error and returns `true` — treats a missing table as pending.
+
+This method is Workers-safe: it only uses the Drizzle `db` instance passed in and the constant — no `bun:sqlite` import.
 
 **`runMigrations(): Promise<{ success: boolean; error?: string }>`**
 
@@ -75,6 +80,7 @@ Calls `runSqliteMigrations()` for Bun deployments. Guards against Workers via `D
 ### Passlist (always skip the check)
 
 - `/upgrade`
+- `/api/admin/upgrade/` (status and run endpoints — must pass through during upgrade)
 - `/_astro/`
 - `/favicon.*`
 
@@ -84,8 +90,10 @@ Calls `runSqliteMigrations()` for Bun deployments. Guards against Workers via `D
 2. Call `MigrationService.isMigrationPending(db)`.
 3. If **not pending**: call `next()`.
 4. If **pending**:
-   - User is `super_admin` → `302 /upgrade`
-   - All others → return a 503 response with inline maintenance HTML
+   - `context.locals.user?.role === 'super_admin'` → `302 /upgrade`
+   - All others (unauthenticated, `admin`, `member`) → return a 503 response with inline maintenance HTML
+
+The null check on `context.locals.user` is explicit — unauthenticated users fall through to the 503 branch, not to an error.
 
 ### Maintenance HTML (503 response)
 
@@ -116,11 +124,13 @@ If `context.locals.user?.role !== 'super_admin'`, redirect to `/login`. Defense-
 | **Success** | API returns `{ success: true }` | Green checkmark, "Upgrade complete", countdown to `/admin` redirect (3 s) |
 | **Error** | API returns `{ success: false }` | Red alert, error message, collapsible `<pre>` with SQL details, "Retry" button |
 
-On page load, the client calls `GET /api/admin/upgrade/status`. If `pending: false`, the page shows a "Nothing to upgrade" state and offers a link to `/admin`. If a migration is already in progress (e.g., the admin refreshed mid-run), the page enters the Running state and resumes polling.
+On page load, the client calls `GET /api/admin/upgrade/status`. If `pending: false`, the page shows a "Nothing to upgrade" state and offers a link to `/admin`.
+
+**Note on "in-progress" state:** `POST /api/admin/upgrade/run` is synchronous — it blocks until `runSqliteMigrations()` completes and returns. There is no true mid-run state visible to the client. If the admin refreshes the page while waiting for the POST response (before it resolves), the page reloads into the Idle state and they can click "Run Upgrade" again — which is safe since `runSqliteMigrations()` is idempotent. The Running state is purely client-side (from button click until POST resolves); no server-side "running" flag is needed.
 
 ### Polling
 
-During the Running state, the client polls `GET /api/admin/upgrade/status` every 2 seconds. When `pending: false` is returned, the page transitions to Success and redirects after 3 seconds.
+The Running state is client-side only (active while awaiting the `POST /api/admin/upgrade/run` response). When the POST resolves with `{ success: true }`, the page transitions to Success and redirects to `/admin` after 3 seconds. Polling `GET /api/admin/upgrade/status` is used only on page load to determine the initial state — not during the run itself.
 
 ---
 
@@ -163,7 +173,7 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 
 | Scenario | Behavior |
 |---|---|
-| Migration fails mid-run | API catches throw, returns `{ success: false, error: e.message }`. Drizzle records only completed migrations; retry applies remaining. UI shows collapsible error details with a Retry button. |
+| Migration fails mid-run | API catches throw, returns `{ success: false, error: e.message }`. Drizzle's `bun-sqlite` migrator runs each migration file in its own transaction — completed files are recorded in `__drizzle_migrations` before the next file runs. A retry therefore applies only the remaining unrecorded migrations, not the entire set. UI shows collapsible error details with a Retry button. |
 | `__drizzle_migrations` table missing | `isMigrationPending()` catches query error, returns `true`. Migrations will create the table on first run. |
 | D1/Workers deployment | `POST /api/admin/upgrade/run` returns 501. UI displays CLI instructions. Maintenance block remains until admin applies migrations via CLI and the `__drizzle_migrations` count catches up. |
 | Concurrent upgrade attempts | Idempotent — Drizzle skips already-applied migrations. No locking required. |
@@ -183,9 +193,9 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 - `migrationGuard`:
   - Calls `next()` when not pending
   - Redirects super admin to `/upgrade` when pending
-  - Returns 503 for unauthenticated user when pending
+  - Returns 503 for unauthenticated user (`context.locals.user` is null) when pending
   - Returns 503 for `admin`/`member` role when pending
-  - Skips check for passlist paths (`/upgrade`, `/_astro/`, `/favicon.*`)
+  - Skips check for passlist paths (`/upgrade`, `/api/admin/upgrade/run`, `/api/admin/upgrade/status`, `/_astro/`, `/favicon.ico`)
 
 ### Integration tests
 
@@ -215,7 +225,7 @@ Success state → 3 s → redirect /admin
 ### Migrations pending — non-admin
 
 ```
-Request → migrationGuard → 503 inline maintenance HTML (URL unchanged)
+Request → migrationGuard (pending, context.locals.user?.role ≠ 'super_admin') → 503 maintenance HTML (URL unchanged)
 (Admin completes upgrade elsewhere)
 User refreshes → migrationGuard (not pending) → next() → normal page
 ```
