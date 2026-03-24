@@ -3,13 +3,15 @@
  *
  * Detects pending database migrations and runs them on demand.
  *
- * WORKERS-SAFE NOTE: This file must not import bun:sqlite directly.
- * isMigrationPending() and getStatus() only use the injected db instance
- * and constants — safe for Cloudflare Workers. runMigrations() imports
- * migrate.ts at runtime only when DEPLOY_TARGET is not set to a Workers target.
+ * Uses the shared `db` proxy from @/db, which auto-selects the correct
+ * driver (bun:sqlite for local dev, D1 for Cloudflare Workers).
+ * isMigrationPending() and getStatus() run a lightweight COUNT query.
+ * runMigrations() dynamically imports migrate.ts (which uses bun:sqlite)
+ * and returns 501 for Workers deployments.
  */
 
 import { sql } from 'drizzle-orm';
+import { db } from '@/db';
 import { EXPECTED_MIGRATION_COUNT } from '@/db/migration-constants';
 
 export interface MigrationStatus {
@@ -30,20 +32,20 @@ export class MigrationService {
    * Queries __drizzle_migrations for applied count and compares against
    * EXPECTED_MIGRATION_COUNT. Returns true (pending) if the table doesn't
    * exist yet (fresh DB) or if applied count < expected.
-   *
-   * Workers-safe: no bun:sqlite import.
    */
-  static async isMigrationPending(db: any): Promise<boolean> {
-    const status = await this.getStatus(db);
+  static async isMigrationPending(): Promise<boolean> {
+    const status = await this.getStatus();
     return status.pending;
   }
 
   /**
    * Return migration status with counts for the /api/admin/upgrade/status endpoint.
    */
-  static async getStatus(db: any): Promise<MigrationStatus> {
+  static async getStatus(): Promise<MigrationStatus> {
     try {
-      const result = db.get(sql`SELECT COUNT(*) as count FROM __drizzle_migrations`);
+      const result = db.get<{ count: number }>(
+        sql`SELECT COUNT(*) as count FROM __drizzle_migrations`
+      );
       const applied = Number(result?.count ?? 0);
       return {
         pending: applied < EXPECTED_MIGRATION_COUNT,

@@ -13,6 +13,7 @@ import { perfDebug } from './perf-debug';
 import { securityHeaders } from './security-headers';
 import { authentication } from './auth';
 import { csrf } from './csrf';
+import { migrationGuard } from './migration-guard';
 import { routeGuard } from './route-guard';
 
 export const onRequest = sequence(
@@ -21,5 +22,6 @@ export const onRequest = sequence(
   securityHeaders,
   authentication,
   csrf,
+  migrationGuard,
   routeGuard
 );
