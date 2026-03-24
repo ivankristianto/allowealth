@@ -609,6 +609,8 @@ const isActive = (href: string) => {
 
     const openSheet = () => {
       // Clear any inline styles left by an interrupted swipe gesture
+      isDragging = false;
+      sheet.style.transition = '';
       sheet.style.transform = '';
       backdrop.style.opacity = '';
 
@@ -636,6 +638,8 @@ const isActive = (href: string) => {
 
     const closeSheet = () => {
       // Clear any inline styles left by an in-progress swipe gesture
+      isDragging = false;
+      sheet.style.transition = '';
       sheet.style.transform = '';
       backdrop.style.opacity = '';
 

@@ -159,6 +159,12 @@ async function flickSwipeDragHandle(
     const rect = handle.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const startY = rect.top + rect.height / 2;
+    (
+      window as typeof window & { __swipeGestureStart?: { cx: number; startY: number } }
+    ).__swipeGestureStart = {
+      cx,
+      startY,
+    };
     const t = new Touch({
       identifier: 1,
       target: handle,
@@ -186,9 +192,13 @@ async function flickSwipeDragHandle(
   await page.evaluate((dy: number) => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
-    const rect = handle.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const startY = rect.top + rect.height / 2;
+    const state = (
+      window as typeof window & {
+        __swipeGestureStart?: { cx: number; startY: number };
+      }
+    ).__swipeGestureStart;
+    if (!state) throw new Error('missing swipe gesture start state');
+    const { cx, startY } = state;
 
     const mkTouch = (x: number, y: number) =>
       new Touch({
@@ -214,6 +224,8 @@ async function flickSwipeDragHandle(
 
     fire('touchmove', startY + Math.floor(dy * 0.5), [mkTouch(cx, startY + Math.floor(dy * 0.5))]);
     fire('touchend', startY + dy, []);
+    delete (window as typeof window & { __swipeGestureStart?: { cx: number; startY: number } })
+      .__swipeGestureStart;
   }, deltaY);
 }
 
