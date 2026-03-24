@@ -19,6 +19,7 @@ const verified = url.searchParams.get('verified');
 const passwordReset = url.searchParams.get('password-reset');
 const passwordChanged = url.searchParams.get('password-changed');
 const emailChanged = url.searchParams.get('email-changed');
+const installed = url.searchParams.get('installed');
 const oauthErrorCodes = new Set(['oauth_error', 'link_expired', 'link_failed', 'rate_limited']);
 const oauthError =
   Astro.url.searchParams.get('oauth_error') || (error && oauthErrorCodes.has(error) ? error : '');
@@ -64,6 +65,9 @@ if (registered === 'true') {
   bannerType = 'error';
 } else if (emailChanged === 'true') {
   bannerMessage = 'Email changed successfully! Please sign in with your new email.';
+  bannerType = 'success';
+} else if (installed === 'true') {
+  bannerMessage = 'Setup complete! Sign in with your admin account.';
   bannerType = 'success';
 }
 ---
