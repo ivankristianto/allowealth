@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+/** Augmented window type used by multi-step touch helpers to share state across evaluate calls. */
+type WindowWithSwipeState = typeof window & {
+  __swipeGestureStart?: { cx: number; startY: number };
+};
+
 /**
  * Fast swipe — all touch events dispatched synchronously in a single evaluate call.
  * With the zero-elapsed guard (`elapsed > 0 ? … : 0`), velocity is 0 when all events
@@ -56,13 +61,17 @@ async function slowSwipeDragHandle(
   page: import('@playwright/test').Page,
   deltaY: number
 ): Promise<void> {
-  // 1) touchstart
+  // 1) touchstart — cache start coords in window state so later steps are
+  //    anchored to the original position even after the sheet is translated.
   await page.evaluate(() => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
     const rect = handle.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const startY = rect.top + rect.height / 2;
+    (
+      window as WindowWithSwipeState
+    ).__swipeGestureStart = { cx, startY };
     const t = new Touch({
       identifier: 1,
       target: handle,
@@ -85,13 +94,17 @@ async function slowSwipeDragHandle(
 
   await page.waitForTimeout(150);
 
-  // 2) touchmove
+  // 2) touchmove — use cached start coords so midY is relative to touchstart,
+  //    not to the already-translated sheet position.
   await page.evaluate((dy: number) => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
-    const rect = handle.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const midY = rect.top + rect.height / 2 + Math.floor(dy * 0.5);
+    const state = (
+      window as WindowWithSwipeState
+    ).__swipeGestureStart;
+    if (!state) throw new Error('missing swipe gesture start state');
+    const { cx, startY } = state;
+    const midY = startY + Math.floor(dy * 0.5);
     const t = new Touch({
       identifier: 1,
       target: handle,
@@ -114,13 +127,16 @@ async function slowSwipeDragHandle(
 
   await page.waitForTimeout(150);
 
-  // 3) touchend
+  // 3) touchend — use cached start coords so endY is relative to touchstart.
   await page.evaluate((dy: number) => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
-    const rect = handle.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const endY = rect.top + rect.height / 2 + dy;
+    const state = (
+      window as WindowWithSwipeState
+    ).__swipeGestureStart;
+    if (!state) throw new Error('missing swipe gesture start state');
+    const { cx, startY } = state;
+    const endY = startY + dy;
     const t = new Touch({
       identifier: 1,
       target: handle,
@@ -139,6 +155,8 @@ async function slowSwipeDragHandle(
         changedTouches: [t],
       })
     );
+    delete (window as WindowWithSwipeState)
+      .__swipeGestureStart;
   }, deltaY);
 }
 
@@ -160,7 +178,7 @@ async function flickSwipeDragHandle(
     const cx = rect.left + rect.width / 2;
     const startY = rect.top + rect.height / 2;
     (
-      window as typeof window & { __swipeGestureStart?: { cx: number; startY: number } }
+      window as WindowWithSwipeState
     ).__swipeGestureStart = {
       cx,
       startY,
@@ -193,9 +211,7 @@ async function flickSwipeDragHandle(
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
     const state = (
-      window as typeof window & {
-        __swipeGestureStart?: { cx: number; startY: number };
-      }
+      window as WindowWithSwipeState
     ).__swipeGestureStart;
     if (!state) throw new Error('missing swipe gesture start state');
     const { cx, startY } = state;
@@ -224,7 +240,7 @@ async function flickSwipeDragHandle(
 
     fire('touchmove', startY + Math.floor(dy * 0.5), [mkTouch(cx, startY + Math.floor(dy * 0.5))]);
     fire('touchend', startY + dy, []);
-    delete (window as typeof window & { __swipeGestureStart?: { cx: number; startY: number } })
+    delete (window as WindowWithSwipeState)
       .__swipeGestureStart;
   }, deltaY);
 }

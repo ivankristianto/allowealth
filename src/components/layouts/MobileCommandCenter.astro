@@ -582,7 +582,7 @@ const isActive = (href: string) => {
             backdrop.style.opacity = '';
           }
         },
-        { signal }
+        { passive: true, signal }
       );
 
       // touchcancel: OS interrupted the touch (e.g. incoming call) — snap back cleanly
