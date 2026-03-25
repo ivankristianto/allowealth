@@ -1,22 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import * as v from 'valibot';
+import { installerSetupSchema } from '@/pages/api/installer/setup';
 
 /**
  * Test the validation schema for the installer setup endpoint.
  * Integration testing of the full endpoint (DB inserts) is covered by E2E tests.
  */
-
-// Inline the schema here to test it independently
-const installerSetupSchema = v.object({
-  workspaceName: v.pipe(
-    v.string(),
-    v.minLength(1, 'Workspace name is required'),
-    v.maxLength(255, 'Workspace name must be less than 255 characters')
-  ),
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
-  email: v.pipe(v.string(), v.email('Invalid email address')),
-  password: v.pipe(v.string(), v.minLength(12, 'Password must be at least 12 characters')),
-});
 
 describe('installer setup validation', () => {
   test('accepts valid input', () => {

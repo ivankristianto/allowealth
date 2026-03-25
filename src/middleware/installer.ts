@@ -14,6 +14,11 @@ import type { MiddlewareHandler } from 'astro';
 import { isMigrationApplied, hasUsers } from '@/lib/installer/detection';
 import { getDb, resetDb } from '@/db';
 
+/** Escape HTML special characters to prevent XSS in error pages */
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 /** Paths that skip detection entirely */
 const STATIC_PREFIXES = ['/_astro/', '/favicon'] as const;
 
@@ -51,7 +56,7 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return new Response(
-        `<html><body><h1>Migration Failed</h1><pre>${message}</pre><p>Fix the issue and reload.</p></body></html>`,
+        `<html><body><h1>Migration Failed</h1><pre>${escapeHtml(message)}</pre><p>Fix the issue and reload.</p></body></html>`,
         { status: 500, headers: { 'Content-Type': 'text/html' } }
       );
     }

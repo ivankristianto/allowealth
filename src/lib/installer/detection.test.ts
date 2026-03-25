@@ -1,17 +1,21 @@
 import { describe, expect, test, mock, beforeEach } from 'bun:test';
-import { sql } from 'drizzle-orm';
 import type { Database } from '@/db';
 
 /**
  * Detection function tests.
  *
- * We inline-import the functions via dynamic import to ensure we test the real
- * implementations even when other test files use mock.module on the same path.
- * The key assertions are about the SQL query logic, try/catch, and return values.
+ * These functions are tested via inline re-implementations because bun's
+ * mock.module leaks globally across the process. The middleware test mocks
+ * '@/lib/installer/detection', making both static and dynamic imports
+ * return mocked stubs when tests run in the same process.
+ *
+ * The inline implementations mirror detection.ts exactly so any behavioral
+ * change to the production code should also be reflected here.
  */
 
-// Re-implement the detection logic inline to test it directly, avoiding
-// mock.module pollution from middleware tests that mock '@/lib/installer/detection'.
+// --- Inline implementations matching src/lib/installer/detection.ts ---
+import { sql } from 'drizzle-orm';
+
 function isMigrationApplied(db: Database): boolean {
   try {
     const rows = db.all<{ count: number }>(sql`SELECT count(*) as count FROM __drizzle_migrations`);
@@ -30,7 +34,8 @@ function hasUsers(db: Database): boolean {
   }
 }
 
-// Mock db.all() used by Drizzle's sql tagged template
+// --- Tests ---
+
 const mockAll = mock(() => [] as { count: number }[]);
 
 const mockDb = {

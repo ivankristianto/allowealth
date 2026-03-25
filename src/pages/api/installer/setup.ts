@@ -15,8 +15,9 @@ import { hashPassword } from '@/lib/auth/password';
 import { AccountCategoryService } from '@/services/account-category.service';
 import { hasUsers } from '@/lib/installer/detection';
 import { getDb } from '@/db';
+import { logError } from '@/lib/utils';
 
-const installerSetupSchema = v.object({
+export const installerSetupSchema = v.object({
   workspaceName: v.pipe(
     v.string(),
     v.minLength(1, 'Workspace name is required'),
@@ -121,8 +122,8 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Setup failed';
-    return new Response(JSON.stringify({ error: message }), {
+    logError('Installer setup failed', error);
+    return new Response(JSON.stringify({ error: 'Setup failed. Check server logs for details.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
