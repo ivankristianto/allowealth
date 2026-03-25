@@ -16,8 +16,8 @@ import type { Database } from '@/db';
  */
 export function isMigrationApplied(db: Database): boolean {
   try {
-    const row = db.get<{ count: number }>(sql`SELECT count(*) as count FROM __drizzle_migrations`);
-    return row != null && row.count > 0;
+    const rows = db.all<{ count: number }>(sql`SELECT count(*) as count FROM __drizzle_migrations`);
+    return rows.length > 0 && rows[0].count > 0;
   } catch {
     return false;
   }
@@ -30,8 +30,8 @@ export function isMigrationApplied(db: Database): boolean {
  */
 export function hasUsers(db: Database): boolean {
   try {
-    const row = db.get<{ count: number }>(sql`SELECT count(*) as count FROM user`);
-    return row != null && row.count > 0;
+    const rows = db.all<{ count: number }>(sql`SELECT count(*) as count FROM user`);
+    return rows.length > 0 && rows[0].count > 0;
   } catch {
     return false;
   }
