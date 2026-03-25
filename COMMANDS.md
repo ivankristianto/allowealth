@@ -101,13 +101,9 @@ Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 | `bun run build`             | Build for default target                                     |
 | `bun run build:node`        | Build for Node.js deployment                                 |
 | `bun run build:cloudflare`  | Build for Cloudflare Workers                                 |
-| `bun run build:vercel`      | Build for Vercel                                             |
-| `bun run build:netlify`     | Build for Netlify                                            |
 | `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html`         |
 | `bun run bundle:report`     | Build and run bundle size analysis                           |
 | `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers with `/wrangler.toml` |
-| `bun run deploy:vercel`     | Build and deploy to Vercel                                   |
-| `bun run deploy:netlify`    | Build and deploy to Netlify                                  |
 
 ```bash
 bun run build                # Default build
@@ -442,8 +438,6 @@ When `DEMO_MODE=true`, the app shows a warning banner on every page and disables
 | Command                        | Description                            |
 | ------------------------------ | -------------------------------------- |
 | `bun run aw deploy cloudflare` | Build and deploy to Cloudflare Workers |
-| `bun run aw deploy vercel`     | Build and deploy to Vercel             |
-| `bun run aw deploy netlify`    | Build and deploy to Netlify            |
 
 ### Other
 

@@ -512,8 +512,6 @@ Each app worker deployment uses its own D1 database. The marketing site and docs
 | ---------- | --------------------------------- | --------------------- |
 | Cloudflare | Supported production deployment   | `@astrojs/cloudflare` |
 | Node       | Build target for custom workflows | `@astrojs/node`       |
-| Vercel     | Build target for custom workflows | `@astrojs/vercel`     |
-| Netlify    | Build target for custom workflows | `@astrojs/netlify`    |
 
 ### Production prerequisites
 

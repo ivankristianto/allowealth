@@ -19,10 +19,8 @@ const port = parseInt(PORT || '4321', 10);
  * Set DEPLOY_TARGET to switch between platforms:
  * - node (default): Local development and traditional Node.js hosting
  * - cloudflare: Cloudflare Workers/Pages
- * - vercel: Vercel serverless
- * - netlify: Netlify Functions
  */
-type DeployTarget = 'node' | 'cloudflare' | 'vercel' | 'netlify';
+type DeployTarget = 'node' | 'cloudflare';
 const DEPLOY_TARGET = (process.env.DEPLOY_TARGET || 'node') as DeployTarget;
 
 /**
@@ -33,14 +31,6 @@ async function getAdapter(): Promise<AstroIntegration> {
     case 'cloudflare': {
       const cloudflare = await import('@astrojs/cloudflare');
       return cloudflare.default({});
-    }
-    case 'vercel': {
-      const vercel = await import('@astrojs/vercel');
-      return vercel.default({});
-    }
-    case 'netlify': {
-      const netlify = await import('@astrojs/netlify');
-      return netlify.default({});
     }
     case 'node':
     default: {
