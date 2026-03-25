@@ -491,6 +491,7 @@ const isActive = (href: string) => {
 
 <script>
   import { performLogout } from '@/lib/utils/client';
+  import { SwipeGesture } from '@/lib/gestures/swipe';
 
   // Store abort controllers for cleanup
   const navControllers = new Map<HTMLElement, AbortController>();
@@ -525,78 +526,23 @@ const isActive = (href: string) => {
     // Store last focused element to restore focus on close
     let lastFocusedElement: HTMLElement | null = null;
 
-    // Swipe-to-dismiss state
-    let dragStartY = 0;
-    let dragStartTime = 0;
-    let isDragging = false;
-
+    // Swipe-to-dismiss via shared gesture controller
+    let gesture: SwipeGesture | null = null;
     if (dragHandle instanceof HTMLElement) {
-      // touchstart: record start position, disable CSS transition for real-time tracking
-      dragHandle.addEventListener(
-        'touchstart',
-        (e) => {
-          dragStartY = e.touches[0].clientY;
-          dragStartTime = Date.now();
-          isDragging = true;
-          sheet.style.transition = 'none';
-        },
-        { passive: true, signal }
-      );
-
-      // touchmove: translate sheet and fade backdrop proportionally (downward only)
-      dragHandle.addEventListener(
-        'touchmove',
-        (e) => {
-          if (!isDragging) return;
-          const deltaY = Math.max(0, e.touches[0].clientY - dragStartY);
-          sheet.style.transform = `translateY(${deltaY}px)`;
-          const progress = deltaY / sheet.offsetHeight;
+      gesture = new SwipeGesture({
+        direction: 'down',
+        element: dragHandle,
+        target: sheet,
+        distanceThreshold: 0.25,
+        velocityThreshold: 0.4,
+        onMove: (progress) => {
           backdrop.style.opacity = String(0.5 * (1 - progress));
         },
-        { passive: true, signal }
-      );
-
-      // touchend: dismiss if past threshold, otherwise snap back
-      dragHandle.addEventListener(
-        'touchend',
-        (e) => {
-          if (!isDragging) return;
-          isDragging = false;
-
-          const deltaY = Math.max(0, e.changedTouches[0].clientY - dragStartY);
-          const elapsed = Date.now() - dragStartTime;
-          const velocity = elapsed > 0 ? deltaY / elapsed : 0; // px/ms
-
-          const DISTANCE_THRESHOLD = sheet.offsetHeight * 0.25;
-          const VELOCITY_THRESHOLD = 0.4; // px/ms
-
-          // Restore CSS transition before either animation
-          sheet.style.transition = '';
-
-          if (deltaY >= DISTANCE_THRESHOLD || velocity >= VELOCITY_THRESHOLD) {
-            // closeSheet() clears sheet.style.transform and backdrop.style.opacity internally
-            closeSheet();
-          } else {
-            // Snap back: clearing inline styles lets CSS transition return to translate-y-0
-            sheet.style.transform = '';
-            backdrop.style.opacity = '';
-          }
-        },
-        { passive: true, signal }
-      );
-
-      // touchcancel: OS interrupted the touch (e.g. incoming call) — snap back cleanly
-      dragHandle.addEventListener(
-        'touchcancel',
-        () => {
-          if (!isDragging) return;
-          isDragging = false;
-          sheet.style.transition = '';
-          sheet.style.transform = '';
+        onThreshold: () => closeSheet(),
+        onCancel: () => {
           backdrop.style.opacity = '';
         },
-        { signal }
-      );
+      });
     }
 
     const getFocusableElements = () => {
@@ -609,9 +555,7 @@ const isActive = (href: string) => {
 
     const openSheet = () => {
       // Clear any inline styles left by an interrupted swipe gesture
-      isDragging = false;
-      sheet.style.transition = '';
-      sheet.style.transform = '';
+      gesture?.reset();
       backdrop.style.opacity = '';
 
       // Store current focus
@@ -638,9 +582,7 @@ const isActive = (href: string) => {
 
     const closeSheet = () => {
       // Clear any inline styles left by an in-progress swipe gesture
-      isDragging = false;
-      sheet.style.transition = '';
-      sheet.style.transform = '';
+      gesture?.reset();
       backdrop.style.opacity = '';
 
       sheet.classList.add('translate-y-full');
@@ -725,6 +667,7 @@ const isActive = (href: string) => {
       mutations.forEach((mutation) => {
         mutation.removedNodes.forEach((node) => {
           if (node === commandCenter || (node instanceof Element && node.contains(commandCenter))) {
+            gesture?.destroy();
             controller.abort();
             navControllers.delete(commandCenter);
             observer.disconnect();
@@ -741,6 +684,7 @@ const isActive = (href: string) => {
       () => {
         // Reset scroll lock and sheet state before view transition
         document.body.style.overflow = '';
+        gesture?.destroy();
         controller.abort();
         navControllers.delete(commandCenter);
         observer.disconnect();
