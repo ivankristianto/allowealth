@@ -20,7 +20,15 @@ function escapeHtml(text: string): string {
 }
 
 /** Paths that skip detection entirely */
-const STATIC_PREFIXES = ['/_astro/', '/favicon'] as const;
+const STATIC_PREFIXES = ['/_astro/', '/favicon', '/scripts/'] as const;
+
+function isStaticAssetPath(pathname: string): boolean {
+  if (STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return true;
+  }
+
+  return !pathname.startsWith('/api/') && /\.[a-z0-9]+$/i.test(pathname);
+}
 
 /** Paths allowed through when no users exist */
 const INSTALLER_PATHS = ['/installer', '/api/installer/'] as const;
@@ -32,7 +40,7 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
   const { pathname } = context.url;
 
   // Skip static assets
-  if (STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  if (isStaticAssetPath(pathname)) {
     return next();
   }
 

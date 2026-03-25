@@ -62,6 +62,15 @@ describe('installer middleware', () => {
     expect(mockIsMigrationApplied).not.toHaveBeenCalled();
   });
 
+  test('skips public script assets', async () => {
+    mockHasUsers.mockReturnValue(false);
+    mockIsMigrationApplied.mockReturnValue(false);
+    const ctx = createMockContext('/scripts/theme-init.js');
+    await installerGuard(ctx, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(mockIsMigrationApplied).not.toHaveBeenCalled();
+  });
+
   test('runs migrations when not applied, then redirects to /installer', async () => {
     mockIsMigrationApplied.mockReturnValue(false);
     mockHasUsers.mockReturnValue(false);
