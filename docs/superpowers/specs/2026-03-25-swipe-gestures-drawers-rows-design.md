@@ -87,7 +87,9 @@ class SwipeGesture {
 |---|---|---|---|---|
 | `down` | Y | deltaY >= 0 | `translateY(${delta}px)` | target height |
 | `right` | X | deltaX >= 0 | `translateX(${delta}px)` | target width |
-| `left` | X | deltaX <= 0 | `translateX(${delta}px)` | fixed pixel value (action panel width) |
+| `left` | X | deltaX <= 0 | `translateX(${delta}px)` | `distanceThresholdPx` value |
+
+For the `left` direction, delta is negative. The `onMove` progress is computed as `Math.abs(delta) / threshold`, yielding 0–1. The `onThreshold` callback receives no arguments — the consumer sets the final transform (e.g., `translateX(-128px)` for the revealed position).
 
 **Direction lock logic:**
 
