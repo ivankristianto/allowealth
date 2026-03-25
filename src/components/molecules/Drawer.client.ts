@@ -1,5 +1,6 @@
 import { animate } from 'motion/mini';
 import { DRAWER_ANIMATION_CONFIG, DRAWER_CONTENT_INITIAL_STYLES } from '@/lib/animations';
+import { SwipeGesture } from '@/lib/gestures/swipe';
 
 const initializedDrawers = new WeakSet<HTMLElement>();
 
@@ -45,6 +46,49 @@ function initDrawer(drawerElement: Element): void {
   let pendingAction: 'open' | 'close' | null = null;
   let lastFocusedElement: HTMLElement | null = null;
   let previousBodyOverflow: string | null = null;
+
+  const LG_BREAKPOINT = 1024;
+  let swipeGesture: SwipeGesture | null = null;
+
+  function initSwipeGesture(): void {
+    if (window.innerWidth >= LG_BREAKPOINT) return;
+    if (swipeGesture) return; // already initialized
+
+    const contentEl = drawer.querySelector<HTMLElement>('[data-drawer-content]');
+    const backdropEl = drawer.querySelector<HTMLElement>('[data-drawer-backdrop]');
+    if (!contentEl) return;
+
+    swipeGesture = new SwipeGesture({
+      direction: 'right',
+      element: contentEl,
+      target: contentEl,
+      distanceThreshold: 0.25,
+      onMove: (progress) => {
+        if (backdropEl) {
+          backdropEl.style.opacity = String(1 - progress);
+        }
+      },
+      onThreshold: () => closeDrawer(),
+      onCancel: () => {
+        if (backdropEl) {
+          backdropEl.style.opacity = '';
+        }
+      },
+    });
+  }
+
+  function destroySwipeGesture(): void {
+    swipeGesture?.destroy();
+    swipeGesture = null;
+  }
+
+  const mediaQuery = window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`);
+  const handleBreakpointChange = (e: MediaQueryListEvent): void => {
+    if (e.matches) {
+      destroySwipeGesture();
+    }
+  };
+  mediaQuery.addEventListener('change', handleBreakpointChange);
 
   const openDrawer = async (): Promise<void> => {
     if (isAnimating) {
@@ -92,6 +136,7 @@ function initDrawer(drawerElement: Element): void {
 
       requestAnimationFrame(focusFirstElement);
       drawer.dispatchEvent(new CustomEvent('drawer-opened'));
+      initSwipeGesture();
     } finally {
       isAnimating = false;
       if (pendingAction === 'close') {
@@ -135,6 +180,7 @@ function initDrawer(drawerElement: Element): void {
       document.body.style.overflow = previousBodyOverflow ?? '';
       previousBodyOverflow = null;
       isAnimating = false;
+      destroySwipeGesture();
     }
 
     drawer.dispatchEvent(new CustomEvent('drawer-closed'));
@@ -201,6 +247,8 @@ function initDrawer(drawerElement: Element): void {
   document.addEventListener('keydown', handleKeydown);
 
   const cleanup = (): void => {
+    destroySwipeGesture();
+    mediaQuery.removeEventListener('change', handleBreakpointChange);
     motionQuery.removeEventListener('change', handleMotionPreferenceChange);
     document.removeEventListener('keydown', handleKeydown);
   };
