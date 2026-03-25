@@ -581,11 +581,15 @@ const cardClasses = [
     markTruncated,
     observeExpandableContainers,
   } from './ExpandableText.client';
+  import { initTransactionSwipe, cleanupTransactionSwipe } from './TransactionCard.client';
 
   initTransactionHistory();
   initExpandableText();
   markTruncated();
   observeExpandableContainers();
+  initTransactionSwipe();
+
+  document.addEventListener('astro:before-swap', cleanupTransactionSwipe, { once: true });
 
   // Keyboard navigation for transaction dropdown menus.
   // Use one delegated listener so dynamically injected cards work without re-binding.
