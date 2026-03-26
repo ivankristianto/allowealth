@@ -131,6 +131,15 @@ export class DiagnosticsService {
       return info;
     }
 
+    if (
+      cacheState.isInitializing &&
+      cacheState.configuredDriver === 'redis' &&
+      cacheState.activeDriver !== 'redis'
+    ) {
+      info.status = 'initializing';
+      return info;
+    }
+
     // Test cache connectivity
     try {
       const testKey = `diagnostics:health:${Date.now()}`;

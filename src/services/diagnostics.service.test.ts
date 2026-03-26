@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import { resetCacheManager } from '@/lib/cache';
+import { CacheManager, resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 import { DiagnosticsService } from './diagnostics.service';
 
@@ -61,5 +61,40 @@ describe('DiagnosticsService environment variables', () => {
 
     expect(cacheInfo.driver).toBe('redis');
     expect(cacheInfo.redisConfig?.url).toBe('redis://:***@localhost:6379');
+  });
+
+  it('reports redis cache as initializing while async init is pending', async () => {
+    const originalCreate = CacheManager.create;
+    let releaseInit = () => {};
+    const initGate = new Promise<void>((resolve) => {
+      releaseInit = resolve;
+    });
+
+    (CacheManager as typeof CacheManager & { create: typeof CacheManager.create }).create = (async (
+      _config,
+      manager = new CacheManager()
+    ) => {
+      await initGate;
+      return manager;
+    }) as typeof CacheManager.create;
+
+    try {
+      setTestEnv({
+        NODE_ENV: 'development',
+        CACHE_DRIVER: 'redis',
+        REDIS_URL: 'redis://:changeme@localhost:6379',
+      });
+
+      const service = new DiagnosticsService(mockDb);
+      const cacheInfo = await service.getCacheInfo();
+
+      expect(cacheInfo.driver).toBe('redis');
+      expect(cacheInfo.status).toBe('initializing');
+      expect(cacheInfo.redisConfig?.url).toBe('redis://:***@localhost:6379');
+    } finally {
+      releaseInit();
+      (CacheManager as typeof CacheManager & { create: typeof CacheManager.create }).create =
+        originalCreate;
+    }
   });
 });

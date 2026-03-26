@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { CacheManager, getCacheManager, resetCacheManager } from './cache-manager';
+import type { CacheDriver } from './types';
 import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
 import { setTestEnv } from '@/lib/env';
@@ -147,6 +148,55 @@ describe('CacheManager', () => {
       expect(latestInstance).toBe(freshInstance);
       expect(latestInstance).not.toBe(staleInstance);
       expect(latestInstance.getDriverName()).toBe('memory');
+    });
+
+    it('should preserve startup writes until redis init completes', async () => {
+      const originalCreate = CacheManager.create;
+      const redisStore = new Map<string, unknown>();
+      const fakeRedisDriver: CacheDriver = {
+        async get<T>(key: string): Promise<T | null> {
+          return (redisStore.get(key) as T | undefined) ?? null;
+        },
+        async set<T>(key: string, value: T): Promise<void> {
+          redisStore.set(key, value);
+        },
+        async delete(key: string): Promise<void> {
+          redisStore.delete(key);
+        },
+        async invalidateByTags(_tags: string[]): Promise<void> {},
+      };
+
+      let releaseInit = () => {};
+      const initGate = new Promise<void>((resolve) => {
+        releaseInit = resolve;
+      });
+
+      (CacheManager as typeof CacheManager & { create: typeof CacheManager.create }).create =
+        (async (_config, manager = new CacheManager()) => {
+          await initGate;
+          (manager as any).applyDriver(fakeRedisDriver, 'redis');
+          return manager;
+        }) as typeof CacheManager.create;
+
+      try {
+        setTestEnv({
+          CACHE_DRIVER: 'redis',
+          REDIS_URL: 'redis://:changeme@localhost:6379',
+        });
+
+        const manager = getCacheManager();
+        const startupWrite = manager.set('startup-key', { data: 'value' });
+
+        releaseInit();
+        await startupWrite;
+        await waitFor(() => manager.getDriverName() === 'redis');
+
+        expect(await manager.get<{ data: string }>('startup-key')).toEqual({ data: 'value' });
+      } finally {
+        releaseInit();
+        (CacheManager as typeof CacheManager & { create: typeof CacheManager.create }).create =
+          originalCreate;
+      }
     });
   });
 });

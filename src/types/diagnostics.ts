@@ -37,7 +37,7 @@ export interface CacheInfo {
   redisConfig?: {
     url: string; // Sanitized (password removed)
   };
-  status: 'healthy' | 'error' | 'disabled';
+  status: 'healthy' | 'error' | 'disabled' | 'initializing';
   lastError?: string;
 }
 

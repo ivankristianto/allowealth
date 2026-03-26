@@ -23,6 +23,7 @@ let initializationError: string | null = null;
 export class CacheManager {
   private driver: CacheDriver;
   private driverName: string;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(config?: CacheConfig) {
     if (config) {
@@ -48,6 +49,16 @@ export class CacheManager {
   private applyDriver(driver: CacheDriver, name: string): void {
     this.driver = driver;
     this.driverName = name;
+  }
+
+  setInitializationPromise(promise: Promise<void> | null): void {
+    this.initializationPromise = promise;
+  }
+
+  private async waitForInitialization(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
   }
 
   private createDriverSync(config: CacheConfig): { driver: CacheDriver; name: string } {
@@ -101,6 +112,7 @@ export class CacheManager {
 
   async get<T>(key: string, perf?: PerfCollector): Promise<T | null> {
     try {
+      await this.waitForInitialization();
       perf?.setCacheDriver(this.driverName);
       const result = await this.driver.get<T>(key);
       if (result !== null) {
@@ -116,14 +128,17 @@ export class CacheManager {
   }
 
   async set<T>(key: string, value: T, options?: CacheSetOptions): Promise<void> {
+    await this.waitForInitialization();
     return this.driver.set(key, value, options);
   }
 
   async delete(key: string): Promise<void> {
+    await this.waitForInitialization();
     return this.driver.delete(key);
   }
 
   async invalidateByTags(tags: string[]): Promise<void> {
+    await this.waitForInitialization();
     return this.driver.invalidateByTags(tags);
   }
 }
@@ -172,11 +187,14 @@ export function getCacheManager(): CacheManager {
           return manager;
         })
         .finally(() => {
+          manager.setInitializationPromise(null);
+
           if (initPromise === pendingInit) {
             initPromise = null;
           }
         });
 
+      manager.setInitializationPromise(pendingInit.then(() => undefined));
       initPromise = pendingInit;
     } else {
       instance = new CacheManager({
