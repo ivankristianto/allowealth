@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { CacheManager, getCacheManager, resetCacheManager } from './cache-manager';
 import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
+import { setTestEnv } from '@/lib/env';
 
 describe('CacheManager', () => {
   afterEach(() => {
     resetCacheManager();
+    setTestEnv(null);
   });
 
   describe('driver selection', () => {
@@ -22,6 +24,20 @@ describe('CacheManager', () => {
     it('should fall back to MemoryDriver when upstash credentials missing', () => {
       const manager = new CacheManager({ driver: 'upstash' });
       expect((manager as any).driver).toBeInstanceOf(MemoryDriver);
+    });
+
+    it('should fall back to MemoryDriver when redis URL missing', async () => {
+      const manager = await CacheManager.create({ driver: 'redis' });
+      expect(manager.getDriverName()).toBe('memory');
+    });
+
+    it('should use RedisDriver when redis URL provided', async () => {
+      const manager = await CacheManager.create({
+        driver: 'redis',
+        redis: { url: 'redis://:changeme@localhost:6379' },
+      });
+
+      expect(manager.getDriverName()).toBe('redis');
     });
   });
 
@@ -80,6 +96,22 @@ describe('CacheManager', () => {
       resetCacheManager();
       const instance2 = getCacheManager();
       expect(instance1).not.toBe(instance2);
+    });
+
+    it('should clear async init state on reset', async () => {
+      setTestEnv({
+        CACHE_DRIVER: 'redis',
+        REDIS_URL: 'redis://:changeme@localhost:6379',
+      });
+
+      getCacheManager();
+      resetCacheManager();
+
+      setTestEnv({ CACHE_DRIVER: 'memory' });
+      await Promise.resolve();
+
+      const instance = getCacheManager();
+      expect(instance.getDriverName()).toBe('memory');
     });
   });
 });
