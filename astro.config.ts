@@ -21,7 +21,19 @@ const port = parseInt(PORT || '4321', 10);
  * - cloudflare: Cloudflare Workers/Pages
  */
 type DeployTarget = 'node' | 'cloudflare';
-const DEPLOY_TARGET = (process.env.DEPLOY_TARGET || 'node') as DeployTarget;
+
+const rawDeployTarget = process.env.DEPLOY_TARGET || 'node';
+const validTargets: DeployTarget[] = ['node', 'cloudflare'];
+
+if (!validTargets.includes(rawDeployTarget as DeployTarget)) {
+  throw new Error(
+    `Invalid DEPLOY_TARGET "${rawDeployTarget}". ` +
+      `Valid targets are: ${validTargets.join(', ')}. ` +
+      `Support for "vercel" and "netlify" has been removed.`
+  );
+}
+
+const DEPLOY_TARGET = rawDeployTarget as DeployTarget;
 
 /**
  * Get the appropriate adapter based on DEPLOY_TARGET
