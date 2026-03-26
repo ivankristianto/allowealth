@@ -24,7 +24,7 @@ export interface DatabaseInfo {
 }
 
 export interface CacheInfo {
-  driver: 'memory' | 'upstash' | 'noop';
+  driver: 'memory' | 'upstash' | 'redis' | 'noop';
   isEnabled: boolean;
   config: {
     ttl?: number;
@@ -33,6 +33,9 @@ export interface CacheInfo {
   upstashConfig?: {
     url: string; // Sanitized (token removed)
     restUrl: string;
+  };
+  redisConfig?: {
+    url: string; // Sanitized (password removed)
   };
   status: 'healthy' | 'error' | 'disabled';
   lastError?: string;

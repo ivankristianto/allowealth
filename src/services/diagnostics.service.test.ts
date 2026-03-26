@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
+import { resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 import { DiagnosticsService } from './diagnostics.service';
 
@@ -14,6 +15,7 @@ const mockDb = {
 describe('DiagnosticsService environment variables', () => {
   afterEach(() => {
     setTestEnv(null);
+    resetCacheManager();
   });
 
   it('returns only insensitive environment variables in diagnostics output', () => {
@@ -45,5 +47,19 @@ describe('DiagnosticsService environment variables', () => {
       'PERF_DEBUG',
     ]);
     expect(envVars.every((envVar) => envVar.isSensitive === false)).toBe(true);
+  });
+
+  it('reports redis cache details when redis driver is configured', async () => {
+    setTestEnv({
+      NODE_ENV: 'development',
+      CACHE_DRIVER: 'redis',
+      REDIS_URL: 'redis://:changeme@localhost:6379',
+    });
+
+    const service = new DiagnosticsService(mockDb);
+    const cacheInfo = await service.getCacheInfo();
+
+    expect(cacheInfo.driver).toBe('redis');
+    expect(cacheInfo.redisConfig?.url).toBe('redis://:***@localhost:6379');
   });
 });

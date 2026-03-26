@@ -4,6 +4,18 @@ import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
 import { setTestEnv } from '@/lib/env';
 
+async function waitFor(condition: () => boolean, timeoutMs: number = 1_000): Promise<void> {
+  const start = Date.now();
+
+  while (!condition()) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error('Timed out waiting for condition');
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 describe('CacheManager', () => {
   afterEach(() => {
     resetCacheManager();
@@ -38,6 +50,22 @@ describe('CacheManager', () => {
       });
 
       expect(manager.getDriverName()).toBe('redis');
+    });
+
+    it('should promote the singleton to redis after async init completes', async () => {
+      setTestEnv({
+        CACHE_DRIVER: 'redis',
+        REDIS_URL: 'redis://:changeme@localhost:6379',
+      });
+
+      const manager = getCacheManager();
+
+      expect(manager.getDriverName()).toBe('memory');
+
+      await waitFor(() => manager.getDriverName() === 'redis');
+
+      expect(manager.getDriverName()).toBe('redis');
+      expect(getCacheManager()).toBe(manager);
     });
   });
 
@@ -104,14 +132,21 @@ describe('CacheManager', () => {
         REDIS_URL: 'redis://:changeme@localhost:6379',
       });
 
-      getCacheManager();
+      const staleInstance = getCacheManager();
       resetCacheManager();
 
       setTestEnv({ CACHE_DRIVER: 'memory' });
-      await Promise.resolve();
+      const freshInstance = getCacheManager();
 
-      const instance = getCacheManager();
-      expect(instance.getDriverName()).toBe('memory');
+      await waitFor(() => staleInstance.getDriverName() === 'redis');
+
+      expect(freshInstance.getDriverName()).toBe('memory');
+
+      const latestInstance = getCacheManager();
+
+      expect(latestInstance).toBe(freshInstance);
+      expect(latestInstance).not.toBe(staleInstance);
+      expect(latestInstance.getDriverName()).toBe('memory');
     });
   });
 });

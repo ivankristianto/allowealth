@@ -17,6 +17,8 @@ import { NoopDriver } from './drivers/noop';
 
 let instance: CacheManager | null = null;
 let initPromise: Promise<CacheManager> | null = null;
+let configuredDriver: CacheConfig['driver'] | null = null;
+let initializationError: string | null = null;
 
 export class CacheManager {
   private driver: CacheDriver;
@@ -34,12 +36,18 @@ export class CacheManager {
     this.driverName = 'memory';
   }
 
-  static async create(config: CacheConfig): Promise<CacheManager> {
-    const manager = new CacheManager();
+  static async create(
+    config: CacheConfig,
+    manager: CacheManager = new CacheManager()
+  ): Promise<CacheManager> {
     const { driver, name } = await manager.createDriverAsync(config);
-    manager.driver = driver;
-    manager.driverName = name;
+    manager.applyDriver(driver, name);
     return manager;
+  }
+
+  private applyDriver(driver: CacheDriver, name: string): void {
+    this.driver = driver;
+    this.driverName = name;
   }
 
   private createDriverSync(config: CacheConfig): { driver: CacheDriver; name: string } {
@@ -120,6 +128,20 @@ export class CacheManager {
   }
 }
 
+export function getCacheManagerState(): {
+  configuredDriver: CacheConfig['driver'] | null;
+  activeDriver: string | null;
+  isInitializing: boolean;
+  initializationError: string | null;
+} {
+  return {
+    configuredDriver,
+    activeDriver: instance?.getDriverName() ?? null,
+    isInitializing: initPromise !== null,
+    initializationError,
+  };
+}
+
 export function getCacheManager(): CacheManager {
   if (instance) {
     return instance;
@@ -129,17 +151,33 @@ export function getCacheManager(): CacheManager {
     const driver = (getEnv('CACHE_DRIVER') as CacheConfig['driver']) || 'memory';
     const url = getEnv('UPSTASH_REDIS_REST_URL') || '';
     const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || '';
+    configuredDriver = driver;
+    initializationError = null;
 
     if (driver === 'redis') {
-      instance = new CacheManager();
-      initPromise = CacheManager.create({
-        driver,
-        redis: { url: getEnv('REDIS_URL') || '' },
-        defaultTtl: 3600,
-      }).then((manager) => {
-        instance = manager;
-        return manager;
-      });
+      const manager = new CacheManager();
+      instance = manager;
+
+      const pendingInit = CacheManager.create(
+        {
+          driver,
+          redis: { url: getEnv('REDIS_URL') || '' },
+          defaultTtl: 3600,
+        },
+        manager
+      )
+        .catch((error) => {
+          initializationError = error instanceof Error ? error.message : String(error);
+          log.warn('Redis initialization failed, continuing with memory driver', error);
+          return manager;
+        })
+        .finally(() => {
+          if (initPromise === pendingInit) {
+            initPromise = null;
+          }
+        });
+
+      initPromise = pendingInit;
     } else {
       instance = new CacheManager({
         driver,
@@ -155,4 +193,6 @@ export function getCacheManager(): CacheManager {
 export function resetCacheManager(): void {
   instance = null;
   initPromise = null;
+  configuredDriver = null;
+  initializationError = null;
 }
