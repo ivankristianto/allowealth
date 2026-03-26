@@ -16,18 +16,33 @@ import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
 
 let instance: CacheManager | null = null;
+let initPromise: Promise<CacheManager> | null = null;
 
 export class CacheManager {
   private driver: CacheDriver;
   private driverName: string;
 
-  constructor(config: CacheConfig) {
-    const { driver, name } = this.createDriver(config);
-    this.driver = driver;
-    this.driverName = name;
+  constructor(config?: CacheConfig) {
+    if (config) {
+      const { driver, name } = this.createDriverSync(config);
+      this.driver = driver;
+      this.driverName = name;
+      return;
+    }
+
+    this.driver = new MemoryDriver();
+    this.driverName = 'memory';
   }
 
-  private createDriver(config: CacheConfig): { driver: CacheDriver; name: string } {
+  static async create(config: CacheConfig): Promise<CacheManager> {
+    const manager = new CacheManager();
+    const { driver, name } = await manager.createDriverAsync(config);
+    manager.driver = driver;
+    manager.driverName = name;
+    return manager;
+  }
+
+  private createDriverSync(config: CacheConfig): { driver: CacheDriver; name: string } {
     switch (config.driver) {
       case 'upstash': {
         const url = config.upstash?.url;
@@ -44,10 +59,32 @@ export class CacheManager {
       case 'memory':
         return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
 
+      case 'redis':
+        log.warn('Redis driver requires async initialization, falling back to memory driver');
+        return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
+
       case 'none':
       default:
         return { driver: new NoopDriver(), name: 'noop' };
     }
+  }
+
+  private async createDriverAsync(
+    config: CacheConfig
+  ): Promise<{ driver: CacheDriver; name: string }> {
+    if (config.driver === 'redis') {
+      const url = config.redis?.url;
+
+      if (!url) {
+        log.warn('Redis URL missing, falling back to memory driver');
+        return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
+      }
+
+      const { RedisDriver } = await import('./drivers/redis');
+      return { driver: new RedisDriver(url, config.defaultTtl), name: 'redis' };
+    }
+
+    return this.createDriverSync(config);
   }
 
   getDriverName(): string {
@@ -84,20 +121,38 @@ export class CacheManager {
 }
 
 export function getCacheManager(): CacheManager {
-  if (!instance) {
+  if (instance) {
+    return instance;
+  }
+
+  if (!initPromise) {
     const driver = (getEnv('CACHE_DRIVER') as CacheConfig['driver']) || 'memory';
     const url = getEnv('UPSTASH_REDIS_REST_URL') || '';
     const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || '';
 
-    instance = new CacheManager({
-      driver,
-      upstash: { url, token },
-      defaultTtl: 3600,
-    });
+    if (driver === 'redis') {
+      instance = new CacheManager();
+      initPromise = CacheManager.create({
+        driver,
+        redis: { url: getEnv('REDIS_URL') || '' },
+        defaultTtl: 3600,
+      }).then((manager) => {
+        instance = manager;
+        return manager;
+      });
+    } else {
+      instance = new CacheManager({
+        driver,
+        upstash: { url, token },
+        defaultTtl: 3600,
+      });
+    }
   }
+
   return instance;
 }
 
 export function resetCacheManager(): void {
   instance = null;
+  initPromise = null;
 }
