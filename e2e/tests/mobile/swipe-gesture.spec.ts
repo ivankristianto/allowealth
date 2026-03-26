@@ -80,9 +80,7 @@ async function slowSwipeDragHandle(
     const rect = handle.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const startY = rect.top + rect.height / 2;
-    (
-      window as WindowWithSwipeState
-    ).__swipeGestureStart = { cx, startY };
+    (window as WindowWithSwipeState).__swipeGestureStart = { cx, startY };
     const t = new Touch({
       identifier: 1,
       target: handle,
@@ -110,9 +108,7 @@ async function slowSwipeDragHandle(
   await page.evaluate((dy: number) => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
-    const state = (
-      window as WindowWithSwipeState
-    ).__swipeGestureStart;
+    const state = (window as WindowWithSwipeState).__swipeGestureStart;
     if (!state) throw new Error('missing swipe gesture start state');
     const { cx, startY } = state;
     const midY = startY + Math.floor(dy * 0.5);
@@ -142,9 +138,7 @@ async function slowSwipeDragHandle(
   await page.evaluate((dy: number) => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
-    const state = (
-      window as WindowWithSwipeState
-    ).__swipeGestureStart;
+    const state = (window as WindowWithSwipeState).__swipeGestureStart;
     if (!state) throw new Error('missing swipe gesture start state');
     const { cx, startY } = state;
     const endY = startY + dy;
@@ -166,8 +160,7 @@ async function slowSwipeDragHandle(
         changedTouches: [t],
       })
     );
-    delete (window as WindowWithSwipeState)
-      .__swipeGestureStart;
+    delete (window as WindowWithSwipeState).__swipeGestureStart;
   }, deltaY);
 }
 
@@ -188,9 +181,7 @@ async function flickSwipeDragHandle(
     const rect = handle.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const startY = rect.top + rect.height / 2;
-    (
-      window as WindowWithSwipeState
-    ).__swipeGestureStart = {
+    (window as WindowWithSwipeState).__swipeGestureStart = {
       cx,
       startY,
     };
@@ -221,9 +212,7 @@ async function flickSwipeDragHandle(
   await page.evaluate((dy: number) => {
     const handle = document.querySelector('[data-drag-handle]') as HTMLElement;
     if (!handle) throw new Error('[data-drag-handle] not found');
-    const state = (
-      window as WindowWithSwipeState
-    ).__swipeGestureStart;
+    const state = (window as WindowWithSwipeState).__swipeGestureStart;
     if (!state) throw new Error('missing swipe gesture start state');
     const { cx, startY } = state;
 
@@ -251,8 +240,7 @@ async function flickSwipeDragHandle(
 
     fire('touchmove', startY + Math.floor(dy * 0.5), [mkTouch(cx, startY + Math.floor(dy * 0.5))]);
     fire('touchend', startY + dy, []);
-    delete (window as WindowWithSwipeState)
-      .__swipeGestureStart;
+    delete (window as WindowWithSwipeState).__swipeGestureStart;
   }, deltaY);
 }
 
