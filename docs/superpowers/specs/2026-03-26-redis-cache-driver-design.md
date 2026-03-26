@@ -48,13 +48,28 @@ Identical to Upstash driver:
 #### Operations
 
 - **get(key):** `GET key` then `JSON.parse(result)`. Returns `null` on miss or error.
-- **set(key, value, options):** `SET key JSON.stringify(value) EX ttl`. If tags provided, pipeline `SADD tag:{tag} key` and `EXPIRE tag:{tag} ttl+60 GT` for each tag.
+- **set(key, value, options):** `SET key JSON.stringify(value) EX ttl`. If tags provided, use `Promise.all` to run `SADD tag:{tag} key` and `redis.send("EXPIRE", [tagKey, String(ttl + 60), "GT"])` for each tag concurrently (Bun.Redis auto-pipelines concurrent commands).
 - **delete(key):** `DEL key`.
-- **invalidateByTags(tags):** Pipeline `SMEMBERS tag:{tag}` for each tag. Collect unique keys. `DEL ...keys ...tagKeys`.
+- **invalidateByTags(tags):** Use `Promise.all` to run `SMEMBERS tag:{tag}` for each tag concurrently. Collect unique keys. `DEL ...keys ...tagKeys`.
+
+#### Bun.Redis API Notes
+
+Bun.Redis does **not** have an explicit `.pipeline()` method like `@upstash/redis`. Instead, it uses **automatic pipelining**: concurrent commands issued via `Promise.all` are batched into a single network round-trip. This is functionally equivalent.
+
+The `EXPIRE` command's `GT` flag (Redis 7.0+) is not available via the typed `.expire()` convenience method. Use `redis.send("EXPIRE", [key, ttl, "GT"])` instead.
 
 #### Serialization
 
-Unlike `@upstash/redis` which auto-serializes, `Bun.Redis` works with raw strings. The driver handles `JSON.stringify` on write and `JSON.parse` on read.
+Unlike `@upstash/redis` which auto-serializes, `Bun.Redis` returns raw strings. The driver must call `JSON.stringify(value)` before `SET` and `JSON.parse(result)` after `GET`.
+
+```ts
+// set
+await this.redis.set(key, JSON.stringify(value), { ex: ttl });
+
+// get
+const raw = await this.redis.get(key);
+return raw ? JSON.parse(raw) : null;
+```
 
 #### Error Handling
 
@@ -75,24 +90,82 @@ export interface CacheConfig {
 
 #### `src/lib/cache/cache-manager.ts`
 
-Add `case 'redis'` to `createDriver()`:
+**Critical: Dynamic import required.** `Bun.Redis` is a Bun built-in that fails at import time on non-Bun runtimes (Node.js, Cloudflare Workers). The existing drivers are statically imported, but `RedisDriver` must use a dynamic import to avoid breaking Workers builds.
+
+Change `createDriver()` to `async` and use dynamic import:
 
 ```ts
-case 'redis': {
-  const url = config.redis?.url;
-  if (!url) {
-    log.warn('Redis URL missing, falling back to memory driver');
-    return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
+private async createDriver(config: CacheConfig): Promise<{ driver: CacheDriver; name: string }> {
+  switch (config.driver) {
+    case 'redis': {
+      const url = config.redis?.url;
+      if (!url) {
+        log.warn('Redis URL missing, falling back to memory driver');
+        return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
+      }
+      const { RedisDriver } = await import('./drivers/redis');
+      return { driver: new RedisDriver(url, config.defaultTtl), name: 'redis' };
+    }
+    // ... existing cases unchanged (static imports are fine)
   }
-  return { driver: new RedisDriver(url, config.defaultTtl), name: 'redis' };
 }
 ```
 
-Update `getCacheManager()` to read `REDIS_URL`:
+The constructor becomes async via a static factory:
 
 ```ts
-const redisUrl = getEnv('REDIS_URL') || '';
+static async create(config: CacheConfig): Promise<CacheManager> {
+  const manager = new CacheManager();
+  const { driver, name } = await manager.createDriver(config);
+  manager.driver = driver;
+  manager.driverName = name;
+  return manager;
+}
 ```
+
+Update `getCacheManager()` to handle async initialization:
+
+```ts
+let instance: CacheManager | null = null;
+let initPromise: Promise<CacheManager> | null = null;
+
+export function getCacheManager(): CacheManager {
+  // Return cached instance synchronously if already initialized
+  if (instance) return instance;
+
+  // Synchronous fallback: start with memory, replace when async init completes
+  if (!initPromise) {
+    const driver = (getEnv('CACHE_DRIVER') as CacheConfig['driver']) || 'memory';
+
+    if (driver === 'redis') {
+      // Start async init, use memory driver until ready
+      instance = new CacheManager(); // memory fallback
+      initPromise = CacheManager.create({
+        driver,
+        redis: { url: getEnv('REDIS_URL') || '' },
+        defaultTtl: 3600,
+      }).then((mgr) => {
+        instance = mgr;
+        return mgr;
+      });
+    } else {
+      // Existing sync path for upstash/memory/none
+      instance = new CacheManager({
+        driver,
+        upstash: {
+          url: getEnv('UPSTASH_REDIS_REST_URL') || '',
+          token: getEnv('UPSTASH_REDIS_REST_TOKEN') || '',
+        },
+        defaultTtl: 3600,
+      });
+    }
+  }
+
+  return instance!;
+}
+```
+
+This preserves the synchronous `getCacheManager()` API that all consumers depend on. For the `redis` driver, the first few calls may hit the memory fallback until the async import resolves — acceptable since the app is starting up.
 
 #### `src/env.d.ts`
 
@@ -103,13 +176,17 @@ readonly REDIS_URL?: string;
 
 #### `src/lib/cache/index.ts`
 
-Export `RedisDriver` alongside existing drivers.
+Do **not** add a static export for `RedisDriver`. Since it uses Bun built-ins, a static export would break Workers builds. Consumers that need the class directly can use `import('./drivers/redis')`. The normal usage path goes through `CacheManager`, which handles the dynamic import internally.
 
 ### Docker Compose
 
-Add Redis service to `docker-compose.yml` with password authentication:
+Add Redis to a **separate `docker-compose.dev.yml`** for local development. The existing `docker-compose.yml` is the self-hosted production file and should not bundle Redis (self-hosted users choose their own cache driver).
+
+#### `docker-compose.dev.yml` (new file)
 
 ```yaml
+# Local development services
+# Usage: docker compose -f docker-compose.dev.yml up -d
 services:
   redis:
     image: redis:7-alpine
@@ -124,19 +201,34 @@ volumes:
   redis-data:
 ```
 
-The app service references Redis via the Docker network hostname `redis`.
+For self-hosted Dokploy deployments, users add a Redis service to their project stack and set `REDIS_URL` accordingly. The app does not prescribe the Redis deployment topology.
 
 ### Environment Variables
 
-Add to `.env.docker.example` (or equivalent):
+Update `.env.docker.example` cache section to document the new `redis` driver option:
+
+```env
+# ─── Cache ───────────────────────────────────────────────────────────────────
+# memory  = in-process cache (resets on restart, fine for single-container)
+# upstash = Redis via Upstash REST API (set UPSTASH_REDIS_REST_URL and TOKEN)
+# redis   = TCP Redis via Bun.Redis (local dev or self-hosted with Bun runtime)
+CACHE_DRIVER=memory
+
+# UPSTASH_REDIS_REST_URL=
+# UPSTASH_REDIS_REST_TOKEN=
+
+# REDIS_URL=redis://:changeme@redis:6379
+```
+
+For local dev with `docker-compose.dev.yml`, set in `.env`:
 
 ```env
 CACHE_DRIVER=redis
 REDIS_PASSWORD=changeme
-REDIS_URL=redis://:changeme@redis:6379
+REDIS_URL=redis://:changeme@localhost:6379
 ```
 
-For local dev, the same `.env` pattern applies. Password is included for production readiness (Dokploy deployments share Docker networks per workspace, but defense in depth is warranted).
+Password is included for production readiness (Dokploy deployments share Docker networks per workspace, defense in depth).
 
 ### Documentation Updates
 
@@ -145,15 +237,15 @@ For local dev, the same `.env` pattern applies. Password is included for product
 
 ### Testing
 
-Unit tests in `src/lib/cache/drivers/__tests__/redis.test.ts`:
+**Unit tests** in `src/lib/cache/drivers/__tests__/redis.test.ts`:
 
 - Mirrors existing driver test patterns (get/set/delete/invalidateByTags)
 - Tests JSON serialization round-trip
 - Tests tag-based invalidation
-- Tests fail-silent behavior on connection errors
 - Tests missing URL fallback to memory driver (in cache-manager tests)
+- Uses a real Redis instance (`docker-compose.dev.yml`) — not mocks. This matches the driver's purpose (local dev) and avoids mock/prod divergence.
 
-Tests require a running Redis instance. Use the docker-compose Redis container.
+**CI note:** Tests are skipped when Redis is unavailable (check connection before test suite). This avoids adding Redis as a CI infrastructure requirement. The driver's logic mirrors the Upstash driver which is already tested with mocks.
 
 ## Out of Scope
 
@@ -170,7 +262,7 @@ Tests require a running Redis instance. Use the docker-compose Redis container.
 | Bun (self-hosted/Dokploy) | Yes |
 | Cloudflare Workers | No (use `upstash`) |
 
-The `redis` driver uses `Bun.Redis` which requires the Bun runtime. It must not be imported in middleware or any code path that runs on Cloudflare Workers. The lazy `case 'redis'` in `createDriver()` ensures the import only happens when the driver is selected.
+The `redis` driver uses `Bun.Redis` which requires the Bun runtime. It **fails at import time** on non-Bun runtimes (Node.js, Cloudflare Workers) — the `"bun"` module does not exist. The driver file must never be statically imported. `CacheManager.createDriver()` uses `await import('./drivers/redis')` (dynamic import) so the module is only loaded when `CACHE_DRIVER=redis` is set, which only happens in Bun environments.
 
 ## References
 
