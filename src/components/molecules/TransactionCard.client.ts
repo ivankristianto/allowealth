@@ -18,9 +18,6 @@ function initSwipeRows(): void {
   // Only on mobile
   if (window.innerWidth >= LG_BREAKPOINT) return;
 
-  // Skip if bulk selection is active
-  if (document.querySelector('[data-bulk-select]')) return;
-
   destroySwipeRows();
   cleanupController = new AbortController();
   const { signal } = cleanupController;

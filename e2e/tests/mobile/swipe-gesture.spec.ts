@@ -1,4 +1,15 @@
 import { test, expect } from '@playwright/test';
+import {
+  createTransactionViaAPI,
+  createCategoryViaAPI,
+  createAccountViaAPI,
+  deleteTransactionViaAPI,
+  deleteCategoryViaAPI,
+} from '../../helpers';
+import { TEST_AMOUNTS } from '../../helpers/test-data';
+
+const AUTH_STATE_PATH = 'e2e/.auth/user.json';
+const TEST_RUN_ID = `swipe-${Date.now().toString(36)}`;
 
 /** Augmented window type used by multi-step touch helpers to share state across evaluate calls. */
 type WindowWithSwipeState = typeof window & {
@@ -352,288 +363,423 @@ test.describe('Mobile Command Center — swipe gesture', () => {
   });
 });
 
-test.describe('Drawer — swipe-to-dismiss', () => {
-  test.use({ viewport: { width: 393, height: 851 } }); // Mobile viewport
+test.describe('Swipe gestures on transactions page', () => {
+  let testCategoryId: string;
+  let testAccountId: string;
+  let testTransactionIds: string[] = [];
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/transactions');
-    await page.waitForSelector('[data-transaction-card]');
-  });
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
+    const page = await context.newPage();
+    try {
+      const category = await createCategoryViaAPI(page.request, {
+        name: `Swipe Test ${TEST_RUN_ID}`,
+        type: 'expense',
+        icon: 'shopping-cart',
+      });
+      testCategoryId = category.id;
 
-  test('swipe right past threshold dismisses the transaction drawer', async ({ page }) => {
-    // Open the transaction drawer by clicking edit on first transaction
-    const firstEditBtn = page.locator('[data-edit-transaction]').first();
-    await firstEditBtn.click();
+      const account = await createAccountViaAPI(page.request, {
+        name: `Swipe Acct ${TEST_RUN_ID}`,
+        type: 'bank_account',
+        balance: TEST_AMOUNTS.SMALL_INCOME,
+        currency: 'IDR',
+      });
+      testAccountId = account.id;
 
-    // Wait for drawer to open
-    const drawer = page.locator('[data-drawer]').first();
-    await expect(drawer).not.toHaveClass(/hidden/);
-
-    const drawerContent = page.locator('[data-drawer-content]').first();
-    const box = await drawerContent.boundingBox();
-    if (!box) throw new Error('Drawer content not visible');
-
-    // Swipe right from center of drawer
-    const startX = box.x + box.width / 2;
-    const startY = box.y + box.height / 2;
-    const swipeDistance = box.width * 0.3; // Past 25% threshold
-
-    await page.touchscreen.tap(startX, startY); // Ensure touch capability
-    await page.evaluate(
-      ({ sx, sy, dist }) => {
-        const el = document.elementFromPoint(sx, sy);
-        if (!el) return;
-        el.dispatchEvent(
-          new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchmove', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx + dist, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchend', {
-            bubbles: true,
-            changedTouches: [
-              new Touch({ identifier: 0, target: el, clientX: sx + dist, clientY: sy }),
-            ],
-          })
-        );
-      },
-      { sx: startX, sy: startY, dist: swipeDistance }
-    );
-
-    // Wait for drawer to close
-    await expect(drawer).toHaveClass(/hidden/, { timeout: 2000 });
-  });
-
-  test('swipe right below threshold snaps drawer back', async ({ page }) => {
-    const firstEditBtn = page.locator('[data-edit-transaction]').first();
-    await firstEditBtn.click();
-
-    const drawer = page.locator('[data-drawer]').first();
-    await expect(drawer).not.toHaveClass(/hidden/);
-
-    const drawerContent = page.locator('[data-drawer-content]').first();
-    const box = await drawerContent.boundingBox();
-    if (!box) throw new Error('Drawer content not visible');
-
-    const startX = box.x + box.width / 2;
-    const startY = box.y + box.height / 2;
-    const swipeDistance = box.width * 0.1; // Below 25% threshold
-
-    await page.evaluate(
-      ({ sx, sy, dist }) => {
-        const el = document.elementFromPoint(sx, sy);
-        if (!el) return;
-        el.dispatchEvent(
-          new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchmove', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx + dist, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchend', {
-            bubbles: true,
-            changedTouches: [
-              new Touch({ identifier: 0, target: el, clientX: sx + dist, clientY: sy }),
-            ],
-          })
-        );
-      },
-      { sx: startX, sy: startY, dist: swipeDistance }
-    );
-
-    // Drawer should still be open
-    await expect(drawer).not.toHaveClass(/hidden/);
-  });
-});
-
-test.describe('Transaction Row — swipe-to-reveal', () => {
-  test.use({ viewport: { width: 393, height: 851 } });
-
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/transactions');
-    await page.waitForSelector('[data-swipe-container]');
-  });
-
-  test('swipe left reveals Edit and Delete buttons', async ({ page }) => {
-    const firstContainer = page.locator('[data-swipe-container]').first();
-    const content = firstContainer.locator('[data-swipe-content]');
-    const box = await content.boundingBox();
-    if (!box) throw new Error('Swipe content not visible');
-
-    const startX = box.x + box.width / 2;
-    const startY = box.y + box.height / 2;
-
-    await page.evaluate(
-      ({ sx, sy }) => {
-        const el = document.elementFromPoint(sx, sy);
-        if (!el) return;
-        el.dispatchEvent(
-          new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchmove', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchend', {
-            bubbles: true,
-            changedTouches: [
-              new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
-            ],
-          })
-        );
-      },
-      { sx: startX, sy: startY }
-    );
-
-    // Action panel should be visible
-    const actions = firstContainer.locator('[data-swipe-actions]');
-    await expect(actions).toBeVisible();
-
-    // Edit and Delete buttons should be present
-    const editBtn = actions.locator('[data-edit-transaction]');
-    const deleteBtn = actions.locator('[data-delete-transaction]');
-    await expect(editBtn).toBeVisible();
-    await expect(deleteBtn).toBeVisible();
-  });
-
-  test('swiping another row closes the first', async ({ page }) => {
-    const containers = page.locator('[data-swipe-container]');
-    const count = await containers.count();
-    if (count < 2) {
-      test.skip(true, 'Need at least 2 transaction rows');
-      return;
+      // Create 2 transactions so we can test multi-row swipe interactions
+      for (let i = 0; i < 2; i++) {
+        const tx = await createTransactionViaAPI(page.request, {
+          type: 'expense',
+          amount: TEST_AMOUNTS.SMALL_EXPENSE,
+          categoryId: testCategoryId,
+          accountId: testAccountId,
+          description: `Swipe E2E #${i + 1} ${TEST_RUN_ID}`,
+        });
+        testTransactionIds.push(tx.id);
+      }
+    } finally {
+      await context.close();
     }
-
-    // Swipe first row
-    const first = containers.nth(0).locator('[data-swipe-content]');
-    const box1 = await first.boundingBox();
-    if (!box1) throw new Error('First row not visible');
-
-    await page.evaluate(
-      ({ sx, sy }) => {
-        const el = document.elementFromPoint(sx, sy);
-        if (!el) return;
-        el.dispatchEvent(
-          new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchmove', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchend', {
-            bubbles: true,
-            changedTouches: [
-              new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
-            ],
-          })
-        );
-      },
-      { sx: box1.x + box1.width / 2, sy: box1.y + box1.height / 2 }
-    );
-
-    // Now swipe second row
-    const second = containers.nth(1).locator('[data-swipe-content]');
-    const box2 = await second.boundingBox();
-    if (!box2) throw new Error('Second row not visible');
-
-    await page.evaluate(
-      ({ sx, sy }) => {
-        const el = document.elementFromPoint(sx, sy);
-        if (!el) return;
-        el.dispatchEvent(
-          new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchmove', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchend', {
-            bubbles: true,
-            changedTouches: [
-              new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
-            ],
-          })
-        );
-      },
-      { sx: box2.x + box2.width / 2, sy: box2.y + box2.height / 2 }
-    );
-
-    // First row should be back to original position (transform cleared or 0)
-    const firstTransform = await first.evaluate((el) => el.style.transform);
-    expect(firstTransform === '' || firstTransform === 'translateX(0px)').toBeTruthy();
   });
 
-  test('tapping outside closes revealed row', async ({ page }) => {
-    const firstContainer = page.locator('[data-swipe-container]').first();
-    const content = firstContainer.locator('[data-swipe-content]');
-    const box = await content.boundingBox();
-    if (!box) throw new Error('Swipe content not visible');
-
-    // Swipe to reveal
-    await page.evaluate(
-      ({ sx, sy }) => {
-        const el = document.elementFromPoint(sx, sy);
-        if (!el) return;
-        el.dispatchEvent(
-          new TouchEvent('touchstart', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchmove', {
-            bubbles: true,
-            touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
-          })
-        );
-        el.dispatchEvent(
-          new TouchEvent('touchend', {
-            bubbles: true,
-            changedTouches: [
-              new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
-            ],
-          })
-        );
-      },
-      { sx: box.x + box.width / 2, sy: box.y + box.height / 2 }
-    );
-
-    // Click somewhere outside
-    await page.click('body', { position: { x: 10, y: 10 } });
-
-    // Row should snap back
-    const transform = await content.evaluate((el) => el.style.transform);
-    expect(transform === '' || transform === 'translateX(0px)').toBeTruthy();
+  test.afterAll(async ({ browser }) => {
+    const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
+    const page = await context.newPage();
+    try {
+      for (const id of testTransactionIds) {
+        await deleteTransactionViaAPI(page.request, id).catch(() => {});
+      }
+      if (testCategoryId) {
+        await deleteCategoryViaAPI(page.request, testCategoryId).catch(() => {});
+      }
+      // Account cleanup not strictly needed (no deleteAccountViaAPI), but transactions are gone
+    } finally {
+      await context.close();
+    }
   });
-});
+
+  test.describe('Drawer — swipe-to-dismiss', () => {
+    test.use({ viewport: { width: 393, height: 851 } }); // Mobile viewport
+
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/transactions');
+      await page.waitForSelector('[data-transaction-card]', { timeout: 10000 });
+    });
+
+    test('swipe right past threshold dismisses the transaction drawer', async ({ page }) => {
+      // Open the kebab menu on the first transaction, then click Edit
+      const firstKebab = page
+        .locator('[data-transaction-actions] button[aria-haspopup="menu"]')
+        .first();
+      await firstKebab.click();
+      const editMenuItem = page
+        .locator('[data-transaction-actions] [data-edit-transaction]')
+        .first();
+      await editMenuItem.click();
+
+      // Wait for drawer to open
+      const drawer = page.locator('[data-drawer]').first();
+      await expect(drawer).toHaveClass(/drawer-open/, { timeout: 5000 });
+
+      // Wait for the open animation to complete and SwipeGesture to be initialized.
+      // The drawer-open class is added before the 400ms enter animation starts;
+      // initSwipeGesture() runs after the animation Promise resolves.
+      await page.waitForTimeout(600);
+
+      const drawerContent = page.locator('[data-drawer-content]').first();
+      const box = await drawerContent.boundingBox();
+      if (!box) throw new Error('Drawer content not visible');
+
+      // Target the drawer content panel directly (not elementFromPoint which may
+      // resolve to an input/textarea that SwipeGesture ignores).
+      // Use the slow-swipe pattern (separate evaluate calls with real delays)
+      // so elapsed time > 10ms and threshold detection works correctly.
+      const startX = box.x + box.width * 0.25; // Start in the left quarter to avoid form inputs
+      const startY = box.y + 30; // Near the top header area, away from form fields
+      const swipeDistance = box.width * 0.35; // Past 25% threshold
+
+      // 1) touchstart
+      await page.evaluate(
+        ({ sx, sy }) => {
+          const el = document.querySelector('[data-drawer-content]') as HTMLElement;
+          if (!el) throw new Error('[data-drawer-content] not found');
+          const t = new Touch({
+            identifier: 1,
+            target: el,
+            clientX: sx,
+            clientY: sy,
+            radiusX: 1,
+            radiusY: 1,
+            force: 1,
+            rotationAngle: 0,
+          });
+          el.dispatchEvent(
+            new TouchEvent('touchstart', {
+              bubbles: true,
+              cancelable: true,
+              touches: [t],
+              changedTouches: [t],
+            })
+          );
+        },
+        { sx: startX, sy: startY }
+      );
+
+      await page.waitForTimeout(50);
+
+      // 2) touchmove — intermediate position
+      await page.evaluate(
+        ({ sx, sy, dist }) => {
+          const el = document.querySelector('[data-drawer-content]') as HTMLElement;
+          if (!el) throw new Error('[data-drawer-content] not found');
+          const midX = sx + dist * 0.5;
+          const t = new Touch({
+            identifier: 1,
+            target: el,
+            clientX: midX,
+            clientY: sy,
+            radiusX: 1,
+            radiusY: 1,
+            force: 1,
+            rotationAngle: 0,
+          });
+          el.dispatchEvent(
+            new TouchEvent('touchmove', {
+              bubbles: true,
+              cancelable: true,
+              touches: [t],
+              changedTouches: [t],
+            })
+          );
+        },
+        { sx: startX, sy: startY, dist: swipeDistance }
+      );
+
+      await page.waitForTimeout(50);
+
+      // 3) touchend — final position past threshold
+      await page.evaluate(
+        ({ sx, sy, dist }) => {
+          const el = document.querySelector('[data-drawer-content]') as HTMLElement;
+          if (!el) throw new Error('[data-drawer-content] not found');
+          const endX = sx + dist;
+          const t = new Touch({
+            identifier: 1,
+            target: el,
+            clientX: endX,
+            clientY: sy,
+            radiusX: 1,
+            radiusY: 1,
+            force: 1,
+            rotationAngle: 0,
+          });
+          el.dispatchEvent(
+            new TouchEvent('touchend', {
+              bubbles: true,
+              cancelable: true,
+              touches: [],
+              changedTouches: [t],
+            })
+          );
+        },
+        { sx: startX, sy: startY, dist: swipeDistance }
+      );
+
+      // Wait for drawer to close
+      await expect(drawer).not.toHaveClass(/drawer-open/, { timeout: 3000 });
+    });
+
+    test('swipe right below threshold snaps drawer back', async ({ page }) => {
+      const firstKebab = page
+        .locator('[data-transaction-actions] button[aria-haspopup="menu"]')
+        .first();
+      await firstKebab.click();
+      const editMenuItem = page
+        .locator('[data-transaction-actions] [data-edit-transaction]')
+        .first();
+      await editMenuItem.click();
+
+      const drawer = page.locator('[data-drawer]').first();
+      await expect(drawer).toHaveClass(/drawer-open/, { timeout: 5000 });
+
+      const drawerContent = page.locator('[data-drawer-content]').first();
+      const box = await drawerContent.boundingBox();
+      if (!box) throw new Error('Drawer content not visible');
+
+      const startX = box.x + box.width / 2;
+      const startY = box.y + box.height / 2;
+      const swipeDistance = box.width * 0.1; // Below 25% threshold
+
+      await page.evaluate(
+        ({ sx, sy, dist }) => {
+          const el = document.elementFromPoint(sx, sy);
+          if (!el) return;
+          el.dispatchEvent(
+            new TouchEvent('touchstart', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchmove', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx + dist, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchend', {
+              bubbles: true,
+              changedTouches: [
+                new Touch({ identifier: 0, target: el, clientX: sx + dist, clientY: sy }),
+              ],
+            })
+          );
+        },
+        { sx: startX, sy: startY, dist: swipeDistance }
+      );
+
+      // Drawer should still be open
+      await expect(drawer).toHaveClass(/drawer-open/);
+    });
+  });
+
+  test.describe('Transaction Row — swipe-to-reveal', () => {
+    test.use({ viewport: { width: 393, height: 851 } });
+
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/transactions');
+      await page.waitForSelector('[data-swipe-container]', { timeout: 10000 });
+    });
+
+    test('swipe left reveals Edit and Delete buttons', async ({ page }) => {
+      const firstContainer = page.locator('[data-swipe-container]').first();
+      const content = firstContainer.locator('[data-swipe-content]');
+      const box = await content.boundingBox();
+      if (!box) throw new Error('Swipe content not visible');
+
+      const startX = box.x + box.width / 2;
+      const startY = box.y + box.height / 2;
+
+      await page.evaluate(
+        ({ sx, sy }) => {
+          const el = document.elementFromPoint(sx, sy);
+          if (!el) return;
+          el.dispatchEvent(
+            new TouchEvent('touchstart', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchmove', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchend', {
+              bubbles: true,
+              changedTouches: [
+                new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
+              ],
+            })
+          );
+        },
+        { sx: startX, sy: startY }
+      );
+
+      // Action panel should be visible
+      const actions = firstContainer.locator('[data-swipe-actions]');
+      await expect(actions).toBeVisible();
+
+      // Edit and Delete buttons should be present
+      const editBtn = actions.locator('[data-edit-transaction]');
+      const deleteBtn = actions.locator('[data-delete-transaction]');
+      await expect(editBtn).toBeVisible();
+      await expect(deleteBtn).toBeVisible();
+    });
+
+    test('swiping another row closes the first', async ({ page }) => {
+      const containers = page.locator('[data-swipe-container]');
+      const count = await containers.count();
+      if (count < 2) {
+        test.skip(true, 'Need at least 2 transaction rows');
+        return;
+      }
+
+      // Swipe first row
+      const first = containers.nth(0).locator('[data-swipe-content]');
+      const box1 = await first.boundingBox();
+      if (!box1) throw new Error('First row not visible');
+
+      await page.evaluate(
+        ({ sx, sy }) => {
+          const el = document.elementFromPoint(sx, sy);
+          if (!el) return;
+          el.dispatchEvent(
+            new TouchEvent('touchstart', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchmove', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchend', {
+              bubbles: true,
+              changedTouches: [
+                new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
+              ],
+            })
+          );
+        },
+        { sx: box1.x + box1.width / 2, sy: box1.y + box1.height / 2 }
+      );
+
+      // Now swipe second row
+      const second = containers.nth(1).locator('[data-swipe-content]');
+      const box2 = await second.boundingBox();
+      if (!box2) throw new Error('Second row not visible');
+
+      await page.evaluate(
+        ({ sx, sy }) => {
+          const el = document.elementFromPoint(sx, sy);
+          if (!el) return;
+          el.dispatchEvent(
+            new TouchEvent('touchstart', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchmove', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchend', {
+              bubbles: true,
+              changedTouches: [
+                new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
+              ],
+            })
+          );
+        },
+        { sx: box2.x + box2.width / 2, sy: box2.y + box2.height / 2 }
+      );
+
+      // First row should be back to original position (transform cleared or 0)
+      const firstTransform = await first.evaluate((el) => el.style.transform);
+      expect(firstTransform === '' || firstTransform === 'translateX(0px)').toBeTruthy();
+    });
+
+    test('tapping outside closes revealed row', async ({ page }) => {
+      const firstContainer = page.locator('[data-swipe-container]').first();
+      const content = firstContainer.locator('[data-swipe-content]');
+      const box = await content.boundingBox();
+      if (!box) throw new Error('Swipe content not visible');
+
+      // Swipe to reveal
+      await page.evaluate(
+        ({ sx, sy }) => {
+          const el = document.elementFromPoint(sx, sy);
+          if (!el) return;
+          el.dispatchEvent(
+            new TouchEvent('touchstart', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchmove', {
+              bubbles: true,
+              touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
+            })
+          );
+          el.dispatchEvent(
+            new TouchEvent('touchend', {
+              bubbles: true,
+              changedTouches: [
+                new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
+              ],
+            })
+          );
+        },
+        { sx: box.x + box.width / 2, sy: box.y + box.height / 2 }
+      );
+
+      // Click somewhere outside
+      await page.click('body', { position: { x: 10, y: 10 } });
+
+      // Row should snap back
+      const transform = await content.evaluate((el) => el.style.transform);
+      expect(transform === '' || transform === 'translateX(0px)').toBeTruthy();
+    });
+  });
+}); // end: Swipe gestures on transactions page
