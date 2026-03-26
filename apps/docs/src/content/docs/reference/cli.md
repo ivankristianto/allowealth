@@ -45,7 +45,7 @@ bun run aw workspace create --target d1 --name "Ops" --email admin@example.com
 - `recurring`: recurring templates and occurrence operations
 - `admin`: super-admin and API key operations
 - `mcp`: start MCP server
-- `deploy`: cloudflare/vercel/netlify deployment helpers
+- `deploy`: Cloudflare deployment helpers
 
 ## Global options expectations
 
