@@ -3,6 +3,33 @@ import { RedisDriver } from './redis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://:changeme@localhost:6379';
 
+/**
+ * Safety check: Only allow FLUSHDB on localhost or when explicitly enabled
+ * to prevent accidental data loss on shared Redis instances.
+ */
+function isTestSafeRedisUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Allow localhost, 127.0.0.1, or IPv6 loopback
+    const isLocalhost =
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '[::1]' ||
+      parsed.hostname === '::1';
+    return isLocalhost || process.env.REDIS_TEST_ALLOW_FLUSH === 'true';
+  } catch {
+    return false;
+  }
+}
+
+const testSafeRedis = isTestSafeRedisUrl(REDIS_URL);
+if (!testSafeRedis) {
+  console.warn(
+    'Redis tests skipped: REDIS_URL does not point to localhost. ' +
+      'Set REDIS_TEST_ALLOW_FLUSH=true to override (not recommended for shared Redis).'
+  );
+}
+
 let redisAvailable = false;
 
 try {
@@ -19,6 +46,9 @@ try {
   console.warn('Redis not available, skipping RedisDriver tests');
 }
 
+// Combine availability and safety checks
+const shouldRunTests = redisAvailable && testSafeRedis;
+
 function getDriverClient(driver: RedisDriver): InstanceType<typeof Bun.RedisClient> {
   return (driver as any).redis;
 }
@@ -28,7 +58,7 @@ describe('RedisDriver', () => {
   let cleanupClient: InstanceType<typeof Bun.RedisClient>;
 
   beforeAll(() => {
-    if (!redisAvailable) {
+    if (!shouldRunTests) {
       return;
     }
 
@@ -36,7 +66,7 @@ describe('RedisDriver', () => {
   });
 
   afterAll(() => {
-    if (!redisAvailable) {
+    if (!shouldRunTests) {
       return;
     }
 
@@ -44,7 +74,7 @@ describe('RedisDriver', () => {
   });
 
   afterEach(() => {
-    if (!redisAvailable) {
+    if (!shouldRunTests) {
       return;
     }
 
@@ -52,7 +82,7 @@ describe('RedisDriver', () => {
   });
 
   beforeEach(async () => {
-    if (!redisAvailable) {
+    if (!shouldRunTests) {
       return;
     }
 
@@ -62,14 +92,14 @@ describe('RedisDriver', () => {
 
   describe('get/set', () => {
     it('should return null for missing key', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       const result = await driver.get('nonexistent');
       expect(result).toBeNull();
     });
 
     it('should store and retrieve value', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', { foo: 'bar' });
       const result = await driver.get<{ foo: string }>('key1');
@@ -77,7 +107,7 @@ describe('RedisDriver', () => {
     });
 
     it('should handle string values', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', 'hello');
       const result = await driver.get<string>('key1');
@@ -85,7 +115,7 @@ describe('RedisDriver', () => {
     });
 
     it('should handle numeric values', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', 42);
       const result = await driver.get<number>('key1');
@@ -93,7 +123,7 @@ describe('RedisDriver', () => {
     });
 
     it('should handle nested objects', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       const data = { a: { b: [1, 2, 3] }, c: null };
       await driver.set('key1', data);
@@ -104,7 +134,7 @@ describe('RedisDriver', () => {
 
   describe('delete', () => {
     it('should delete existing key', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', 'value');
       await driver.delete('key1');
@@ -113,7 +143,7 @@ describe('RedisDriver', () => {
     });
 
     it('should not throw for nonexistent key', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await expect(driver.delete('nonexistent')).resolves.toBeUndefined();
     });
@@ -121,7 +151,7 @@ describe('RedisDriver', () => {
 
   describe('invalidateByTags', () => {
     it('should invalidate keys with matching tags', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', 'value1', { tags: ['tag:a', 'tag:b'] });
       await driver.set('key2', 'value2', { tags: ['tag:a'] });
@@ -135,7 +165,7 @@ describe('RedisDriver', () => {
     });
 
     it('should invalidate keys matching any of the tags', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', 'value1', { tags: ['tag:a'] });
       await driver.set('key2', 'value2', { tags: ['tag:b'] });
@@ -149,7 +179,7 @@ describe('RedisDriver', () => {
     });
 
     it('should handle empty tags array', async () => {
-      if (!redisAvailable) return;
+      if (!shouldRunTests) return;
 
       await driver.set('key1', 'value1');
       await driver.invalidateByTags([]);

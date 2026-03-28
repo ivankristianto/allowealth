@@ -79,8 +79,9 @@ export class CacheManager {
         return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
 
       case 'redis':
-        log.warn('Redis driver requires async initialization, falling back to memory driver');
-        return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
+        throw new Error(
+          "Redis driver requires async initialization. Use CacheManager.create(...) when configuring driver: 'redis'."
+        );
 
       case 'none':
       default:

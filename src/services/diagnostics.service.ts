@@ -91,8 +91,8 @@ export class DiagnosticsService {
     const driverName = cache.getDriverName();
     const cacheState = getCacheManagerState();
     const reportedDriver =
-      cacheState.isInitializing &&
       cacheState.configuredDriver === 'redis' &&
+      (cacheState.isInitializing || cacheState.initializationError) &&
       driverName === 'memory'
         ? 'redis'
         : (driverName as CacheInfo['driver']);
@@ -282,6 +282,10 @@ export class DiagnosticsService {
       const parsed = new URL(url);
       if (parsed.password) {
         parsed.password = '***';
+      }
+      // Strip trailing slash for URLs without a path (e.g., redis://localhost:6379/)
+      if (parsed.pathname === '/' && !url.endsWith('/')) {
+        return parsed.toString().replace(/\/$/, '');
       }
       return parsed.toString();
     } catch {
