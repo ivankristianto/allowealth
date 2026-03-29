@@ -230,6 +230,24 @@ describe('better-auth server config', () => {
     expect(mod.auth.options.rateLimit?.storage).toBe('secondary-storage');
   });
 
+  it('enables Better Auth secondary storage when Redis cache is configured', async () => {
+    setTestEnv({
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'prod-better-auth-secret-1234567890',
+      GOOGLE_CLIENT_ID: 'prod-google-client-id',
+      GOOGLE_CLIENT_SECRET: 'prod-google-client-secret',
+      PUBLIC_TURNSTILE_SITE_KEY: 'turnstile-site-key',
+      TURNSTILE_SECRET_KEY: 'turnstile-secret',
+      CACHE_DRIVER: 'redis',
+      REDIS_URL: 'redis://:changeme@localhost:6379',
+    });
+
+    const mod = await importFreshServer();
+
+    expect(mod.auth.options.secondaryStorage).toBeDefined();
+    expect(mod.auth.options.rateLimit?.storage).toBe('secondary-storage');
+  });
+
   it('does not throw from password reset delivery callback when email is unavailable', async () => {
     setTestEnv({
       NODE_ENV: 'production',
