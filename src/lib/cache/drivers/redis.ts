@@ -41,7 +41,7 @@ export class RedisDriver implements CacheDriver {
   async set<T>(key: string, value: T, options?: CacheSetOptions): Promise<void> {
     try {
       const ttl = options?.ttl ?? this.defaultTtl;
-      await this.redis.setex(key, ttl, JSON.stringify(value));
+      await this.redis.set(key, JSON.stringify(value), 'EX', ttl);
 
       if (options?.tags?.length) {
         const tagOperations = options.tags.flatMap((tag) => {
