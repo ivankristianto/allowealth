@@ -2,7 +2,7 @@
  * Cache Driver Interface
  *
  * Abstraction layer for cache storage backends.
- * Implementations: UpstashDriver, MemoryDriver, NoopDriver
+ * Implementations: UpstashDriver, RedisDriver, MemoryDriver, NoopDriver
  */
 
 export interface CacheSetOptions {
@@ -28,11 +28,15 @@ export interface CacheDriver {
 
 export interface CacheConfig {
   /** Cache driver to use */
-  driver: 'upstash' | 'memory' | 'none';
+  driver: 'upstash' | 'redis' | 'memory' | 'none';
   /** Upstash credentials (required when driver=upstash) */
   upstash?: {
     url: string;
     token: string;
+  };
+  /** Redis connection (required when driver=redis) */
+  redis?: {
+    url: string;
   };
   /** Default TTL in seconds (default: 3600) */
   defaultTtl?: number;

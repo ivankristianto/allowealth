@@ -6,7 +6,6 @@
  * - Node.js
  * - Bun
  * - Cloudflare Workers
- * - Vercel Edge
  * - Deno
  *
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html

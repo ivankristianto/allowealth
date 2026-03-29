@@ -80,15 +80,15 @@ Allowealth runs on Cloudflare Workers at the edge using the `@astrojs/cloudflare
 
 Use Cloudflare D1 for the production database. It runs SQLite-compatible storage at the edge and matches the local schema.
 
-##### 1. Configure D1
+#### 1. Configure D1
 
-1. Create the D1 database:
+Create the D1 database:
 
 ```bash
 wrangler d1 create allowealth-db
 ```
 
-2. Copy `wrangler.toml.example` to `wrangler.toml` and add your database ID:
+Copy `wrangler.toml.example` to `wrangler.toml` and add your database ID:
 
 ```toml
 [[d1_databases]]
@@ -97,7 +97,7 @@ database_name = "allowealth-db"
 database_id = "<your-database-id>"
 ```
 
-##### 2. Set secrets
+#### 2. Set secrets
 
 D1 does not use `DATABASE_URL`. Set the application secrets instead:
 
@@ -109,7 +109,7 @@ wrangler secret put GOOGLE_CLIENT_SECRET
 wrangler secret put PUBLIC_URL
 ```
 
-##### 3. Migrate and deploy
+#### 3. Migrate and deploy
 
 Apply SQLite migrations to the remote D1 database, then deploy:
 
@@ -123,19 +123,13 @@ bun run deploy:cloudflare
 
 After the Better Auth migration, the first deployment forces a one-time logout because legacy sessions are not preserved.
 
-##### 4. Create the first workspace
+#### 4. Create the first workspace
 
 Use the CLI against remote D1:
 
 ```bash
 bun run aw workspace create --target d1 --name "My Family" --email admin@example.com
 ```
-
-### Other Targets (Build Adapters)
-
-- **Vercel:** Support for Vercel Serverless Functions.
-- **Netlify:** Support for Netlify Functions.
-- **Node.js (Docker/VPS):** Standalone server deployment.
 
 ## CI/CD and Custom Domains (Cloudflare)
 

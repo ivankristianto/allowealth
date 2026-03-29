@@ -19,11 +19,21 @@ const port = parseInt(PORT || '4321', 10);
  * Set DEPLOY_TARGET to switch between platforms:
  * - node (default): Local development and traditional Node.js hosting
  * - cloudflare: Cloudflare Workers/Pages
- * - vercel: Vercel serverless
- * - netlify: Netlify Functions
  */
-type DeployTarget = 'node' | 'cloudflare' | 'vercel' | 'netlify';
-const DEPLOY_TARGET = (process.env.DEPLOY_TARGET || 'node') as DeployTarget;
+type DeployTarget = 'node' | 'cloudflare';
+
+const rawDeployTarget = process.env.DEPLOY_TARGET || 'node';
+const validTargets: DeployTarget[] = ['node', 'cloudflare'];
+
+if (!validTargets.includes(rawDeployTarget as DeployTarget)) {
+  throw new Error(
+    `Invalid DEPLOY_TARGET "${rawDeployTarget}". ` +
+      `Valid targets are: ${validTargets.join(', ')}. ` +
+      `Support for "vercel" and "netlify" has been removed.`
+  );
+}
+
+const DEPLOY_TARGET = rawDeployTarget as DeployTarget;
 
 /**
  * Get the appropriate adapter based on DEPLOY_TARGET
@@ -33,14 +43,6 @@ async function getAdapter(): Promise<AstroIntegration> {
     case 'cloudflare': {
       const cloudflare = await import('@astrojs/cloudflare');
       return cloudflare.default({});
-    }
-    case 'vercel': {
-      const vercel = await import('@astrojs/vercel');
-      return vercel.default({});
-    }
-    case 'netlify': {
-      const netlify = await import('@astrojs/netlify');
-      return netlify.default({});
     }
     case 'node':
     default: {

@@ -16,13 +16,17 @@ import type {
 } from '@/types/diagnostics';
 import { SENSITIVE_PATTERNS, REQUIRED_ENV_VARS } from '@/types/diagnostics';
 import { getEnv } from '@/lib/env';
-import { getCacheManager } from '@/lib/cache/cache-manager';
+import { getCacheManager, getCacheManagerState } from '@/lib/cache/cache-manager';
 import { getDatabaseConfig } from '@/db/config';
 
 export class DiagnosticsService {
   constructor(private db: IDatabase) {}
 
-  private static readonly HIDDEN_ENV_VARS = new Set(['DATABASE_URL', 'UPSTASH_REDIS_REST_URL']);
+  private static readonly HIDDEN_ENV_VARS = new Set([
+    'DATABASE_URL',
+    'UPSTASH_REDIS_REST_URL',
+    'REDIS_URL',
+  ]);
 
   /**
    * Get runtime environment information
@@ -85,28 +89,55 @@ export class DiagnosticsService {
   async getCacheInfo(): Promise<CacheInfo> {
     const cache = getCacheManager();
     const driverName = cache.getDriverName();
+    const cacheState = getCacheManagerState();
+    const reportedDriver =
+      cacheState.configuredDriver === 'redis' &&
+      (cacheState.isInitializing || cacheState.initializationError) &&
+      driverName === 'memory'
+        ? 'redis'
+        : (driverName as CacheInfo['driver']);
 
     const info: CacheInfo = {
-      driver: driverName as 'memory' | 'upstash' | 'noop',
-      isEnabled: driverName !== 'noop',
+      driver: reportedDriver,
+      isEnabled: reportedDriver !== 'noop',
       config: {},
-      status: driverName === 'noop' ? 'disabled' : 'healthy',
+      status: reportedDriver === 'noop' ? 'disabled' : 'healthy',
     };
 
-    if (driverName === 'noop') {
+    if (reportedDriver === 'noop') {
       return info;
     }
 
     // Add driver-specific configuration
-    if (driverName === 'memory') {
+    if (reportedDriver === 'memory') {
       const maxSize = getEnv('CACHE_MAX_SIZE');
       info.config.maxSize = maxSize ? Number(maxSize) : undefined;
-    } else if (driverName === 'upstash') {
+    } else if (reportedDriver === 'redis') {
+      const url = getEnv('REDIS_URL') ?? '';
+      info.redisConfig = {
+        url: this.sanitizeConnectionUrl(url),
+      };
+    } else if (reportedDriver === 'upstash') {
       const url = getEnv('UPSTASH_REDIS_REST_URL') ?? '';
       info.upstashConfig = {
         url: this.sanitizeUrl(url),
         restUrl: this.sanitizeUrl(url),
       };
+    }
+
+    if (cacheState.initializationError) {
+      info.status = 'error';
+      info.lastError = cacheState.initializationError;
+      return info;
+    }
+
+    if (
+      cacheState.isInitializing &&
+      cacheState.configuredDriver === 'redis' &&
+      cacheState.activeDriver !== 'redis'
+    ) {
+      info.status = 'initializing';
+      return info;
     }
 
     // Test cache connectivity
@@ -139,6 +170,7 @@ export class DiagnosticsService {
       'DATABASE_URL',
       'CACHE_DRIVER',
       'UPSTASH_REDIS_REST_URL',
+      'REDIS_URL',
       'PUBLIC_URL',
       'DEV_HOST',
       'BETTER_AUTH_SECRET',
@@ -245,17 +277,25 @@ export class DiagnosticsService {
   /**
    * Sanitize database URL (remove password)
    */
-  private sanitizeDbUrl(url: string): string {
+  private sanitizeConnectionUrl(url: string): string {
     try {
       const parsed = new URL(url);
       if (parsed.password) {
         parsed.password = '***';
+      }
+      // Strip trailing slash for URLs without a path (e.g., redis://localhost:6379/)
+      if (parsed.pathname === '/' && !url.endsWith('/')) {
+        return parsed.toString().replace(/\/$/, '');
       }
       return parsed.toString();
     } catch {
       // If URL parsing fails, truncate if too long
       return url.length > 50 ? `${url.substring(0, 50)}...` : url;
     }
+  }
+
+  private sanitizeDbUrl(url: string): string {
+    return this.sanitizeConnectionUrl(url);
   }
 
   /**

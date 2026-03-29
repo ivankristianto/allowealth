@@ -16,7 +16,8 @@ Use a service-layer cache-aside architecture with driver abstraction and tag-bas
 
 - `CacheManager`: central runtime manager for cache operations.
 - `CacheDriver` interface: consistent API for all drivers.
-- `UpstashDriver`: shared production cache backend.
+- `UpstashDriver`: shared production cache backend (REST API, Workers-compatible).
+- `RedisDriver`: local/self-hosted cache backend (TCP via Bun.Redis, Bun-only).
 - `MemoryDriver`: local/dev in-memory cache backend.
 - `NoopDriver`: explicit no-cache mode (tests or disabled cache).
 

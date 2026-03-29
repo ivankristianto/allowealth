@@ -191,167 +191,210 @@ const cardClasses = [
       aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${formatCurrency(amount, transaction?.currency)}`}
     >
       {/* Mobile Layout (2-row compact) - shown below @lg container width */}
-      <div class="@lg:hidden">
-        <div class="flex items-start gap-2.5">
-          {showBulkSelection && transaction && (
-            <label class="flex items-center cursor-pointer shrink-0 pt-0.5">
-              <input
-                type="checkbox"
-                class="checkbox checkbox-sm checkbox-primary"
-                data-bulk-select={transaction.id}
-                aria-label={`Select transaction: ${primaryText}`}
-              />
-            </label>
-          )}
+      {/* Mobile inner content used by both swipe and non-swipe branches */}
+      {(() => {
+        const mobileInner = (
+          <div class="flex items-start gap-2.5">
+            {showBulkSelection && transaction && (
+              <label class="flex items-center cursor-pointer shrink-0 pt-0.5">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm checkbox-primary"
+                  data-bulk-select={transaction.id}
+                  aria-label={`Select transaction: ${primaryText}`}
+                />
+              </label>
+            )}
 
-          <div class="flex-1 min-w-0">
-            {/* Row 1: Description + Amount (+ menu when actions) */}
-            <div class="flex items-center gap-2.5">
-              <div class="flex-1 min-w-0">
-                <div
-                  class:list={[
-                    'font-bold text-sm tracking-tight leading-tight truncate',
-                    isDeleted && 'line-through',
-                  ]}
-                  data-expandable-text
-                  title={primaryText}
-                >
-                  {primaryText}
+            <div class="flex-1 min-w-0">
+              {/* Row 1: Description + Amount (+ menu when actions) */}
+              <div class="flex items-center gap-2.5">
+                <div class="flex-1 min-w-0">
+                  <div
+                    class:list={[
+                      'font-bold text-sm tracking-tight leading-tight truncate',
+                      isDeleted && 'line-through',
+                    ]}
+                    data-expandable-text
+                    title={primaryText}
+                  >
+                    {primaryText}
+                  </div>
                 </div>
-              </div>
 
-              <Currency
-                amount={amount}
-                currency={transaction?.currency || 'IDR'}
-                showSign={false}
-                variant={isExpense ? 'negative' : 'positive'}
-                size="sm"
-                className={`font-bold tracking-tight shrink-0${isDeleted ? ' line-through' : ''}`}
-              />
+                <Currency
+                  amount={amount}
+                  currency={transaction?.currency || 'IDR'}
+                  showSign={false}
+                  variant={isExpense ? 'negative' : 'positive'}
+                  size="sm"
+                  className={`font-bold tracking-tight shrink-0${isDeleted ? ' line-through' : ''}`}
+                />
 
-              {transaction && (
-                <div class="dropdown dropdown-end shrink-0 -mr-1.5" data-transaction-actions>
-                  <button
-                    type="button"
-                    tabindex={0}
-                    class="btn btn-ghost btn-xs btn-square rounded-xl min-h-[44px] min-w-[44px]"
-                    aria-label="Transaction actions"
-                    aria-haspopup="menu"
-                  >
-                    <Ellipsis size={16} class="stroke-current opacity-40" aria-hidden="true" />
-                  </button>
-                  <ul
-                    tabindex={0}
-                    class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
-                    role="menu"
-                  >
-                    <li role="none" class:list={[!hasHistory && 'disabled opacity-40']}>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        class="flex items-center gap-2"
-                        aria-label={
-                          hasHistory
-                            ? `View edit history for: ${primaryText}`
-                            : 'No edit history available'
-                        }
-                        aria-disabled={!hasHistory}
-                        {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
-                      >
-                        <History size={16} class="stroke-current" aria-hidden="true" />
-                        View edit history
-                      </button>
-                    </li>
-                    {showActions && !isDeleted && (
-                      <>
-                        <li role="none">
-                          <button
-                            type="button"
-                            role="menuitem"
-                            class="flex items-center gap-2"
-                            aria-label={`Edit transaction: ${primaryText}`}
-                            data-edit-transaction={transaction.id}
-                            data-transaction-data={transactionDataJson}
-                          >
-                            <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                            Edit
-                          </button>
-                        </li>
-                        {convertToRecurringHref && (
+                {transaction && (
+                  <div class="dropdown dropdown-end shrink-0 -mr-1.5" data-transaction-actions>
+                    <button
+                      type="button"
+                      tabindex={0}
+                      class="btn btn-ghost btn-xs btn-square rounded-xl min-h-[44px] min-w-[44px]"
+                      aria-label="Transaction actions"
+                      aria-haspopup="menu"
+                    >
+                      <Ellipsis size={16} class="stroke-current opacity-40" aria-hidden="true" />
+                    </button>
+                    <ul
+                      tabindex={0}
+                      class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+                      role="menu"
+                    >
+                      <li role="none" class:list={[!hasHistory && 'disabled opacity-40']}>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          class="flex items-center gap-2"
+                          aria-label={
+                            hasHistory
+                              ? `View edit history for: ${primaryText}`
+                              : 'No edit history available'
+                          }
+                          aria-disabled={!hasHistory}
+                          {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
+                        >
+                          <History size={16} class="stroke-current" aria-hidden="true" />
+                          View edit history
+                        </button>
+                      </li>
+                      {showActions && !isDeleted && (
+                        <>
                           <li role="none">
-                            <a
-                              href={convertToRecurringHref}
+                            <button
+                              type="button"
                               role="menuitem"
                               class="flex items-center gap-2"
-                              aria-label={`Convert transaction to recurring: ${primaryText}`}
-                              data-convert-recurring
+                              aria-label={`Edit transaction: ${primaryText}`}
+                              data-edit-transaction={transaction.id}
+                              data-transaction-data={transactionDataJson}
                             >
-                              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
-                              Convert to recurring
-                            </a>
+                              <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                              Edit
+                            </button>
                           </li>
-                        )}
-                        <li role="none">
-                          <button
-                            type="button"
-                            role="menuitem"
-                            class="flex items-center gap-2 text-error"
-                            aria-label={`Delete transaction: ${primaryText}`}
-                            data-delete-transaction={transaction.id}
-                            data-transaction-details={transactionDetailsJson}
-                          >
-                            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-                            Delete
-                          </button>
-                        </li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
+                          {convertToRecurringHref && (
+                            <li role="none">
+                              <a
+                                href={convertToRecurringHref}
+                                role="menuitem"
+                                class="flex items-center gap-2"
+                                aria-label={`Convert transaction to recurring: ${primaryText}`}
+                                data-convert-recurring
+                              >
+                                <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
+                                Convert to recurring
+                              </a>
+                            </li>
+                          )}
+                          <li role="none">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="flex items-center gap-2 text-error"
+                              aria-label={`Delete transaction: ${primaryText}`}
+                              data-delete-transaction={transaction.id}
+                              data-transaction-details={transactionDetailsJson}
+                            >
+                              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                              Delete
+                            </button>
+                          </li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
 
-            {/* Row 2: Date · Category · Account · User */}
-            <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/40">
-              <time
-                datetime={date.toISOString()}
-                class="whitespace-nowrap font-medium text-base-content/60"
-              >
-                {formattedDate}
-              </time>
-              <span aria-hidden="true">&middot;</span>
-              {(transaction?.category?.name || transaction?.type === 'transfer') && (
-                <span
-                  class="font-semibold text-base-content/80 px-1.5 py-0.5 rounded text-xs"
-                  style={categoryPillStyle}
+              {/* Row 2: Date · Category · Account · User */}
+              <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/40">
+                <time
+                  datetime={date.toISOString()}
+                  class="whitespace-nowrap font-medium text-base-content/60"
                 >
-                  {transaction?.category?.name || 'Transfer'}
+                  {formattedDate}
+                </time>
+                <span aria-hidden="true">&middot;</span>
+                {(transaction?.category?.name || transaction?.type === 'transfer') && (
+                  <span
+                    class="font-semibold text-base-content/80 px-1.5 py-0.5 rounded text-xs"
+                    style={categoryPillStyle}
+                  >
+                    {transaction?.category?.name || 'Transfer'}
+                  </span>
+                )}
+                {isRecurring && (
+                  <span
+                    class="badge badge-sm badge-outline badge-accent gap-1"
+                    title="From recurring transaction"
+                  >
+                    <RefreshCw size={12} aria-hidden="true" />
+                    Recurring
+                  </span>
+                )}
+                {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
+                <span class="inline-flex items-center gap-1 min-w-0">
+                  <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
+                  <span class="truncate">{transaction?.account?.name}</span>
                 </span>
-              )}
-              {isRecurring && (
-                <span
-                  class="badge badge-sm badge-outline badge-accent gap-1"
-                  title="From recurring transaction"
-                >
-                  <RefreshCw size={12} aria-hidden="true" />
-                  Recurring
-                </span>
-              )}
-              {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
-              <span class="inline-flex items-center gap-1 min-w-0">
-                <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
-                <span class="truncate">{transaction?.account?.name}</span>
-              </span>
-              {createdByName && (
-                <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
-                  <span aria-hidden="true">&middot;</span>
-                  <span class="truncate">{createdByName}</span>
-                </span>
-              )}
+                {createdByName && (
+                  <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
+                    <span aria-hidden="true">&middot;</span>
+                    <span class="truncate">{createdByName}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        );
+
+        const hasSwipe = showActions && !isDeleted;
+
+        return (
+          <div class="@lg:hidden">
+            {hasSwipe ? (
+              <div class="relative overflow-hidden" data-swipe-container>
+                {/* Action panel behind card */}
+                <div class="absolute inset-y-0 right-0 flex" data-swipe-actions aria-hidden="true">
+                  <button
+                    type="button"
+                    class="w-16 bg-primary text-primary-content flex items-center justify-center"
+                    aria-label={`Edit transaction: ${primaryText}`}
+                    data-edit-transaction={transaction!.id}
+                    data-transaction-data={transactionDataJson}
+                    tabindex="-1"
+                  >
+                    <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    class="w-16 bg-error text-error-content flex items-center justify-center"
+                    aria-label={`Delete transaction: ${primaryText}`}
+                    data-delete-transaction={transaction!.id}
+                    data-transaction-details={transactionDetailsJson}
+                    tabindex="-1"
+                  >
+                    <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                  </button>
+                </div>
+                {/* Swipeable card content */}
+                <div class="bg-base-100 relative" data-swipe-content>
+                  {mobileInner}
+                </div>
+              </div>
+            ) : (
+              mobileInner
+            )}
+          </div>
+        );
+      })()}
 
       {/* Desktop Layout (horizontal with inline buttons) - shown at @lg container width */}
       <div class="hidden @lg:flex items-center gap-3 @2xl:gap-4">
@@ -540,11 +583,15 @@ const cardClasses = [
     markTruncated,
     observeExpandableContainers,
   } from './ExpandableText.client';
+  import { initTransactionSwipe, cleanupTransactionSwipe } from './TransactionCard.client';
 
   initTransactionHistory();
   initExpandableText();
   markTruncated();
   observeExpandableContainers();
+  initTransactionSwipe();
+
+  document.addEventListener('astro:before-swap', cleanupTransactionSwipe, { once: true });
 
   // Keyboard navigation for transaction dropdown menus.
   // Use one delegated listener so dynamically injected cards work without re-binding.

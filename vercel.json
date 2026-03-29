@@ -1,6 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "DEPLOY_TARGET=vercel bun run build",
-  "framework": null,
-  "installCommand": "bun install"
-}

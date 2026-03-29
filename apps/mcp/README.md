@@ -3,7 +3,7 @@
 Model Context Protocol (MCP) server that lets AI assistants (Claude Desktop, Claude Code, etc.) interact with your Allowealth financial data. Supports two transport modes:
 
 - **stdio** — for local MCP clients running on the same machine
-- **HTTP** — for remote access via the deployed web app (Cloudflare Workers, Vercel, etc.)
+- **HTTP** — for remote access via the deployed web app (Cloudflare Workers, etc.)
 
 ## Prerequisites
 

@@ -80,9 +80,10 @@ declare global {
     readonly BETTER_AUTH_SECRET?: string;
 
     // Cache configuration
-    readonly CACHE_DRIVER?: 'upstash' | 'memory' | 'none';
+    readonly CACHE_DRIVER?: 'upstash' | 'redis' | 'memory' | 'none';
     readonly UPSTASH_REDIS_REST_URL?: string;
     readonly UPSTASH_REDIS_REST_TOKEN?: string;
+    readonly REDIS_URL?: string;
 
     // Performance debugging
     /** Enable Server-Timing header for performance metrics (default: false) */

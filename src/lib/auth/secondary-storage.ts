@@ -1,4 +1,5 @@
 import { getCacheManager } from '@/lib/cache';
+import { getEnv } from '@/lib/env';
 
 type BetterAuthSecondaryStorage = {
   get(key: string): Promise<string | null>;
@@ -13,11 +14,24 @@ function getAuthCacheKey(key: string): string {
 }
 
 export function createAuthSecondaryStorage(): BetterAuthSecondaryStorage | undefined {
-  const cache = getCacheManager();
+  const configuredDriver = getEnv('CACHE_DRIVER');
 
-  if (cache.getDriverName() !== 'upstash') {
+  if (configuredDriver === 'upstash') {
+    const url = getEnv('UPSTASH_REDIS_REST_URL');
+    const token = getEnv('UPSTASH_REDIS_REST_TOKEN');
+
+    if (!url || !token) {
+      return undefined;
+    }
+  } else if (configuredDriver === 'redis') {
+    if (!getEnv('REDIS_URL')) {
+      return undefined;
+    }
+  } else {
     return undefined;
   }
+
+  const cache = getCacheManager();
 
   return {
     async get(key) {
