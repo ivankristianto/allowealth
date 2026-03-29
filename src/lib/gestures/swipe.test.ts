@@ -324,7 +324,7 @@ describe('SwipeGesture', () => {
   });
 
   describe('velocity threshold', () => {
-    it('calls onThreshold on fast flick even below distance threshold', () => {
+    it('does not call onThreshold when velocity is guarded to zero on near-zero elapsed time', () => {
       const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',

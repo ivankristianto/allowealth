@@ -87,10 +87,25 @@ function destroySwipeRows(): void {
   cleanupController = null;
 }
 
-export function initTransactionSwipe(): void {
+// Initialize swipe rows
+function initTransactionSwipe(): void {
   initSwipeRows();
 }
 
-export function cleanupTransactionSwipe(): void {
+function cleanupTransactionSwipe(): void {
   destroySwipeRows();
 }
+
+// Hook into Astro view transitions for SPA navigation compatibility
+// This ensures swipe gestures are initialized/cleaned up correctly across navigations
+if (typeof window !== 'undefined') {
+  window.addEventListener('astro:page-load', () => {
+    initTransactionSwipe();
+  });
+
+  window.addEventListener('astro:before-swap', () => {
+    cleanupTransactionSwipe();
+  });
+}
+
+export { initTransactionSwipe, cleanupTransactionSwipe };

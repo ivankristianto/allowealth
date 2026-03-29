@@ -276,10 +276,35 @@ async function openSheet(page: import('@playwright/test').Page): Promise<void> {
   );
 }
 
+/**
+ * Feature detection for Touch API support.
+ * Desktop Chrome (non-mobile viewport) may not support Touch/TouchEvent constructors.
+ * Skip tests that depend on touch simulation when not available.
+ */
+function hasTouchAPI(): boolean {
+  try {
+    return typeof Touch !== 'undefined' && typeof TouchEvent !== 'undefined';
+  } catch {
+    return false;
+  }
+}
+
 test.describe('Mobile Command Center — swipe gesture', () => {
   test.use({ viewport: { width: 393, height: 851 } }); // Pixel 5
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, browserName }) => {
+    // Touch API feature detection - skip if not supported (e.g., Desktop Chrome)
+    const touchSupported = await page.evaluate(() => {
+      try {
+        return typeof Touch !== 'undefined' && typeof TouchEvent !== 'undefined';
+      } catch {
+        return false;
+      }
+    });
+    if (!touchSupported) {
+      test.skip(true, 'Touch API not supported in this browser configuration');
+      return;
+    }
     await page.goto('/dashboard');
     // Wait for the menu toggle button to be visible (mobile nav renders at bottom)
     await page.waitForSelector('[data-menu-toggle]', { timeout: 5000 });
@@ -311,7 +336,8 @@ test.describe('Mobile Command Center — swipe gesture', () => {
     // Sheet should still be open (no inert attribute)
     await expect(sheet).not.toHaveAttribute('inert');
     // Inline transform should be cleared after snap-back
-    await expect(sheet).not.toHaveCSS('transform', /translateY\([^0]/);
+    const transform = await sheet.evaluate((el) => (el as HTMLElement).style.transform);
+    expect(transform === '' || transform === 'translateY(0px)').toBeTruthy();
   });
 
   test('close button still dismisses the sheet after gesture is initialized', async ({ page }) => {

@@ -46,8 +46,8 @@ export class SwipeGesture {
 
     el.addEventListener('touchstart', this.handleTouchStart, { passive: true, signal });
     el.addEventListener('touchmove', this.handleTouchMove, { passive: true, signal });
-    el.addEventListener('touchend', this.handleTouchEnd, { signal });
-    el.addEventListener('touchcancel', this.handleTouchCancel, { signal });
+    el.addEventListener('touchend', this.handleTouchEnd, { passive: true, signal });
+    el.addEventListener('touchcancel', this.handleTouchCancel, { passive: true, signal });
   }
 
   destroy(): void {

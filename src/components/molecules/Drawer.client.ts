@@ -68,7 +68,14 @@ function initDrawer(drawerElement: Element): void {
           backdropEl.style.opacity = String(1 - progress);
         }
       },
-      onThreshold: () => closeDrawer(),
+      onThreshold: () => {
+        // Reset inline styles before close animation to prevent visual snap
+        swipeGesture?.reset();
+        if (backdropEl) {
+          backdropEl.style.opacity = '';
+        }
+        closeDrawer();
+      },
       onCancel: () => {
         if (backdropEl) {
           backdropEl.style.opacity = '';

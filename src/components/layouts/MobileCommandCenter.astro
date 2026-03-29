@@ -536,7 +536,8 @@ const isActive = (href: string) => {
         distanceThreshold: 0.25,
         velocityThreshold: 0.4,
         onMove: (progress) => {
-          backdrop.style.opacity = String(0.5 * (1 - progress));
+          const clampedProgress = Math.max(0, Math.min(1, progress));
+          backdrop.style.opacity = String(1 - clampedProgress);
         },
         onThreshold: () => closeSheet(),
         onCancel: () => {
