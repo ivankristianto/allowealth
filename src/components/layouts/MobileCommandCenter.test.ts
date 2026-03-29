@@ -65,6 +65,12 @@ describe('MobileCommandCenter', () => {
       expect(source).toContain('aria-label="Documentation (opens in new tab)"');
     });
 
+    it('includes a drag handle for swipe gesture', () => {
+      expect(source).toContain('data-drag-handle');
+      expect(source).toContain('touch-none');
+      expect(source).toContain('bg-base-content/30');
+    });
+
     it('keeps the super-admin account card intact', () => {
       const adminBranch = source.split('/* Admin user section - unchanged */')[1] ?? '';
 

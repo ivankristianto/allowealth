@@ -11,19 +11,5 @@ export default defineCommand({
         exec('wrangler', ['deploy']);
       },
     }),
-    vercel: defineCommand({
-      meta: { name: 'vercel', description: 'Build and deploy to Vercel' },
-      run() {
-        exec('astro', ['build'], { DEPLOY_TARGET: 'vercel' });
-        exec('vercel', ['deploy', '--prod']);
-      },
-    }),
-    netlify: defineCommand({
-      meta: { name: 'netlify', description: 'Build and deploy to Netlify' },
-      run() {
-        exec('astro', ['build'], { DEPLOY_TARGET: 'netlify' });
-        exec('netlify', ['deploy', '--prod']);
-      },
-    }),
   },
 });
