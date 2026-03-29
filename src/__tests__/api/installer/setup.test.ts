@@ -14,6 +14,7 @@ describe('installer setup validation', () => {
       name: 'Admin User',
       email: 'admin@example.com',
       password: 'securepassword123',
+      installerSecret: 'bootstrap-secret',
     });
     expect(result.success).toBe(true);
   });

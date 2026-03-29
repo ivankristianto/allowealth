@@ -30,8 +30,8 @@ export function isMigrationApplied(db: Database): boolean {
  */
 export function hasUsers(db: Database): boolean {
   try {
-    const rows = db.all<{ count: number }>(sql`SELECT count(*) as count FROM user`);
-    return rows.length > 0 && rows[0].count > 0;
+    const rows = db.all<{ one: number }>(sql`SELECT 1 as one FROM user LIMIT 1`);
+    return rows.length > 0;
   } catch {
     return false;
   }

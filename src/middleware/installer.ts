@@ -6,13 +6,14 @@
  * 2. If no users exist — redirects to /installer
  * 3. If users exist and path is /installer — redirects to /login
  * 4. Otherwise — passes through to next middleware
+ * 5. In D1 runtime — no-op (installer is Bun/SQLite-only)
  *
  * Must run after database middleware and before authentication.
  */
 
 import type { MiddlewareHandler } from 'astro';
 import { isMigrationApplied, hasUsers } from '@/lib/installer/detection';
-import { getDb, resetDb } from '@/db';
+import { getDatabaseConfig, getDb, resetDb } from '@/db';
 
 /** Escape HTML special characters to prevent XSS in error pages */
 function escapeHtml(text: string): string {
@@ -41,6 +42,11 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
 
   // Skip static assets
   if (isStaticAssetPath(pathname)) {
+    return next();
+  }
+
+  // Installer flow is Bun/SQLite-only; skip guard entirely for D1 runtime.
+  if (getDatabaseConfig().isD1) {
     return next();
   }
 

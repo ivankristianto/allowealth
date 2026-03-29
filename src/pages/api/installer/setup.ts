@@ -12,9 +12,10 @@ import * as v from 'valibot';
 import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { getActiveSchema, getDb, runTransaction } from '@/db';
+import { getActiveSchema, getDb, runTransaction, type Database } from '@/db';
 import { hashPassword } from '@/lib/auth/password';
 import { AccountCategoryService } from '@/services/account-category.service';
+import { getEnv } from '@/lib/env';
 import { hasUsers } from '@/lib/installer/detection';
 import { logError } from '@/lib/utils';
 
@@ -29,6 +30,13 @@ async function cleanupFailedInstallerSetup(userId: string, workspaceId: string):
   await database.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceId));
 }
 
+class SetupAlreadyCompleteError extends Error {
+  constructor() {
+    super('Setup already complete');
+    this.name = 'SetupAlreadyCompleteError';
+  }
+}
+
 export const installerSetupSchema = v.object({
   workspaceName: v.pipe(
     v.string(),
@@ -38,6 +46,7 @@ export const installerSetupSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
   email: v.pipe(v.string(), v.email('Invalid email address')),
   password: v.pipe(v.string(), v.minLength(12, 'Password must be at least 12 characters')),
+  installerSecret: v.optional(v.string()),
 });
 
 export const POST: APIRoute = async ({ request }) => {
@@ -71,7 +80,17 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const { workspaceName, name, email, password } = result.output;
+  const { workspaceName, name, email, password, installerSecret } = result.output;
+  const configuredInstallerSecret = getEnv('INSTALLER_SECRET');
+
+  // Optional bootstrap secret for unattended fresh deployments.
+  if (configuredInstallerSecret && installerSecret !== configuredInstallerSecret) {
+    return new Response(JSON.stringify({ error: 'Invalid installer secret' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const schema = getActiveSchema();
   const userId = nanoid();
   const workspaceId = nanoid();
@@ -85,6 +104,10 @@ export const POST: APIRoute = async ({ request }) => {
     const now = new Date();
 
     await runTransaction(database, async (tx) => {
+      if (hasUsers(tx as unknown as Database)) {
+        throw new SetupAlreadyCompleteError();
+      }
+
       const categoryService = new AccountCategoryService(tx);
 
       // 1. Better Auth user table
@@ -140,7 +163,18 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    await cleanupFailedInstallerSetup(userId, workspaceId);
+    if (error instanceof SetupAlreadyCompleteError) {
+      return new Response(JSON.stringify({ error: 'Setup already complete' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    try {
+      await cleanupFailedInstallerSetup(userId, workspaceId);
+    } catch (cleanupError) {
+      logError('Installer cleanup failed', cleanupError);
+    }
     logError('Installer setup failed', error);
     return new Response(JSON.stringify({ error: 'Setup failed. Check server logs for details.' }), {
       status: 500,

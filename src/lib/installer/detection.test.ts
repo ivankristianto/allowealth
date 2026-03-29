@@ -27,8 +27,8 @@ function isMigrationApplied(db: Database): boolean {
 
 function hasUsers(db: Database): boolean {
   try {
-    const rows = db.all<{ count: number }>(sql`SELECT count(*) as count FROM user`);
-    return rows.length > 0 && rows[0].count > 0;
+    const rows = db.all<{ one: number }>(sql`SELECT 1 as one FROM user LIMIT 1`);
+    return rows.length > 0;
   } catch {
     return false;
   }
@@ -36,7 +36,7 @@ function hasUsers(db: Database): boolean {
 
 // --- Tests ---
 
-const mockAll = mock(() => [] as { count: number }[]);
+const mockAll = mock(() => [] as Array<{ count?: number; one?: number }>);
 
 const mockDb = {
   all: mockAll,
@@ -71,12 +71,12 @@ describe('hasUsers', () => {
   });
 
   test('returns true when user table has rows', () => {
-    mockAll.mockReturnValue([{ count: 1 }]);
+    mockAll.mockReturnValue([{ one: 1 }] as any);
     expect(hasUsers(mockDb as any)).toBe(true);
   });
 
   test('returns false when user table is empty', () => {
-    mockAll.mockReturnValue([{ count: 0 }]);
+    mockAll.mockReturnValue([]);
     expect(hasUsers(mockDb as any)).toBe(false);
   });
 

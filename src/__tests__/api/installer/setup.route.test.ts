@@ -11,6 +11,7 @@ import { AccountCategoryService } from '@/services/account-category.service';
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalD1Enabled = process.env.D1_ENABLED;
+const originalInstallerSecret = process.env.INSTALLER_SECRET;
 const originalSeedDefaultCategories = AccountCategoryService.prototype.seedDefaultCategories;
 
 let testDbPath = '';
@@ -54,6 +55,7 @@ describe('POST /api/installer/setup', () => {
 
     process.env.DATABASE_URL = testDbPath;
     process.env.D1_ENABLED = 'false';
+    delete process.env.INSTALLER_SECRET;
 
     setupTestDatabase(testDbPath);
     await closeDatabase();
@@ -75,6 +77,12 @@ describe('POST /api/installer/setup', () => {
       delete process.env.D1_ENABLED;
     } else {
       process.env.D1_ENABLED = originalD1Enabled;
+    }
+
+    if (originalInstallerSecret === undefined) {
+      delete process.env.INSTALLER_SECRET;
+    } else {
+      process.env.INSTALLER_SECRET = originalInstallerSecret;
     }
 
     deleteSqliteArtifacts(testDbPath);
@@ -112,6 +120,57 @@ describe('POST /api/installer/setup', () => {
         hash: credentialAccount?.password ?? '',
       })
     ).toBe(true);
+  });
+
+  it('returns 401 when installer secret is configured but missing', async () => {
+    process.env.INSTALLER_SECRET = 'bootstrap-secret';
+
+    const response = await POST(
+      createApiContext({
+        workspaceName: 'Installer Workspace',
+        name: 'Installer Admin',
+        email: 'installer@example.com',
+        password: 'InstallerPassword123!',
+      })
+    );
+
+    expect(response.status).toBe(401);
+    expect(
+      await db.query.user.findFirst({
+        where: eq(authUsers.email, 'installer@example.com'),
+      })
+    ).toBeUndefined();
+  });
+
+  it('allows setup when installer secret is configured and provided', async () => {
+    process.env.INSTALLER_SECRET = 'bootstrap-secret';
+
+    const response = await POST(
+      createApiContext({
+        workspaceName: 'Installer Workspace',
+        name: 'Installer Admin',
+        email: 'installer@example.com',
+        password: 'InstallerPassword123!',
+        installerSecret: 'bootstrap-secret',
+      })
+    );
+
+    expect(response.status).toBe(201);
+  });
+
+  it('returns 409 when setup has already completed', async () => {
+    const payload = {
+      workspaceName: 'Installer Workspace',
+      name: 'Installer Admin',
+      email: 'installer@example.com',
+      password: 'InstallerPassword123!',
+    };
+
+    const firstResponse = await POST(createApiContext(payload));
+    const secondResponse = await POST(createApiContext(payload));
+
+    expect(firstResponse.status).toBe(201);
+    expect(secondResponse.status).toBe(409);
   });
 
   it('rolls back installer records when category seeding fails', async () => {

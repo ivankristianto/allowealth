@@ -1,4 +1,4 @@
-# First-Run Installer Design (ALL-64)
+# First-Run Installer Design (ALL-65)
 
 ## Summary
 
@@ -16,10 +16,12 @@ database → installer → perfDebug → securityHeaders → authentication → 
 
 ### Detection logic
 
+For D1 runtime (`D1_ENABLED=true` or `DB` binding present), the middleware is a no-op.
+
 The middleware runs two checks on every request:
 
 1. **`isMigrationApplied()`** — queries `SELECT count(*) FROM __drizzle_migrations`. If the table does not exist (query throws) or has fewer rows than expected, migrations have not been fully applied.
-2. **`hasUsers()`** — queries `SELECT count(*) FROM user LIMIT 1` (Better Auth's `user` table). Returns `true` if at least one user exists.
+2. **`hasUsers()`** — queries `SELECT 1 FROM user LIMIT 1` (Better Auth's `user` table). Returns `true` if at least one user exists.
 
 ### Behavior
 
@@ -133,6 +135,7 @@ When the `?installed=true` query param is present, the login page shows a succes
 ## Security
 
 - **Idempotent:** The setup endpoint checks user count before inserting — duplicate requests return 409.
+- **Bootstrap secret support:** When `INSTALLER_SECRET` is set, installer requests must include the same `installerSecret` value.
 - **No CSRF:** No session exists to protect during installation.
 - **Password hashing:** PBKDF2-SHA256 via Web Crypto API (existing `hashPassword()`).
 - **Dead after setup:** Once the first user exists, the middleware redirects all `/installer` requests to `/login`. The installer page and API become unreachable.

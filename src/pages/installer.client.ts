@@ -53,6 +53,7 @@ async function handleSubmit(e: Event): Promise<void> {
         name: formData.get('name'),
         email: formData.get('email'),
         password,
+        installerSecret: formData.get('installerSecret'),
       }),
     });
 
