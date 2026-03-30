@@ -53,6 +53,7 @@ Update `validateMcpToken()` lookup path in `src/lib/mcp-auth.ts` to include user
 
 - Token is valid only if `users.deleted_at IS NULL`.
 - If `deleted_at` is set, return `null` exactly as other invalid-token cases.
+- Phase A uses DB-first validation for MCP tokens (no cache-only accept path), so revocation correctness does not depend on cache invalidation reliability.
 
 #### Rationale
 
@@ -77,7 +78,7 @@ Revocation behavior is mandatory:
 - Invalidate `MCP_TOKENS` tag after bulk deletion as defense-in-depth.
 - Execute user soft-delete + OAuth token deletion in one DB transaction.
 - If token deletion fails, roll back the transaction and fail the request (no soft-delete commit).
-- Cache invalidation runs immediately after successful DB commit; if invalidation fails, return an error and require retry.
+- Cache invalidation runs immediately after successful DB commit as best-effort hygiene; request success is determined by transactional DB revocation.
 
 #### Rationale
 
@@ -98,6 +99,13 @@ Apply strict, endpoint-local guards in `src/pages/api/mcp.ts`:
 
 - Key basis: bearer-token hash + endpoint path.
 - On exceed: return `429` with standard rate-limit headers.
+- Production backend: Upstash Redis (`@upstash/redis`) using existing Upstash credentials.
+- Local development/test backend: existing in-memory limiter.
+- Production key model (fixed window): `mcp:ratelimit:<tokenHash>:<windowEpochMinute>`.
+- Production atomic model:
+  - `INCR` the window key for each request,
+  - if counter is `1`, set `EXPIRE` to `120` seconds,
+  - allow when counter `<= 60`, otherwise reject with `429`.
 - Consistency model is hybrid:
   - Production: use shared storage-backed counters so limits are enforced across Workers isolates.
   - Local development/test: use in-memory counters.
@@ -171,8 +179,8 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 
 - Missing bearer token -> `401`.
 - Invalid/expired/deleted-user token -> `401`.
-- Rate-limit violation -> `429` + rate-limit headers.
-- Body too large -> `413`.
+- Rate-limit violation -> `429` + `X-RateLimit-*` headers and `Retry-After`.
+- Body too large -> `413` JSON error response.
 - Invalid JSON -> `400`.
 - Missing JSON-RPC method -> `400`.
 
@@ -214,6 +222,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
   - Confirm MCP cache invalidation calls happen.
   - Confirm the same revocation behavior for workspace member soft-delete path.
   - Confirm transaction rollback when token deletion fails (user remains active).
+  - Confirm cache invalidation failures do not mask DB revocation success.
 
 - `e2e-reset-rate-limits` route tests
   - DEV + allowed hosts succeed.
@@ -226,7 +235,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
   - Returns `429` when exceeding `60/min` for same token.
   - Returns `413` for payloads > `64 KB`.
   - Continues to serve valid JSON-RPC calls under limits.
-  - Production path uses shared storage-backed limiter; local dev uses in-memory limiter.
+  - Production path uses Upstash shared counter keys; local dev uses in-memory limiter.
 
 ## Risks and Mitigations
 
@@ -237,10 +246,10 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
   - Mitigation: only dangerous formula-leading values are changed; behavior is documented in tests.
 
 - Risk: deactivation flow partial failure (user deactivated, token cleanup error).
-  - Mitigation: make soft-delete + token deletion transactional with rollback on deletion failure; fail request when cache invalidation fails so operators can retry.
+  - Mitigation: make soft-delete + token deletion transactional with rollback on deletion failure; use DB-first MCP validation so cache invalidation reliability is not a security boundary.
 
 - Risk: inconsistent rate-limit enforcement in Cloudflare Workers due to isolate-local memory.
-  - Mitigation: require shared storage-backed limiter in production; reserve in-memory limiter for local development/test only.
+  - Mitigation: require Upstash shared counters in production; reserve in-memory limiter for local development/test only.
 
 ## Acceptance Criteria
 
@@ -248,6 +257,6 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 - Any user soft-delete path (admin deactivation and workspace member removal) revokes MCP OAuth tokens and invalidates MCP token cache entries.
 - If MCP token deletion fails during soft-delete, the request fails and `deleted_at` is not committed.
 - `/api/mcp` enforces `60 req/min` per token and `64 KB` body-size maximum.
-- `/api/mcp` rate limiting is globally shared in production and in-memory only in local dev/test.
+- `/api/mcp` rate limiting is globally shared in production via Upstash counters and in-memory only in local dev/test.
 - CSV exports neutralize formula-leading values via `'` prefix.
 - DEV reset endpoint allows only loopback and `*.local`, and remains unavailable outside DEV.
