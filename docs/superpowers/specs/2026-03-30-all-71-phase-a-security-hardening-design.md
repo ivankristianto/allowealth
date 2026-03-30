@@ -53,7 +53,7 @@ Update `validateMcpToken()` lookup path in `src/lib/mcp-auth.ts` to include user
 
 - Token is valid only if `users.deleted_at IS NULL`.
 - If `deleted_at` is set, return `null` exactly as other invalid-token cases.
-- Phase A uses DB-first validation for MCP tokens (no cache-only accept path), so revocation correctness does not depend on cache invalidation reliability.
+- Phase A removes the cache-first early return in `validateMcpToken()` and performs DB validation on every MCP auth check (DB-first, no cache-only accept path), so revocation correctness does not depend on cache invalidation reliability.
 
 #### Rationale
 
@@ -97,11 +97,11 @@ Apply strict, endpoint-local guards in `src/pages/api/mcp.ts`:
 
 #### Rate Limit Details
 
-- Key basis: bearer-token hash + endpoint path.
+- Canonical key basis: bearer-token hash + endpoint identifier + fixed window minute.
 - On exceed: return `429` with standard rate-limit headers.
 - Production backend: Upstash Redis (`@upstash/redis`) using existing Upstash credentials.
 - Local development/test backend: existing in-memory limiter.
-- Production key model (fixed window): `mcp:ratelimit:<tokenHash>:<windowEpochMinute>`.
+- Production key model (fixed window): `mcp:ratelimit:<tokenHash>:api-mcp:<windowEpochMinute>`.
 - Production atomic model:
   - `INCR` the window key for each request,
   - if counter is `1`, set `EXPIRE` to `120` seconds,
@@ -159,6 +159,7 @@ Allowed hosts:
 - `localhost`
 - `127.0.0.1`
 - `::1`
+- `[::1]`
 - Any hostname ending in `.local`
 
 All other hosts are denied (`403` in DEV). Non-DEV remains unavailable (`404`).
@@ -167,7 +168,7 @@ Host matching rules:
 
 - Normalize using `new URL(request.url).hostname` (hostname only, no port).
 - Lowercase before comparison.
-- Accept exact `localhost`, `127.0.0.1`, `::1`, or suffix `.local`.
+- Accept exact `localhost`, `127.0.0.1`, `::1`, `[::1]`, or suffix `.local`.
 
 #### Rationale
 
@@ -234,6 +235,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 - `/api/mcp`
   - Returns `429` when exceeding `60/min` for same token.
   - Returns `413` for payloads > `64 KB`.
+  - Returns `413` for oversized payloads when `Content-Length` is missing (stream cutoff path).
   - Continues to serve valid JSON-RPC calls under limits.
   - Production path uses Upstash shared counter keys; local dev uses in-memory limiter.
 
