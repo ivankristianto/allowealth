@@ -139,6 +139,7 @@ Before CSV quoting/escaping in both export paths:
 Apply a shared normalization rule:
 
 - For any cell value whose first non-empty character is `=`, `+`, `-`, or `@`, prefix with `'`.
+- This includes values beginning with `-` by design; safe spreadsheet opening is prioritized over preserving numeric typing in exported cells.
 
 Then run existing quote/newline/comma escaping.
 
@@ -159,16 +160,15 @@ Allowed hosts:
 - `localhost`
 - `127.0.0.1`
 - `::1`
-- `[::1]`
 - Any hostname ending in `.local`
 
 All other hosts are denied (`403` in DEV). Non-DEV remains unavailable (`404`).
 
 Host matching rules:
 
-- Normalize using `new URL(request.url).hostname` (hostname only, no port).
-- Lowercase before comparison.
-- Accept exact `localhost`, `127.0.0.1`, `::1`, `[::1]`, or suffix `.local`.
+- Read hostname via `new URL(request.url).hostname` (hostname only, no port), lowercase it, then normalize IPv6 loopback by stripping surrounding brackets when present.
+- Compare the normalized host.
+- Accept exact `localhost`, `127.0.0.1`, `::1`, or suffix `.local`.
 
 #### Rationale
 
