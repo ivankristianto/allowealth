@@ -11,6 +11,7 @@
 
 services:
   app:
+    container_name: allowealth-app
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -27,6 +28,12 @@ services:
       # Ensure the standalone server binds on all interfaces inside the container
       # (overrides any DEV_HOST that may have been baked in at build time)
       HOST: '0.0.0.0'
+      # Override dev values from .env for container context
+      DATABASE_URL: /data/allowealth.db
+      PORT: 3000
+      # Set to your production URL (e.g., https://finances.example.com)
+      # Defaults to localhost for local Docker testing
+      PUBLIC_URL: http://localhost:3000
     restart: unless-stopped
 
   redis:

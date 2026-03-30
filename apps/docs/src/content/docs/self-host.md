@@ -204,6 +204,35 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 Migrations run automatically when the new container starts.
 
+### Database management
+
+Migrations run automatically on every container start. Use these commands for manual operations or troubleshooting.
+
+**Run migrations manually:**
+
+```bash
+docker exec allowealth-app bun run src/db/migrate.ts
+```
+
+**Seed with demo data:**
+
+```bash
+# Default: 6 months of transactions
+docker exec allowealth-app bun run src/db/seed/index.ts
+
+# Custom options
+docker exec allowealth-app bun run src/db/seed/index.ts --months=12
+docker exec allowealth-app bun run src/db/seed/index.ts --stress
+```
+
+After seeding, sign in with the demo credentials printed in the output.
+
+**Set up database from scratch:**
+
+```bash
+docker exec allowealth-app bun run src/db/setup.ts
+```
+
 ### Troubleshooting
 
 **Container exits immediately after start**
@@ -217,11 +246,10 @@ docker compose -f docker/docker-compose.yml logs app
 To run migrations manually and inspect the output:
 
 ```bash
-docker compose -f docker/docker-compose.yml stop app
-docker compose -f docker/docker-compose.yml run --rm --entrypoint bunx app drizzle-kit migrate
+docker exec allowealth-app bun run src/db/migrate.ts
 ```
 
-Fix the issue, then restart:
+If the container has already exited, restart it first:
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d
