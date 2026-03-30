@@ -99,7 +99,11 @@ Apply strict, endpoint-local guards in `src/pages/api/mcp.ts`:
 #### Request Size Details
 
 - Early reject with `413` when `Content-Length` is present and exceeds `65536` bytes.
-- If `Content-Length` is absent or unreliable, enforce the same cap using parsed payload size fallback (serialized byte length).
+- If `Content-Length` is absent or unreliable, read the request body as a stream with a hard cutoff at `65536 + 1` bytes:
+  - stop reading as soon as the cap is exceeded,
+  - return `413` immediately,
+  - never pass oversized payloads to JSON parsing.
+- Only parse JSON after size validation passes.
 - Keep existing JSON-RPC validation semantics for malformed JSON or missing method.
 
 #### Rationale
@@ -144,6 +148,12 @@ Allowed hosts:
 
 All other hosts are denied (`403` in DEV). Non-DEV remains unavailable (`404`).
 
+Host matching rules:
+
+- Normalize using `new URL(request.url).hostname` (hostname only, no port).
+- Lowercase before comparison.
+- Accept exact `localhost`, `127.0.0.1`, `::1`, or suffix `.local`.
+
 #### Rationale
 
 Prevents accidental exposure/abuse when DEV builds run on non-local network contexts.
@@ -172,6 +182,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 - Revoke MCP OAuth tokens for that user using the same service path.
 - Invalidate token cache entries.
 - Subsequent `/api/mcp` calls fail auth.
+- Reactivating a user does not restore revoked MCP tokens; the user must re-authorize to get new tokens.
 
 ### CSV Exports
 
