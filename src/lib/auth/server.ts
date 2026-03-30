@@ -11,6 +11,7 @@ import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 import { securityActivityService } from '@/services/security-activity.service';
 import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
+import { hashPassword, verifyPassword } from './password';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
@@ -173,6 +174,11 @@ function createAuthInstance() {
     },
     emailAndPassword: {
       enabled: true,
+      minPasswordLength: 12,
+      password: {
+        hash: hashPassword,
+        verify: ({ password, hash }) => verifyPassword(password, hash),
+      },
       sendResetPassword: async ({ user, url }) => {
         if (!user.email) {
           return;

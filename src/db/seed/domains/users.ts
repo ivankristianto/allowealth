@@ -6,7 +6,6 @@
 
 import { db } from '@/db';
 import { account as authAccounts, user as authUsers, users, userMeta } from '@/db/schema';
-import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { hashPassword } from '@/lib/auth/password';
 import { nanoid } from 'nanoid';
@@ -26,16 +25,13 @@ async function createSeededCredentialIdentity(
   password: string,
   now: Date
 ): Promise<void> {
-  const [legacyPasswordHash, authPasswordHash] = await Promise.all([
-    hashPassword(password),
-    hashBetterAuthPassword(password),
-  ]);
+  const passwordHash = await hashPassword(password);
 
   await db.insert(users).values({
     id: userId,
     workspace_id: workspaceId,
     email,
-    password_hash: legacyPasswordHash,
+    password_hash: passwordHash,
     name,
     role,
     email_verified_at: now,
@@ -59,7 +55,7 @@ async function createSeededCredentialIdentity(
     accountId: userId,
     providerId: 'credential',
     userId,
-    password: authPasswordHash,
+    password: passwordHash,
     createdAt: now,
     updatedAt: now,
   });
