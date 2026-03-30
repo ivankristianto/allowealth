@@ -75,6 +75,9 @@ Revocation behavior is mandatory:
 - Delete those token rows.
 - Invalidate related MCP token cache tags for each token id (`mcp-token:<tokenId>`).
 - Invalidate `MCP_TOKENS` tag after bulk deletion as defense-in-depth.
+- Execute user soft-delete + OAuth token deletion in one DB transaction.
+- If token deletion fails, roll back the transaction and fail the request (no soft-delete commit).
+- Cache invalidation runs immediately after successful DB commit; if invalidation fails, return an error and require retry.
 
 #### Rationale
 
@@ -95,6 +98,10 @@ Apply strict, endpoint-local guards in `src/pages/api/mcp.ts`:
 
 - Key basis: bearer-token hash + endpoint path.
 - On exceed: return `429` with standard rate-limit headers.
+- Consistency model is hybrid:
+  - Production: use shared storage-backed counters so limits are enforced across Workers isolates.
+  - Local development/test: use in-memory counters.
+- The `60 req/min` limit is defined as globally shared in production (not isolate-local).
 
 #### Request Size Details
 
@@ -174,6 +181,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 - Deactivate user (`deleted_at` set).
 - Revoke MCP OAuth tokens for that user.
 - Invalidate token cache entries.
+- If token deletion fails, transaction is rolled back and request fails.
 - Subsequent `/api/mcp` calls fail auth.
 
 ### Workspace Member Removal (Soft-Delete)
@@ -205,6 +213,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
   - Confirm token rows removed for deactivated user.
   - Confirm MCP cache invalidation calls happen.
   - Confirm the same revocation behavior for workspace member soft-delete path.
+  - Confirm transaction rollback when token deletion fails (user remains active).
 
 - `e2e-reset-rate-limits` route tests
   - DEV + allowed hosts succeed.
@@ -217,6 +226,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
   - Returns `429` when exceeding `60/min` for same token.
   - Returns `413` for payloads > `64 KB`.
   - Continues to serve valid JSON-RPC calls under limits.
+  - Production path uses shared storage-backed limiter; local dev uses in-memory limiter.
 
 ## Risks and Mitigations
 
@@ -227,12 +237,17 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
   - Mitigation: only dangerous formula-leading values are changed; behavior is documented in tests.
 
 - Risk: deactivation flow partial failure (user deactivated, token cleanup error).
-  - Mitigation: perform revocation in same service flow with explicit error handling and test coverage.
+  - Mitigation: make soft-delete + token deletion transactional with rollback on deletion failure; fail request when cache invalidation fails so operators can retry.
+
+- Risk: inconsistent rate-limit enforcement in Cloudflare Workers due to isolate-local memory.
+  - Mitigation: require shared storage-backed limiter in production; reserve in-memory limiter for local development/test only.
 
 ## Acceptance Criteria
 
 - Soft-deleted users cannot authenticate to `/api/mcp`.
 - Any user soft-delete path (admin deactivation and workspace member removal) revokes MCP OAuth tokens and invalidates MCP token cache entries.
+- If MCP token deletion fails during soft-delete, the request fails and `deleted_at` is not committed.
 - `/api/mcp` enforces `60 req/min` per token and `64 KB` body-size maximum.
+- `/api/mcp` rate limiting is globally shared in production and in-memory only in local dev/test.
 - CSV exports neutralize formula-leading values via `'` prefix.
 - DEV reset endpoint allows only loopback and `*.local`, and remains unavailable outside DEV.
