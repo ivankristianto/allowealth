@@ -1,0 +1,23 @@
+# Allowealth Docker Compose - local development services
+# Usage:
+#   docker compose -f docker/docker-compose.dev.yml up -d
+#
+# Provides Redis for persistent local caching.
+# Set in .env:
+#   CACHE_DRIVER=redis
+#   REDIS_PASSWORD=changeme
+#   REDIS_URL=redis://:changeme@localhost:6379
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    name: redis-data

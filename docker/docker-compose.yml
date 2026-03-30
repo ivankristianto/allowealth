@@ -1,0 +1,30 @@
+# Allowealth Docker Compose — self-hosted deployment
+# Usage:
+#   cp docker/.env.example .env
+#   # Edit .env — set every required production value from docker/.env.example
+#   # Required: set ALLOWEALTH_VERSION to pin the image tag (e.g., vX.Y.Z)
+#   docker compose -f docker/docker-compose.yml up -d
+#
+# To update:
+#   docker compose -f docker/docker-compose.yml pull && docker compose -f docker/docker-compose.yml up -d
+
+services:
+  app:
+    # ALLOWEALTH_VERSION must be set — compose fails fast with clear error if missing
+    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION:?ALLOWEALTH_VERSION is required. Set it in .env (e.g., ALLOWEALTH_VERSION=vX.Y.Z)}
+    ports:
+      - '3000:3000'
+    volumes:
+      - allowealth-data:/data
+    env_file: ../.env
+    environment:
+      # Ensure the standalone server binds on all interfaces inside the container
+      # (overrides any DEV_HOST that may have been baked in at build time)
+      HOST: '0.0.0.0'
+    restart: unless-stopped
+
+volumes:
+  allowealth-data:
+    name: allowealth-data
+    # Named volume persists the SQLite database at /data/allowealth.db across
+    # container restarts and image updates.

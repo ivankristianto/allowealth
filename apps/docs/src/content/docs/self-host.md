@@ -94,18 +94,19 @@ Docker images currently support **linux/amd64 only**. ARM64 systems (Apple Silic
 ```bash
 # 1. Pick one released version and use it for the image, compose file, and env template
 #    Check https://github.com/ivankristianto/allowealth/releases for the latest version
-export ALLOWEALTH_VERSION=v0.22.3  # Replace with latest version
+export ALLOWEALTH_VERSION=vX.Y.Z  # Replace with the latest release version
 
 # 2. Pull that exact image
 docker pull ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION}
 
-# 3. Get the matching docker-compose.yml
-curl -o docker-compose.yml https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/docker-compose.yml
-# or: clone/download the repository and copy docker-compose.yml from the repository root
+# 3. Create the docker/ directory and get the matching compose file
+mkdir -p docker
+curl -o docker/docker-compose.yml https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/docker/docker-compose.yml
+# or: clone/download the repository and copy docker/docker-compose.yml from the repository
 
 # 4. Get the matching environment template
-curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/.env.docker.example
-# or: copy the .env.docker.example file from the repository root
+curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOWEALTH_VERSION}/docker/.env.example
+# or: copy docker/.env.example from the repository into .env
 
 # 5. Edit .env — keep ALLOWEALTH_VERSION pinned there, then set every required production value:
 #   PUBLIC_URL=https://your-domain.com
@@ -118,11 +119,11 @@ curl -o .env https://raw.githubusercontent.com/ivankristianto/allowealth/${ALLOW
 #   TURNSTILE_SECRET_KEY=<cloudflare-turnstile-secret-key>
 
 # 6. Start the container
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-The container runs database migrations automatically on every start. Check logs with `docker compose logs -f app`.
-Keep `ALLOWEALTH_VERSION` in `.env` until you intentionally upgrade. That way, later `docker compose pull` runs stay pinned to the same release.
+The container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
+Keep `ALLOWEALTH_VERSION` in `.env` until you intentionally upgrade. That way, later `docker compose -f docker/docker-compose.yml pull` runs stay pinned to the same release.
 
 ### Environment variables
 
@@ -146,7 +147,7 @@ The table below marks the values you should treat as required for a production D
 | `CACHE_DRIVER`              | No       | `memory`                | `memory` or `upstash`                                                |
 | `PUBLIC_SITE_URL`           | No       | `https://allowealth.io` | Marketing site URL linked from within the app                        |
 
-See `.env.docker.example` for the full list, including email provider and cache settings.
+See `docker/.env.example` in the repository for the full list, including email provider and cache settings.
 
 ### Volume persistence
 
@@ -155,12 +156,12 @@ SQLite lives at `/data/allowealth.db` inside the container, backed by a named Do
 **Backup:**
 
 ```bash
-docker compose stop app
+docker compose -f docker/docker-compose.yml stop app
 docker run --rm \
   -v allowealth-data:/data \
   -v "$(pwd)":/backup \
   busybox sh -c 'tar czf /backup/allowealth-backup-$(date +%Y%m%d).tar.gz -C / data'
-docker compose start app
+docker compose -f docker/docker-compose.yml start app
 ```
 
 Stop the app before creating the tar archive. Allowealth uses SQLite WAL mode, so a live tar backup can miss the latest database state.
@@ -168,12 +169,12 @@ Stop the app before creating the tar archive. Allowealth uses SQLite WAL mode, s
 **Restore:**
 
 ```bash
-docker compose stop app
+docker compose -f docker/docker-compose.yml stop app
 docker run --rm \
   -v allowealth-data:/data \
   -v "$(pwd)":/backup \
   busybox tar xzf /backup/allowealth-backup-YYYYMMDD.tar.gz -C /
-docker compose start app
+docker compose -f docker/docker-compose.yml start app
 ```
 
 ### Reverse proxy
@@ -205,8 +206,8 @@ Caddy and Traefik work equally well. Set `PUBLIC_URL` to the final HTTPS origin 
 
 ```bash
 vi .env  # update ALLOWEALTH_VERSION when you want to move to a newer release
-docker compose pull
-docker compose up -d
+docker compose -f docker/docker-compose.yml pull
+docker compose -f docker/docker-compose.yml up -d
 ```
 
 Migrations run automatically when the new container starts.
@@ -218,20 +219,20 @@ Migrations run automatically when the new container starts.
 A migration failed or a required environment variable is missing. Check the logs:
 
 ```bash
-docker compose logs app
+docker compose -f docker/docker-compose.yml logs app
 ```
 
 To run migrations manually and inspect the output:
 
 ```bash
-docker compose stop app
-docker compose run --rm --entrypoint bunx app drizzle-kit migrate
+docker compose -f docker/docker-compose.yml stop app
+docker compose -f docker/docker-compose.yml run --rm --entrypoint bunx app drizzle-kit migrate
 ```
 
 Fix the issue, then restart:
 
 ```bash
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
 ```
 
 **App is not reachable on port 3000**
@@ -239,8 +240,8 @@ docker compose up -d
 Verify the container is running and the port is bound:
 
 ```bash
-docker compose ps
-docker compose logs app
+docker compose -f docker/docker-compose.yml ps
+docker compose -f docker/docker-compose.yml logs app
 ```
 
 If the container is healthy but unreachable, check your firewall rules and confirm your reverse proxy points to the correct port.
