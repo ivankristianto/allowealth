@@ -9,9 +9,13 @@ All available `bun run` commands for the project.
 | `bun run dev`          | Start Astro dev server with hot reload                     |
 | `bun run preview`      | Preview build locally (uses `.env`)                        |
 | `bun run preview:prod` | Preview build with production env (uses `.env.production`) |
+| `bun run docker:start` | Start local Docker development services (Redis)            |
+| `bun run docker:stop`  | Stop local Docker development services (Redis)             |
 
 ```bash
 bun run dev              # http://localhost:4321
+bun run docker:start     # Start local Redis via docker/docker-compose.dev.yml
+bun run docker:stop      # Stop local Redis stack
 ```
 
 ## Docs Site (Starlight)
