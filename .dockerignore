@@ -23,6 +23,7 @@ apps/site/
 .env.*
 !docker/.env.example
 
+
 # Editor and OS files
 .DS_Store
 *.swp

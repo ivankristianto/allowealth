@@ -2,25 +2,38 @@
 # Usage:
 #   cp docker/.env.example .env
 #   # Edit .env — set every required production value from docker/.env.example
-#   # Required: set ALLOWEALTH_VERSION to pin the image tag (e.g., vX.Y.Z)
-#   docker compose -f docker/docker-compose.yml up -d
+#   docker compose -f docker/docker-compose.yml up -d --build
 #
 # To update:
-#   docker compose -f docker/docker-compose.yml pull && docker compose -f docker/docker-compose.yml up -d
+#   git fetch --tags
+#   git checkout vX.Y.Z
+#   docker compose -f docker/docker-compose.yml up -d --build
 
 services:
   app:
-    # ALLOWEALTH_VERSION must be set — compose fails fast with clear error if missing
-    image: ghcr.io/ivankristianto/allowealth:${ALLOWEALTH_VERSION:?ALLOWEALTH_VERSION is required. Set it in .env (e.g., ALLOWEALTH_VERSION=vX.Y.Z)}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - redis
     ports:
       - '3000:3000'
     volumes:
       - allowealth-data:/data
     env_file: ../.env
     environment:
+      CACHE_DRIVER: ${CACHE_DRIVER:-redis}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-changeme}@redis:6379}
       # Ensure the standalone server binds on all interfaces inside the container
       # (overrides any DEV_HOST that may have been baked in at build time)
       HOST: '0.0.0.0'
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis-data:/data
     restart: unless-stopped
 
 volumes:
@@ -28,3 +41,5 @@ volumes:
     name: allowealth-data
     # Named volume persists the SQLite database at /data/allowealth.db across
     # container restarts and image updates.
+  redis-data:
+    name: redis-data
