@@ -20,7 +20,10 @@ This phase intentionally excludes token-at-rest migration and keeps changes surg
 - `src/pages/api/mcp.ts`
 - `src/services/transaction.service.ts`
 - `src/services/budget.service.ts`
-- `src/services/super-admin.service.ts` and/or deactivation call path
+- `src/services/super-admin.service.ts`
+- `src/services/user.service.ts`
+- `src/pages/api/admin/users/[id]/deactivate.ts`
+- `src/pages/api/workspace/members.ts`
 - `src/pages/api/auth/e2e-reset-rate-limits.ts`
 - Unit/API tests for each behavior
 
@@ -55,18 +58,23 @@ Update `validateMcpToken()` lookup path in `src/lib/mcp-auth.ts` to include user
 
 Returning `null` preserves current public behavior (`401`) and prevents deactivated users from accessing `/api/mcp` with previously issued tokens.
 
-### 2) User Deactivation: Revoke MCP Tokens Immediately
+### 2) User Soft-Delete: Revoke MCP Tokens Immediately
 
-Current deactivation sets `users.deleted_at` but does not revoke existing OAuth MCP tokens.
+Current soft-delete paths set `users.deleted_at` but do not revoke existing OAuth MCP tokens.
 
 #### Change
 
-In the user deactivation flow (service-owned path):
+Introduce a single service-level revocation path and require all user soft-delete entry points to call it:
+
+- Admin deactivation (`super-admin` path).
+- Workspace member removal (`userService.softDelete()` path).
+
+Revocation behavior is mandatory:
 
 - Query OAuth access tokens owned by deactivated user.
 - Delete those token rows.
 - Invalidate related MCP token cache tags for each token id (`mcp-token:<tokenId>`).
-- Optionally invalidate `MCP_TOKENS` tag as defense-in-depth when bulk deleting.
+- Invalidate `MCP_TOKENS` tag after bulk deletion as defense-in-depth.
 
 #### Rationale
 
@@ -158,6 +166,13 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 - Invalidate token cache entries.
 - Subsequent `/api/mcp` calls fail auth.
 
+### Workspace Member Removal (Soft-Delete)
+
+- Remove member via soft-delete flow.
+- Revoke MCP OAuth tokens for that user using the same service path.
+- Invalidate token cache entries.
+- Subsequent `/api/mcp` calls fail auth.
+
 ### CSV Exports
 
 - Export format unchanged except dangerous formula-leading cells are prefixed with `'`.
@@ -178,6 +193,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 - Deactivation service/API tests
   - Confirm token rows removed for deactivated user.
   - Confirm MCP cache invalidation calls happen.
+  - Confirm the same revocation behavior for workspace member soft-delete path.
 
 - `e2e-reset-rate-limits` route tests
   - DEV + allowed hosts succeed.
@@ -205,8 +221,7 @@ Prevents accidental exposure/abuse when DEV builds run on non-local network cont
 ## Acceptance Criteria
 
 - Soft-deleted users cannot authenticate to `/api/mcp`.
-- Deactivating a user revokes their MCP OAuth tokens and invalidates MCP token cache entries.
+- Any user soft-delete path (admin deactivation and workspace member removal) revokes MCP OAuth tokens and invalidates MCP token cache entries.
 - `/api/mcp` enforces `60 req/min` per token and `64 KB` body-size maximum.
 - CSV exports neutralize formula-leading values via `'` prefix.
 - DEV reset endpoint allows only loopback and `*.local`, and remains unavailable outside DEV.
-
