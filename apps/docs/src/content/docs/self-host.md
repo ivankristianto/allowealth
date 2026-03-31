@@ -113,6 +113,20 @@ docker compose -f docker/docker-compose.yml up -d --build
 The stack starts both Allowealth and Redis. The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
 To upgrade later, check out a newer release tag and rebuild the stack.
 
+### First-run setup
+
+When the app starts with an empty database, the web-based installer automatically guides you through creating the first workspace and admin account.
+
+1. Open your `PUBLIC_URL` (e.g., `http://localhost:3000` for local testing)
+2. The app redirects to `/installer` — fill in:
+   - Workspace name
+   - Admin full name, email, and password
+   - Optional: Installer secret (if you set `INSTALLER_SECRET` in `.env`)
+3. Submit the form to complete setup
+4. Sign in with the admin credentials you just created
+
+The installer only appears when no users exist. Once setup is complete, the `/installer` path redirects to the login page.
+
 ### Environment variables
 
 For the current Docker production flow, Google OAuth and Cloudflare Turnstile are required at startup. Prepare those values before you bring the container up.
@@ -130,6 +144,7 @@ The table below marks the values you should treat as required for a production D
 | `GOOGLE_CLIENT_SECRET`      | Yes      | —                              | Google OAuth client secret for the same callback                                 |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Yes      | —                              | Cloudflare Turnstile site key used on sign-in and sign-up forms                  |
 | `TURNSTILE_SECRET_KEY`      | Yes      | —                              | Cloudflare Turnstile secret key used for server-side verification                |
+| `INSTALLER_SECRET`          | No       | —                              | Optional bootstrap secret required during first-run setup for unattended deploys |
 | `SIGNUP_MODE`               | No       | `invite_only`                  | `invite_only` or `public` registration                                           |
 | `EMAIL_MODE`                | No       | `console`                      | `console` logs emails, `real` sends through a provider                           |
 | `CACHE_DRIVER`              | No       | `redis`                        | `redis`, `memory`, or `upstash`                                                  |
