@@ -69,6 +69,7 @@ test-results/
 .env.e2e
 .env.backup
 .env*
+!docker/.env.example
 
 # Platform-specific local files
 .wrangler/

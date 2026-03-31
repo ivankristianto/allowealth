@@ -9,10 +9,38 @@ All available `bun run` commands for the project.
 | `bun run dev`          | Start Astro dev server with hot reload                     |
 | `bun run preview`      | Preview build locally (uses `.env`)                        |
 | `bun run preview:prod` | Preview build with production env (uses `.env.production`) |
+| `bun run docker:start` | Start the Docker app stack (Allowealth + Redis)            |
+| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)             |
 
 ```bash
 bun run dev              # http://localhost:4321
+bun run docker:start     # Build and start Allowealth + Redis via docker/docker-compose.yml
+bun run docker:stop      # Stop the Docker app stack
 ```
+
+### Docker Container Commands
+
+Once the Docker stack is running, you can run database operations inside the container:
+
+| Command                                                   | Description                     |
+| --------------------------------------------------------- | ------------------------------- |
+| `docker exec allowealth-app bun run src/db/migrate.ts`    | Apply pending SQLite migrations |
+| `docker exec allowealth-app bun run src/db/seed/index.ts` | Seed database with demo data    |
+| `docker exec allowealth-app bun run src/db/setup.ts`      | Set up database from scratch    |
+
+```bash
+# Run migrations manually
+docker exec allowealth-app bun run src/db/migrate.ts
+
+# Seed with demo data
+docker exec allowealth-app bun run src/db/seed/index.ts
+
+# Seed with custom options
+docker exec allowealth-app bun run src/db/seed/index.ts --months=12
+docker exec allowealth-app bun run src/db/seed/index.ts --stress
+```
+
+Note: Migrations run automatically on every container start via the entrypoint script. Manual execution is only needed for troubleshooting or re-seeding.
 
 ## Docs Site (Starlight)
 
