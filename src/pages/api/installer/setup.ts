@@ -40,10 +40,15 @@ class SetupAlreadyCompleteError extends Error {
 export const installerSetupSchema = v.object({
   workspaceName: v.pipe(
     v.string(),
+    v.transform((s) => s.trim()),
     v.minLength(1, 'Workspace name is required'),
     v.maxLength(255, 'Workspace name must be less than 255 characters')
   ),
-  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+  name: v.pipe(
+    v.string(),
+    v.transform((s) => s.trim()),
+    v.minLength(1, 'Name is required')
+  ),
   email: v.pipe(v.string(), v.email('Invalid email address')),
   password: v.pipe(v.string(), v.minLength(12, 'Password must be at least 12 characters')),
   installerSecret: v.optional(v.string()),

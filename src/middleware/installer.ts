@@ -37,6 +37,9 @@ const INSTALLER_PATHS = ['/installer', '/api/installer/'] as const;
 /** In-memory flag — once users are confirmed, skip detection for this process */
 let setupComplete = false;
 
+/** Process-level lock to prevent concurrent migrations */
+let migrationInFlight: Promise<void> | null = null;
+
 export const installerGuard: MiddlewareHandler = async (context, next) => {
   const { pathname } = context.url;
 
@@ -61,18 +64,36 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
 
   const db = getDb();
 
-  // Step 1: Check migrations
+  // Step 1: Check migrations (with process-level lock to prevent concurrent runs)
   if (!isMigrationApplied(db)) {
-    try {
-      const { runSqliteMigrations } = await import('@/db/migrate');
-      runSqliteMigrations();
-      resetDb();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return new Response(
-        `<html><body><h1>Migration Failed</h1><pre>${escapeHtml(message)}</pre><p>Fix the issue and reload.</p></body></html>`,
-        { status: 500, headers: { 'Content-Type': 'text/html' } }
-      );
+    // If migration is already in flight, wait for it
+    if (migrationInFlight) {
+      try {
+        await migrationInFlight;
+      } catch {
+        // Migration failed, will be handled below
+      }
+    } else {
+      // Start migration and store the promise
+      migrationInFlight = (async () => {
+        try {
+          const { runSqliteMigrations } = await import('@/db/migrate');
+          runSqliteMigrations();
+          resetDb();
+        } finally {
+          migrationInFlight = null;
+        }
+      })();
+
+      try {
+        await migrationInFlight;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return new Response(
+          `<html><body><h1>Migration Failed</h1><pre>${escapeHtml(message)}</pre><p>Fix the issue and reload.</p></body></html>`,
+          { status: 500, headers: { 'Content-Type': 'text/html' } }
+        );
+      }
     }
   }
 

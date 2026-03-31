@@ -22,37 +22,53 @@ if [ ! -f .env ]; then
     cp docker/.env.example .env
     echo -e "${GREEN}✓ Created .env from docker/.env.example${NC}"
 
+    # Helper function to safely set env values using # as delimiter
+    # This avoids issues with / and & characters in base64 strings
+    set_env_value() {
+        local key="$1"
+        local value="$2"
+        # Escape backslashes and & for sed replacement
+        local escaped_value="${value//\\/\\\\}"
+        escaped_value="${escaped_value//\&/\\\&}"
+        sed -i.bak "s#^${key}=.*#${key}=${escaped_value}#" .env
+        rm -f .env.bak
+    }
+
     # Generate BETTER_AUTH_SECRET (32 bytes = 48 base64 chars)
     BETTER_AUTH_SECRET=$(openssl rand -base64 48)
-    sed -i.bak "s/^BETTER_AUTH_SECRET=.*/BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}/" .env
-    rm -f .env.bak
+    set_env_value "BETTER_AUTH_SECRET" "$BETTER_AUTH_SECRET"
     echo -e "${GREEN}✓ Generated BETTER_AUTH_SECRET${NC}"
 
     # Generate EMAIL_ENCRYPTION_KEY (32 bytes base64)
     EMAIL_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
-    sed -i.bak "s/^EMAIL_ENCRYPTION_KEY=.*/EMAIL_ENCRYPTION_KEY=${EMAIL_ENCRYPTION_KEY}/" .env
-    rm -f .env.bak
+    set_env_value "EMAIL_ENCRYPTION_KEY" "$EMAIL_ENCRYPTION_KEY"
     echo -e "${GREEN}✓ Generated EMAIL_ENCRYPTION_KEY${NC}"
 
     # Generate COOKIE_SIGNING_SECRET
     COOKIE_SIGNING_SECRET=$(openssl rand -base64 48)
-    sed -i.bak "s/^COOKIE_SIGNING_SECRET=.*/COOKIE_SIGNING_SECRET=${COOKIE_SIGNING_SECRET}/" .env
-    rm -f .env.bak
+    set_env_value "COOKIE_SIGNING_SECRET" "$COOKIE_SIGNING_SECRET"
     echo -e "${GREEN}✓ Generated COOKIE_SIGNING_SECRET${NC}"
 
+    # Generate INSTALLER_SECRET for first-run security
+    INSTALLER_SECRET=$(openssl rand -base64 32 | tr -d '=+/' | cut -c1-32)
+    set_env_value "INSTALLER_SECRET" "$INSTALLER_SECRET"
+    echo -e "${GREEN}✓ Generated INSTALLER_SECRET${NC}"
+
     # Set default PUBLIC_URL for local testing
-    sed -i.bak 's/^PUBLIC_URL=.*/PUBLIC_URL=http:\/\/localhost:3000/' .env
+    sed -i.bak 's#^PUBLIC_URL=.*#PUBLIC_URL=http://localhost:3000#' .env
     rm -f .env.bak
     echo -e "${GREEN}✓ Set PUBLIC_URL=http://localhost:3000${NC}"
 
     echo ""
-    echo -e "${YELLOW}⚠️  Please review .env and configure required OAuth/Turnstile values:${NC}"
-    echo -e "   - GOOGLE_CLIENT_ID (optional for local testing)"
-    echo -e "   - GOOGLE_CLIENT_SECRET (optional for local testing)"
-    echo -e "   - PUBLIC_TURNSTILE_SITE_KEY (optional for local testing)"
-    echo -e "   - TURNSTILE_SECRET_KEY (optional for local testing)"
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║        🔐 INSTALLER SECRET (SAVE THIS!)                ║${NC}"
+    echo -e "${GREEN}╠════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${GREEN}║  ${INSTALLER_SECRET}  ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${BLUE}Edit .env now, then run 'bun run docker:start' again.${NC}"
+    echo -e "${YELLOW}⚠️  You'll need this secret when completing first-run setup.${NC}"
+    echo ""
+    echo -e "${BLUE}Review .env now, then run 'bun run docker:start' again.${NC}"
     echo ""
     exit 0
 else
