@@ -1,6 +1,6 @@
 {
   "name": "allowealth",
-  "version": "0.26.4",
+  "version": "0.27.1",
   "type": "module",
   "private": true,
   "scripts": {
@@ -20,6 +20,8 @@
     "build:node": "DEPLOY_TARGET=node astro build",
     "build:cloudflare": "DEPLOY_TARGET=cloudflare astro build",
     "deploy:cloudflare": "bun run build:cloudflare && wrangler deploy",
+    "docker:start": "docker compose -f docker/docker-compose.yml up -d --build",
+    "docker:stop": "docker compose -f docker/docker-compose.yml down",
     "bundle:report": "bun run build && bun run scripts/analyze-bundle.ts",
     "preview": "bun --bun --env-file=.env astro preview",
     "preview:prod": "bun --bun --env-file=.env.production astro preview",

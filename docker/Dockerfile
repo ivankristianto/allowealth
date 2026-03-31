@@ -29,14 +29,15 @@ COPY --from=build --chown=bun:bun /app/dist ./dist
 COPY --from=build --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=build --chown=bun:bun /app/package.json ./package.json
 
-# Copy migration files (Bun SQLite migrator reads these at runtime)
+# Copy migration and seed files (Bun SQLite migrator/seeder reads these at runtime)
 COPY --from=build --chown=bun:bun /app/drizzle ./drizzle
 COPY --from=build --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=build --chown=bun:bun /app/src/db/migrate.ts ./src/db/migrate.ts
+COPY --from=build --chown=bun:bun /app/src ./src
+COPY --from=build --chown=bun:bun /app/tsconfig.json ./tsconfig.json
 
 # Copy entrypoint and healthcheck scripts
-COPY --chown=bun:bun docker-entrypoint.sh /docker-entrypoint.sh
-COPY --chown=bun:bun docker-healthcheck.ts /docker-healthcheck.ts
+COPY --chown=bun:bun docker/entrypoint.sh /docker-entrypoint.sh
+COPY --chown=bun:bun docker/healthcheck.ts /docker-healthcheck.ts
 RUN chmod +x /docker-entrypoint.sh
 
 # Create the SQLite data directory (volume is mounted here by docker-compose)

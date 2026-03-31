@@ -21,7 +21,8 @@ apps/site/
 # Environment files (injected at runtime via docker-compose env_file)
 .env
 .env.*
-!.env.docker.example
+!docker/.env.example
+
 
 # Editor and OS files
 .DS_Store
