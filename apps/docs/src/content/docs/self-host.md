@@ -93,24 +93,23 @@ git clone https://github.com/ivankristianto/allowealth.git
 cd allowealth
 git checkout vX.Y.Z  # Replace with the release version you want to run
 
-# 2. Copy the Docker environment template
-cp docker/.env.example .env
+# 2. Start the stack (auto-creates .env with generated secrets)
+bun run docker:start
 
-# 3. Edit .env and set every required production value:
-#   PUBLIC_URL=https://your-domain.com
-#   BETTER_AUTH_SECRET=<long-random-string>
-#   EMAIL_ENCRYPTION_KEY=<base64-32-bytes>
-#   COOKIE_SIGNING_SECRET=<long-random-string>
-#   GOOGLE_CLIENT_ID=<google-oauth-client-id>
-#   GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
-#   PUBLIC_TURNSTILE_SITE_KEY=<cloudflare-turnstile-site-key>
-#   TURNSTILE_SECRET_KEY=<cloudflare-turnstile-secret-key>
-
-# 4. Build and start the stack
-docker compose -f docker/docker-compose.yml up -d --build
+# Or manually with docker:
+# cp docker/.env.example .env
+# Edit .env with your values, then:
+# docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-The stack starts both Allowealth and Redis. The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
+The `bun run docker:start` command automatically:
+
+1. Creates `.env` from `docker/.env.example` if it doesn't exist
+2. Generates required secrets (`BETTER_AUTH_SECRET`, `EMAIL_ENCRYPTION_KEY`, `COOKIE_SIGNING_SECRET`)
+3. Sets `PUBLIC_URL=http://localhost:3000` for local testing
+4. Builds and starts the Docker stack
+
+The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
 To upgrade later, check out a newer release tag and rebuild the stack.
 
 ### First-run setup

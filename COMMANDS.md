@@ -9,13 +9,21 @@ All available `bun run` commands for the project.
 | `bun run dev`          | Start Astro dev server with hot reload                     |
 | `bun run preview`      | Preview build locally (uses `.env`)                        |
 | `bun run preview:prod` | Preview build with production env (uses `.env.production`) |
-| `bun run docker:start` | Start the Docker app stack (Allowealth + Redis)            |
+| `bun run docker:start` | Start the Docker app stack (auto-creates .env if missing)  |
 | `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)             |
 
 ```bash
 bun run dev              # http://localhost:4321
-bun run docker:start     # Build and start Allowealth + Redis via docker/docker-compose.yml
+bun run docker:start     # Auto-setup .env + build + start Allowealth + Redis
 bun run docker:stop      # Stop the Docker app stack
+```
+
+**First-time Docker setup:**
+
+```bash
+bun run docker:start     # Creates .env with auto-generated secrets, prompts for OAuth config
+docker compose -f docker/docker-compose.yml logs -f app  # Watch startup
+# Visit http://localhost:3000 to complete first-run setup
 ```
 
 ### Docker Container Commands
