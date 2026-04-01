@@ -1,4 +1,4 @@
-import { describe, expect, test, mock, beforeEach } from 'bun:test';
+import { describe, expect, test, mock, beforeEach, afterAll } from 'bun:test';
 import type { APIContext } from 'astro';
 
 // Bun's mock.module is a runtime API not reflected in @types/bun
@@ -38,6 +38,10 @@ function createMockContext(pathname: string): APIContext {
 const next = mock(() => Promise.resolve(new Response('OK')));
 
 describe('installer middleware', () => {
+  afterAll(() => {
+    (mock as any).restore();
+  });
+
   beforeEach(() => {
     if (originalD1Enabled === undefined) {
       delete process.env.D1_ENABLED;

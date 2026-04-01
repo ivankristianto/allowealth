@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,6 +8,24 @@ import { account, user as authUsers, users, workspaces } from '@/db/schema';
 import { verifyPassword } from '@/lib/auth/password';
 import { POST } from '@/pages/api/installer/setup';
 import { AccountCategoryService } from '@/services/account-category.service';
+
+// Re-mock installer detection with real implementation in case a prior test
+// (e.g. installer.middleware.test.ts) globally mocked this module via mock.module.
+const mockModule = (mock as any).module;
+mockModule('@/lib/installer/detection', () => ({
+  isMigrationApplied: () => true,
+  hasUsers: (database: any) => {
+    try {
+      const rows = database.all(sql`SELECT 1 as one FROM user LIMIT 1`) as { one: number }[];
+      return rows.length > 0;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('no such table')) {
+        return false;
+      }
+      throw error;
+    }
+  },
+}));
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalD1Enabled = process.env.D1_ENABLED;
