@@ -30,8 +30,21 @@ if [ ! -f .env ]; then
         # Escape backslashes and & for sed replacement
         local escaped_value="${value//\\/\\\\}"
         escaped_value="${escaped_value//\&/\\\&}"
-        sed -i.bak "s#^${key}=.*#${key}=${escaped_value}#" .env
-        rm -f .env.bak
+
+        if grep -q "^${key}=" .env; then
+            sed -i.bak "s#^${key}=.*#${key}=${escaped_value}#" .env
+            rm -f .env.bak
+            return
+        fi
+
+        if grep -Eq "^#[[:space:]]*${key}=" .env; then
+            sed -i.bak "s#^\#[[:space:]]*${key}=.*#${key}=${escaped_value}#" .env
+            rm -f .env.bak
+            return
+        fi
+
+        # Append key when template omits it entirely.
+        printf '\n%s=%s\n' "$key" "$value" >> .env
     }
 
     # Generate BETTER_AUTH_SECRET (32 bytes = 48 base64 chars)

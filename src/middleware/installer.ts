@@ -20,6 +20,14 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function createMigrationFailedResponse(error: unknown): Response {
+  const message = error instanceof Error ? error.message : String(error);
+  return new Response(
+    `<html><body><h1>Migration Failed</h1><pre>${escapeHtml(message)}</pre><p>Fix the issue and reload.</p></body></html>`,
+    { status: 500, headers: { 'Content-Type': 'text/html' } }
+  );
+}
+
 /** Paths that skip detection entirely */
 const STATIC_PREFIXES = ['/_astro/', '/favicon', '/scripts/'] as const;
 
@@ -70,8 +78,8 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
     if (migrationInFlight) {
       try {
         await migrationInFlight;
-      } catch {
-        // Migration failed, will be handled below
+      } catch (error) {
+        return createMigrationFailedResponse(error);
       }
     } else {
       // Start migration and store the promise
@@ -88,11 +96,7 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
       try {
         await migrationInFlight;
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return new Response(
-          `<html><body><h1>Migration Failed</h1><pre>${escapeHtml(message)}</pre><p>Fix the issue and reload.</p></body></html>`,
-          { status: 500, headers: { 'Content-Type': 'text/html' } }
-        );
+        return createMigrationFailedResponse(error);
       }
     }
   }

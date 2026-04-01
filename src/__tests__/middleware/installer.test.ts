@@ -136,4 +136,22 @@ describe('installer middleware', () => {
     const response = await installerGuard(ctx, next);
     expect((response as Response).status).toBe(500);
   });
+
+  test('returns 500 to all concurrent waiters when migration fails', async () => {
+    mockIsMigrationApplied.mockReturnValue(false);
+    mockRunSqliteMigrations.mockImplementation(() => {
+      throw new Error('permission denied');
+    });
+
+    const ctxA = createMockContext('/dashboard');
+    const ctxB = createMockContext('/login');
+    const [responseA, responseB] = await Promise.all([
+      installerGuard(ctxA, next),
+      installerGuard(ctxB, next),
+    ]);
+
+    expect(mockRunSqliteMigrations).toHaveBeenCalledTimes(1);
+    expect((responseA as Response).status).toBe(500);
+    expect((responseB as Response).status).toBe(500);
+  });
 });

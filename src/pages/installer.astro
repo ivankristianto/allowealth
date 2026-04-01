@@ -14,14 +14,11 @@ import FormField from '../components/molecules/FormField.astro';
 import { Server } from '@lucide/astro';
 import { hasUsers } from '@/lib/installer/detection';
 import { getDb } from '@/db';
-import installerClientUrl from './installer.client.ts?url';
 
 // Server-side guard: redirect if already set up
 if (hasUsers(getDb())) {
   return Astro.redirect('/login', 302);
 }
-
-const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <AuthLayout title="allowealth - Setup">
@@ -67,6 +64,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
           <FormField label="Password" htmlFor="password" required>
             <PasswordField
+              label=""
               id="password"
               name="password"
               placeholder="Min 12 characters"
@@ -77,6 +75,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
           <FormField label="Confirm Password" htmlFor="confirmPassword" required>
             <PasswordField
+              label=""
               id="confirmPassword"
               name="confirmPassword"
               placeholder="Confirm your password"
@@ -86,6 +85,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
           <FormField label="Installer Secret (optional)" htmlFor="installerSecret">
             <PasswordField
+              label=""
               id="installerSecret"
               name="installerSecret"
               placeholder="Required when INSTALLER_SECRET is configured"
@@ -99,6 +99,6 @@ const cspNonce = Astro.locals.cspNonce || '';
       </form>
     </div>
   </div>
-</AuthLayout>
 
-<script src={installerClientUrl} nonce={cspNonce} is:inline></script>
+  <script src="./installer.client.ts"></script>
+</AuthLayout>

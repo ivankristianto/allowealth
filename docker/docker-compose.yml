@@ -1,4 +1,5 @@
 # Allowealth Docker Compose — self-hosted deployment
+name: allowealth
 # Usage:
 #   cp docker/.env.example .env
 #   # Edit .env — set every required production value from docker/.env.example
@@ -18,7 +19,7 @@ services:
     depends_on:
       - redis
     ports:
-      - '3000:3000'
+      - '${PORT:-3000}:${PORT:-3000}'
     volumes:
       - allowealth-data:/data
     env_file: ../.env
@@ -30,10 +31,10 @@ services:
       HOST: '0.0.0.0'
       # Override dev values from .env for container context
       DATABASE_URL: /data/allowealth.db
-      PORT: 3000
+      PORT: ${PORT:-3000}
       # Set to your production URL (e.g., https://finances.example.com)
       # Defaults to localhost for local Docker testing
-      PUBLIC_URL: http://localhost:3000
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
     restart: unless-stopped
 
   redis:

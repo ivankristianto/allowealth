@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { verifyPassword as verifyBetterAuthPassword } from 'better-auth/crypto';
 import { eq } from 'drizzle-orm';
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { closeDatabase, db, resetDb } from '@/db';
 import { account, user as authUsers, users, workspaces } from '@/db/schema';
+import { verifyPassword } from '@/lib/auth/password';
 import { POST } from '@/pages/api/installer/setup';
 import { AccountCategoryService } from '@/services/account-category.service';
 
@@ -88,7 +88,7 @@ describe('POST /api/installer/setup', () => {
     deleteSqliteArtifacts(testDbPath);
   });
 
-  it('stores a Better Auth compatible credential hash for the installer admin', async () => {
+  it('stores a runtime-compatible credential hash for the installer admin', async () => {
     const password = 'InstallerPassword123!';
 
     const response = await POST(
@@ -114,12 +114,7 @@ describe('POST /api/installer/setup', () => {
     });
 
     expect(credentialAccount?.password).toBeDefined();
-    expect(
-      await verifyBetterAuthPassword({
-        password,
-        hash: credentialAccount?.password ?? '',
-      })
-    ).toBe(true);
+    expect(await verifyPassword(password, credentialAccount?.password ?? '')).toBe(true);
   });
 
   it('returns 401 when installer secret is configured but missing', async () => {

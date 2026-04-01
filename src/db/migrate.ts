@@ -6,6 +6,41 @@ import { resolve } from 'node:path';
 
 const MIGRATIONS_DIR = resolve(process.cwd(), 'drizzle/sqlite');
 const DEFAULT_DB_PATH = 'db/.dev.db';
+const DRIZZLE_MIGRATIONS_TABLE = '__drizzle_migrations';
+
+function getCount(rawDb: Database, query: string): number {
+  const row = rawDb.prepare(query).get() as { count: number };
+  return Number(row.count);
+}
+
+function hasUntrackedExistingSchema(rawDb: Database): { userTableCount: number } | null {
+  const hasMigrationsTable =
+    getCount(
+      rawDb,
+      `SELECT COUNT(*) AS count
+       FROM sqlite_master
+       WHERE type = 'table' AND name = '${DRIZZLE_MIGRATIONS_TABLE}'`
+    ) > 0;
+
+  const migrationRows = hasMigrationsTable
+    ? getCount(rawDb, `SELECT COUNT(*) AS count FROM ${DRIZZLE_MIGRATIONS_TABLE}`)
+    : 0;
+
+  if (migrationRows > 0) {
+    return null;
+  }
+
+  const userTableCount = getCount(
+    rawDb,
+    `SELECT COUNT(*) AS count
+     FROM sqlite_master
+     WHERE type = 'table'
+       AND name NOT LIKE 'sqlite_%'
+       AND name != '${DRIZZLE_MIGRATIONS_TABLE}'`
+  );
+
+  return userTableCount > 0 ? { userTableCount } : null;
+}
 
 export function runSqliteMigrations(dbPath?: string): void {
   if (process.env.D1_ENABLED === 'true') {
@@ -18,6 +53,15 @@ export function runSqliteMigrations(dbPath?: string): void {
   const rawDb = new Database(targetPath);
 
   try {
+    const existingSchema = hasUntrackedExistingSchema(rawDb);
+    if (existingSchema) {
+      throw new Error(
+        `Refusing to run migrations for "${targetPath}": ${DRIZZLE_MIGRATIONS_TABLE} is empty, but the database already has ${existingSchema.userTableCount} user table(s). ` +
+          'This usually means the schema was initialized with "bun run db:setup". ' +
+          'Use "bun run db:reset" to recreate the DB with migration tracking.'
+      );
+    }
+
     const db = drizzle(rawDb);
     migrate(db, { migrationsFolder: MIGRATIONS_DIR });
   } finally {

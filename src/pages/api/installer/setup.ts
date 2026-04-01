@@ -9,7 +9,6 @@
 
 import type { APIRoute } from 'astro';
 import * as v from 'valibot';
-import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getActiveSchema, getDb, runTransaction, type Database } from '@/db';
@@ -102,10 +101,7 @@ export const POST: APIRoute = async ({ request }) => {
   const accountId = nanoid();
 
   try {
-    const [legacyPasswordHash, authPasswordHash] = await Promise.all([
-      hashPassword(password),
-      hashBetterAuthPassword(password),
-    ]);
+    const passwordHash = await hashPassword(password);
     const now = new Date();
 
     await runTransaction(database, async (tx) => {
@@ -131,7 +127,7 @@ export const POST: APIRoute = async ({ request }) => {
         accountId: userId,
         providerId: 'credential',
         userId: userId,
-        password: authPasswordHash,
+        password: passwordHash,
         createdAt: now,
         updatedAt: now,
       });
@@ -150,7 +146,7 @@ export const POST: APIRoute = async ({ request }) => {
         id: userId,
         workspace_id: workspaceId,
         email: email.toLowerCase(),
-        password_hash: legacyPasswordHash,
+        password_hash: passwordHash,
         name: name.trim(),
         role: 'admin',
         email_verified_at: now,
