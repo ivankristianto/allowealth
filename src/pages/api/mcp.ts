@@ -1,9 +1,13 @@
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
 import { validateMcpToken } from '@/lib/mcp-auth';
+import { checkMcpRateLimit } from '@/lib/mcp-rate-limit';
+import { createRateLimitResponse } from '@/lib/rate-limit';
 import { createServices } from '@mcp-server/context';
 import { registerTools, handleToolCall } from '@mcp-server/tools/index';
 import type { ToolContext } from '@mcp-server/tools/types';
+
+const MAX_BODY_BYTES = 65_536;
 
 /**
  * Extract bearer token from Authorization header.
@@ -31,20 +35,53 @@ interface JsonRpcResponse {
   error?: { code: number; message: string };
 }
 
-/** Build a JSON response with proper content-type */
-function jsonResponse(body: JsonRpcResponse, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
 /** Build an HTTP error response (non-JSON-RPC) */
 function errorResponse(status: number, message: string): Response {
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+async function readValidatedBodyText(request: Request): Promise<string | null> {
+  const declaredLength = request.headers.get('Content-Length');
+  if (declaredLength) {
+    const parsedLength = Number.parseInt(declaredLength, 10);
+    if (Number.isFinite(parsedLength) && parsedLength > MAX_BODY_BYTES) {
+      return null;
+    }
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) {
+    return '';
+  }
+
+  const decoder = new TextDecoder();
+  let bodyText = '';
+  let totalBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      bodyText += decoder.decode();
+      break;
+    }
+
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_BODY_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+
+    bodyText += decoder.decode(value, { stream: true });
+  }
+
+  if (totalBytes > MAX_BODY_BYTES) {
+    return null;
+  }
+
+  return bodyText;
 }
 
 /**
@@ -116,9 +153,19 @@ export const POST: APIRoute = async (context) => {
     return errorResponse(401, 'Missing Authorization header. Use: Bearer <oauth-token>');
   }
 
+  const bodyText = await readValidatedBodyText(context.request);
+  if (bodyText === null) {
+    return errorResponse(413, 'Request body too large');
+  }
+
   const auth = await validateMcpToken(accessToken);
   if (!auth) {
     return errorResponse(401, 'Invalid or expired OAuth token');
+  }
+
+  const rateLimit = await checkMcpRateLimit(accessToken);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(rateLimit, 'Too many MCP requests. Please try again later.');
   }
 
   // Build per-request ToolContext with fresh DB connection and service instances
@@ -127,7 +174,7 @@ export const POST: APIRoute = async (context) => {
 
   let body: JsonRpcRequest;
   try {
-    body = await context.request.json();
+    body = JSON.parse(bodyText) as JsonRpcRequest;
   } catch {
     return errorResponse(400, 'Invalid JSON body');
   }
@@ -143,7 +190,15 @@ export const POST: APIRoute = async (context) => {
     return new Response(null, { status: 204 });
   }
 
-  return jsonResponse(result);
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-RateLimit-Limit': String(rateLimit.limit),
+      'X-RateLimit-Remaining': String(rateLimit.remaining),
+      'X-RateLimit-Reset': String(rateLimit.resetTime),
+    },
+  });
 };
 
 /** Reject all non-POST methods */
