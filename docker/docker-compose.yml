@@ -1,0 +1,53 @@
+# Allowealth Docker Compose — self-hosted deployment
+name: allowealth
+# Usage:
+#   cp docker/.env.example .env
+#   # Edit .env — set every required production value from docker/.env.example
+#   docker compose -f docker/docker-compose.yml up -d --build
+#
+# To update:
+#   git fetch --tags
+#   git checkout vX.Y.Z
+#   docker compose -f docker/docker-compose.yml up -d --build
+
+services:
+  app:
+    container_name: allowealth-app
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - redis
+    ports:
+      - '${PORT:-3000}:${PORT:-3000}'
+    volumes:
+      - allowealth-data:/data
+    env_file: ../.env
+    environment:
+      CACHE_DRIVER: ${CACHE_DRIVER:-redis}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-changeme}@redis:6379}
+      # Ensure the standalone server binds on all interfaces inside the container
+      # (overrides any DEV_HOST that may have been baked in at build time)
+      HOST: '0.0.0.0'
+      # Override dev values from .env for container context
+      DATABASE_URL: /data/allowealth.db
+      PORT: ${PORT:-3000}
+      # Set to your production URL (e.g., https://finances.example.com)
+      # Defaults to localhost for local Docker testing
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  allowealth-data:
+    name: allowealth-data
+    # Named volume persists the SQLite database at /data/allowealth.db across
+    # container restarts and image updates.
+  redis-data:
+    name: redis-data

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { verifyPassword } from 'better-auth/crypto';
+import { verifyPassword } from '@/lib/auth/password';
 import { nanoid } from 'nanoid';
 import { join } from 'node:path';
 import { existsSync, rmSync } from 'node:fs';
@@ -176,17 +176,11 @@ describe('seed integration', () => {
     expect(memberAuthUser?.email).toBe(DEMO_MEMBER.email);
     expect(adminCredentialAccount?.accountId).toBe(adminUserId);
     expect(memberCredentialAccount?.accountId).toBe(memberUserId);
+    expect(await verifyPassword(DEMO_ADMIN.password, adminCredentialAccount?.password ?? '')).toBe(
+      true
+    );
     expect(
-      await verifyPassword({
-        password: DEMO_ADMIN.password,
-        hash: adminCredentialAccount?.password ?? '',
-      })
-    ).toBe(true);
-    expect(
-      await verifyPassword({
-        password: DEMO_MEMBER.password,
-        hash: memberCredentialAccount?.password ?? '',
-      })
+      await verifyPassword(DEMO_MEMBER.password, memberCredentialAccount?.password ?? '')
     ).toBe(true);
   });
 });

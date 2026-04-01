@@ -9,6 +9,7 @@
 
 import { sequence } from 'astro:middleware';
 import { database } from './database';
+import { installerGuard } from './installer';
 import { perfDebug } from './perf-debug';
 import { securityHeaders } from './security-headers';
 import { authentication } from './auth';
@@ -18,6 +19,7 @@ import { routeGuard } from './route-guard';
 
 export const onRequest = sequence(
   database,
+  installerGuard,
   perfDebug,
   securityHeaders,
   authentication,

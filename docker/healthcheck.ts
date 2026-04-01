@@ -4,6 +4,8 @@
  * Returns exit code 0 if healthy, 1 if unhealthy
  */
 
+export {};
+
 const port = process.env.PORT ?? '3000';
 const url = `http://localhost:${port}/`;
 

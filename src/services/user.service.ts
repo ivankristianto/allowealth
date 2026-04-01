@@ -17,7 +17,6 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { and, eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
-import { hashPassword as hashBetterAuthPassword } from 'better-auth/crypto';
 import { maxLength, minLength, object, parse, pipe, regex, string, type InferInput } from 'valibot';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
 import {
@@ -159,10 +158,7 @@ export class UserService {
     }
 
     // Hash new password for both legacy domain table and better-auth account table
-    const [newPasswordHash, betterAuthHash] = await Promise.all([
-      hashPassword(validated.newPassword),
-      hashBetterAuthPassword(validated.newPassword),
-    ]);
+    const newPasswordHash = await hashPassword(validated.newPassword);
 
     const now = new Date();
 
@@ -180,7 +176,7 @@ export class UserService {
       await tx
         .update(authSchema.account)
         .set({
-          password: betterAuthHash,
+          password: newPasswordHash,
           updatedAt: now,
         })
         .where(

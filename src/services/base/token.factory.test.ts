@@ -26,6 +26,8 @@ function makeDb(tokenRow: any = mockToken) {
   const values = mock(() => Promise.resolve());
   const findFirst = mock(() => Promise.resolve(tokenRow));
   const where = mock(() => Promise.resolve());
+  const txDelete = mock(() => ({ where }));
+  const txInsert = mock(() => ({ values }));
   return {
     query: {
       tokens: {
@@ -36,10 +38,12 @@ function makeDb(tokenRow: any = mockToken) {
     delete: mock(() => ({ where })),
     transaction: mock(async (callback: (tx: any) => Promise<any>) =>
       callback({
-        delete: mock(() => ({ where })),
-        insert: mock(() => ({ values })),
+        delete: txDelete,
+        insert: txInsert,
       })
     ),
+    txDelete,
+    txInsert,
   };
 }
 
@@ -60,8 +64,8 @@ describe('createTokenService', () => {
     const token = await svc.createToken('u1', 60);
     expect(typeof token).toBe('string');
     expect(token.length).toBe(64);
-    expect(db.insert).toHaveBeenCalledTimes(1);
-    const insertedRow = (db.insert as any).mock.results[0].value.values.mock.calls[0][0];
+    expect(db.txInsert).toHaveBeenCalledTimes(1);
+    const insertedRow = (db.txInsert as any).mock.results[0].value.values.mock.calls[0][0];
     expect(insertedRow.token).not.toBe(token);
     expect(insertedRow.token).toBe(await hashOpaqueToken(token));
   });
@@ -70,7 +74,7 @@ describe('createTokenService', () => {
     const db = makeDb();
     const svc = createTokenService(db as any, makeConfig(db));
     await svc.createToken('u1', 60);
-    expect(db.delete).toHaveBeenCalledTimes(1);
+    expect(db.txDelete).toHaveBeenCalledTimes(1);
   });
 
   it('validateToken returns userId when token is valid and not expired', async () => {
