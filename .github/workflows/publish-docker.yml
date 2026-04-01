@@ -60,6 +60,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: docker/Dockerfile
           push: true
           # amd64 only for initial release; add linux/arm64 later via QEMU
           platforms: linux/amd64
