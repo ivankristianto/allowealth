@@ -2,7 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
 // Defense-in-depth: migrationGuard enforces this, but page also checks.
-if (Astro.locals.user?.role !== 'super_admin') {
+if (!Astro.locals.user) {
   return Astro.redirect('/login', 302);
 }
 ---
