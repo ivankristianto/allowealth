@@ -19,6 +19,7 @@ import { and, eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
 import { maxLength, minLength, object, parse, pipe, regex, string, type InferInput } from 'valibot';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
+import { softDeleteUserAndRevokeMcpTokens } from './mcp-token-revocation.service';
 import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_REQUIREMENTS,
@@ -213,13 +214,6 @@ export class UserService {
       return;
     }
 
-    // Soft delete user
-    await this.db
-      .update(this.schema.users)
-      .set({
-        deleted_at: new Date(),
-        updated_at: new Date(),
-      })
-      .where(eq(this.schema.users.id, userId));
+    await softDeleteUserAndRevokeMcpTokens(this.db, userId);
   }
 }
