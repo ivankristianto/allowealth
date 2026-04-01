@@ -13,7 +13,7 @@ function getCount(rawDb: Database, query: string): number {
   return Number(row.count);
 }
 
-function hasUntrackedExistingSchema(rawDb: Database): { userTableCount: number } | null {
+function hasUntrackedExistingSchema(rawDb: Database): { tableCount: number } | null {
   const hasMigrationsTable =
     getCount(
       rawDb,
@@ -30,7 +30,7 @@ function hasUntrackedExistingSchema(rawDb: Database): { userTableCount: number }
     return null;
   }
 
-  const userTableCount = getCount(
+  const tableCount = getCount(
     rawDb,
     `SELECT COUNT(*) AS count
      FROM sqlite_master
@@ -39,7 +39,7 @@ function hasUntrackedExistingSchema(rawDb: Database): { userTableCount: number }
        AND name != '${DRIZZLE_MIGRATIONS_TABLE}'`
   );
 
-  return userTableCount > 0 ? { userTableCount } : null;
+  return tableCount > 0 ? { tableCount } : null;
 }
 
 export function runSqliteMigrations(dbPath?: string): void {
@@ -56,9 +56,10 @@ export function runSqliteMigrations(dbPath?: string): void {
     const existingSchema = hasUntrackedExistingSchema(rawDb);
     if (existingSchema) {
       throw new Error(
-        `Refusing to run migrations for "${targetPath}": ${DRIZZLE_MIGRATIONS_TABLE} is empty, but the database already has ${existingSchema.userTableCount} user table(s). ` +
+        `Refusing to run migrations for "${targetPath}": ${DRIZZLE_MIGRATIONS_TABLE} is empty, but the database already has ${existingSchema.tableCount} table(s). ` +
           'This usually means the schema was initialized with "bun run db:setup". ' +
-          'Use "bun run db:reset" to recreate the DB with migration tracking.'
+          'For dev or fresh installs, use "bun run db:reset" to recreate the DB with migration tracking. ' +
+          'For existing environments, back up data before recreating the database.'
       );
     }
 

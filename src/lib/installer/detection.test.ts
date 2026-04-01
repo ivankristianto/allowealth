@@ -20,8 +20,11 @@ function isMigrationApplied(db: Database): boolean {
   try {
     const rows = db.all<{ count: number }>(sql`SELECT count(*) as count FROM __drizzle_migrations`);
     return rows.length > 0 && rows[0].count > 0;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('no such table')) {
+      return false;
+    }
+    throw error;
   }
 }
 
@@ -29,8 +32,11 @@ function hasUsers(db: Database): boolean {
   try {
     const rows = db.all<{ one: number }>(sql`SELECT 1 as one FROM user LIMIT 1`);
     return rows.length > 0;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('no such table')) {
+      return false;
+    }
+    throw error;
   }
 }
 
@@ -63,6 +69,13 @@ describe('isMigrationApplied', () => {
     });
     expect(isMigrationApplied(mockDb as any)).toBe(false);
   });
+
+  test('rethrows unexpected database errors', () => {
+    mockAll.mockImplementation(() => {
+      throw new Error('database disk image is malformed');
+    });
+    expect(() => isMigrationApplied(mockDb as any)).toThrow('database disk image is malformed');
+  });
 });
 
 describe('hasUsers', () => {
@@ -80,10 +93,17 @@ describe('hasUsers', () => {
     expect(hasUsers(mockDb as any)).toBe(false);
   });
 
-  test('returns false when query throws', () => {
+  test('returns false when query throws (table does not exist)', () => {
     mockAll.mockImplementation(() => {
       throw new Error('no such table: user');
     });
     expect(hasUsers(mockDb as any)).toBe(false);
+  });
+
+  test('rethrows unexpected database errors', () => {
+    mockAll.mockImplementation(() => {
+      throw new Error('database is locked');
+    });
+    expect(() => hasUsers(mockDb as any)).toThrow('database is locked');
   });
 });

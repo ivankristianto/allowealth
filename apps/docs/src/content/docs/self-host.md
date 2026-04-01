@@ -93,7 +93,10 @@ git clone https://github.com/ivankristianto/allowealth.git
 cd allowealth
 git checkout vX.Y.Z  # Replace with the release version you want to run
 
-# 2. Start the stack (auto-creates .env with generated secrets)
+# 2. First run: create .env with generated secrets (exits after setup)
+bun run docker:start
+
+# 3. Edit .env with required OAuth/Turnstile values, then rerun to start
 bun run docker:start
 
 # Or manually with docker:
@@ -102,12 +105,15 @@ bun run docker:start
 # docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-The `bun run docker:start` command automatically:
+On first run, `bun run docker:start` automatically:
 
 1. Creates `.env` from `docker/.env.example` if it doesn't exist
 2. Generates required secrets (`BETTER_AUTH_SECRET`, `EMAIL_ENCRYPTION_KEY`, `COOKIE_SIGNING_SECRET`)
 3. Sets `PUBLIC_URL=http://localhost:3000` for local testing
-4. Builds and starts the Docker stack
+4. Prints a generated `INSTALLER_SECRET` for first-run setup
+5. Exits so you can review and complete required environment values
+
+After you fill the required variables, rerun `bun run docker:start` to build and start the Docker stack.
 
 The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
 To upgrade later, check out a newer release tag and rebuild the stack.

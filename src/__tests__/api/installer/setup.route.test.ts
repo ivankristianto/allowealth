@@ -168,6 +168,21 @@ describe('POST /api/installer/setup', () => {
     expect(secondResponse.status).toBe(409);
   });
 
+  it('returns 404 when installer is called in D1 runtime', async () => {
+    process.env.D1_ENABLED = 'true';
+
+    const response = await POST(
+      createApiContext({
+        workspaceName: 'Installer Workspace',
+        name: 'Installer Admin',
+        email: 'installer@example.com',
+        password: 'InstallerPassword123!',
+      })
+    );
+
+    expect(response.status).toBe(404);
+  });
+
   it('rolls back installer records when category seeding fails', async () => {
     AccountCategoryService.prototype.seedDefaultCategories = mock(async () => {
       throw new Error('category seeding failed');

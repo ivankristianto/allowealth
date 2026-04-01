@@ -13,7 +13,14 @@ import Button from '../components/atoms/Button.astro';
 import FormField from '../components/molecules/FormField.astro';
 import { Server } from '@lucide/astro';
 import { hasUsers } from '@/lib/installer/detection';
-import { getDb } from '@/db';
+import { getDb, getDatabaseConfig } from '@/db';
+
+const dbConfig = getDatabaseConfig();
+
+// Installer flow is Bun/SQLite-only.
+if (dbConfig.isD1) {
+  return Astro.redirect('/login', 302);
+}
 
 // Server-side guard: redirect if already set up
 if (hasUsers(getDb())) {

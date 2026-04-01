@@ -39,6 +39,35 @@ describe('installer setup validation', () => {
     expect(result.success).toBe(false);
   });
 
+  test('accepts and trims email with surrounding whitespace', () => {
+    const result = v.safeParse(installerSetupSchema, {
+      workspaceName: 'Workspace',
+      name: 'Admin',
+      email: '  admin@example.com  ',
+      password: 'securepassword123',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.output.email).toBe('admin@example.com');
+    }
+  });
+
+  test('trims installer secret when provided', () => {
+    const result = v.safeParse(installerSetupSchema, {
+      workspaceName: 'Workspace',
+      name: 'Admin',
+      email: 'admin@example.com',
+      password: 'securepassword123',
+      installerSecret: '  bootstrap-secret  ',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.output.installerSecret).toBe('bootstrap-secret');
+    }
+  });
+
   test('rejects short password', () => {
     const result = v.safeParse(installerSetupSchema, {
       workspaceName: 'Workspace',

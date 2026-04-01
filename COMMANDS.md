@@ -4,24 +4,27 @@ All available `bun run` commands for the project.
 
 ## Development
 
-| Command                | Description                                                |
-| ---------------------- | ---------------------------------------------------------- |
-| `bun run dev`          | Start Astro dev server with hot reload                     |
-| `bun run preview`      | Preview build locally (uses `.env`)                        |
-| `bun run preview:prod` | Preview build with production env (uses `.env.production`) |
-| `bun run docker:start` | Start the Docker app stack (auto-creates .env if missing)  |
-| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)             |
+| Command                | Description                                                      |
+| ---------------------- | ---------------------------------------------------------------- |
+| `bun run dev`          | Start Astro dev server with hot reload                           |
+| `bun run preview`      | Preview build locally (uses `.env`)                              |
+| `bun run preview:prod` | Preview build with production env (uses `.env.production`)       |
+| `bun run docker:start` | Start the Docker app stack (first run creates `.env` then exits) |
+| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)                   |
 
 ```bash
 bun run dev              # http://localhost:4321
-bun run docker:start     # Auto-setup .env + build + start Allowealth + Redis
+bun run docker:start     # First run: creates .env + secrets then exits; rerun to build + start
 bun run docker:stop      # Stop the Docker app stack
 ```
 
 **First-time Docker setup:**
 
 ```bash
-bun run docker:start     # Creates .env with auto-generated secrets, prompts for OAuth config
+bun run docker:start     # Creates .env with auto-generated secrets, then exits
+# Save INSTALLER_SECRET printed in the terminal (needed for first-run setup if set in .env)
+# Edit .env with OAuth/Turnstile values, then run again:
+bun run docker:start     # Builds and starts the Docker stack
 docker compose -f docker/docker-compose.yml logs -f app  # Watch startup
 # Visit http://localhost:3000 to complete first-run setup
 ```
