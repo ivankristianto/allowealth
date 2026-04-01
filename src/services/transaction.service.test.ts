@@ -507,6 +507,32 @@ describe('TransactionService', () => {
     });
   });
 
+  describe('exportToCSV', () => {
+    it('neutralizes formula-leading values in exported cells', async () => {
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations(
+          {
+            description: '=HYPERLINK("https://example.com")',
+            amount: '@SUM(A1)',
+          },
+          createMockCategory({ name: '+Category' }),
+          createMockAccount({ name: '-Account' })
+        ),
+      ];
+
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
+
+      const csv = await transactionService.exportToCSV({
+        workspace_id: 'workspace-1',
+      });
+
+      expect(csv).toContain("'+Category");
+      expect(csv).toContain("'-Account");
+      expect(csv).toContain("'@SUM(A1)");
+      expect(csv).toContain(`"'=HYPERLINK(""https://example.com"")"`);
+    });
+  });
+
   describe('count', () => {
     it('should count transactions with filters', async () => {
       (mockDb.select as any).mockReturnValueOnce({

@@ -226,6 +226,28 @@ describe('BudgetService', () => {
       expect(csv).toContain('Food');
       expect(csv).not.toContain('Salary');
     });
+
+    it('neutralizes formula-leading values in exported cells', async () => {
+      const userId = 'user-1';
+      const year = 2026;
+      const month = 1;
+      const currency = 'IDR';
+
+      const mockBudgets = [
+        createMockBudgetWithCategory(
+          { id: '=budget-1', category_id: 'cat-1', budget_amount: '-123', month, year },
+          { id: 'cat-1', name: '@cmd', type: 'expense', is_active: true }
+        ),
+      ];
+
+      (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
+
+      const csv = await budgetService.exportToCSV(userId, year, month, currency);
+
+      expect(csv).toContain("'=budget-1");
+      expect(csv).toContain("'@cmd");
+      expect(csv).toContain("'-123");
+    });
   });
 
   describe('getMonthlyOverview', () => {

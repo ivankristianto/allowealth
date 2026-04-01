@@ -372,5 +372,17 @@ describe('UserService', () => {
       });
       expect(passwordResult).toEqual({ success: true, reauthRequired: true });
     });
+
+    it('soft deletes a user by setting deleted_at', async () => {
+      const user = await createTestUser(testEmail1, testPassword, testName);
+
+      await userService.softDelete(user.id);
+
+      const updatedUser = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
+      });
+
+      expect(updatedUser?.deleted_at).toBeTruthy();
+    });
   });
 });

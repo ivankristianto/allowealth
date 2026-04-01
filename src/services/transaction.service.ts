@@ -1,6 +1,7 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { decimalAdd } from '@/lib/utils/decimal';
 import { createLogger } from '@/lib/logger';
+import { sanitizeCellForCsv } from '@/lib/csv/sanitize-cell-for-csv';
 
 const log = createLogger('transaction');
 import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
@@ -1410,7 +1411,7 @@ export class TransactionService {
         row
           .map((cell: any) => {
             // Escape quotes and wrap in quotes if contains comma or quote
-            const cellStr = String(cell);
+            const cellStr = sanitizeCellForCsv(cell);
             if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
               return `"${cellStr.replace(/"/g, '""')}"`;
             }

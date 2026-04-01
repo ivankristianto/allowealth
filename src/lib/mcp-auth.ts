@@ -61,10 +61,10 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<TokenLooku
 
   const userRecord = await deps.db.query.users.findFirst({
     where: eq(schema.users.id, userId),
-    columns: { workspace_id: true },
+    columns: { workspace_id: true, deleted_at: true },
   });
 
-  if (!userRecord?.workspace_id) return null;
+  if (!userRecord?.workspace_id || userRecord.deleted_at) return null;
 
   return {
     auth: {
@@ -90,9 +90,6 @@ export async function validateMcpToken(
   const deps = resolveDeps(overrides);
   const tokenHash = deps.hash(rawToken);
   const cacheKey = deps.cacheKeys.mcpToken(tokenHash);
-
-  const cached = await deps.cache.get<McpAuthContext>(cacheKey);
-  if (cached) return cached;
 
   const lookup = await lookupToken(rawToken, deps);
   if (!lookup) return null;

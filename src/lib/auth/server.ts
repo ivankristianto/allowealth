@@ -140,6 +140,7 @@ function createAuthInstance() {
       accountLinking: {
         disableImplicitLinking: true,
       },
+      encryptOAuthTokens: true,
     },
     databaseHooks: {
       user: {

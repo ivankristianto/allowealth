@@ -31,6 +31,7 @@ import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
+import { sanitizeCellForCsv } from '@/lib/csv/sanitize-cell-for-csv';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { createCrudService } from './base/crud.factory';
 import { WorkspaceMetaService } from './workspace-meta.service';
@@ -633,7 +634,7 @@ export class BudgetService {
         row
           .map((cell) => {
             // Escape quotes and wrap in quotes if contains comma
-            const cellStr = String(cell);
+            const cellStr = sanitizeCellForCsv(cell);
             if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
               return `"${cellStr.replace(/"/g, '""')}"`;
             }

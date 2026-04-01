@@ -12,6 +12,7 @@ import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, sql, desc, asc, like, and, isNull } from 'drizzle-orm';
 import { isValidWorkspaceMetaKey } from '@/lib/constants/workspace-meta-keys';
 import { SuperAdminServiceError, ServiceErrorCode } from './service-errors';
+import { softDeleteUserAndRevokeMcpTokens } from './mcp-token-revocation.service';
 
 // === Interfaces ===
 
@@ -620,10 +621,7 @@ export class SuperAdminService {
       );
     }
 
-    await this.db
-      .update(schema.users)
-      .set({ deleted_at: new Date(), updated_at: new Date() })
-      .where(eq(schema.users.id, userId));
+    await softDeleteUserAndRevokeMcpTokens(this.db, userId);
   }
 
   /**
