@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add an admin-only `/upgrade` page that appears when the database schema is out of date. A `migrationGuard` middleware intercepts all requests when migrations are pending: super admins are redirected to `/upgrade` to trigger the migration; all other users receive an inline 503 maintenance page at their current URL. Once the admin runs the migration, normal access resumes.
+Add an `/upgrade` page that appears when the database schema is out of date. A `migrationGuard` middleware intercepts all requests when migrations are pending: authenticated users are redirected to `/upgrade` to trigger the migration; unauthenticated users receive an inline 503 maintenance page at their current URL. Once the migration runs, normal access resumes.
 
 ## Motivation
 
@@ -93,10 +93,8 @@ The following paths skip the migration pending check entirely (prefix match):
 2. Call `MigrationService.isMigrationPending(db)`.
 3. If **not pending**: call `next()`.
 4. If **pending**:
-   - `context.locals.user?.role === 'super_admin'` → `302 /upgrade`
-   - All others (unauthenticated, `admin`, `member`) → return a 503 response with inline maintenance HTML
-
-The null check on `context.locals.user` is explicit — unauthenticated users fall through to the 503 branch, not to an error.
+   - `context.locals.user` (any authenticated user) → `302 /upgrade`
+   - Unauthenticated (`context.locals.user` is null) → return a 503 response with inline maintenance HTML
 
 ### Maintenance HTML (503 response)
 
@@ -115,7 +113,7 @@ A minimal self-contained HTML page. Inline a `<style>` block with only the CSS n
 
 ### Access control
 
-If `context.locals.user?.role !== 'super_admin'`, redirect to `/login`. Defense-in-depth; `migrationGuard` handles normal enforcement.
+If `!context.locals.user`, redirect to `/login`. Defense-in-depth; `migrationGuard` handles normal enforcement.
 
 ### UI States
 
@@ -141,7 +139,7 @@ The Running state is client-side only (active while awaiting the `POST /api/admi
 
 ### `POST /api/admin/upgrade/run`
 
-**Auth:** `requireSuperAdmin` — existing helper in `src/lib/auth/requireAuth.ts`. Returns 403 JSON if the user is not `super_admin`.
+**Auth:** Requires authentication (any role). Returns 401 JSON if not authenticated.
 
 **CSRF:** The `/upgrade` page fetch must include the CSRF token. The existing CSRF middleware uses a cookie-to-header double-submit pattern; the client reads the `csrf-token` cookie and sends it as the `x-csrf-token` request header on the POST.
 
@@ -165,7 +163,7 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 
 ### `GET /api/admin/upgrade/status`
 
-**Auth:** `requireSuperAdmin` — existing helper in `src/lib/auth/requireAuth.ts`.
+**Auth:** Requires authentication (any role).
 
 **Response — pending:**
 ```json
@@ -187,7 +185,7 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 | `__drizzle_migrations` table missing | `isMigrationPending()` catches query error, returns `true`. Migrations will create the table on first run. |
 | D1/Workers deployment | `POST /api/admin/upgrade/run` returns 501. UI displays CLI instructions. Maintenance block remains until admin applies migrations via CLI and the `__drizzle_migrations` count catches up. |
 | Concurrent upgrade attempts | Idempotent — Drizzle skips already-applied migrations. No locking required. |
-| Non-super-admin reaches `/upgrade` directly | Page redirects to `/login`. |
+| Unauthenticated user reaches `/upgrade` directly | Page redirects to `/login`. |
 
 ---
 
@@ -202,9 +200,8 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
   - Returns `true` when `__drizzle_migrations` table does not exist
 - `migrationGuard`:
   - Calls `next()` when not pending
-  - Redirects super admin to `/upgrade` when pending
+  - Redirects any authenticated user to `/upgrade` when pending
   - Returns 503 for unauthenticated user (`context.locals.user` is null) when pending
-  - Returns 503 for `admin`/`member` role when pending
   - Skips check for passlist paths (`/upgrade`, `/api/admin/upgrade/run`, `/api/admin/upgrade/status`, `/_astro/`, `/favicon.ico`)
 
 ### Integration tests
@@ -222,19 +219,19 @@ Calling this endpoint when already up to date is a no-op (Drizzle skips applied 
 Request → database → auth → migrationGuard (COUNT = expected → next()) → routeGuard → page
 ```
 
-### Migrations pending — super admin
+### Migrations pending — authenticated user
 
 ```
 Request → migrationGuard → 302 /upgrade
 /upgrade loads → GET /api/admin/upgrade/status → { pending: true } → Idle state
-Admin clicks "Run Upgrade" → POST /api/admin/upgrade/run (blocks) → runSqliteMigrations()
+User clicks "Run Upgrade" → POST /api/admin/upgrade/run (blocks) → runSqliteMigrations()
 POST resolves { success: true } → Success state → 3 s → redirect /admin
 ```
 
-### Migrations pending — non-admin
+### Migrations pending — unauthenticated
 
 ```
-Request → migrationGuard (pending, context.locals.user?.role ≠ 'super_admin') → 503 maintenance HTML (URL unchanged)
-(Admin completes upgrade elsewhere)
+Request → migrationGuard (pending, context.locals.user is null) → 503 maintenance HTML (URL unchanged)
+(Authenticated user completes upgrade elsewhere)
 User refreshes → migrationGuard (not pending) → next() → normal page
 ```
