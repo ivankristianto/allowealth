@@ -3,8 +3,8 @@
  *
  * Checks whether database migrations are pending on every request.
  * When pending:
- *   - super_admin -> redirect to /upgrade to trigger the migration
- *   - everyone else -> 503 inline maintenance page (URL preserved)
+ *   - authenticated users -> redirect to /upgrade to trigger the migration
+ *   - unauthenticated users -> 503 inline maintenance page (URL preserved)
  *
  * Placed after `csrf` and before `routeGuard` in the middleware chain.
  *
@@ -99,11 +99,11 @@ export const migrationGuard: MiddlewareHandler = async (context, next) => {
     return next();
   }
 
-  // Super admin gets redirected to the upgrade page to take action
-  if (context.locals.user?.role === 'super_admin') {
+  // Any authenticated user gets redirected to the upgrade page
+  if (context.locals.user) {
     return context.redirect('/upgrade', 302);
   }
 
-  // All other users (unauthenticated, admin, member) see the maintenance page
+  // Unauthenticated users see the maintenance page
   return maintenancePage();
 };

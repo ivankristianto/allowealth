@@ -74,7 +74,7 @@ describe('migrationGuard — passlist', () => {
   });
 
   it('does NOT passlist /upgrade-other (exact match only)', async () => {
-    const ctx = makeContext('/upgrade-other', 'member');
+    const ctx = makeContext('/upgrade-other');
     const res = await migrationGuard(ctx, next);
     expect((res as Response).status).toBe(503);
   });
@@ -92,38 +92,40 @@ describe('migrationGuard — pending', () => {
     expect((res as Response).headers.get('location')).toBe('/upgrade');
   });
 
+  it('redirects admin to /upgrade', async () => {
+    const ctx = makeContext('/dashboard', 'admin');
+    const res = await migrationGuard(ctx, next);
+    expect((res as Response).status).toBe(302);
+    expect((res as Response).headers.get('location')).toBe('/upgrade');
+  });
+
+  it('redirects member to /upgrade', async () => {
+    const ctx = makeContext('/dashboard', 'member');
+    const res = await migrationGuard(ctx, next);
+    expect((res as Response).status).toBe(302);
+    expect((res as Response).headers.get('location')).toBe('/upgrade');
+  });
+
   it('returns 503 for unauthenticated user', async () => {
     const ctx = makeContext('/dashboard');
     const res = await migrationGuard(ctx, next);
     expect((res as Response).status).toBe(503);
   });
 
-  it('returns 503 for admin role', async () => {
-    const ctx = makeContext('/dashboard', 'admin');
-    const res = await migrationGuard(ctx, next);
-    expect((res as Response).status).toBe(503);
-  });
-
-  it('returns 503 for member role', async () => {
-    const ctx = makeContext('/dashboard', 'member');
-    const res = await migrationGuard(ctx, next);
-    expect((res as Response).status).toBe(503);
-  });
-
   it('503 response includes Retry-After header', async () => {
-    const ctx = makeContext('/dashboard', 'member');
+    const ctx = makeContext('/dashboard');
     const res = await migrationGuard(ctx, next);
     expect((res as Response).headers.get('retry-after')).toBe('60');
   });
 
   it('503 response includes Cache-Control no-store header', async () => {
-    const ctx = makeContext('/dashboard', 'member');
+    const ctx = makeContext('/dashboard');
     const res = await migrationGuard(ctx, next);
     expect((res as Response).headers.get('cache-control')).toBe('no-store');
   });
 
   it('503 response is HTML with maintenance message', async () => {
-    const ctx = makeContext('/dashboard', 'member');
+    const ctx = makeContext('/dashboard');
     const res = await migrationGuard(ctx, next);
     const html = await (res as Response).text();
     expect(html).toContain('maintenance');
