@@ -26,6 +26,10 @@ function isAllowedDevResetHost(hostname: string): boolean {
   );
 }
 
+function isLoopbackClientAddress(clientAddress: string | undefined): boolean {
+  return clientAddress === '127.0.0.1' || clientAddress === '::1';
+}
+
 export const POST: APIRoute = async (context) => {
   const isDev = import.meta.env.DEV || getEnv('NODE_ENV') === 'development';
   if (!isDev) {
@@ -33,7 +37,7 @@ export const POST: APIRoute = async (context) => {
   }
 
   const hostname = new URL(context.request.url).hostname;
-  if (!isAllowedDevResetHost(hostname)) {
+  if (!isAllowedDevResetHost(hostname) || !isLoopbackClientAddress(context.clientAddress)) {
     return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },

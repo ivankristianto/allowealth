@@ -51,29 +51,39 @@ export async function checkMcpRateLimit(
   token: string,
   deps: McpRateLimitDeps = {}
 ): Promise<RateLimitResult> {
-  const key = buildMcpRateLimitKey(token, deps);
   const now = deps.now?.() ?? Date.now();
-  const resetTime = Math.floor((now + WINDOW_MS) / 1000);
+  const windowEpochMinute = Math.floor(now / WINDOW_MS);
+  const key = buildMcpRateLimitKey(token, { ...deps, now: () => now });
+  const resetTime = Math.floor(((windowEpochMinute + 1) * WINDOW_MS) / 1000);
   const redis = getRedisClient(deps);
+  const checkByKey = deps.checkByKey ?? checkRateLimitByKey;
 
   if (redis) {
-    const currentCount = await redis.incr(key);
-    if (currentCount === 1) {
-      await redis.expire(key, UPSTASH_TTL_SECONDS);
-    }
+    try {
+      const currentCount = await redis.incr(key);
+      if (currentCount === 1) {
+        await redis.expire(key, UPSTASH_TTL_SECONDS);
+      }
 
-    const remaining = Math.max(0, MAX_REQUESTS - currentCount);
-    return {
-      allowed: currentCount <= MAX_REQUESTS,
-      remaining,
-      limit: MAX_REQUESTS,
-      resetTime,
-      retryAfter:
-        currentCount <= MAX_REQUESTS ? 0 : Math.max(1, Math.ceil((resetTime * 1000 - now) / 1000)),
-    };
+      const remaining = Math.max(0, MAX_REQUESTS - currentCount);
+      return {
+        allowed: currentCount <= MAX_REQUESTS,
+        remaining,
+        limit: MAX_REQUESTS,
+        resetTime,
+        retryAfter:
+          currentCount <= MAX_REQUESTS
+            ? 0
+            : Math.max(1, Math.ceil((resetTime * 1000 - now) / 1000)),
+      };
+    } catch {
+      return checkByKey(key, {
+        maxRequests: MAX_REQUESTS,
+        windowMs: WINDOW_MS,
+      });
+    }
   }
 
-  const checkByKey = deps.checkByKey ?? checkRateLimitByKey;
   return checkByKey(key, {
     maxRequests: MAX_REQUESTS,
     windowMs: WINDOW_MS,

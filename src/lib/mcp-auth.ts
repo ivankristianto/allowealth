@@ -1,8 +1,6 @@
 import { db, getActiveSchema } from '@/db';
-import { getCacheManager, CacheKeys, CacheTags, simpleHash } from '@/lib/cache';
+import { getCacheManager } from '@/lib/cache';
 import { eq } from 'drizzle-orm';
-
-const CACHE_TTL_SECONDS = 300;
 
 export interface McpAuthContext {
   workspaceId: string;
@@ -18,15 +16,7 @@ interface McpAuthDeps {
     };
   };
   getSchema: () => Pick<ReturnType<typeof getActiveSchema>, 'oauthAccessToken' | 'users'>;
-  cache: Pick<ReturnType<typeof getCacheManager>, 'get' | 'set' | 'invalidateByTags'>;
-  cacheKeys: Pick<typeof CacheKeys, 'mcpToken'>;
-  cacheTags: Pick<typeof CacheTags, 'MCP_TOKENS'>;
-  hash: (token: string) => string;
-}
-
-interface TokenLookupResult {
-  auth: McpAuthContext;
-  accessTokenExpiresAt: Date;
+  cache: Pick<ReturnType<typeof getCacheManager>, 'invalidateByTags'>;
 }
 
 function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
@@ -34,14 +24,11 @@ function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
     db,
     getSchema: getActiveSchema,
     cache: getCacheManager(),
-    cacheKeys: CacheKeys,
-    cacheTags: CacheTags,
-    hash: simpleHash,
     ...overrides,
   };
 }
 
-async function lookupToken(token: string, deps: McpAuthDeps): Promise<TokenLookupResult | null> {
+async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthContext | null> {
   const schema = deps.getSchema();
 
   const tokenRecord = await deps.db.query.oauthAccessToken.findFirst({
@@ -67,18 +54,10 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<TokenLooku
   if (!userRecord?.workspace_id || userRecord.deleted_at) return null;
 
   return {
-    auth: {
-      workspaceId: userRecord.workspace_id,
-      userId,
-      tokenId: tokenRecord.id,
-    },
-    accessTokenExpiresAt: tokenRecord.accessTokenExpiresAt,
+    workspaceId: userRecord.workspace_id,
+    userId,
+    tokenId: tokenRecord.id,
   };
-}
-
-function getCacheTtlSeconds(accessTokenExpiresAt: Date): number {
-  const secondsUntilExpiry = Math.floor((accessTokenExpiresAt.getTime() - Date.now()) / 1000);
-  return Math.min(CACHE_TTL_SECONDS, secondsUntilExpiry);
 }
 
 export async function validateMcpToken(
@@ -88,21 +67,7 @@ export async function validateMcpToken(
   if (!rawToken) return null;
 
   const deps = resolveDeps(overrides);
-  const tokenHash = deps.hash(rawToken);
-  const cacheKey = deps.cacheKeys.mcpToken(tokenHash);
-
-  const lookup = await lookupToken(rawToken, deps);
-  if (!lookup) return null;
-
-  const ttl = getCacheTtlSeconds(lookup.accessTokenExpiresAt);
-  if (ttl > 0) {
-    await deps.cache.set(cacheKey, lookup.auth, {
-      ttl,
-      tags: [deps.cacheTags.MCP_TOKENS, `mcp-token:${lookup.auth.tokenId}`],
-    });
-  }
-
-  return lookup.auth;
+  return lookupToken(rawToken, deps);
 }
 
 export async function invalidateMcpToken(

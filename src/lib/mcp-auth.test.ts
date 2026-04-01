@@ -12,11 +12,6 @@ const mockDb = {
 const mockCacheGet = mock(async () => null);
 const mockCacheSet = mock(async () => {});
 const mockCacheInvalidate = mock(async () => {});
-const mockCache = {
-  get: mockCacheGet,
-  set: mockCacheSet,
-  invalidateByTags: mockCacheInvalidate,
-};
 
 const testDeps = {
   db: mockDb,
@@ -24,10 +19,7 @@ const testDeps = {
     oauthAccessToken,
     users,
   }),
-  cache: mockCache,
-  cacheKeys: { mcpToken: (hash: string) => `cache:mcptoken:${hash}` },
-  cacheTags: { MCP_TOKENS: 'mcp_tokens' as const },
-  hash: (token: string) => token.slice(0, 8),
+  cache: { invalidateByTags: mockCacheInvalidate },
 };
 
 import { invalidateMcpToken, validateMcpToken } from './mcp-auth';
@@ -79,14 +71,10 @@ describe('validateMcpToken', () => {
 
     const result = await validateMcpToken('valid-token', testDeps);
     expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
-    expect(mockCacheSet).toHaveBeenCalledWith(
-      'cache:mcptoken:valid-to',
-      { workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' },
-      { ttl: 300, tags: ['mcp_tokens', 'mcp-token:tok-1'] }
-    );
+    expect(mockCacheSet).not.toHaveBeenCalled();
   });
 
-  it('caps cache TTL to the token remaining lifetime', async () => {
+  it('does not write successful auth results into cache', async () => {
     mockCacheGet.mockResolvedValue(null);
     const expiresAt = new Date(Date.now() + 60_000);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
@@ -101,12 +89,7 @@ describe('validateMcpToken', () => {
 
     const result = await validateMcpToken('short-lived-token', testDeps);
     expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
-    const [cacheKey, cacheValue, cacheOptions] = (mockCacheSet as any).mock.calls[0];
-    expect(cacheKey).toBe('cache:mcptoken:short-li');
-    expect(cacheValue).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
-    expect(cacheOptions.tags).toEqual(['mcp_tokens', 'mcp-token:tok-1']);
-    expect(cacheOptions.ttl).toBeGreaterThanOrEqual(59);
-    expect(cacheOptions.ttl).toBeLessThanOrEqual(60);
+    expect(mockCacheSet).not.toHaveBeenCalled();
   });
 
   it('does not accept cached auth without a fresh DB validation', async () => {

@@ -53,6 +53,51 @@ describe('mcp-rate-limit', () => {
     expect(counter).toBe(1);
   });
 
+  it('aligns redis reset headers to the current fixed window boundary', async () => {
+    const result = await checkMcpRateLimit('token-1', {
+      now: () => 179_999,
+      redis: {
+        incr: async () => 61,
+        expire: jestLikeNoop,
+      },
+    });
+
+    expect(result).toMatchObject({
+      allowed: false,
+      limit: 60,
+      remaining: 0,
+      resetTime: 180,
+      retryAfter: 1,
+    });
+  });
+
+  it('falls back to the in-memory limiter when redis fails', async () => {
+    const result = await checkMcpRateLimit('token-1', {
+      now: () => 120_000,
+      redis: {
+        incr: async () => {
+          throw new Error('upstash unavailable');
+        },
+        expire: jestLikeNoop,
+      },
+      checkByKey: (key, config) => ({
+        allowed: true,
+        remaining: config.maxRequests - 1,
+        limit: config.maxRequests,
+        resetTime: key.includes('api-mcp') ? 121 : 0,
+        retryAfter: 0,
+      }),
+    });
+
+    expect(result).toMatchObject({
+      allowed: true,
+      remaining: 59,
+      limit: 60,
+      resetTime: 121,
+      retryAfter: 0,
+    });
+  });
+
   it('keeps local dev and test on in-memory limiting even with Upstash env vars', async () => {
     const result = await checkMcpRateLimit('token-1', {
       now: () => 120_000,

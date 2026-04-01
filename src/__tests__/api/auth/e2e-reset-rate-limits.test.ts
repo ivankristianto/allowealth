@@ -18,6 +18,7 @@ describe('POST /api/auth/e2e-reset-rate-limits', () => {
     ]) {
       const response = await route.POST({
         request: new Request(url, { method: 'POST' }),
+        clientAddress: '127.0.0.1',
       } as any);
 
       expect(response.status).toBe(200);
@@ -30,6 +31,18 @@ describe('POST /api/auth/e2e-reset-rate-limits', () => {
       request: new Request('http://example.com/api/auth/e2e-reset-rate-limits', {
         method: 'POST',
       }),
+    } as any);
+
+    expect(response.status).toBe(403);
+  });
+
+  it('returns 403 when the client address is not loopback', async () => {
+    const route = await import('@/pages/api/auth/e2e-reset-rate-limits');
+    const response = await route.POST({
+      request: new Request('http://localhost/api/auth/e2e-reset-rate-limits', {
+        method: 'POST',
+      }),
+      clientAddress: '203.0.113.10',
     } as any);
 
     expect(response.status).toBe(403);
