@@ -121,17 +121,17 @@ If `!context.locals.user`, redirect to `/login`. Defense-in-depth; `migrationGua
 |---|---|---|
 | **Idle** | Page load, `pending: true` | "Database upgrade required" heading, description, "Run Upgrade" button |
 | **Running** | After button click | Spinner, "Running migrations…", button disabled |
-| **Success** | POST resolves `{ success: true }` | Green checkmark, "Upgrade complete", countdown to `/admin` redirect (3 s) |
+| **Success** | POST resolves `{ success: true }` | Green checkmark, "Upgrade complete", countdown to `/dashboard` redirect (3 s) |
 | **Error** | POST resolves `{ success: false }` | Red alert, error message, collapsible `<pre>` with SQL details, "Retry" button |
-| **Up to date** | Page load, `pending: false` | "Nothing to upgrade" message, link to `/admin` |
+| **Up to date** | Page load, `pending: false` | "Nothing to upgrade" message, link to `/dashboard` |
 
-On page load, the client calls `GET /api/admin/upgrade/status`. If `pending: false`, the page shows a "Nothing to upgrade" state and offers a link to `/admin`.
+On page load, the client calls `GET /api/admin/upgrade/status`. If `pending: false`, the page shows a "Nothing to upgrade" state and offers a link to `/dashboard`.
 
-**Note on "in-progress" state:** `POST /api/admin/upgrade/run` is synchronous — it blocks until `runSqliteMigrations()` completes and returns. There is no true mid-run state visible to the client. If the admin refreshes the page while waiting for the POST response (before it resolves), the page reloads into the Idle state and they can click "Run Upgrade" again — which is safe since `runSqliteMigrations()` is idempotent. The Running state is purely client-side (from button click until POST resolves); no server-side "running" flag is needed.
+**Note on "in-progress" state:** `POST /api/admin/upgrade/run` is synchronous — it blocks until `runSqliteMigrations()` completes and returns. There is no true mid-run state visible to the client. If the user refreshes the page while waiting for the POST response (before it resolves), the page reloads into the Idle state and they can click "Run Upgrade" again — which is safe since `runSqliteMigrations()` is idempotent. The Running state is purely client-side (from button click until POST resolves); no server-side "running" flag is needed.
 
 ### Polling
 
-The Running state is client-side only (active while awaiting the `POST /api/admin/upgrade/run` response). When the POST resolves with `{ success: true }`, the page transitions to Success and redirects to `/admin` after 3 seconds. Polling `GET /api/admin/upgrade/status` is used only on page load to determine the initial state — not during the run itself.
+The Running state is client-side only (active while awaiting the `POST /api/admin/upgrade/run` response). When the POST resolves with `{ success: true }`, the page transitions to Success and redirects to `/dashboard` after 3 seconds. Polling `GET /api/admin/upgrade/status` is used only on page load to determine the initial state — not during the run itself.
 
 ---
 
