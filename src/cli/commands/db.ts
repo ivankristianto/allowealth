@@ -330,7 +330,10 @@ export default defineCommand({
       },
     }),
     reset: defineCommand({
-      meta: { name: 'reset', description: 'Delete SQLite DB, push schema, and seed (dev only)' },
+      meta: {
+        name: 'reset',
+        description: 'Delete SQLite DB, apply migrations, and seed (dev only)',
+      },
       args: {
         target: targetArg,
       },
@@ -345,7 +348,7 @@ export default defineCommand({
         console.log('Resetting database...');
         exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
         exec('mkdir', ['-p', 'db']);
-        exec('bun', ['run', 'src/db/setup.ts']);
+        exec('bun', ['run', 'src/db/migrate.ts']);
         exec('bun', ['run', 'src/db/seed/index.ts']);
       },
     }),

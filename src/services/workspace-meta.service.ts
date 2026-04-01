@@ -18,7 +18,7 @@
  */
 
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { createMetaService } from './base/meta.factory';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
@@ -490,13 +490,38 @@ export class WorkspaceMetaService {
     const currentSecondary = current.secondary ?? '';
     const primaryChanging = primary !== current.primary;
     const secondaryChanging = secondary !== currentSecondary;
+    let requiresMetaBackfill = false;
 
     if (!primaryChanging && !secondaryChanging) {
-      return;
+      const [existingPrimaryMeta, existingSecondaryMeta] = await Promise.all([
+        this.db.query.workspaceMeta.findFirst({
+          where: and(
+            eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+            eq(this.schema.workspaceMeta.meta_key, WORKSPACE_META_KEYS.CURRENCY)
+          ),
+          columns: { id: true },
+        }),
+        this.db.query.workspaceMeta.findFirst({
+          where: and(
+            eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+            eq(this.schema.workspaceMeta.meta_key, WORKSPACE_META_KEYS.SECONDARY_CURRENCY)
+          ),
+          columns: { id: true },
+        }),
+      ]);
+
+      if (existingPrimaryMeta && existingSecondaryMeta) {
+        return;
+      }
+
+      requiresMetaBackfill = true;
     }
 
     this.assertCurrencyPairValid(primary, secondary);
-    await this.assertCurrencySettingsCanChange(workspaceId);
+    // Allow unchanged-value backfill to repair missing explicit meta rows even when currency is locked.
+    if (!requiresMetaBackfill) {
+      await this.assertCurrencySettingsCanChange(workspaceId);
+    }
 
     const schema = this.schema;
     const now = new Date();
