@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# ─── Stage 1: Install dependencies ──────────────────────────────────────────
+# ─── Stage 1: Install ALL dependencies (needed for build) ───────────────────
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
@@ -17,23 +17,28 @@ COPY . .
 # Build the Node.js standalone server
 RUN bun run build:node
 
-# ─── Stage 3: Runtime ────────────────────────────────────────────────────────
+# ─── Stage 3: Production dependencies only ──────────────────────────────────
+FROM oven/bun:1 AS prod-deps
+WORKDIR /app
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production --ignore-scripts
+
+# ─── Stage 4: Runtime ────────────────────────────────────────────────────────
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app
 
 # Use root for image filesystem setup; drop privileges before runtime
 USER root
 
-# Copy only what is needed to run the server
+# Copy production-only node_modules (excludes dev deps like Playwright, ESLint, etc.)
+COPY --from=prod-deps --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=build --chown=bun:bun /app/dist ./dist
-COPY --from=build --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=build --chown=bun:bun /app/package.json ./package.json
 
-# Copy migration and seed files (Bun SQLite migrator/seeder reads these at runtime)
-COPY --from=build --chown=bun:bun /app/drizzle ./drizzle
-COPY --from=build --chown=bun:bun /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=build --chown=bun:bun /app/src ./src
-COPY --from=build --chown=bun:bun /app/tsconfig.json ./tsconfig.json
+# Copy migration files (Bun SQLite migrator reads these at runtime)
+COPY --from=build --chown=bun:bun /app/drizzle/sqlite ./drizzle/sqlite
+COPY --from=build --chown=bun:bun /app/src/db/migrate.ts ./src/db/migrate.ts
 
 # Copy entrypoint and healthcheck scripts
 COPY --chown=bun:bun docker/entrypoint.sh /docker-entrypoint.sh

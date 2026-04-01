@@ -4,18 +4,29 @@ All available `bun run` commands for the project.
 
 ## Development
 
-| Command                | Description                                                |
-| ---------------------- | ---------------------------------------------------------- |
-| `bun run dev`          | Start Astro dev server with hot reload                     |
-| `bun run preview`      | Preview build locally (uses `.env`)                        |
-| `bun run preview:prod` | Preview build with production env (uses `.env.production`) |
-| `bun run docker:start` | Start the Docker app stack (Allowealth + Redis)            |
-| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)             |
+| Command                | Description                                                      |
+| ---------------------- | ---------------------------------------------------------------- |
+| `bun run dev`          | Start Astro dev server with hot reload                           |
+| `bun run preview`      | Preview build locally (uses `.env`)                              |
+| `bun run preview:prod` | Preview build with production env (uses `.env.production`)       |
+| `bun run docker:start` | Start the Docker app stack (first run creates `.env` then exits) |
+| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)                   |
 
 ```bash
 bun run dev              # http://localhost:4321
-bun run docker:start     # Build and start Allowealth + Redis via docker/docker-compose.yml
+bun run docker:start     # First run: creates .env + secrets then exits; rerun to build + start
 bun run docker:stop      # Stop the Docker app stack
+```
+
+**First-time Docker setup:**
+
+```bash
+bun run docker:start     # Creates .env with auto-generated secrets, then exits
+# Save INSTALLER_SECRET printed in the terminal (needed for first-run setup if set in .env)
+# Edit .env with OAuth/Turnstile values, then run again:
+bun run docker:start     # Builds and starts the Docker stack
+docker compose -f docker/docker-compose.yml logs -f app  # Watch startup
+# Visit http://localhost:3000 to complete first-run setup
 ```
 
 ### Docker Container Commands
@@ -191,7 +202,7 @@ bun run lint:fix && bun run stylelint:fix && bun run format:fix && bun run typec
 | `bun run db:studio`      | Open Drizzle Studio (visual DB browser)                |
 | `bun run db:seed`        | Seed database with demo data (3 months default)        |
 | `bun run db:seed:stress` | Seed 5 years of realistic family stress-test data      |
-| `bun run db:reset`       | Delete SQLite DB, push schema, and seed                |
+| `bun run db:reset`       | Delete SQLite DB, apply migrations, and seed           |
 | `bun run db:empty`       | Truncate all data (preserve schema)                    |
 
 ```bash
@@ -322,26 +333,26 @@ Aliases provide shorter commands that map to resource operations.
 
 ### Database
 
-| Command                                   | Description                                 |
-| ----------------------------------------- | ------------------------------------------- |
-| `bun run aw db migrate`                   | Apply pending migrations (SQLite)           |
-| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1       |
-| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1        |
-| `bun run aw db generate`                  | Generate migration from schema changes      |
-| `bun run aw db push`                      | Push schema directly (dev only)             |
-| `bun run aw db studio`                    | Open Drizzle Studio                         |
-| `bun run aw db seed`                      | Seed with demo data (3 months default)      |
-| `bun run aw db seed --months=6`           | Seed with 6 months of transaction data      |
-| `bun run aw db seed --transactions=5000`  | Add 5,000 extra transactions                |
-| `bun run aw db seed --benchmark`          | Seed with ~10k transactions (12 months)     |
-| `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset |
-| `bun run aw db seed-oauth-clients`        | Seed MCP OAuth clients for Connected Apps   |
-| `bun run aw db reset`                     | Delete SQLite DB, push schema, and seed     |
-| `bun run aw db empty`                     | Truncate all data (preserve schema)         |
-| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB           |
-| `bun run aw db backup`                    | Create backup file for the selected target  |
-| `bun run aw db restore`                   | Safely restore from local/cloud backup      |
-| `bun run aw db prune audit-logs`          | Delete audit log entries older than 30 days |
+| Command                                   | Description                                  |
+| ----------------------------------------- | -------------------------------------------- |
+| `bun run aw db migrate`                   | Apply pending migrations (SQLite)            |
+| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1        |
+| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1         |
+| `bun run aw db generate`                  | Generate migration from schema changes       |
+| `bun run aw db push`                      | Push schema directly (dev only)              |
+| `bun run aw db studio`                    | Open Drizzle Studio                          |
+| `bun run aw db seed`                      | Seed with demo data (3 months default)       |
+| `bun run aw db seed --months=6`           | Seed with 6 months of transaction data       |
+| `bun run aw db seed --transactions=5000`  | Add 5,000 extra transactions                 |
+| `bun run aw db seed --benchmark`          | Seed with ~10k transactions (12 months)      |
+| `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset  |
+| `bun run aw db seed-oauth-clients`        | Seed MCP OAuth clients for Connected Apps    |
+| `bun run aw db reset`                     | Delete SQLite DB, apply migrations, and seed |
+| `bun run aw db empty`                     | Truncate all data (preserve schema)          |
+| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB            |
+| `bun run aw db backup`                    | Create backup file for the selected target   |
+| `bun run aw db restore`                   | Safely restore from local/cloud backup       |
+| `bun run aw db prune audit-logs`          | Delete audit log entries older than 30 days  |
 
 #### Database Drop Command
 

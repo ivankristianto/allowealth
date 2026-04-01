@@ -93,25 +93,44 @@ git clone https://github.com/ivankristianto/allowealth.git
 cd allowealth
 git checkout vX.Y.Z  # Replace with the release version you want to run
 
-# 2. Copy the Docker environment template
-cp docker/.env.example .env
+# 2. First run: create .env with generated secrets (exits after setup)
+bun run docker:start
 
-# 3. Edit .env and set every required production value:
-#   PUBLIC_URL=https://your-domain.com
-#   BETTER_AUTH_SECRET=<long-random-string>
-#   EMAIL_ENCRYPTION_KEY=<base64-32-bytes>
-#   COOKIE_SIGNING_SECRET=<long-random-string>
-#   GOOGLE_CLIENT_ID=<google-oauth-client-id>
-#   GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
-#   PUBLIC_TURNSTILE_SITE_KEY=<cloudflare-turnstile-site-key>
-#   TURNSTILE_SECRET_KEY=<cloudflare-turnstile-secret-key>
+# 3. Edit .env with required OAuth/Turnstile values, then rerun to start
+bun run docker:start
 
-# 4. Build and start the stack
-docker compose -f docker/docker-compose.yml up -d --build
+# Or manually with docker:
+# cp docker/.env.example .env
+# Edit .env with your values, then:
+# docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-The stack starts both Allowealth and Redis. The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
+On first run, `bun run docker:start` automatically:
+
+1. Creates `.env` from `docker/.env.example` if it doesn't exist
+2. Generates required secrets (`BETTER_AUTH_SECRET`, `EMAIL_ENCRYPTION_KEY`, `COOKIE_SIGNING_SECRET`)
+3. Sets `PUBLIC_URL=http://localhost:3000` for local testing
+4. Prints a generated `INSTALLER_SECRET` for first-run setup
+5. Exits so you can review and complete required environment values
+
+After you fill the required variables, rerun `bun run docker:start` to build and start the Docker stack.
+
+The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
 To upgrade later, check out a newer release tag and rebuild the stack.
+
+### First-run setup
+
+When the app starts with an empty database, the web-based installer automatically guides you through creating the first workspace and admin account.
+
+1. Open your `PUBLIC_URL` (e.g., `http://localhost:3000` for local testing)
+2. The app redirects to `/installer` — fill in:
+   - Workspace name
+   - Admin full name, email, and password
+   - Optional: Installer secret (if you set `INSTALLER_SECRET` in `.env`)
+3. Submit the form to complete setup
+4. Sign in with the admin credentials you just created
+
+The installer only appears when no users exist. Once setup is complete, the `/installer` path redirects to the login page.
 
 ### Environment variables
 
@@ -130,6 +149,7 @@ The table below marks the values you should treat as required for a production D
 | `GOOGLE_CLIENT_SECRET`      | Yes      | —                              | Google OAuth client secret for the same callback                                 |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Yes      | —                              | Cloudflare Turnstile site key used on sign-in and sign-up forms                  |
 | `TURNSTILE_SECRET_KEY`      | Yes      | —                              | Cloudflare Turnstile secret key used for server-side verification                |
+| `INSTALLER_SECRET`          | No       | —                              | Optional bootstrap secret required during first-run setup for unattended deploys |
 | `SIGNUP_MODE`               | No       | `invite_only`                  | `invite_only` or `public` registration                                           |
 | `EMAIL_MODE`                | No       | `console`                      | `console` logs emails, `real` sends through a provider                           |
 | `CACHE_DRIVER`              | No       | `redis`                        | `redis`, `memory`, or `upstash`                                                  |

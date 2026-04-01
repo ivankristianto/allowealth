@@ -94,15 +94,19 @@ export interface IDatabase {
 }
 
 /**
- * Run an async callback.
+ * Run an async callback in a database transaction when available.
  *
- * SQLite and D1 run the callback directly -- single-writer WAL mode ensures
- * sequential consistency. D1 does not support BEGIN/COMMIT/ROLLBACK.
+ * SQLite uses Drizzle's native transaction support. D1 falls back to a direct
+ * callback because Cloudflare D1 does not support the same transaction API.
  */
 export async function runTransaction<T>(
   db: IDatabase,
   callback: (tx: IDatabase) => Promise<T>
 ): Promise<T> {
+  if (typeof db.transaction === 'function') {
+    return db.transaction((tx) => callback(tx as IDatabase));
+  }
+
   return callback(db);
 }
 

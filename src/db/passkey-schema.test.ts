@@ -56,15 +56,15 @@ describe('passkey schema coverage', () => {
     db.close();
   });
 
-  test('db:reset uses db:setup for fresh schema creation', () => {
+  test('db:reset uses db:migrate for migration-tracked schema creation', () => {
     const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
     const resetScript = packageJson.scripts['db:reset'];
-    const setupCommand = 'bun run db:setup';
+    const migrateCommand = 'bun run db:migrate';
     const seedCommand = 'bun run db:seed';
 
-    expect(resetScript).toContain(setupCommand);
+    expect(resetScript).toContain(migrateCommand);
     expect(resetScript).toContain(seedCommand);
-    expect(resetScript.indexOf(setupCommand)).toBeLessThan(resetScript.indexOf(seedCommand));
-    expect(resetScript).not.toContain('bun run db:migrate');
+    expect(resetScript.indexOf(migrateCommand)).toBeLessThan(resetScript.indexOf(seedCommand));
+    expect(resetScript).not.toContain('bun run db:setup');
   });
 });
