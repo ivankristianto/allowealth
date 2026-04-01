@@ -14,7 +14,7 @@ if (!Astro.locals.user) {
         <!-- Header -->
         <div class="text-center">
           <h1 class="text-2xl font-bold tracking-tight">Database Upgrade</h1>
-          <p class="text-base-content/60 text-sm mt-1">allowealth admin</p>
+          <p class="text-base-content/60 text-sm mt-1">allowealth</p>
         </div>
 
         <!-- State: loading (initial) -->
@@ -28,7 +28,7 @@ if (!Astro.locals.user) {
           <div class="text-success text-5xl mb-3">&check;</div>
           <h2 class="font-semibold text-lg">Database is up to date</h2>
           <p class="text-sm text-base-content/60 mt-1">No migrations are pending.</p>
-          <a href="/admin" class="btn btn-primary mt-6 w-full">Go to Admin</a>
+          <a href="/dashboard" class="btn btn-primary mt-6 w-full">Go to Dashboard</a>
         </div>
 
         <!-- State: idle (pending) -->
@@ -70,9 +70,9 @@ if (!Astro.locals.user) {
           <div class="text-success text-5xl mb-3">&check;</div>
           <h2 class="font-semibold text-lg">Upgrade complete</h2>
           <p class="text-sm text-base-content/60 mt-1">
-            Redirecting to admin in <span id="countdown">3</span>s&hellip;
+            Redirecting in <span id="countdown">3</span>s&hellip;
           </p>
-          <a href="/admin" class="btn btn-primary mt-6 w-full">Go to Admin now</a>
+          <a href="/dashboard" class="btn btn-primary mt-6 w-full">Go to Dashboard now</a>
         </div>
 
         <!-- State: error -->
@@ -181,7 +181,7 @@ if (!Astro.locals.user) {
       if (el) el.textContent = String(n);
       if (n <= 0) {
         clearInterval(interval);
-        window.location.href = '/admin';
+        window.location.href = '/dashboard';
       }
     }, 1000);
   }
