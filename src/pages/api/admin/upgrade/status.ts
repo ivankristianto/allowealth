@@ -9,15 +9,12 @@ import { logError } from '@/lib/logger';
  * Returns current migration status. Used by the /upgrade page on load
  * to determine whether the database needs upgrading.
  *
- * Super admin only.
+ * Any authenticated user.
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
-
-    if (auth.role !== 'super_admin') {
-      return errorResponse('Super admin access required', 403, 'SUPER_ADMIN_REQUIRED');
-    }
+    // Any authenticated user can check migration status.
+    getAuthenticatedUser(context);
 
     const status = await MigrationService.getStatus();
     return successResponse(status);
