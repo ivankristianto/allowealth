@@ -124,23 +124,39 @@ const adminUser = {
   deletedAt: null,
 } as MockUser;
 
-describe('routeGuard upgrade route exemption', () => {
+const superAdminUser = {
+  id: 'user-4',
+  email: 'super-admin@example.com',
+  name: 'Super Admin User',
+  role: 'super_admin',
+  workspaceId: null,
+  avatarUrl: null,
+  deletedAt: null,
+} as MockUser;
+
+describe('routeGuard upgrade and admin restrictions', () => {
   const passthrough = async () => new Response(null, { status: 204 });
 
-  test('allows member to access /api/admin/upgrade/status', async () => {
+  test('blocks member from /api/admin/upgrade/status', async () => {
     const context = createMockContext('/api/admin/upgrade/status', memberUser);
     const response = expectResponse(await routeGuard(context, passthrough));
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(403);
   });
 
-  test('allows member to access /api/admin/upgrade/run', async () => {
+  test('blocks member from /api/admin/upgrade/run', async () => {
     const context = createMockContext('/api/admin/upgrade/run', memberUser);
     const response = expectResponse(await routeGuard(context, passthrough));
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(403);
   });
 
-  test('allows admin to access /api/admin/upgrade/status', async () => {
+  test('blocks admin from /api/admin/upgrade/status', async () => {
     const context = createMockContext('/api/admin/upgrade/status', adminUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(403);
+  });
+
+  test('allows super admin to access /api/admin/upgrade/status', async () => {
+    const context = createMockContext('/api/admin/upgrade/status', superAdminUser);
     const response = expectResponse(await routeGuard(context, passthrough));
     expect(response.status).toBe(204);
   });
@@ -156,5 +172,19 @@ describe('routeGuard upgrade route exemption', () => {
     const response = expectResponse(await routeGuard(context, passthrough));
     expect(response.status).toBe(302);
     expect(response.headers.get('Location')).toBe('/dashboard');
+  });
+
+  test('blocks member from /upgrade page', async () => {
+    const context = createMockContext('/upgrade', memberUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(302);
+    expect(response.headers.get('Location')).toBe('/dashboard');
+  });
+
+  test('redirects signed-out /upgrade visits to login', async () => {
+    const context = createMockContext('/upgrade');
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(302);
+    expect(response.headers.get('Location')).toContain('/login?redirect=');
   });
 });

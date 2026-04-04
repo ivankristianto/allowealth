@@ -12,6 +12,7 @@ import type { MiddlewareHandler } from 'astro';
 
 const PROTECTED_PREFIXES = [
   '/admin',
+  '/upgrade',
   '/dashboard',
   '/onboarding',
   '/transactions',
@@ -49,14 +50,11 @@ export const routeGuard: MiddlewareHandler = async (context, next) => {
     return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
   }
 
-  // Require super_admin role for /admin routes (pages and API),
-  // except /upgrade and /api/admin/upgrade/* which are open to any authenticated user
-  // (migrationGuard controls access to those paths).
+  // Require super_admin role for admin and upgrade routes.
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
-  const isUpgradeRoute = pathname === '/upgrade' || pathname.startsWith('/api/admin/upgrade/');
+  const isUpgradeRoute = pathname === '/upgrade';
   if (
-    isAdminRoute &&
-    !isUpgradeRoute &&
+    (isAdminRoute || isUpgradeRoute) &&
     context.locals.user &&
     context.locals.user.role !== 'super_admin'
   ) {

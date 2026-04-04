@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 // Mock MigrationService before importing the guard
 let mockPending = false;
@@ -12,6 +12,10 @@ mock.module('@/services/migration.service', () => ({
 
 // Import after mock is set up
 const { migrationGuard } = await import('@/middleware/migration-guard');
+
+afterAll(() => {
+  (mock as any).restore();
+});
 
 function makeContext(pathname: string, role?: string) {
   return {
@@ -61,6 +65,18 @@ describe('migrationGuard — passlist', () => {
     expect((res as Response).status).toBe(200);
   });
 
+  it('calls next() for /login even if pending', async () => {
+    const ctx = makeContext('/login');
+    const res = await migrationGuard(ctx, next);
+    expect((res as Response).status).toBe(200);
+  });
+
+  it('calls next() for /api/auth/* endpoints even if pending', async () => {
+    const ctx = makeContext('/api/auth/login');
+    const res = await migrationGuard(ctx, next);
+    expect((res as Response).status).toBe(200);
+  });
+
   it('calls next() for /_astro/ assets even if pending', async () => {
     const ctx = makeContext('/_astro/main.js', 'member');
     const res = await migrationGuard(ctx, next);
@@ -92,18 +108,16 @@ describe('migrationGuard — pending', () => {
     expect((res as Response).headers.get('location')).toBe('/upgrade');
   });
 
-  it('redirects admin to /upgrade', async () => {
+  it('returns 503 for admin user', async () => {
     const ctx = makeContext('/dashboard', 'admin');
     const res = await migrationGuard(ctx, next);
-    expect((res as Response).status).toBe(302);
-    expect((res as Response).headers.get('location')).toBe('/upgrade');
+    expect((res as Response).status).toBe(503);
   });
 
-  it('redirects member to /upgrade', async () => {
+  it('returns 503 for member user', async () => {
     const ctx = makeContext('/dashboard', 'member');
     const res = await migrationGuard(ctx, next);
-    expect((res as Response).status).toBe(302);
-    expect((res as Response).headers.get('location')).toBe('/upgrade');
+    expect((res as Response).status).toBe(503);
   });
 
   it('returns 503 for unauthenticated user', async () => {
