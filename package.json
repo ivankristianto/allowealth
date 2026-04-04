@@ -21,6 +21,7 @@
     "build:cloudflare": "DEPLOY_TARGET=cloudflare astro build",
     "deploy:cloudflare": "bun run build:cloudflare && wrangler deploy",
     "docker:start": "./scripts/docker-start.sh",
+    "docker:seed": "./scripts/docker-seed.sh",
     "docker:stop": "docker compose -f docker/docker-compose.yml down",
     "bundle:report": "bun run build && bun run scripts/analyze-bundle.ts",
     "preview": "bun --bun --env-file=.env astro preview",

@@ -10,11 +10,13 @@ All available `bun run` commands for the project.
 | `bun run preview`      | Preview build locally (uses `.env`)                              |
 | `bun run preview:prod` | Preview build with production env (uses `.env.production`)       |
 | `bun run docker:start` | Start the Docker app stack (first run creates `.env` then exits) |
+| `bun run docker:seed`  | Seed Docker demo database (`allowealth-data` volume)             |
 | `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)                   |
 
 ```bash
 bun run dev              # http://localhost:4321
 bun run docker:start     # First run: creates .env + secrets then exits; rerun to build + start
+bun run docker:seed      # Seed demo data into Docker volume
 bun run docker:stop      # Stop the Docker app stack
 ```
 
@@ -33,25 +35,30 @@ docker compose -f docker/docker-compose.yml logs -f app  # Watch startup
 
 Once the Docker stack is running, you can run database operations inside the container:
 
-| Command                                                   | Description                     |
-| --------------------------------------------------------- | ------------------------------- |
-| `docker exec allowealth-app bun run src/db/migrate.ts`    | Apply pending SQLite migrations |
-| `docker exec allowealth-app bun run src/db/seed/index.ts` | Seed database with demo data    |
-| `docker exec allowealth-app bun run src/db/setup.ts`      | Set up database from scratch    |
+| Command                                                | Description                                                    |
+| ------------------------------------------------------ | -------------------------------------------------------------- |
+| `docker exec allowealth-app bun run src/db/migrate.ts` | Apply pending SQLite migrations                                |
+| `bun run docker:seed`                                  | Seed demo data into Docker volume                              |
+| `docker compose -f docker/docker-compose.yml down -v`  | Reset database from scratch (removes `allowealth-data` volume) |
 
 ```bash
 # Run migrations manually
 docker exec allowealth-app bun run src/db/migrate.ts
 
-# Seed with demo data
-docker exec allowealth-app bun run src/db/seed/index.ts
+# Reset database from scratch (delete persisted SQLite volume)
+docker compose -f docker/docker-compose.yml down -v
+bun run docker:start
+
+# Seed demo data (default: --months=6)
+bun run docker:seed
 
 # Seed with custom options
-docker exec allowealth-app bun run src/db/seed/index.ts --months=12
-docker exec allowealth-app bun run src/db/seed/index.ts --stress
+bun run docker:seed -- --months=12
+bun run docker:seed -- --stress
 ```
 
-Note: Migrations run automatically on every container start via the entrypoint script. Manual execution is only needed for troubleshooting or re-seeding.
+Note: Migrations run automatically on every container start via the entrypoint script.
+Note: `docker:seed` works by mounting local `src/` into the slim runtime image (which no longer ships seed/setup source files).
 
 ## Docs Site (Starlight)
 
