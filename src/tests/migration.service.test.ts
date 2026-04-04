@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it } from 'bun:test';
 import { EXPECTED_MIGRATION_COUNT } from '@/db/migration-constants';
 
 /**
@@ -28,6 +28,10 @@ mock.module('@/db', () => ({
 
 // Import after mock is set up
 const { MigrationService } = await import('@/services/migration.service');
+
+afterAll(() => {
+  (mock as any).restore();
+});
 
 describe('MigrationService.isMigrationPending', () => {
   beforeEach(() => {

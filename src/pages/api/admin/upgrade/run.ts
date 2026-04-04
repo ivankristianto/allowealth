@@ -11,13 +11,14 @@ import { logError } from '@/lib/logger';
  *
  * Returns 501 for Cloudflare/Vercel/Netlify deployments — use CLI instead.
  *
- * Any authenticated user. Requires x-csrf-token header (enforced by csrf middleware).
+ * Super admin only. Requires x-csrf-token header (enforced by csrf middleware).
  */
 export const POST: APIRoute = async (context) => {
   try {
-    // Any authenticated user can trigger migrations — the SQL is deterministic
-    // and idempotent, shipped with the app code. No user input flows into it.
-    getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
+    if (auth.role !== 'super_admin') {
+      return errorResponse('Super admin access required', 403);
+    }
 
     const result = await MigrationService.runMigrations();
 

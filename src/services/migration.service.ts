@@ -61,7 +61,7 @@ export class MigrationService {
    */
   static async getStatus(): Promise<MigrationStatus> {
     try {
-      const rows = db.all<{ count: number }>(
+      const rows = await db.all<{ count: number }>(
         sql`SELECT COUNT(*) as count FROM __drizzle_migrations`
       );
       const applied = Number(rows[0]?.count ?? 0);

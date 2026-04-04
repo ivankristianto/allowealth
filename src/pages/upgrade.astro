@@ -2,7 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
 // Defense-in-depth: migrationGuard enforces this, but page also checks.
-if (!Astro.locals.user) {
+if (!Astro.locals.user || Astro.locals.user.role !== 'super_admin') {
   return Astro.redirect('/login', 302);
 }
 ---
@@ -28,7 +28,7 @@ if (!Astro.locals.user) {
           <div class="text-success text-5xl mb-3">&check;</div>
           <h2 class="font-semibold text-lg">Database is up to date</h2>
           <p class="text-sm text-base-content/60 mt-1">No migrations are pending.</p>
-          <a href="/dashboard" class="btn btn-primary mt-6 w-full">Go to Dashboard</a>
+          <a href="/admin" class="btn btn-primary mt-6 w-full">Go to Admin</a>
         </div>
 
         <!-- State: idle (pending) -->
@@ -72,7 +72,7 @@ if (!Astro.locals.user) {
           <p class="text-sm text-base-content/60 mt-1">
             Redirecting in <span id="countdown">3</span>s&hellip;
           </p>
-          <a href="/dashboard" class="btn btn-primary mt-6 w-full">Go to Dashboard now</a>
+          <a href="/admin" class="btn btn-primary mt-6 w-full">Go to Admin now</a>
         </div>
 
         <!-- State: error -->
@@ -181,7 +181,7 @@ if (!Astro.locals.user) {
       if (el) el.textContent = String(n);
       if (n <= 0) {
         clearInterval(interval);
-        window.location.href = '/dashboard';
+        window.location.href = '/admin';
       }
     }, 1000);
   }

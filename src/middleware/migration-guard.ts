@@ -3,8 +3,8 @@
  *
  * Checks whether database migrations are pending on every request.
  * When pending:
- *   - authenticated users -> redirect to /upgrade to trigger the migration
- *   - unauthenticated users -> 503 inline maintenance page (URL preserved)
+ *   - super_admin users -> redirect to /upgrade to trigger the migration
+ *   - everyone else -> 503 inline maintenance page (URL preserved)
  *
  * Placed after `csrf` and before `routeGuard` in the middleware chain.
  *
@@ -24,11 +24,12 @@ const PASSLIST_EXACT = [
   '/upgrade',
   '/api/admin/upgrade/run',
   '/api/admin/upgrade/status',
+  '/login',
   '/favicon.ico',
 ];
 
 /** Prefix-matched paths (e.g. static asset directories). */
-const PASSLIST_PREFIX = ['/_astro/'];
+const PASSLIST_PREFIX = ['/_astro/', '/api/auth/'];
 
 function isPasslisted(pathname: string): boolean {
   return (
@@ -99,11 +100,11 @@ export const migrationGuard: MiddlewareHandler = async (context, next) => {
     return next();
   }
 
-  // Any authenticated user gets redirected to the upgrade page
-  if (context.locals.user) {
+  // Only super_admin users can access the upgrade page to run migrations.
+  if (context.locals.user?.role === 'super_admin') {
     return context.redirect('/upgrade', 302);
   }
 
-  // Unauthenticated users see the maintenance page
+  // Everyone else sees the maintenance page.
   return maintenancePage();
 };

@@ -20,7 +20,7 @@ afterAll(async () => {
   await rm(tmpDir, { recursive: true, force: true });
 });
 
-describe('upgrade integration', () => {
+describe('migration runner integration', () => {
   it('fresh DB has no __drizzle_migrations table', () => {
     const raw = new Database(dbPath);
     const db = drizzle(raw);
