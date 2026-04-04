@@ -494,11 +494,13 @@ To connect an MCP client, first seed the OAuth clients with `bun run aw db seed-
 | Command                 | Description                                       |
 | ----------------------- | ------------------------------------------------- |
 | `bun run test`          | Run unit tests with dots reporter (failures only) |
+| `bun run tests`         | Alias for `bun run test`                          |
 | `bun run test:watch`    | Run tests in watch mode                           |
 | `bun run test:coverage` | Run tests with coverage report                    |
 
 ```bash
 bun run test                 # Dots output, failures only
+bun run tests                # Alias for bun run test
 bun run test:watch           # Watch mode
 ```
 

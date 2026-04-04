@@ -25,6 +25,10 @@ export interface MigrationResult {
   error?: string;
 }
 
+type MigrationCountDb = {
+  all: <T = { count: number }>(query: unknown) => Promise<T[]> | T[];
+};
+
 export class MigrationService {
   /**
    * In-memory cache: once migrations are confirmed up-to-date, skip the
@@ -49,9 +53,9 @@ export class MigrationService {
    * Result is cached in-memory: once not-pending, the query is skipped on
    * subsequent requests for the lifetime of the process.
    */
-  static async isMigrationPending(): Promise<boolean> {
+  static async isMigrationPending(database: MigrationCountDb = db): Promise<boolean> {
     if (this._notPending) return false;
-    const status = await this.getStatus();
+    const status = await this.getStatus(database);
     if (!status.pending) this._notPending = true;
     return status.pending;
   }
@@ -59,9 +63,9 @@ export class MigrationService {
   /**
    * Return migration status with counts for the /api/admin/upgrade/status endpoint.
    */
-  static async getStatus(): Promise<MigrationStatus> {
+  static async getStatus(database: MigrationCountDb = db): Promise<MigrationStatus> {
     try {
-      const rows = await db.all<{ count: number }>(
+      const rows = await database.all<{ count: number }>(
         sql`SELECT COUNT(*) as count FROM __drizzle_migrations`
       );
       const applied = Number(rows[0]?.count ?? 0);

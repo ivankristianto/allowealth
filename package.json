@@ -44,6 +44,7 @@
     "db:reset": "mkdir -p db && rm -f db/.dev.db db/.dev.db-wal db/.dev.db-shm && bun run db:migrate && bun run db:seed",
     "db:empty": "bun run src/db/empty.ts",
     "test": "bun test --only-failures --dots",
+    "tests": "bun run test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "test:e2e:setup": "./scripts/setup-e2e.sh",
