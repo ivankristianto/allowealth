@@ -1,0 +1,212 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+// Defense-in-depth: migrationGuard enforces this, but page also checks.
+if (!Astro.locals.user) {
+  return Astro.redirect('/login', 302);
+}
+---
+
+<BaseLayout title="Database Upgrade">
+  <div class="min-h-dvh flex items-center justify-center bg-base-100 p-6">
+    <div class="card bg-base-200 shadow-xl w-full max-w-md">
+      <div class="card-body gap-6">
+        <!-- Header -->
+        <div class="text-center">
+          <h1 class="text-2xl font-bold tracking-tight">Database Upgrade</h1>
+          <p class="text-base-content/60 text-sm mt-1">allowealth</p>
+        </div>
+
+        <!-- State: loading (initial) -->
+        <div id="state-loading" class="text-center py-4">
+          <span class="loading loading-spinner loading-md"></span>
+          <p class="text-sm text-base-content/60 mt-2">Checking database status&hellip;</p>
+        </div>
+
+        <!-- State: up-to-date -->
+        <div id="state-uptodate" class="hidden text-center py-4">
+          <div class="text-success text-5xl mb-3">&check;</div>
+          <h2 class="font-semibold text-lg">Database is up to date</h2>
+          <p class="text-sm text-base-content/60 mt-1">No migrations are pending.</p>
+          <a href="/dashboard" class="btn btn-primary mt-6 w-full">Go to Dashboard</a>
+        </div>
+
+        <!-- State: idle (pending) -->
+        <div id="state-idle" class="hidden">
+          <div class="alert alert-warning mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              ></path>
+            </svg>
+            <span>Database upgrade required</span>
+          </div>
+          <p class="text-sm text-base-content/70 mb-6">
+            There are pending database migrations. Click the button below to apply them. All users
+            are blocked from the application until this is complete.
+          </p>
+          <div class="text-xs text-base-content/40 mb-4" id="status-counts"></div>
+          <button id="btn-run" class="btn btn-primary w-full">Run Upgrade</button>
+        </div>
+
+        <!-- State: running -->
+        <div id="state-running" class="hidden text-center py-4">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
+          <h2 class="font-semibold text-lg mt-4">Running migrations&hellip;</h2>
+          <p class="text-sm text-base-content/60 mt-1">Please do not close this tab.</p>
+        </div>
+
+        <!-- State: success -->
+        <div id="state-success" class="hidden text-center py-4">
+          <div class="text-success text-5xl mb-3">&check;</div>
+          <h2 class="font-semibold text-lg">Upgrade complete</h2>
+          <p class="text-sm text-base-content/60 mt-1">
+            Redirecting in <span id="countdown">3</span>s&hellip;
+          </p>
+          <a href="/dashboard" class="btn btn-primary mt-6 w-full">Go to Dashboard now</a>
+        </div>
+
+        <!-- State: error -->
+        <div id="state-error" class="hidden">
+          <div class="alert alert-error mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span id="error-message">Migration failed</span>
+          </div>
+          <details class="mb-4">
+            <summary class="text-xs cursor-pointer text-base-content/50 hover:text-base-content/80"
+              >Show details</summary
+            >
+            <pre
+              id="error-details"
+              class="text-xs mt-2 p-3 bg-base-300 rounded overflow-x-auto whitespace-pre-wrap break-words">
+            </pre>
+          </details>
+          <button id="btn-retry" class="btn btn-outline w-full">Retry</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { getCsrfToken } from '@/lib/csrf-client';
+
+  type State = 'loading' | 'uptodate' | 'idle' | 'running' | 'success' | 'error';
+
+  function show(state: State) {
+    const states: State[] = ['loading', 'uptodate', 'idle', 'running', 'success', 'error'];
+    for (const s of states) {
+      const el = document.getElementById(`state-${s}`);
+      if (el) el.classList.toggle('hidden', s !== state);
+    }
+  }
+
+  async function checkStatus() {
+    const res = await fetch('/api/admin/upgrade/status');
+    if (!res.ok) throw new Error('Failed to fetch status');
+    const json = (await res.json()) as {
+      data: { pending: boolean; applied: number; expected: number };
+    };
+    return json.data;
+  }
+
+  async function runUpgrade() {
+    show('running');
+    try {
+      const res = await fetch('/api/admin/upgrade/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken() ?? '',
+        },
+      });
+
+      if (res.status === 501) {
+        const json = (await res.json()) as { error: { message: string } };
+        showError(json.error?.message ?? 'Not supported in this deployment');
+        return;
+      }
+
+      const json = (await res.json()) as {
+        success: boolean;
+        data?: { success: boolean };
+        error?: { message: string };
+      };
+
+      if (json.success) {
+        show('success');
+        startCountdown();
+      } else {
+        showError(json.error?.message ?? 'Unknown error');
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  function showError(message: string, details?: string) {
+    const msgEl = document.getElementById('error-message');
+    const detailEl = document.getElementById('error-details');
+    if (msgEl) msgEl.textContent = message;
+    if (detailEl) detailEl.textContent = details ?? message;
+    show('error');
+  }
+
+  function startCountdown() {
+    let n = 3;
+    const el = document.getElementById('countdown');
+    const interval = setInterval(() => {
+      n--;
+      if (el) el.textContent = String(n);
+      if (n <= 0) {
+        clearInterval(interval);
+        window.location.href = '/dashboard';
+      }
+    }, 1000);
+  }
+
+  // Boot: check status on load
+  (async () => {
+    try {
+      const status = await checkStatus();
+      if (!status.pending) {
+        show('uptodate');
+      } else {
+        const counts = document.getElementById('status-counts');
+        if (counts) {
+          counts.textContent = `Applied: ${status.applied} / Expected: ${status.expected}`;
+        }
+        show('idle');
+      }
+    } catch {
+      show('idle'); // Default to idle if status check fails
+    }
+  })();
+
+  // Button handlers
+  document.getElementById('btn-run')?.addEventListener('click', runUpgrade);
+  document.getElementById('btn-retry')?.addEventListener('click', () => {
+    show('idle');
+  });
+</script>

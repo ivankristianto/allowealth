@@ -103,3 +103,58 @@ describe('routeGuard app-only public routes', () => {
     expect(response.headers.get('Location')).toBe('/admin');
   });
 });
+
+const memberUser = {
+  id: 'user-1',
+  email: 'user@example.com',
+  name: 'Member User',
+  role: 'member',
+  workspaceId: 'workspace-1',
+  avatarUrl: null,
+  deletedAt: null,
+} as MockUser;
+
+const adminUser = {
+  id: 'user-3',
+  email: 'admin@example.com',
+  name: 'Admin User',
+  role: 'admin',
+  workspaceId: 'workspace-1',
+  avatarUrl: null,
+  deletedAt: null,
+} as MockUser;
+
+describe('routeGuard upgrade route exemption', () => {
+  const passthrough = async () => new Response(null, { status: 204 });
+
+  test('allows member to access /api/admin/upgrade/status', async () => {
+    const context = createMockContext('/api/admin/upgrade/status', memberUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(204);
+  });
+
+  test('allows member to access /api/admin/upgrade/run', async () => {
+    const context = createMockContext('/api/admin/upgrade/run', memberUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(204);
+  });
+
+  test('allows admin to access /api/admin/upgrade/status', async () => {
+    const context = createMockContext('/api/admin/upgrade/status', adminUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(204);
+  });
+
+  test('still blocks member from other /api/admin routes', async () => {
+    const context = createMockContext('/api/admin/users', memberUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(403);
+  });
+
+  test('still blocks admin from /admin page routes', async () => {
+    const context = createMockContext('/admin', adminUser);
+    const response = expectResponse(await routeGuard(context, passthrough));
+    expect(response.status).toBe(302);
+    expect(response.headers.get('Location')).toBe('/dashboard');
+  });
+});

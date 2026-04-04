@@ -49,9 +49,17 @@ export const routeGuard: MiddlewareHandler = async (context, next) => {
     return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
   }
 
-  // Require super_admin role for /admin routes (pages and API)
+  // Require super_admin role for /admin routes (pages and API),
+  // except /upgrade and /api/admin/upgrade/* which are open to any authenticated user
+  // (migrationGuard controls access to those paths).
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
-  if (isAdminRoute && context.locals.user && context.locals.user.role !== 'super_admin') {
+  const isUpgradeRoute = pathname === '/upgrade' || pathname.startsWith('/api/admin/upgrade/');
+  if (
+    isAdminRoute &&
+    !isUpgradeRoute &&
+    context.locals.user &&
+    context.locals.user.role !== 'super_admin'
+  ) {
     // API routes get JSON 403, page routes get redirected to dashboard
     if (pathname.startsWith('/api/')) {
       return new Response(JSON.stringify({ error: 'Super admin access required' }), {
