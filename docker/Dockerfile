@@ -30,6 +30,13 @@ RUN bun install --frozen-lockfile --production --ignore-scripts
 # ─── Stage 4: Runtime ────────────────────────────────────────────────────────
 # TODO: pin to sha256 digest for reproducible builds
 FROM oven/bun:1.3.11-slim AS runtime
+
+LABEL org.opencontainers.image.title="Allowealth"
+LABEL org.opencontainers.image.description="Personal and family financial application"
+LABEL org.opencontainers.image.url="https://github.com/ivankristianto/allowealth"
+LABEL org.opencontainers.image.source="https://github.com/ivankristianto/allowealth"
+LABEL org.opencontainers.image.licenses="MIT"
+
 WORKDIR /app
 
 # Use root for image filesystem setup; drop privileges before runtime
@@ -52,6 +59,8 @@ RUN chmod +x /docker-entrypoint.sh
 # Create the SQLite data directory (volume is mounted here by docker-compose)
 # chown here sets the image layer ownership; Docker preserves this into named volumes on first init
 RUN mkdir -p /data && chown bun:bun /data
+
+VOLUME /data
 
 # Use the non-root user provided by the official Bun image
 USER bun
