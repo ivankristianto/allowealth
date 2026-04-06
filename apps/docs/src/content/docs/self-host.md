@@ -21,151 +21,77 @@ Self-host Allowealth when you want full control over data, updates, and deployme
 
 ## Prerequisites
 
-- Bun 1.x
-- Git access to the Allowealth repository
-- A deployment target you control, such as a VPS or Cloudflare account
-- Required environment values: `PUBLIC_URL`, `BETTER_AUTH_SECRET`, and any auth provider secrets you plan to enable
-
-## Quick Start
-
-Start locally first. It is the fastest way to confirm auth, seeded data, and core workflows before you deploy.
-
-From the repository root:
-
-```bash
-cp .env.example .env
-./scripts/setup.sh
-bun run dev
-```
-
-Open `http://localhost:4321` and confirm the app loads.
-
-## Environment and deployment notes
-
-- Set `PUBLIC_URL` to the final origin before you invite real users or enable OAuth.
-- Replace `BETTER_AUTH_SECRET` with a long random value in every non-local environment.
-- Start with SQLite for a single-host pilot. Use Cloudflare D1 when you deploy to Cloudflare Workers.
-- Cloudflare Workers is the primary documented production target. Node builds are also available for self-managed servers.
-
-See [Setup and Deployment](/developers/setup-and-deployment/) for target-specific commands and production details.
-
-## First login and first checks
-
-If you used the seeded local setup, sign in with the demo account from [Getting Started](/getting-started/).
-
-After first login, check these basics:
-
-1. The dashboard loads without errors.
-2. You can create a transaction and see budgets update.
-3. Reports show the new data.
-4. Backups, secrets, and domain settings are in place before you share access.
-
-For a clean production environment, create the first workspace and admin user before opening the app to others:
-
-```bash
-bun run aw workspace create --target <environment> --name "My Family" --email admin@example.com
-```
-
-## Next steps
-
-- Follow [Setup and Deployment](/developers/setup-and-deployment/) for Cloudflare and Node deployment details
-- Use [Deployment Guide](/admins/deployment-guide/) for rollout and rollback checks
-- Keep [Commands Reference](/reference/commands/) nearby for exact CLI syntax
-- Review [Database Management](/developers/database-management/) before you plan backups or restores
-
-## Docker
-
-Run Allowealth as a Docker stack for a self-contained deployment with automatic SQLite persistence and bundled Redis caching.
-
-### Prerequisites
-
 - [Docker Engine 24+](https://docs.docker.com/engine/install/)
-- [Docker Compose v2](https://docs.docker.com/compose/install/) (`docker compose` — note: no hyphen)
-- A machine that can build Docker images locally from this repository
-- Google OAuth credentials for your production domain
-- Cloudflare Turnstile site and secret keys for your production domain
+- [Docker Compose v2](https://docs.docker.com/compose/install/)
+- A machine that can build Docker images
+- Google OAuth credentials for your domain
+- Cloudflare Turnstile site and secret keys
 
-### Quick start
+## Quick start
 
 ```bash
-# 1. Clone the repository and check out the release you want to run
+# 1. Clone the repository at the release you want
 git clone https://github.com/ivankristianto/allowealth.git
 cd allowealth
-git checkout vX.Y.Z  # Replace with the release version you want to run
+git checkout vX.Y.Z  # Replace with your target version
 
-# 2. First run: create .env with generated secrets (exits after setup)
+# 2. First run: create .env and generate secrets (exits after setup)
 bun run docker:start
 
-# 3. Edit .env with required OAuth/Turnstile values, then rerun to start
+# 3. Edit .env with your OAuth/Turnstile values
+# Then start the containers:
 bun run docker:start
-
-# Or manually with docker:
-# cp docker/.env.example .env
-# Edit .env with your values, then:
-# docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-On first run, `bun run docker:start` automatically:
+The app runs at `http://localhost:3000` by default.
 
-1. Creates `.env` from `docker/.env.example` if it doesn't exist
-2. Generates required secrets (`BETTER_AUTH_SECRET`, `EMAIL_ENCRYPTION_KEY`, `COOKIE_SIGNING_SECRET`)
-3. Sets `PUBLIC_URL=http://localhost:3000` for local testing
-4. Prints a generated `INSTALLER_SECRET` for first-run setup
-5. Exits so you can review and complete required environment values
+## First-run setup
 
-After you fill the required variables, rerun `bun run docker:start` to build and start the Docker stack.
+When the app starts with an empty database, the installer guides you through creating the first workspace and admin account.
 
-The app container runs database migrations automatically on every start. Check logs with `docker compose -f docker/docker-compose.yml logs -f app`.
-To upgrade later, check out a newer release tag and rebuild the stack.
-
-### First-run setup
-
-When the app starts with an empty database, the web-based installer automatically guides you through creating the first workspace and admin account.
-
-1. Open your `PUBLIC_URL` (e.g., `http://localhost:3000` for local testing)
+1. Open your `PUBLIC_URL` (e.g., `http://localhost:3000`)
 2. The app redirects to `/installer` — fill in:
    - Workspace name
    - Admin full name, email, and password
-   - Optional: Installer secret (if you set `INSTALLER_SECRET` in `.env`)
+   - Installer secret (if you set `INSTALLER_SECRET` in `.env`)
 3. Submit the form to complete setup
-4. Sign in with the admin credentials you just created
+4. Sign in with the admin credentials you created
 
-The installer only appears when no users exist. Once setup is complete, the `/installer` path redirects to the login page.
+The installer only appears when no users exist. After setup, `/installer` redirects to the login page.
 
-### Environment variables
+## Environment variables
 
-For the current Docker production flow, Google OAuth and Cloudflare Turnstile are required at startup. Prepare those values before you bring the container up.
+The following variables are required for production:
 
-The table below marks the values you should treat as required for a production Docker deployment. Some are validated at startup, and others are required when the app encrypts stored secrets or signs cookies.
+| Variable                    | Required | Description                                                |
+| --------------------------- | -------- | ---------------------------------------------------------- |
+| `PUBLIC_URL`                | Yes      | Origin users access (e.g., `https://finances.example.com`) |
+| `BETTER_AUTH_SECRET`        | Yes      | Long random string for auth signing                        |
+| `EMAIL_ENCRYPTION_KEY`      | Yes      | Base64 32-byte key for encrypted secrets                   |
+| `COOKIE_SIGNING_SECRET`     | Yes      | Separate secret for cookie signing                         |
+| `GOOGLE_CLIENT_ID`          | Yes      | Google OAuth client ID                                     |
+| `GOOGLE_CLIENT_SECRET`      | Yes      | Google OAuth client secret                                 |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Yes      | Cloudflare Turnstile site key                              |
+| `TURNSTILE_SECRET_KEY`      | Yes      | Cloudflare Turnstile secret key                            |
 
-| Variable                    | Required | Default                        | Description                                                                      |
-| --------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------- |
-| `PUBLIC_URL`                | Yes      | —                              | Origin users access, for example `https://finances.example.com`                  |
-| `BETTER_AUTH_SECRET`        | Yes      | —                              | Long random string for auth signing                                              |
-| `DATABASE_URL`              | No       | `/data/allowealth.db`          | SQLite path inside the container if you want to override the default             |
-| `EMAIL_ENCRYPTION_KEY`      | Yes      | —                              | Base64 32-byte key for encrypted secrets                                         |
-| `COOKIE_SIGNING_SECRET`     | Yes      | —                              | Separate secret for cookie signing                                               |
-| `GOOGLE_CLIENT_ID`          | Yes      | —                              | Google OAuth client ID for `<PUBLIC_URL>/api/auth/callback/google`               |
-| `GOOGLE_CLIENT_SECRET`      | Yes      | —                              | Google OAuth client secret for the same callback                                 |
-| `PUBLIC_TURNSTILE_SITE_KEY` | Yes      | —                              | Cloudflare Turnstile site key used on sign-in and sign-up forms                  |
-| `TURNSTILE_SECRET_KEY`      | Yes      | —                              | Cloudflare Turnstile secret key used for server-side verification                |
-| `INSTALLER_SECRET`          | No       | —                              | Optional bootstrap secret required during first-run setup for unattended deploys |
-| `SIGNUP_MODE`               | No       | `invite_only`                  | `invite_only` or `public` registration                                           |
-| `EMAIL_MODE`                | No       | `console`                      | `console` logs emails, `real` sends through a provider                           |
-| `CACHE_DRIVER`              | No       | `redis`                        | `redis`, `memory`, or `upstash`                                                  |
-| `REDIS_PASSWORD`            | No       | `changeme`                     | Password used by the bundled Docker Redis service on the internal Docker network |
-| `REDIS_URL`                 | No       | `redis://:changeme@redis:6379` | Optional override for the Redis connection string                                |
-| `PUBLIC_SITE_URL`           | No       | `https://allowealth.io`        | Marketing site URL linked from within the app                                    |
+Optional variables:
 
-`docker/docker-compose.yml` starts Redis alongside the app and points `CACHE_DRIVER` at that service by default. See `docker/.env.example` for the full list, including email provider and cache settings.
+| Variable          | Default                 | Description                                      |
+| ----------------- | ----------------------- | ------------------------------------------------ |
+| `DATABASE_URL`    | `/data/allowealth.db`   | SQLite path inside container                     |
+| `SIGNUP_MODE`     | `invite_only`           | `invite_only` or `public` registration           |
+| `EMAIL_MODE`      | `console`               | `console` logs emails, `real` sends via provider |
+| `CACHE_DRIVER`    | `redis`                 | `redis`, `memory`, or `upstash`                  |
+| `REDIS_PASSWORD`  | `changeme`              | Redis password (internal Docker network)         |
+| `PUBLIC_SITE_URL` | `https://allowealth.io` | Marketing site URL                               |
 
-Redis stays on the internal Docker network by default. The app reaches it through the service name `redis`.
+See `docker/.env.example` for email provider and cache configuration options.
 
-### Volume persistence
+## Volume persistence
 
 SQLite lives at `/data/allowealth.db` inside the container, backed by a named Docker volume (`allowealth-data`). The volume persists across container restarts and image updates.
 
-**Backup:**
+### Backup
 
 ```bash
 docker compose -f docker/docker-compose.yml stop app
@@ -176,9 +102,9 @@ docker run --rm \
 docker compose -f docker/docker-compose.yml start app
 ```
 
-Stop the app before creating the tar archive. Allowealth uses SQLite WAL mode, so a live tar backup can miss the latest database state.
+Stop the app before backing up. SQLite uses WAL mode, so live backups can miss recent changes.
 
-**Restore:**
+### Restore
 
 ```bash
 docker compose -f docker/docker-compose.yml stop app
@@ -189,18 +115,18 @@ docker run --rm \
 docker compose -f docker/docker-compose.yml start app
 ```
 
-### Reverse proxy
+## Reverse proxy
 
-Allowealth listens on port 3000 inside the container. Put it behind your preferred reverse proxy so users reach it over HTTPS.
+Allowealth listens on port 3000 inside the container. Put it behind a reverse proxy for HTTPS.
 
-**Nginx example:**
+### Nginx example
 
 ```nginx
 server {
     listen 443 ssl;
     server_name finances.example.com;
 
-    # SSL config here (certbot, Let's Encrypt, etc.)
+    # SSL configuration here
 
     location / {
         proxy_pass http://localhost:3000;
@@ -212,29 +138,27 @@ server {
 }
 ```
 
-Caddy and Traefik work equally well. Set `PUBLIC_URL` to the final HTTPS origin that your proxy serves.
+Caddy and Traefik work equally well. Set `PUBLIC_URL` to the final HTTPS origin your proxy serves.
 
-### Updates
+## Updates
 
 ```bash
 git fetch --tags
-git checkout vX.Y.Z  # switch to the release you want to run
+git checkout vX.Y.Z  # switch to target version
 docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-Migrations run automatically when the new container starts.
+Migrations run automatically when the container starts.
 
-### Database management
+## Database management
 
-Migrations run automatically on every container start. Use these commands for manual operations or troubleshooting.
-
-**Run migrations manually:**
+### Run migrations manually
 
 ```bash
 docker exec allowealth-app bun run src/db/migrate.ts
 ```
 
-**Seed with demo data:**
+### Seed with demo data
 
 ```bash
 # Default: 6 months of transactions
@@ -245,17 +169,15 @@ docker exec allowealth-app bun run src/db/seed/index.ts --months=12
 docker exec allowealth-app bun run src/db/seed/index.ts --stress
 ```
 
-After seeding, sign in with the demo credentials printed in the output.
-
-**Set up database from scratch:**
+### Reset database
 
 ```bash
 docker exec allowealth-app bun run src/db/setup.ts
 ```
 
-### Troubleshooting
+## Troubleshooting
 
-**Container exits immediately after start**
+### Container exits immediately
 
 A migration failed or a required environment variable is missing. Check the logs:
 
@@ -263,25 +185,33 @@ A migration failed or a required environment variable is missing. Check the logs
 docker compose -f docker/docker-compose.yml logs app
 ```
 
-To run migrations manually and inspect the output:
+To run migrations manually:
 
 ```bash
 docker exec allowealth-app bun run src/db/migrate.ts
 ```
 
-If the container has already exited, restart it first:
+If the container has exited, restart it first:
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d
 ```
 
-**App is not reachable on port 3000**
+### App unreachable on port 3000
 
-Verify the container is running and the port is bound:
+Verify the container is running:
 
 ```bash
 docker compose -f docker/docker-compose.yml ps
 docker compose -f docker/docker-compose.yml logs app
 ```
 
-If the container is healthy but unreachable, check your firewall rules and confirm your reverse proxy points to the correct port.
+If the container is healthy but unreachable, check your firewall rules and reverse proxy configuration.
+
+## Next steps
+
+- Review [Getting Started](/getting-started/) for first-run workflows and demo account credentials
+- Follow [Setup and Deployment](/developers/setup-and-deployment/) for Cloudflare and Node deployment details
+- Use [Deployment Guide](/admins/deployment-guide/) for rollout and rollback checks
+- Keep [Commands Reference](/reference/commands/) nearby for CLI syntax
+- Review [Database Management](/developers/database-management/) before planning backups
