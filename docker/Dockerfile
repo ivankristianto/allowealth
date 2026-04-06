@@ -1,14 +1,16 @@
 # syntax=docker/dockerfile:1
 
 # ─── Stage 1: Install ALL dependencies (needed for build) ───────────────────
-FROM oven/bun:1 AS deps
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11 AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 # ─── Stage 2: Build ──────────────────────────────────────────────────────────
-FROM oven/bun:1 AS build
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11 AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -18,14 +20,16 @@ COPY . .
 RUN bun run build:node
 
 # ─── Stage 3: Production dependencies only ──────────────────────────────────
-FROM oven/bun:1 AS prod-deps
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11 AS prod-deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # ─── Stage 4: Runtime ────────────────────────────────────────────────────────
-FROM oven/bun:1-slim AS runtime
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11-slim AS runtime
 WORKDIR /app
 
 # Use root for image filesystem setup; drop privileges before runtime
