@@ -36,6 +36,19 @@ services:
       # Defaults to localhost for local Docker testing
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
   redis:
     image: redis:7-alpine
