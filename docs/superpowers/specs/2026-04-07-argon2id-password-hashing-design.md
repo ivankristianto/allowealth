@@ -43,17 +43,19 @@ interface PasswordHasher {
 const isBunRuntime = typeof globalThis.Bun !== 'undefined';
 ```
 
-Returns `Argon2idHasher` on Bun, `Pbkdf2Hasher` on Workers. The result is cached as a module-level singleton.
+Returns `Argon2idHasher` on Bun, `Pbkdf2Hasher` on Workers. The factory is called once at module scope and the result stored as a `const`. Each runtime isolate gets its own instance, which is the correct behavior.
 
 ## Hashing Behavior
 
 ### Argon2idHasher
 
-Wraps `Bun.password.hash(password)` with Bun defaults:
+Wraps `Bun.password.hash(password, { algorithm: 'argon2id', memoryCost: 65536, timeCost: 2 })` with explicit parameters pinned to Bun's current defaults. These are passed explicitly to guard against future Bun version changes:
 - Algorithm: Argon2id
 - Memory: 65536 KiB (64 MiB)
 - Time cost: 2 iterations
 - Parallelism: 1
+
+These parameters produce hashing times of ~50ms on modern hardware, well within the <200ms target from the acceptance criteria.
 
 Output format (PHC): `$argon2id$v=19$m=65536,t=2,p=1$<salt>$<hash>`
 
@@ -87,7 +89,16 @@ This means:
 
 ### Edge case: Argon2id hash on Workers
 
-If an Argon2id-hashed password reaches a Workers deployment, `verifyPassword()` sees the `$argon2id$` prefix and returns `false`. This is acceptable: the ticket scopes Workers as PBKDF2-only, and a single deployment runs one runtime.
+If an Argon2id-hashed password reaches a Workers deployment, `verifyPassword()` sees the `$argon2id$` prefix, logs a warning, and returns `false`. The warning gives operators a signal that something is misconfigured:
+
+```ts
+if (hash.startsWith('$argon2id$') && !isBunRuntime) {
+  logger.warn('Argon2id hash encountered on non-Bun runtime; cannot verify');
+  return false;
+}
+```
+
+This is acceptable for the current scope: the ticket scopes Workers as PBKDF2-only, and a single deployment runs one runtime. The warning log makes the gap visible in production if a deployment migration occurs.
 
 ## Public API
 
@@ -122,7 +133,7 @@ Seeders run on Bun, so they automatically use Argon2id. Password change re-hashe
 
 ### Integration tests for the public API
 
-- `password.test.ts` -- `hashPassword()` produces expected format for current runtime. `verifyPassword()` handles both hash formats (hardcoded PBKDF2 hash + freshly generated Argon2id hash). Edge cases: empty password, short password, malformed hash, unknown prefix returns `false`.
+- `password.test.ts` -- `hashPassword()` produces expected format for current runtime. `verifyPassword()` handles both hash formats using hardcoded constant hash strings with known passwords (both PBKDF2 and Argon2id) for regression-proof format verification. Edge cases: empty password, short password, malformed hash, unknown prefix returns `false`.
 
 ### No E2E changes
 
