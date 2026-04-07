@@ -1,3 +1,6 @@
+import { Argon2idHasher } from './password-argon2id';
+import { Pbkdf2Hasher } from './password-pbkdf2';
+
 /**
  * Password hasher interface
  *
@@ -8,3 +11,15 @@ export interface PasswordHasher {
   hash(password: string): Promise<string>;
   verify(password: string, hash: string): Promise<boolean>;
 }
+
+const isBunRuntime = typeof globalThis.Bun !== 'undefined';
+
+function createPasswordHasher(): PasswordHasher {
+  return isBunRuntime ? new Argon2idHasher() : new Pbkdf2Hasher();
+}
+
+/** Runtime-appropriate hasher instance, created once at module load. */
+export const passwordHasher = createPasswordHasher();
+
+/** Whether the current runtime is Bun (exported for verify dispatch). */
+export { isBunRuntime };
