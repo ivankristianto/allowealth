@@ -14,10 +14,15 @@ import type { PasswordHasher } from './password-hasher';
 
 export const ARGON2ID_PREFIX = '$argon2id$';
 
-const ARGON2ID_CONFIG = {
+type Argon2idConfig = Bun.Password.Argon2Algorithm & {
+  parallelism: 1;
+};
+
+const ARGON2ID_CONFIG: Argon2idConfig = {
   algorithm: 'argon2id' as const,
   memoryCost: 65_536,
   timeCost: 2,
+  parallelism: 1,
 };
 
 export class Argon2idHasher implements PasswordHasher {

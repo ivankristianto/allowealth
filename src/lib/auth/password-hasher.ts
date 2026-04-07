@@ -14,12 +14,12 @@ export interface PasswordHasher {
 
 const isBunRuntime = typeof globalThis.Bun !== 'undefined';
 
-function createPasswordHasher(): PasswordHasher {
-  return isBunRuntime ? new Argon2idHasher() : new Pbkdf2Hasher();
+function createPasswordHasher(runtimeIsBun = isBunRuntime): PasswordHasher {
+  return runtimeIsBun ? new Argon2idHasher() : new Pbkdf2Hasher();
 }
 
 /** Runtime-appropriate hasher instance, created once at module load. */
 export const passwordHasher = createPasswordHasher();
 
 /** Whether the current runtime is Bun (exported for verify dispatch). */
-export { isBunRuntime };
+export { createPasswordHasher, isBunRuntime };

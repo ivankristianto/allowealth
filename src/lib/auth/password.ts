@@ -12,6 +12,7 @@
  */
 
 import { createLogger } from '@/lib/logger';
+import type { PasswordHasher } from './password-hasher';
 import { ARGON2ID_PREFIX, Argon2idHasher } from './password-argon2id';
 import { isBunRuntime, passwordHasher } from './password-hasher';
 import { PBKDF2_PREFIX, Pbkdf2Hasher } from './password-pbkdf2';
@@ -24,6 +25,56 @@ const pbkdf2Verifier = new Pbkdf2Hasher();
 /** Argon2id verifier -- only usable on Bun runtime. */
 const argon2idVerifier = isBunRuntime ? new Argon2idHasher() : null;
 
+type PasswordFacadeOptions = {
+  passwordHasher?: PasswordHasher;
+  pbkdf2Verifier?: PasswordHasher;
+  argon2idVerifier?: PasswordHasher | null;
+  logger?: {
+    warn(message: string): void;
+  };
+};
+
+function createPasswordFacade(options: PasswordFacadeOptions = {}) {
+  const activePasswordHasher = options.passwordHasher ?? passwordHasher;
+  const activePbkdf2Verifier = options.pbkdf2Verifier ?? pbkdf2Verifier;
+  const activeArgon2idVerifier =
+    options.argon2idVerifier === undefined ? argon2idVerifier : options.argon2idVerifier;
+  const activeLogger = options.logger ?? logger;
+
+  return {
+    async hashPassword(password: string): Promise<string> {
+      if (!password || password.length < 12) {
+        throw new Error('Password must be at least 12 characters long');
+      }
+
+      return activePasswordHasher.hash(password);
+    },
+
+    async verifyPassword(password: string, hash: string): Promise<boolean> {
+      if (!password || !hash) {
+        return false;
+      }
+
+      if (hash.startsWith(ARGON2ID_PREFIX)) {
+        if (!activeArgon2idVerifier) {
+          activeLogger.warn('Argon2id hash encountered on non-Bun runtime; cannot verify');
+          return false;
+        }
+
+        return activeArgon2idVerifier.verify(password, hash);
+      }
+
+      if (hash.startsWith(PBKDF2_PREFIX)) {
+        return activePbkdf2Verifier.verify(password, hash);
+      }
+
+      return false;
+    },
+  };
+}
+
+const facade = createPasswordFacade();
+
 /**
  * Hash a plain text password using the runtime-appropriate algorithm.
  *
@@ -31,11 +82,7 @@ const argon2idVerifier = isBunRuntime ? new Argon2idHasher() : null;
  * @returns Hashed password string in PHC or custom prefix format
  */
 export async function hashPassword(password: string): Promise<string> {
-  if (!password || password.length < 12) {
-    throw new Error('Password must be at least 12 characters long');
-  }
-
-  return passwordHasher.hash(password);
+  return facade.hashPassword(password);
 }
 
 /**
@@ -49,22 +96,7 @@ export async function hashPassword(password: string): Promise<string> {
  * @returns true if password matches, false otherwise
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  if (!password || !hash) {
-    return false;
-  }
-
-  if (hash.startsWith(ARGON2ID_PREFIX)) {
-    if (!argon2idVerifier) {
-      logger.warn('Argon2id hash encountered on non-Bun runtime; cannot verify');
-      return false;
-    }
-
-    return argon2idVerifier.verify(password, hash);
-  }
-
-  if (hash.startsWith(PBKDF2_PREFIX)) {
-    return pbkdf2Verifier.verify(password, hash);
-  }
-
-  return false;
+  return facade.verifyPassword(password, hash);
 }
+
+export { createPasswordFacade };
