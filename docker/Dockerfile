@@ -1,14 +1,17 @@
 # syntax=docker/dockerfile:1
 
 # ─── Stage 1: Install ALL dependencies (needed for build) ───────────────────
-FROM oven/bun:1 AS deps
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11 AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN --mount=type=cache,target=/home/bun/.bun/install/cache \
+    bun install --frozen-lockfile
 
 # ─── Stage 2: Build ──────────────────────────────────────────────────────────
-FROM oven/bun:1 AS build
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11 AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -18,14 +21,24 @@ COPY . .
 RUN bun run build:node
 
 # ─── Stage 3: Production dependencies only ──────────────────────────────────
-FROM oven/bun:1 AS prod-deps
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11 AS prod-deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production --ignore-scripts
+RUN --mount=type=cache,target=/home/bun/.bun/install/cache \
+    bun install --frozen-lockfile --production --ignore-scripts
 
 # ─── Stage 4: Runtime ────────────────────────────────────────────────────────
-FROM oven/bun:1-slim AS runtime
+# TODO: pin to sha256 digest for reproducible builds
+FROM oven/bun:1.3.11-slim AS runtime
+
+LABEL org.opencontainers.image.title="Allowealth"
+LABEL org.opencontainers.image.description="Personal and family financial application"
+LABEL org.opencontainers.image.url="https://github.com/ivankristianto/allowealth"
+LABEL org.opencontainers.image.source="https://github.com/ivankristianto/allowealth"
+LABEL org.opencontainers.image.licenses="MIT"
+
 WORKDIR /app
 
 # Use root for image filesystem setup; drop privileges before runtime
@@ -48,6 +61,8 @@ RUN chmod +x /docker-entrypoint.sh
 # Create the SQLite data directory (volume is mounted here by docker-compose)
 # chown here sets the image layer ownership; Docker preserves this into named volumes on first init
 RUN mkdir -p /data && chown bun:bun /data
+
+VOLUME /data
 
 # Use the non-root user provided by the official Bun image
 USER bun
