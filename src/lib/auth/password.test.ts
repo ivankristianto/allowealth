@@ -1,35 +1,38 @@
 /**
- * Unit tests for password hashing utilities
+ * Integration tests for the password hashing facade
+ *
+ * Tests the public hashPassword/verifyPassword API including
+ * prefix-based verification dispatch across both hash formats.
  */
 
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { hashPassword, verifyPassword } from './password';
 
-describe('Password Hashing', () => {
-  describe('hashPassword', () => {
-    it('should hash a valid password', async () => {
-      const password = 'SecurePassword123!';
-      const hash = await hashPassword(password);
+/** Hardcoded PBKDF2 hash of "TestPassword123!" for cross-format regression testing. */
+const KNOWN_PBKDF2_HASH =
+  '$pbkdf2-sha256$100000$xRDzRIW4WcZ8U135JQtdzQ==$sqJYw5hNy/d2l9dcWsUWBzPuWgEF82iwG5oqELlZjyc=';
 
-      expect(hash).toBeDefined();
-      expect(typeof hash).toBe('string');
-      expect(hash.length).toBeGreaterThan(0);
-      expect(hash).not.toEqual(password);
+/** Hardcoded Argon2id hash of "TestPassword123!" for cross-format regression testing. */
+const KNOWN_ARGON2ID_HASH =
+  '$argon2id$v=19$m=65536,t=2,p=1$KKa335shvrWayGnd1ZwIFoLuZwFVnVFx4UMio6TCIbo$vK8PnpIuF1zweSNXM4H5VfPQURPkSpiDVa1BhbS6GFE';
+
+describe('Password Hashing Facade', () => {
+  describe('hashPassword', () => {
+    it('should produce an Argon2id hash on Bun runtime', async () => {
+      const hash = await hashPassword('SecurePassword123!');
+
+      expect(hash.startsWith('$argon2id$')).toBe(true);
     });
 
     it('should generate different hashes for the same password', async () => {
-      const password = 'SecurePassword123!';
-      const hash1 = await hashPassword(password);
-      const hash2 = await hashPassword(password);
+      const hash1 = await hashPassword('SecurePassword123!');
+      const hash2 = await hashPassword('SecurePassword123!');
 
-      // Each hash should be unique due to salt
       expect(hash1).not.toEqual(hash2);
     });
 
-    it('should throw error for password less than 12 characters', async () => {
-      const shortPassword = 'Short1!';
-
-      expect(hashPassword(shortPassword)).rejects.toThrow(
+    it('should throw for password shorter than 12 characters', async () => {
+      await expect(hashPassword('Short1!')).rejects.toThrow(
         'Password must be at least 12 characters long'
       );
     });
@@ -40,88 +43,68 @@ describe('Password Hashing', () => {
       );
     });
 
-    it('should accept 12 character password', async () => {
-      const password = 'TwelveChars1';
-      const hash = await hashPassword(password);
+    it('should accept exactly 12 character password', async () => {
+      const hash = await hashPassword('TwelveChars1');
 
       expect(hash).toBeDefined();
-      expect(typeof hash).toBe('string');
-    });
-
-    it('should accept long passwords', async () => {
-      const password = 'VeryLongPasswordWithSpecialChars123!@#%$^&*()';
-      const hash = await hashPassword(password);
-
-      expect(hash).toBeDefined();
-      expect(typeof hash).toBe('string');
     });
   });
 
   describe('verifyPassword', () => {
-    it('should verify correct password', async () => {
+    it('should verify a freshly hashed password', async () => {
       const password = 'CorrectPassword123!';
       const hash = await hashPassword(password);
-      const isValid = await verifyPassword(password, hash);
 
-      expect(isValid).toBe(true);
+      expect(await verifyPassword(password, hash)).toBe(true);
     });
 
     it('should reject incorrect password', async () => {
-      const password = 'CorrectPassword123!';
-      const wrongPassword = 'WrongPassword456!';
-      const hash = await hashPassword(password);
-      const isValid = await verifyPassword(wrongPassword, hash);
+      const hash = await hashPassword('CorrectPassword123!');
 
-      expect(isValid).toBe(false);
+      expect(await verifyPassword('WrongPassword456!', hash)).toBe(false);
     });
 
-    it('should reject password with different case', async () => {
-      const password = 'Password123!';
-      const differentCase = 'password123!';
-      const hash = await hashPassword(password);
-      const isValid = await verifyPassword(differentCase, hash);
+    it('should verify a known PBKDF2 hash', async () => {
+      expect(await verifyPassword('TestPassword123!', KNOWN_PBKDF2_HASH)).toBe(true);
+    });
 
-      expect(isValid).toBe(false);
+    it('should verify a known Argon2id hash', async () => {
+      expect(await verifyPassword('TestPassword123!', KNOWN_ARGON2ID_HASH)).toBe(true);
+    });
+
+    it('should reject wrong password against PBKDF2 hash', async () => {
+      expect(await verifyPassword('WrongPassword456!', KNOWN_PBKDF2_HASH)).toBe(false);
+    });
+
+    it('should reject wrong password against Argon2id hash', async () => {
+      expect(await verifyPassword('WrongPassword456!', KNOWN_ARGON2ID_HASH)).toBe(false);
     });
 
     it('should return false for empty password', async () => {
       const hash = await hashPassword('ValidPassword123!');
-      const isValid = await verifyPassword('', hash);
 
-      expect(isValid).toBe(false);
+      expect(await verifyPassword('', hash)).toBe(false);
     });
 
     it('should return false for empty hash', async () => {
-      const isValid = await verifyPassword('Password123!', '');
-
-      expect(isValid).toBe(false);
+      expect(await verifyPassword('Password123!', '')).toBe(false);
     });
 
     it('should return false for invalid hash format', async () => {
-      const isValid = await verifyPassword('Password123!', 'invalid-hash-format');
+      expect(await verifyPassword('Password123!', 'invalid-hash-format')).toBe(false);
+    });
 
-      expect(isValid).toBe(false);
+    it('should return false for unknown hash prefix', async () => {
+      expect(await verifyPassword('Password123!', '$bcrypt$something')).toBe(false);
     });
 
     it('should return false for both empty', async () => {
-      const isValid = await verifyPassword('', '');
-
-      expect(isValid).toBe(false);
+      expect(await verifyPassword('', '')).toBe(false);
     });
   });
 
-  describe('Integration', () => {
-    it('should hash and verify multiple different passwords', async () => {
-      const passwords = ['PasswordOne123!', 'PasswordTwo456@', 'PasswordThree789#'];
-
-      for (const password of passwords) {
-        const hash = await hashPassword(password);
-        const isValid = await verifyPassword(password, hash);
-        expect(isValid).toBe(true);
-      }
-    });
-
-    it('should not verify password against different hash', async () => {
+  describe('Cross-password isolation', () => {
+    it('should not verify password against a different hash', async () => {
       const password1 = 'FirstPassword123!';
       const password2 = 'SecondPassword456!';
       const hash1 = await hashPassword(password1);

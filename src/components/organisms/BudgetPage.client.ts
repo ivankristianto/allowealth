@@ -588,6 +588,9 @@ export { getOrderedCategories, type CategoryNavItem } from './BudgetCategoryNav.
 export function initBudgetPage(): void {
   if (initialized) return;
 
+  // Guard: Only initialize if we're on the budget page
+  if (!document.querySelector('[data-budget-page]')) return;
+
   state = getPageState();
   if (!state) {
     console.error('[BudgetPage] Failed to initialize - page state not found');

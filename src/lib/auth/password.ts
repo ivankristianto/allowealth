@@ -1,201 +1,100 @@
 /**
- * Password hashing and verification utilities
+ * Password hashing and verification facade
  *
- * Uses PBKDF2 with SHA-256 via Web Crypto API for secure password hashing.
- * This implementation works across all JavaScript runtimes including:
- * - Node.js
- * - Bun
- * - Cloudflare Workers
- * - Deno
+ * Selects the strongest available hasher per runtime:
+ * - Bun: Argon2id via Bun.password (memory-hard, OWASP recommended)
+ * - Workers: PBKDF2-SHA256 via Web Crypto API (cross-runtime fallback)
  *
- * @see https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
- */
-
-/**
- * PBKDF2 configuration
+ * Verification dispatches by hash prefix, so both formats are readable
+ * on any runtime that supports the underlying algorithm.
  *
- * - iterations: 100,000 (Cloudflare Workers limit - max supported is 100,000)
- * - saltLength: 16 bytes (128 bits)
- * - hashLength: 32 bytes (256 bits)
- * - algorithm: SHA-256
- *
- * Note: OWASP recommends 600,000 iterations for SHA-256, but Cloudflare Workers
- * has a hard limit of 100,000 iterations. For edge deployment compatibility,
- * we use the maximum allowed value.
- * @see https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
+ * @see docs/superpowers/specs/2026-04-07-argon2id-password-hashing-design.md
  */
-const PBKDF2_CONFIG = {
-  iterations: 100_000,
-  saltLength: 16,
-  hashLength: 32,
-  algorithm: 'SHA-256',
-} as const;
 
-/**
- * Hash format: $pbkdf2-sha256$iterations$base64salt$base64hash
- */
-const HASH_PREFIX = '$pbkdf2-sha256$';
+import { createLogger } from '@/lib/logger';
+import type { PasswordHasher } from './password-hasher';
+import { ARGON2ID_PREFIX, Argon2idHasher } from './password-argon2id';
+import { isBunRuntime, passwordHasher } from './password-hasher';
+import { PBKDF2_PREFIX, Pbkdf2Hasher } from './password-pbkdf2';
 
-/**
- * Convert Uint8Array or ArrayBuffer to base64 string
- */
-function bufferToBase64(buffer: Uint8Array | ArrayBuffer): string {
-  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
+const logger = createLogger('password');
 
-/**
- * Convert base64 string to Uint8Array
- */
-function base64ToBuffer(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
+/** Fallback PBKDF2 verifier -- always available regardless of runtime. */
+const pbkdf2Verifier = new Pbkdf2Hasher();
 
-/**
- * Generate cryptographically secure random salt
- */
-function generateSalt(): Uint8Array {
-  return crypto.getRandomValues(new Uint8Array(PBKDF2_CONFIG.saltLength));
-}
+/** Argon2id verifier -- only usable on Bun runtime. */
+const argon2idVerifier = isBunRuntime ? new Argon2idHasher() : null;
 
-/**
- * Derive key using PBKDF2
- */
-async function deriveKey(password: string, salt: Uint8Array): Promise<ArrayBuffer> {
-  const encoder = new TextEncoder();
-  const passwordBuffer = encoder.encode(password);
+type PasswordFacadeOptions = {
+  passwordHasher?: PasswordHasher;
+  pbkdf2Verifier?: PasswordHasher;
+  argon2idVerifier?: PasswordHasher | null;
+  logger?: {
+    warn(message: string): void;
+  };
+};
 
-  // Import password as raw key material
-  const keyMaterial = await crypto.subtle.importKey('raw', passwordBuffer, 'PBKDF2', false, [
-    'deriveBits',
-  ]);
+function createPasswordFacade(options: PasswordFacadeOptions = {}) {
+  const activePasswordHasher = options.passwordHasher ?? passwordHasher;
+  const activePbkdf2Verifier = options.pbkdf2Verifier ?? pbkdf2Verifier;
+  const activeArgon2idVerifier =
+    options.argon2idVerifier === undefined ? argon2idVerifier : options.argon2idVerifier;
+  const activeLogger = options.logger ?? logger;
 
-  // Derive the hash (cast salt to BufferSource for TypeScript compatibility)
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt: salt as BufferSource,
-      iterations: PBKDF2_CONFIG.iterations,
-      hash: PBKDF2_CONFIG.algorithm,
+  return {
+    async hashPassword(password: string): Promise<string> {
+      if (!password || password.length < 12) {
+        throw new Error('Password must be at least 12 characters long');
+      }
+
+      return activePasswordHasher.hash(password);
     },
-    keyMaterial,
-    PBKDF2_CONFIG.hashLength * 8 // bits
-  );
 
-  return derivedBits;
+    async verifyPassword(password: string, hash: string): Promise<boolean> {
+      if (!password || !hash) {
+        return false;
+      }
+
+      if (hash.startsWith(ARGON2ID_PREFIX)) {
+        if (!activeArgon2idVerifier) {
+          activeLogger.warn('Argon2id hash encountered on non-Bun runtime; cannot verify');
+          return false;
+        }
+
+        return activeArgon2idVerifier.verify(password, hash);
+      }
+
+      if (hash.startsWith(PBKDF2_PREFIX)) {
+        return activePbkdf2Verifier.verify(password, hash);
+      }
+
+      return false;
+    },
+  };
 }
 
+const facade = createPasswordFacade();
+
 /**
- * Hash a plain text password using PBKDF2-SHA256
+ * Hash a plain text password using the runtime-appropriate algorithm.
  *
- * @param password - Plain text password to hash
- * @returns Promise resolving to the hashed password string
- *
- * @example
- * ```ts
- * const hash = await hashPassword('user-password123');
- * // Store hash in database
- * ```
+ * @param password - Plain text password (minimum 12 characters)
+ * @returns Hashed password string in PHC or custom prefix format
  */
 export async function hashPassword(password: string): Promise<string> {
-  if (!password || password.length < 12) {
-    throw new Error('Password must be at least 12 characters long');
-  }
-
-  const salt = generateSalt();
-  const derivedKey = await deriveKey(password, salt);
-
-  // Format: $pbkdf2-sha256$iterations$base64salt$base64hash
-  const saltBase64 = bufferToBase64(salt);
-  const hashBase64 = bufferToBase64(derivedKey);
-
-  return `${HASH_PREFIX}${PBKDF2_CONFIG.iterations}$${saltBase64}$${hashBase64}`;
+  return facade.hashPassword(password);
 }
 
 /**
- * Verify a plain text password against a hash
+ * Verify a plain text password against a stored hash.
+ *
+ * Dispatches to the correct verifier based on the hash prefix.
+ * Handles both Argon2id and PBKDF2 hash formats.
  *
  * @param password - Plain text password to verify
- * @param hash - Hashed password to compare against
- * @returns Promise resolving to true if password matches, false otherwise
- *
- * @example
- * ```ts
- * const isValid = await verifyPassword('user-password123', storedHash);
- * if (isValid) {
- *   // Password is correct
- * }
- * ```
+ * @param hash - Stored hash to verify against
+ * @returns true if password matches, false otherwise
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  if (!password || !hash) {
-    return false;
-  }
-
-  try {
-    // Parse the hash format: $pbkdf2-sha256$iterations$base64salt$base64hash
-    if (!hash.startsWith(HASH_PREFIX)) {
-      return false;
-    }
-
-    const parts = hash.slice(HASH_PREFIX.length).split('$');
-    if (parts.length !== 3) {
-      return false;
-    }
-
-    const [iterationsStr, saltBase64, storedHashBase64] = parts;
-    const iterations = parseInt(iterationsStr, 10);
-
-    if (isNaN(iterations) || iterations <= 0) {
-      return false;
-    }
-
-    const salt = base64ToBuffer(saltBase64);
-    const storedHash = base64ToBuffer(storedHashBase64);
-
-    // Derive key with same parameters
-    const encoder = new TextEncoder();
-    const passwordBuffer = encoder.encode(password);
-
-    const keyMaterial = await crypto.subtle.importKey('raw', passwordBuffer, 'PBKDF2', false, [
-      'deriveBits',
-    ]);
-
-    const derivedBits = await crypto.subtle.deriveBits(
-      {
-        name: 'PBKDF2',
-        salt: salt as BufferSource,
-        iterations: iterations,
-        hash: PBKDF2_CONFIG.algorithm,
-      },
-      keyMaterial,
-      storedHash.length * 8
-    );
-
-    const derivedHash = new Uint8Array(derivedBits);
-
-    // Constant-time comparison to prevent timing attacks
-    if (derivedHash.length !== storedHash.length) {
-      return false;
-    }
-
-    let result = 0;
-    for (let i = 0; i < derivedHash.length; i++) {
-      result |= derivedHash[i] ^ storedHash[i];
-    }
-
-    return result === 0;
-  } catch {
-    // If verification fails (e.g., invalid hash format), return false
-    return false;
-  }
+  return facade.verifyPassword(password, hash);
 }
