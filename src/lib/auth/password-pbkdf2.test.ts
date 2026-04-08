@@ -43,7 +43,7 @@ describe('Pbkdf2Hasher', () => {
       expect(await hasher.verify('WrongPassword456!', hash)).toBe(false);
     });
 
-    it('should verify a round-tripped hash to guard against format regressions', async () => {
+    it('should verify a round-tripped hash', async () => {
       const password = 'KnownTestPassword1!';
       const hash = await hasher.hash(password);
 

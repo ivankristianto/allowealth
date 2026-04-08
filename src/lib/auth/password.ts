@@ -98,5 +98,3 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return facade.verifyPassword(password, hash);
 }
-
-export { createPasswordFacade };

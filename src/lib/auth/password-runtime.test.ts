@@ -1,38 +1,56 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'bun:test';
 import { ARGON2ID_PREFIX } from './password-argon2id';
-import { createPasswordFacade } from './password';
 import { createPasswordHasher } from './password-hasher';
-import { PBKDF2_PREFIX, Pbkdf2Hasher } from './password-pbkdf2';
+import { Pbkdf2Hasher } from './password-pbkdf2';
 
 const KNOWN_ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=2,p=1$KKa335shvrWayGnd1ZwIFoLuZwFVnVFx4UMio6TCIbo$vK8PnpIuF1zweSNXM4H5VfPQURPkSpiDVa1BhbS6GFE';
+
+const authDir = dirname(fileURLToPath(import.meta.url));
+
+function runNodeRuntimeSmoke() {
+  const tempDir = mkdtempSync(join(tmpdir(), 'password-runtime-'));
+  const smokeOutfile = join(tempDir, 'password-runtime-smoke.mjs');
+  const smokeEntry = join(authDir, 'password-runtime-node-smoke.ts');
+
+  execFileSync('bun', ['build', smokeEntry, '--target=node', '--outfile', smokeOutfile], {
+    cwd: authDir,
+    stdio: 'pipe',
+  });
+
+  return JSON.parse(execFileSync('node', [smokeOutfile], { encoding: 'utf8' })) as {
+    isBunRuntime: boolean;
+    isPbkdf2: boolean;
+    hashStartsWithPbkdf2: boolean;
+    argon2Verified: boolean;
+    warningSeen: boolean;
+  };
+}
 
 describe('password runtime selection', () => {
   it('selects PBKDF2 when Bun runtime is unavailable', () => {
     expect(createPasswordHasher(false)).toBeInstanceOf(Pbkdf2Hasher);
   });
 
-  it('uses PBKDF2 hashing and rejects Argon2id verification outside Bun', async () => {
-    const warnings: string[] = [];
-    const facade = createPasswordFacade({
-      passwordHasher: new Pbkdf2Hasher(),
-      pbkdf2Verifier: new Pbkdf2Hasher(),
-      argon2idVerifier: null,
-      logger: {
-        warn(message) {
-          warnings.push(String(message));
-        },
-      },
-    });
-    const hash = await facade.hashPassword('SecurePassword123!');
+  it('does not export internal facade helpers from password.ts', async () => {
+    const mod = await import('./password');
 
-    expect(hash.startsWith(PBKDF2_PREFIX)).toBe(true);
-    expect(await facade.verifyPassword('TestPassword123!', KNOWN_ARGON2ID_HASH)).toBe(false);
-    expect(
-      warnings.some((message) =>
-        message.includes('Argon2id hash encountered on non-Bun runtime; cannot verify')
-      )
-    ).toBe(true);
+    expect('createPasswordFacade' in mod).toBe(false);
+  });
+
+  it('uses PBKDF2 hashing and rejects Argon2id verification in a real non-Bun runtime', () => {
+    const result = runNodeRuntimeSmoke();
+
+    expect(result.isBunRuntime).toBe(false);
+    expect(result.isPbkdf2).toBe(true);
+    expect(result.hashStartsWithPbkdf2).toBe(true);
+    expect(result.argon2Verified).toBe(false);
+    expect(result.warningSeen).toBe(true);
   });
 
   it('continues to recognize Argon2id hashes by prefix in runtime coverage tests', () => {
