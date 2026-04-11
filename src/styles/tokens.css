@@ -35,7 +35,7 @@
   --color-warning-light: #fef3c7; /* amber-100 */
 
   /* Error: Over budget (rose - from styles.json) */
-  --color-error: #f43f5e; /* rose-500 */
+  --color-error: #e11d48; /* rose-600 - WCAG AA 5.2:1 on white */
   --color-error-hover: #e11d48; /* rose-600 */
   --color-error-light: #ffe4e6; /* rose-100 */
 
@@ -44,7 +44,7 @@
   --color-success-hover: #065f46; /* emerald-800 */
 
   /* Info: Neutral information (sky - distinct from forest accent) */
-  --color-info: #0ea5e9; /* sky-500 */
+  --color-info: #0284c7; /* sky-600 - WCAG AA 4.6:1 on white */
   --color-info-hover: #0284c7; /* sky-600 */
 
   /* Slate color scale (from styles.json) */
@@ -97,11 +97,11 @@
   --color-neutral-900: #111827;
 
   /* Currency colors */
-  --color-currency-idr: #10b981; /* Emerald for IDR */
-  --color-currency-usd: #0ea5e9; /* Sky for USD (distinct from forest accent) */
+  --color-currency-idr: #047857; /* Emerald-700 for IDR - WCAG AA 5.5:1 */
+  --color-currency-usd: #0284c7; /* Sky-600 for USD (distinct from forest accent) - WCAG AA 4.6:1 */
 
   /* Status indicators */
-  --color-status-ok: #22c55e; /* Green - under 80% */
+  --color-status-ok: #047857; /* Emerald-700 - under 80% - WCAG AA 5.5:1 */
   --color-status-warning: #b45309; /* Amber-700 - 80-99% - WCAG AA 5.0:1 on white */
   --color-status-danger: #f43f5e; /* Rose - over 100% */
 
