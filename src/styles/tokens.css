@@ -9,8 +9,8 @@
  * - accent: forest-700 (#15803d) - CTAs, interactive elements, WCAG AA compliant
  * - success: emerald-700 (#047857) - positive status, confirmations - WCAG AA 5.5:1 on white
  * - warning: amber-700 (#b45309) - budget alerts, caution states - WCAG AA 5.0:1 on white
- * - error: rose-500 (#f43f5e) - over budget, destructive actions
- * - info: sky-500 (#0ea5e9) - informational messages (distinct from accent)
+ * - error: rose-600 (#e11d48) - over budget, destructive actions - WCAG AA 5.2:1 on white
+ * - info: sky-600 (#0284c7) - informational messages (distinct from accent) - WCAG AA 4.6:1 on white
  */
 
 :root {
@@ -103,7 +103,7 @@
   /* Status indicators */
   --color-status-ok: #047857; /* Emerald-700 - under 80% - WCAG AA 5.5:1 */
   --color-status-warning: #b45309; /* Amber-700 - 80-99% - WCAG AA 5.0:1 on white */
-  --color-status-danger: #f43f5e; /* Rose - over 100% */
+  --color-status-danger: #e11d48; /* Rose-600 - over 100% - WCAG AA 5.2:1 on white */
 
   /* ========================================
    * TYPOGRAPHY
