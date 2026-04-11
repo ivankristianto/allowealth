@@ -270,28 +270,25 @@
   --button-lg-padding: 0.75rem 1.5rem;
   --button-lg-height: 3rem;
   --button-lg-font-size: 0.9375rem;
-  --button-primary-bg: #15803d;
-  --button-primary-color: #ffffff;
+  --button-primary-bg: var(--color-accent);
+  --button-primary-color: var(--color-accent-content);
   --button-primary-shadow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
-  --button-secondary-bg: #0f172a;
+  --button-secondary-bg: var(--color-primary);
   --button-secondary-color: #ffffff;
-  --button-ghost-border: 1px solid #e2e8f0;
+  --button-ghost-border: 1px solid var(--color-slate-200);
 
   /* Card tokens */
   --card-padding: 1.75rem;
   --card-border: 1px solid;
-  --card-border-color-light: #e2e8f0;
-  --card-border-color-dark: #334155; /* slate-700 = base-300 */
-  --card-bg-light: #ffffff;
-  --card-bg-dark: #1e293b; /* slate-800 = base-200 */
+  --card-border-color: #e2e8f0;
+  --card-bg: #ffffff;
   --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
 
   /* Input tokens */
   --input-height: 2.5rem;
   --input-padding: 0.5rem 2.5rem 0.5rem 0.75rem;
   --input-font-size: 0.8125rem;
-  --input-bg-light: #f1f5f9;
-  --input-bg-dark: #334155; /* slate-700 = base-300 (sunken) */
+  --input-bg: #f1f5f9;
   --input-focus-ring: 2px solid rgb(21 128 61 / 0.25);
 
   /* Badge tokens */
@@ -301,10 +298,8 @@
 
   /* Sidebar tokens */
   --sidebar-width: 16rem;
-  --sidebar-bg-light: #ffffff;
-  --sidebar-bg-dark: #111827; /* gray-900 = base-100 */
-  --sidebar-border-light: #e2e8f0;
-  --sidebar-border-dark: #334155; /* slate-700 = base-300 */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
   --sidebar-nav-item-padding: 0.625rem 1rem;
   --sidebar-nav-item-gap: 0.75rem;
   --sidebar-icon-size: 22px;
@@ -313,13 +308,11 @@
     rgb(21 128 61 / 0.1) 0%,
     rgb(21 128 61 / 0) 100%
   );
-  --sidebar-active-border: 2px solid #15803d;
+  --sidebar-active-border: 2px solid var(--color-accent);
 
   /* Table tokens */
-  --table-header-bg-light: rgb(248 250 252 / 0.5);
-  --table-header-bg-dark: rgb(51 65 85 / 0.5); /* slate-700 */
-  --table-row-hover-light: #f8fafc;
-  --table-row-hover-dark: rgb(51 65 85 / 0.4); /* slate-700 */
+  --table-header-bg: rgb(248 250 252 / 0.5);
+  --table-row-hover: #f8fafc;
   --table-cell-padding: 1rem 1.5rem;
   --table-icon-size: 22px;
 
@@ -471,6 +464,10 @@
   --input-bg: var(--color-slate-700); /* #334155 = base-300 (sunken input) */
   --sidebar-bg: var(--color-slate-900); /* #111827 = base-100 (body level) */
   --sidebar-border: var(--color-slate-700); /* #334155 = base-300 (visible) */
+  --table-header-bg: rgb(51 65 85 / 0.5); /* slate-700 */
+  --table-row-hover: rgb(51 65 85 / 0.4); /* slate-700 */
+  --button-secondary-bg: var(--color-slate-800);
+  --button-ghost-border: 1px solid var(--color-slate-700);
 }
 
 .token-badge-padding {
