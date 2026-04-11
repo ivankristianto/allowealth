@@ -116,7 +116,7 @@ For branch-based local development (useful when working on multiple branches sim
 2. **Copy Serena cache files:**
 
    ```bash
-   mkdir -p .serena && cp /path/to/main/worktree/.serena/cache/* .serena/ 2>/dev/null || true
+   mkdir -p .serena && cp -r /path/to/main/worktree/.serena/cache .serena/
    ```
 
    This copies cached symbol information from the main worktree to speed up Serena's code analysis.
