@@ -113,12 +113,20 @@ For branch-based local development (useful when working on multiple branches sim
    cp .env.example .env
    ```
 
-2. **Configure host and port:**
+2. **Copy Serena cache files:**
+
+   ```bash
+   mkdir -p .serena && cp /path/to/main/worktree/.serena/cache/* .serena/ 2>/dev/null || true
+   ```
+
+   This copies cached symbol information from the main worktree to speed up Serena's code analysis.
+
+3. **Configure host and port:**
    Edit `.env` and set:
    - `DEV_HOST` to `{branch}.allowealth.local` (e.g., `feature-auth.allowealth.local`)
    - `PORT` to an unused port (e.g., `4350`, `4351`, ...)
 
-3. **Run setup script:**
+4. **Run setup script:**
    ```bash
    ./scripts/setup.sh
    ```
