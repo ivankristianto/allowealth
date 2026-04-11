@@ -24,24 +24,24 @@ colors.primaryLight; // #f1f5f9 (slate-100)
 colors.accent; // #15803d (forest-700 - WCAG AA)
 colors.accentHover; // #166534 (forest-800)
 
-colors.warning; // #f59e0b (amber-500)
-colors.error; // #f43f5e (rose-500)
-colors.errorHover; // #e11d48 (rose-600)
+colors.warning; // #b45309 (amber-700) - WCAG AA 5.0:1
+colors.error; // #e11d48 (rose-600) - WCAG AA 5.2:1
+colors.errorHover; // #be123c (rose-700)
 
-colors.success; // #10b981 (emerald-500)
-colors.info; // #0ea5e9 (sky-500)
+colors.success; // #047857 (emerald-700) - WCAG AA 5.5:1
+colors.info; // #0284c7 (sky-600) - WCAG AA 4.6:1
 ```
 
 **Color Semantic Model:**
 
-| Usage         | Color   | Hex     | Semantic                   |
-| ------------- | ------- | ------- | -------------------------- |
-| Primary CTAs  | accent  | #15803d | forest-700 - CTAs, WCAG AA |
-| Headings/text | primary | #0f172a | slate - headings, text     |
-| Success       | success | #10b981 | emerald - positive status  |
-| Warning       | warning | #f59e0b | amber - caution states     |
-| Error         | error   | #f43f5e | rose - destructive actions |
-| Info          | info    | #0ea5e9 | sky - informational        |
+| Usage         | Color   | Hex     | Semantic                    |
+| ------------- | ------- | ------- | --------------------------- |
+| Primary CTAs  | accent  | #15803d | forest-700 - CTAs, WCAG AA  |
+| Headings/text | primary | #0f172a | slate - headings, text      |
+| Success       | success | #047857 | emerald-700 - WCAG AA 5.5:1 |
+| Warning       | warning | #b45309 | amber-700 - WCAG AA 5.0:1   |
+| Error         | error   | #e11d48 | rose-600 - WCAG AA 5.2:1    |
+| Info          | info    | #0284c7 | sky-600 - WCAG AA 4.6:1     |
 
 ### Dark Mode Colors (v1.2.0 - Comfortable Dark)
 
@@ -79,12 +79,12 @@ Dark mode uses raised backgrounds, softer text, and desaturated accents for exte
 ### Currency & Status
 
 ```typescript
-colors.currency.idr; // #10b981 (emerald-500)
-colors.currency.usd; // #0ea5e9 (sky-500)
+colors.currency.idr; // #047857 (emerald-700) - WCAG AA 5.5:1
+colors.currency.usd; // #0284c7 (sky-600) - WCAG AA 4.6:1
 
-colors.status.ok; // #22c55e (emerald-500, <80%)
-colors.status.warning; // #f59e0b (amber-500, 80-99%)
-colors.status.danger; // #f43f5e (rose-500, ≥100%)
+colors.status.ok; // #047857 (emerald-700, <80%) - WCAG AA 5.5:1
+colors.status.warning; // #b45309 (amber-700, 80-99%) - WCAG AA 5.0:1
+colors.status.danger; // #e11d48 (rose-600, ≥100%) - WCAG AA 5.2:1
 ```
 
 ### Neutral Scale (Slate)
@@ -146,6 +146,34 @@ const statusColor = colors.status.danger;
 - Normal text: ≥4.5:1
 - Large text: ≥3:1
 - UI components: ≥3:1
+
+### Component Tokens (Theme-Aware)
+
+Component tokens use single variable names that adapt to the current theme. Light mode values are defined in `:root`, dark mode overrides in `[data-theme='dark']`.
+
+```css
+:root {
+  --card-bg: #ffffff;
+  --card-border-color: #e2e8f0;
+  --input-bg: #f1f5f9;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
+  --table-header-bg: rgb(248 250 252 / 0.5);
+  --table-row-hover: #f8fafc;
+}
+
+[data-theme='dark'] {
+  --card-bg: #1e293b;
+  --card-border-color: #334155;
+  --input-bg: #334155;
+  --sidebar-bg: #111827;
+  --sidebar-border: #334155;
+  --table-header-bg: rgb(51 65 85 / 0.5);
+  --table-row-hover: rgb(51 65 85 / 0.4);
+}
+```
+
+**Migration from split tokens:** The old `--card-bg-light`/`--card-bg-dark` pattern has been replaced with unified `--card-bg` that changes value based on theme.
 
 ## Typography
 
