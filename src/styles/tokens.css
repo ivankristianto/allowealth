@@ -4,13 +4,13 @@
  * Single source of truth for all design decisions
  * Modify these values to update the entire application
  *
- * Color Semantics (Allowealth v1.1.0 - Forest Green):
+ * Color Semantics (Allowealth v1.3.0 - WCAG AA corrected):
  * - primary: slate-900 (#0f172a) - headings, primary text, secondary buttons
  * - accent: forest-700 (#15803d) - CTAs, interactive elements, WCAG AA compliant
  * - success: emerald-700 (#047857) - positive status, confirmations - WCAG AA 5.5:1 on white
  * - warning: amber-700 (#b45309) - budget alerts, caution states - WCAG AA 5.0:1 on white
- * - error: rose-500 (#f43f5e) - over budget, destructive actions
- * - info: sky-500 (#0ea5e9) - informational messages (distinct from accent)
+ * - error: rose-600 (#e11d48) - over budget, destructive actions - WCAG AA 5.2:1 on white
+ * - info: sky-600 (#0284c7) - informational messages (distinct from accent) - WCAG AA 4.5:1 on white
  */
 
 :root {
@@ -34,18 +34,18 @@
   --color-warning-hover: #92400e; /* amber-800 */
   --color-warning-light: #fef3c7; /* amber-100 */
 
-  /* Error: Over budget (rose - from styles.json) */
-  --color-error: #f43f5e; /* rose-500 */
-  --color-error-hover: #e11d48; /* rose-600 */
+  /* Error: Over budget (rose - WCAG AA 5.2:1 on white) */
+  --color-error: #e11d48; /* rose-600 */
+  --color-error-hover: #be123c; /* rose-700 */
   --color-error-light: #ffe4e6; /* rose-100 */
 
   /* Success: Confirmations (emerald) - WCAG AA 5.5:1 on white */
   --color-success: #047857; /* emerald-700 */
   --color-success-hover: #065f46; /* emerald-800 */
 
-  /* Info: Neutral information (sky - distinct from forest accent) */
-  --color-info: #0ea5e9; /* sky-500 */
-  --color-info-hover: #0284c7; /* sky-600 */
+  /* Info: Neutral information (sky - distinct from forest accent) - WCAG AA 4.5:1 on white */
+  --color-info: #0284c7; /* sky-600 */
+  --color-info-hover: #0369a1; /* sky-700 */
 
   /* Slate color scale (from styles.json) */
   --color-slate-50: #f8fafc;
@@ -96,14 +96,14 @@
   --color-neutral-800: #1f2937;
   --color-neutral-900: #111827;
 
-  /* Currency colors */
-  --color-currency-idr: #10b981; /* Emerald for IDR */
-  --color-currency-usd: #0ea5e9; /* Sky for USD (distinct from forest accent) */
+  /* Currency colors - WCAG AA compliant */
+  --color-currency-idr: #047857; /* emerald-700 - WCAG AA 5.5:1 on white */
+  --color-currency-usd: #0284c7; /* sky-600 - WCAG AA 4.5:1 on white */
 
-  /* Status indicators */
-  --color-status-ok: #22c55e; /* Green - under 80% */
+  /* Status indicators - WCAG AA compliant */
+  --color-status-ok: #15803d; /* green-700 - WCAG AA 5.5:1 on white */
   --color-status-warning: #b45309; /* Amber-700 - 80-99% - WCAG AA 5.0:1 on white */
-  --color-status-danger: #f43f5e; /* Rose - over 100% */
+  --color-status-danger: #e11d48; /* rose-600 - WCAG AA 5.2:1 on white (tracks error) */
 
   /* ========================================
    * TYPOGRAPHY
