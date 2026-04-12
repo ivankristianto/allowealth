@@ -270,28 +270,16 @@
   --button-lg-padding: 0.75rem 1.5rem;
   --button-lg-height: 3rem;
   --button-lg-font-size: 0.9375rem;
-  --button-primary-bg: #15803d;
-  --button-primary-color: #ffffff;
-  --button-primary-shadow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
-  --button-secondary-bg: #0f172a;
-  --button-secondary-color: #ffffff;
-  --button-ghost-border: 1px solid #e2e8f0;
 
   /* Card tokens */
   --card-padding: 1.75rem;
   --card-border: 1px solid;
-  --card-border-color-light: #e2e8f0;
-  --card-border-color-dark: #334155; /* slate-700 = base-300 */
-  --card-bg-light: #ffffff;
-  --card-bg-dark: #1e293b; /* slate-800 = base-200 */
   --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
 
   /* Input tokens */
   --input-height: 2.5rem;
   --input-padding: 0.5rem 2.5rem 0.5rem 0.75rem;
   --input-font-size: 0.8125rem;
-  --input-bg-light: #f1f5f9;
-  --input-bg-dark: #334155; /* slate-700 = base-300 (sunken) */
   --input-focus-ring: 2px solid rgb(21 128 61 / 0.25);
 
   /* Badge tokens */
@@ -301,10 +289,6 @@
 
   /* Sidebar tokens */
   --sidebar-width: 16rem;
-  --sidebar-bg-light: #ffffff;
-  --sidebar-bg-dark: #111827; /* gray-900 = base-100 */
-  --sidebar-border-light: #e2e8f0;
-  --sidebar-border-dark: #334155; /* slate-700 = base-300 */
   --sidebar-nav-item-padding: 0.625rem 1rem;
   --sidebar-nav-item-gap: 0.75rem;
   --sidebar-icon-size: 22px;
@@ -316,10 +300,6 @@
   --sidebar-active-border: 2px solid #15803d;
 
   /* Table tokens */
-  --table-header-bg-light: rgb(248 250 252 / 0.5);
-  --table-header-bg-dark: rgb(51 65 85 / 0.5); /* slate-700 */
-  --table-row-hover-light: #f8fafc;
-  --table-row-hover-dark: rgb(51 65 85 / 0.4); /* slate-700 */
   --table-cell-padding: 1rem 1.5rem;
   --table-icon-size: 22px;
 
@@ -464,13 +444,6 @@
   /* Emerald scale */
   --color-emerald-400: #34d399;
   --color-emerald-900: #064e3b;
-
-  /* Component dark mode overrides — aligned to base surface hierarchy */
-  --card-bg: var(--color-slate-800); /* #1e293b = base-200 (elevated) */
-  --card-border-color: var(--color-slate-700); /* #334155 = base-300 (visible) */
-  --input-bg: var(--color-slate-700); /* #334155 = base-300 (sunken input) */
-  --sidebar-bg: var(--color-slate-900); /* #111827 = base-100 (body level) */
-  --sidebar-border: var(--color-slate-700); /* #334155 = base-300 (visible) */
 }
 
 .token-badge-padding {
