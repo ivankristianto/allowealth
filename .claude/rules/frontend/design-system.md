@@ -7,7 +7,7 @@ paths:
 
 # Design System
 
-**Version:** 1.2.0 | **Framework:** Astro 6.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.3.0 | **Framework:** Astro 6.x + Tailwind v4 + DaisyUI v5
 
 ## Visual Debugging with Chrome
 
@@ -53,10 +53,10 @@ import { animate } from 'motion/mini';
 ```typescript
 'text-primary'; // Primary brand color (slate-900 light / slate-200 dark)
 'text-accent'; // Accent color (forest-700 light / green-500 dark)
-'text-success'; // Success states (emerald-500 light / emerald-400 dark)
-'text-warning'; // Warning states (amber-500 light / amber-400 dark)
-'text-error'; // Error states (rose-500 light / red-400 dark)
-'text-info'; // Info states (sky-500 light / sky-400 dark)
+'text-success'; // Success states (emerald-700 light / emerald-400 dark)
+'text-warning'; // Warning states (amber-700 light / amber-400 dark)
+'text-error'; // Error states (rose-600 light / red-400 dark)
+'text-info'; // Info states (sky-600 light / sky-400 dark)
 
 'bg-base-100'; // Base background (white light / gray-900 dark)
 'bg-base-200'; // Elevated background (slate-50 light / slate-800 dark)
@@ -81,17 +81,17 @@ import { animate } from 'motion/mini';
 ```typescript
 colors.primary; // #0f172a (slate-900 - headings, text)
 colors.accent; // #15803d (forest-700 - CTAs, WCAG AA)
-colors.success; // #10b981 (emerald-500)
-colors.warning; // #f59e0b (amber-500)
-colors.error; // #f43f5e (rose-500)
-colors.info; // #0ea5e9 (sky-500)
+colors.success; // #047857 (emerald-700)
+colors.warning; // #b45309 (amber-700)
+colors.error; // #e11d48 (rose-600)
+colors.info; // #0284c7 (sky-600)
 
-colors.currency.idr; // #10b981 (emerald)
-colors.currency.usd; // #3b82f6 (blue)
+colors.currency.idr; // #047857 (emerald-700)
+colors.currency.usd; // #0284c7 (sky-600)
 
-colors.status.ok; // #22c55e (<80%)
-colors.status.warning; // #f59e0b (80-99%)
-colors.status.danger; // #f43f5e (≥100%)
+colors.status.ok; // #15803d (<80%)
+colors.status.warning; // #b45309 (80-99%)
+colors.status.danger; // #e11d48 (≥100%)
 ```
 
 **Color Semantics:**

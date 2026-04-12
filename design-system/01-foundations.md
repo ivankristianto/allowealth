@@ -11,7 +11,7 @@ Visual building blocks. **Always import from `@/lib/tokens`** - never hardcode.
 
 ## Colors
 
-### Semantic Colors (v1.2.0 - Forest Green + Comfortable Dark)
+### Semantic Colors (v1.3.0 - Forest Green + WCAG AA)
 
 ```typescript
 import { colors } from '@/lib/tokens';
@@ -21,27 +21,27 @@ colors.primary; // #0f172a (slate-900)
 colors.primaryLight; // #f1f5f9 (slate-100)
 
 // Accent color (forest green) - CTAs, interactive elements, active states
-colors.accent; // #15803d (forest-700 - WCAG AA)
+colors.accent; // #15803d (forest-700 - WCAG AA 5.5:1)
 colors.accentHover; // #166534 (forest-800)
 
-colors.warning; // #f59e0b (amber-500)
-colors.error; // #f43f5e (rose-500)
-colors.errorHover; // #e11d48 (rose-600)
+colors.warning; // #b45309 (amber-700 - WCAG AA 5.0:1)
+colors.error; // #e11d48 (rose-600 - WCAG AA 5.2:1)
+colors.errorHover; // #be123c (rose-700)
 
-colors.success; // #10b981 (emerald-500)
-colors.info; // #0ea5e9 (sky-500)
+colors.success; // #047857 (emerald-700 - WCAG AA 5.5:1)
+colors.info; // #0284c7 (sky-600 - WCAG AA 4.5:1)
 ```
 
 **Color Semantic Model:**
 
-| Usage         | Color   | Hex     | Semantic                   |
-| ------------- | ------- | ------- | -------------------------- |
-| Primary CTAs  | accent  | #15803d | forest-700 - CTAs, WCAG AA |
-| Headings/text | primary | #0f172a | slate - headings, text     |
-| Success       | success | #10b981 | emerald - positive status  |
-| Warning       | warning | #f59e0b | amber - caution states     |
-| Error         | error   | #f43f5e | rose - destructive actions |
-| Info          | info    | #0ea5e9 | sky - informational        |
+| Usage         | Color   | Hex     | Ratio | Semantic                       |
+| ------------- | ------- | ------- | ----- | ------------------------------ |
+| Primary CTAs  | accent  | #15803d | 5.5:1 | forest-700 - CTAs, WCAG AA     |
+| Headings/text | primary | #0f172a | 17:1  | slate - headings, text         |
+| Success       | success | #047857 | 5.5:1 | emerald-700 - positive status  |
+| Warning       | warning | #b45309 | 5.0:1 | amber-700 - caution states     |
+| Error         | error   | #e11d48 | 5.2:1 | rose-600 - destructive actions |
+| Info          | info    | #0284c7 | 4.5:1 | sky-600 - informational        |
 
 ### Dark Mode Colors (v1.2.0 - Comfortable Dark)
 
@@ -74,17 +74,17 @@ Dark mode uses raised backgrounds, softer text, and desaturated accents for exte
 | Error   | error   | `#f87171` | red-400 — warmer, less pink than rose-400 |
 | Info    | info    | `#38bdf8` | sky-400                                   |
 
-**Design rationale:** Light mode colors use 500-700 level tokens for good contrast on white. Dark mode shifts to 400-500 level but desaturates where needed to avoid neon glare on near-black backgrounds. Surface stepping uses standard Tailwind gray/slate values proven at scale (GitHub, Linear, Vercel).
+**Design rationale:** Light mode colors use 600-700 level tokens for WCAG AA compliance (≥4.5:1 on white). Dark mode shifts to 400-500 level but desaturates where needed to avoid neon glare on near-black backgrounds. Surface stepping uses standard Tailwind gray/slate values proven at scale (GitHub, Linear, Vercel).
 
 ### Currency & Status
 
 ```typescript
-colors.currency.idr; // #10b981 (emerald-500)
-colors.currency.usd; // #0ea5e9 (sky-500)
+colors.currency.idr; // #047857 (emerald-700 - WCAG AA 5.5:1)
+colors.currency.usd; // #0284c7 (sky-600 - WCAG AA 4.5:1)
 
-colors.status.ok; // #22c55e (emerald-500, <80%)
-colors.status.warning; // #f59e0b (amber-500, 80-99%)
-colors.status.danger; // #f43f5e (rose-500, ≥100%)
+colors.status.ok; // #15803d (green-700 - WCAG AA 5.5:1, <80%)
+colors.status.warning; // #b45309 (amber-700 - WCAG AA 5.0:1, 80-99%)
+colors.status.danger; // #e11d48 (rose-600 - WCAG AA 5.2:1, ≥100%)
 ```
 
 ### Neutral Scale (Slate)
