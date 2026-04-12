@@ -192,7 +192,8 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
 
 <script>
   import { Chart } from '@/lib/chart-setup';
-  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import { createChartLifecycle } from '@/lib/utils/chart-lifecycle';
+  import { getChartThemeColors } from '@/lib/utils/chart-theme';
 
   interface ExpenseCategory {
     name: string;
@@ -213,15 +214,13 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
    * Update chart tooltip colors based on current theme
    */
   function updateChartThemeColors(): void {
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
 
     Object.values(charts).forEach(({ chart }) => {
       if (chart.options.plugins?.tooltip) {
-        chart.options.plugins.tooltip.backgroundColor = dark
-          ? 'rgba(248, 250, 252, 0.95)'
-          : 'rgba(15, 23, 42, 0.9)';
-        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+        chart.options.plugins.tooltip.titleColor = theme.tooltipTitle;
+        chart.options.plugins.tooltip.bodyColor = theme.tooltipBody;
         chart.update('none');
       }
     });
@@ -243,7 +242,7 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
     const chartLabels = data.map((d) => d.name);
     const chartColors = data.map((d) => d.color);
 
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -275,9 +274,9 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
             display: false,
           },
           tooltip: {
-            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipTitle,
+            bodyColor: theme.tooltipBody,
             padding: 12,
             cornerRadius: 12,
             displayColors: true,

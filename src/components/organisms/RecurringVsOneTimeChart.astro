@@ -146,7 +146,8 @@ const serializedData = JSON.stringify({
 
 <script>
   import { Chart } from '@/lib/chart-setup';
-  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import { createChartLifecycle } from '@/lib/utils/chart-lifecycle';
+  import { getChartThemeColors } from '@/lib/utils/chart-theme';
 
   interface BreakdownData {
     recurring: number;
@@ -156,15 +157,13 @@ const serializedData = JSON.stringify({
   const charts: Record<string, Chart<'doughnut', number[], string>> = {};
 
   function updateThemeColors(): void {
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
 
     Object.values(charts).forEach((chart) => {
       if (!chart.options.plugins?.tooltip) return;
-      chart.options.plugins.tooltip.backgroundColor = dark
-        ? 'rgba(248, 250, 252, 0.95)'
-        : 'rgba(15, 23, 42, 0.9)';
-      chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-      chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+      chart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+      chart.options.plugins.tooltip.titleColor = theme.tooltipTitle;
+      chart.options.plugins.tooltip.bodyColor = theme.tooltipBody;
       chart.update('none');
     });
   }
@@ -181,7 +180,7 @@ const serializedData = JSON.stringify({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
 
     const chart = new Chart(ctx, {
       type: 'doughnut',
@@ -204,9 +203,9 @@ const serializedData = JSON.stringify({
             display: false,
           },
           tooltip: {
-            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipTitle,
+            bodyColor: theme.tooltipBody,
             cornerRadius: 10,
             padding: 10,
           },
