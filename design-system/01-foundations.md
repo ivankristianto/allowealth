@@ -43,7 +43,7 @@ colors.info; // #0284c7 (sky-600 - WCAG AA 4.5:1)
 | Error         | error   | #e11d48 | 5.2:1 | rose-600 - destructive actions |
 | Info          | info    | #0284c7 | 4.5:1 | sky-600 - informational        |
 
-### Dark Mode Colors (v1.2.0 - Comfortable Dark)
+### Dark Mode Colors (v1.3.0 - Comfortable Dark)
 
 Dark mode uses raised backgrounds, softer text, and desaturated accents for extended reading comfort.
 
