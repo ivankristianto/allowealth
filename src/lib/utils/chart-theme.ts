@@ -16,10 +16,10 @@ export function getChartThemeColors() {
   const dark = isDarkTheme();
   return {
     tooltipBg: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-    tooltipTitle: getCssVar('--color-primary'),
-    tooltipBody: getCssVar('--color-primary'),
-    tickText: getCssVar('--color-neutral-500'),
-    legendText: getCssVar('--color-neutral-500'),
+    tooltipTitle: getCssVar('--color-primary-content'),
+    tooltipBody: getCssVar('--color-primary-content'),
+    tickText: getCssVar('--color-neutral'),
+    legendText: getCssVar('--color-neutral'),
     gridLine: dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)',
     accent: getCssVar('--color-accent'),
   };
