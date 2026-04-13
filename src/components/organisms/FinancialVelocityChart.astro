@@ -141,7 +141,8 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 <script>
   import { Chart } from '@/lib/chart-setup';
   import { formatCurrency } from '@/lib/formatting/currency-client';
-  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import { createChartLifecycle } from '@/lib/utils/chart-lifecycle';
+  import { getChartThemeColors } from '@/lib/utils/chart-theme';
   import { isValidCurrency } from '@/lib/constants/currency';
   import type { Currency } from '@/lib/constants/currency';
   import { colors } from '@/lib/tokens';
@@ -170,10 +171,9 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
    * Update chart colors based on current theme
    */
   function updateChartThemeColors(): void {
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
     const incomeColor = readThemeColor('--color-success', colors.success);
     const expenseColor = readThemeColor('--color-error', colors.error);
-    const textColor = dark ? colors.slate[400] : colors.slate[500];
 
     Object.values(charts).forEach(({ chart }) => {
       const incomeDataset = chart.data.datasets[0];
@@ -181,31 +181,24 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
       if (incomeDataset) incomeDataset.backgroundColor = incomeColor;
       if (expenseDataset) expenseDataset.backgroundColor = expenseColor;
 
-      // Update tooltip colors
       if (chart.options.plugins?.tooltip) {
-        chart.options.plugins.tooltip.backgroundColor = dark
-          ? 'rgba(248, 250, 252, 0.95)'
-          : 'rgba(15, 23, 42, 0.9)';
-        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+        chart.options.plugins.tooltip.titleColor = theme.tooltipTitle;
+        chart.options.plugins.tooltip.bodyColor = theme.tooltipBody;
       }
 
-      // Update legend colors
       if (chart.options.plugins?.legend?.labels) {
-        chart.options.plugins.legend.labels.color = textColor;
+        chart.options.plugins.legend.labels.color = theme.legendText;
       }
 
-      // Update axis colors
       if (chart.options.scales?.x?.ticks) {
-        chart.options.scales.x.ticks.color = textColor;
+        chart.options.scales.x.ticks.color = theme.tickText;
       }
       if (chart.options.scales?.y?.ticks) {
-        chart.options.scales.y.ticks.color = textColor;
+        chart.options.scales.y.ticks.color = theme.tickText;
       }
       if (chart.options.scales?.y?.grid) {
-        chart.options.scales.y.grid.color = dark
-          ? 'rgba(148, 163, 184, 0.1)'
-          : 'rgba(148, 163, 184, 0.15)';
+        chart.options.scales.y.grid.color = theme.gridLine;
       }
 
       chart.update('none');
@@ -235,11 +228,11 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
     const incomeData = data.map((d) => d.income);
     const expensesData = data.map((d) => d.expenses);
 
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
     const incomeColor = readThemeColor('--color-success', colors.success);
     const expenseColor = readThemeColor('--color-error', colors.error);
-    const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
-    const textColor = dark ? colors.slate[400] : colors.slate[500];
+    const gridColor = theme.gridLine;
+    const textColor = theme.tickText;
 
     const chart = new Chart(ctx, {
       type: 'bar',
@@ -285,9 +278,9 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
             },
           },
           tooltip: {
-            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipTitle,
+            bodyColor: theme.tooltipBody,
             padding: 12,
             cornerRadius: 12,
             displayColors: true,

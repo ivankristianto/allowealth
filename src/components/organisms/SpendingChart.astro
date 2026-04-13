@@ -228,7 +228,8 @@ import Button from '@/components/atoms/Button.astro';
 <script>
   import { Chart } from '@/lib/chart-setup';
   import { safeParseJsonArray } from '@/lib/client-utils';
-  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+  import { createChartLifecycle } from '@/lib/utils/chart-lifecycle';
+  import { getChartThemeColors } from '@/lib/utils/chart-theme';
 
   interface SpendingCategory {
     category: string;
@@ -251,17 +252,14 @@ import Button from '@/components/atoms/Button.astro';
    * Called when theme changes via MutationObserver
    */
   function updateChartThemeColors(): void {
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
 
-    // Update all chart instances with new tooltip colors
     Object.values(charts).forEach(({ chart }) => {
       if (chart.options.plugins?.tooltip) {
-        chart.options.plugins.tooltip.backgroundColor = dark
-          ? 'rgba(248, 250, 252, 0.95)'
-          : 'rgba(15, 23, 42, 0.9)';
-        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
-        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
-        chart.update('none'); // Update without animation
+        chart.options.plugins.tooltip.backgroundColor = theme.tooltipBg;
+        chart.options.plugins.tooltip.titleColor = theme.tooltipTitle;
+        chart.options.plugins.tooltip.bodyColor = theme.tooltipBody;
+        chart.update('none');
       }
     });
   }
@@ -288,8 +286,7 @@ import Button from '@/components/atoms/Button.astro';
     const chartLabels = data.map((d) => d.category);
     const chartColors = data.map((d, i) => d.color || colors[i % colors.length]);
 
-    // Detect dark mode for tooltip colors (using data-theme attribute)
-    const dark = isDarkTheme();
+    const theme = getChartThemeColors();
 
     // Create new chart
     const ctx = canvas.getContext('2d');
@@ -322,9 +319,9 @@ import Button from '@/components/atoms/Button.astro';
             display: false,
           },
           tooltip: {
-            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: dark ? '#0f172a' : '#fff',
-            bodyColor: dark ? '#0f172a' : '#fff',
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipTitle,
+            bodyColor: theme.tooltipBody,
             padding: 12,
             cornerRadius: 8,
             displayColors: true,

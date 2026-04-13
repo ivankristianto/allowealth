@@ -3,14 +3,14 @@
  * ==========================================
  * Use these values in component logic for consistency
  *
- * Version: 1.1.0 - Allowealth Design System (Forest Green)
+ * Version: 1.3.0 - Allowealth Design System (Forest Green, WCAG AA)
  * Color semantic model:
  * - primary = slate-900 → headings, primary text, secondary buttons
  * - accent = forest-700 (#15803d) → CTAs, interactive elements, active states
- * - success = emerald-500 → positive status, confirmations
- * - warning = amber-500 → budget alerts, caution states
- * - error = rose-500 → over budget, destructive actions
- * - info = sky-500 (#0ea5e9) → informational messages (distinct from accent)
+ * - success = emerald-700 (#047857) → positive status, confirmations
+ * - warning = amber-700 (#b45309) → budget alerts, caution states
+ * - error = rose-600 (#e11d48) → over budget, destructive actions
+ * - info = sky-600 (#0284c7) → informational messages (distinct from accent)
  */
 
 /* ========================================
@@ -81,14 +81,14 @@ export const colors = {
   accentHover: '#166534',
   accentContent: '#ffffff',
 
-  warning: '#f59e0b',
-  warningHover: '#d97706',
+  warning: '#b45309', // was '#f59e0b' — amber-700
+  warningHover: '#92400e', // was '#d97706' — amber-800
 
-  error: '#f43f5e',
-  errorHover: '#e11d48',
+  error: '#e11d48', // was '#f43f5e' — rose-600
+  errorHover: '#be123c', // was '#e11d48' — rose-700
 
-  success: '#10b981',
-  info: '#0ea5e9', // sky-500 - distinct from forest accent
+  success: '#047857', // was '#10b981' — emerald-700
+  info: '#0284c7', // was '#0ea5e9' — sky-600
 
   // Slate color scale
   slate: {
@@ -136,14 +136,14 @@ export const colors = {
   } as const,
 
   currency: {
-    idr: '#10b981', // emerald
-    usd: '#0ea5e9', // sky - distinct from forest accent
+    idr: '#047857', // emerald-700 — was '#10b981'
+    usd: '#0284c7', // sky-600 — was '#0ea5e9'
   },
 
   status: {
-    ok: '#22c55e', // Under 80%
-    warning: '#f59e0b', // 80-99%
-    danger: '#f43f5e', // Over 100%
+    ok: '#15803d', // green-700 — was '#22c55e'
+    warning: '#b45309', // amber-700 — was '#f59e0b'
+    danger: '#e11d48', // rose-600 — was '#f43f5e'
   },
 
   /**

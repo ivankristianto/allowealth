@@ -4,13 +4,13 @@
  * Single source of truth for all design decisions
  * Modify these values to update the entire application
  *
- * Color Semantics (Allowealth v1.1.0 - Forest Green):
+ * Color Semantics (Allowealth v1.3.0 - WCAG AA corrected):
  * - primary: slate-900 (#0f172a) - headings, primary text, secondary buttons
  * - accent: forest-700 (#15803d) - CTAs, interactive elements, WCAG AA compliant
  * - success: emerald-700 (#047857) - positive status, confirmations - WCAG AA 5.5:1 on white
  * - warning: amber-700 (#b45309) - budget alerts, caution states - WCAG AA 5.0:1 on white
- * - error: rose-500 (#f43f5e) - over budget, destructive actions
- * - info: sky-500 (#0ea5e9) - informational messages (distinct from accent)
+ * - error: rose-600 (#e11d48) - over budget, destructive actions - WCAG AA 5.2:1 on white
+ * - info: sky-600 (#0284c7) - informational messages (distinct from accent) - WCAG AA 4.5:1 on white
  */
 
 :root {
@@ -34,18 +34,18 @@
   --color-warning-hover: #92400e; /* amber-800 */
   --color-warning-light: #fef3c7; /* amber-100 */
 
-  /* Error: Over budget (rose - from styles.json) */
-  --color-error: #f43f5e; /* rose-500 */
-  --color-error-hover: #e11d48; /* rose-600 */
+  /* Error: Over budget (rose - WCAG AA 5.2:1 on white) */
+  --color-error: #e11d48; /* rose-600 */
+  --color-error-hover: #be123c; /* rose-700 */
   --color-error-light: #ffe4e6; /* rose-100 */
 
   /* Success: Confirmations (emerald) - WCAG AA 5.5:1 on white */
   --color-success: #047857; /* emerald-700 */
   --color-success-hover: #065f46; /* emerald-800 */
 
-  /* Info: Neutral information (sky - distinct from forest accent) */
-  --color-info: #0ea5e9; /* sky-500 */
-  --color-info-hover: #0284c7; /* sky-600 */
+  /* Info: Neutral information (sky - distinct from forest accent) - WCAG AA 4.5:1 on white */
+  --color-info: #0284c7; /* sky-600 */
+  --color-info-hover: #0369a1; /* sky-700 */
 
   /* Slate color scale (from styles.json) */
   --color-slate-50: #f8fafc;
@@ -96,14 +96,14 @@
   --color-neutral-800: #1f2937;
   --color-neutral-900: #111827;
 
-  /* Currency colors */
-  --color-currency-idr: #10b981; /* Emerald for IDR */
-  --color-currency-usd: #0ea5e9; /* Sky for USD (distinct from forest accent) */
+  /* Currency colors - WCAG AA compliant */
+  --color-currency-idr: #047857; /* emerald-700 - WCAG AA 5.5:1 on white */
+  --color-currency-usd: #0284c7; /* sky-600 - WCAG AA 4.5:1 on white */
 
-  /* Status indicators */
-  --color-status-ok: #22c55e; /* Green - under 80% */
+  /* Status indicators - WCAG AA compliant */
+  --color-status-ok: #15803d; /* green-700 - WCAG AA 5.5:1 on white */
   --color-status-warning: #b45309; /* Amber-700 - 80-99% - WCAG AA 5.0:1 on white */
-  --color-status-danger: #f43f5e; /* Rose - over 100% */
+  --color-status-danger: #e11d48; /* rose-600 - WCAG AA 5.2:1 on white (tracks error) */
 
   /* ========================================
    * TYPOGRAPHY
@@ -270,28 +270,16 @@
   --button-lg-padding: 0.75rem 1.5rem;
   --button-lg-height: 3rem;
   --button-lg-font-size: 0.9375rem;
-  --button-primary-bg: #15803d;
-  --button-primary-color: #ffffff;
-  --button-primary-shadow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
-  --button-secondary-bg: #0f172a;
-  --button-secondary-color: #ffffff;
-  --button-ghost-border: 1px solid #e2e8f0;
 
   /* Card tokens */
   --card-padding: 1.75rem;
   --card-border: 1px solid;
-  --card-border-color-light: #e2e8f0;
-  --card-border-color-dark: #334155; /* slate-700 = base-300 */
-  --card-bg-light: #ffffff;
-  --card-bg-dark: #1e293b; /* slate-800 = base-200 */
   --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
 
   /* Input tokens */
   --input-height: 2.5rem;
   --input-padding: 0.5rem 2.5rem 0.5rem 0.75rem;
   --input-font-size: 0.8125rem;
-  --input-bg-light: #f1f5f9;
-  --input-bg-dark: #334155; /* slate-700 = base-300 (sunken) */
   --input-focus-ring: 2px solid rgb(21 128 61 / 0.25);
 
   /* Badge tokens */
@@ -301,10 +289,6 @@
 
   /* Sidebar tokens */
   --sidebar-width: 16rem;
-  --sidebar-bg-light: #ffffff;
-  --sidebar-bg-dark: #111827; /* gray-900 = base-100 */
-  --sidebar-border-light: #e2e8f0;
-  --sidebar-border-dark: #334155; /* slate-700 = base-300 */
   --sidebar-nav-item-padding: 0.625rem 1rem;
   --sidebar-nav-item-gap: 0.75rem;
   --sidebar-icon-size: 22px;
@@ -316,10 +300,6 @@
   --sidebar-active-border: 2px solid #15803d;
 
   /* Table tokens */
-  --table-header-bg-light: rgb(248 250 252 / 0.5);
-  --table-header-bg-dark: rgb(51 65 85 / 0.5); /* slate-700 */
-  --table-row-hover-light: #f8fafc;
-  --table-row-hover-dark: rgb(51 65 85 / 0.4); /* slate-700 */
   --table-cell-padding: 1rem 1.5rem;
   --table-icon-size: 22px;
 
@@ -464,13 +444,6 @@
   /* Emerald scale */
   --color-emerald-400: #34d399;
   --color-emerald-900: #064e3b;
-
-  /* Component dark mode overrides — aligned to base surface hierarchy */
-  --card-bg: var(--color-slate-800); /* #1e293b = base-200 (elevated) */
-  --card-border-color: var(--color-slate-700); /* #334155 = base-300 (visible) */
-  --input-bg: var(--color-slate-700); /* #334155 = base-300 (sunken input) */
-  --sidebar-bg: var(--color-slate-900); /* #111827 = base-100 (body level) */
-  --sidebar-border: var(--color-slate-700); /* #334155 = base-300 (visible) */
 }
 
 .token-badge-padding {

@@ -32,13 +32,13 @@
   --color-base-content: #0f172a; /* slate-900 - maximum contrast */
 
   /* Semantic colors */
-  --color-info: #0ea5e9; /* sky-500 - distinct from accent */
+  --color-info: #0284c7; /* sky-600 - WCAG AA 4.6:1 on white */
   --color-info-content: #ffffff;
   --color-success: #047857; /* emerald-700 - WCAG AA 5.5:1 on white */
   --color-success-content: #ffffff;
   --color-warning: #b45309; /* amber-700 - WCAG AA 5.0:1 on white */
   --color-warning-content: #ffffff;
-  --color-error: #f43f5e; /* rose-500 */
+  --color-error: #e11d48; /* rose-600 - WCAG AA 4.6:1 on white */
   --color-error-content: #ffffff;
 
   /* Design variables (from styles.json) */

@@ -126,11 +126,11 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
             preserveAspectRatio="none"
             aria-hidden="true"
           >
-            <path d={sparklineArea} fill="#16a34a" fill-opacity="0.12" />
+            <path d={sparklineArea} fill="var(--color-accent)" fill-opacity="0.12" />
             <polyline
               points={sparklinePoints}
               fill="none"
-              stroke="#16a34a"
+              stroke="var(--color-accent)"
               stroke-width="1.5"
               stroke-linejoin="round"
               stroke-linecap="round"
@@ -138,7 +138,7 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
             {(() => {
               const lastPoint = sparklinePoints.split(' ').pop() ?? '100,22';
               const [cx, cy] = lastPoint.split(',');
-              return <circle cx={cx} cy={cy} r="2" fill="#16a34a" />;
+              return <circle cx={cx} cy={cy} r="2" fill="var(--color-accent)" />;
             })()}
           </svg>
           {showGrowthAnnotation && (
