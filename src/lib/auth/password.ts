@@ -1,45 +1,28 @@
 /**
  * Password hashing and verification facade
  *
- * Selects the strongest available hasher per runtime:
- * - Bun: Argon2id via Bun.password (memory-hard, OWASP recommended)
- * - Workers: PBKDF2-SHA256 via Web Crypto API (cross-runtime fallback)
- *
- * Verification dispatches by hash prefix, so both formats are readable
- * on any runtime that supports the underlying algorithm.
- *
- * @see docs/superpowers/specs/2026-04-07-argon2id-password-hashing-design.md
+ * Hashes new passwords with Argon2id (native `Bun.password` on Bun, WASM
+ * `hash-wasm` elsewhere). Verifies by hash prefix so legacy PBKDF2 records
+ * still authenticate while new writes use Argon2id everywhere.
  */
 
-import { createLogger } from '@/lib/logger';
 import type { PasswordHasher } from './password-hasher';
-import { ARGON2ID_PREFIX, Argon2idHasher } from './password-argon2id';
-import { isBunRuntime, passwordHasher } from './password-hasher';
+import { ARGON2ID_PREFIX } from './password-argon2id';
+import { passwordHasher } from './password-hasher';
 import { PBKDF2_PREFIX, Pbkdf2Hasher } from './password-pbkdf2';
 
-const logger = createLogger('password');
-
-/** Fallback PBKDF2 verifier -- always available regardless of runtime. */
 const pbkdf2Verifier = new Pbkdf2Hasher();
-
-/** Argon2id verifier -- only usable on Bun runtime. */
-const argon2idVerifier = isBunRuntime ? new Argon2idHasher() : null;
 
 type PasswordFacadeOptions = {
   passwordHasher?: PasswordHasher;
   pbkdf2Verifier?: PasswordHasher;
-  argon2idVerifier?: PasswordHasher | null;
-  logger?: {
-    warn(message: string): void;
-  };
+  argon2idVerifier?: PasswordHasher;
 };
 
 function createPasswordFacade(options: PasswordFacadeOptions = {}) {
   const activePasswordHasher = options.passwordHasher ?? passwordHasher;
   const activePbkdf2Verifier = options.pbkdf2Verifier ?? pbkdf2Verifier;
-  const activeArgon2idVerifier =
-    options.argon2idVerifier === undefined ? argon2idVerifier : options.argon2idVerifier;
-  const activeLogger = options.logger ?? logger;
+  const activeArgon2idVerifier = options.argon2idVerifier ?? passwordHasher;
 
   return {
     async hashPassword(password: string): Promise<string> {
@@ -56,11 +39,6 @@ function createPasswordFacade(options: PasswordFacadeOptions = {}) {
       }
 
       if (hash.startsWith(ARGON2ID_PREFIX)) {
-        if (!activeArgon2idVerifier) {
-          activeLogger.warn('Argon2id hash encountered on non-Bun runtime; cannot verify');
-          return false;
-        }
-
         return activeArgon2idVerifier.verify(password, hash);
       }
 
@@ -76,10 +54,10 @@ function createPasswordFacade(options: PasswordFacadeOptions = {}) {
 const facade = createPasswordFacade();
 
 /**
- * Hash a plain text password using the runtime-appropriate algorithm.
+ * Hash a plain text password using the runtime-appropriate Argon2id implementation.
  *
  * @param password - Plain text password (minimum 12 characters)
- * @returns Hashed password string in PHC or custom prefix format
+ * @returns PHC-encoded `$argon2id$` hash string
  */
 export async function hashPassword(password: string): Promise<string> {
   return facade.hashPassword(password);
@@ -89,7 +67,7 @@ export async function hashPassword(password: string): Promise<string> {
  * Verify a plain text password against a stored hash.
  *
  * Dispatches to the correct verifier based on the hash prefix.
- * Handles both Argon2id and PBKDF2 hash formats.
+ * Handles both Argon2id and legacy PBKDF2 hash formats.
  *
  * @param password - Plain text password to verify
  * @param hash - Stored hash to verify against

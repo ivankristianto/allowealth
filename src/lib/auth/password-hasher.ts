@@ -1,11 +1,14 @@
 import { Argon2idHasher } from './password-argon2id';
-import { Pbkdf2Hasher } from './password-pbkdf2';
+import { Argon2idWasmHasher } from './password-argon2id-wasm';
 
 /**
  * Password hasher interface
  *
  * Implementations provide algorithm-specific hashing and verification.
- * The factory selects the strongest available hasher for the current runtime.
+ * The factory selects the runtime-appropriate Argon2id hasher: native
+ * `Bun.password` on Bun, WASM (`hash-wasm`) elsewhere. Both produce and
+ * accept the same PHC-encoded `$argon2id$` format, so a hash created on
+ * one runtime verifies on the other.
  */
 export interface PasswordHasher {
   hash(password: string): Promise<string>;
@@ -15,11 +18,10 @@ export interface PasswordHasher {
 const isBunRuntime = typeof globalThis.Bun !== 'undefined';
 
 function createPasswordHasher(runtimeIsBun = isBunRuntime): PasswordHasher {
-  return runtimeIsBun ? new Argon2idHasher() : new Pbkdf2Hasher();
+  return runtimeIsBun ? new Argon2idHasher() : new Argon2idWasmHasher();
 }
 
 /** Runtime-appropriate hasher instance, created once at module load. */
 export const passwordHasher = createPasswordHasher();
 
-/** Whether the current runtime is Bun (exported for verify dispatch). */
 export { createPasswordHasher, isBunRuntime };
