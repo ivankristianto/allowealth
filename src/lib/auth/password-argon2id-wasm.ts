@@ -13,8 +13,11 @@
  * @see https://github.com/Daninet/hash-wasm
  */
 
+import { createLogger } from '@/lib/logger';
 import { ARGON2ID_PREFIX } from './password-argon2id';
 import type { PasswordHasher } from './password-hasher';
+
+const logger = createLogger('password');
 
 const ARGON2ID_PARAMS = {
   iterations: 2,
@@ -34,6 +37,14 @@ function loadHashWasm(): Promise<HashWasmModule> {
   }
 
   return hashWasmPromise;
+}
+
+function describeError(error: unknown): { name: string; message: string } {
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message };
+  }
+
+  return { name: 'UnknownError', message: String(error) };
 }
 
 function generateSalt(): Uint8Array {
@@ -57,11 +68,18 @@ export class Argon2idWasmHasher implements PasswordHasher {
       return false;
     }
 
+    let mod: HashWasmModule;
     try {
-      const { argon2Verify } = await loadHashWasm();
+      mod = await loadHashWasm();
+    } catch (error) {
+      logger.error('Failed to load hash-wasm', describeError(error));
+      return false;
+    }
 
-      return await argon2Verify({ password, hash });
-    } catch {
+    try {
+      return await mod.argon2Verify({ password, hash });
+    } catch (error) {
+      logger.error('Argon2id WASM verify threw', describeError(error));
       return false;
     }
   }
