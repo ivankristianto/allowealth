@@ -1,4 +1,4 @@
-import { Argon2idWasmHasher } from './password-argon2id-wasm';
+import { Argon2idJsHasher } from './password-argon2id-js';
 import { isBunRuntime, passwordHasher } from './password-hasher';
 import { hashPassword, verifyPassword } from './password';
 
@@ -12,7 +12,7 @@ const roundTripVerified = await verifyPassword('SecurePassword123!', hash);
 process.stdout.write(
   JSON.stringify({
     isBunRuntime,
-    isWasm: passwordHasher instanceof Argon2idWasmHasher,
+    isJs: passwordHasher instanceof Argon2idJsHasher,
     hashStartsWithArgon2id: hash.startsWith('$argon2id$'),
     argon2Verified,
     roundTripVerified,

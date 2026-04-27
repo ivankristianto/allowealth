@@ -1,9 +1,10 @@
 /**
  * Password hashing and verification facade
  *
- * Hashes new passwords with Argon2id (native `Bun.password` on Bun, WASM
- * `hash-wasm` elsewhere). Verifies by hash prefix so legacy PBKDF2 records
- * still authenticate while new writes use Argon2id everywhere.
+ * Hashes new passwords with Argon2id (native `Bun.password` on Bun, pure
+ * JavaScript via `@noble/hashes` elsewhere, since Workers blocks runtime
+ * WebAssembly compilation). Verifies by hash prefix so legacy PBKDF2
+ * records still authenticate while new writes use Argon2id everywhere.
  */
 
 import type { PasswordHasher } from './password-hasher';

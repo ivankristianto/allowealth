@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'bun:test';
 import { ARGON2ID_PREFIX } from './password-argon2id';
-import { Argon2idWasmHasher } from './password-argon2id-wasm';
+import { Argon2idJsHasher } from './password-argon2id-js';
 import { createPasswordHasher } from './password-hasher';
 
 const KNOWN_ARGON2ID_HASH =
@@ -25,7 +25,7 @@ function runNodeRuntimeSmoke() {
 
   return JSON.parse(execFileSync('node', [smokeOutfile], { encoding: 'utf8' })) as {
     isBunRuntime: boolean;
-    isWasm: boolean;
+    isJs: boolean;
     hashStartsWithArgon2id: boolean;
     argon2Verified: boolean;
     roundTripVerified: boolean;
@@ -33,8 +33,8 @@ function runNodeRuntimeSmoke() {
 }
 
 describe('password runtime selection', () => {
-  it('selects the WASM Argon2id hasher when Bun runtime is unavailable', () => {
-    expect(createPasswordHasher(false)).toBeInstanceOf(Argon2idWasmHasher);
+  it('selects the JS Argon2id hasher when Bun runtime is unavailable', () => {
+    expect(createPasswordHasher(false)).toBeInstanceOf(Argon2idJsHasher);
   });
 
   it('does not export internal facade helpers from password.ts', async () => {
@@ -47,7 +47,7 @@ describe('password runtime selection', () => {
     const result = runNodeRuntimeSmoke();
 
     expect(result.isBunRuntime).toBe(false);
-    expect(result.isWasm).toBe(true);
+    expect(result.isJs).toBe(true);
     expect(result.hashStartsWithArgon2id).toBe(true);
     expect(result.argon2Verified).toBe(true);
     expect(result.roundTripVerified).toBe(true);
