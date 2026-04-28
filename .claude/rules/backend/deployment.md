@@ -44,22 +44,49 @@ import { $ } from 'bun';
 
 ## Password Hashing
 
+The factory in `src/lib/auth/password-hasher.ts` selects per runtime:
+
+- **Bun** (Docker, local dev): Argon2id via `Bun.password` — native, memory-hard
+- **Cloudflare Workers / Node**: PBKDF2-SHA256 via Web Crypto — runs in the
+  Workers C++ runtime, no JS-CPU pressure
+
+Hashes do not migrate between deployment targets. Argon2id cannot run on
+Workers: `WebAssembly.compile()` is blocked by the embedder, and pure-JS
+Argon2id exceeds the 10ms per-request CPU budget. An Argon2id hash on a
+Workers deployment indicates a misconfigured seed; the facade logs a
+warning and returns false rather than failing silently.
+
 ```typescript
-// ✅ Correct: Web Crypto API (PBKDF2-SHA256)
+// ✅ Correct: use the facade — runtime-appropriate algorithm is automatic
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 
-// Uses Web Crypto API - works in all runtimes
-
-// ❌ Wrong: Native addon
-import { hash, verify } from '@node-rs/argon2'; // Native addon, Workers incompatible
-import { hash } from 'oslo/password'; // Depends on native argon2
+// ❌ Wrong: native addons or runtime-WASM crypto libraries
+import { hash, verify } from '@node-rs/argon2'; // native, Workers-incompatible
+import { argon2id } from 'hash-wasm'; // runtime WASM compile, blocked on Workers
 ```
+
+### Seeding for a Workers-targeted DB
+
+The seeder runs on Bun, so by default it would produce Argon2id hashes
+that Workers cannot verify. Force PBKDF2 hashing with the
+`PASSWORD_HASHER` env var:
+
+```bash
+# Default: Argon2id (for Docker / Bun deployments)
+bun run aw seed:demo
+
+# Workers-targeted: PBKDF2
+PASSWORD_HASHER=pbkdf2 bun run aw seed:demo
+```
+
+`PASSWORD_HASHER=argon2id` is the explicit form of the default and errors
+on non-Bun runtimes. Unset means runtime detection.
 
 **Rules:**
 
-- ✅ **Use Web Crypto API (PBKDF2-SHA256)** for password hashing - works in all runtimes
-- ❌ **Use oslo/argon2 or native addons** - not Workers-compatible
-- ✅ **Trace dependency chains when builds fail** - e.g., oslo → @node-rs/argon2 → native addon
+- ✅ **Use the `hashPassword`/`verifyPassword` facade** — never call the underlying hasher classes directly outside `password.ts`
+- ✅ **Set `PASSWORD_HASHER=pbkdf2` when seeding for a Workers DB** — otherwise the Argon2id hashes the seeder writes will not verify on Workers
+- ❌ **Use `oslo/argon2`, `hash-wasm`, `@noble/hashes/argon2`, or any other runtime-WASM crypto on Workers** — they all fail with `Wasm code generation disallowed by embedder` or hit the per-request CPU limit
 
 ## Environment Variables
 

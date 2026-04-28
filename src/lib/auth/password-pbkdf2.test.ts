@@ -26,7 +26,7 @@ describe('Pbkdf2Hasher', () => {
       const parts = hash.slice('$pbkdf2-sha256$'.length).split('$');
 
       expect(parts.length).toBe(3);
-      expect(parseInt(parts[0], 10)).toBe(100_000);
+      expect(parseInt(parts[0], 10)).toBe(600_000);
     });
   });
 

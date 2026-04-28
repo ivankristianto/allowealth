@@ -5,8 +5,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'bun:test';
 import { ARGON2ID_PREFIX } from './password-argon2id';
-import { Argon2idJsHasher } from './password-argon2id-js';
 import { createPasswordHasher } from './password-hasher';
+import { Pbkdf2Hasher } from './password-pbkdf2';
 
 const KNOWN_ARGON2ID_HASH =
   '$argon2id$v=19$m=65536,t=2,p=1$KKa335shvrWayGnd1ZwIFoLuZwFVnVFx4UMio6TCIbo$vK8PnpIuF1zweSNXM4H5VfPQURPkSpiDVa1BhbS6GFE';
@@ -25,16 +25,17 @@ function runNodeRuntimeSmoke() {
 
   return JSON.parse(execFileSync('node', [smokeOutfile], { encoding: 'utf8' })) as {
     isBunRuntime: boolean;
-    isJs: boolean;
-    hashStartsWithArgon2id: boolean;
-    argon2Verified: boolean;
+    isPbkdf2: boolean;
+    hashStartsWithPbkdf2: boolean;
+    argon2VerifyResult: boolean;
     roundTripVerified: boolean;
+    argon2WarningSeen: boolean;
   };
 }
 
 describe('password runtime selection', () => {
-  it('selects the JS Argon2id hasher when Bun runtime is unavailable', () => {
-    expect(createPasswordHasher(false)).toBeInstanceOf(Argon2idJsHasher);
+  it('selects PBKDF2 when Bun runtime is unavailable', () => {
+    expect(createPasswordHasher(false)).toBeInstanceOf(Pbkdf2Hasher);
   });
 
   it('does not export internal facade helpers from password.ts', async () => {
@@ -43,14 +44,15 @@ describe('password runtime selection', () => {
     expect('createPasswordFacade' in mod).toBe(false);
   });
 
-  it('hashes and verifies Argon2id in a real non-Bun runtime', () => {
+  it('hashes with PBKDF2 and refuses Argon2id verification on a non-Bun runtime', () => {
     const result = runNodeRuntimeSmoke();
 
     expect(result.isBunRuntime).toBe(false);
-    expect(result.isJs).toBe(true);
-    expect(result.hashStartsWithArgon2id).toBe(true);
-    expect(result.argon2Verified).toBe(true);
+    expect(result.isPbkdf2).toBe(true);
+    expect(result.hashStartsWithPbkdf2).toBe(true);
     expect(result.roundTripVerified).toBe(true);
+    expect(result.argon2VerifyResult).toBe(false);
+    expect(result.argon2WarningSeen).toBe(true);
   });
 
   it('continues to recognize Argon2id hashes by prefix in runtime coverage tests', () => {

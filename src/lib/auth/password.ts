@@ -1,29 +1,39 @@
 /**
  * Password hashing and verification facade
  *
- * Hashes new passwords with Argon2id (native `Bun.password` on Bun, pure
- * JavaScript via `@noble/hashes` elsewhere, since Workers blocks runtime
- * WebAssembly compilation). Verifies by hash prefix so legacy PBKDF2
- * records still authenticate while new writes use Argon2id everywhere.
+ * Hashes new passwords with the runtime-appropriate algorithm:
+ * Argon2id via `Bun.password` on Bun (Docker, local dev), PBKDF2-SHA256
+ * via Web Crypto on Cloudflare Workers and any other non-Bun runtime.
+ *
+ * Hashes do not migrate between deployment targets. An Argon2id hash
+ * landing on a Workers deployment indicates a misconfigured seed and
+ * surfaces a warning so it does not fail silently.
  */
 
+import { createLogger } from '@/lib/logger';
 import type { PasswordHasher } from './password-hasher';
-import { ARGON2ID_PREFIX } from './password-argon2id';
-import { passwordHasher } from './password-hasher';
+import { ARGON2ID_PREFIX, Argon2idHasher } from './password-argon2id';
+import { isBunRuntime, passwordHasher } from './password-hasher';
 import { PBKDF2_PREFIX, Pbkdf2Hasher } from './password-pbkdf2';
 
+const logger = createLogger('password');
+
 const pbkdf2Verifier = new Pbkdf2Hasher();
+const argon2idVerifier = isBunRuntime ? new Argon2idHasher() : null;
 
 type PasswordFacadeOptions = {
   passwordHasher?: PasswordHasher;
   pbkdf2Verifier?: PasswordHasher;
-  argon2idVerifier?: PasswordHasher;
+  argon2idVerifier?: PasswordHasher | null;
+  logger?: { warn(message: string): void };
 };
 
 function createPasswordFacade(options: PasswordFacadeOptions = {}) {
   const activePasswordHasher = options.passwordHasher ?? passwordHasher;
   const activePbkdf2Verifier = options.pbkdf2Verifier ?? pbkdf2Verifier;
-  const activeArgon2idVerifier = options.argon2idVerifier ?? passwordHasher;
+  const activeArgon2idVerifier =
+    options.argon2idVerifier === undefined ? argon2idVerifier : options.argon2idVerifier;
+  const activeLogger = options.logger ?? logger;
 
   return {
     async hashPassword(password: string): Promise<string> {
@@ -40,6 +50,13 @@ function createPasswordFacade(options: PasswordFacadeOptions = {}) {
       }
 
       if (hash.startsWith(ARGON2ID_PREFIX)) {
+        if (!activeArgon2idVerifier) {
+          activeLogger.warn(
+            'Argon2id hash encountered on non-Bun runtime; this deployment uses PBKDF2 and cannot verify it'
+          );
+          return false;
+        }
+
         return activeArgon2idVerifier.verify(password, hash);
       }
 
@@ -55,10 +72,10 @@ function createPasswordFacade(options: PasswordFacadeOptions = {}) {
 const facade = createPasswordFacade();
 
 /**
- * Hash a plain text password using the runtime-appropriate Argon2id implementation.
+ * Hash a plain text password using the runtime-appropriate algorithm.
  *
  * @param password - Plain text password (minimum 12 characters)
- * @returns PHC-encoded `$argon2id$` hash string
+ * @returns Hash string in `$argon2id$` (Bun) or `$pbkdf2-sha256$` (Workers) format
  */
 export async function hashPassword(password: string): Promise<string> {
   return facade.hashPassword(password);
@@ -68,7 +85,9 @@ export async function hashPassword(password: string): Promise<string> {
  * Verify a plain text password against a stored hash.
  *
  * Dispatches to the correct verifier based on the hash prefix.
- * Handles both Argon2id and legacy PBKDF2 hash formats.
+ * Argon2id verification only succeeds on Bun. On non-Bun runtimes an
+ * Argon2id hash logs a warning and returns false so misconfigured seeds
+ * surface immediately.
  *
  * @param password - Plain text password to verify
  * @param hash - Stored hash to verify against

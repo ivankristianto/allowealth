@@ -9,7 +9,7 @@
 import type { PasswordHasher } from './password-hasher';
 
 const PBKDF2_CONFIG = {
-  iterations: 100_000,
+  iterations: 600_000,
   saltLength: 16,
   hashLength: 32,
   algorithm: 'SHA-256',
