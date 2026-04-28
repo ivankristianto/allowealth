@@ -45,14 +45,7 @@ function createPasswordFacade(options: PasswordFacadeOptions = {}) {
     },
 
     async verifyPassword(password: string, hash: string): Promise<boolean> {
-      console.error('[verify-debug] enter', {
-        passwordLen: password?.length ?? 0,
-        hashLen: hash?.length ?? 0,
-        hashPrefix: hash ? hash.slice(0, 16) : null,
-      });
-
       if (!password || !hash) {
-        console.error('[verify-debug] empty input');
         return false;
       }
 
@@ -64,16 +57,13 @@ function createPasswordFacade(options: PasswordFacadeOptions = {}) {
           return false;
         }
 
-        console.error('[verify-debug] dispatching to argon2id verifier');
         return activeArgon2idVerifier.verify(password, hash);
       }
 
       if (hash.startsWith(PBKDF2_PREFIX)) {
-        console.error('[verify-debug] dispatching to pbkdf2 verifier');
         return activePbkdf2Verifier.verify(password, hash);
       }
 
-      console.error('[verify-debug] no prefix matched, falling through');
       return false;
     },
   };

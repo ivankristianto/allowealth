@@ -47,8 +47,12 @@ import { $ } from 'bun';
 The factory in `src/lib/auth/password-hasher.ts` selects per runtime:
 
 - **Bun** (Docker, local dev): Argon2id via `Bun.password` — native, memory-hard
-- **Cloudflare Workers / Node**: PBKDF2-SHA256 via Web Crypto — runs in the
-  Workers C++ runtime, no JS-CPU pressure
+- **Cloudflare Workers / Node**: PBKDF2-SHA256 via Web Crypto, **100,000
+  iterations**. Workers' `crypto.subtle.deriveBits` rejects PBKDF2
+  iteration counts above 100,000 with `NotSupportedError`, so the project
+  pins to that ceiling. This is below OWASP 2023's 600,000 recommendation
+  for PBKDF2-HMAC-SHA256 but matches OWASP 2017 guidance and is the
+  maximum the runtime accepts.
 
 Hashes do not migrate between deployment targets. Argon2id cannot run on
 Workers: `WebAssembly.compile()` is blocked by the embedder, and pure-JS
