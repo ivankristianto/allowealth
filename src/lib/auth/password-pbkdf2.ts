@@ -85,17 +85,23 @@ export class Pbkdf2Hasher implements PasswordHasher {
 
     try {
       if (!hash.startsWith(PBKDF2_PREFIX)) {
+        console.error('[pbkdf2-debug] reject: missing prefix', {
+          hashLen: hash.length,
+          first16: hash.slice(0, 16),
+        });
         return false;
       }
 
       const parts = hash.slice(PBKDF2_PREFIX.length).split('$');
       if (parts.length !== 3) {
+        console.error('[pbkdf2-debug] reject: bad part count', { parts: parts.length });
         return false;
       }
 
       const [iterationsStr, saltBase64, storedHashBase64] = parts;
 
       if (!ITERATIONS_PATTERN.test(iterationsStr)) {
+        console.error('[pbkdf2-debug] reject: iterations pattern', { iterationsStr });
         return false;
       }
 
@@ -105,6 +111,7 @@ export class Pbkdf2Hasher implements PasswordHasher {
         iterations < MIN_ACCEPTED_ITERATIONS ||
         iterations > MAX_ACCEPTED_ITERATIONS
       ) {
+        console.error('[pbkdf2-debug] reject: iterations bounds', { iterations });
         return false;
       }
 
@@ -115,6 +122,10 @@ export class Pbkdf2Hasher implements PasswordHasher {
         salt.length !== PBKDF2_CONFIG.saltLength ||
         storedHash.length !== PBKDF2_CONFIG.hashLength
       ) {
+        console.error('[pbkdf2-debug] reject: salt/hash length', {
+          saltLen: salt.length,
+          hashLen: storedHash.length,
+        });
         return false;
       }
 
@@ -139,6 +150,10 @@ export class Pbkdf2Hasher implements PasswordHasher {
       const derivedHash = new Uint8Array(derivedBits);
 
       if (derivedHash.length !== storedHash.length) {
+        console.error('[pbkdf2-debug] reject: derived length mismatch', {
+          derived: derivedHash.length,
+          stored: storedHash.length,
+        });
         return false;
       }
 
@@ -147,8 +162,21 @@ export class Pbkdf2Hasher implements PasswordHasher {
         result |= derivedHash[i] ^ storedHash[i];
       }
 
+      if (result !== 0) {
+        console.error('[pbkdf2-debug] reject: bytes mismatch', {
+          passwordLen: password.length,
+          iterations,
+        });
+      } else {
+        console.error('[pbkdf2-debug] match', { iterations });
+      }
+
       return result === 0;
-    } catch {
+    } catch (error) {
+      console.error('[pbkdf2-debug] threw', {
+        name: error instanceof Error ? error.name : 'unknown',
+        message: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
