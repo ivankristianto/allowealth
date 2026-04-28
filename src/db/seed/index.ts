@@ -88,6 +88,32 @@ if (isProduction && !allowSeed) {
 }
 
 // ============================================================================
+// HASHER GUARD
+// ============================================================================
+//
+// D1 is served by Cloudflare Workers, which can only verify PBKDF2 hashes.
+// The seed script runs under Bun, which defaults to Argon2id. Without an
+// explicit override the seeder would silently write Argon2id hashes that no
+// sign-in on Workers can verify. Refuse to start so the misconfiguration
+// surfaces as a setup error, not as "Invalid password" later.
+
+const seedTarget = process.env.AW_TARGET;
+const seedTargetsD1 =
+  seedTarget === 'd1' || seedTarget === 'd1-local' || process.env.D1_ENABLED === 'true';
+
+if (seedTargetsD1 && process.env.PASSWORD_HASHER !== 'pbkdf2') {
+  console.error('❌ Cannot seed a D1 target with the default hasher.');
+  console.error('');
+  console.error('   D1 is served by Cloudflare Workers, which cannot verify Argon2id');
+  console.error('   hashes. Re-run with PASSWORD_HASHER=pbkdf2 to produce hashes the');
+  console.error('   Workers runtime can verify, e.g.:');
+  console.error('');
+  console.error('     PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=d1');
+  console.error('     PASSWORD_HASHER=pbkdf2 bun run aw demo reset --target=d1 --yes');
+  process.exit(1);
+}
+
+// ============================================================================
 // CLI ARGUMENT PARSING
 // ============================================================================
 

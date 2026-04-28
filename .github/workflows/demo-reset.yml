@@ -27,11 +27,14 @@ jobs:
       - name: Reset demo data on D1
         # AW_TARGET=d1 + D1_ENABLED=true replaces --target d1 to avoid loadEnvFile('.env.production')
         # which is not present in CI. The D1 HTTP driver reads Cloudflare auth + database IDs from env.
+        # PASSWORD_HASHER=pbkdf2 forces the Bun seeder to produce PBKDF2 hashes; Workers cannot verify
+        # Argon2id, so without this the reseed leaves the demo unable to sign in.
         # --yes skips the interactive confirmation prompt.
         run: bun run aw demo reset --yes
         env:
           AW_TARGET: d1
           D1_ENABLED: 'true'
+          PASSWORD_HASHER: pbkdf2
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
