@@ -72,20 +72,26 @@ that Workers cannot verify. Force PBKDF2 hashing with the
 `PASSWORD_HASHER` env var:
 
 ```bash
-# Default: Argon2id (for Docker / Bun deployments)
-bun run aw seed:demo
+# Default: Argon2id (sqlite target, for Docker / Bun deployments)
+bun run aw db seed --target=sqlite
 
-# Workers-targeted: PBKDF2
-PASSWORD_HASHER=pbkdf2 bun run aw seed:demo
+# Workers-targeted: PBKDF2 (D1 remote or D1 local)
+PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=d1
+PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=d1-local
 ```
 
-`PASSWORD_HASHER=argon2id` is the explicit form of the default and errors
-on non-Bun runtimes. Unset means runtime detection.
+The `aw db seed` command refuses to run against `--target=d1` or
+`--target=d1-local` unless `PASSWORD_HASHER=pbkdf2` is set, so a
+forgetful operator cannot silently write Argon2id hashes into a
+Workers DB.
+
+`PASSWORD_HASHER=argon2id` is the explicit form of the default and
+errors on non-Bun runtimes. Unset means runtime detection.
 
 **Rules:**
 
 - ✅ **Use the `hashPassword`/`verifyPassword` facade** — never call the underlying hasher classes directly outside `password.ts`
-- ✅ **Set `PASSWORD_HASHER=pbkdf2` when seeding for a Workers DB** — otherwise the Argon2id hashes the seeder writes will not verify on Workers
+- ✅ **Set `PASSWORD_HASHER=pbkdf2` when seeding `--target=d1`** — the CLI fails fast without it; otherwise the Argon2id hashes the seeder writes will not verify on Workers
 - ❌ **Use `oslo/argon2`, `hash-wasm`, `@noble/hashes/argon2`, or any other runtime-WASM crypto on Workers** — they all fail with `Wasm code generation disallowed by embedder` or hit the per-request CPU limit
 
 ## Environment Variables

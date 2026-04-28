@@ -268,8 +268,24 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { resolveTarget } = await import('../lib/target');
+        const { resolveTarget, isD1 } = await import('../lib/target');
         await resolveTarget(args);
+
+        if (isD1() && process.env.PASSWORD_HASHER !== 'pbkdf2') {
+          console.error(
+            [
+              '❌ Cannot seed a D1 target with the default hasher.',
+              '',
+              '   D1 is served by Cloudflare Workers, which cannot verify Argon2id',
+              '   hashes. Re-run with PASSWORD_HASHER=pbkdf2 to produce hashes the',
+              '   Workers runtime can verify:',
+              '',
+              `     PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=${args.target}`,
+            ].join('\n')
+          );
+          process.exit(1);
+        }
+
         const seedArgs = ['run', 'src/db/seed/index.ts'];
         if (args.benchmark) {
           seedArgs.push('--benchmark');

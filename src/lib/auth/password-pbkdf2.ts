@@ -15,6 +15,10 @@ const PBKDF2_CONFIG = {
   algorithm: 'SHA-256',
 } as const;
 
+const MIN_ACCEPTED_ITERATIONS = 100_000;
+const MAX_ACCEPTED_ITERATIONS = 2_000_000;
+const ITERATIONS_PATTERN = /^[1-9][0-9]*$/;
+
 export const PBKDF2_PREFIX = '$pbkdf2-sha256$';
 
 function bufferToBase64(buffer: Uint8Array | ArrayBuffer): string {
@@ -90,14 +94,29 @@ export class Pbkdf2Hasher implements PasswordHasher {
       }
 
       const [iterationsStr, saltBase64, storedHashBase64] = parts;
-      const iterations = parseInt(iterationsStr, 10);
 
-      if (Number.isNaN(iterations) || iterations <= 0) {
+      if (!ITERATIONS_PATTERN.test(iterationsStr)) {
+        return false;
+      }
+
+      const iterations = parseInt(iterationsStr, 10);
+      if (
+        !Number.isFinite(iterations) ||
+        iterations < MIN_ACCEPTED_ITERATIONS ||
+        iterations > MAX_ACCEPTED_ITERATIONS
+      ) {
         return false;
       }
 
       const salt = base64ToBuffer(saltBase64);
       const storedHash = base64ToBuffer(storedHashBase64);
+
+      if (
+        salt.length !== PBKDF2_CONFIG.saltLength ||
+        storedHash.length !== PBKDF2_CONFIG.hashLength
+      ) {
+        return false;
+      }
 
       const encoder = new TextEncoder();
       const passwordBuffer = encoder.encode(password);

@@ -58,5 +58,39 @@ describe('Pbkdf2Hasher', () => {
       expect(await hasher.verify('', 'some-hash')).toBe(false);
       expect(await hasher.verify('Password123!', '')).toBe(false);
     });
+
+    it('should reject iterations below the minimum', async () => {
+      const tooLow =
+        '$pbkdf2-sha256$50000$xRDzRIW4WcZ8U135JQtdzQ==$sqJYw5hNy/d2l9dcWsUWBzPuWgEF82iwG5oqELlZjyc=';
+
+      expect(await hasher.verify('Password123!', tooLow)).toBe(false);
+    });
+
+    it('should reject iterations above the safety ceiling', async () => {
+      const tooHigh =
+        '$pbkdf2-sha256$5000000$xRDzRIW4WcZ8U135JQtdzQ==$sqJYw5hNy/d2l9dcWsUWBzPuWgEF82iwG5oqELlZjyc=';
+
+      expect(await hasher.verify('Password123!', tooHigh)).toBe(false);
+    });
+
+    it('should reject non-decimal iteration counts', async () => {
+      const malformed =
+        '$pbkdf2-sha256$0x1e8480$xRDzRIW4WcZ8U135JQtdzQ==$sqJYw5hNy/d2l9dcWsUWBzPuWgEF82iwG5oqELlZjyc=';
+
+      expect(await hasher.verify('Password123!', malformed)).toBe(false);
+    });
+
+    it('should reject mismatched salt size', async () => {
+      const shortSalt =
+        '$pbkdf2-sha256$600000$c2hvcnQ=$sqJYw5hNy/d2l9dcWsUWBzPuWgEF82iwG5oqELlZjyc=';
+
+      expect(await hasher.verify('Password123!', shortSalt)).toBe(false);
+    });
+
+    it('should reject mismatched hash size', async () => {
+      const shortHash = '$pbkdf2-sha256$600000$xRDzRIW4WcZ8U135JQtdzQ==$c2hvcnQ=';
+
+      expect(await hasher.verify('Password123!', shortHash)).toBe(false);
+    });
   });
 });
