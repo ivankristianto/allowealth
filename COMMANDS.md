@@ -4,14 +4,23 @@ All available `bun run` commands for the project.
 
 ## Development
 
-| Command                | Description                                                      |
-| ---------------------- | ---------------------------------------------------------------- |
-| `bun run dev`          | Start Astro dev server with hot reload                           |
-| `bun run preview`      | Preview build locally (uses `.env`)                              |
-| `bun run preview:prod` | Preview build with production env (uses `.env.production`)       |
-| `bun run docker:start` | Start the Docker app stack (first run creates `.env` then exits) |
-| `bun run docker:seed`  | Seed Docker demo database (`allowealth-data` volume)             |
-| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)                   |
+| Command                | Description                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| `bun run dev`          | Start Astro dev server with hot reload                                            |
+| `bun run preview`      | Preview build locally (uses `.env`)                                               |
+| `bun run preview:prod` | Preview build with production env (uses `.env.production`)                        |
+| `bun run docker:start` | Start the Docker app stack from local build (first run creates `.env` then exits) |
+| `bun run docker:seed`  | Seed Docker demo database (`allowealth-data` volume)                              |
+| `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)                                    |
+
+Two compose files are shipped under `docker/`:
+
+| File                      | Image source                               | When to use                                         |
+| ------------------------- | ------------------------------------------ | --------------------------------------------------- |
+| `docker-compose.yml`      | Built locally from the working tree        | Forks, source modifications, air-gapped builds      |
+| `docker-compose.prod.yml` | `ghcr.io/ivankristianto/allowealth:latest` | Self-hosting (recommended); updates via `pull`/`up` |
+
+`bun run docker:start` and `bun run docker:stop` operate on the build file. For the prod file, run `docker compose -f docker/docker-compose.prod.yml <command>` directly.
 
 ```bash
 bun run dev              # http://localhost:4321
@@ -30,6 +39,24 @@ bun run docker:start     # Builds and starts the Docker stack
 docker compose -f docker/docker-compose.yml logs -f app  # Watch startup
 # Visit http://localhost:3000 to complete first-run setup
 ```
+
+**Production self-host (pre-built image):**
+
+```bash
+# After `bun run docker:start` has scaffolded .env and you've filled in OAuth/Turnstile values,
+# switch to the published image instead of building locally:
+docker compose -f docker/docker-compose.prod.yml pull
+docker compose -f docker/docker-compose.prod.yml up -d
+
+# Updates (no rebuild, no git checkout):
+docker compose -f docker/docker-compose.prod.yml pull
+docker compose -f docker/docker-compose.prod.yml up -d
+
+# Pin a specific image tag:
+APP_IMAGE_TAG=v0.29.8 docker compose -f docker/docker-compose.prod.yml up -d
+```
+
+See `apps/docs/src/content/docs/self-host.md` (or the [Self-Host docs](https://docs.allowealth.io/self-host/)) for the full production runbook.
 
 ### Docker Container Commands
 
@@ -58,7 +85,12 @@ bun run docker:seed -- --stress
 ```
 
 Note: Migrations run automatically on every container start via the entrypoint script.
-Note: `docker:seed` works by mounting local `src/` into the slim runtime image (which no longer ships seed/setup source files).
+Note: The runtime image ships pre-bundled maintenance scripts at `/app/dist/scripts/seed.js` and `/app/dist/scripts/empty.js`, built by `bun run build:scripts` during the image build. `bun run docker:seed` invokes the seed bundle directly — no source tree is bind-mounted. To seed manually against a running container:
+
+```bash
+docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --months=6
+docker exec allowealth-app bun /app/dist/scripts/empty.js
+```
 
 ## Docs Site (Starlight)
 

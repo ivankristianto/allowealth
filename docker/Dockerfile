@@ -20,6 +20,10 @@ COPY . .
 # Build the Node.js standalone server
 RUN bun run build:node
 
+# Bundle the maintenance scripts (seed, empty) so they can run inside the
+# slim runtime image without the source tree.
+RUN bun run build:scripts
+
 # ─── Stage 3: Production dependencies only ──────────────────────────────────
 # TODO: pin to sha256 digest for reproducible builds
 FROM oven/bun:1.3.11 AS prod-deps

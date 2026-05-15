@@ -25,7 +25,5 @@ echo "Seeding demo data into Docker volume (allowealth-data)..."
 
 docker run --rm --entrypoint bun \
   -v allowealth-data:/data \
-  -v "${REPO_ROOT}/src:/app/src:ro" \
-  -v "${REPO_ROOT}/tsconfig.json:/app/tsconfig.json:ro" \
   -e ALLOW_SEED=true \
-  allowealth-app run src/db/seed/index.ts "$@"
+  allowealth-app /app/dist/scripts/seed.js "$@"

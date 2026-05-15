@@ -47,7 +47,9 @@ const tablesToEmpty = [
 async function emptyDatabase() {
   console.log(`\n🗑️  Emptying database (${config.dialect})...\n`);
 
-  const isProduction = import.meta.env.MODE === 'production';
+  // `import.meta.env.MODE` is undefined under Bun, so use `process.env.NODE_ENV`,
+  // which `bun build` inlines at build time (NODE_ENV is set in build:scripts).
+  const isProduction = process.env.NODE_ENV === 'production';
 
   if (isProduction) {
     console.log('⚠️  WARNING: Running in production mode!');

@@ -78,8 +78,10 @@ import { getTrailingMonths } from './lib/dates';
 // PRODUCTION GUARD
 // ============================================================================
 
-const isProduction = import.meta.env.MODE === 'production';
-const allowSeed = import.meta.env.ALLOW_SEED === 'true';
+// `import.meta.env.MODE` is undefined under Bun, so use `process.env.NODE_ENV`,
+// which `bun build` inlines at build time (NODE_ENV is set in build:scripts).
+const isProduction = process.env.NODE_ENV === 'production';
+const allowSeed = process.env.ALLOW_SEED === 'true';
 
 if (isProduction && !allowSeed) {
   console.error('❌ Seeding disabled in production.');

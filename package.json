@@ -19,6 +19,7 @@
     "build:analyze": "bun run build && echo '\n📊 Bundle analysis available at dist/stats.html'",
     "build:node": "DEPLOY_TARGET=node astro build",
     "build:cloudflare": "DEPLOY_TARGET=cloudflare astro build",
+    "build:scripts": "NODE_ENV=production bun build src/db/seed/index.ts --target=bun --outfile=dist/scripts/seed.js && NODE_ENV=production bun build src/db/empty.ts --target=bun --outfile=dist/scripts/empty.js",
     "deploy:cloudflare": "bun run build:cloudflare && wrangler deploy",
     "docker:start": "./scripts/docker-start.sh",
     "docker:seed": "./scripts/docker-seed.sh",
