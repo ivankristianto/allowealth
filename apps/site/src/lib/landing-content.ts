@@ -73,7 +73,7 @@ export interface FaqItem {
   answer: string;
 }
 
-const DEMO_URL = 'https://demo.allowealth.io';
+const DEMO_URL = 'https://preview.allowealth.io';
 const SELF_HOST_DOCS_URL = 'https://docs.allowealth.io/self-host';
 
 // ============================================================================

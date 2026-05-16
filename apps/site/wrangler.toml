@@ -1,7 +1,7 @@
 # Cloudflare Pages configuration for the Allowealth marketing site.
 # Deploys independently from the app worker.
 # Set PUBLIC_APP_URL in the Pages project environment
-# (for example: https://demo.allowealth.io).
+# (for example: https://preview.allowealth.io).
 
 name = "allowealth-site"
 compatibility_date = "2026-03-11"

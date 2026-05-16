@@ -2,7 +2,7 @@
  * Marketing site configuration helpers.
  */
 
-const DEFAULT_PUBLIC_APP_URL = 'https://demo.allowealth.io';
+const DEFAULT_PUBLIC_APP_URL = 'https://preview.allowealth.io';
 
 export function getPublicAppOrigin(): string {
   return import.meta.env.PUBLIC_APP_URL || DEFAULT_PUBLIC_APP_URL;

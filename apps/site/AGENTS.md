@@ -52,9 +52,9 @@ apps/site/
 
 Set these in Cloudflare Pages dashboard (Settings > Environment variables):
 
-| Variable         | Purpose                          | Example                      |
-| ---------------- | -------------------------------- | ---------------------------- |
-| `PUBLIC_APP_URL` | URL of the actual Allowealth app | `https://demo.allowealth.io` |
+| Variable         | Purpose                          | Example                         |
+| ---------------- | -------------------------------- | ------------------------------- |
+| `PUBLIC_APP_URL` | URL of the actual Allowealth app | `https://preview.allowealth.io` |
 
 ## Development Commands
 

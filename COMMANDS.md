@@ -210,7 +210,7 @@ Deploy per environment with:
 
 ```bash
 bun run build:cloudflare
-wrangler deploy --env demo   # → demo.allowealth.io
+wrangler deploy --env demo   # → preview.allowealth.io
 wrangler deploy --env vv     # → vv.allowealth.io
 ```
 

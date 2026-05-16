@@ -94,7 +94,7 @@ bunx wrangler pages deploy
 3. **Set environment variables** (Settings > Environment variables):
 
    ```
-   PUBLIC_APP_URL=https://demo.allowealth.io
+    PUBLIC_APP_URL=https://preview.allowealth.io
    ```
 
    Replace with the URL of your deployed Allowealth app worker.
