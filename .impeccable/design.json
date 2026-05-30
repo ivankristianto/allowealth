@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-30T02:36:09Z",
+  "title": "Design System: Allowealth",
+  "extensions": {
+    "colorMeta": {
+      "forest-signal": {
+        "role": "primary",
+        "displayName": "Forest Signal",
+        "canonical": "#15803d",
+        "tonalRamp": [
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#22c55e",
+          "#4ade80",
+          "#86efac",
+          "#dcfce7"
+        ]
+      },
+      "slate-ink": {
+        "role": "neutral",
+        "displayName": "Slate Ink",
+        "canonical": "#0f172a",
+        "tonalRamp": [
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#f1f5f9"
+        ]
+      },
+      "surface-base": {
+        "role": "neutral",
+        "displayName": "Surface Base",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#64748b",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc",
+          "#ffffff"
+        ]
+      },
+      "success-emerald": {
+        "role": "tertiary",
+        "displayName": "Success Emerald",
+        "canonical": "#047857",
+        "tonalRamp": [
+          "#064e3b",
+          "#047857",
+          "#059669",
+          "#10b981",
+          "#34d399",
+          "#6ee7b7",
+          "#a7f3d0",
+          "#d1fae5"
+        ]
+      },
+      "warning-amber": {
+        "role": "tertiary",
+        "displayName": "Warning Amber",
+        "canonical": "#b45309",
+        "tonalRamp": [
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fbbf24",
+          "#fcd34d",
+          "#fef3c7"
+        ]
+      },
+      "error-rose": {
+        "role": "tertiary",
+        "displayName": "Error Rose",
+        "canonical": "#e11d48",
+        "tonalRamp": [
+          "#881337",
+          "#9f1239",
+          "#be123c",
+          "#e11d48",
+          "#f43f5e",
+          "#fb7185",
+          "#fda4af",
+          "#ffe4e6"
+        ]
+      },
+      "info-sky": {
+        "role": "tertiary",
+        "displayName": "Info Sky",
+        "canonical": "#0284c7",
+        "tonalRamp": [
+          "#0c4a6e",
+          "#075985",
+          "#0369a1",
+          "#0284c7",
+          "#0ea5e9",
+          "#38bdf8",
+          "#7dd3fc",
+          "#e0f2fe"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Rare large moments only (auth screens, a standout figure). Not for routine chrome."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Major page identity where a page wants weight."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and card headings; the in-app workhorse heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text, capped at 65-75ch. Restrained 15px base for dense views."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, badges, metadata. 13px accessible floor."
+      },
+      "numeric": {
+        "displayName": "Numeric",
+        "purpose": "Amounts and balances in SF Mono; digits align in columns."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03)",
+        "purpose": "Resting state for cards. Whisper-soft ambient lift."
+      },
+      {
+        "name": "ambient-sm",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "purpose": "Smallest transient layer lift (dropdowns)."
+      },
+      {
+        "name": "ambient-lg",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Popovers and floating menus only."
+      },
+      {
+        "name": "accent-glow",
+        "value": "0 10px 15px -3px rgb(21 128 61 / 0.25)",
+        "purpose": "Primary CTA only. The one permitted colored shadow; reinforces the One Signal Rule."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for all state transitions."
+      },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Micro-feedback (hover, focus)." },
+      {
+        "name": "duration-base",
+        "value": "200ms",
+        "purpose": "Standard transitions (buttons, inputs)."
+      },
+      {
+        "name": "duration-slow",
+        "value": "300ms",
+        "purpose": "Larger entrances (modals, drawers)."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1536px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The primary call to action. The only button that carries the forest accent glow.",
+      "html": "<button class=\"ds-btn-primary\">Add transaction</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.5rem; padding: 0.625rem 1.25rem; background: #15803d; color: #ffffff; font-family: Inter, -apple-system, sans-serif; font-size: 0.9375rem; font-weight: 500; border: none; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgb(21 128 61 / 0.25); cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #166534; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #15803d; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action that still wants the accent's authority. No glow.",
+      "html": "<button class=\"ds-btn-outline\">Export</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.5rem; padding: 0.625rem 1.25rem; background: transparent; color: #15803d; font-family: Inter, -apple-system, sans-serif; font-size: 0.9375rem; font-weight: 500; border: 1px solid #15803d; border-radius: 1rem; cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-outline:hover { background: rgb(21 128 61 / 0.1); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #15803d; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis action. Always carries a 1px border so it never floats borderless on a colored surface.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.5rem; padding: 0.625rem 1.25rem; background: transparent; color: #0f172a; font-family: Inter, -apple-system, sans-serif; font-size: 0.9375rem; font-weight: 500; border: 1px solid #e2e8f0; border-radius: 1rem; cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-ghost:hover { background: #f8fafc; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #15803d; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Sharp-cornered field, the deliberate ledger edge. Focus shifts the border to Forest Signal with a soft ring.",
+      "html": "<input class=\"ds-input-field\" type=\"text\" placeholder=\"Search transactions\" />",
+      "css": ".ds-input-field { height: 2.5rem; padding: 0.5rem 0.75rem; background: #ffffff; color: #0f172a; font-family: Inter, -apple-system, sans-serif; font-size: 0.8125rem; border: 1px solid #e2e8f0; border-radius: 0; outline: none; transition: border-color 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-input-field::placeholder { color: rgb(15 23 42 / 0.4); } .ds-input-field:focus-visible { border-color: #15803d; box-shadow: 0 0 0 2px rgb(21 128 61 / 0.25); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Gently rounded container that earns separation from a 1px border and a whisper-soft resting shadow. Never nested.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Groceries</h3><p class=\"ds-card-amount\">Rp 1,240,000</p><p class=\"ds-card-meta\">82% of budget</p></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03); } .ds-card-title { margin: 0 0 0.5rem; font-family: Inter, -apple-system, sans-serif; font-size: 1.25rem; font-weight: 600; color: #0f172a; } .ds-card-amount { margin: 0 0 0.25rem; font-family: 'SF Mono', Monaco, monospace; font-size: 1.25rem; font-weight: 500; color: #0f172a; } .ds-card-meta { margin: 0; font-family: Inter, -apple-system, sans-serif; font-size: 0.8125rem; color: #475569; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Compact status tag. Status variants always include a word, never color alone.",
+      "html": "<span class=\"ds-badge ds-badge-warning\">80% spent</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.625rem; font-family: Inter, -apple-system, sans-serif; font-size: 0.8125rem; font-weight: 700; border-radius: 9999px; background: #f1f5f9; color: #0f172a; } .ds-badge-warning { background: #fef3c7; color: #92400e; }"
+    },
+    {
+      "name": "Sidebar Nav Item (active)",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Active navigation item: the one sanctioned colored leading indicator in the system. 2px Forest Signal left border plus a faint accent gradient wash.",
+      "html": "<a class=\"ds-nav-item ds-nav-item-active\"><span class=\"ds-nav-dot\" aria-hidden=\"true\"></span>Budget</a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; font-family: Inter, -apple-system, sans-serif; font-size: 0.9375rem; color: #475569; text-decoration: none; border-radius: 0.5rem; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-nav-item:hover { background: #f8fafc; } .ds-nav-item-active { color: #15803d; font-weight: 600; border-left: 2px solid #15803d; background: linear-gradient(90deg, rgb(21 128 61 / 0.1) 0%, rgb(21 128 61 / 0) 100%); } .ds-nav-dot { width: 22px; height: 22px; display: inline-block; border-radius: 9999px; background: currentColor; opacity: 0.18; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Steady Ledger",
+    "overview": "Allowealth carries the quiet composure of a good accountant's hand. Money is stressful, so the interface never adds to the noise: figures are honest and exact, surfaces are calm, and nothing shouts. The green pen comes out only when it matters. Restraint is not the absence of design here, it is the design. This is a product register and a Restrained color system: tinted slate neutrals carry the surface, and a single forest-green accent (Forest Signal) appears on roughly a tenth of any screen. Two themes are first-class: a bright light mode for daytime glances and a comfortable, glare-free dark mode for late-night reviews. Components feel refined and restrained, with a deliberate tension: fields are sharp-cornered for ledger-like precision while buttons are softly rounded so the call to action feels approachable.",
+    "keyCharacteristics": [
+      "Restrained palette: tinted slate neutrals plus one forest-green signal.",
+      "Forest Signal appears on ≤10% of any screen; its rarity is the point.",
+      "Flat by default; depth comes from tonal layering, not heavy shadows.",
+      "Sharp fields, soft buttons: a deliberate precision/approachability tension.",
+      "Exact numbers in a tabular monospace; honesty over flattery.",
+      "WCAG 2.1 AA in both themes; color is never the only signal."
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "Forest Signal covers ≤10% of any given screen. It marks the single most important action or the on-track state, nothing else. If two greens compete on one view, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tinted Neutral Rule",
+        "body": "Never #000 or pure #fff as a working text/border value. Neutrals are slate, tinted cool. Surfaces step tonally (base -> raised -> edge), 6-10% luminance apart, so elevation reads without a shadow.",
+        "section": "colors"
+      },
+      {
+        "name": "The Honest Color Rule",
+        "body": "Status color always pairs with text or an icon. A red number is never the only signal that a budget is blown.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Money Rule",
+        "body": "Currency and quantitative figures use the monospace stack so digits align in columns. Prose never uses it.",
+        "section": "typography"
+      },
+      {
+        "name": "The 13px Floor Rule",
+        "body": "No text smaller than 13px, ever. Hierarchy comes from weight and scale, not from shrinking labels into illegibility.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-At-Rest Rule",
+        "body": "Surfaces are flat at rest and earn elevation through tone and border, not shadow. A shadow above --shadow-sm is a response to state, never a default decoration.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep Forest Signal to ≤10% of any screen: one primary action, on-track status, focus, active nav.",
+      "Do render money and comparable figures in the SF Mono stack so digits align in columns.",
+      "Do build depth from the tonal surface ramp and 1px borders before reaching for a shadow.",
+      "Do give buttons explicit rounded-2xl (16px) and keep fields sharp (0 radius). The tension is intentional.",
+      "Do pair every status color with a word or icon; never signal over budget with red alone.",
+      "Do maintain both themes as first-class; light uses 600-700 tokens for AA, dark desaturates to 400.",
+      "Do keep text at 13px or larger and build hierarchy through weight and scale.",
+      "Do honor prefers-reduced-motion; motion is feedback, never required to understand state."
+    ],
+    "donts": [
+      "Don't gamify. No confetti, badges-as-rewards, streaks, dopamine nudges, or mascots.",
+      "Don't build an enterprise banking dashboard: no dense gray corporate chrome, no clutter.",
+      "Don't reach for generic SaaS cliches: no cream-and-purple gradients, no hero-metric card rows, no identical icon-heading-text grids.",
+      "Don't go crypto/neon: no neon-on-black, no glowing gradient surfaces, no hype.",
+      "Don't use a colored side-stripe border (>1px) on cards, list items, callouts, or alerts. The 2px Forest Signal indicator is permitted on the active nav item only.",
+      "Don't use background-clip: text gradient text. Emphasis comes from weight and size in a single solid color.",
+      "Don't apply decorative glassmorphism or large backdrop-blur on fixed/always-visible surfaces; use near-opaque fills and radial-gradient instead.",
+      "Don't let a second green compete with Forest Signal, nest cards, or drop a shadow heavier than --shadow-sm at rest."
+    ]
+  }
+}
