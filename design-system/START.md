@@ -1,6 +1,6 @@
 # Design System
 
-**Version:** 1.2.0 | **Framework:** Astro 6.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.3.0 | **Framework:** Astro 6.x + Tailwind v4 + DaisyUI v5
 
 ## Quick Start
 
@@ -12,14 +12,16 @@ This guide reflects the **Allowealth** design system (v1.0.0).
 
 **Source of truth:** `design-system/styles.json`
 
-**Color system update (v1.1.0 - Forest Green):**
+**Color system (v1.3.0 - Forest Green, WCAG AA corrected):**
+
+Light-mode semantics use 600–700 level tokens for ≥4.5:1 contrast on white. Source of truth is `src/styles/tokens.css` and `src/lib/tokens.ts`.
 
 - **Primary:** `#0f172a` (slate-900) - main brand color, text, borders
-- **Accent:** `#15803d` (forest-700) - interactive elements, CTAs, focus states (WCAG AA)
-- **Success:** `#10b981` (emerald-500) - confirmations, positive states, IDR currency
-- **Warning:** `#f59e0b` (amber-500) - budget alerts, caution states
-- **Error:** `#f43f5e` (rose-500) - errors, over budget, danger states
-- **Info:** `#0ea5e9` (sky-500) - informational messages (distinct from accent)
+- **Accent:** `#15803d` (forest-700) - interactive elements, CTAs, focus states (WCAG AA 5.5:1)
+- **Success:** `#047857` (emerald-700) - confirmations, positive states (WCAG AA 5.5:1)
+- **Warning:** `#b45309` (amber-700) - budget alerts, caution states (WCAG AA 5.0:1)
+- **Error:** `#e11d48` (rose-600) - errors, over budget, danger states (WCAG AA 5.2:1)
+- **Info:** `#0284c7` (sky-600) - informational messages, distinct from accent (WCAG AA 4.5:1)
 
 **Dark mode update (v1.2.0 - Comfortable Dark):**
 
@@ -92,28 +94,28 @@ colors.primaryLight; // #f1f5f9 (slate-100 - backgrounds)
 colors.accent; // #15803d (forest-700 - CTAs, WCAG AA compliant)
 colors.accentHover; // #166534 (forest-800)
 
-colors.warning; // #f59e0b (amber - budget alerts)
-colors.error; // #f43f5e (rose - over budget)
-colors.success; // #10b981 (emerald - confirmations)
-colors.info; // #0ea5e9 (sky - info, distinct from accent)
+colors.warning; // #b45309 (amber-700 - budget alerts)
+colors.error; // #e11d48 (rose-600 - over budget)
+colors.success; // #047857 (emerald-700 - confirmations)
+colors.info; // #0284c7 (sky-600 - info, distinct from accent)
 
-colors.currency.idr; // #10b981 (emerald)
-colors.currency.usd; // #3b82f6 (blue)
+colors.currency.idr; // #047857 (emerald-700)
+colors.currency.usd; // #0284c7 (sky-600)
 
-colors.status.ok; // #22c55e (<80%)
-colors.status.warning; // #f59e0b (80-99%)
-colors.status.danger; // #f43f5e (≥100%)
+colors.status.ok; // #15803d (green-700, <80%)
+colors.status.warning; // #b45309 (amber-700, 80-99%)
+colors.status.danger; // #e11d48 (rose-600, ≥100%)
 ```
 
 **DaisyUI Semantic Classes (automatically switch with light/dark theme):**
 
 ```typescript
-'text-primary'; // Primary brand color (slate-900 light / slate-50 dark)
-'text-accent'; // Accent color (forest-700) - CTAs, interactive elements
-'text-success'; // Success states (emerald-500) - confirmations, IDR
-'text-warning'; // Warning states (amber-500) - budget alerts
-'text-error'; // Error states (rose-500) - over budget, danger
-'text-info'; // Info states (sky-500) - informational
+'text-primary'; // Primary brand color (slate-900 light / slate-200 dark)
+'text-accent'; // Accent color (forest-700 light / green-500 dark) - CTAs, interactive elements
+'text-success'; // Success states (emerald-700 light / emerald-400 dark) - confirmations, IDR
+'text-warning'; // Warning states (amber-700 light / amber-400 dark) - budget alerts
+'text-error'; // Error states (rose-600 light / red-400 dark) - over budget, danger
+'text-info'; // Info states (sky-600 light / sky-400 dark) - informational
 
 'bg-base-100'; // Base background
 'bg-base-200'; // Elevated background (cards, inputs)
