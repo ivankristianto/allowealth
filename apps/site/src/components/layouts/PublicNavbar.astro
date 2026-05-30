@@ -57,7 +57,7 @@ const navLinks = [
               href={link.href}
               target={link.external ? '_blank' : undefined}
               rel={link.external ? 'noopener noreferrer' : undefined}
-              class="text-sm font-bold text-base-content/60 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded inline-flex items-center gap-1"
+              class="text-sm font-bold text-base-content/70 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded inline-flex items-center gap-1 py-2"
             >
               {link.label}
               {link.external && <ExternalLink size={12} class="opacity-50" aria-hidden="true" />}
@@ -139,7 +139,7 @@ const navLinks = [
 </nav>
 
 <script>
-  // Mobile menu toggle functionality
+  // Mobile menu toggle with focus trap
   document.addEventListener('DOMContentLoaded', () => {
     const menuButtonEl = document.getElementById('mobile-menu-button');
     const mobileMenuEl = document.getElementById('mobile-menu');
@@ -147,7 +147,6 @@ const navLinks = [
 
     if (!menuButtonEl || !mobileMenuEl || !backdropEl) return;
 
-    // After the null check, cast to non-null types
     const menuButton = menuButtonEl;
     const mobileMenu = mobileMenuEl;
     const backdrop = backdropEl;
@@ -156,11 +155,43 @@ const navLinks = [
     const menuIconClose = menuButton.querySelector('.menu-icon-close');
     let isOpen = false;
 
+    function getFocusableElements(): Element[] {
+      return Array.from(
+        mobileMenu.querySelectorAll<HTMLElement>(
+          'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex >= 0);
+    }
+
+    function trapFocus(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+
+      const focusable = getFocusableElements();
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = focusable[0] as HTMLElement;
+      const last = focusable[focusable.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
     function toggleMenu() {
       isOpen = !isOpen;
 
       if (isOpen) {
-        // Open menu
         mobileMenu.classList.remove('opacity-0', 'invisible');
         mobileMenu.classList.add('opacity-100', 'visible');
         backdrop.classList.remove('opacity-0', 'invisible');
@@ -169,8 +200,14 @@ const navLinks = [
         menuIconClose?.classList.remove('hidden');
         menuButton.setAttribute('aria-expanded', 'true');
         document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', trapFocus);
+
+        // Move focus to first link
+        requestAnimationFrame(() => {
+          const firstLink = getFocusableElements()[0] as HTMLElement | undefined;
+          firstLink?.focus();
+        });
       } else {
-        // Close menu
         mobileMenu.classList.add('opacity-0', 'invisible');
         mobileMenu.classList.remove('opacity-100', 'visible');
         backdrop.classList.add('opacity-0', 'invisible');
@@ -179,25 +216,25 @@ const navLinks = [
         menuIconClose?.classList.add('hidden');
         menuButton.setAttribute('aria-expanded', 'false');
         document.body.style.overflow = '';
+        document.removeEventListener('keydown', trapFocus);
+
+        // Return focus to toggle button
+        menuButton.focus();
       }
     }
 
-    // Toggle on button click
     menuButton.addEventListener('click', toggleMenu);
 
-    // Close on backdrop click
     backdrop.addEventListener('click', () => {
       if (isOpen) toggleMenu();
     });
 
-    // Close on escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && isOpen) {
         toggleMenu();
       }
     });
 
-    // Close menu when clicking a link (for anchor links)
     mobileMenu.querySelectorAll('a').forEach((link) => {
       link.addEventListener('click', () => {
         if (isOpen && !link.getAttribute('target')) {

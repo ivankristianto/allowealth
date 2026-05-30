@@ -36,23 +36,22 @@ const { typingHeadlines } = heroContent;
     <h1
       class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.9] mb-6 sm:mb-10"
     >
+      <span class="sr-only">{typingHeadlines.join(', ')} {heroContent.titleSuffix}</span>
       <span
         class="hero-typing-wrapper block"
         data-headlines={JSON.stringify(typingHeadlines)}
         style="min-height: 2em; contain: layout;"
-        aria-live="polite"
-        aria-atomic="true"
-        aria-label="Animated headline"
+        aria-hidden="true"
       >
         <span class="hero-typing-text">{typingHeadlines[0]}</span>
-        <span class="typing-cursor" aria-hidden="true">|</span>
+        <span class="typing-cursor">|</span>
       </span>
       <span class="text-accent">{heroContent.titleSuffix}</span>
     </h1>
 
     <!-- Description -->
     <p
-      class="text-base-content/60 text-base sm:text-lg md:text-2xl font-medium max-w-3xl mx-auto leading-relaxed mb-10 sm:mb-16"
+      class="text-base-content/70 text-base sm:text-lg md:text-2xl font-medium max-w-3xl mx-auto leading-relaxed mb-10 sm:mb-16"
     >
       {heroContent.description}
     </p>
