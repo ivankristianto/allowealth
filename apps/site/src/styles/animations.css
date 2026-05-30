@@ -30,9 +30,6 @@
     0.2,
     1
   ); /* Same as default - both accelerate and decelerate */
-
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Bouncy effect */
-  --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* Overshoot effect */
 }
 
 /* ============================================================================
@@ -134,18 +131,6 @@
   }
 }
 
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 /* ============================================================================
    Utility Classes
    ========================================================================= */
@@ -181,10 +166,6 @@
 
 .animate-scale-out {
   animation: scale-out var(--duration-normal) var(--ease-default) forwards;
-}
-
-.animate-pop-in {
-  animation: pop-in var(--duration-normal) var(--ease-bounce) forwards;
 }
 
 /* Transition utilities - use with hover/focus states */
