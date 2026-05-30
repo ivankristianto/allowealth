@@ -2,21 +2,19 @@
 /**
  * HeroSection Component
  *
- * Asymmetric two-column hero with animated typing headline,
- * product dashboard preview, and committed forest-green presence.
+ * Landing page hero with animated typing headline, description, and CTAs.
+ * Full-width centered text layout with committed forest-green gradient presence.
  */
 
-import { Image } from 'astro:assets';
 import { ArrowRight } from '@lucide/astro';
 import { heroContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
-import dashboardImg from '@/assets/screenshots/dashboard.jpg';
 
 const { typingHeadlines } = heroContent;
 ---
 
 <header class="relative z-10 pt-36 sm:pt-48 pb-16 sm:pb-32 px-6 overflow-hidden">
-  <!-- Background — committed forest presence, anchored to top-left -->
+  <!-- Background — committed forest presence -->
   <div
     class="absolute inset-0 pointer-events-none"
     style="background: radial-gradient(ellipse 80% 80% at 0% 0%, color-mix(in srgb, var(--color-accent) 15%, transparent) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 100%, color-mix(in srgb, var(--color-accent) 8%, transparent) 0%, transparent 70%);"
@@ -24,86 +22,58 @@ const { typingHeadlines } = heroContent;
   >
   </div>
 
-  <div class="relative max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-      <!-- Content -->
-      <div class="lg:col-span-7 space-y-8 sm:space-y-10">
-        <!-- Label — plain text, no badge pill -->
-        <span class="inline-block text-sm font-bold text-accent uppercase tracking-widest">
-          {heroContent.badge}
-        </span>
+  <div class="relative max-w-7xl mx-auto text-center">
+    <!-- Label -->
+    <span
+      class="inline-block text-sm font-bold text-accent uppercase tracking-widest mb-8 sm:mb-12"
+    >
+      {heroContent.badge}
+    </span>
 
-        <!-- Main Headline with Typing Animation -->
-        <h1
-          class="text-5xl sm:text-7xl md:text-8xl lg:text-[7rem] font-black tracking-tighter text-base-content leading-[0.88] mb-6 sm:mb-10"
-        >
-          <span class="sr-only">{typingHeadlines.join(', ')} {heroContent.titleSuffix}</span>
-          <span
-            class="hero-typing-wrapper block"
-            data-headlines={JSON.stringify(typingHeadlines)}
-            style="min-height: 2em; contain: layout;"
-            aria-hidden="true"
-          >
-            <span class="hero-typing-text">{typingHeadlines[0]}</span>
-            <span class="typing-cursor">|</span>
-          </span>
-          <span class="text-accent">{heroContent.titleSuffix}</span>
-        </h1>
+    <!-- Main Headline with Typing Animation -->
+    <h1
+      class="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.88] mb-6 sm:mb-10"
+    >
+      <span class="sr-only">{typingHeadlines.join(', ')} {heroContent.titleSuffix}</span>
+      <span
+        class="hero-typing-wrapper block"
+        data-headlines={JSON.stringify(typingHeadlines)}
+        style="min-height: 2em; contain: layout;"
+        aria-hidden="true"
+      >
+        <span class="hero-typing-text">{typingHeadlines[0]}</span>
+        <span class="typing-cursor">|</span>
+      </span>
+      <span class="text-accent">{heroContent.titleSuffix}</span>
+    </h1>
 
-        <!-- Description -->
-        <p
-          class="text-base-content/70 text-lg sm:text-xl md:text-2xl font-medium max-w-xl leading-relaxed"
-        >
-          {heroContent.description}
-        </p>
+    <!-- Description -->
+    <p
+      class="text-base-content/70 text-base sm:text-lg md:text-2xl font-medium max-w-3xl mx-auto leading-relaxed mb-10 sm:mb-16"
+    >
+      {heroContent.description}
+    </p>
 
-        <!-- CTA Buttons -->
-        <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-          <Button
-            variant="primary"
-            href={heroContent.ctaGuestHref}
-            size="xl"
-            className="w-full sm:w-auto"
-          >
-            <span>{heroContent.ctaGuest}</span>
-            <ArrowRight size={20} class="stroke-current" aria-hidden="true" />
-          </Button>
+    <!-- CTA Buttons -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+      <Button
+        variant="primary"
+        href={heroContent.ctaGuestHref}
+        size="xl"
+        className="w-full sm:w-auto"
+      >
+        <span>{heroContent.ctaGuest}</span>
+        <ArrowRight size={20} class="stroke-current" aria-hidden="true" />
+      </Button>
 
-          <Button
-            variant="secondary"
-            href={heroContent.ctaSecondaryHref ?? '#showcase'}
-            size="xl"
-            className="w-full sm:w-auto"
-          >
-            {heroContent.ctaSecondary}
-          </Button>
-        </div>
-      </div>
-
-      <!-- Product Preview -->
-      <div class="lg:col-span-5 hidden lg:block">
-        <div class="relative group">
-          <div
-            class="relative p-2 bg-base-200/40 rounded-3xl border border-base-300 shadow-2xl overflow-hidden"
-          >
-            <Image
-              src={dashboardImg}
-              alt="allowealth Dashboard"
-              class="w-full h-auto rounded-2xl grayscale-[0.1] group-hover:grayscale-0 transition-all duration-700"
-              loading="eager"
-              widths={[400, 600, 800]}
-              sizes="(min-width: 1024px) 40vw, 100vw"
-            />
-          </div>
-          <!-- Accent glow behind the card — radial gradient, no blur compositing -->
-          <div
-            class="absolute -inset-6 -z-10 pointer-events-none"
-            style="background: radial-gradient(ellipse at center, color-mix(in srgb, var(--color-accent) 18%, transparent) 0%, transparent 65%);"
-            aria-hidden="true"
-          >
-          </div>
-        </div>
-      </div>
+      <Button
+        variant="secondary"
+        href={heroContent.ctaSecondaryHref ?? '#showcase'}
+        size="xl"
+        className="w-full sm:w-auto"
+      >
+        {heroContent.ctaSecondary}
+      </Button>
     </div>
   </div>
 </header>
