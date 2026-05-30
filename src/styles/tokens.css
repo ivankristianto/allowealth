@@ -350,27 +350,11 @@
   --anim-duration-slow: 0.5s;
   --anim-duration-slower: 1s;
 
-  /* Animation easing */
+  /* Animation easing — ease-out only. No bounce/elastic per DESIGN.md motion doctrine. */
   --anim-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
   --anim-easing-in: cubic-bezier(0.4, 0, 1, 1);
   --anim-easing-out: cubic-bezier(0, 0, 0.2, 1);
   --anim-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --anim-easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --anim-easing-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
-
-  /* Spring configurations */
-  --spring-smooth-stiffness: 100;
-  --spring-smooth-damping: 15;
-  --spring-smooth-mass: 1;
-  --spring-bouncy-stiffness: 300;
-  --spring-bouncy-damping: 10;
-  --spring-bouncy-mass: 1;
-  --spring-gentle-stiffness: 50;
-  --spring-gentle-damping: 20;
-  --spring-gentle-mass: 1;
-  --spring-snappy-stiffness: 400;
-  --spring-snappy-damping: 30;
-  --spring-snappy-mass: 1;
 }
 
 /* ========================================

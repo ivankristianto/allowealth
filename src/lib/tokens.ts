@@ -273,29 +273,6 @@ export const animationDuration = {
   slow: 0.5, // 500ms
 } as const;
 
-export const springPresets = {
-  smooth: {
-    stiffness: 100,
-    damping: 15,
-    mass: 1,
-  },
-  bouncy: {
-    stiffness: 300,
-    damping: 10,
-    mass: 1,
-  },
-  gentle: {
-    stiffness: 50,
-    damping: 20,
-    mass: 1,
-  },
-  snappy: {
-    stiffness: 400,
-    damping: 30,
-    mass: 1,
-  },
-} as const;
-
 /* ========================================
  * TRANSITIONS (Legacy - use animationDuration)
  * ======================================== */
