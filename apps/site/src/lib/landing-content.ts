@@ -14,14 +14,6 @@ import reportsImg from '@/assets/screenshots/reports.jpg';
 // Types
 // ============================================================================
 
-export interface PricingTier {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-  featured?: boolean;
-}
-
 export interface FooterLinkSection {
   title: string;
   links: FooterLink[];
@@ -30,13 +22,6 @@ export interface FooterLinkSection {
 export interface FooterLink {
   label: string;
   href: string;
-}
-
-export interface SocialLink {
-  id: string;
-  label: string;
-  href: string;
-  icon: string; // Lucide icon name
 }
 
 export interface ShowcaseItem {
@@ -77,49 +62,6 @@ const DEMO_URL = 'https://preview.allowealth.io';
 const SELF_HOST_DOCS_URL = 'https://docs.allowealth.io/self-host';
 
 // ============================================================================
-// Pricing Data
-// ============================================================================
-
-export const pricingTiers: PricingTier[] = [
-  {
-    name: 'Starter',
-    price: 'Rp 0',
-    description: 'The base ledger for individuals.',
-    features: [
-      'Manual Transaction Logging',
-      '3 Account Accounts',
-      'Single User Access',
-      'Basic Reports',
-    ],
-  },
-  {
-    name: 'Pro',
-    price: 'Rp 99k',
-    description: 'The complete family headquarters.',
-    featured: true,
-    features: [
-      'Unlimited Accounts',
-      'AI Receipt Scanning',
-      'Global Currency Sync',
-      'Advanced 30-Year Forecasts',
-      'Premium Dashboard Insights',
-    ],
-  },
-  {
-    name: 'Expert',
-    price: 'Rp 249k',
-    description: 'For high-net-worth households.',
-    features: [
-      'Up to 10 Members',
-      'Custom Audit Logs',
-      'Priority Support',
-      'API Data Connectors',
-      'Investment Accounts Hub',
-    ],
-  },
-];
-
-// ============================================================================
 // Footer Data
 // ============================================================================
 
@@ -131,15 +73,6 @@ export const footerLinks: FooterLinkSection[] = [
       { label: 'Self-Host Guide', href: SELF_HOST_DOCS_URL },
       { label: 'Roadmap', href: 'https://github.com/ivankristianto/allowealth/issues' },
     ],
-  },
-];
-
-export const socialLinks: SocialLink[] = [
-  {
-    id: 'github',
-    label: 'GitHub',
-    href: 'https://github.com/ivankristianto/allowealth',
-    icon: 'GitHub',
   },
 ];
 
