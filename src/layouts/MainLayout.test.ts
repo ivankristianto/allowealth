@@ -15,3 +15,14 @@ describe('MainLayout demo banner integration', () => {
     expect(bannerIndex).toBeLessThan(headerIndex);
   });
 });
+
+describe('MainLayout workspace name forwarding', () => {
+  it('accepts workspaceName and forwards it to BaseLayout', () => {
+    const source = readFileSync('src/layouts/MainLayout.astro', 'utf8');
+
+    expect(source).toContain('workspaceName?: string;');
+    expect(source).toContain(
+      '<BaseLayout title={title} ssrTheme={ssrTheme} workspaceName={workspaceName}>'
+    );
+  });
+});
