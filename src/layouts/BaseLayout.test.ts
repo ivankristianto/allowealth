@@ -15,3 +15,13 @@ describe('BaseLayout SSR theme rendering', () => {
     expect(source).toContain('style={ssrFilterStyle}');
   });
 });
+
+describe('BaseLayout browser title', () => {
+  it('includes workspace name in the title when provided', () => {
+    const source = readFileSync('src/layouts/BaseLayout.astro', 'utf8');
+
+    expect(source).toContain('workspaceName?: string;');
+    expect(source).toContain('`${title} | ${workspaceName} - allowealth`');
+    expect(source).toContain('`${title} | allowealth`');
+  });
+});

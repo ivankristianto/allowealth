@@ -8,12 +8,21 @@ import { isPerfDebugEnabled } from '@/lib/perf/debug';
 interface Props {
   title?: string;
   ssrTheme?: string;
+  workspaceName?: string;
 }
 
-const { title = 'allowealth', ssrTheme } = Astro.props;
+const { title = 'allowealth', ssrTheme, workspaceName } = Astro.props;
 
-// Construct browser title: "Page Title | allowealth" or just "allowealth" for home
-const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
+// Construct browser title:
+// - "Page Title | Workspace Name - allowealth" for workspace-scoped pages
+// - "Page Title | allowealth" when no workspace context
+// - "allowealth" for home/brand-only pages
+const browserTitle =
+  title && title !== 'allowealth'
+    ? workspaceName
+      ? `${title} | ${workspaceName} - allowealth`
+      : `${title} | allowealth`
+    : 'allowealth';
 const hasServerTheme = Boolean(ssrTheme && ssrTheme !== 'system');
 const themePreference = ssrTheme || undefined;
 const resolvedTheme = ssrTheme === 'monochrome' ? 'light' : ssrTheme;
