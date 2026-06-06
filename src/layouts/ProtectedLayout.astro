@@ -38,6 +38,7 @@ import {
   userMetaService,
   transactionService,
   workspaceMetaService,
+  workspaceService,
 } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
@@ -49,6 +50,7 @@ interface LayoutData {
   userSettings: UserSettings;
   categoryUsageCounts: Array<{ category_id: string; count: number }>;
   workspaceCurrencies: { primary: Currency; secondary: Currency | null };
+  workspaceName: string;
 }
 
 interface Props {
@@ -86,6 +88,7 @@ let workspaceCurrencies: { primary: Currency; secondary: Currency | null } = {
   primary: 'IDR' as Currency,
   secondary: null,
 };
+let workspaceName = '';
 
 // Try to get from cache first (fail-silent: cache errors should never break the page)
 let cached: LayoutData | null = null;
@@ -107,22 +110,31 @@ if (cached) {
   userSettings = cached.userSettings;
   categoryUsageCounts = cached.categoryUsageCounts;
   workspaceCurrencies = cached.workspaceCurrencies ?? workspaceCurrencies;
+  workspaceName = cached.workspaceName ?? workspaceName;
 } else {
   try {
-    [categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies] =
+    [categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies, workspaceName] =
       await Promise.all([
         categoryService.findAll(user.workspaceId, { is_active: true }),
         accountService.findAll(user.workspaceId),
         userMetaService.getUserSettings(user.id),
         transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
         workspaceMetaService.getWorkspaceCurrencies(user.workspaceId),
+        workspaceService.findById(user.workspaceId).then((workspace) => workspace?.name ?? ''),
       ]);
     // Cache the results (5 minutes TTL — reduced cache miss frequency on Workers)
     try {
       if (cache && cacheKey) {
         await cache.set<LayoutData>(
           cacheKey,
-          { categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies },
+          {
+            categories,
+            accounts,
+            userSettings,
+            categoryUsageCounts,
+            workspaceCurrencies,
+            workspaceName,
+          },
           {
             ttl: 300,
             tags: [
@@ -190,6 +202,7 @@ if (
   ssrTheme={ssrTheme}
   primaryCurrency={workspaceCurrencies.primary}
   secondaryCurrency={workspaceCurrencies.secondary}
+  workspaceName={workspaceName}
 >
   <slot name="header" slot="header" />
   <slot />
