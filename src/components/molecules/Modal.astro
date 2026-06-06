@@ -253,14 +253,16 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
       modal.addEventListener('click', (e) => {
         const content = getContent();
         if (!content) return;
-        const rect = content.getBoundingClientRect();
-        const isInContent =
-          rect.top <= e.clientY &&
-          e.clientY <= rect.top + rect.height &&
-          rect.left <= e.clientX &&
-          e.clientX <= rect.left + rect.width;
 
-        if (!isInContent && modal.open && !isAnimating) {
+        // Detect backdrop clicks by event-target containment, not geometry.
+        // A click on a control that changes the modal's content height (e.g.
+        // a multi-step "continue" button) runs its own handler first and
+        // shrinks the modal-box; a coordinate-based check would then re-measure
+        // the smaller box and misclassify the in-content click as a backdrop
+        // click, closing the modal mid-flow.
+        const clickedInsideContent = e.target instanceof Node && content.contains(e.target);
+
+        if (!clickedInsideContent && modal.open && !isAnimating) {
           void handleClose(e);
         }
       });
