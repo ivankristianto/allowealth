@@ -7,12 +7,7 @@ import { CURRENT_ACCOUNT_NAME } from './accounts';
 export interface IncomeTransactionTemplate {
   owner: 'dad' | 'mom';
   category:
-    | 'Dad Salary'
-    | 'Mom Salary'
-    | 'Bonds'
-    | 'Fixed Deposits'
-    | 'Dividends'
-    | 'Other Side Income';
+    'Dad Salary' | 'Mom Salary' | 'Bonds' | 'Fixed Deposits' | 'Dividends' | 'Other Side Income';
   description: string;
   amount: number;
   day: number;

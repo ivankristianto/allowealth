@@ -25,14 +25,7 @@ type AnchorAttributes = Omit<HTMLAttributes<'a'>, 'class' | 'id' | 'href'>;
 
 export interface Props extends ButtonAttributes, AnchorAttributes {
   variant?:
-    | 'primary'
-    | 'accent'
-    | 'secondary'
-    | 'outline'
-    | 'ghost'
-    | 'danger'
-    | 'warning'
-    | 'success';
+    'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'warning' | 'success';
   shape?: 'default' | 'square' | 'circle';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   disabled?: boolean;
