@@ -165,9 +165,7 @@ function initTransactionDrawer(): void {
       metaDiv.className = 'text-xs text-neutral/60 font-medium';
 
       const apiCategory = (data as unknown as Record<string, unknown>).category as
-        | { id: string; name: string }
-        | null
-        | undefined;
+        { id: string; name: string } | null | undefined;
       let categoryLabel = apiCategory?.name;
       if (!categoryLabel) {
         const categorySelect = form.querySelector(
@@ -256,9 +254,7 @@ function initTransactionDrawer(): void {
       // Populate form fields
       const setInput = (name: string, value: string | number | null | undefined): void => {
         const input = form.querySelector(`[name="${name}"]`) as
-          | HTMLInputElement
-          | HTMLSelectElement
-          | null;
+          HTMLInputElement | HTMLSelectElement | null;
         if (input) {
           input.value = value == null ? '' : String(value);
           input.dispatchEvent(new Event('change', { bubbles: true }));

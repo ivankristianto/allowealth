@@ -127,8 +127,7 @@ export function errorResponse(
 export async function validateBody<T>(
   request: Request,
   schema:
-    | BaseSchema<unknown, T, BaseIssue<unknown>>
-    | BaseSchemaAsync<unknown, T, BaseIssue<unknown>>
+    BaseSchema<unknown, T, BaseIssue<unknown>> | BaseSchemaAsync<unknown, T, BaseIssue<unknown>>
 ): Promise<ValidationResult<T>> {
   try {
     const body = await request.json();

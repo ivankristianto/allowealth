@@ -61,9 +61,7 @@ let invitation: {
 let invitationError = '';
 
 type InvitationErrorCode =
-  | 'INVITATION_NOT_FOUND'
-  | 'INVITATION_EXPIRED'
-  | 'INVITATION_ALREADY_ACCEPTED';
+  'INVITATION_NOT_FOUND' | 'INVITATION_EXPIRED' | 'INVITATION_ALREADY_ACCEPTED';
 
 function getInvitationErrorCode(error: unknown): InvitationErrorCode | undefined {
   if (!error || typeof error !== 'object') {

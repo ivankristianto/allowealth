@@ -106,26 +106,22 @@ if (!user?.workspaceId) {
     const categorySource: LayoutCategory[] =
       layoutCategories.length > 0
         ? layoutCategories
-        : fetchedCategories.map(
-            (category): LayoutCategory => ({
-              id: category.id,
-              name: category.name,
-              type: category.type,
-              currency: category.currency,
-            })
-          );
+        : fetchedCategories.map((category): LayoutCategory => ({
+            id: category.id,
+            name: category.name,
+            type: category.type,
+            currency: category.currency,
+          }));
     const accountSource: LayoutAccount[] =
       layoutAccounts.length > 0
         ? layoutAccounts
-        : fetchedAccounts.map(
-            (account): LayoutAccount => ({
-              id: account.id,
-              name: account.name,
-              type: account.type,
-              currency: account.currency,
-              account_class: account.account_class,
-            })
-          );
+        : fetchedAccounts.map((account): LayoutAccount => ({
+            id: account.id,
+            name: account.name,
+            type: account.type,
+            currency: account.currency,
+            account_class: account.account_class,
+          }));
 
     const pendingById = new Map(
       pendingResults

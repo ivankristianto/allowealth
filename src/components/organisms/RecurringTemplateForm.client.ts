@@ -336,10 +336,7 @@ function initRecurringTemplateForm(): void {
 
   const setFieldValue = (name: string, value: string): void => {
     const field = form.querySelector(`[name="${name}"]`) as
-      | HTMLInputElement
-      | HTMLSelectElement
-      | HTMLTextAreaElement
-      | null;
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
     if (field) field.value = value;
   };
 
