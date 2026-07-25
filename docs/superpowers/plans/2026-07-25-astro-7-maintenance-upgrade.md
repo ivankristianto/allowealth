@@ -1127,19 +1127,20 @@ Expected: a 21-character ID and `true`. The regex is the same one the account mo
 
 - [ ] **Step 6: Verify lint-staged 17 runs**
 
-Touch a CSS file and a TS file, stage them, and confirm the hook fires end to end:
+Invoke the hook directly rather than making a probe commit. This proves the
+hook works without creating a commit that then has to be removed:
 
 ```bash
-git commit --allow-empty -m "test: verify husky 9 hook fires"
+sh .husky/pre-commit; echo "hook exit: $?"
 ```
 
-Expected: the hook output appears and the commit succeeds. Then remove the probe commit:
+Expected: the `Running pre-commit quality gates...` banner, lint-staged
+output, `astro check` reporting `0 errors`, the `✅ Pre-commit checks passed`
+line, and `hook exit: 0`.
 
-```bash
-git reset --hard HEAD~1
-```
-
-Only safe because the commit is empty and was just created. Confirm with `git log --oneline -1` that you removed the probe and not real work.
+Do **not** verify this with `git commit --allow-empty` followed by
+`git reset --hard`. A hard reset would destroy any uncommitted work in the
+tree, and Step 7's real commit already exercises the hook end to end.
 
 - [ ] **Step 7: Commit**
 
