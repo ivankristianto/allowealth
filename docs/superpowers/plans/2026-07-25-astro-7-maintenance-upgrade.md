@@ -40,7 +40,7 @@
 | Path | Change |
 | --- | --- |
 | `package.json` | Dependency versions; remove `@types/decimal.js` and `lucide`; add `globals`, `jiti`, `eslint-plugin-jsx-a11y`; `prepare` script for husky 9; add `snapshot:html` script. |
-| `astro.config.ts:70-79` | Replace Rollup `manualChunks` with Rolldown `advancedChunks`. |
+| `astro.config.ts:70-79` | Replace Rollup `manualChunks` with Rolldown `codeSplitting`. |
 | `eslint.config.js` | ESLint 10 + `eslint-plugin-astro@3` migration. |
 | `stylelint.config.js` | Stylelint 17 migration; drop redundant `stylelint-config-recommended`. |
 | `.husky/pre-commit` | Remove the husky 8 sourcing preamble. |
@@ -481,7 +481,22 @@ bun add astro@7.1.3 @astrojs/node@11.0.2
 bun add -d @astrojs/cloudflare@14.1.4 rollup-plugin-visualizer@7.0.1
 ```
 
-- [ ] **Step 2: Migrate `manualChunks` to Rolldown `advancedChunks`**
+- [ ] **Step 2: Migrate `manualChunks` to Rolldown `codeSplitting`**
+
+Verified against the actual packages, because the option name matters and the
+obvious guess is wrong:
+
+- Vite 8.1.5 contains **no reference to `manualChunks` at all**. The Rollup
+  callback is gone, not shimmed — leaving it in place yields no chunk
+  splitting rather than an error.
+- Vite reads `output.codeSplitting` and passes it to Rolldown:
+  `codeSplitting: output.codeSplitting ?? (...)`.
+- Rolldown accepts both `codeSplitting` and `advancedChunks`, but its own docs
+  warn: "If `advancedChunks` and `codeSplitting` are both specified,
+  `advancedChunks` option will be ignored." Since Vite always sets
+  `codeSplitting`, use `codeSplitting`. Do **not** use `advancedChunks`.
+- The group shape is `{ name: string, test: RegExp }` (Rolldown's
+  `CodeSplittingGroup`).
 
 In `astro.config.ts`, replace this block:
 
@@ -502,7 +517,7 @@ with:
 ```typescript
       rollupOptions: {
         output: {
-          advancedChunks: {
+          codeSplitting: {
             groups: [
               { name: 'chartjs', test: /node_modules[\\/]chart\.js/ },
               { name: 'motion', test: /node_modules[\\/](motion|framer-motion)/ },
@@ -512,7 +527,7 @@ with:
       },
 ```
 
-Rolldown replaces Rollup's `manualChunks` callback with a declarative `advancedChunks.groups` array. The `test` patterns must match the same paths the callback matched.
+Rolldown replaces Rollup's `manualChunks` callback with a declarative `codeSplitting.groups` array. The `test` patterns must match the same paths the callback matched.
 
 - [ ] **Step 3: Build and collect every compiler error**
 
@@ -556,7 +571,7 @@ Expected: `clean`. Cloudflare Workers cannot load `bun:` protocol imports from m
 ls dist/client/_astro/ | grep -iE "chartjs|motion"
 ```
 
-Expected: chunk files matching both names. If absent, `advancedChunks.groups` did not match — check the built module paths and correct the `test` regexes. Silent failure here inflates the main bundle without erroring.
+Expected: chunk files matching both names. If absent, `codeSplitting.groups` did not match — check the built module paths and correct the `test` regexes. Silent failure here inflates the main bundle without erroring.
 
 - [ ] **Step 8: Run remaining gates**
 
@@ -580,7 +595,7 @@ compiler, and Sätteri as the default Markdown pipeline. Adapters move to
 @astrojs/node 11 and @astrojs/cloudflare 14, both of which peer astro ^7.
 
 Migrates the chart.js/motion chunk split from Rollup's manualChunks
-callback to Rolldown's declarative advancedChunks.groups, and raises
+callback to Rolldown's declarative codeSplitting.groups, and raises
 rollup-plugin-visualizer to 7.x for its rolldown peer.
 
 compressHTML is intentionally left unset to adopt the new 'jsx' default;
@@ -1344,7 +1359,7 @@ Expected: all four succeed.
 bun run bundle:report
 ```
 
-Expected: client JS at or under 250 kB gzipped. Confirm the chart.js and motion chunks are still split out — if `advancedChunks` silently stopped matching, the main bundle absorbs both and the budget is likely blown.
+Expected: client JS at or under 250 kB gzipped. Confirm the chart.js and motion chunks are still split out — if `codeSplitting.groups` silently stopped matching, the main bundle absorbs both and the budget is likely blown.
 
 - [ ] **Step 8: Verify CSP headers still land**
 
