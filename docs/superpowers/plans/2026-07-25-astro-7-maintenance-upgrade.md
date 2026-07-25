@@ -16,6 +16,7 @@
 - `typescript` stays `^5.9.3`. Never raise it. `@astrojs/check@0.9.9` peers `typescript: ^5.0.0 || ^6.0.0` and `@typescript-eslint/eslint-plugin@8.65.0` peers `typescript: >=4.8.4 <6.1.0`.
 - Do **not** add a `compressHTML` key to `astro.config.ts`. The new `'jsx'` default is being adopted deliberately.
 - Package manager is `bun`. Use `bun install`, never `npm install`. There is no workspaces field — each of the four manifests installs separately.
+- **Preserve each dependency's existing range style.** `bun add pkg@version` writes an *exact* version and silently strips the `^` caret. After any `bun add`, check `git diff` on the manifest and restore the caret where the previous value had one. The repo uses a deliberate mixed convention: `astro`, `@astrojs/cloudflare`, `@astrojs/node`, and (in the root manifest only) `@astrojs/check` and `@astrojs/ts-plugin` are pinned exact on purpose; everything else uses carets. Flattening everything to exact stops future patch pickups and was not requested.
 - The four manifests: `./package.json`, `apps/docs/package.json`, `apps/site/package.json`, `apps/mcp/package.json`.
 - Quality gates, all blocking: `bun run lint:fix`, `bun run stylelint:fix`, `bun run format:fix`, `bun run typecheck`.
 - Client JS bundle budget: 250 kB gzipped.
