@@ -41,10 +41,11 @@ export default defineConfig({
       assetsInlineLimit: 0,
       rollupOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes('node_modules/chart.js')) return 'chartjs';
-            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion'))
-              return 'motion';
+          codeSplitting: {
+            groups: [
+              { name: 'chartjs', test: /node_modules[\\/]chart\.js/ },
+              { name: 'motion', test: /node_modules[\\/](motion|framer-motion)/ },
+            ],
           },
         },
       },
