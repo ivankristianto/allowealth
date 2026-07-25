@@ -15,7 +15,6 @@ import { defineCommand } from 'citty';
 import { exec } from '../lib/exec';
 import { targetArg } from '../lib/target';
 
-const D1_DATABASE_NAME = 'allowealth-db';
 const DEFAULT_BACKUP_DIR = 'backups';
 const SCHEMA_DETECTION_BUFFER_SIZE = 256 * 1024;
 
@@ -157,32 +156,15 @@ async function requireRestoreConfirmation(force?: boolean): Promise<void> {
   }
 }
 
-function backupToPath(target: string, outputPath: string): void {
+function backupToPath(outputPath: string): void {
   mkdirSync(dirname(outputPath), { recursive: true });
 
-  if (target === 'sqlite') {
-    const dbPath = resolve('db/.dev.db');
-    if (!existsSync(dbPath)) {
-      throw new Error(`SQLite database not found at ${dbPath}.`);
-    }
-    copyFileSync(dbPath, outputPath);
-    console.log(`✅ SQLite backup created: ${outputPath}`);
-    return;
+  const dbPath = resolve('db/.dev.db');
+  if (!existsSync(dbPath)) {
+    throw new Error(`SQLite database not found at ${dbPath}.`);
   }
-
-  if (target === 'd1' || target === 'd1-local') {
-    exec('wrangler', [
-      'd1',
-      'export',
-      D1_DATABASE_NAME,
-      target === 'd1-local' ? '--local' : '--remote',
-      '--output',
-      outputPath,
-    ]);
-    return;
-  }
-
-  throw new Error(`Unsupported target for backup: ${target}`);
+  copyFileSync(dbPath, outputPath);
+  console.log(`✅ SQLite backup created: ${outputPath}`);
 }
 
 export default defineCommand({
@@ -194,16 +176,10 @@ export default defineCommand({
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, isD1 } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
 
-        if (isD1()) {
-          console.error('❌ D1 setup should be done via Wrangler.');
-          console.error('   Use: wrangler d1 execute <db-name> --file=./src/db/setup.sql');
-          process.exit(1);
-        } else {
-          exec('bun', ['run', 'src/db/setup.ts']);
-        }
+        exec('bun', ['run', 'src/db/setup.ts']);
       },
     }),
     migrate: defineCommand({
@@ -212,15 +188,10 @@ export default defineCommand({
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, isD1, isD1Local } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
 
-        if (isD1()) {
-          const { migrateD1 } = await import('../lib/d1-migrate');
-          await migrateD1({ local: isD1Local() });
-        } else {
-          exec('bun', ['run', 'src/db/migrate.ts']);
-        }
+        exec('bun', ['run', 'src/db/migrate.ts']);
       },
     }),
     generate: defineCommand({
@@ -284,23 +255,8 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { resolveTarget, isD1 } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-
-        if (isD1() && process.env.PASSWORD_HASHER !== 'pbkdf2') {
-          console.error(
-            [
-              '❌ Cannot seed a D1 target with the default hasher.',
-              '',
-              '   D1 is served by Cloudflare Workers, which cannot verify Argon2id',
-              '   hashes. Re-run with PASSWORD_HASHER=pbkdf2 to produce hashes the',
-              '   Workers runtime can verify:',
-              '',
-              `     PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=${args.target}`,
-            ].join('\n')
-          );
-          process.exit(1);
-        }
 
         const seedArgs = ['run', 'src/db/seed/index.ts'];
         if (args.benchmark) {
@@ -404,7 +360,7 @@ export default defineCommand({
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, getTarget, isD1, isD1Local } = await import('../lib/target');
+        const { resolveTarget, getTarget } = await import('../lib/target');
         await resolveTarget(args);
 
         const target = getTarget();
@@ -413,11 +369,6 @@ export default defineCommand({
         console.error('\n⚠️  DANGER ZONE ⚠️');
         console.error('This command will DELETE ALL TABLES and reset the database.');
         console.error(`Target: ${target}`);
-
-        if (target === 'd1' || target === 'd1-local') {
-          console.error('This will drop all tables on D1 (including production if --target d1).');
-        }
-
         console.error('\nType "yes" to confirm:');
 
         // Read confirmation from stdin
@@ -441,13 +392,8 @@ export default defineCommand({
 
         console.error('\nDropping all tables...\n');
 
-        if (isD1()) {
-          const { dropD1Tables } = await import('../lib/d1-migrate');
-          await dropD1Tables({ local: isD1Local() });
-        } else if (target === 'sqlite') {
-          exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
-          console.log('✅ SQLite database file deleted.');
-        }
+        exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
+        console.log('✅ SQLite database file deleted.');
 
         console.log('\n✅ Database dropped. Run "aw db migrate" to recreate schema.\n');
       },
@@ -458,7 +404,7 @@ export default defineCommand({
         target: targetArg,
         output: {
           type: 'string',
-          description: 'Output backup path. Defaults to backups/<target>-<timestamp>.{sql|db}',
+          description: 'Output backup path. Defaults to backups/sqlite-<timestamp>.db',
         },
       },
       async run({ args }) {
@@ -466,12 +412,11 @@ export default defineCommand({
         await resolveTarget(args);
         const target = getTarget();
 
-        const defaultExt = target === 'sqlite' ? 'db' : 'sql';
         const outputPath =
           (args.output as string | undefined) ??
-          resolve(DEFAULT_BACKUP_DIR, `${target}-${timestampForFile()}.${defaultExt}`);
+          resolve(DEFAULT_BACKUP_DIR, `${target}-${timestampForFile()}.db`);
 
-        backupToPath(target, outputPath);
+        backupToPath(outputPath);
         console.log(`✅ Backup created: ${outputPath}`);
       },
     }),
@@ -549,14 +494,8 @@ export default defineCommand({
         const format = detectBackupFormat(selectedFile);
         validateBackupFile(selectedFile, format);
 
-        // Validate target/format compatibility
-        const validFormatsForTarget: Record<string, BackupFormat[]> = {
-          sqlite: ['sql', 'sqlite-db'],
-          d1: ['sql'],
-          'd1-local': ['sql'],
-        };
-        const validFormats = validFormatsForTarget[target];
-        if (validFormats && !validFormats.includes(format)) {
+        const validFormats: BackupFormat[] = ['sql', 'sqlite-db'];
+        if (!validFormats.includes(format)) {
           throw new Error(
             `Format "${format}" is not valid for target "${target}". ` +
               `Valid formats: ${validFormats.join(', ')}`
@@ -583,31 +522,18 @@ export default defineCommand({
         if (!args['no-backup']) {
           const preRestorePath = resolve(
             args['backups-dir'] as string,
-            `pre-restore-${timestampForFile()}.${target === 'sqlite' ? 'db' : 'sql'}`
+            `pre-restore-${timestampForFile()}.db`
           );
-          backupToPath(target, preRestorePath);
+          backupToPath(preRestorePath);
           console.log(`✅ Pre-restore backup created: ${preRestorePath}`);
         }
 
-        if (target === 'sqlite') {
-          if (format === 'sqlite-db') {
-            copyFileSync(selectedFile, resolve('db/.dev.db'));
-          } else if (format === 'sql') {
-            execFileSync('sqlite3', [resolve('db/.dev.db'), '.read', selectedFile], {
-              stdio: 'inherit',
-            });
-          } else {
-            throw new Error(`Format "${format}" is not supported for SQLite restore.`);
-          }
-        } else if (target === 'd1' || target === 'd1-local') {
-          exec('wrangler', [
-            'd1',
-            'execute',
-            D1_DATABASE_NAME,
-            target === 'd1-local' ? '--local' : '--remote',
-            '--file',
-            selectedFile,
-          ]);
+        if (format === 'sqlite-db') {
+          copyFileSync(selectedFile, resolve('db/.dev.db'));
+        } else {
+          execFileSync('sqlite3', [resolve('db/.dev.db'), '.read', selectedFile], {
+            stdio: 'inherit',
+          });
         }
 
         console.log(`\n✅ Restore completed from ${basename(selectedFile)}.`);
