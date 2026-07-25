@@ -245,7 +245,7 @@ Use `.client.ts` files with `data-*` attributes to pass server values to client.
 </script>
 ```
 
-**Astro 6 CSP note:** The main SSR app enables `security: { csp: true }` in `astro.config.ts`. `src/middleware/security-headers.ts` still writes the runtime CSP header with nonces, so the middleware header is the source of truth until the nonce path is removed.
+**Astro 7 CSP note:** The main SSR app enables `security: { csp: true }` in `astro.config.ts`. `src/middleware/security-headers.ts` still writes the runtime CSP header with nonces, so the middleware header is the source of truth until the nonce path is removed.
 
 **Rules:**
 
@@ -253,7 +253,7 @@ Use `.client.ts` files with `data-*` attributes to pass server values to client.
 - ❌ **Never mix `define:vars`, `is:inline`, or `type="module"` with npm imports**
 - ✅ **Use `data-*` attributes** to pass server values to client scripts
 - ✅ **Extract `data-action` from DOM, don't use `define:vars`**
-- ✅ **For shared layouts used by prerendered pages, prefer external scripts in `public/scripts/`** - static pages cannot rely on per-request CSP nonces, and Astro 6 hashes only apply to SSR-rendered output
+- ✅ **For shared layouts used by prerendered pages, prefer external scripts in `public/scripts/`** - static pages cannot rely on per-request CSP nonces, and Astro 7 hashes only apply to SSR-rendered output
 - ❌ **Do not add inline bootstrap scripts to prerendered public layouts** unless you also switch that route to a hash-based or static CSP design
 
 ## TypeScript in Components

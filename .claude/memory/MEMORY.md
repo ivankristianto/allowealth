@@ -28,8 +28,8 @@ This file is managed by Claude Code's auto-memory system.
 - **Implementation order**: UI → Service → API → CLI → Seeder
 - **Interactive pages**: Server-rendered HTML fragments via `?_render=html`
 - **Client scripts**: Use `.client.ts` files with `data-*` attributes (never `define:vars` with npm imports)
-- **Astro 6 baseline**: main SSR app enables `security: { csp: true }` in `astro.config.ts`, but `src/middleware/security-headers.ts` still owns the live CSP header until nonce cleanup lands.
-- **Docs and marketing**: `apps/docs` and `apps/site` stay static under Astro 6.
+- **Astro 7 baseline**: main SSR app enables `security: { csp: true }` in `astro.config.ts`, but `src/middleware/security-headers.ts` still owns the live CSP header until nonce cleanup lands.
+- **Docs and marketing**: `apps/docs` and `apps/site` stay static under Astro 7.
 
 ## Performance Targets (Critical)
 

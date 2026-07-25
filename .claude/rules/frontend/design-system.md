@@ -7,7 +7,7 @@ paths:
 
 # Design System
 
-**Version:** 1.3.0 | **Framework:** Astro 6.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.3.0 | **Framework:** Astro 7.x + Tailwind v4 + DaisyUI v5
 
 ## Visual Debugging with Chrome
 
