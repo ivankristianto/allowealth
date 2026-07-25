@@ -48,7 +48,7 @@
 | `apps/docs/package.json` | Astro 7, Starlight 0.41, new `@astrojs/markdown-remark` dep. |
 | `apps/site/package.json` | Astro 7, Lucide 1, minors. |
 | `apps/mcp/package.json` | Align `@modelcontextprotocol/sdk` and `valibot` with root. |
-| `.github/workflows/{quality-gates,deploy-cloudflare,deploy-site,deploy-docs-site}.yml` | `node-version` 22.12.0 → 24.18.0 (5 occurrences across 4 files). |
+| `.github/workflows/{quality-gates,deploy-site,deploy-docs-site}.yml` | `node-version` 22.12.0 → 24.18.0 (4 occurrences across 3 files; `deploy-cloudflare.yml` was deleted by Task 15). |
 | `.claude/CLAUDE.md:8,18` | Framework version and the "Astro 6 Note" heading. |
 | `AGENTS.md:15` | Baseline line. |
 | `docs/prd.md:1155` | Framework version (currently reads "Astro 4.x" — already stale). |
@@ -1200,7 +1200,7 @@ patterns depend on is unchanged."
 
 - [ ] **Step 1: Replace the pinned version in all five places**
 
-Five occurrences across four files. The current `'22.12.0'` pin sits below the floor required by `eslint-plugin-astro@3` (`^22.22.3 || ^24.16.0 || >=26.3.0`), `lint-staged@17` (`>=22.22.1`), `nanoid@6` (`^22 || ^24 || >=26`), and `rollup-plugin-visualizer@7` (`>=22`).
+Four occurrences across three files — `quality-gates.yml` pins it twice, plus `deploy-site.yml` and `deploy-docs-site.yml`. (`deploy-cloudflare.yml` also pinned it but was deleted by Task 15.) The current `'22.12.0'` pin sits below the floor required by `eslint-plugin-astro@3` (`^22.22.3 || ^24.16.0 || >=26.3.0`), `lint-staged@17` (`>=22.22.1`), `nanoid@6` (`^22 || ^24 || >=26`), and `rollup-plugin-visualizer@7` (`>=22`).
 
 ```bash
 grep -rln "node-version: '22.12.0'" .github/workflows/ | xargs sed -i '' "s/node-version: '22.12.0'/node-version: '24.18.0'/"
@@ -1212,7 +1212,7 @@ grep -rln "node-version: '22.12.0'" .github/workflows/ | xargs sed -i '' "s/node
 grep -rn "node-version" .github/workflows/
 ```
 
-Expected: five lines, all reading `node-version: '24.18.0'`. No `22.12.0` remains.
+Expected: four lines, all reading `node-version: '24.18.0'`. No `22.12.0` remains.
 
 - [ ] **Step 3: Commit**
 
