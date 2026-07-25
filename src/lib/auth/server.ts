@@ -222,8 +222,8 @@ function createAuthInstance() {
   return betterAuth(options);
 }
 
-// Lazily initialized auth instance for Cloudflare Workers compatibility
-// Environment variables are resolved via cloudflare:workers env at request time
+// Lazily initialized auth instance so environment variables are resolved at
+// request time rather than at module load.
 let authInstance: ReturnType<typeof betterAuth> | null = null;
 
 export const auth = new Proxy({} as ReturnType<typeof betterAuth>, {

@@ -1,50 +1,13 @@
 /**
  * Runtime Environment Utility
  *
- * Provides unified access to environment variables across different runtimes.
- *
- * In Cloudflare Workers / workerd, env vars are accessed via
- * `import { env } from 'cloudflare:workers'` (available since adapter v13 / Astro 6).
+ * Provides unified access to environment variables.
  *
  * Fallback chain (first defined value wins):
  * 1. Test overrides (unit tests)
- * 2. cloudflare:workers env (Workers + workerd dev)
- * 3. process.env (Bun CLI, Node.js)
- * 4. import.meta.env (Vite build-time vars)
+ * 2. process.env (Bun CLI, Node.js)
+ * 3. import.meta.env (Vite build-time vars)
  */
-
-/**
- * Cached reference to the cloudflare:workers env object.
- * `undefined` = not yet resolved, `null` = resolved but unavailable.
- */
-let cfEnv: Record<string, unknown> | null | undefined = undefined;
-
-/**
- * Resolve cloudflare:workers env lazily (no top-level await).
- *
- * Removing top-level await keeps this module synchronous so that Bun's
- * `require()` can load any file that imports it. The async probe fires
- * immediately but doesn't block module loading. In Workers the promise
- * settles before the first request; in Bun `cloudflare:workers` doesn't
- * exist so it resolves to null almost instantly.
- */
-(async () => {
-  try {
-    const moduleName = 'cloudflare:workers';
-    const mod = (await import(/* @vite-ignore */ moduleName)) as { env?: Record<string, unknown> };
-    cfEnv = mod.env ?? null;
-  } catch {
-    cfEnv = null;
-  }
-})();
-
-/**
- * Return cached cloudflare:workers env.
- * Returns null if not yet resolved (falls through to process.env).
- */
-function getCfEnv(): Record<string, unknown> | null {
-  return cfEnv ?? null;
-}
 
 /**
  * Test-only overrides for environment variables
@@ -57,9 +20,8 @@ let testOverrides: Record<string, string | undefined> | null = null;
  *
  * Priority:
  * 1. Test overrides (for unit tests)
- * 2. cloudflare:workers env (Cloudflare Workers / workerd dev)
- * 3. process.env (Node.js/Bun runtime - loaded via --env-file)
- * 4. import.meta.env (build-time env vars from Vite)
+ * 2. process.env (Node.js/Bun runtime - loaded via --env-file)
+ * 3. import.meta.env (build-time env vars from Vite)
  *
  * @param key - The environment variable name
  * @returns The value or undefined if not set
@@ -68,15 +30,6 @@ export function getEnv(key: string): string | undefined {
   // Check test overrides first (for unit tests)
   if (testOverrides && key in testOverrides) {
     return testOverrides[key];
-  }
-
-  // Check cloudflare:workers env (Workers + workerd dev)
-  const cf = getCfEnv();
-  if (cf) {
-    const val = cf[key];
-    if (val !== undefined && typeof val === 'string') {
-      return val;
-    }
   }
 
   // Check process.env (Node.js/Bun runtime)
@@ -106,16 +59,6 @@ export function requireEnv(key: string): string {
     throw new Error(`Required environment variable ${key} is not set`);
   }
   return value;
-}
-
-/**
- * Get a cloudflare:workers env binding by key (may be a non-string object like D1Database).
- * Returns undefined outside of workerd or if the binding is not set.
- */
-export function getBinding<T = unknown>(key: string): T | undefined {
-  const cf = getCfEnv();
-  if (!cf) return undefined;
-  return cf[key] as T | undefined;
 }
 
 /**
