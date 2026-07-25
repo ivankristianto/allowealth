@@ -556,9 +556,11 @@ elements, which the Go compiler previously auto-corrected."
 
 - [ ] **Step 5: Verify the Cloudflare build**
 
-Run: `bun run build:cloudflare`
-
-Expected: succeeds. This exercises `@astrojs/cloudflare@14` rather than `@astrojs/node@11`.
+> **Superseded.** This step failed in execution: Astro 7 hard-depends on
+> `@astrojs/markdown-satteri`, whose `@bruits/satteri-wasm32-wasi` package
+> declares `cpu: ["wasm32"]` and installs on no platform under bun, so the
+> Workers build could not resolve it locally or in CI. The user chose to remove
+> the Cloudflare Workers target entirely — see Task 15. Skip this step.
 
 - [ ] **Step 6: Verify no `bun:` imports leaked into middleware paths**
 
@@ -1350,21 +1352,19 @@ Expected: `middleware clean`. Any remaining `bun:` hits should sit only in CLI, 
 
 ```bash
 bun run test
-bun run test:e2e
 ```
 
-Expected: both pass. If an E2E test fails, check whether it is pre-existing by stashing and running against `main` before treating it as a regression — a `reuseExistingServer: true` dev server can mask startup failures, so confirm the server actually restarted.
+Expected: passes. **Do NOT run `bun run test:e2e`** — the user deferred all E2E work to a separate pass after this branch. Three E2E database-seeding bugs were fixed during Task 1, but a fourth (an auth-timeout fallback that silently substitutes a workspace-less user) remains open, and 5 of 17 spec files navigate workspace-gated routes. Running the suite now would produce failures unrelated to this upgrade.
 
 - [ ] **Step 6: Build all three apps for both targets**
 
 ```bash
 bun run build
-bun run build:cloudflare
 bun run landing:build
 bun run docs:build
 ```
 
-Expected: all four succeed.
+Expected: all three succeed. There is no `build:cloudflare` — Task 15 removed the Cloudflare Workers target. Confirm it is gone rather than broken: `bun run build:cloudflare` should report "Script not found".
 
 - [ ] **Step 7: Check the bundle budget**
 
