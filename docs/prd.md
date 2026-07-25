@@ -1152,7 +1152,7 @@ Errors: 1 (invalid category)
 
 **Frontend:**
 
-- Framework: Astro 4.x
+- Framework: Astro 7.x
 - UI Framework: React 18+ (for interactive islands)
 - Styling: Tailwind CSS v4 + DaisyUI
 - Component Library: Custom (documented in design system docs)
