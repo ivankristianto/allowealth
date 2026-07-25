@@ -764,18 +764,30 @@ Expected: may fail. Two likely causes, both checked in the next step.
 
 *If the error names a Starlight config key*, check the Starlight changelog for 0.39–0.41 and update `apps/docs/astro.config.mjs`. The config currently sets `title`, `description`, `logo`, `favicon`, `customCss`, `social` (array-of-objects form), `components.SocialIcons`, and a `sidebar` of `{ slug }` and `{ label, items }` entries.
 
-*If the error concerns the Markdown processor*, Starlight needs the remark pipeline explicitly selected rather than Astro 7's Sätteri default. Add to `apps/docs/astro.config.mjs`:
+**Do NOT set `markdown: { processor: unified() }`.** This was left open when the
+plan was written; it is now resolved by reading Starlight 0.41.4's source.
 
-```javascript
-import { unified } from 'unified';
+`applyStarlightMarkdownPlugins` in
+`@astrojs/starlight/integrations/markdown-plugins.ts` branches on the
+configured processor:
 
-export default defineConfig({
-  markdown: { processor: unified() },
-  // ...existing config
-});
-```
+- `isSatteriProcessor(processor)` → sets `processor.options.features.directive = true`
+  (Starlight's asides are container directives, which Sätteri disables by
+  default) and pushes its mdast/hast plugins
+- `unified?.isUnifiedProcessor(processor)` → pushes its remark/rehype plugins
+- neither → logs a warning that Starlight's transforms won't run
 
-Only add this if the build actually demands it — Starlight 0.41 declares the `@astrojs/markdown-remark` peer precisely so it can configure the pipeline itself, so the explicit override may be unnecessary.
+So Astro 7's default Sätteri pipeline is **fully supported**; Starlight adapts
+to it. Leave `markdown` unset.
+
+`@astrojs/markdown-remark` is still installed in Step 1 to satisfy the declared
+peer, but note it is optional *at runtime*: Starlight loads the Unified path via
+`import('./remark-rehype').catch(() => null)`, so its absence merely disables
+that path rather than breaking the build.
+
+If a Markdown-pipeline error does appear, the useful signal is which branch was
+taken — check the build log for that "not supported by Starlight" warning before
+changing any config.
 
 - [ ] **Step 4: Verify docs typecheck and content rendered**
 
