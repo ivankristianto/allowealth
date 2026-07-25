@@ -24,14 +24,12 @@ paths:
                 data:
                   runtime:
                     environment: production
-                    runtime: workers
-                    region: us-east-1
-                    workersCf: ORD
+                    runtime: bun
+                    bunVersion: 1.3.14
                   database:
                     dialect: sqlite
-                    url: ''
+                    url: db/.dev.db
                     isConnected: true
-                    isD1: true
                   cache:
                     driver: upstash
                     isEnabled: true

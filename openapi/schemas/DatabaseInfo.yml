@@ -15,10 +15,6 @@ DatabaseInfo:
       type: boolean
       description: Whether database connection is healthy
       example: true
-    isD1:
-      type: boolean
-      description: Whether using Cloudflare D1
-      example: false
     queryMetrics:
       type: object
       description: Query performance metrics
@@ -35,4 +31,4 @@ DatabaseInfo:
           type: integer
           description: Number of slow queries (>100ms)
           example: 3
-  required: [dialect, url, isConnected, isD1]
+  required: [dialect, url, isConnected]

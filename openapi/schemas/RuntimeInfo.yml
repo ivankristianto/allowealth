@@ -9,13 +9,9 @@ RuntimeInfo:
       example: production
     runtime:
       type: string
-      enum: [bun, node, workers]
+      enum: [bun, node]
       description: JavaScript runtime platform
       example: bun
-    region:
-      type: string
-      description: Cloudflare region (workers runtime only)
-      example: us-east-1
     nodeVersion:
       type: string
       description: Node.js version (node runtime only)
@@ -24,8 +20,4 @@ RuntimeInfo:
       type: string
       description: Bun version (bun runtime only)
       example: 1.0.29
-    workersCf:
-      type: string
-      description: Cloudflare metadata (workers runtime only)
-      example: ORD
   required: [environment, runtime]
