@@ -5,7 +5,6 @@
 export interface RuntimeInfo {
   environment: 'development' | 'production' | 'test';
   runtime: 'bun' | 'node';
-  region?: string;
   nodeVersion?: string;
   bunVersion?: string;
 }
