@@ -15,7 +15,7 @@ paths:
 - ✅ **Use specific imports** - Import only what you need
 - ✅ **Type-only imports for server libraries** - Prevent bundling server code in client
 - ❌ **Use barrel exports** (`@/lib/utils`) - imports everything, breaks tree-shaking
-- ❌ **Assume `manualChunks` captures transitive dependencies** - specify all related packages
+- ❌ **Assume a `codeSplitting.groups` `test` regex captures transitive dependencies** - a pattern matching only the wrapper package won't pull in its dependencies; match the whole `node_modules` subtree the chunk needs
 
 ## Import Patterns
 
@@ -52,21 +52,26 @@ import { Chart } from 'chart.js/auto'; // +100KB
 
 **Pattern**: Use `@/lib/chart-setup` which registers only needed components.
 
-## Manual Chunks
+## Code Splitting
+
+Astro 7 builds on Vite 8, which uses Rolldown instead of Rollup. Rollup's
+`build.rollupOptions.output.manualChunks` no longer exists — setting it is
+silently ignored, producing an unsplit bundle with no error. Use Rolldown's
+`codeSplitting.groups` instead, matching the shape in `astro.config.ts`:
 
 ```typescript
-// astro.config.mjs
+// astro.config.ts
 export default defineConfig({
   vite: {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            // ✅ Include transitive dependencies
-            motion: ['motion', 'motion-dom', 'framer-motion'],
-
-            // ❌ Missing transitive deps
-            motion: ['motion'], // Only captures wrapper, not actual implementation
+          codeSplitting: {
+            groups: [
+              // ✅ Match the whole node_modules subtree for the package
+              { name: 'chartjs', test: /node_modules[\\/]chart\.js/ },
+              { name: 'motion', test: /node_modules[\\/](motion|framer-motion)/ },
+            ],
           },
         },
       },
@@ -77,8 +82,10 @@ export default defineConfig({
 
 **Rules:**
 
-- ❌ **Assume `manualChunks` captures transitive dependencies** - `motion: ['motion']` only captures the wrapper, not `motion-dom`/`framer-motion`
-- ✅ **Specify all related packages** explicitly in the chunk
+- ❌ **Use `manualChunks`** - Vite 8 / Rolldown has no such option; it is silently ignored, not an error
+- ✅ **Use `codeSplitting.groups`** with a `test` regex per chunk
+- ❌ **Write a narrow `test` regex that matches only the wrapper package** - e.g. `/node_modules[\\/]motion$/` misses `motion-dom`/`framer-motion`
+- ✅ **Match the shared `node_modules` path prefix** so transitive dependencies pulled in under the same package tree are captured too
 
 ## Checking Bundle Size
 
