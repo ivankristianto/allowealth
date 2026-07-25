@@ -28,7 +28,7 @@ Comprehensive performance rules extracted from:
 - **N+1 Prevention**: Subqueries/JOINs instead of loops
 - **Bulk Operations**: CSV import optimization (3000 → 5 queries)
 - **Query Complexity**: Indexes, LIMIT, WHERE clauses
-- **Connection Optimization**: D1 bindings in Workers, fresh request-scoped setup
+- **Connection Optimization**: single `bun:sqlite` connection with WAL pragmas applied once
 
 **Real-world example:**
 

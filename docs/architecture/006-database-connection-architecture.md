@@ -2,6 +2,14 @@
 
 > **ADR-006** | Created: 2026-02-04 | Updated: 2026-03-09
 
+> **Superseded in part — 2026-07-25.** Cloudflare Workers and D1 support was
+> removed from the project. The `bun:sqlite` driver is now the only database
+> target: the D1 binding, D1 HTTP and D1 local drivers are deleted, and
+> `DatabaseConfig` no longer carries an `isD1` field. The Workers-specific
+> parts of the decision below are retained as historical record and no longer
+> describe the codebase. Cloudflare **Pages** hosting for `apps/docs` and
+> `apps/site` and Cloudflare **Turnstile** are unaffected.
+
 ## Overview
 
 This document describes how Allowealth connects to the database across local development, Cloudflare Workers, and CLI workflows after removing PostgreSQL, Supabase, and Hyperdrive support.

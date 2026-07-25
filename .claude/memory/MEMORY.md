@@ -20,9 +20,8 @@ This file is managed by Claude Code's auto-memory system.
 
 ## Database
 
-- Local: SQLite via `bun:sqlite`
-- Production: Cloudflare D1
-- Migrations: Single SQLite flow; generate `drizzle/sqlite/*.sql` once and use for both local SQLite and Cloudflare D1
+- SQLite via `bun:sqlite` (only driver; Cloudflare D1 support removed 2026-07-25)
+- Migrations: Single SQLite flow; generate `drizzle/sqlite/*.sql` and apply with `bun run db:migrate`
 
 ## Key Architecture Patterns
 

@@ -2,101 +2,39 @@
 paths:
   - 'src/middleware/**/*.ts'
   - 'src/lib/**/*.ts'
-  - 'astro.config.mjs'
+  - 'astro.config.ts'
 ---
 
-# Cloudflare Workers Deployment
+# Deployment
 
-The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
+The SSR app builds with the `@astrojs/node` adapter (`mode: 'standalone'`) and
+runs on **Bun**. There is a single build target: `bun run build`.
 
-## Runtime Compatibility
-
-Any code imported by middleware MUST be Workers-compatible.
-
-### Forbidden in Middleware-Imported Code
-
-- ❌ `bun:sqlite` → Only use in API routes, CLI, or non-middleware contexts
-- ❌ `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
-- ❌ Native addons (e.g., `@node-rs/argon2`) → Use Web APIs or Workers-compatible alternatives
-- ❌ Node-specific APIs → Use cross-runtime alternatives
-
-### Detection
-
-```bash
-# Check for Bun-specific imports
-grep -r "bun:" src/ --exclude-dir=node_modules
-
-# If results appear in middleware-imported files, REFACTOR
-```
-
-### Correct Patterns
-
-```typescript
-// ✅ Middleware: Workers-compatible imports only (no SQLite drivers)
-// Database middleware skips SQLite lifecycle management
-
-// ✅ API routes: Can use Bun-specific APIs (local dev context)
-import { Database } from 'bun:sqlite'; // OK in API routes
-
-// ✅ CLI scripts: Can use Bun-specific APIs
-import { $ } from 'bun';
-```
+Cloudflare **Pages** still hosts the two static sites — `apps/docs` and
+`apps/site`. Each has its own `wrangler.toml` and its own `wrangler`
+dependency, deployed via `bun run docs:deploy` / `bun run landing:deploy` and
+the `deploy-docs-site.yml` / `deploy-site.yml` workflows. Cloudflare
+**Turnstile** is also still in use for CAPTCHA. Neither is affected by the
+removal of the Workers SSR target.
 
 ## Password Hashing
 
-The factory in `src/lib/auth/password-hasher.ts` selects per runtime:
-
-- **Bun** (Docker, local dev): Argon2id via `Bun.password` — native, memory-hard
-- **Cloudflare Workers / Node**: PBKDF2-SHA256 via Web Crypto, **100,000
-  iterations**. Workers' `crypto.subtle.deriveBits` rejects PBKDF2
-  iteration counts above 100,000 with `NotSupportedError`, so the project
-  pins to that ceiling. This is below OWASP 2023's 600,000 recommendation
-  for PBKDF2-HMAC-SHA256 but matches OWASP 2017 guidance and is the
-  maximum the runtime accepts.
-
-Hashes do not migrate between deployment targets. Argon2id cannot run on
-Workers: `WebAssembly.compile()` is blocked by the embedder, and pure-JS
-Argon2id exceeds the 10ms per-request CPU budget. An Argon2id hash on a
-Workers deployment indicates a misconfigured seed; the facade logs a
-warning and returns false rather than failing silently.
+Passwords are hashed with **Argon2id** via `Bun.password` — native and
+memory-hard. The facade lives in `src/lib/auth/password.ts`.
 
 ```typescript
-// ✅ Correct: use the facade — runtime-appropriate algorithm is automatic
+// ✅ Correct: use the facade
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 
 // ❌ Wrong: native addons or runtime-WASM crypto libraries
-import { hash, verify } from '@node-rs/argon2'; // native, Workers-incompatible
-import { argon2id } from 'hash-wasm'; // runtime WASM compile, blocked on Workers
+import { hash, verify } from '@node-rs/argon2';
+import { argon2id } from 'hash-wasm';
 ```
-
-### Seeding for a Workers-targeted DB
-
-The seeder runs on Bun, so by default it would produce Argon2id hashes
-that Workers cannot verify. Force PBKDF2 hashing with the
-`PASSWORD_HASHER` env var:
-
-```bash
-# Default: Argon2id (sqlite target, for Docker / Bun deployments)
-bun run aw db seed --target=sqlite
-
-# Workers-targeted: PBKDF2 (D1 remote or D1 local)
-PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=d1
-PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=d1-local
-```
-
-The `aw db seed` command refuses to run against `--target=d1` or
-`--target=d1-local` unless `PASSWORD_HASHER=pbkdf2` is set, so a
-forgetful operator cannot silently write Argon2id hashes into a
-Workers DB.
-
-`PASSWORD_HASHER=argon2id` is the explicit form of the default and
-errors on non-Bun runtimes. Unset means runtime detection.
 
 **Rules:**
 
 - ✅ **Use the `hashPassword`/`verifyPassword` facade** — never call the underlying hasher classes directly outside `password.ts`
-- ✅ **Set `PASSWORD_HASHER=pbkdf2` when seeding `--target=d1`** — the CLI fails fast without it; otherwise the Argon2id hashes the seeder writes will not verify on Workers
-- ❌ **Use `oslo/argon2`, `hash-wasm`, `@noble/hashes/argon2`, or any other runtime-WASM crypto on Workers** — they all fail with `Wasm code generation disallowed by embedder` or hit the per-request CPU limit
+- ❌ **Add a second hashing algorithm without a migration path** — existing hashes must stay verifiable
 
 ## Environment Variables
 
@@ -107,16 +45,14 @@ import { getEnv } from '@/lib/env';
 const dbUrl = getEnv('DATABASE_URL');
 const apiKey = getEnv('API_KEY');
 
-// ❌ Wrong: import.meta.env (build-time only on Workers)
-const dbUrl = import.meta.env.DATABASE_URL; // Undefined in Workers runtime
+// ❌ Wrong: import.meta.env for runtime secrets (build-time only)
+const dbUrl = import.meta.env.DATABASE_URL;
 ```
 
 **Rules:**
 
-- ✅ **Use `getEnv()` for ALL runtime env vars on Workers** - `import.meta.env` only has build-time inlined values
-- ✅ **Audit ALL `import.meta.env` usages when deploying to Workers** - categorize as: Vite built-in (safe), CLI-only (safe), runtime secret (needs `getEnv()`)
-- ✅ **Set `runtimeEnv` from middleware on first request** - Workers secrets aren't available at module load
-- ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match the production code path
+- ✅ **Use `getEnv()` for runtime env vars** — it checks `process.env` then falls back to `import.meta.env`
+- ❌ **Mutate `import.meta.env` directly in tests** — use `setTestEnv()` to match the production code path
 
 ### Safe import.meta.env Usage
 
@@ -125,34 +61,23 @@ const dbUrl = import.meta.env.DATABASE_URL; // Undefined in Workers runtime
 const isDev = import.meta.env.DEV;
 const isProd = import.meta.env.PROD;
 
-// ✅ Safe: CLI-only (not used in Workers runtime)
-if (import.meta.main) {
-  console.log(import.meta.env.NODE_ENV);
-}
-
 // ❌ Unsafe: Runtime secret (needs getEnv())
-const dbUrl = import.meta.env.DATABASE_URL; // Use getEnv() instead
+const dbUrl = import.meta.env.DATABASE_URL;
 ```
 
 ## Database Connections
 
 ```typescript
-// ✅ Correct: Fresh connections per request in Workers
-export async function onRequest(context) {
-  const db = createConnection(getEnv('DATABASE_URL'));
-  // Use db...
-  await db.close();
-}
+// ✅ Correct: go through getDb()
+import { getDb } from '@/db';
 
-// ❌ Wrong: Singleton connections in Workers
-const db = createConnection(process.env.DATABASE_URL); // Doesn't work in Workers
+const db = getDb(); // bun:sqlite, pragmas applied once per connection
 ```
 
 **Rules:**
 
-- ✅ **Create fresh DB connections per request in Workers** - no singletons in edge runtime
-- ✅ **Use D1 for Workers database access** - native binding, no external TCP layer
-- ❌ **Add external PostgreSQL connection layers to Workers** - production uses D1
+- ✅ **Go through `getDb()`** — it applies the WAL and cache pragmas
+- ❌ **Add external PostgreSQL connection layers** — the app is SQLite-only
 
 ## Serialization
 
@@ -164,14 +89,11 @@ return {
     createdAt: budget.createdAt.toISOString(),
   },
 };
-
-// ❌ Wrong: Return raw Date objects without serialization
-return { budget }; // Date objects can't JSON-serialize in Workers
 ```
 
 **Rules:**
 
-- ✅ **Serialize Date objects explicitly when returning from services** - keep cross-runtime responses stable
+- ✅ **Serialize Date objects explicitly when returning from services** — keeps API responses stable
 
 ## Caching
 
@@ -181,23 +103,18 @@ import { getCacheManager } from '@/lib/cache';
 
 const cache = getCacheManager();
 
-// Set with tags
 await cache.set('budget:123', data, {
   ttl: 300,
   tags: ['budget:123', 'user:456'],
 });
 
-// Invalidate by tag
 await cache.invalidateTags(['budget:123']);
-
-// ❌ Wrong: Direct Redis or local-only cache
-const redis = new Redis(process.env.REDIS_URL); // Doesn't work in Workers
 ```
 
 **Rules:**
 
-- ✅ **Use CacheManager + Tag-based drivers** - Upstash (prod), Memory (dev)
-- ✅ **Handle cache errors gracefully** - fall back to database queries
+- ✅ **Use CacheManager + Tag-based drivers** — Upstash (prod), Memory (dev)
+- ✅ **Handle cache errors gracefully** — fall back to database queries
 - ✅ **Use tag-based cache invalidation** (`user:123`, `budget:123`) with configurable TTLs
 
 ## Logging
@@ -207,96 +124,42 @@ const redis = new Redis(process.env.REDIS_URL); // Doesn't work in Workers
 import { logger } from '@/lib/logger';
 
 logger.info('Budget created', { budgetId, userId });
-logger.error('Failed to save', { error: error.message });
-
-// ❌ Wrong: console.log
-console.log('Budget created:', budgetId); // Unstructured
 ```
 
 **Rules:**
 
-- ✅ **Use structured consola loggers** - JSON on Workers, pretty in dev
+- ✅ **Use structured consola loggers** — not `console.log`
 
 ## Content Security Policy
 
-Astro 6 can generate hash-based CSP for SSR pages with `security: { csp: true }`. This repo still has a nonce middleware in `src/middleware/security-headers.ts` that overwrites the response header, so that middleware is the runtime source of truth today. Static Pages output still needs its own static CSP strategy; it cannot depend on per-request nonces.
+`astro.config.ts` sets `security: { csp: true }` (hash-based), but
+`src/middleware/security-headers.ts` overwrites the response header with a
+nonce-based policy, so that middleware is the runtime source of truth today.
+See `TODO(ALL-62)` in that file for the migration path.
+
+Static Pages output needs its own static CSP strategy — it cannot depend on
+per-request nonces.
+
+**Rules:**
+
+- ✅ **Keep nonce middleware until the SSR app no longer needs it** — response headers from middleware take precedence
+- ❌ **Use `script-src 'unsafe-inline'` for CSP** — prefer hashes or nonces
+
+## Database URL
 
 ```typescript
-// Astro 6 native hash-based CSP (config-driven)
-'script-src': ["'self'", "'sha256-...'"],
+// ❌ Wrong: silent sqlite fallback in prod config
+const dbUrl = getEnv('DATABASE_URL') || 'sqlite:local.db';
 
-// Current runtime policy (middleware wins)
-'script-src': ["'self'", `'nonce-${nonce}'`],
+// ✅ Correct: fail fast if missing
+const dbUrl = requireEnv('DATABASE_URL');
 ```
 
 **Rules:**
 
-- ✅ **Use `security: { csp: true }` for Astro 6 SSR pages** - it hashes Astro-generated scripts and styles
-- ✅ **Keep nonce middleware until the SSR app no longer needs it** - response headers from middleware take precedence
-- ❌ **Use `script-src 'unsafe-inline'` for CSP** - prefer hashes or nonces, not unsafe inline
+- ❌ **Add a silent DATABASE_URL fallback for production** — fail fast instead
 
-## Common Deployment Issues
-
-### Fetch Counter
-
-```typescript
-// ❌ Wrong: Assume fetch counter captures all subrequests
-const count = context.env.FETCH_COUNT; // TCP sockets bypass this
-
-// ✅ Correct: Understand limitations
-// TCP sockets via nodejs_compat bypass fetch wrappers
-// Use application-level monitoring instead
-```
-
-**Rules:**
-
-- ❌ **Assume fetch counter captures all subrequests** - TCP sockets via nodejs_compat bypass fetch wrappers
-
-### Database URL
-
-```typescript
-// ❌ Wrong: Change to sqlite fallback in prod config
-const dbUrl = getEnv('DATABASE_URL') || 'sqlite:local.db'; // Never fallback in prod
-
-// ✅ Correct: Fail fast if missing
-const dbUrl = getEnv('DATABASE_URL'); // Throws if missing
-```
-
-**Rules:**
-
-- ❌ **Change DATABASE_URL to sqlite fallback in prod config** - fail fast instead
-
-## Cloudflare D1
-
-```typescript
-// ✅ Correct: Static import for D1 driver
-import { drizzle } from 'drizzle-orm/d1';
-
-// ✅ Correct: Dedicated binding storage
-let d1Binding: D1Database | null = null;
-export function setD1Binding(binding: D1Database) {
-  d1Binding = binding;
-}
-export function getD1Binding() {
-  return d1Binding;
-}
-
-// ❌ Wrong: Smuggle through env bag
-setRuntimeEnv({ D1: binding }); // D1 is an object, env expects strings
-```
-
-**Rules:**
-
-- ✅ **Use static import for `drizzle-orm/d1`** - `drizzle()` is synchronous, dynamic `import()` adds unnecessary async complexity
-- ❌ **Use async proxy patterns to bridge sync/async DB interfaces** - Proxy that wraps every property as an async function breaks `db.query.table.findFirst()` chains
-- ✅ **Store D1 binding in dedicated module-level variable** - not in the string-typed env API (`Record<string, string>`)
-- ❌ **Smuggle objects through `setRuntimeEnv()` env bag** - D1 binding is an object, env API expects strings; use dedicated `setD1Binding()`/`getD1Binding()`
-- ✅ **Enable transactions for D1 in `runTransaction()`** - D1 runs in multi-isolate Workers, not single-writer local SQLite
-- ❌ **Assume D1 has same concurrency model as local SQLite** - local SQLite has single-writer WAL; D1 is multi-isolate, needs transactions
-- ✅ **Call `prepareForRequest()` for D1 in database middleware** - reset `dbInstance` per-request even though D1 has no TCP connections
-- ✅ **Suppress `DATABASE_URL` warning when D1 is enabled** - D1 doesn't use DATABASE_URL; check `isD1` before calling `getDatabaseUrl()`
-
-## Wrangler Configuration
+## Cloudflare Pages (apps/docs, apps/site)
 
 ```toml
 # ✅ Correct: Bare domain for custom domains
@@ -312,72 +175,15 @@ custom_domain = true
 
 **Rules:**
 
-- ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
+- ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** — Custom Domains only accept bare domain names
 - ✅ **Use bare domain in `custom_domain` routes**
-
-## CI/CD — Generated wrangler.toml
-
-`wrangler.toml` is **gitignored** (contains user-specific config like `database_id`). The deploy workflow generates it at runtime from GitHub secrets and variables.
-
-### Required GitHub Secrets
-
-| Secret                 | Description                 |
-| ---------------------- | --------------------------- |
-| `CLOUDFLARE_API_TOKEN` | Wrangler deploy token       |
-| `D1_DATABASE_ID`       | Cloudflare D1 database UUID |
-
-### Required GitHub Variables
-
-| Variable        | Default                          | Description                                 |
-| --------------- | -------------------------------- | ------------------------------------------- |
-| `PUBLIC_URL`    | `https://allowealth.workers.dev` | Public base URL                             |
-| `CUSTOM_DOMAIN` | _(empty)_                        | Custom domain (optional, adds `[[routes]]`) |
-
-### Generated Structure
-
-```toml
-name = "allowealth"
-main = "dist/_worker.js/index.js"
-compatibility_date = "2026-02-01"
-compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
-
-[assets]
-directory = "./dist"
-binding = "ASSETS"
-
-[vars]
-NODE_ENV = "production"
-PUBLIC_URL = "https://your-domain.io"
-SIGNUP_MODE = "invite_only"
-CACHE_DRIVER = "upstash"
-# ... other vars
-
-[[d1_databases]]
-binding = "DB"
-database_name = "allowealth-db"
-database_id = "<D1_DATABASE_ID secret>"
-
-# Added only when CUSTOM_DOMAIN variable is set:
-routes = [{ pattern = "your-domain.io", custom_domain = true }]
-```
-
-**Rules:**
-
-- ✅ **Generate `wrangler.toml` in CI from secrets/variables** - never commit it; it's gitignored to allow open-source forkers to configure their own deployment
-- ✅ **Use `D1_DATABASE_ID` as a GitHub secret** - UUID is user-specific and must not be in source
-- ✅ **Use `PUBLIC_URL` and `CUSTOM_DOMAIN` as GitHub variables** - not secrets, safe to be non-sensitive
-- ✅ **Conditionally append `[[routes]]` only when `CUSTOM_DOMAIN` is set** - workers.dev subdomain needs no routes block
-- ❌ **Commit `wrangler.toml` to the repo** - it's gitignored by design
+- ✅ **Keep `apps/docs` and `apps/site` wrangler config and deploy scripts intact** — they are the deploy path for the two live static sites
 
 ## Deployment Checklist
 
-Before deploying to Workers:
+Before deploying:
 
-- [ ] Audit for `bun:` imports in middleware-imported code
-- [ ] Replace native addons with Workers-compatible alternatives
 - [ ] Audit `import.meta.env` usage (use `getEnv()` for runtime secrets)
-- [ ] Test with `wrangler dev` locally
-- [ ] Verify environment variables are set in Workers dashboard
+- [ ] Verify environment variables are set in the target environment
 - [ ] Check CSP headers are correct
-- [ ] Verify D1 binding works
 - [ ] Test cache fallback behavior

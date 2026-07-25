@@ -1,6 +1,6 @@
 ---
 title: Database Management
-description: Backup, restore, migrate, and maintain Allowealth databases across SQLite and Cloudflare D1.
+description: Backup, restore, migrate, and maintain the Allowealth SQLite database.
 draft: false
 head: []
 sidebar:
@@ -13,16 +13,12 @@ audience:
 The `aw db` CLI commands manage the supported Allowealth database targets:
 
 - `sqlite` for local development
-- `d1` for remote Cloudflare D1
-- `d1-local` for Wrangler-managed local D1 state
 
 ## Supported Targets
 
-| Target     | Use Case             | Configuration                |
-| ---------- | -------------------- | ---------------------------- |
-| `sqlite`   | Local development    | `db/.dev.db`                 |
-| `d1`       | Remote Cloudflare D1 | `.env.production` + Wrangler |
-| `d1-local` | Local D1 emulation   | Wrangler local state         |
+| Target   | Use Case          | Configuration |
+| -------- | ----------------- | ------------- |
+| `sqlite` | Local development | `db/.dev.db`  |
 
 ## Migrations
 
@@ -39,14 +35,7 @@ bun run aw db generate
 Apply pending migrations to the selected target:
 
 ```bash
-# SQLite (default)
 bun run aw db migrate
-
-# Remote D1
-bun run aw db migrate --target d1
-
-# Local D1
-bun run aw db migrate --target d1-local
 ```
 
 ## Schema changes
@@ -76,17 +65,10 @@ This command works only with the `sqlite` target.
 Create timestamped backups for any supported target:
 
 ```bash
-# SQLite
 bun run aw db backup --target sqlite
-
-# Remote D1
-bun run aw db backup --target d1
-
-# Local D1
-bun run aw db backup --target d1-local
 ```
 
-By default, backups save to `backups/<target>-<timestamp>.<ext>`.
+By default, backups save to `backups/sqlite-<timestamp>.db`.
 
 Use a custom path when needed:
 
@@ -103,7 +85,7 @@ Restore validates backups before applying changes and creates a safety backup un
 Validate a backup without restoring it:
 
 ```bash
-bun run aw db restore --target d1 --source cloud --dry-run
+bun run aw db restore --dry-run
 ```
 
 ### Restore from local backup
@@ -125,13 +107,13 @@ bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04.sql
 ### Restore from cloud backup
 
 ```bash
-bun run aw db restore --target d1 --source cloud
+bun run aw db restore --source cloud
 ```
 
 Cloud backups read from `backups/cloud/` by default. Override the location if needed:
 
 ```bash
-bun run aw db restore --target d1 --source cloud --cloud-dir /path/to/cloud/backups
+bun run aw db restore --source cloud --cloud-dir /path/to/cloud/backups
 ```
 
 ## Data seeding
@@ -171,14 +153,7 @@ bun run aw db seed --target sqlite --stress
 Delete all tables and reset the selected database:
 
 ```bash
-# SQLite
 bun run aw db drop
-
-# Remote D1
-bun run aw db drop --target d1
-
-# Local D1
-bun run aw db drop --target d1-local
 ```
 
 This command requires typed confirmation.
@@ -187,24 +162,6 @@ This command requires typed confirmation.
 
 ```bash
 bun run aw db empty
-```
-
-## D1-specific operations
-
-### Export a D1 database
-
-The backup command uses `wrangler d1 export` for D1 targets:
-
-```bash
-bun run aw db backup --target d1
-```
-
-### Restore a D1 database
-
-The restore command uses `wrangler d1 execute`:
-
-```bash
-bun run aw db restore --target d1 --file backups/d1-2026-03-04.sql
 ```
 
 ## Quality checks

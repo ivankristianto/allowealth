@@ -174,45 +174,24 @@ Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 
 ## Build & Deploy
 
-| Command                     | Description                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| `bun run build`             | Build for default target                                     |
-| `bun run build:node`        | Build for Node.js deployment                                 |
-| `bun run build:cloudflare`  | Build for Cloudflare Workers                                 |
-| `bun run build:analyze`     | Build and generate bundle stats at `dist/stats.html`         |
-| `bun run bundle:report`     | Build and run bundle size analysis                           |
-| `bun run deploy:cloudflare` | Build and deploy to Cloudflare Workers with `/wrangler.toml` |
+The SSR app builds with the `@astrojs/node` adapter (`mode: 'standalone'`).
+
+| Command                 | Description                                          |
+| ----------------------- | ---------------------------------------------------- |
+| `bun run build`         | Build the app                                        |
+| `bun run build:node`    | Alias for `bun run build`                            |
+| `bun run build:analyze` | Build and generate bundle stats at `dist/stats.html` |
+| `bun run bundle:report` | Build and run bundle size analysis                   |
 
 ```bash
-bun run build                # Default build
-bun run deploy:cloudflare    # Build + deploy to Workers
+bun run build
 ```
 
-### Worker Config Setup
+The built server is started with the Node adapter's standalone entry point.
+Docker helpers are available via `bun run docker:start` / `bun run docker:stop`.
 
-Deployments are managed via environments in `wrangler.toml`. Each environment has its own worker name, domain, and D1 database.
-
-To add a new environment, add an `[env.<name>]` section to `wrangler.toml` and create a D1 database:
-
-```bash
-wrangler d1 create allowealth-<name>-db
-```
-
-Then update the `database_id` in `wrangler.toml` and run migrations:
-
-```bash
-for f in drizzle/sqlite/*.sql; do
-  wrangler d1 execute allowealth-<name>-db --remote --file="$f" --env <name>
-done
-```
-
-Deploy per environment with:
-
-```bash
-bun run build:cloudflare
-wrangler deploy --env demo   # → preview.allowealth.io
-wrangler deploy --env vv     # → vv.allowealth.io
-```
+Cloudflare Pages deployment for the docs and landing sites is covered above
+under "Landing Page Deployment" and "Docs Deployment".
 
 ## Quality Gates
 
@@ -265,45 +244,40 @@ See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
 ## Allowealth CLI (`aw`)
 
-The `aw` CLI provides a unified interface for admin and operational commands. Use `--target` (`-t`) on subcommands to select the database backend.
+The `aw` CLI provides a unified interface for admin and operational commands.
 
 ### Target Values
 
-| Target     | Database               | Env loading                  | Auth / config                                                                                                                         |
-| ---------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `sqlite`   | Local SQLite (default) | None                         | N/A                                                                                                                                   |
-| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_API_TOKEN` or `CLOUDFLARE_TOKEN`; local runs read `wrangler.toml`, CI can pass `CLOUDFLARE_ACCOUNT_ID` + `D1_DATABASE_ID` |
-| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite                                                                                                           |
+| Target   | Database               | Env loading | Auth / config |
+| -------- | ---------------------- | ----------- | ------------- |
+| `sqlite` | Local SQLite (default) | None        | N/A           |
 
 ### Quick Reference
 
-| Command                             | Description              |
-| ----------------------------------- | ------------------------ |
-| `bun run aw --help`                 | Show all commands        |
-| `bun run aw <command> --help`       | Show subcommand help     |
-| `bun run aw --target d1 db migrate` | Target before subcommand |
-| `bun run aw db migrate --target d1` | Target after subcommand  |
+| Command                       | Description          |
+| ----------------------------- | -------------------- |
+| `bun run aw --help`           | Show all commands    |
+| `bun run aw <command> --help` | Show subcommand help |
+| `bun run aw db migrate`       | Apply migrations     |
 
 ### Global CLI Options
 
-- `--target`, `-t`: Select backend target (`sqlite`, `d1`, `d1-local`) on leaf subcommands.
+- `--target`, `-t`: Select backend target (`sqlite` is the only value).
 - `--json`: Return machine-readable JSON output instead of formatted text.
 - `--yes`, `-y`: Skip confirmation prompts for destructive CRUD and alias operations (`delete`, `rm`).
   - Some destructive commands use command-specific confirmations instead. Examples: `workspace delete --force` or the typed confirmation in `aw db drop`.
 
 ### Workspace Management
 
-| Command                                                                                 | Description                          |
-| --------------------------------------------------------------------------------------- | ------------------------------------ |
-| `bun run aw workspace create --name "Name" --email admin@example.com`                   | Create workspace (SQLite)            |
-| `bun run aw workspace create --target d1 --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)      |
-| `bun run aw workspace create --target d1-local --name "Name" --email admin@example.com` | Create workspace on D1 (local)       |
-| `bun run aw workspace list`                                                             | List all workspaces with user counts |
-| `bun run aw workspace delete --id <id>`                                                 | Delete workspace and all its data    |
-| `bun run aw workspace delete --id <id> --force`                                         | Delete workspace (skip confirmation) |
-| `bun run aw workspace invite --workspace-id <id> --email <email>`                       | Invite member to workspace           |
-| `bun run aw workspace members list --workspace-id <id>`                                 | List all workspace members           |
-| `bun run aw workspace members remove --workspace-id <id> --user-id <id>`                | Remove member from workspace         |
+| Command                                                                  | Description                          |
+| ------------------------------------------------------------------------ | ------------------------------------ |
+| `bun run aw workspace create --name "Name" --email admin@example.com`    | Create workspace (SQLite)            |
+| `bun run aw workspace list`                                              | List all workspaces with user counts |
+| `bun run aw workspace delete --id <id>`                                  | Delete workspace and all its data    |
+| `bun run aw workspace delete --id <id> --force`                          | Delete workspace (skip confirmation) |
+| `bun run aw workspace invite --workspace-id <id> --email <email>`        | Invite member to workspace           |
+| `bun run aw workspace members list --workspace-id <id>`                  | List all workspace members           |
+| `bun run aw workspace members remove --workspace-id <id> --user-id <id>` | Remove member from workspace         |
 
 ### Resource Commands
 
@@ -372,27 +346,25 @@ Aliases provide shorter commands that map to resource operations.
 
 ### Database
 
-| Command                                   | Description                                                         |
-| ----------------------------------------- | ------------------------------------------------------------------- |
-| `bun run aw db migrate`                   | Apply pending migrations (SQLite)                                   |
-| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1                               |
-| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1                                |
-| `bun run aw db generate`                  | Generate migration from schema changes                              |
-| `bun run aw db push`                      | Push schema directly (dev only)                                     |
-| `bun run aw db studio`                    | Open Drizzle Studio                                                 |
-| `bun run aw db docs`                      | Regenerate `docs/architecture/database-schema.html` schema diagrams |
-| `bun run aw db seed`                      | Seed with demo data (3 months default)                              |
-| `bun run aw db seed --months=6`           | Seed with 6 months of transaction data                              |
-| `bun run aw db seed --transactions=5000`  | Add 5,000 extra transactions                                        |
-| `bun run aw db seed --benchmark`          | Seed with ~10k transactions (12 months)                             |
-| `bun run aw db seed --stress`             | Seed with 5-year family stress-test dataset                         |
-| `bun run aw db seed-oauth-clients`        | Seed MCP OAuth clients for Connected Apps                           |
-| `bun run aw db reset`                     | Delete SQLite DB, apply migrations, and seed                        |
-| `bun run aw db empty`                     | Truncate all data (preserve schema)                                 |
-| `bun run aw db drop`                      | ⚠️ Delete all tables and reset DB                                   |
-| `bun run aw db backup`                    | Create backup file for the selected target                          |
-| `bun run aw db restore`                   | Safely restore from local/cloud backup                              |
-| `bun run aw db prune audit-logs`          | Delete audit log entries older than 30 days                         |
+| Command                                  | Description                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------- |
+| `bun run aw db migrate`                  | Apply pending migrations (SQLite)                                   |
+| `bun run aw db generate`                 | Generate migration from schema changes                              |
+| `bun run aw db push`                     | Push schema directly (dev only)                                     |
+| `bun run aw db studio`                   | Open Drizzle Studio                                                 |
+| `bun run aw db docs`                     | Regenerate `docs/architecture/database-schema.html` schema diagrams |
+| `bun run aw db seed`                     | Seed with demo data (3 months default)                              |
+| `bun run aw db seed --months=6`          | Seed with 6 months of transaction data                              |
+| `bun run aw db seed --transactions=5000` | Add 5,000 extra transactions                                        |
+| `bun run aw db seed --benchmark`         | Seed with ~10k transactions (12 months)                             |
+| `bun run aw db seed --stress`            | Seed with 5-year family stress-test dataset                         |
+| `bun run aw db seed-oauth-clients`       | Seed MCP OAuth clients for Connected Apps                           |
+| `bun run aw db reset`                    | Delete SQLite DB, apply migrations, and seed                        |
+| `bun run aw db empty`                    | Truncate all data (preserve schema)                                 |
+| `bun run aw db drop`                     | ⚠️ Delete all tables and reset DB                                   |
+| `bun run aw db backup`                   | Create backup file for the selected target                          |
+| `bun run aw db restore`                  | Safely restore from local/cloud backup                              |
+| `bun run aw db prune audit-logs`         | Delete audit log entries older than 30 days                         |
 
 #### Database Drop Command
 
@@ -401,19 +373,11 @@ The `aw db drop` command drops all tables and clears migrations.
 ```bash
 # Drop local SQLite database
 bun run aw db drop
-
-# Drop remote D1 database (production)
-bun run aw db drop -t d1
-
-# Drop local D1 database
-bun run aw db drop -t d1-local
-
 ```
 
 **What it does:**
 
-- **D1**: Drops all user tables (excludes reserved system tables like `_cf_*` and `__drizzle_migrations`), then truncates the migrations table
-- **SQLite**: Deletes the `.dev.db` file
+- Deletes the `.dev.db` file
   After running, use `aw db migrate` to recreate the schema from the first migration.
 
 #### Database Backup & Restore
@@ -422,29 +386,18 @@ bun run aw db drop -t d1-local
 # SQLite backup
 bun run aw db backup --target sqlite
 
-# D1 remote backup
-bun run aw db backup --target d1
-
-# D1 local backup
-bun run aw db backup --target d1-local
-
-# Validate latest cloud backup without restoring
-bun run aw db restore --target d1 --source cloud --dry-run
+# Validate the latest backup without restoring
+bun run aw db restore --dry-run
 
 # Restore SQLite from file
 bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04T16-30-00.db --force --no-backup
-
-# Restore D1 from backup (non-interactive)
-bun run aw db restore --target d1 --file backups/d1-2026-03-04T16-30-00.sql --force
 ```
 
 **Backup format by target:**
 
-| Target     | Default Format | Valid Formats |
-| ---------- | -------------- | ------------- |
-| `sqlite`   | `.db`          | `.db`, `.sql` |
-| `d1`       | `.sql`         | `.sql`        |
-| `d1-local` | `.sql`         | `.sql`        |
+| Target   | Default Format | Valid Formats |
+| -------- | -------------- | ------------- |
+| `sqlite` | `.db`          | `.db`, `.sql` |
 
 #### Audit Log Pruning
 
@@ -483,12 +436,10 @@ AUDIT_LOG_RETENTION_DAYS=60 bun run aw db prune audit-logs
 
 ### Demo
 
-| Command                                   | Description                                                   |
-| ----------------------------------------- | ------------------------------------------------------------- |
-| `bun run aw demo --help`                  | Show demo environment commands                                |
-| `bun run aw demo reset`                   | Empty and reseed the local SQLite demo dataset                |
-| `bun run aw demo reset --target d1 --yes` | Empty and reseed the remote D1 demo dataset without prompting |
-| `bun run aw demo reset --target d1-local` | Empty and reseed the local D1 demo dataset                    |
+| Command                  | Description                                    |
+| ------------------------ | ---------------------------------------------- |
+| `bun run aw demo --help` | Show demo environment commands                 |
+| `bun run aw demo reset`  | Empty and reseed the local SQLite demo dataset |
 
 `DEMO_MODE` controls the UI. `aw demo reset` refreshes the data.
 
@@ -496,11 +447,8 @@ AUDIT_LOG_RETENTION_DAYS=60 bun run aw db prune audit-logs
 # Enable the demo experience locally
 echo 'DEMO_MODE=true' >> .env
 
-# Refresh demo data in the default local SQLite database
+# Refresh demo data in the local SQLite database
 bun run aw demo reset
-
-# Refresh remote demo data in CI or a non-interactive shell
-bun run aw demo reset --target d1 --yes
 ```
 
 When `DEMO_MODE=true`, the app shows a warning banner on every page and disables member invitations, profile editing, password changes, MFA controls, and active session management.
@@ -543,12 +491,6 @@ range with two owners is loaded.
 | --------------------------------------------------------------- | ----------------------------------------------- |
 | `bun run aw admin create-super-admin --email admin@example.com` | Promote user to super admin                     |
 | `bun run aw admin generate-email-key`                           | Generate encryption key for email functionality |
-
-### Deploy
-
-| Command                        | Description                            |
-| ------------------------------ | -------------------------------------- |
-| `bun run aw deploy cloudflare` | Build and deploy to Cloudflare Workers |
 
 ### Other
 

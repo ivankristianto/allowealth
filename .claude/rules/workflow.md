@@ -28,37 +28,20 @@
 **Before every commit:**
 
 ```bash
-# 1. Check for Bun-specific imports in shared code
-grep -r "bun:" src/ --exclude-dir=node_modules || echo "No bun: imports found"
-
-# 2. Run quality gates (all must pass)
+# Run quality gates (all must pass)
 bun run lint:fix          # ESLint (blocking)
 bun run stylelint:fix     # Stylelint (blocking)
 bun run format:fix        # Prettier (blocking)
 bun run typecheck         # TypeScript (blocking)
 ```
 
-**CRITICAL:** If `bun:` imports are found in middleware-imported files, REFACTOR before committing.
+### Runtime Notes
 
-### Runtime Compatibility
+The app runs on **Bun** and builds with the `@astrojs/node` adapter.
 
-The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev). Any code imported by middleware MUST be Workers-compatible.
-
-**Forbidden in middleware-imported code:**
-
-- `bun:sqlite` → Only use in non-middleware code paths (API routes, CLI, services)
-- `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
-
-**Correct pattern:**
-
-- Middleware: Workers-compatible imports only (no native addons, no `bun:` APIs)
-- API routes: Can use Bun-specific APIs (local dev context)
-- CLI scripts: Can use Bun-specific APIs
-- Database: Use abstraction layer with environment-specific drivers
-- Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only on Workers)
+- Environment variables: Use the `getEnv()` helper, not `import.meta.env` (build-time only)
 - Dev/preview scripts: Must use `bun --bun` flag to ensure Bun runtime (Astro CLI defaults to Node.js)
-- Prerendered HTML on Cloudflare bypasses Astro middleware entirely; do not rely on middleware headers or per-request CSP nonces for static pages
-- Static public routes must keep scripts external and define their security headers in `public/_headers`
+- `apps/docs` and `apps/site` deploy to Cloudflare Pages as static output. Prerendered HTML there bypasses Astro middleware, so those routes must keep scripts external and define their security headers in `public/_headers` rather than relying on per-request CSP nonces
 
 ## Debugging Process
 
