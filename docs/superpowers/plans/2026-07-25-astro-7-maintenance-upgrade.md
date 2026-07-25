@@ -1144,10 +1144,18 @@ Both the shebang and the `. "$(dirname "$0")/_/husky.sh"` line are gone; husky 9
 
 ```bash
 bunx husky
-cat .git/hooks/pre-commit
+git config core.hooksPath
 ```
 
-Expected: the hook file exists and references husky 9's runner.
+Expected: `core.hooksPath` prints `.husky/_`. **Do not look for
+`.git/hooks/pre-commit`** — husky 9 does not write there. It sets
+`core.hooksPath` to `.husky/_` and dispatches through it, so an absent
+`.git/hooks/pre-commit` is correct, not a failure.
+
+**Never run `bunx husky --version`.** Husky 9's CLI has no version flag and
+treats the argument as the hooks directory, setting `core.hooksPath` to a
+literal `--version/_` and breaking every commit until you re-run a plain
+`bunx husky`.
 
 - [ ] **Step 5: Verify nanoid still generates 21-character IDs**
 
