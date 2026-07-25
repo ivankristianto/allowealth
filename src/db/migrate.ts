@@ -43,12 +43,6 @@ function hasUntrackedExistingSchema(rawDb: Database): { tableCount: number } | n
 }
 
 export function runSqliteMigrations(dbPath?: string): void {
-  if (process.env.D1_ENABLED === 'true') {
-    throw new Error(
-      'SQLite migration runner does not support D1 targets. Use "aw --target=d1 db migrate" instead.'
-    );
-  }
-
   const targetPath = dbPath ?? process.env.DATABASE_URL ?? DEFAULT_DB_PATH;
   const rawDb = new Database(targetPath);
 

@@ -16,7 +16,7 @@
 
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
-import { db, getDatabaseConfig } from '@/db';
+import { db } from '@/db';
 import { sql } from 'drizzle-orm';
 import {
   workspaces,
@@ -86,32 +86,6 @@ const allowSeed = process.env.ALLOW_SEED === 'true';
 if (isProduction && !allowSeed) {
   console.error('❌ Seeding disabled in production.');
   console.error('   Set ALLOW_SEED=true to override (use caution).');
-  process.exit(1);
-}
-
-// ============================================================================
-// HASHER GUARD
-// ============================================================================
-//
-// D1 is served by Cloudflare Workers, which can only verify PBKDF2 hashes.
-// The seed script runs under Bun, which defaults to Argon2id. Without an
-// explicit override the seeder would silently write Argon2id hashes that no
-// sign-in on Workers can verify. Refuse to start so the misconfiguration
-// surfaces as a setup error, not as "Invalid password" later.
-
-const seedTarget = process.env.AW_TARGET;
-const seedTargetsD1 =
-  seedTarget === 'd1' || seedTarget === 'd1-local' || process.env.D1_ENABLED === 'true';
-
-if (seedTargetsD1 && process.env.PASSWORD_HASHER !== 'pbkdf2') {
-  console.error('❌ Cannot seed a D1 target with the default hasher.');
-  console.error('');
-  console.error('   D1 is served by Cloudflare Workers, which cannot verify Argon2id');
-  console.error('   hashes. Re-run with PASSWORD_HASHER=pbkdf2 to produce hashes the');
-  console.error('   Workers runtime can verify, e.g.:');
-  console.error('');
-  console.error('     PASSWORD_HASHER=pbkdf2 bun run aw db seed --target=d1');
-  console.error('     PASSWORD_HASHER=pbkdf2 bun run aw demo reset --target=d1 --yes');
   process.exit(1);
 }
 
@@ -256,11 +230,7 @@ async function clearAllTables() {
 
   try {
     // Disable FK checks during cleanup to avoid ordering issues
-    const config = getDatabaseConfig();
-    const { dialect } = config;
-    if (dialect === 'sqlite' && !config.isD1) {
-      db.run(sql`PRAGMA foreign_keys = OFF`);
-    }
+    db.run(sql`PRAGMA foreign_keys = OFF`);
 
     // Delete in reverse dependency order
     await db.delete(auditLogs);
@@ -290,15 +260,11 @@ async function clearAllTables() {
     await db.delete(workspaces);
 
     // Re-enable FK checks
-    if (dialect === 'sqlite' && !config.isD1) {
-      db.run(sql`PRAGMA foreign_keys = ON`);
-    }
+    db.run(sql`PRAGMA foreign_keys = ON`);
 
-    // Run VACUUM to clean up the database and reclaim space (SQLite only, not D1)
-    if (dialect === 'sqlite' && !config.isD1) {
-      console.log('🧹 Vacuuming database...');
-      db.run(sql`VACUUM`);
-    }
+    // Run VACUUM to clean up the database and reclaim space
+    console.log('🧹 Vacuuming database...');
+    db.run(sql`VACUUM`);
 
     console.log('✓ All tables cleared');
   } catch (error) {

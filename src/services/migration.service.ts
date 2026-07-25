@@ -3,11 +3,10 @@
  *
  * Detects pending database migrations and runs them on demand.
  *
- * Uses the shared `db` proxy from @/db, which auto-selects the correct
- * driver (bun:sqlite for local dev, D1 for Cloudflare Workers).
+ * Uses the shared `db` proxy from @/db (bun:sqlite).
  * isMigrationPending() and getStatus() run a lightweight COUNT query.
- * runMigrations() dynamically imports migrate.ts (which uses bun:sqlite)
- * and returns 501 for Workers deployments.
+ * runMigrations() dynamically imports migrate.ts so bun:sqlite stays out of
+ * the module graph until a migration is actually requested.
  */
 
 import { sql } from 'drizzle-orm';
@@ -87,27 +86,11 @@ export class MigrationService {
   /**
    * Run pending SQLite migrations.
    *
-   * Only works when DEPLOY_TARGET is 'node' or unset (Bun/SQLite environments).
-   * Returns a 501-style error object for Cloudflare D1 / Workers deployments.
-   *
-   * Note: runSqliteMigrations() is imported dynamically to avoid pulling
-   * bun:sqlite into the module graph for Workers builds.
+   * Note: runSqliteMigrations() is imported dynamically so bun:sqlite is only
+   * pulled into the module graph when a migration is actually requested.
    */
   static async runMigrations(): Promise<MigrationResult> {
-    const deployTarget = process.env.DEPLOY_TARGET;
-    const isWorkersTarget =
-      deployTarget === 'cloudflare' || deployTarget === 'vercel' || deployTarget === 'netlify';
-
-    if (isWorkersTarget) {
-      return {
-        success: false,
-        error:
-          'Web-triggered migrations are not supported in this deployment. Run: bun run db:migrate',
-      };
-    }
-
     try {
-      // Dynamic import keeps bun:sqlite out of the Workers module graph
       const { runSqliteMigrations } = await import('@/db/migrate');
       runSqliteMigrations();
       // Reset cache so the next request re-verifies from the DB

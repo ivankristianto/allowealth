@@ -4,18 +4,16 @@
 
 export interface RuntimeInfo {
   environment: 'development' | 'production' | 'test';
-  runtime: 'bun' | 'node' | 'workers';
+  runtime: 'bun' | 'node';
   region?: string;
   nodeVersion?: string;
   bunVersion?: string;
-  workersCf?: string; // Cloudflare Workers metadata
 }
 
 export interface DatabaseInfo {
   dialect: 'sqlite';
   url: string; // Sanitized (passwords removed)
   isConnected: boolean;
-  isD1: boolean;
   queryMetrics?: {
     totalQueries: number;
     avgLatency: number;

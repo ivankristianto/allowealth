@@ -3,11 +3,9 @@
  * Database Empty Script
  *
  * Empties all data from the database while preserving the schema.
- * Works for SQLite and D1.
  *
  * Usage:
  *   bun run db:empty                        # Uses default .env (SQLite)
- *   bun run aw --target d1 db empty         # Uses D1
  */
 
 import { sql } from 'drizzle-orm';
@@ -59,13 +57,11 @@ async function emptyDatabase() {
   }
 
   try {
-    // SQLite / D1: Delete from each table individually
+    // Delete from each table individually
     console.log('Using DELETE for SQLite...\n');
 
-    // Disable foreign key checks temporarily (not supported on D1)
-    if (!config.isD1) {
-      await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
-    }
+    // Disable foreign key checks temporarily
+    await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
 
     for (const table of tablesToEmpty) {
       try {
@@ -79,9 +75,7 @@ async function emptyDatabase() {
     }
 
     // Re-enable foreign key checks
-    if (!config.isD1) {
-      await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
-    }
+    await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
 
     console.log('\n✅ Database emptied successfully!\n');
   } catch (error) {

@@ -35,24 +35,17 @@ export class DiagnosticsService {
     const nodeEnv = getEnv('NODE_ENV') as 'development' | 'production' | 'test' | undefined;
     const environment = nodeEnv ?? 'development';
 
-    // Detect runtime: bun, node, or workers (Cloudflare)
+    // Detect runtime: bun or node
     const runtime: RuntimeInfo['runtime'] =
-      typeof process !== 'undefined' && process.versions?.bun
-        ? 'bun'
-        : typeof caches !== 'undefined'
-          ? 'workers'
-          : 'node';
+      typeof process !== 'undefined' && process.versions?.bun ? 'bun' : 'node';
 
     const info: RuntimeInfo = { environment, runtime };
 
     // Add runtime-specific information
     if (runtime === 'bun') {
       info.bunVersion = process.versions.bun;
-    } else if (runtime === 'node') {
+    } else {
       info.nodeVersion = process.version;
-    } else if (runtime === 'workers') {
-      info.workersCf = getEnv('CF_REGION');
-      info.region = getEnv('CF_REGION');
     }
 
     return info;
@@ -69,7 +62,6 @@ export class DiagnosticsService {
       dialect: config.dialect,
       url: sanitizedUrl,
       isConnected: false,
-      isD1: config.isD1,
     };
 
     // Test database connectivity

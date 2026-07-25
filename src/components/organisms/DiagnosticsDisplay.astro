@@ -123,8 +123,8 @@ const configurationStatus =
       : { variant: 'success' as const, text: 'Healthy' };
 
 const runtimeSummaryVariant: StatusVariant = 'neutral';
-const databaseDriverLabel = data.database.isD1 ? 'D1' : data.database.dialect;
-const databasePlatformLabel = data.database.isD1 ? 'Cloudflare D1' : 'Local SQLite';
+const databaseDriverLabel = data.database.dialect;
+const databasePlatformLabel = 'Local SQLite';
 ---
 
 <section data-testid="diagnostics-summary" class="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -378,15 +378,6 @@ const databasePlatformLabel = data.database.isD1 ? 'Cloudflare D1' : 'Local SQLi
           </a>
         </dd>
       </div>
-
-      {
-        data.runtime.workersCf && (
-          <div class="border-b border-base-300 py-2 md:col-span-2">
-            <dt class="text-sm font-medium text-base-content/70">Workers Metadata</dt>
-            <dd class="mt-1 font-mono text-sm text-base-content">{data.runtime.workersCf}</dd>
-          </div>
-        )
-      }
     </dl>
   </Card>
 
@@ -408,7 +399,7 @@ const databasePlatformLabel = data.database.isD1 ? 'Cloudflare D1' : 'Local SQLi
       <div class="border-b border-base-300 py-2">
         <dt class="text-sm font-medium text-base-content/70">Dialect</dt>
         <dd class="mt-1 text-sm text-base-content">
-          {data.database.isD1 ? 'D1' : data.database.dialect}
+          {data.database.dialect}
         </dd>
       </div>
 
