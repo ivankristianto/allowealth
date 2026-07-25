@@ -100,3 +100,6 @@ bundle-report.md
 .aw-backfill/
 docs/superpowers/specs/*backfill*
 docs/superpowers/plans/*backfill*
+
+# HTML snapshots for the compressHTML whitespace audit
+.snapshots/

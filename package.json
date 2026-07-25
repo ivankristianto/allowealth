@@ -51,6 +51,7 @@
     "test:e2e:headed": "playwright test --config=e2e/playwright.config.ts --headed",
     "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
     "test:e2e:report": "playwright show-report test-results/playwright-report",
+    "snapshot:html": "playwright test --config=e2e/tools/snapshot.config.ts",
     "test:e2e:critical": "playwright test --config=e2e/playwright.config.ts --grep @critical",
     "release": "bun run scripts/release.ts",
     "aw": "bun run src/cli/index.ts"
