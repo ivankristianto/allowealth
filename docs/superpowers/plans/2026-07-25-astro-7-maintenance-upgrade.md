@@ -1420,3 +1420,168 @@ Per project rules, claim only what was actually run. If a step was skipped, say 
 **If a task fails in a way the plan did not anticipate**, stop and report rather than improvising. Three failed fix attempts on the same problem means the approach is wrong — surface it instead of trying a fourth.
 
 **Task 1 is not optional and cannot be deferred.** Once Astro 7 is installed, the Astro 6 baseline cannot be captured without reverting the branch.
+
+---
+
+### Task 15: Remove Cloudflare Workers and D1 support
+
+**Added mid-execution by user decision.** Astro 7 hard-depends on
+`@astrojs/markdown-satteri`, whose `@bruits/satteri-wasm32-wasi` package
+declares `cpu: ["wasm32"]` and therefore installs on no platform under bun.
+That breaks `build:cloudflare` locally and in CI. Rather than work around it,
+the user chose to drop the Workers target, which the project no longer uses.
+
+**Executes immediately after Task 4**, before Tasks 5–13.
+
+**Scope boundary — this is the part to get right.** Cloudflare sells several
+products and only one is being removed:
+
+- **REMOVE:** Workers (the SSR target on workerd) and D1 (its database)
+- **KEEP:** Cloudflare **Pages**, which hosts `apps/docs` and `apps/site`.
+  Different product, currently working. Their `wrangler.toml` files, their own
+  `wrangler` dependencies, the `docs:deploy` / `landing:deploy` scripts, and the
+  `deploy-docs-site.yml` / `deploy-site.yml` workflows all stay.
+- **KEEP:** Cloudflare **Turnstile** (`src/components/atoms/Turnstile.astro`).
+  CAPTCHA, unrelated to Workers.
+- **KEEP:** Upstash Redis caching. Not a Cloudflare product.
+
+Deleting anything in the KEEP list strands two sites with no deploy path or
+breaks CAPTCHA. When in doubt, leave it and report.
+
+**Files:**
+
+- Delete: `wrangler.toml`, `wrangler.toml.example`
+- Delete: `.github/workflows/deploy-cloudflare.yml`
+- Delete: `src/db/drivers/d1.ts`, `d1.test.ts`, `d1-http.ts`, `d1-http.test.ts`, `d1-local.ts`, `d1-local.test.ts`
+- Modify: `package.json`, `astro.config.ts`, `src/db/config.ts`, `src/db/index.ts`, `src/db/migrate.ts`, `src/db/seed/index.ts`, `src/cli/lib/target.ts`, `src/cli/index.ts`, `src/cli/commands/deploy.ts`, `src/lib/env.ts`, `src/lib/auth/server.ts`, `src/middleware/security-headers.ts`, `src/env.d.ts`
+- Modify (tests): `src/db/config.test.ts`, `src/cli/lib/target.test.ts`, `src/cli/commands/demo.test.ts`, `src/db/seed/seed.integration.test.ts`, `src/__tests__/middleware/installer.test.ts`, `src/__tests__/api/installer/setup.route.test.ts`
+- Modify (docs): `.claude/CLAUDE.md`, `.claude/rules/workflow.md`, `.claude/rules/backend/deployment.md`, `.claude/rules/backend/database.md`, `.claude/rules/performance.md`, `docs/architecture/006-database-connection-architecture.md`, `docs/architecture/007-database-migrations.md`, `COMMANDS.md`, `AGENTS.md`
+
+Keep `src/db/drivers/bun.ts` — that is the local SQLite driver and becomes the
+only driver.
+
+- [ ] **Step 1: Remove the build target and adapter**
+
+Drop the dependency and the two Workers scripts. The root `wrangler` dependency
+goes too: both `apps/docs` and `apps/site` declare their own `wrangler ^4.114.0`,
+and the `docs:deploy` / `landing:deploy` scripts `cd` into those directories
+before invoking it, so the root copy existed only for `deploy:cloudflare`.
+
+```bash
+bun remove @astrojs/cloudflare wrangler
+```
+
+In `package.json`, delete the `build:cloudflare` and `deploy:cloudflare` script
+lines. Leave `docs:deploy` and `landing:deploy` untouched.
+
+- [ ] **Step 2: Simplify `astro.config.ts` to a single adapter**
+
+The `DeployTarget` type, the `validTargets` check, the `getAdapter()` function,
+and the `DEPLOY_TARGET` environment switch all exist only to choose between two
+adapters. With one adapter left, replace that whole block with a direct import:
+
+```typescript
+import node from '@astrojs/node';
+```
+
+and in the config, `adapter: node({ mode: 'standalone' })`.
+
+Delete the `DEPLOY_TARGET` plumbing entirely rather than leaving it with one
+branch — the project forbids backwards-compatibility hacks and dead code.
+
+- [ ] **Step 3: Delete the D1 drivers and their tests**
+
+```bash
+git rm src/db/drivers/d1.ts src/db/drivers/d1.test.ts \
+       src/db/drivers/d1-http.ts src/db/drivers/d1-http.test.ts \
+       src/db/drivers/d1-local.ts src/db/drivers/d1-local.test.ts
+```
+
+- [ ] **Step 4: Remove D1 branches from the database layer**
+
+In `src/db/config.ts`, `src/db/index.ts`, `src/db/migrate.ts`, and
+`src/db/seed/index.ts`, remove the `D1_ENABLED` checks and every D1 code path.
+`getActiveSchema()` and the driver selection should resolve unconditionally to
+the Bun SQLite driver.
+
+Where a function existed only to choose between drivers, collapse it rather than
+leaving a single-branch conditional. Do **not** wrap anything in a silent
+`try/catch` returning `[]` — the project forbids that; surface errors.
+
+- [ ] **Step 5: Remove the D1 CLI target**
+
+`src/cli/lib/target.ts` and `src/cli/index.ts` expose a `--target=d1` flag, and
+`src/cli/commands/deploy.ts` has a `cloudflare` subcommand that runs
+`astro build` with `DEPLOY_TARGET: 'cloudflare'`. Remove all three. If removing
+the `cloudflare` subcommand leaves `deploy.ts` with no subcommands, delete the
+command and unregister it from `src/cli/index.ts`'s `subCommands`.
+
+- [ ] **Step 6: Remove Workers-runtime branches from app code**
+
+In `src/lib/env.ts`, `src/lib/auth/server.ts`, `src/middleware/security-headers.ts`,
+and `src/env.d.ts`, remove branches that detect or adapt to the Workers runtime.
+
+Two cautions. `src/middleware/security-headers.ts` writes a nonce-based CSP
+header that interacts with `security: { csp: true }` — remove only
+Workers-specific branching, not the CSP logic. And `getEnv()` in `src/lib/env.ts`
+exists because `import.meta.env` is build-time-only on Workers; with Workers
+gone, `getEnv()` may be simplifiable, but it is used widely. Leave `getEnv()`'s
+signature intact and report the simplification opportunity rather than
+refactoring every caller.
+
+- [ ] **Step 7: Update the tests**
+
+These reference `D1_ENABLED` or D1 behaviour: `src/db/config.test.ts`,
+`src/cli/lib/target.test.ts`, `src/cli/commands/demo.test.ts`,
+`src/db/seed/seed.integration.test.ts`,
+`src/__tests__/middleware/installer.test.ts`,
+`src/__tests__/api/installer/setup.route.test.ts`.
+
+Remove the D1-specific cases. Do **not** delete a test file wholesale if it also
+covers non-D1 behaviour — remove only the D1 cases and keep the rest passing.
+The project forbids deleting tests without replacing coverage.
+
+Baseline: `bun run test` passes 2549. Expect the total to drop as D1 cases go;
+report the new number and confirm zero failures.
+
+- [ ] **Step 8: Run the gates**
+
+```bash
+bun run typecheck
+bun run lint
+bun run test
+bun run build
+bun run landing:build
+bun run docs:build
+```
+
+All must pass. `typecheck` baseline is `0 errors, 0 warnings, 0 hints` across
+960 files; the file count will drop.
+
+Confirm `build:cloudflare` is gone rather than broken:
+`bun run build:cloudflare` should now fail with "script not found".
+
+Confirm Pages deploys still resolve: `cd apps/docs && bunx wrangler --version`
+and the same in `apps/site` should both print a version.
+
+- [ ] **Step 9: Update the documentation**
+
+Remove Workers and D1 from: `.claude/CLAUDE.md` (the Runtime line, the
+Database/Workers rows of the ADR table, the Workers-compatibility notes),
+`.claude/rules/workflow.md` (the entire "Runtime Compatibility" section is about
+Workers), `.claude/rules/backend/deployment.md`, `.claude/rules/backend/database.md`,
+`.claude/rules/performance.md`, `COMMANDS.md` (the removed scripts), and
+`AGENTS.md`.
+
+For `docs/architecture/006-database-connection-architecture.md` and
+`007-database-migrations.md`: these are **architecture decision records**. Do not
+rewrite history. Add a dated superseding note at the top stating that Cloudflare
+Workers and D1 support was removed on 2026-07-25 and the Bun SQLite driver is now
+the only target, and leave the original decision text intact below it.
+
+- [ ] **Step 10: Commit**
+
+Commit in stages so the diff stays reviewable — one commit per concern:
+build target, D1 drivers, CLI, app code, tests, docs. Suggested final-commit
+subject line style: `feat(deploy)!: remove Cloudflare Workers and D1 support`,
+noting in the body that Pages hosting and Turnstile are unaffected.
