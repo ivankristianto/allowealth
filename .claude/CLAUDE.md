@@ -2,19 +2,6 @@
 
 Personal and family financial application for expense tracking, budgeting, account management, and financial forecasting.
 
-## Tech Stack
-
-- **Runtime:** Bun 1.x (dev) / Cloudflare Workers (prod)
-- **Framework:** Astro 6.x (file-based routing)
-- **Styling:** Tailwind CSS v4 + DaisyUI v5
-- **Components:** Astro components (server-side)
-- **State Management:** Nano Stores (client-side reactive state)
-- **Animations:** Motion/mini (client-side animations)
-- **Database:** Drizzle ORM + SQLite (dev) / Cloudflare D1 (prod)
-- **Auth:** Better Auth
-- **Cache:** CacheManager + Upstash Redis (prod) / Memory (dev)
-- **Logging:** Structured consola loggers
-
 ## Astro 6 Note
 
 The main SSR app enables `security: { csp: true }`, but `src/middleware/security-headers.ts` still writes the runtime CSP header until the nonce path is removed.
@@ -49,90 +36,12 @@ The main SSR app enables `security: { csp: true }`, but `src/middleware/security
 | **CLI Commands**        | `bun run aw <command>` (citty)                                         | Standalone scripts in `src/cli/`               | `COMMANDS.md`                                                   |
 | **Validation**          | Valibot (`import * as v from 'valibot'`)                               | Zod (`import { z } from 'zod'`)                | `rules/backend/api.md`                                          |
 
-## Key Commands
+## Where Things Live
 
-```bash
-# Development
-bun run dev                  # Start dev server
-bun run build                # Build for production
-
-# Quality Gates (run before every commit)
-bun run lint:fix             # ESLint (blocking)
-bun run stylelint:fix        # Stylelint (blocking)
-bun run format:fix           # Prettier (blocking)
-bun run typecheck            # TypeScript (blocking)
-
-# Testing
-bun run test                 # Unit tests
-bun run test:e2e             # E2E tests
-
-# Database
-bun run db:generate          # Generate SQLite migration
-bun run db:migrate           # Apply SQLite migrations
-bun run db:push              # Push schema (SQLite dev only)
-
-```
-
-See `COMMANDS.md` for complete list of available scripts and CLI tools.
-
-## Project Structure
-
-```
-src/
-├── components/              # Astro components (atoms/molecules/organisms/partials)
-├── pages/                   # File-based routing (Astro)
-├── services/                # Business logic (framework-agnostic)
-├── db/                      # Database schemas and connection
-│   ├── schema/
-│   │   └── sqlite/          # Shared SQLite-compatible schemas
-│   └── index.ts             # getActiveSchema()
-├── lib/                     # Utilities, tokens, auth, cache, logging
-├── middleware/              # Request middleware (Workers-compatible only)
-└── styles/                  # Global styles, tokens
-```
-
-## Rules & Documentation
-
-All project rules are in `.claude/rules/`:
-
-- **`principles.md`** - Core principles (code quality, user-first, performance)
-- **`workflow.md`** - Session behavior, quality gates, debugging
-- **`performance.md`** - Performance rules (database, cache, Core Web Vitals)
-- **`frontend/design-system.md`** - Design tokens, DaisyUI, accessibility
-- **`frontend/astro.md`** - Astro patterns, client scripts
-- **`frontend/bundle.md`** - Bundle performance rules
-- **`backend/database.md`** - DB patterns and migrations
-- **`backend/deployment.md`** - Workers deployment patterns
-- **`backend/api.md`** - API patterns, OpenAPI
-- **`testing.md`** - Testing patterns (E2E, Playwright, unit)
-- **`learned-patterns.md`** - Pattern index (patterns distributed to domain files)
-
-Architecture decisions in `docs/architecture/`:
-
-- `002-interactive-pages.md` - Server-rendered HTML fragments
-- `003-api-authentication.md` - Auth patterns
-- `004-database-schema.md` - Schema design
-- `005-bundle-performance.md` - Bundle optimization
-- `006-database-connection-architecture.md` - Connection handling
-- `007-database-migrations.md` - Migration strategy
-- `008-cache-abstraction.md` - Cache layer
-- `009-logger-abstraction.md` - Logging
-- `010-mcp-server-architecture.md` - MCP server
-- `011-authentication-architecture.md` - Auth patterns (OAuth, SSO, passkeys, 2FA)
-- `012-multi-currency-support.md` - Multi-currency baskets
-- `013-astro-view-transitions.md` - ClientRouter view transitions
-
-Design system in `design-system/`:
-
-- `START.md` - Quick start guide (read first)
-- `01-foundations.md` - Tokens, colors, typography
-- `02-components.md` - Component inventory
-- `03-forms.md` - Form patterns
-- `04-accessibility.md` - WCAG compliance
-- `05-responsive.md` - Responsive patterns
-- `06-data-visualization.md` - Charts, currency
-- `07-patterns.md` - Page layouts
-- `08-animations.md` - Animation patterns
+- Rules: `.claude/rules/` (domain files are path-scoped and load on demand)
+- Architecture decisions: `docs/architecture/`
+- Design system: `design-system/` (start with `START.md`)
+- Scripts and CLI: `COMMANDS.md`
 
 ## Quick Start for New Agents
 

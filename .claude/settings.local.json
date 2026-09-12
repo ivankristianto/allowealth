@@ -17,5 +17,9 @@
   },
   "remote": {
     "defaultEnvironmentId": "env_01FHJM9bNLk3FW2W4X5qoMcu"
+  },
+  "skillOverrides": {
+    "cloudflare-r2-uploader": "off",
+    "docs-writer-skill": "off"
   }
 }
