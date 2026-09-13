@@ -47,13 +47,14 @@ export function verifyPlan(plan: Plan): VerifyResult {
   );
   record(1, 'closing total', plan.checks.closingTotal, closingTotal);
 
-  // The sheet's per-account Income column is denominated in each account's own
-  // currency, so no conversion belongs here. Synthetic buckets have no column
-  // to compare against and are deliberately out of Link 4's scope.
+  // Link 4 compares in local currency: the foreign column would reintroduce the
+  // rate spread. Rows placed by `incomeRouting` are subtracted, because the
+  // sheet's Income column excludes them — it is zero outside salary. Synthetic
+  // buckets have no column to compare against and are out of scope.
   const byAccount = new Map<string, number>();
   for (const t of plan.transactions) {
-    if (t.kind !== 'income') continue;
-    byAccount.set(t.account, (byAccount.get(t.account) ?? 0) + Number(t.amount));
+    if (t.kind !== 'income' || t.routedByException) continue;
+    byAccount.set(t.account, (byAccount.get(t.account) ?? 0) + Number(t.localAmount));
   }
   for (const [account, expected] of Object.entries(plan.checks.accountIncome)) {
     record(4, `income into ${account}`, expected, byAccount.get(account) ?? 0);

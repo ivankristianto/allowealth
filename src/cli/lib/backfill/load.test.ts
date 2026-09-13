@@ -18,6 +18,7 @@ const samplePlan = (): Plan => ({
       account: 'Household (historical)',
       amount: '100',
       currency: 'IDR',
+      localAmount: '100',
     },
   ],
   checks: { expenseTotal: 100, incomeTotal: 0, closingTotal: 0, accountIncome: {} },
@@ -68,10 +69,12 @@ function deps(overrides: Partial<LoadDeps> = {}) {
     readSavedPlan: () => null,
     hashPlan: () => 'plan-hash',
     buildPlanForMonth: () => samplePlan(),
+    planFor: () => samplePlan(),
     settle: async () => {
       calls.push('settle');
     },
     earliest: { month: 1, year: 2099 },
+    config: { accounts: [] } as unknown as LoadDeps['config'],
     ...overrides,
   };
   return { calls, d, posted };
@@ -216,7 +219,13 @@ describe('loadMonth verification gates', () => {
       buildPlanForMonth: () => {
         const plan = samplePlan();
         plan.snapshots = [
-          { account: 'A', closing: '0', currency: 'IDR', recordedAt: '2099-01-31T23:00:00.000Z' },
+          {
+            account: 'A',
+            opening: '0',
+            closing: '0',
+            currency: 'IDR',
+            recordedAt: '2099-01-31T23:00:00.000Z',
+          },
         ];
         plan.checks.closingTotal = 0;
         return plan;
@@ -224,5 +233,111 @@ describe('loadMonth verification gates', () => {
     });
     expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/Link 2/);
     expect(calls).not.toContain('commit');
+  });
+});
+
+describe('loadMonth settle target', () => {
+  it('settles against a later loaded month, not the one just re-run', async () => {
+    const settled: Plan[] = [];
+    const later = samplePlan();
+    later.month = 6;
+    const { d } = deps({
+      readLedger: () => [
+        { month: 1, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
+        { month: 6, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
+      ],
+      planFor: () => later,
+      settle: async (plan) => {
+        settled.push(plan);
+      },
+    });
+    await loadMonth(d, 1, 2099, { force: true });
+    expect(settled[0]?.month).toBe(6);
+  });
+
+  it('settles against this month when it is the newest', async () => {
+    const settled: Plan[] = [];
+    const { d } = deps({
+      settle: async (plan) => {
+        settled.push(plan);
+      },
+    });
+    await loadMonth(d, 1, 2099, {});
+    expect(settled[0]?.month).toBe(1);
+  });
+});
+
+describe('loadMonth ownership', () => {
+  const twoOwners = {
+    accounts: [
+      { name: 'Household (historical)', currency: 'IDR', owner: 'OwnerA' },
+      { name: 'B', currency: 'IDR', owner: 'OwnerB' },
+    ],
+  } as unknown as LoadDeps['config'];
+
+  function ownerClient(patched: string[], members: { id: string; name: string }[]) {
+    return {
+      get: async (path: string) => {
+        if (path.startsWith('/api/categories')) {
+          return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
+        }
+        if (path.startsWith('/api/workspace/members')) return { members };
+        if (path.startsWith('/api/accounts')) {
+          return [
+            {
+              id: 'acct-1',
+              name: 'Household (historical)',
+              currency: 'IDR',
+              balance: '0',
+              created_by_user_id: 'admin',
+            },
+          ];
+        }
+        return [];
+      },
+      getAll: async () => [],
+      post: async () => ({ id: 'x' }),
+      patch: async (p: string) => {
+        patched.push(p);
+        return {};
+      },
+      del: async () => ({}),
+    } as unknown as LoadDeps['client'];
+  }
+
+  it('moves an account to the member the roster names', async () => {
+    const patched: string[] = [];
+    const { d } = deps({
+      config: twoOwners,
+      client: ownerClient(patched, [{ id: 'user-a', name: 'OwnerA' }]),
+      buildPlanForMonth: () => {
+        const plan = samplePlan();
+        plan.checks.expenseTotal = 0;
+        plan.transactions = [];
+        return plan;
+      },
+    });
+    await loadMonth(d, 1, 2099, {});
+    expect(patched).toContain('/api/accounts/acct-1/transfer-owner');
+  });
+
+  it('aborts naming the member when the roster owner has no account', async () => {
+    const { d } = deps({
+      config: twoOwners,
+      client: ownerClient([], [{ id: 'user-z', name: 'Somebody Else' }]),
+      buildPlanForMonth: () => {
+        const plan = samplePlan();
+        plan.checks.expenseTotal = 0;
+        plan.transactions = [];
+        return plan;
+      },
+    });
+    expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/OwnerA/);
+  });
+
+  it('does not call the members endpoint when every account has one owner', async () => {
+    const { calls, d } = deps();
+    await loadMonth(d, 1, 2099, {});
+    expect(calls.some((c) => c.includes('transfer-owner'))).toBe(false);
   });
 });

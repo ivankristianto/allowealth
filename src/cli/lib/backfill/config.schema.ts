@@ -39,6 +39,10 @@ export const configSchema = v.object({
     ),
   }),
   categoryRenames: v.array(v.object({ from: v.string(), to: v.string() })),
+  // Salary is routed by category to a member's own account. It is kept apart
+  // from `incomeRouting`, which exists only for foreign-currency non-salary
+  // income: a local-currency entry appearing there signals the scope drifting.
+  salaryRouting: v.array(v.object({ category: filledIn, account: filledIn })),
   incomeRouting: v.array(v.object({ match: v.string(), account: v.string() })),
   suppressedRows: v.array(
     v.object({

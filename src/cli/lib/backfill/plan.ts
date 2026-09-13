@@ -93,26 +93,50 @@ function requireLocalAmount(row: RawRow, side: string): number | null {
   );
 }
 
+interface Route {
+  account: string;
+  currency: Currency;
+  /** Set when `incomeRouting` placed the row, so Link 4 can subtract it. */
+  byException?: boolean;
+}
+
+function rosterAccount(
+  roster: Map<string, ResolvedAccount>,
+  name: string,
+  field: string
+): ResolvedAccount {
+  const account = roster.get(name);
+  if (!account) {
+    throw new DetectionError(
+      `\`${field}\` points at "${name}", which is not in this month's accounts.\n` +
+        `Point it at an account that appears in the balance sheet.`
+    );
+  }
+  return account;
+}
+
+/**
+ * Routing keys on category, never on the presence of a foreign amount — some
+ * non-salary rows carry one too.
+ */
 function routeIncome(
   row: RawRow,
   config: BackfillConfig,
   roster: Map<string, ResolvedAccount>,
   owner: string
-): { account: string; currency: Currency } {
+): Route {
+  const salary = config.salaryRouting.find((r) => r.category === row.category);
+  if (salary) {
+    const account = rosterAccount(roster, salary.account, 'salaryRouting');
+    return { account: account.name, currency: account.currency };
+  }
+
   const rule = config.incomeRouting.find(
     (r) => r.match === row.category || r.match === row.description
   );
-
   if (rule) {
-    const account = roster.get(rule.account);
-    if (!account) {
-      throw new DetectionError(
-        `\`incomeRouting\` sends "${rule.match}" to "${rule.account}", ` +
-          `which is not in this month's accounts.\n` +
-          `Point the rule at an account that appears in the balance sheet.`
-      );
-    }
-    return { account: account.name, currency: account.currency };
+    const account = rosterAccount(roster, rule.account, 'incomeRouting');
+    return { account: account.name, currency: account.currency, byException: true };
   }
 
   // A foreign figure with nowhere to go is a routing gap, not a passive row:
@@ -184,6 +208,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       account: config.syntheticAccounts.expense,
       amount: decimal(amount),
       currency: LOCAL,
+      localAmount: decimal(amount),
     });
   }
 
@@ -203,7 +228,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       continue;
     }
     const { owner } = resolveOwner(row.description, config, unmarkedOwner);
-    const { account, currency } = routeIncome(row, config, roster, owner);
+    const { account, currency, byException } = routeIncome(row, config, roster, owner);
     const amount = amountFor(row, currency, local);
     if (amount === 0) {
       skipped.push({ reason: 'zero amount', description: row.description });
@@ -217,12 +242,15 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       account,
       amount: decimal(amount),
       currency,
+      localAmount: decimal(local),
+      ...(byException ? { routedByException: true } : {}),
     });
   }
 
   const lastDay = String(lastDayOfMonth(raw.month, raw.year)).padStart(2, '0');
   const snapshots: PlanSnapshot[] = accounts.map((a) => ({
     account: a.name,
+    opening: decimal(a.awal),
     closing: decimal(a.akhir),
     currency: a.currency,
     recordedAt: `${key}-${lastDay}T23:00:00.000Z`,

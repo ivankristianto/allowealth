@@ -66,8 +66,20 @@ describe('buildPlan', () => {
     expect(plan.checks.accountIncome['Bank1 OwnerB']).toBe(5_000_000);
   });
 
-  it('records per-account income in the account own currency', () => {
-    expect(plan.checks.accountIncome['Bank2 OwnerA USD']).toBe(1_000);
+  it('records per-account income in local currency, as the sheet prints it', () => {
+    expect(plan.checks.accountIncome['Bank2 OwnerA USD']).toBe(10_000_000);
+  });
+
+  it('keeps the local-currency figure alongside a foreign-currency amount', () => {
+    const s = plan.transactions.find((t) => t.description === 'Salary OwnerA');
+    expect(s?.amount).toBe('1000');
+    expect(s?.currency).toBe('USD');
+    expect(s?.localAmount).toBe('10000000');
+  });
+
+  it('does not mark salary rows as exception-routed', () => {
+    const s = plan.transactions.find((t) => t.description === 'Salary OwnerA');
+    expect(s?.routedByException).toBeUndefined();
   });
 
   it('emits one snapshot per account at 23:00:00 on the last day', () => {
@@ -98,6 +110,21 @@ describe('buildPlan detection', () => {
     bad.incomes[1]!.amount = { kind: 'blank' };
     bad.incomes[1]!.usd = { kind: 'value', value: 500 };
     expect(() => buildPlan(bad, fixtureConfig)).toThrow(/placeholder|suppress/i);
+  });
+
+  it('marks an incomeRouting row so Link 4 can subtract it', () => {
+    // Foreign-currency non-salary income: the only thing incomeRouting is for.
+    const foreign = structuredClone(raw);
+    foreign.incomes[2]!.usd = { kind: 'value', value: 75 };
+    const routed = buildPlan(foreign, {
+      ...fixtureConfig,
+      incomeRouting: [{ match: 'Coupon OwnerA', account: 'Bank2 OwnerA USD' }],
+    });
+    const c = routed.transactions.find((t) => t.description === 'Coupon OwnerA');
+    expect(c?.routedByException).toBe(true);
+    expect(c?.currency).toBe('USD');
+    expect(c?.amount).toBe('75');
+    expect(c?.localAmount).toBe('750000');
   });
 
   it('aborts on a foreign amount with no routing entry', () => {

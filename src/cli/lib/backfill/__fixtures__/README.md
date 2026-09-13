@@ -22,5 +22,8 @@ run against this pair in CI.
 | Total Income      | 16,000,000 | the four income rows                                          |
 | Total Akhir Bulan | 50,750,000 | the six closing balances, the USD account converted at 10,000 |
 
-Per-account `Income`: `Bank2 OwnerA USD` 1,000 (USD), `Bank1 OwnerB` 5,000,000
-(IDR), every other account 0.
+Per-account `Income` is denominated in **local** currency even for a foreign
+account, because Link 4 compares against the transaction sheet's local column:
+`Bank2 OwnerA USD` 10,000,000, `Bank1 OwnerB` 5,000,000, every other account 0.
+`Awal Bulan` and `Akhir Bulan` for that account stay in its own currency and are
+converted at the reference rate for the closing total.

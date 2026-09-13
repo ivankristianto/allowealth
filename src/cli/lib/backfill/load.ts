@@ -1,7 +1,9 @@
 import type { BackfillClient } from './client';
+import type { BackfillConfig } from './config.schema';
 import { DirectiveError } from './errors';
+import { closeEnough } from './money';
 import type { LedgerEntry, MonthRef } from './ledger';
-import { findGaps } from './ledger';
+import { findGaps, newestLoaded } from './ledger';
 import { monthKey } from './plan';
 import { assertOwnership, fetchMonthTransactions, purgeMonth } from './purge';
 import { reconcileMonth } from './reconcile';
@@ -20,7 +22,10 @@ export interface LoadDeps {
   hashPlan: (plan: Plan) => string;
   buildPlanForMonth: (month: number, year: number) => Plan;
   settle: (plan: Plan, accounts: { id: string; name: string }[]) => Promise<void>;
+  /** Re-parses a month's CSVs, for settling against the newest loaded month. */
+  planFor: (month: number, year: number) => Plan;
   earliest: MonthRef;
+  config: BackfillConfig;
 }
 
 export interface LoadOptions {
@@ -35,6 +40,7 @@ export interface LoadReport {
   plan: Plan;
   purged: { transactions: number; budgets: number };
   created: { accounts: number; budgets: number; transactions: number; snapshots: number };
+  transferred: string[];
   reconciliation: ReconcileReport | null;
 }
 
@@ -42,7 +48,9 @@ interface ApiAccount {
   id: string;
   name: string;
   balance?: string;
+  initial_balance?: string;
   currency?: string;
+  created_by_user_id?: string;
 }
 
 interface ApiCategory {
@@ -96,9 +104,12 @@ async function ensureAccounts(
   const byName = new Map((existing ?? []).map((a) => [a.name, a]));
   let created = 0;
 
+  // An account is created with its first-appearance opening balance, which the
+  // service also stores as initial_balance; getBalanceAtMonthStart falls back to
+  // it when no history precedes the month, so only closings are posted later.
   const needed = new Map<string, { currency: string; opening: string }>();
   for (const snapshot of plan.snapshots) {
-    needed.set(snapshot.account, { currency: snapshot.currency, opening: '0' });
+    needed.set(snapshot.account, { currency: snapshot.currency, opening: snapshot.opening });
   }
   for (const transaction of plan.transactions) {
     if (needed.has(transaction.account)) continue;
@@ -114,6 +125,20 @@ async function ensureAccounts(
             `Fix the currency in \`accounts\`, or rename one of them.`
         );
       }
+      // A different origin balance means the months were loaded out of order,
+      // which would silently misstate every balance derived from it.
+      const existingOpening = found.initial_balance;
+      if (
+        existingOpening !== undefined &&
+        spec.opening !== '0' &&
+        !closeEnough(Number(existingOpening), Number(spec.opening))
+      ) {
+        throw new LoadError(
+          `Account "${name}" already exists with an origin balance of ${existingOpening}, ` +
+            `but ${monthKey(plan.month, plan.year)} opens it at ${spec.opening}.\n` +
+            `That means months were loaded out of order. Purge the later months and reload in order.`
+        );
+      }
       continue;
     }
     const account = await client.post<ApiAccount>('/api/accounts', {
@@ -127,6 +152,54 @@ async function ensureAccounts(
   }
 
   return { accounts: byName, created };
+}
+
+interface WorkspaceMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Moves each account to the member the roster says owns it.
+ *
+ * Accounts are created by the admin member, so without this every account in
+ * the workspace reads as the admin's and per-member reporting is wrong.
+ */
+async function transferOwnership(
+  client: BackfillClient,
+  config: BackfillConfig,
+  accounts: Map<string, ApiAccount>
+): Promise<string[]> {
+  const owners = new Map(config.accounts.map((a) => [a.name, a.owner]));
+  const distinct = new Set([...owners.values()]);
+  if (distinct.size <= 1) return [];
+
+  const page = await client.get<{ members?: WorkspaceMember[] }>('/api/workspace/members');
+  const members = page?.members ?? [];
+
+  const moved: string[] = [];
+  for (const [name, account] of accounts) {
+    const owner = owners.get(name);
+    if (!owner) continue;
+
+    const member = members.find((m) => m.name === owner || m.email === owner);
+    if (!member) {
+      throw new LoadError(
+        `\`accounts\` says "${name}" belongs to "${owner}", but no workspace member ` +
+          `matches that name or email.\n` +
+          `Create the member with \`aw backfill setup --create-user --email <address>\`, ` +
+          `or correct the owner in the config.`
+      );
+    }
+    if (account.created_by_user_id === member.id) continue;
+
+    await client.patch(`/api/accounts/${account.id}/transfer-owner`, {
+      owner_user_id: member.id,
+    });
+    moved.push(name);
+  }
+  return moved;
 }
 
 async function categoryIndex(client: BackfillClient): Promise<Map<string, ApiCategory>> {
@@ -185,6 +258,7 @@ export async function loadMonth(
       plan,
       purged: { transactions: 0, budgets: 0 },
       created: { accounts: 0, budgets: 0, transactions: 0, snapshots: 0 },
+      transferred: [],
       reconciliation: null,
     };
   }
@@ -204,6 +278,7 @@ export async function loadMonth(
 
   const purged = await purgeMonth(deps.client, month, year);
   const { accounts, created: createdAccounts } = await ensureAccounts(deps.client, plan);
+  const transferred = await transferOwnership(deps.client, deps.config, accounts);
   const categories = await categoryIndex(deps.client);
 
   const openings = Object.fromEntries(
@@ -258,8 +333,21 @@ export async function loadMonth(
     );
   }
 
+  // Settle against the NEWEST month known to be loaded, re-parsed from its CSVs
+  // — not the month this invocation happened to load. Re-running an early month
+  // after a later one would otherwise leave accounts.balance showing the early
+  // month, a failure no history-based check would notice. This month counts as
+  // loaded here: it has passed every gate, and the ledger flips just below.
+  const recorded = newestLoaded(deps.readLedger());
+  const newest =
+    recorded && recorded.year * 12 + recorded.month > year * 12 + month
+      ? { month: recorded.month, year: recorded.year }
+      : { month, year };
+  const settlePlan =
+    newest.month === month && newest.year === year ? plan : deps.planFor(newest.month, newest.year);
+
   await deps.settle(
-    plan,
+    settlePlan,
     [...accounts.values()].map((a) => ({ id: a.id, name: a.name }))
   );
 
@@ -277,6 +365,7 @@ export async function loadMonth(
       transactions: plan.transactions.length,
       snapshots: plan.snapshots.length,
     },
+    transferred,
     reconciliation,
   };
 }
@@ -356,8 +445,10 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
     readSavedPlan: (month, y) => ledger.readSavedPlan(dataDir, month, y),
     hashPlan: ledger.hashPlan,
     buildPlanForMonth: (month, y) => buildPlan(readMonth(dataDir, config, month, y), config),
+    planFor: (month, y) => buildPlan(readMonth(dataDir, config, month, y), config),
     settle: (plan, accounts) => settle(client, plan, accounts),
     earliest: earliestFromConfig(config),
+    config,
   };
 
   const { createOutput } = await import('../output');

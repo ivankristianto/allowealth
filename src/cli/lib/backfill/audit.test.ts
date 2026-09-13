@@ -16,10 +16,11 @@ const plan = {
       account: 'Household (historical)',
       amount: '100',
       currency: 'IDR',
+      localAmount: '100',
     },
   ],
   budgets: [{ category: 'Cat1', amountIdr: 400, pct: '50%' }],
-  snapshots: [{ account: 'A', closing: '1200', currency: 'IDR', recordedAt: '' }],
+  snapshots: [{ account: 'A', opening: '0', closing: '1200', currency: 'IDR', recordedAt: '' }],
   checks: { expenseTotal: 100, incomeTotal: 0, closingTotal: 1200, accountIncome: {} },
   skipped: [],
   unmarkedOwner: [],
@@ -82,5 +83,66 @@ describe('diffMonth', () => {
   it('reports a nonzero reconciliation variance', () => {
     const r = diffMonth(plan, { ...clean, reconciliation: { IDR: 5, USD: 0 } });
     expect(r.some((x) => x.dimension === 'reconciliation')).toBe(true);
+  });
+});
+
+describe('diffMonth against a later loaded month', () => {
+  it('compares current balance to the newest loaded month, not the audited one', () => {
+    // The audited month closed at 1200; a later month moved the account to 5000.
+    const rows = diffMonth(plan, {
+      ...clean,
+      balances: { A: '5000' },
+      newestClosing: { A: '5000' },
+    });
+    expect(rows.some((x) => x.dimension === 'current balance')).toBe(false);
+  });
+
+  it('still reports a current balance that matches neither month', () => {
+    const rows = diffMonth(plan, {
+      ...clean,
+      balances: { A: '7' },
+      newestClosing: { A: '5000' },
+    });
+    expect(rows.some((x) => x.dimension === 'current balance')).toBe(true);
+  });
+});
+
+describe('diffMonth grouped dimensions', () => {
+  it('reports an expense filed under the wrong category', () => {
+    const rows = diffMonth(plan, {
+      ...clean,
+      transactions: [{ ...clean.transactions[0]!, category: 'Cat2' }],
+    });
+    expect(rows.some((x) => x.dimension === 'expense per category')).toBe(true);
+  });
+
+  it('reports income landing in the wrong account', () => {
+    const withIncome = structuredClone(plan);
+    withIncome.transactions.push({
+      kind: 'income',
+      date: '2099-01-10',
+      description: 'i',
+      category: 'Inc1',
+      account: 'A',
+      amount: '500',
+      currency: 'IDR',
+      localAmount: '500',
+    });
+    withIncome.checks.incomeTotal = 500;
+    const rows = diffMonth(withIncome, {
+      ...clean,
+      transactions: [
+        ...clean.transactions,
+        {
+          type: 'income',
+          transaction_date: '2099-01-10',
+          amount: '500',
+          category: 'Inc1',
+          account: 'B',
+          currency: 'IDR',
+        },
+      ],
+    });
+    expect(rows.some((x) => x.dimension === 'income per account')).toBe(true);
   });
 });

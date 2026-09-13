@@ -29,6 +29,7 @@ const MINIMAL = JSON.stringify({
   },
   categories: { expense: ['Cat1'], income: [{ name: 'Inc1', sourceType: 'active' }] },
   categoryRenames: [],
+  salaryRouting: [{ category: 'Inc1', account: 'Bank1 OwnerA' }],
   incomeRouting: [],
   suppressedRows: [],
   dateRules: { incomeDayOfMonth: 10, earliestMonth: '2099-01' },

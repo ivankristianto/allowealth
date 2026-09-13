@@ -22,10 +22,22 @@ export interface PlanTransaction {
   account: string;
   amount: string; // decimal string, no separators
   currency: Currency;
+  /**
+   * The CSV's local-currency figure for this row. Link 4 compares in local
+   * currency, because the foreign column would reintroduce the rate spread.
+   */
+  localAmount: string;
+  /**
+   * True when `incomeRouting` placed this row. The balance sheet's `Income`
+   * column excludes such rows, so Link 4 subtracts them.
+   */
+  routedByException?: boolean;
 }
 
 export interface PlanSnapshot {
   account: string;
+  /** First-appearance `Awal Bulan`, stored as the account's initial_balance. */
+  opening: string;
   closing: string;
   currency: Currency;
   recordedAt: string; // ISO

@@ -532,6 +532,10 @@ Environment:
 
 There is no password flag on any subcommand: a secret must not land in shell history.
 
+Accounts are created by the loading member and then moved to the owner named in
+the config's `accounts` roster, so `setup --create-user` must have run before a
+range with two owners is loaded.
+
 ### Admin & Security
 
 | Command                                                         | Description                                     |

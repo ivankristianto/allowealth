@@ -2,7 +2,7 @@ import type { BackfillClient } from './client';
 import { closeEnough, toLocal } from './money';
 import { monthKey } from './plan';
 import { fetchMonthTransactions } from './purge';
-import type { Currency, Plan } from './types';
+import type { Currency, Plan, PlanTransaction } from './types';
 
 export interface AuditRow {
   dimension: string;
@@ -29,6 +29,12 @@ export interface ActualState {
   /** The account's current balance, which net worth reads. */
   balances: Record<string, string>;
   /**
+   * Account → closing balance of the NEWEST loaded month. Current balance is
+   * settled against that month, not the audited one, so auditing an earlier
+   * month must compare against it or every account reads as drifted.
+   */
+  newestClosing?: Record<string, string>;
+  /**
    * Per-currency variance, when the caller has it. Omitted rather than defaulted
    * to zero: a comparison of 0 against 0 would report "clean" without checking.
    */
@@ -37,6 +43,34 @@ export interface ActualState {
 
 function money(value: number): string {
   return value.toFixed(2);
+}
+
+/**
+ * Compares plan against app totals grouped by some key, in local currency.
+ *
+ * Keys present on either side are reported, so a category the app holds but the
+ * plan does not shows up rather than being skipped.
+ */
+function groupCompare(
+  dimension: string,
+  planned: PlanTransaction[],
+  actual: ActualTransaction[],
+  planKey: (t: PlanTransaction) => string,
+  actualKey: (t: ActualTransaction) => string,
+  compare: (dimension: string, key: string, expected: number, got: number) => void,
+  rate: number
+): void {
+  const sums = new Map<string, { expected: number; got: number }>();
+  const bucket = (key: string) => {
+    const found = sums.get(key) ?? { expected: 0, got: 0 };
+    sums.set(key, found);
+    return found;
+  };
+
+  for (const t of planned) bucket(planKey(t)).expected += Number(t.localAmount);
+  for (const t of actual) bucket(actualKey(t)).got += toLocal(t.amount, t.currency, rate);
+
+  for (const [key, { expected, got }] of sums) compare(dimension, key, expected, got);
 }
 
 /**
@@ -72,6 +106,34 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
   );
   compare('transaction count', key, plan.transactions.length, actual.transactions.length);
 
+  groupCompare(
+    'expense per category',
+    plan.transactions.filter((t) => t.kind === 'expense'),
+    actual.transactions.filter((t) => t.type === 'expense'),
+    (t) => t.category,
+    (t) => t.category ?? '',
+    compare,
+    plan.rate
+  );
+  groupCompare(
+    'income per category',
+    plan.transactions.filter((t) => t.kind === 'income'),
+    actual.transactions.filter((t) => t.type === 'income'),
+    (t) => t.category,
+    (t) => t.category ?? '',
+    compare,
+    plan.rate
+  );
+  groupCompare(
+    'income per account',
+    plan.transactions.filter((t) => t.kind === 'income'),
+    actual.transactions.filter((t) => t.type === 'income'),
+    (t) => t.account,
+    (t) => t.account ?? '',
+    compare,
+    plan.rate
+  );
+
   const actualBudgets = new Map(actual.budgets.map((b) => [b.category, b.budget_amount]));
   for (const budget of plan.budgets) {
     const got = actualBudgets.get(budget.category);
@@ -103,9 +165,12 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
 
   // Settle writes the current balance and net worth reads it, yet no
   // history-based check would notice it going stale, so it is audited on its own.
-  const planClosing = new Map(plan.snapshots.map((s) => [s.account, s.closing]));
+  // It settles to the newest loaded month, which is not necessarily this one.
+  const settledTo =
+    actual.newestClosing ??
+    Object.fromEntries(plan.snapshots.map((s) => [s.account, s.closing] as const));
   for (const [account, balance] of Object.entries(actual.balances)) {
-    compare('current balance', account, Number(planClosing.get(account) ?? '0'), Number(balance));
+    compare('current balance', account, Number(settledTo[account] ?? '0'), Number(balance));
   }
 
   for (const [currency, variance] of Object.entries(actual.reconciliation ?? {})) {
@@ -137,7 +202,11 @@ interface HistoryEntry {
 }
 
 /** Reads the app's state for the month. Performs no writes. */
-export async function runAudit(client: BackfillClient, plan: Plan): Promise<AuditRow[]> {
+export async function runAudit(
+  client: BackfillClient,
+  plan: Plan,
+  newestPlan?: Plan
+): Promise<AuditRow[]> {
   const transactions = await fetchMonthTransactions(client, plan.month, plan.year);
   const budgets = await client.get<{ category?: string; budget_amount: string }[]>(
     `/api/budgets?month=${plan.month}&year=${plan.year}`
@@ -176,6 +245,9 @@ export async function runAudit(client: BackfillClient, plan: Plan): Promise<Audi
     })),
     history,
     balances,
+    newestClosing: newestPlan
+      ? Object.fromEntries(newestPlan.snapshots.map((s) => [s.account, s.closing] as const))
+      : undefined,
   });
 }
 
@@ -204,8 +276,18 @@ export async function runAuditCommand(args: AuditArgs): Promise<number> {
   const { month, year: y } = parseMonthArg(args.month, year);
 
   const plan = buildPlan(readMonth(dataDir, config, month, y), config);
+
+  // Current balance is settled against the newest loaded month, so auditing an
+  // earlier month must compare against that month's closings, not this month's.
+  const { newestLoaded, readLedger } = await import('./ledger');
+  const newest = newestLoaded(readLedger(dataDir));
+  const newestPlan =
+    newest && (newest.month !== month || newest.year !== y)
+      ? buildPlan(readMonth(dataDir, config, newest.month, newest.year), config)
+      : undefined;
+
   const client = await createClient();
-  const rows = await runAudit(client, plan);
+  const rows = await runAudit(client, plan, newestPlan);
 
   const label = monthKey(month, y);
 

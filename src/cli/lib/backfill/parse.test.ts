@@ -53,7 +53,8 @@ describe('parseMonth', () => {
   it('reads the per-account income column', () => {
     const byName = Object.fromEntries(m.accounts.map((a) => [a.name, a.income]));
     expect(byName['Bank1 OwnerB']).toEqual({ kind: 'value', value: 5_000_000 });
-    expect(byName['Bank2 OwnerA USD']).toEqual({ kind: 'value', value: 1_000 });
+    // The Income column is local currency even for a foreign account.
+    expect(byName['Bank2 OwnerA USD']).toEqual({ kind: 'value', value: 10_000_000 });
     expect(byName['Bank1 OwnerA']).toEqual({ kind: 'value', value: 0 });
   });
 

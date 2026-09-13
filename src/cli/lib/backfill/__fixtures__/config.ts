@@ -33,10 +33,11 @@ export const fixtureConfig: BackfillConfig = {
     ],
   },
   categoryRenames: [],
-  incomeRouting: [
-    { match: 'IncSalaryA', account: 'Bank2 OwnerA USD' },
-    { match: 'IncSalaryB', account: 'Bank1 OwnerB' },
+  salaryRouting: [
+    { category: 'IncSalaryA', account: 'Bank2 OwnerA USD' },
+    { category: 'IncSalaryB', account: 'Bank1 OwnerB' },
   ],
+  incomeRouting: [],
   suppressedRows: [],
   dateRules: { incomeDayOfMonth: 10, earliestMonth: '2099-01' },
 };

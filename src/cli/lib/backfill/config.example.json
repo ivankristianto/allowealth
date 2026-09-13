@@ -29,7 +29,11 @@
     ]
   },
   "categoryRenames": [{ "from": "Seeded Category", "to": "Cat2" }],
-  "incomeRouting": [{ "match": "Coupon OwnerA", "account": "Bank2 OwnerA USD" }],
+  "salaryRouting": [
+    { "category": "IncSalaryA", "account": "Bank2 OwnerA USD" },
+    { "category": "IncSalaryB", "account": "Bank1 OwnerB" }
+  ],
+  "incomeRouting": [{ "match": "IncInterest", "account": "Bank2 OwnerA USD" }],
   "suppressedRows": [
     {
       "month": "2099-01",

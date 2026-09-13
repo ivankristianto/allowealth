@@ -79,6 +79,13 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 | `No free balance-history slot left`                  | The day's 23:00–23:59 window is full. Clear the stale snapshots for that day first                          |
 | `loaded but does not reconcile`                      | Link 2 failed. The month stays `loading`; investigate, then re-run                                          |
 
+**Salary is not `incomeRouting`.** Salary routes by category through
+`salaryRouting`, to the member's own account. `incomeRouting` exists only for
+**foreign-currency non-salary** income, which must land in a foreign-currency
+account or the service rejects it. A local-currency entry appearing in
+`incomeRouting` is a signal that this scope is drifting — Link 4 subtracts
+those rows, so a wrong entry there silently weakens the check.
+
 **Rename or closure?** An account that stops appearing at a **non-zero**
 balance was renamed — map it with `accountAliases`. At **zero** it was closed —
 leave it out of later months; `settle` will write its balance to `0`.
@@ -98,10 +105,11 @@ Four links check the load, at two different moments.
 | 3    | After the load   | No     | The recombined figure against the sheet's balance          |
 
 Link 4 closes a hole Link 1 cannot see: the totals still match when every
-income row is routed to the wrong account. It compares in each account's **own**
-currency, which is how the sheet prints that column. Synthetic buckets
-(`Household (historical)`, `Passive Income (…)`) have no column to compare
-against and are deliberately out of its scope.
+income row is routed to the wrong account. It compares in **local**
+currency — the foreign column would reintroduce the rate spread — and
+subtracts rows placed by `incomeRouting`, because the sheet's `Income`
+column excludes them. Synthetic buckets (`Household (historical)`,
+`Passive Income (…)`) have no column to compare against and are out of scope.
 
 Link 2 recomputes the variance from the accounts and transactions read back
 out of the app, because the app derives reconciliation only for its own
