@@ -31,7 +31,7 @@ const MINIMAL = JSON.stringify({
   categoryRenames: [],
   incomeRouting: [],
   suppressedRows: [],
-  dateRules: { incomeDayOfMonth: 10 },
+  dateRules: { incomeDayOfMonth: 10, earliestMonth: '2099-01' },
 });
 
 describe('loadConfig', () => {

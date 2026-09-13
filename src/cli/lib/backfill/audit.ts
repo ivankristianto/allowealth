@@ -180,3 +180,45 @@ export async function runAudit(client: BackfillClient, plan: Plan): Promise<Audi
     reconciliation: { IDR: 0, USD: 0 },
   });
 }
+
+/* eslint-disable no-console -- CLI output is intentional */
+
+export interface AuditArgs {
+  dir?: string;
+  month?: string;
+  year?: string;
+  verbose?: boolean;
+}
+
+/** Arg-parsing shell around `runAudit`. Returns the process exit code. */
+export async function runAuditCommand(args: AuditArgs): Promise<number> {
+  const { buildPlan } = await import('./plan');
+  const { loadConfig } = await import('./config.schema');
+  const { createClient, parseMonthArg, readMonth, resolveDataDir, UsageError } =
+    await import('./runtime');
+
+  const dataDir = resolveDataDir(args.dir, process.env.AW_BACKFILL_DIR);
+  const config = loadConfig(dataDir);
+  if (!args.month) throw new UsageError('Pass --month to name the month to audit.');
+
+  const year = args.year ? Number(args.year) : new Date().getFullYear();
+  const { month, year: y } = parseMonthArg(args.month, year);
+
+  const plan = buildPlan(readMonth(dataDir, config, month, y), config);
+  const client = await createClient();
+  const rows = await runAudit(client, plan);
+
+  const label = monthKey(month, y);
+  if (rows.length === 0) {
+    console.log(`${label}  audit clean.`);
+    return 0;
+  }
+
+  console.log(`${label}  ${rows.length} mismatch(es):`);
+  for (const row of rows) {
+    console.log(
+      `  ${row.dimension.padEnd(20)} ${row.key.padEnd(30)} csv ${row.expected}  app ${row.actual}`
+    );
+  }
+  return 1;
+}

@@ -38,5 +38,5 @@ export const fixtureConfig: BackfillConfig = {
     { match: 'IncSalaryB', account: 'Bank1 OwnerB' },
   ],
   suppressedRows: [],
-  dateRules: { incomeDayOfMonth: 10 },
+  dateRules: { incomeDayOfMonth: 10, earliestMonth: '2099-01' },
 };

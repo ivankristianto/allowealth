@@ -38,5 +38,5 @@
       "reason": "blank local amount with a populated foreign amount"
     }
   ],
-  "dateRules": { "incomeDayOfMonth": 10 }
+  "dateRules": { "incomeDayOfMonth": 10, "earliestMonth": "2099-01" }
 }

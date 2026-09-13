@@ -253,3 +253,85 @@ export async function loadMonth(
     reconciliation,
   };
 }
+
+/* eslint-disable no-console -- CLI output is intentional */
+
+export interface LoadArgs {
+  dir?: string;
+  month?: string;
+  from?: string;
+  to?: string;
+  year?: string;
+  force?: boolean;
+  'dry-run'?: boolean;
+}
+
+/** Arg-parsing shell around `loadMonth`. */
+export async function runLoadCommand(args: LoadArgs): Promise<void> {
+  const { buildPlan } = await import('./plan');
+  const { loadConfig } = await import('./config.schema');
+  const ledger = await import('./ledger');
+  const { settle } = await import('./snapshots');
+  const {
+    createClient,
+    earliestFromConfig,
+    monthRange,
+    parseMonthArg,
+    readMonth,
+    resolveDataDir,
+    UsageError,
+  } = await import('./runtime');
+
+  const dataDir = resolveDataDir(args.dir, process.env.AW_BACKFILL_DIR);
+  const config = loadConfig(dataDir);
+  const year = args.year ? Number(args.year) : new Date().getFullYear();
+
+  let months: MonthRef[];
+  if (args.month) {
+    months = [parseMonthArg(args.month, year)];
+  } else if (args.from && args.to) {
+    months = monthRange(parseMonthArg(args.from, year), parseMonthArg(args.to, year));
+  } else {
+    throw new UsageError('Pass --month, or --from and --to for a range.');
+  }
+
+  const client = await createClient();
+  const deps: LoadDeps = {
+    client,
+    readLedger: () => ledger.readLedger(dataDir),
+    claimMonth: (month, y, hash) => ledger.claimMonth(dataDir, month, y, hash),
+    commitMonth: (month, y) => ledger.commitMonth(dataDir, month, y),
+    savePlan: (plan) => ledger.savePlan(dataDir, plan),
+    readSavedPlan: (month, y) => ledger.readSavedPlan(dataDir, month, y),
+    buildPlanForMonth: (month, y) => buildPlan(readMonth(dataDir, config, month, y), config),
+    settle: (plan, accounts) => settle(client, plan, accounts),
+    earliest: earliestFromConfig(config),
+  };
+
+  for (const { month, year: y } of months) {
+    const report = await loadMonth(deps, month, y, {
+      force: args.force,
+      dryRun: args['dry-run'],
+    });
+    const label = monthKey(month, y);
+    if (report.dryRun) {
+      console.log(
+        `${label}  dry run: ${report.plan.transactions.length} transactions, ` +
+          `${report.plan.budgets.length} budgets, ${report.plan.snapshots.length} snapshots. ` +
+          `Nothing written.`
+      );
+    } else {
+      console.log(
+        `${label}  loaded: ${report.created.transactions} transactions, ` +
+          `${report.created.budgets} budgets, ${report.created.snapshots} snapshots ` +
+          `(purged ${report.purged.transactions}).`
+      );
+    }
+    for (const skip of report.plan.skipped) {
+      console.log(`  skipped (${skip.reason}): ${skip.description}`);
+    }
+    for (const row of report.plan.unmarkedOwner) {
+      console.log(`  owner fell back to the default: ${row}`);
+    }
+  }
+}

@@ -40,7 +40,13 @@ export const configSchema = v.object({
       reason: v.string(),
     })
   ),
-  dateRules: v.object({ incomeDayOfMonth: v.pipe(v.number(), v.minValue(1), v.maxValue(28)) }),
+  dateRules: v.object({
+    incomeDayOfMonth: v.pipe(v.number(), v.minValue(1), v.maxValue(28)),
+    // The first month of the range. Gap detection walks forward from here, so
+    // without it a later month could be loaded first and stamp every account
+    // with the wrong origin balance.
+    earliestMonth: v.pipe(v.string(), v.regex(/^\d{4}-\d{2}$/, 'Expected YYYY-MM')),
+  }),
 });
 
 export type BackfillConfig = v.InferOutput<typeof configSchema>;

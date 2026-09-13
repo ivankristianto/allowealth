@@ -504,6 +504,34 @@ bun run aw demo reset --target d1 --yes
 
 When `DEMO_MODE=true`, the app shows a warning banner on every page and disables member invitations, profile editing, password changes, MFA controls, and active session management.
 
+### CSV Backfill
+
+Loads monthly household-finance CSV pairs into the app over the REST API. All
+month-specific knowledge lives in a config file inside the data directory,
+never in the repository.
+
+| Command                                                     | Description                                       |
+| ----------------------------------------------------------- | ------------------------------------------------- |
+| `bun run aw backfill scaffold --from Jan --to Dec`          | Emit a config skeleton from a CSV range           |
+| `bun run aw backfill setup`                                 | Reconcile categories with the config (idempotent) |
+| `bun run aw backfill setup --create-user --email <address>` | Create the second household member (rate limited) |
+| `bun run aw backfill run --month Jan --dry-run`             | Build and verify one month's plan; write nothing  |
+| `bun run aw backfill run --from Jan --to Dec`               | Load a month range, in order                      |
+| `bun run aw backfill run --month Jan --force`               | Purge and reload a month already loaded           |
+| `bun run aw backfill verify --month Jan`                    | Audit a loaded month against its CSVs (read-only) |
+
+Flags: `--dir` (data directory, default `$AW_BACKFILL_DIR`), `--month` / `--from`
+/ `--to` (`Jan`, `1`, or `2099-01`), `--year`, `--force`, `--dry-run`.
+
+Environment:
+
+- `AW_BACKFILL_DIR` — the data directory holding the CSVs and `.aw-backfill/` state.
+- `AW_BACKFILL_BASE_URL` — app base URL (default `http://localhost:4321`).
+- `AW_BACKFILL_EMAIL`, `AW_BACKFILL_PASSWORD` — credentials for the loading user.
+- `AW_BACKFILL_SECONDARY_PASSWORD` — required by `setup --create-user`.
+
+There is no password flag on any subcommand: a secret must not land in shell history.
+
 ### Admin & Security
 
 | Command                                                         | Description                                     |

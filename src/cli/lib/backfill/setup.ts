@@ -164,3 +164,33 @@ async function createSecondaryMember(
   });
   report.created.push(`user:${config.members.secondary}`);
 }
+
+/* eslint-disable no-console -- CLI output is intentional */
+
+export interface SetupArgs {
+  dir?: string;
+  'create-user'?: boolean;
+  email?: string;
+  name?: string;
+}
+
+/** Arg-parsing shell around `runSetup`. */
+export async function runSetupCommand(args: SetupArgs): Promise<void> {
+  const { loadConfig } = await import('./config.schema');
+  const { createClient, resolveDataDir } = await import('./runtime');
+
+  const dataDir = resolveDataDir(args.dir, process.env.AW_BACKFILL_DIR);
+  const config = loadConfig(dataDir);
+  const client = await createClient();
+
+  const report = await runSetup(client, config, {
+    createUser: args['create-user'],
+    email: args.email,
+    name: args.name,
+  });
+
+  for (const item of report.created) console.log(`created  ${item}`);
+  for (const item of report.alreadyCorrect) console.log(`ok       ${item}`);
+  for (const item of report.skipped) console.log(`removed  ${item}`);
+  for (const warning of report.warnings) console.log(`WARNING  ${warning}`);
+}
