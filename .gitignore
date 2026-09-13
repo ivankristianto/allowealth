@@ -95,3 +95,9 @@ bundle-report.md
 
 # superpowers plugin
 .superpowers
+
+# CSV backfill: state, private config, and the design/plan docs.
+# These describe real household financial records; this repo is public.
+.aw-backfill/
+docs/superpowers/specs/*backfill*
+docs/superpowers/plans/*backfill*
