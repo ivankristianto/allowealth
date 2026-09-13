@@ -20,7 +20,16 @@ const plan = {
     },
   ],
   budgets: [{ category: 'Cat1', amountIdr: 400, pct: '50%' }],
-  snapshots: [{ account: 'A', opening: '0', closing: '1200', currency: 'IDR', recordedAt: '' }],
+  snapshots: [
+    {
+      account: 'A',
+      opening: '0',
+      closing: '1200',
+      localClosing: '1200',
+      currency: 'IDR',
+      recordedAt: '',
+    },
+  ],
   checks: { expenseTotal: 100, incomeTotal: 0, closingTotal: 1200, accountIncome: {} },
   skipped: [],
   unmarkedOwner: [],

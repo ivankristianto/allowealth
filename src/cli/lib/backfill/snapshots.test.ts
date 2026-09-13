@@ -25,7 +25,9 @@ describe('nextSlot', () => {
 
 describe('settle', () => {
   const plan = {
-    snapshots: [{ account: 'A', closing: '100', currency: 'IDR', recordedAt: '' }],
+    snapshots: [
+      { account: 'A', closing: '100', localClosing: '100', currency: 'IDR', recordedAt: '' },
+    ],
   } as unknown as Plan;
 
   it('posts 0 for accounts absent from the newest month', async () => {

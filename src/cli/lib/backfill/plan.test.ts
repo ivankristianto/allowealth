@@ -86,9 +86,25 @@ describe('buildPlan', () => {
     expect(plan.snapshots[0]?.recordedAt).toMatch(/^2099-01-31T23:00:00/);
   });
 
-  it('carries a foreign account closing in its own currency', () => {
+  it('converts a foreign account balance out of the local column', () => {
+    // The account table is written in local currency for every account, so a
+    // foreign account's balance is divided by the rate to reach the currency
+    // the app will hold it in.
     const usd = plan.snapshots.find((s) => s.account === 'Bank2 OwnerA USD');
-    expect(usd).toMatchObject({ closing: '2000', currency: 'USD' });
+    expect(usd).toMatchObject({ opening: '1000', closing: '2000', currency: 'USD' });
+  });
+
+  it('keeps the local figure for a foreign account alongside the converted one', () => {
+    // Link 1 sums this against the sheet's own printed total, so it must be the
+    // untouched column value: converting back would reintroduce the rounding
+    // the division introduced.
+    const usd = plan.snapshots.find((s) => s.account === 'Bank2 OwnerA USD');
+    expect(usd?.localClosing).toBe('20000000');
+  });
+
+  it('leaves a local account untouched', () => {
+    const idr = plan.snapshots.find((s) => s.account === 'Bank1 OwnerA');
+    expect(idr).toMatchObject({ opening: '5000000', closing: '4000000', localClosing: '4000000' });
   });
 
   it('carries the budget block through', () => {

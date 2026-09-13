@@ -20,6 +20,23 @@ export function toLocal(
     : Number(amount) * rate;
 }
 
+/**
+ * Converts a local-currency amount into a foreign currency at the month's rate.
+ *
+ * The exports write every balance in local currency, including for accounts the
+ * app holds in a foreign one, so this recovers the figure the account is
+ * denominated in.
+ */
+export function fromLocal(
+  amount: string | number,
+  currency: string | undefined,
+  rate: number
+): number {
+  return currency === LOCAL_CURRENCY || currency === undefined
+    ? Number(amount)
+    : Number(amount) / rate;
+}
+
 export function lastDayOfMonth({ month, year }: MonthRef): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }

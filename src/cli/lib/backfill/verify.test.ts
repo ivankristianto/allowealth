@@ -85,3 +85,45 @@ describe('verifyPlan currency handling', () => {
     expect(verifyPlan(broken).failures.some((f) => f.label === 'income total')).toBe(true);
   });
 });
+
+describe('verifyPlan closing total', () => {
+  it('sums the local column and never converts', () => {
+    // A foreign account's closing is held in its own currency, so summing that
+    // side directly would understate the total by the rate. Link 1 must read
+    // `localClosing`, which is the sheet's own figure.
+    const usd = plan.snapshots.find((s) => s.currency === 'USD');
+    expect(usd).toBeDefined();
+    expect(Number(usd!.closing)).toBeLessThan(Number(usd!.localClosing));
+
+    const summed = plan.snapshots.reduce((sum, s) => sum + Number(s.localClosing), 0);
+    expect(summed).toBe(plan.checks.closingTotal);
+    expect(verifyPlan(plan).ok).toBe(true);
+  });
+});
+
+describe('verifyPlan closing conversion', () => {
+  it('catches a foreign balance converted the wrong way', () => {
+    // The failure this guards against: Link 1's total reads `localClosing`, so
+    // multiplying where the plan should divide leaves the total exact while
+    // every foreign balance reaching the app is out by the square of the rate.
+    const broken = structuredClone(plan);
+    const usd = broken.snapshots.find((s) => s.currency === 'USD')!;
+    usd.closing = String(Number(usd.localClosing) * broken.rate);
+
+    const r = verifyPlan(broken);
+    expect(r.ok).toBe(false);
+    expect(r.failures.some((f) => f.link === 1 && /does not convert back/.test(f.label))).toBe(
+      true
+    );
+  });
+
+  it('tolerates the rounding the two-decimal conversion introduces', () => {
+    // 20,000,000 / 10,000 is exact, so nudge the stored figure by half a cent —
+    // the most `decimal` can lose — and the check must still pass.
+    const rounded = structuredClone(plan);
+    const usd = rounded.snapshots.find((s) => s.currency === 'USD')!;
+    usd.closing = String(Number(usd.closing) - 0.005);
+
+    expect(verifyPlan(rounded).ok).toBe(true);
+  });
+});

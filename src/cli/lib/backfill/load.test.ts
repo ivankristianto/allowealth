@@ -222,6 +222,7 @@ describe('loadMonth verification gates', () => {
             account: 'A',
             opening: '0',
             closing: '0',
+            localClosing: '0',
             currency: 'IDR',
             recordedAt: '2099-01-31T23:00:00.000Z',
           },

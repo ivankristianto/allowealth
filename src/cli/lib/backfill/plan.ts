@@ -1,5 +1,5 @@
 import type { BackfillConfig } from './config.schema';
-import { decimal, lastDayOfMonth, LOCAL_CURRENCY as LOCAL } from './money';
+import { decimal, fromLocal, lastDayOfMonth, LOCAL_CURRENCY as LOCAL } from './money';
 import type { RawMonth, RawRow } from './parse';
 import { assertCategoriesKnown, DetectionError, resolveAccounts } from './resolve';
 import type { ResolvedAccount } from './resolve';
@@ -248,10 +248,14 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
   }
 
   const lastDay = String(lastDayOfMonth(raw)).padStart(2, '0');
+  // The account table is denominated in local currency for every account, so a
+  // foreign account's balance is divided by the month's rate to reach the
+  // currency the app holds it in. `localClosing` keeps the sheet's own figure.
   const snapshots: PlanSnapshot[] = accounts.map((a) => ({
     account: a.name,
-    opening: decimal(a.awal),
-    closing: decimal(a.akhir),
+    opening: decimal(fromLocal(a.awal, a.currency, raw.rate)),
+    closing: decimal(fromLocal(a.akhir, a.currency, raw.rate)),
+    localClosing: decimal(a.akhir),
     currency: a.currency,
     recordedAt: `${key}-${lastDay}T23:00:00.000Z`,
   }));

@@ -1,4 +1,4 @@
-import { closeEnough, toLocal } from './money';
+import { closeEnough, LOCAL_CURRENCY, TOLERANCE, toLocal } from './money';
 import { monthKey } from './plan';
 import type { Plan } from './types';
 
@@ -45,13 +45,29 @@ export function verifyPlan(plan: Plan): VerifyResult {
     .reduce((sum, t) => sum + Number(t.localAmount), 0);
   record(1, 'income total', plan.checks.incomeTotal, incomeTotal);
 
-  // Closing balances are the exception: the sheet prints `Total Akhir Bulan`
-  // already recombined at the reference rate, so this side must convert to match.
-  const closingTotal = plan.snapshots.reduce(
-    (sum, s) => sum + toLocal(s.closing, s.currency, plan.rate),
-    0
-  );
+  // Closing balances are no exception: the sheet's account table is written in
+  // local currency for every account, so `Total Akhir Bulan` is the plain sum of
+  // that column. `localClosing` is it, untouched by the foreign-account division.
+  const closingTotal = plan.snapshots.reduce((sum, s) => sum + Number(s.localClosing), 0);
   record(1, 'closing total', plan.checks.closingTotal, closingTotal);
+
+  // The total above cannot see the converted figure, and that is the one the app
+  // actually receives — a conversion that went the wrong way leaves
+  // `localClosing` untouched and the total still exact. So each balance is
+  // checked back against the column it came from, to the precision the two
+  // decimal places allow: half a cent of the account's own currency.
+  for (const snapshot of plan.snapshots) {
+    const slack = snapshot.currency === LOCAL_CURRENCY ? TOLERANCE : TOLERANCE + plan.rate / 200;
+    const local = toLocal(snapshot.closing, snapshot.currency, plan.rate);
+    if (Math.abs(local - Number(snapshot.localClosing)) > slack) {
+      failures.push({
+        link: 1,
+        label: `closing balance for ${snapshot.account} does not convert back`,
+        expected: Number(snapshot.localClosing),
+        actual: local,
+      });
+    }
+  }
 
   // Link 4 compares in local currency: the foreign column would reintroduce the
   // rate spread. Rows placed by `incomeRouting` are subtracted, because the

@@ -48,9 +48,18 @@ export interface PlanTransaction {
 
 export interface PlanSnapshot {
   account: string;
-  /** First-appearance `Awal Bulan`, stored as the account's initial_balance. */
+  /** First-appearance `Awal Bulan`, in `currency`, stored as initial_balance. */
   opening: string;
+  /** `Akhir Bulan` in `currency` — divided by the rate for a foreign account. */
   closing: string;
+  /**
+   * The sheet's own `Akhir Bulan` figure, always local currency.
+   *
+   * The account table is written in local currency for every account, so Link 1
+   * sums this against the sheet's printed total. Converting `closing` back would
+   * reintroduce the rounding the division introduced.
+   */
+  localClosing: string;
   currency: Currency;
   recordedAt: string; // ISO
 }

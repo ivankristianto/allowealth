@@ -107,9 +107,20 @@ Four links check the load, at two different moments.
 Links 1 and 4 both sum the CSV's **local** column and never convert a foreign
 amount. The reference rate is a month-end figure while receipts cleared at other
 rates, so converting would introduce a spread the sheet's printed totals do not
-contain — and both links are exact in every month. The one exception is the
-closing total, which the sheet itself prints already recombined at the reference
-rate, so that side must convert to match.
+contain — and both links are exact in every month.
+
+**The account table is written in local currency for every account, foreign ones
+included.** `Total Akhir Bulan` is therefore the plain sum of the `Akhir Bulan`
+column, with nothing converted. A foreign account's balance is _divided_ by the
+rate to reach the currency the app holds it in, and `localClosing` keeps the
+sheet's own figure so Link 1 stays exact. Link 1 also converts each foreign
+balance back and compares it to that figure, because the total alone cannot see
+a conversion that went the wrong way.
+
+Do not assume an account named `… USD` is foreign-denominated. One such account
+sat at an unchanged local-currency book value for four consecutive months while
+the rate moved; declaring it foreign would have fabricated a drifting balance.
+Check that the balance divides cleanly by the rate before declaring a currency.
 
 Link 4 closes a hole Link 1 cannot see: the totals still match when every
 income row is routed to the wrong account. It compares in **local**
