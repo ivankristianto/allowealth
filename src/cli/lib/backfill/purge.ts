@@ -1,4 +1,6 @@
 import type { BackfillClient } from './client';
+import { DirectiveError } from './errors';
+import { lastDayOfMonth } from './money';
 import { monthKey } from './plan';
 import type { Plan } from './types';
 
@@ -8,14 +10,16 @@ import type { Plan } from './types';
  * Purge is date-range based, so it deletes everything in the month. Refusing
  * here is what stops it from destroying data that came from somewhere else.
  */
-export class OwnershipError extends Error {}
+export class OwnershipError extends DirectiveError {}
 
 export interface ExistingTransaction {
   id?: string;
+  type?: string;
   transaction_date: string;
   amount: string;
   category?: string;
   account?: string;
+  currency?: string;
 }
 
 interface ExistingBudget {
@@ -24,7 +28,8 @@ interface ExistingBudget {
 
 const DIFF_LIMIT = 10;
 
-function normaliseDate(value: string): string {
+/** The date part of an ISO or date-only string. Not a parser; see plan.ts for that. */
+function dateOnly(value: string): string {
   return value.slice(0, 10);
 }
 
@@ -34,7 +39,7 @@ function normaliseAmount(value: string): string {
 
 function existingKey(row: ExistingTransaction): string {
   return [
-    normaliseDate(row.transaction_date),
+    dateOnly(row.transaction_date),
     normaliseAmount(row.amount),
     row.category ?? '',
     row.account ?? '',
@@ -42,9 +47,7 @@ function existingKey(row: ExistingTransaction): string {
 }
 
 function plannedKey(row: Plan['transactions'][number]): string {
-  return [normaliseDate(row.date), normaliseAmount(row.amount), row.category, row.account].join(
-    '|'
-  );
+  return [dateOnly(row.date), normaliseAmount(row.amount), row.category, row.account].join('|');
 }
 
 function multiset(keys: string[]): Map<string, number> {
@@ -113,8 +116,9 @@ export function assertOwnership(
   );
 }
 
-function monthRange(month: number, year: number): { start: string; end: string } {
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+/** The month's first and last calendar dates, for a date-range API query. */
+function monthDateRange(month: number, year: number): { start: string; end: string } {
+  const lastDay = lastDayOfMonth(month, year);
   const key = monthKey(month, year);
   return { start: `${key}-01`, end: `${key}-${String(lastDay).padStart(2, '0')}` };
 }
@@ -124,7 +128,7 @@ export async function fetchMonthTransactions(
   month: number,
   year: number
 ): Promise<ExistingTransaction[]> {
-  const { start, end } = monthRange(month, year);
+  const { start, end } = monthDateRange(month, year);
   return client.getAll<ExistingTransaction>(
     `/api/transactions?start_date=${start}&end_date=${end}`,
     'transactions'

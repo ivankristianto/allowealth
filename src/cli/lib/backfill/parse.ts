@@ -1,4 +1,5 @@
 import { isFootnote, parseAmount, parseCsv } from './csv';
+import { DirectiveError } from './errors';
 import type { Amount } from './types';
 
 export interface RawRow {
@@ -36,7 +37,7 @@ export interface RawMonth {
   totals: { expense: number; income: number; closing: number };
 }
 
-export class ParseError extends Error {}
+export class ParseError extends DirectiveError {}
 
 /** Column offsets. The exports' header labels drift, so access is positional. */
 const EXPENSE = { description: 1, category: 2, date: 3, amount: 4 } as const;

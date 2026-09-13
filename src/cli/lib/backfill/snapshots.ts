@@ -1,4 +1,5 @@
 import type { BackfillClient } from './client';
+import { DirectiveError } from './errors';
 import type { Plan } from './types';
 
 /**
@@ -7,7 +8,7 @@ import type { Plan } from './types';
  * A wrapped write would land in the following month and corrupt the single
  * lookup net worth depends on, so it aborts instead.
  */
-export class SlotExhaustedError extends Error {}
+export class SlotExhaustedError extends DirectiveError {}
 
 export interface AccountRef {
   id: string;

@@ -1,3 +1,4 @@
+import { closeEnough, toLocal } from './money';
 import { monthKey } from './plan';
 import type { Plan } from './types';
 
@@ -13,13 +14,6 @@ export interface VerifyResult {
   failures: VerifyFailure[];
 }
 
-/** Decimal representation, and nothing wider. A real routing error exceeds this. */
-const TOLERANCE = 0.01;
-
-function toLocal(amount: string, currency: string, rate: number): number {
-  return currency === 'IDR' ? Number(amount) : Number(amount) * rate;
-}
-
 /**
  * Checks the plan against the sheet's own printed figures, before anything is
  * written.
@@ -32,7 +26,7 @@ export function verifyPlan(plan: Plan): VerifyResult {
   const failures: VerifyFailure[] = [];
 
   const record = (link: 1 | 4, label: string, expected: number, actual: number) => {
-    if (Math.abs(expected - actual) > TOLERANCE) {
+    if (!closeEnough(expected, actual)) {
       failures.push({ link, label, expected, actual });
     }
   };

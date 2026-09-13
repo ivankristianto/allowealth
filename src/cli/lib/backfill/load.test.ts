@@ -25,27 +25,38 @@ const samplePlan = (): Plan => ({
   unmarkedOwner: [],
 });
 
+/**
+ * A stateful fake of the app: transactions posted during the load are readable
+ * afterwards, so the reconciliation Link 2 performs sees what actually landed.
+ */
 function deps(overrides: Partial<LoadDeps> = {}) {
   const calls: string[] = [];
+  const posted: { type: string; transaction_date: string; amount: string; currency: string }[] = [];
+
+  const client = {
+    get: async (path: string) => {
+      if (path.startsWith('/api/categories')) {
+        return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
+      }
+      if (path.startsWith('/api/accounts')) {
+        return [{ id: 'acct-1', name: 'Household (historical)', currency: 'IDR', balance: '0' }];
+      }
+      return [];
+    },
+    getAll: async () => posted,
+    post: async (p: string, body: Record<string, unknown>) => {
+      calls.push(`POST ${p}`);
+      if (p === '/api/transactions') {
+        posted.push(body as (typeof posted)[number]);
+      }
+      return { id: 'x' };
+    },
+    patch: async () => ({}),
+    del: async () => ({}),
+  } as unknown as LoadDeps['client'];
+
   const d: LoadDeps = {
-    client: {
-      get: async (path: string) => {
-        if (path.startsWith('/api/categories')) {
-          return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
-        }
-        if (path.startsWith('/api/accounts')) {
-          return [{ id: 'acct-1', name: 'Household (historical)', currency: 'IDR', balance: '0' }];
-        }
-        return [];
-      },
-      getAll: async () => [],
-      post: async (p: string) => {
-        calls.push(`POST ${p}`);
-        return { id: 'x' };
-      },
-      patch: async () => ({}),
-      del: async () => ({}),
-    } as unknown as LoadDeps['client'],
+    client,
     readLedger: () => [],
     claimMonth: () => {
       calls.push('claim');
@@ -55,6 +66,7 @@ function deps(overrides: Partial<LoadDeps> = {}) {
     },
     savePlan: () => {},
     readSavedPlan: () => null,
+    hashPlan: () => 'plan-hash',
     buildPlanForMonth: () => samplePlan(),
     settle: async () => {
       calls.push('settle');
@@ -62,7 +74,7 @@ function deps(overrides: Partial<LoadDeps> = {}) {
     earliest: { month: 1, year: 2099 },
     ...overrides,
   };
-  return { calls, d };
+  return { calls, d, posted };
 }
 
 describe('loadMonth', () => {
@@ -169,5 +181,48 @@ describe('loadMonth ordering', () => {
     const { d } = deps({ readLedger: () => loaded });
     const report = await loadMonth(d, 1, 2099, { dryRun: true });
     expect(report.dryRun).toBe(true);
+  });
+});
+
+describe('loadMonth verification gates', () => {
+  it('claims the month with the plan hash, not a placeholder', async () => {
+    const claims: string[] = [];
+    const { d } = deps({ claimMonth: (_m, _y, hash) => claims.push(hash) });
+    await loadMonth(d, 1, 2099, {});
+    expect(claims).toEqual(['plan-hash']);
+  });
+
+  it('aborts without committing when Link 2 finds the app out of balance', async () => {
+    const { calls, d } = deps({
+      client: {
+        get: async (path: string) => {
+          if (path.startsWith('/api/categories')) {
+            return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
+          }
+          if (path.startsWith('/api/accounts')) {
+            return [{ id: 'acct-1', name: 'A', currency: 'IDR', balance: '999999' }];
+          }
+          return [];
+        },
+        // The app reports a closing balance the plan's transactions cannot explain.
+        getAll: async () => [],
+        post: async (p: string) => {
+          calls.push(`POST ${p}`);
+          return { id: 'x' };
+        },
+        patch: async () => ({}),
+        del: async () => ({}),
+      } as unknown as LoadDeps['client'],
+      buildPlanForMonth: () => {
+        const plan = samplePlan();
+        plan.snapshots = [
+          { account: 'A', closing: '0', currency: 'IDR', recordedAt: '2099-01-31T23:00:00.000Z' },
+        ];
+        plan.checks.closingTotal = 0;
+        return plan;
+      },
+    });
+    expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/Link 2/);
+    expect(calls).not.toContain('commit');
   });
 });

@@ -1,23 +1,12 @@
 import type { BackfillConfig } from './config.schema';
+import { decimal, lastDayOfMonth, LOCAL_CURRENCY as LOCAL } from './money';
 import type { RawMonth, RawRow } from './parse';
 import { assertCategoriesKnown, DetectionError, resolveAccounts } from './resolve';
 import type { ResolvedAccount } from './resolve';
 import type { Currency, Plan, PlanSnapshot, PlanTransaction } from './types';
 
-const LOCAL: Currency = 'IDR';
-
 export function monthKey(month: number, year: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
-}
-
-function lastDayOfMonth(month: number, year: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
-/** Formats a decimal number as the API's amount string: no separators, no exponent. */
-function decimal(value: number): string {
-  const rounded = Math.round(value * 100) / 100;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
 }
 
 /**

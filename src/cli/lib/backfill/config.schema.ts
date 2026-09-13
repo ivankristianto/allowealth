@@ -1,9 +1,10 @@
 import * as v from 'valibot';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { DirectiveError } from './errors';
 
 /** Thrown when the config is absent or does not validate. Always actionable. */
-export class ConfigError extends Error {}
+export class ConfigError extends DirectiveError {}
 
 const currency = v.picklist(['IDR', 'USD']);
 

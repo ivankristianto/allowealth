@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BackfillClient } from './client';
 import type { BackfillConfig } from './config.schema';
+import { DirectiveError } from './errors';
 import type { MonthRef } from './ledger';
 import { parseMonth } from './parse';
 import type { RawMonth } from './parse';
@@ -21,7 +22,7 @@ const MONTH_NAMES = [
   'Dec',
 ] as const;
 
-export class UsageError extends Error {}
+export class UsageError extends DirectiveError {}
 
 /**
  * The data directory holds the config, the ledger, the saved plans and the
@@ -91,9 +92,10 @@ export function resolveFilenames(
   return { transactions: fill(templates.transactions), balance: fill(templates.balance) };
 }
 
+/** Reads one month's CSV pair. Takes only the filename templates it needs. */
 export function readMonth(
   dataDir: string,
-  config: BackfillConfig,
+  config: Pick<BackfillConfig, 'filenames'>,
   month: number,
   year: number
 ): RawMonth {
@@ -138,17 +140,6 @@ export async function createClient(): Promise<BackfillClient> {
   return client;
 }
 
-/** The error classes whose message is the whole point: they name the fix. */
-const DIRECTIVE_ERRORS = new Set([
-  'ConfigError',
-  'DetectionError',
-  'LoadError',
-  'OwnershipError',
-  'ParseError',
-  'SlotExhaustedError',
-  'UsageError',
-]);
-
 /**
  * Runs a command, printing a directive abort as its message alone.
  *
@@ -161,7 +152,7 @@ export async function withDirectiveErrors(fn: () => Promise<number | void>): Pro
     const code = await fn();
     return typeof code === 'number' ? code : 0;
   } catch (error) {
-    if (error instanceof Error && DIRECTIVE_ERRORS.has(error.constructor.name)) {
+    if (error instanceof DirectiveError) {
       console.error(error.message);
       return 1;
     }

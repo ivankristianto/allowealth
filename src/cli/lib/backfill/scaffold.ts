@@ -71,6 +71,7 @@ export interface ScaffoldArgs {
   to?: string;
   year?: string;
   force?: boolean;
+  json?: boolean;
 }
 
 /** Arg-parsing shell around `scaffoldConfig`. Writes only into the data directory. */
@@ -103,9 +104,7 @@ export async function runScaffoldCommand(args: ScaffoldArgs): Promise<void> {
     // No config yet: that is the normal case for scaffolding.
   }
 
-  const raw = months.map((m) =>
-    readMonth(dataDir, { filenames: templates } as never, m.month, m.year)
-  );
+  const raw = months.map((m) => readMonth(dataDir, { filenames: templates }, m.month, m.year));
   const { config, ambiguities } = scaffoldConfig(raw);
 
   const skeleton = {
@@ -121,6 +120,13 @@ export async function runScaffoldCommand(args: ScaffoldArgs): Promise<void> {
 
   mkdirSync(join(dataDir, '.aw-backfill'), { recursive: true });
   writeFileSync(path, `${JSON.stringify(skeleton, null, 2)}\n`);
+
+  const { createOutput } = await import('../output');
+  const out = createOutput(args);
+  if (out.json) {
+    out.write({ path, ambiguities }, '');
+    return;
+  }
 
   console.log(`Wrote ${path}`);
   console.log('Set the currency, owner and member names by hand before running a load.');

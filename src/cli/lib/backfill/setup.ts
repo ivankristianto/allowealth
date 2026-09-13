@@ -98,12 +98,14 @@ export async function runSetup(
     report.created.push(`category:${category.name}`);
   }
 
-  const wantedNames = new Set(wanted.map((c) => c.name));
+  // Every id that should survive: the wanted categories as they now stand, which
+  // already accounts for the renames above.
+  const keepIds = new Set(
+    wanted.map((c) => byName.get(c.name)?.id).filter((id): id is string => Boolean(id))
+  );
+
   for (const category of existing) {
-    const current = byName.get(category.name);
-    // Skip rows this run renamed into the wanted set.
-    if (wantedNames.has(category.name) || (current && wantedNames.has(current.name))) continue;
-    if ([...byName.values()].some((c) => c.id === category.id && wantedNames.has(c.name))) continue;
+    if (keepIds.has(category.id)) continue;
 
     const count = await countTransactions(client, category);
     if (count > 0) {
@@ -172,6 +174,7 @@ export interface SetupArgs {
   'create-user'?: boolean;
   email?: string;
   name?: string;
+  json?: boolean;
 }
 
 /** Arg-parsing shell around `runSetup`. */
@@ -188,6 +191,13 @@ export async function runSetupCommand(args: SetupArgs): Promise<void> {
     email: args.email,
     name: args.name,
   });
+
+  const { createOutput } = await import('../output');
+  const out = createOutput(args);
+  if (out.json) {
+    out.write(report, '');
+    return;
+  }
 
   for (const item of report.created) console.log(`created  ${item}`);
   for (const item of report.alreadyCorrect) console.log(`ok       ${item}`);

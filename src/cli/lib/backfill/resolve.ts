@@ -1,5 +1,6 @@
 import type { BackfillConfig } from './config.schema';
 import type { RawAccountRow, RawMonth } from './parse';
+import { DirectiveError } from './errors';
 import type { Currency } from './types';
 
 /**
@@ -8,7 +9,7 @@ import type { Currency } from './types';
  * Every message names the exact config field that resolves it, because the
  * operator reads it months after the config was written.
  */
-export class DetectionError extends Error {}
+export class DetectionError extends DirectiveError {}
 
 export interface ResolvedAccount {
   name: string;

@@ -1,0 +1,35 @@
+import type { Currency } from './types';
+
+/**
+ * Decimal representation, and nothing wider. Every comparison in the
+ * verification links uses this: a real routing or rounding error exceeds it,
+ * while decimal representation noise does not.
+ */
+export const TOLERANCE = 0.01;
+
+export const LOCAL_CURRENCY: Currency = 'IDR';
+
+/** Converts a foreign amount into the local currency at the month's rate. */
+export function toLocal(
+  amount: string | number,
+  currency: string | undefined,
+  rate: number
+): number {
+  return currency === LOCAL_CURRENCY || currency === undefined
+    ? Number(amount)
+    : Number(amount) * rate;
+}
+
+export function lastDayOfMonth(month: number, year: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/** Formats a decimal as the API's amount string: no separators, no exponent. */
+export function decimal(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+export function closeEnough(a: number, b: number): boolean {
+  return Math.abs(a - b) <= TOLERANCE;
+}

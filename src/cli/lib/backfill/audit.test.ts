@@ -39,7 +39,6 @@ const clean: ActualState = {
   budgets: [{ category: 'Cat1', budget_amount: '400' }],
   history: { A: '1200' },
   balances: { A: '1200' },
-  reconciliation: { IDR: 0, USD: 0 },
 };
 
 describe('diffMonth', () => {

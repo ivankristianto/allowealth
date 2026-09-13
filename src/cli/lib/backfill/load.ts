@@ -1,10 +1,12 @@
 import type { BackfillClient } from './client';
+import { DirectiveError } from './errors';
 import type { LedgerEntry, MonthRef } from './ledger';
 import { findGaps } from './ledger';
 import { monthKey } from './plan';
 import { assertOwnership, fetchMonthTransactions, purgeMonth } from './purge';
 import { reconcileMonth } from './reconcile';
 import type { ReconcileReport } from './reconcile';
+import { historyTimestamps, nextSlot } from './snapshots';
 import type { Plan } from './types';
 import { verifyPlan } from './verify';
 
@@ -15,6 +17,7 @@ export interface LoadDeps {
   commitMonth: (month: number, year: number) => void;
   savePlan: (plan: Plan) => void;
   readSavedPlan: (month: number, year: number) => Plan | null;
+  hashPlan: (plan: Plan) => string;
   buildPlanForMonth: (month: number, year: number) => Plan;
   settle: (plan: Plan, accounts: { id: string; name: string }[]) => Promise<void>;
   earliest: MonthRef;
@@ -50,7 +53,12 @@ interface ApiCategory {
 
 const TRANSACTION_CONCURRENCY = 4;
 
-export class LoadError extends Error {}
+/** The day every snapshot in a plan is recorded on: the month's last. */
+function snapshotDay(plan: Plan): string {
+  return (plan.snapshots[0]?.recordedAt ?? '').slice(0, 10);
+}
+
+export class LoadError extends DirectiveError {}
 
 /** Runs `worker` over `items` with bounded concurrency, preserving failures. */
 async function inBatches<T>(items: T[], size: number, worker: (item: T) => Promise<void>) {
@@ -188,9 +196,11 @@ export async function loadMonth(
   const existingRows = await fetchMonthTransactions(deps.client, month, year);
   assertOwnership(existingRows, deps.readSavedPlan(month, year), ledgerStatus, opts.force ?? false);
 
-  // Claimed before the first write, so an aborted load stays purgeable.
+  // Claimed before the first write, so an aborted load stays purgeable. The
+  // hash records which plan the claim belongs to, so a later re-derivation that
+  // differs is visible in the ledger.
   deps.savePlan(plan);
-  deps.claimMonth(month, year, '');
+  deps.claimMonth(month, year, deps.hashPlan(plan));
 
   const purged = await purgeMonth(deps.client, month, year);
   const { accounts, created: createdAccounts } = await ensureAccounts(deps.client, plan);
@@ -223,19 +233,30 @@ export async function loadMonth(
   });
 
   // Snapshots are serial: they share a one-hour slot window per day and the
-  // next free slot depends on the writes already made.
+  // next free slot depends on the writes already made. Reusing an occupied
+  // timestamp would overwrite the one lookup net worth depends on.
+  const lastDay = snapshotDay(plan);
   for (const snapshot of plan.snapshots) {
-    await deps.client.post(
-      `/api/accounts/${requireId(accounts, snapshot.account, 'account')}/balance`,
-      {
-        balance: snapshot.closing,
-        notes: `backfill ${monthKey(month, year)}`,
-        recorded_at: snapshot.recordedAt,
-      }
-    );
+    const accountId = requireId(accounts, snapshot.account, 'account');
+    const taken = await historyTimestamps(deps.client, accountId);
+    await deps.client.post(`/api/accounts/${accountId}/balance`, {
+      balance: snapshot.closing,
+      notes: `backfill ${monthKey(month, year)}`,
+      recorded_at: nextSlot(taken, lastDay),
+    });
   }
 
   const reconciliation = await reconcileMonth(deps.client, plan, openings);
+  const drifted = reconciliation.perCurrency.filter((row) => !row.ok);
+  if (drifted.length > 0) {
+    const lines = drifted.map(
+      (row) => `  Link 2 — ${row.currency}: plan ${row.expected}, app ${row.actual}`
+    );
+    throw new LoadError(
+      `${monthKey(month, year)} loaded but does not reconcile:\n${lines.join('\n')}\n` +
+        `The month stays claimed as loading, so a re-run will purge and reload it.`
+    );
+  }
 
   await deps.settle(
     plan,
@@ -270,6 +291,7 @@ export interface LoadArgs {
   year?: string;
   force?: boolean;
   'dry-run'?: boolean;
+  json?: boolean;
 }
 
 /**
@@ -332,13 +354,21 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
     commitMonth: (month, y) => ledger.commitMonth(dataDir, month, y),
     savePlan: (plan) => ledger.savePlan(dataDir, plan),
     readSavedPlan: (month, y) => ledger.readSavedPlan(dataDir, month, y),
+    hashPlan: ledger.hashPlan,
     buildPlanForMonth: (month, y) => buildPlan(readMonth(dataDir, config, month, y), config),
     settle: (plan, accounts) => settle(client, plan, accounts),
     earliest: earliestFromConfig(config),
   };
 
+  const { createOutput } = await import('../output');
+  const out = createOutput(args);
+  const reports: LoadReport[] = [];
+
   for (const { month, year: y } of months) {
     const report = await loadMonth(deps, month, y, { force: args.force, dryRun });
+    reports.push(report);
+    if (out.json) continue;
+
     const label = monthKey(month, y);
     if (report.dryRun) {
       console.log(
@@ -360,4 +390,6 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
       console.log(`  owner fell back to the default: ${row}`);
     }
   }
+
+  if (out.json) out.write(reports, '');
 }

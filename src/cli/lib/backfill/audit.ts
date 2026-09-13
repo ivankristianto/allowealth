@@ -1,4 +1,5 @@
 import type { BackfillClient } from './client';
+import { closeEnough, toLocal } from './money';
 import { monthKey } from './plan';
 import { fetchMonthTransactions } from './purge';
 import type { Currency, Plan } from './types';
@@ -27,13 +28,11 @@ export interface ActualState {
   history: Record<string, string>;
   /** The account's current balance, which net worth reads. */
   balances: Record<string, string>;
-  reconciliation: Record<Currency, number>;
-}
-
-const TOLERANCE = 0.01;
-
-function toLocal(amount: string | number, currency: string | undefined, rate: number): number {
-  return currency === 'USD' ? Number(amount) * rate : Number(amount);
+  /**
+   * Per-currency variance, when the caller has it. Omitted rather than defaulted
+   * to zero: a comparison of 0 against 0 would report "clean" without checking.
+   */
+  reconciliation?: Record<Currency, number>;
 }
 
 function money(value: number): string {
@@ -49,7 +48,7 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
   const rows: AuditRow[] = [];
 
   const compare = (dimension: string, key: string, expected: number, got: number) => {
-    if (Math.abs(expected - got) > TOLERANCE) {
+    if (!closeEnough(expected, got)) {
       rows.push({ dimension, key, expected: money(expected), actual: money(got) });
     }
   };
@@ -109,7 +108,7 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
     compare('current balance', account, Number(planClosing.get(account) ?? '0'), Number(balance));
   }
 
-  for (const [currency, variance] of Object.entries(actual.reconciliation)) {
+  for (const [currency, variance] of Object.entries(actual.reconciliation ?? {})) {
     compare('reconciliation', currency, 0, variance);
   }
 
@@ -177,7 +176,6 @@ export async function runAudit(client: BackfillClient, plan: Plan): Promise<Audi
     })),
     history,
     balances,
-    reconciliation: { IDR: 0, USD: 0 },
   });
 }
 
@@ -188,6 +186,7 @@ export interface AuditArgs {
   month?: string;
   year?: string;
   verbose?: boolean;
+  json?: boolean;
 }
 
 /** Arg-parsing shell around `runAudit`. Returns the process exit code. */
@@ -209,6 +208,31 @@ export async function runAuditCommand(args: AuditArgs): Promise<number> {
   const rows = await runAudit(client, plan);
 
   const label = monthKey(month, y);
+
+  if (args.json) {
+    const { createOutput } = await import('../output');
+    createOutput(args).write({ month, year: y, ok: rows.length === 0, mismatches: rows }, '');
+    return rows.length === 0 ? 0 : 1;
+  }
+
+  if (args.verbose) {
+    console.log(
+      `${label}  plan: ${plan.transactions.length} transactions, ` +
+        `${plan.budgets.length} budgets, ${plan.snapshots.length} snapshots.`
+    );
+    for (const t of plan.transactions) {
+      console.log(
+        `  ${t.date}  ${t.kind.padEnd(7)} ${t.amount.padStart(14)} ${t.currency}  ` +
+          `${t.category} -> ${t.account}  ${t.description}`
+      );
+    }
+    for (const s of plan.snapshots) {
+      console.log(
+        `  ${s.recordedAt.slice(0, 10)}  closing ${s.closing.padStart(14)} ${s.currency}  ${s.account}`
+      );
+    }
+  }
+
   if (rows.length === 0) {
     console.log(`${label}  audit clean.`);
     return 0;

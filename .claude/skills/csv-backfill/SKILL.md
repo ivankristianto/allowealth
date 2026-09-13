@@ -77,6 +77,7 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 | `… is already loaded`                                | Re-run with `--force` to purge and reload                                                                   |
 | `rows diverge from the plan this tool saved`         | Something else wrote into the month. Investigate before passing `--force`                                   |
 | `No free balance-history slot left`                  | The day's 23:00–23:59 window is full. Clear the stale snapshots for that day first                          |
+| `loaded but does not reconcile`                      | Link 2 failed. The month stays `loading`; investigate, then re-run                                          |
 
 **Rename or closure?** An account that stops appearing at a **non-zero**
 balance was renamed — map it with `accountAliases`. At **zero** it was closed —
@@ -89,18 +90,24 @@ from the data once an account has been created with the wrong one.
 
 Four links check the load, at two different moments.
 
-| Link | When             | Gates? | What it proves                                           |
-| ---- | ---------------- | ------ | -------------------------------------------------------- |
-| 1    | Before any write | Yes    | The plan's totals match the sheet's own printed totals   |
-| 4    | Before any write | Yes    | Per-account income matches the sheet's `Income` column   |
-| 2    | After the load   | Yes    | The app's per-currency reconciliation matches the plan's |
-| 3    | After the load   | No     | The recombined figure against the sheet's balance        |
+| Link | When             | Gates? | What it proves                                             |
+| ---- | ---------------- | ------ | ---------------------------------------------------------- |
+| 1    | Before any write | Yes    | The plan's totals match the sheet's own printed totals     |
+| 4    | Before any write | Yes    | Per-account income matches the sheet's `Income` column     |
+| 2    | After the load   | Yes    | The month read back out of the app reconciles as predicted |
+| 3    | After the load   | No     | The recombined figure against the sheet's balance          |
 
 Link 4 closes a hole Link 1 cannot see: the totals still match when every
 income row is routed to the wrong account. It compares in each account's **own**
 currency, which is how the sheet prints that column. Synthetic buckets
 (`Household (historical)`, `Passive Income (…)`) have no column to compare
 against and are deliberately out of its scope.
+
+Link 2 recomputes the variance from the accounts and transactions read back
+out of the app, because the app derives reconciliation only for its own
+accounts page and exposes no API route for it. That independence is the
+point: a write the API silently altered shows up as drift. It fails the load
+with the month still claimed as `loading`, so a re-run purges and reloads it.
 
 Link 3 cannot be exact. It recombines currencies at a single month-end rate,
 while the sheet's balance moved at whatever rate applied on each day. It
