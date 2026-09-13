@@ -1,0 +1,128 @@
+import { describe, expect, it } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { parseMonth } from './parse';
+import { buildPlan } from './plan';
+import { DetectionError } from './resolve';
+import { thrown } from './test-helpers/throws';
+import { fixtureConfig } from './__fixtures__/config';
+
+const dir = join(import.meta.dir, '__fixtures__');
+const raw = parseMonth(
+  readFileSync(join(dir, 'txn-2099-01.csv'), 'utf8'),
+  readFileSync(join(dir, 'balance-2099-01.csv'), 'utf8'),
+  1,
+  2099
+);
+const plan = buildPlan(raw, fixtureConfig);
+
+describe('buildPlan', () => {
+  it('sends every expense to the synthetic household account', () => {
+    const expenses = plan.transactions.filter((t) => t.kind === 'expense');
+    expect(new Set(expenses.map((t) => t.account))).toEqual(new Set(['Household (historical)']));
+  });
+
+  it('skips zero-amount rows and records why', () => {
+    expect(plan.transactions.some((t) => t.description === 'Item F')).toBe(false);
+    expect(plan.skipped).toContainEqual({ reason: 'zero amount', description: 'Item F' });
+  });
+
+  it('routes the primary salary to a foreign-currency account in that currency', () => {
+    const s = plan.transactions.find((t) => t.description === 'Salary OwnerA');
+    expect(s?.currency).toBe('USD');
+    expect(s?.amount).toBe('1000');
+    expect(s?.account).toBe('Bank2 OwnerA USD');
+  });
+
+  it('routes the secondary salary to their local account in local currency', () => {
+    const s = plan.transactions.find((t) => t.description === 'Salary OwnerB');
+    expect(s?.currency).toBe('IDR');
+    expect(s?.account).toBe('Bank1 OwnerB');
+    expect(s?.amount).toBe('5000000');
+  });
+
+  it('routes non-salary income to the owner passive bucket', () => {
+    const c = plan.transactions.find((t) => t.description === 'Payout OwnerB');
+    expect(c?.account).toBe('Passive Income (OwnerB)');
+  });
+
+  it('dates every income row on the configured day', () => {
+    const incomes = plan.transactions.filter((t) => t.kind === 'income');
+    expect(new Set(incomes.map((t) => t.date))).toEqual(new Set(['2099-01-10']));
+  });
+
+  it('keeps every transaction inside the plan month', () => {
+    expect(plan.transactions.every((t) => t.date.startsWith('2099-01'))).toBe(true);
+  });
+
+  it('resolves owner by whole word anywhere in the description', () => {
+    // "Item E OwnerB" carries the owner mid-string, not as a suffix.
+    expect(plan.transactions.find((t) => t.description === 'Item E OwnerB')).toBeDefined();
+  });
+
+  it('records the sheet totals and per-account income as checks', () => {
+    expect(plan.checks.expenseTotal).toBe(1_000_000);
+    expect(plan.checks.incomeTotal).toBe(16_000_000);
+    expect(plan.checks.accountIncome['Bank1 OwnerB']).toBe(5_000_000);
+  });
+
+  it('records per-account income in the account own currency', () => {
+    expect(plan.checks.accountIncome['Bank2 OwnerA USD']).toBe(1_000);
+  });
+
+  it('emits one snapshot per account at 23:00:00 on the last day', () => {
+    expect(plan.snapshots).toHaveLength(6);
+    expect(plan.snapshots[0]?.recordedAt).toMatch(/^2099-01-31T23:00:00/);
+  });
+
+  it('carries a foreign account closing in its own currency', () => {
+    const usd = plan.snapshots.find((s) => s.account === 'Bank2 OwnerA USD');
+    expect(usd).toMatchObject({ closing: '2000', currency: 'USD' });
+  });
+
+  it('carries the budget block through', () => {
+    expect(plan.budgets).toHaveLength(3);
+    expect(plan.budgets[0]).toMatchObject({ category: 'Cat1', amountIdr: 400_000 });
+  });
+});
+
+describe('buildPlan detection', () => {
+  it('aborts when a description names both members', () => {
+    const bad = structuredClone(raw);
+    bad.incomes[3]!.description = 'Payout OwnerA and OwnerB';
+    expect(thrown(() => buildPlan(bad, fixtureConfig))).toBeInstanceOf(DetectionError);
+  });
+
+  it('aborts on a populated foreign amount with a blank local amount', () => {
+    const bad = structuredClone(raw);
+    bad.incomes[1]!.amount = { kind: 'blank' };
+    bad.incomes[1]!.usd = { kind: 'value', value: 500 };
+    expect(() => buildPlan(bad, fixtureConfig)).toThrow(/placeholder|suppress/i);
+  });
+
+  it('aborts on a foreign amount with no routing entry', () => {
+    const bad = structuredClone(raw);
+    bad.incomes[3]!.usd = { kind: 'value', value: 25 };
+    expect(() => buildPlan(bad, fixtureConfig)).toThrow(/incomeRouting/);
+  });
+
+  it('drops a row matched by suppressedRows', () => {
+    const config = {
+      ...fixtureConfig,
+      suppressedRows: [
+        {
+          month: '2099-01',
+          side: 'income' as const,
+          match: 'Payout OwnerB',
+          reason: 'placeholder',
+        },
+      ],
+    };
+    const suppressed = buildPlan(raw, config);
+    expect(suppressed.transactions.some((t) => t.description === 'Payout OwnerB')).toBe(false);
+  });
+
+  it('reports rows whose owner fell back rather than hiding them', () => {
+    expect(Array.isArray(plan.unmarkedOwner)).toBe(true);
+  });
+});

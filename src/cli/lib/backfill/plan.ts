@@ -1,0 +1,262 @@
+import type { BackfillConfig } from './config.schema';
+import type { RawMonth, RawRow } from './parse';
+import { assertCategoriesKnown, DetectionError, resolveAccounts } from './resolve';
+import type { ResolvedAccount } from './resolve';
+import type { Currency, Plan, PlanSnapshot, PlanTransaction } from './types';
+
+const LOCAL: Currency = 'IDR';
+
+export function monthKey(month: number, year: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function lastDayOfMonth(month: number, year: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/** Formats a decimal number as the API's amount string: no separators, no exponent. */
+function decimal(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+/**
+ * Normalises a sheet date cell (`M/D/YYYY`, optionally with a time) to
+ * `YYYY-MM-DD`, and refuses anything that would land outside the plan month.
+ */
+function normaliseDate(cell: string, month: number, year: number, label: string): string {
+  const parts = cell.trim().split(' ')[0]?.split('/') ?? [];
+  if (parts.length !== 3) {
+    throw new DetectionError(
+      `Unreadable date "${cell}" on ${label}. Expected M/D/YYYY in the Date column.`
+    );
+  }
+  const [m, d, y] = parts.map((p) => Number(p));
+  if (!m || !d || !y || Number.isNaN(m) || Number.isNaN(d) || Number.isNaN(y)) {
+    throw new DetectionError(
+      `Unreadable date "${cell}" on ${label}. Expected M/D/YYYY in the Date column.`
+    );
+  }
+  if (m !== month || y !== year) {
+    throw new DetectionError(
+      `Date "${cell}" on ${label} falls outside ${monthKey(month, year)}.\n` +
+        `Fix the cell in the CSV, or add a \`suppressedRows\` entry for this row.`
+    );
+  }
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/**
+ * Resolves the member named in a description by whole word, anywhere in it.
+ *
+ * Owners are written mid-string as often as they are suffixed, so a suffix
+ * match would silently fall back for a large share of rows.
+ */
+function resolveOwner(
+  description: string,
+  config: BackfillConfig,
+  unmarked: string[]
+): { owner: string; fellBack: boolean } {
+  const names = [config.members.primary, config.members.secondary];
+  const matched = names.filter((name) =>
+    new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(description)
+  );
+
+  if (matched.length > 1) {
+    throw new DetectionError(
+      `Row "${description}" names both ${names.join(' and ')}; the owner is ambiguous.\n` +
+        `Rename the row in the CSV, or add a \`suppressedRows\` entry for it.`
+    );
+  }
+  if (matched.length === 1) return { owner: matched[0]!, fellBack: false };
+
+  unmarked.push(description);
+  return { owner: config.members.fallback, fellBack: true };
+}
+
+function isSuppressed(
+  row: RawRow,
+  side: 'expense' | 'income',
+  config: BackfillConfig,
+  key: string
+): boolean {
+  return config.suppressedRows.some(
+    (r) => r.month === key && r.side === side && row.description.includes(r.match)
+  );
+}
+
+/** Blank is never zero: it means the export dropped a figure we must not invent. */
+function requireLocalAmount(row: RawRow, side: string): number | null {
+  if (row.amount.kind === 'value') return row.amount.value;
+  if (row.amount.kind === 'invalid') {
+    throw new DetectionError(`${side} row "${row.description}" has an unreadable amount.`);
+  }
+  if (row.usd.kind === 'value') {
+    throw new DetectionError(
+      `${side} row "${row.description}" has a blank local amount but a foreign amount of ` +
+        `${row.usd.value}. This is a placeholder row.\n` +
+        `Add a \`suppressedRows\` entry for it if it should not be loaded.`
+    );
+  }
+  throw new DetectionError(
+    `${side} row "${row.description}" has a blank amount.\n` +
+      `Fill it in the CSV, or add a \`suppressedRows\` entry for it.`
+  );
+}
+
+function routeIncome(
+  row: RawRow,
+  config: BackfillConfig,
+  roster: Map<string, ResolvedAccount>,
+  owner: string
+): { account: string; currency: Currency } {
+  const rule = config.incomeRouting.find(
+    (r) => r.match === row.category || r.match === row.description
+  );
+
+  if (rule) {
+    const account = roster.get(rule.account);
+    if (!account) {
+      throw new DetectionError(
+        `\`incomeRouting\` sends "${rule.match}" to "${rule.account}", ` +
+          `which is not in this month's accounts.\n` +
+          `Point the rule at an account that appears in the balance sheet.`
+      );
+    }
+    return { account: account.name, currency: account.currency };
+  }
+
+  // A foreign figure with nowhere to go is a routing gap, not a passive row:
+  // the passive bucket is local-currency and would silently lose the rate.
+  if (row.usd.kind === 'value' && row.usd.value !== 0) {
+    throw new DetectionError(
+      `Income row "${row.description}" (${row.category}) carries a foreign amount ` +
+        `but has no routing rule.\n` +
+        `Add an \`incomeRouting\` entry mapping "${row.category}" to a foreign-currency account.`
+    );
+  }
+
+  const bucket = config.syntheticAccounts.passiveIncome[owner];
+  if (!bucket) {
+    throw new DetectionError(
+      `No passive-income account configured for "${owner}".\n` +
+        `Add it to \`syntheticAccounts.passiveIncome\`.`
+    );
+  }
+  return { account: bucket, currency: LOCAL };
+}
+
+function amountFor(row: RawRow, currency: Currency, local: number): number {
+  if (currency === LOCAL) return local;
+  if (row.usd.kind !== 'value') {
+    throw new DetectionError(
+      `Income row "${row.description}" routes to a ${currency} account ` +
+        `but has no foreign amount.\n` +
+        `Fill the foreign column in the CSV, or route it to a local-currency account.`
+    );
+  }
+  return row.usd.value;
+}
+
+function accountIncomeChecks(accounts: ResolvedAccount[]): Record<string, number> {
+  // Denominated in each account's own currency, exactly as the sheet prints it.
+  return Object.fromEntries(accounts.map((a) => [a.name, a.income]));
+}
+
+/** Turns a parsed month into the serialisable Plan the loader executes. */
+export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
+  const key = monthKey(raw.month, raw.year);
+  assertCategoriesKnown(raw, config);
+
+  const accounts = resolveAccounts(raw, config, key);
+  const roster = new Map(accounts.map((a) => [a.name, a]));
+  const renames = new Map(config.categoryRenames.map((r) => [r.from, r.to]));
+  const rename = (category: string) => renames.get(category) ?? category;
+
+  const transactions: PlanTransaction[] = [];
+  const skipped: Plan['skipped'] = [];
+  const unmarkedOwner: string[] = [];
+
+  for (const row of raw.expenses) {
+    if (isSuppressed(row, 'expense', config, key)) {
+      skipped.push({ reason: 'suppressed', description: row.description });
+      continue;
+    }
+    const amount = requireLocalAmount(row, 'Expense');
+    if (amount === 0) {
+      skipped.push({ reason: 'zero amount', description: row.description });
+      continue;
+    }
+    transactions.push({
+      kind: 'expense',
+      date: normaliseDate(row.date, raw.month, raw.year, `expense "${row.description}"`),
+      description: row.description,
+      category: rename(row.category),
+      account: config.syntheticAccounts.expense,
+      amount: decimal(amount),
+      currency: LOCAL,
+    });
+  }
+
+  // Income rows carry no usable date of their own, so they are all dated on the
+  // configured day. That keeps every transaction inside its own month, which is
+  // what makes a date-range purge unambiguous.
+  const incomeDate = `${key}-${String(config.dateRules.incomeDayOfMonth).padStart(2, '0')}`;
+
+  for (const row of raw.incomes) {
+    if (isSuppressed(row, 'income', config, key)) {
+      skipped.push({ reason: 'suppressed', description: row.description });
+      continue;
+    }
+    const local = requireLocalAmount(row, 'Income');
+    if (local === 0 && row.usd.kind !== 'value') {
+      skipped.push({ reason: 'zero amount', description: row.description });
+      continue;
+    }
+    const { owner } = resolveOwner(row.description, config, unmarkedOwner);
+    const { account, currency } = routeIncome(row, config, roster, owner);
+    const amount = amountFor(row, currency, local);
+    if (amount === 0) {
+      skipped.push({ reason: 'zero amount', description: row.description });
+      continue;
+    }
+    transactions.push({
+      kind: 'income',
+      date: incomeDate,
+      description: row.description,
+      category: rename(row.category),
+      account,
+      amount: decimal(amount),
+      currency,
+    });
+  }
+
+  const lastDay = String(lastDayOfMonth(raw.month, raw.year)).padStart(2, '0');
+  const snapshots: PlanSnapshot[] = accounts.map((a) => ({
+    account: a.name,
+    closing: decimal(a.akhir),
+    currency: a.currency,
+    recordedAt: `${key}-${lastDay}T23:00:00.000Z`,
+  }));
+
+  return {
+    month: raw.month,
+    year: raw.year,
+    rate: raw.rate,
+    budgets: raw.budgets.map((b) => ({
+      category: rename(b.category),
+      amountIdr: b.budget,
+      pct: b.pct,
+    })),
+    transactions,
+    snapshots,
+    checks: {
+      expenseTotal: raw.totals.expense,
+      incomeTotal: raw.totals.income,
+      closingTotal: raw.totals.closing,
+      accountIncome: accountIncomeChecks(accounts),
+    },
+    skipped,
+    unmarkedOwner,
+  };
+}
