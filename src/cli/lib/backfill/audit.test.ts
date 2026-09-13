@@ -146,3 +146,14 @@ describe('diffMonth grouped dimensions', () => {
     expect(rows.some((x) => x.dimension === 'income per account')).toBe(true);
   });
 });
+
+describe('audit reconciliation dimension', () => {
+  it('reports nothing when the app reconciles the way the plan predicts', () => {
+    expect(diffMonth(plan, { ...clean, reconciliation: { IDR: 0, USD: 0 } })).toEqual([]);
+  });
+
+  it('reports drift between the plan and the app figures', () => {
+    const rows = diffMonth(plan, { ...clean, reconciliation: { IDR: 250, USD: 0 } });
+    expect(rows.some((x) => x.dimension === 'reconciliation' && x.key === 'IDR')).toBe(true);
+  });
+});

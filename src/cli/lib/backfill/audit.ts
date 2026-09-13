@@ -1,5 +1,6 @@
 import type { BackfillClient } from './client';
 import { closeEnough, toLocal } from './money';
+import { actualVariance, expectedVariance } from './reconcile';
 import { monthKey } from './plan';
 import { fetchMonthTransactions } from './purge';
 import type { Currency, Plan, PlanTransaction } from './types';
@@ -201,6 +202,39 @@ interface HistoryEntry {
   balance: string;
 }
 
+/**
+ * The drift between the plan's per-currency variance and the same figure
+ * computed from what the app holds for this month.
+ *
+ * End balances come from the month's balance history rather than the account's
+ * current balance: current balance is settled to the newest loaded month, so it
+ * would be the wrong end point for any earlier month.
+ */
+function auditReconciliation(
+  plan: Plan,
+  history: Record<string, string>,
+  transactions: ActualTransaction[]
+): Record<Currency, number> {
+  const openings = Object.fromEntries(
+    plan.snapshots.map((s) => [s.account, Number(s.opening)] as const)
+  );
+
+  const balances: Record<string, { balance: number; currency: Currency }> = {};
+  for (const snapshot of plan.snapshots) {
+    const recorded = history[snapshot.account];
+    if (recorded === undefined) continue;
+    balances[snapshot.account] = { balance: Number(recorded), currency: snapshot.currency };
+  }
+
+  const expected = expectedVariance(plan, openings);
+  const actual = actualVariance(
+    { balances, transactions: transactions.map((t) => ({ ...t, currency: t.currency })) },
+    openings
+  );
+
+  return { IDR: actual.IDR - expected.IDR, USD: actual.USD - expected.USD };
+}
+
 /** Reads the app's state for the month. Performs no writes. */
 export async function runAudit(
   client: BackfillClient,
@@ -230,15 +264,17 @@ export async function runAudit(
     if (last) history[account.name] = last.balance;
   }
 
+  const monthTransactions = transactions.map((t) => ({
+    type: 'type' in t ? String((t as { type?: string }).type) : 'expense',
+    transaction_date: t.transaction_date,
+    amount: t.amount,
+    category: t.category,
+    account: t.account,
+    currency: (t as { currency?: string }).currency,
+  }));
+
   return diffMonth(plan, {
-    transactions: transactions.map((t) => ({
-      type: 'type' in t ? String((t as { type?: string }).type) : 'expense',
-      transaction_date: t.transaction_date,
-      amount: t.amount,
-      category: t.category,
-      account: t.account,
-      currency: (t as { currency?: string }).currency,
-    })),
+    transactions: monthTransactions,
     budgets: (budgets ?? []).map((b) => ({
       category: b.category ?? '',
       budget_amount: b.budget_amount,
@@ -248,6 +284,7 @@ export async function runAudit(
     newestClosing: newestPlan
       ? Object.fromEntries(newestPlan.snapshots.map((s) => [s.account, s.closing] as const))
       : undefined,
+    reconciliation: auditReconciliation(plan, history, monthTransactions),
   });
 }
 

@@ -121,6 +121,13 @@ Link 3 cannot be exact. It recombines currencies at a single month-end rate,
 while the sheet's balance moved at whatever rate applied on each day. It
 informs and never gates.
 
+`verify` checks nine dimensions: expense and income count and total, expense
+and income per category, income per account, budget per category, account
+closing balance, current account balance, and reconciliation variance. Its
+reconciliation figure uses the month's own balance **history** for end
+balances, not the account's current balance, which is settled to the newest
+loaded month and would be the wrong end point for any earlier month.
+
 `verify` also audits the account's **current** balance, separately from its
 balance history. `settle` writes it and net worth reads it, yet no
 history-based check would notice it going stale.
