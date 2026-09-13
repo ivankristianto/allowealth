@@ -51,6 +51,14 @@ describe('loadConfig', () => {
     expect(thrown(() => loadConfig(withConfig(bad)))).toBeInstanceOf(ConfigError);
   });
 
+  it('rejects a scaffold skeleton whose fields are still blank', () => {
+    const skeleton = JSON.parse(MINIMAL);
+    skeleton.members.primary = '';
+    const error = thrown(() => loadConfig(withConfig(JSON.stringify(skeleton))));
+    expect(error).toBeInstanceOf(ConfigError);
+    expect((error as Error).message).toMatch(/members\.primary/);
+  });
+
   it('rejects a duplicate account name in the roster', () => {
     const bad = JSON.parse(MINIMAL);
     bad.accounts.push({ name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA' });

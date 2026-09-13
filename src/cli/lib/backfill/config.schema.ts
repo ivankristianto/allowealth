@@ -7,10 +7,17 @@ export class ConfigError extends Error {}
 
 const currency = v.picklist(['IDR', 'USD']);
 
+/**
+ * A field the scaffold leaves blank for the operator to fill. Rejecting it here
+ * turns "you have not finished the config" into one clear message, rather than
+ * a confusing abort deep in owner resolution.
+ */
+const filledIn = v.pipe(v.string(), v.nonEmpty('Fill this in; the scaffold leaves it blank'));
+
 export const configSchema = v.object({
   filenames: v.object({ transactions: v.string(), balance: v.string() }),
-  members: v.object({ primary: v.string(), secondary: v.string(), fallback: v.string() }),
-  accounts: v.array(v.object({ name: v.string(), currency, owner: v.string() })),
+  members: v.object({ primary: filledIn, secondary: filledIn, fallback: filledIn }),
+  accounts: v.array(v.object({ name: filledIn, currency, owner: filledIn })),
   accountAliases: v.array(v.object({ from: v.string(), to: v.string() })),
   duplicateRules: v.array(
     v.object({
@@ -21,13 +28,13 @@ export const configSchema = v.object({
     })
   ),
   syntheticAccounts: v.object({
-    expense: v.string(),
-    passiveIncome: v.record(v.string(), v.string()),
+    expense: filledIn,
+    passiveIncome: v.record(v.string(), filledIn),
   }),
   categories: v.object({
-    expense: v.array(v.string()),
+    expense: v.array(filledIn),
     income: v.array(
-      v.object({ name: v.string(), sourceType: v.picklist(['active', 'passive', 'other']) })
+      v.object({ name: filledIn, sourceType: v.picklist(['active', 'passive', 'other']) })
     ),
   }),
   categoryRenames: v.array(v.object({ from: v.string(), to: v.string() })),

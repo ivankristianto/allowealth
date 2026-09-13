@@ -117,3 +117,57 @@ describe('loadMonth', () => {
     expect(calls.filter((c) => c === 'POST /api/transactions')).toHaveLength(1);
   });
 });
+
+describe('offlineClient', () => {
+  it('refuses every request, so a dry run cannot reach the network', async () => {
+    const { offlineClient } = await import('./load');
+    const client = offlineClient();
+    expect(() => client.get('/api/accounts')).toThrow(/dry run/i);
+    expect(() => client.post('/api/transactions', {})).toThrow(/dry run/i);
+  });
+
+  it('carries a plan through a dry run without touching the client', async () => {
+    const { calls, d } = deps({ client: offlineClientFor() });
+    const report = await loadMonth(d, 1, 2099, { dryRun: true });
+    expect(report.dryRun).toBe(true);
+    expect(report.plan.transactions).toHaveLength(1);
+    expect(calls).toEqual([]);
+  });
+});
+
+function offlineClientFor(): LoadDeps['client'] {
+  const refuse = (): never => {
+    throw new Error('network touched during a dry run');
+  };
+  return {
+    signIn: refuse,
+    get: refuse,
+    post: refuse,
+    patch: refuse,
+    del: refuse,
+    getAll: refuse,
+  } as unknown as LoadDeps['client'];
+}
+
+describe('loadMonth ordering', () => {
+  it('aborts a dry run that is out of order, before building the plan', async () => {
+    let built = 0;
+    const { d } = deps({
+      buildPlanForMonth: () => {
+        built++;
+        return samplePlan();
+      },
+    });
+    expect(loadMonth(d, 3, 2099, { dryRun: true })).rejects.toThrow(/2099-01/);
+    expect(built).toBe(0);
+  });
+
+  it('previews an already-loaded month rather than refusing a dry run', async () => {
+    const loaded = [
+      { month: 1, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
+    ];
+    const { d } = deps({ readLedger: () => loaded });
+    const report = await loadMonth(d, 1, 2099, { dryRun: true });
+    expect(report.dryRun).toBe(true);
+  });
+});

@@ -59,9 +59,9 @@ async function inBatches<T>(items: T[], size: number, worker: (item: T) => Promi
   }
 }
 
-function assertNoGap(deps: LoadDeps, month: number, year: number, force: boolean): void {
-  const entries = deps.readLedger();
-  const gaps = findGaps(entries, month, year, deps.earliest);
+/** Reads only the local ledger, so a dry run can surface an ordering mistake too. */
+function assertNoGap(deps: LoadDeps, month: number, year: number): void {
+  const gaps = findGaps(deps.readLedger(), month, year, deps.earliest);
   if (gaps.length > 0) {
     throw new LoadError(
       `Cannot load ${monthKey(month, year)}: earlier months are not loaded — ${gaps.join(', ')}.\n` +
@@ -69,8 +69,10 @@ function assertNoGap(deps: LoadDeps, month: number, year: number, force: boolean
         `onto every account it creates.`
     );
   }
+}
 
-  const existing = entries.find((e) => e.month === month && e.year === year);
+function assertNotAlreadyLoaded(deps: LoadDeps, month: number, year: number, force: boolean): void {
+  const existing = deps.readLedger().find((e) => e.month === month && e.year === year);
   if (existing?.status === 'loaded' && !force) {
     throw new LoadError(
       `${monthKey(month, year)} is already loaded. Re-run with --force to purge and reload it.`
@@ -151,6 +153,10 @@ export async function loadMonth(
   year: number,
   opts: LoadOptions
 ): Promise<LoadReport> {
+  // Ordering is checked before the plan is even built: it needs no network and
+  // an out-of-order dry run is just as wrong as an out-of-order load.
+  assertNoGap(deps, month, year);
+
   const plan = deps.buildPlanForMonth(month, year);
 
   const verification = verifyPlan(plan);
@@ -175,7 +181,7 @@ export async function loadMonth(
     };
   }
 
-  assertNoGap(deps, month, year, opts.force ?? false);
+  assertNotAlreadyLoaded(deps, month, year, opts.force ?? false);
 
   const entries = deps.readLedger();
   const ledgerStatus = entries.find((e) => e.month === month && e.year === year)?.status;
@@ -266,6 +272,25 @@ export interface LoadArgs {
   'dry-run'?: boolean;
 }
 
+/**
+ * Stands in for the client during a dry run. Every method throws, so any future
+ * change that reaches the network before the dry-run early return fails loudly
+ * instead of silently signing in.
+ */
+export function offlineClient(): BackfillClient {
+  const refuse = (): never => {
+    throw new LoadError('A dry run must not make requests; this is a bug in the load sequence.');
+  };
+  return {
+    signIn: refuse,
+    get: refuse,
+    post: refuse,
+    patch: refuse,
+    del: refuse,
+    getAll: refuse,
+  } as unknown as BackfillClient;
+}
+
 /** Arg-parsing shell around `loadMonth`. */
 export async function runLoadCommand(args: LoadArgs): Promise<void> {
   const { buildPlan } = await import('./plan');
@@ -295,7 +320,11 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
     throw new UsageError('Pass --month, or --from and --to for a range.');
   }
 
-  const client = await createClient();
+  // A dry run must not touch the network: the operator dry-runs every month
+  // before the app is even set up, and a sign-in here would block that.
+  const dryRun = args['dry-run'] === true;
+  const client = dryRun ? offlineClient() : await createClient();
+
   const deps: LoadDeps = {
     client,
     readLedger: () => ledger.readLedger(dataDir),
@@ -309,10 +338,7 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
   };
 
   for (const { month, year: y } of months) {
-    const report = await loadMonth(deps, month, y, {
-      force: args.force,
-      dryRun: args['dry-run'],
-    });
+    const report = await loadMonth(deps, month, y, { force: args.force, dryRun });
     const label = monthKey(month, y);
     if (report.dryRun) {
       console.log(

@@ -21,7 +21,8 @@ export default defineCommand({
       },
       async run({ args }) {
         const { runScaffoldCommand } = await import('../lib/backfill/scaffold');
-        await runScaffoldCommand(args);
+        const { withDirectiveErrors } = await import('../lib/backfill/runtime');
+        process.exitCode = await withDirectiveErrors(() => runScaffoldCommand(args));
       },
     }),
     setup: defineCommand({
@@ -40,7 +41,8 @@ export default defineCommand({
       },
       async run({ args }) {
         const { runSetupCommand } = await import('../lib/backfill/setup');
-        await runSetupCommand(args);
+        const { withDirectiveErrors } = await import('../lib/backfill/runtime');
+        process.exitCode = await withDirectiveErrors(() => runSetupCommand(args));
       },
     }),
     run: defineCommand({
@@ -59,7 +61,8 @@ export default defineCommand({
       },
       async run({ args }) {
         const { runLoadCommand } = await import('../lib/backfill/load');
-        await runLoadCommand(args);
+        const { withDirectiveErrors } = await import('../lib/backfill/runtime');
+        process.exitCode = await withDirectiveErrors(() => runLoadCommand(args));
       },
     }),
     verify: defineCommand({
@@ -72,7 +75,8 @@ export default defineCommand({
       },
       async run({ args }) {
         const { runAuditCommand } = await import('../lib/backfill/audit');
-        process.exitCode = await runAuditCommand(args);
+        const { withDirectiveErrors } = await import('../lib/backfill/runtime');
+        process.exitCode = await withDirectiveErrors(() => runAuditCommand(args));
       },
     }),
   },

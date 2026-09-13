@@ -126,6 +126,45 @@ export async function createClient(): Promise<BackfillClient> {
   }
 
   const client = new BackfillClient({ baseUrl, email, password });
-  await client.signIn();
+  try {
+    await client.signIn();
+  } catch (error) {
+    throw new UsageError(
+      `Could not sign in at ${baseUrl}: ${error instanceof Error ? error.message : String(error)}\n` +
+        `Check that the app is running and that AW_BACKFILL_BASE_URL, AW_BACKFILL_EMAIL and ` +
+        `AW_BACKFILL_PASSWORD are correct. Pass --dry-run to build and verify a plan offline.`
+    );
+  }
   return client;
+}
+
+/** The error classes whose message is the whole point: they name the fix. */
+const DIRECTIVE_ERRORS = new Set([
+  'ConfigError',
+  'DetectionError',
+  'LoadError',
+  'OwnershipError',
+  'ParseError',
+  'SlotExhaustedError',
+  'UsageError',
+]);
+
+/**
+ * Runs a command, printing a directive abort as its message alone.
+ *
+ * Every abort names the config field that resolves it; a stack trace buries
+ * that under frames the operator cannot act on. Unexpected errors still throw
+ * with their trace intact.
+ */
+export async function withDirectiveErrors(fn: () => Promise<number | void>): Promise<number> {
+  try {
+    const code = await fn();
+    return typeof code === 'number' ? code : 0;
+  } catch (error) {
+    if (error instanceof Error && DIRECTIVE_ERRORS.has(error.constructor.name)) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
 }
