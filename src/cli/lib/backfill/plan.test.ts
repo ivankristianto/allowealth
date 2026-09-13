@@ -11,8 +11,7 @@ const dir = join(import.meta.dir, '__fixtures__');
 const raw = parseMonth(
   readFileSync(join(dir, 'txn-2099-01.csv'), 'utf8'),
   readFileSync(join(dir, 'balance-2099-01.csv'), 'utf8'),
-  1,
-  2099
+  { month: 1, year: 2099 }
 );
 const plan = buildPlan(raw, fixtureConfig);
 

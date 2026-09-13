@@ -6,7 +6,7 @@ import { parseMonth } from './parse';
 const dir = join(import.meta.dir, '__fixtures__');
 const txn = readFileSync(join(dir, 'txn-2099-01.csv'), 'utf8');
 const bal = readFileSync(join(dir, 'balance-2099-01.csv'), 'utf8');
-const m = parseMonth(txn, bal, 1, 2099);
+const m = parseMonth(txn, bal, { month: 1, year: 2099 });
 
 describe('parseMonth', () => {
   it('reads expense rows despite the drifted header', () => {
@@ -60,6 +60,6 @@ describe('parseMonth', () => {
 
   it('aborts on an unparseable amount, naming the raw cell', () => {
     const broken = txn.replace('"100,000.00"', 'n/a');
-    expect(() => parseMonth(broken, bal, 1, 2099)).toThrow(/n\/a/);
+    expect(() => parseMonth(broken, bal, { month: 1, year: 2099 })).toThrow(/n\/a/);
   });
 });

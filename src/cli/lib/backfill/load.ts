@@ -1,29 +1,28 @@
 import type { BackfillClient } from './client';
 import type { BackfillConfig } from './config.schema';
 import { DirectiveError } from './errors';
-import { closeEnough } from './money';
-import type { LedgerEntry, MonthRef } from './ledger';
+import { closeEnough, ordinal, sameMonth } from './money';
+import type { LedgerEntry } from './ledger';
 import { findGaps, newestLoaded } from './ledger';
 import { monthKey } from './plan';
 import { assertOwnership, fetchMonthTransactions, purgeMonth } from './purge';
 import { reconcileMonth } from './reconcile';
 import type { ReconcileReport } from './reconcile';
 import { historyTimestamps, nextSlot } from './snapshots';
-import type { Plan } from './types';
+import type { MonthRef, Plan } from './types';
 import { verifyPlan } from './verify';
 
 export interface LoadDeps {
   client: BackfillClient;
   readLedger: () => LedgerEntry[];
-  claimMonth: (month: number, year: number, planHash: string) => void;
-  commitMonth: (month: number, year: number) => void;
+  claimMonth: (ref: MonthRef, planHash: string) => void;
+  commitMonth: (ref: MonthRef) => void;
   savePlan: (plan: Plan) => void;
-  readSavedPlan: (month: number, year: number) => Plan | null;
+  readSavedPlan: (ref: MonthRef) => Plan | null;
   hashPlan: (plan: Plan) => string;
-  buildPlanForMonth: (month: number, year: number) => Plan;
+  /** Re-parses a month's CSVs into a plan. Also used to settle a later month. */
+  planFor: (ref: MonthRef) => Plan;
   settle: (plan: Plan, accounts: { id: string; name: string }[]) => Promise<void>;
-  /** Re-parses a month's CSVs, for settling against the newest loaded month. */
-  planFor: (month: number, year: number) => Plan;
   earliest: MonthRef;
   config: BackfillConfig;
 }
@@ -76,22 +75,22 @@ async function inBatches<T>(items: T[], size: number, worker: (item: T) => Promi
 }
 
 /** Reads only the local ledger, so a dry run can surface an ordering mistake too. */
-function assertNoGap(deps: LoadDeps, month: number, year: number): void {
-  const gaps = findGaps(deps.readLedger(), month, year, deps.earliest);
+function assertNoGap(deps: LoadDeps, ref: MonthRef): void {
+  const gaps = findGaps(deps.readLedger(), ref, deps.earliest);
   if (gaps.length > 0) {
     throw new LoadError(
-      `Cannot load ${monthKey(month, year)}: earlier months are not loaded — ${gaps.join(', ')}.\n` +
+      `Cannot load ${monthKey(ref)}: earlier months are not loaded — ${gaps.join(', ')}.\n` +
         `Months must load in order: a later month loaded first stamps the wrong origin balance ` +
         `onto every account it creates.`
     );
   }
 }
 
-function assertNotAlreadyLoaded(deps: LoadDeps, month: number, year: number, force: boolean): void {
-  const existing = deps.readLedger().find((e) => e.month === month && e.year === year);
+function assertNotAlreadyLoaded(deps: LoadDeps, ref: MonthRef, force: boolean): void {
+  const existing = deps.readLedger().find((e) => sameMonth(e, ref));
   if (existing?.status === 'loaded' && !force) {
     throw new LoadError(
-      `${monthKey(month, year)} is already loaded. Re-run with --force to purge and reload it.`
+      `${monthKey(ref)} is already loaded. Re-run with --force to purge and reload it.`
     );
   }
 }
@@ -135,7 +134,7 @@ async function ensureAccounts(
       ) {
         throw new LoadError(
           `Account "${name}" already exists with an origin balance of ${existingOpening}, ` +
-            `but ${monthKey(plan.month, plan.year)} opens it at ${spec.opening}.\n` +
+            `but ${monthKey(plan)} opens it at ${spec.opening}.\n` +
             `That means months were loaded out of order. Purge the later months and reload in order.`
         );
       }
@@ -230,15 +229,14 @@ function requireId<T extends { id: string }>(
  */
 export async function loadMonth(
   deps: LoadDeps,
-  month: number,
-  year: number,
+  ref: MonthRef,
   opts: LoadOptions
 ): Promise<LoadReport> {
   // Ordering is checked before the plan is even built: it needs no network and
   // an out-of-order dry run is just as wrong as an out-of-order load.
-  assertNoGap(deps, month, year);
+  assertNoGap(deps, ref);
 
-  const plan = deps.buildPlanForMonth(month, year);
+  const plan = deps.planFor(ref);
 
   const verification = verifyPlan(plan);
   if (!verification.ok) {
@@ -246,14 +244,14 @@ export async function loadMonth(
       (f) => `  Link ${f.link} — ${f.label}: sheet ${f.expected}, plan ${f.actual}`
     );
     throw new LoadError(
-      `${monthKey(month, year)} failed verification; nothing was written:\n${lines.join('\n')}`
+      `${monthKey(ref)} failed verification; nothing was written:\n${lines.join('\n')}`
     );
   }
 
   if (opts.dryRun) {
     return {
-      month,
-      year,
+      month: ref.month,
+      year: ref.year,
       dryRun: true,
       plan,
       purged: { transactions: 0, budgets: 0 },
@@ -263,20 +261,19 @@ export async function loadMonth(
     };
   }
 
-  assertNotAlreadyLoaded(deps, month, year, opts.force ?? false);
+  assertNotAlreadyLoaded(deps, ref, opts.force ?? false);
 
-  const entries = deps.readLedger();
-  const ledgerStatus = entries.find((e) => e.month === month && e.year === year)?.status;
-  const existingRows = await fetchMonthTransactions(deps.client, month, year);
-  assertOwnership(existingRows, deps.readSavedPlan(month, year), ledgerStatus, opts.force ?? false);
+  const ledgerStatus = deps.readLedger().find((e) => sameMonth(e, ref))?.status;
+  const existingRows = await fetchMonthTransactions(deps.client, ref);
+  assertOwnership(existingRows, deps.readSavedPlan(ref), ledgerStatus, opts.force ?? false);
 
   // Claimed before the first write, so an aborted load stays purgeable. The
   // hash records which plan the claim belongs to, so a later re-derivation that
   // differs is visible in the ledger.
   deps.savePlan(plan);
-  deps.claimMonth(month, year, deps.hashPlan(plan));
+  deps.claimMonth(ref, deps.hashPlan(plan));
 
-  const purged = await purgeMonth(deps.client, month, year);
+  const purged = await purgeMonth(deps.client, ref);
   const { accounts, created: createdAccounts } = await ensureAccounts(deps.client, plan);
   const transferred = await transferOwnership(deps.client, deps.config, accounts);
   const categories = await categoryIndex(deps.client);
@@ -288,8 +285,8 @@ export async function loadMonth(
   for (const budget of plan.budgets) {
     await deps.client.post('/api/budgets', {
       category_id: requireId(categories, budget.category, 'category'),
-      month,
-      year,
+      month: ref.month,
+      year: ref.year,
       budget_amount: String(budget.amountIdr),
       currency: 'IDR',
     });
@@ -316,7 +313,7 @@ export async function loadMonth(
     const taken = await historyTimestamps(deps.client, accountId);
     await deps.client.post(`/api/accounts/${accountId}/balance`, {
       balance: snapshot.closing,
-      notes: `backfill ${monthKey(month, year)}`,
+      notes: `backfill ${monthKey(ref)}`,
       recorded_at: nextSlot(taken, lastDay),
     });
   }
@@ -328,7 +325,7 @@ export async function loadMonth(
       (row) => `  Link 2 — ${row.currency}: plan ${row.expected}, app ${row.actual}`
     );
     throw new LoadError(
-      `${monthKey(month, year)} loaded but does not reconcile:\n${lines.join('\n')}\n` +
+      `${monthKey(ref)} loaded but does not reconcile:\n${lines.join('\n')}\n` +
         `The month stays claimed as loading, so a re-run will purge and reload it.`
     );
   }
@@ -339,23 +336,19 @@ export async function loadMonth(
   // month, a failure no history-based check would notice. This month counts as
   // loaded here: it has passed every gate, and the ledger flips just below.
   const recorded = newestLoaded(deps.readLedger());
-  const newest =
-    recorded && recorded.year * 12 + recorded.month > year * 12 + month
-      ? { month: recorded.month, year: recorded.year }
-      : { month, year };
-  const settlePlan =
-    newest.month === month && newest.year === year ? plan : deps.planFor(newest.month, newest.year);
+  const newest = recorded && ordinal(recorded) > ordinal(ref) ? recorded : ref;
+  const settlePlan = sameMonth(newest, ref) ? plan : deps.planFor(newest);
 
   await deps.settle(
     settlePlan,
     [...accounts.values()].map((a) => ({ id: a.id, name: a.name }))
   );
 
-  deps.commitMonth(month, year);
+  deps.commitMonth(ref);
 
   return {
-    month,
-    year,
+    month: ref.month,
+    year: ref.year,
     dryRun: false,
     plan,
     purged,
@@ -420,13 +413,13 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
 
   const dataDir = resolveDataDir(args.dir, process.env.AW_BACKFILL_DIR);
   const config = loadConfig(dataDir);
-  const year = args.year ? Number(args.year) : new Date().getFullYear();
+  const defaultYear = args.year ? Number(args.year) : new Date().getFullYear();
 
   let months: MonthRef[];
   if (args.month) {
-    months = [parseMonthArg(args.month, year)];
+    months = [parseMonthArg(args.month, defaultYear)];
   } else if (args.from && args.to) {
-    months = monthRange(parseMonthArg(args.from, year), parseMonthArg(args.to, year));
+    months = monthRange(parseMonthArg(args.from, defaultYear), parseMonthArg(args.to, defaultYear));
   } else {
     throw new UsageError('Pass --month, or --from and --to for a range.');
   }
@@ -439,13 +432,12 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
   const deps: LoadDeps = {
     client,
     readLedger: () => ledger.readLedger(dataDir),
-    claimMonth: (month, y, hash) => ledger.claimMonth(dataDir, month, y, hash),
-    commitMonth: (month, y) => ledger.commitMonth(dataDir, month, y),
+    claimMonth: (ref, hash) => ledger.claimMonth(dataDir, ref, hash),
+    commitMonth: (ref) => ledger.commitMonth(dataDir, ref),
     savePlan: (plan) => ledger.savePlan(dataDir, plan),
-    readSavedPlan: (month, y) => ledger.readSavedPlan(dataDir, month, y),
+    readSavedPlan: (ref) => ledger.readSavedPlan(dataDir, ref),
     hashPlan: ledger.hashPlan,
-    buildPlanForMonth: (month, y) => buildPlan(readMonth(dataDir, config, month, y), config),
-    planFor: (month, y) => buildPlan(readMonth(dataDir, config, month, y), config),
+    planFor: (ref) => buildPlan(readMonth(dataDir, config, ref), config),
     settle: (plan, accounts) => settle(client, plan, accounts),
     earliest: earliestFromConfig(config),
     config,
@@ -455,12 +447,12 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
   const out = createOutput(args);
   const reports: LoadReport[] = [];
 
-  for (const { month, year: y } of months) {
-    const report = await loadMonth(deps, month, y, { force: args.force, dryRun });
+  for (const ref of months) {
+    const report = await loadMonth(deps, ref, { force: args.force, dryRun });
     reports.push(report);
     if (out.json) continue;
 
-    const label = monthKey(month, y);
+    const label = monthKey(ref);
     if (report.dryRun) {
       console.log(
         `${label}  dry run: ${report.plan.transactions.length} transactions, ` +

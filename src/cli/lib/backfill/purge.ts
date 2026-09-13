@@ -2,7 +2,7 @@ import type { BackfillClient } from './client';
 import { DirectiveError } from './errors';
 import { lastDayOfMonth } from './money';
 import { monthKey } from './plan';
-import type { Plan } from './types';
+import type { MonthRef, Plan } from './types';
 
 /**
  * Thrown when the month holds rows this tool cannot prove it wrote.
@@ -117,18 +117,17 @@ export function assertOwnership(
 }
 
 /** The month's first and last calendar dates, for a date-range API query. */
-function monthDateRange(month: number, year: number): { start: string; end: string } {
-  const lastDay = lastDayOfMonth(month, year);
-  const key = monthKey(month, year);
+function monthDateRange(ref: MonthRef): { start: string; end: string } {
+  const lastDay = lastDayOfMonth(ref);
+  const key = monthKey(ref);
   return { start: `${key}-01`, end: `${key}-${String(lastDay).padStart(2, '0')}` };
 }
 
 export async function fetchMonthTransactions(
   client: Pick<BackfillClient, 'getAll'>,
-  month: number,
-  year: number
+  ref: MonthRef
 ): Promise<ExistingTransaction[]> {
-  const { start, end } = monthDateRange(month, year);
+  const { start, end } = monthDateRange(ref);
   return client.getAll<ExistingTransaction>(
     `/api/transactions?start_date=${start}&end_date=${end}`,
     'transactions'
@@ -138,10 +137,9 @@ export async function fetchMonthTransactions(
 /** Deletes every transaction and budget in the month. Ownership is proved by the caller. */
 export async function purgeMonth(
   client: Pick<BackfillClient, 'getAll' | 'get' | 'post' | 'del'>,
-  month: number,
-  year: number
+  ref: MonthRef
 ): Promise<{ transactions: number; budgets: number }> {
-  const transactions = await fetchMonthTransactions(client, month, year);
+  const transactions = await fetchMonthTransactions(client, ref);
   const ids = transactions.map((t) => t.id).filter((id): id is string => Boolean(id));
 
   // The bulk endpoint caps a request at 100 ids.
@@ -149,7 +147,9 @@ export async function purgeMonth(
     await client.post('/api/transactions/bulk', { action: 'delete', ids: ids.slice(i, i + 100) });
   }
 
-  const budgets = await client.get<ExistingBudget[]>(`/api/budgets?month=${month}&year=${year}`);
+  const budgets = await client.get<ExistingBudget[]>(
+    `/api/budgets?month=${ref.month}&year=${ref.year}`
+  );
   for (const budget of budgets ?? []) {
     await client.del(`/api/budgets/${budget.id}`);
   }

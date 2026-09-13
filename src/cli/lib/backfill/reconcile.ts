@@ -111,7 +111,7 @@ export async function reconcileMonth(
   const expected = expectedVariance(plan, openings);
 
   const accounts = await client.get<ApiAccount[]>('/api/accounts');
-  const transactions = await fetchMonthTransactions(client, plan.month, plan.year);
+  const transactions = await fetchMonthTransactions(client, plan);
 
   const planned = new Set(plan.snapshots.map((s) => s.account));
   const balances: AppState['balances'] = {};

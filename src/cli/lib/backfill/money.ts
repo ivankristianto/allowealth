@@ -1,4 +1,4 @@
-import type { Currency } from './types';
+import type { Currency, MonthRef } from './types';
 
 /**
  * Decimal representation, and nothing wider. Every comparison in the
@@ -20,7 +20,7 @@ export function toLocal(
     : Number(amount) * rate;
 }
 
-export function lastDayOfMonth(month: number, year: number): number {
+export function lastDayOfMonth({ month, year }: MonthRef): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
@@ -32,4 +32,17 @@ export function decimal(value: number): string {
 
 export function closeEnough(a: number, b: number): boolean {
   return Math.abs(a - b) <= TOLERANCE;
+}
+
+/** Months as a single comparable number, so ordering needs no nested compare. */
+export function ordinal({ month, year }: MonthRef): number {
+  return year * 12 + month;
+}
+
+export function sameMonth(a: MonthRef, b: MonthRef): boolean {
+  return a.month === b.month && a.year === b.year;
+}
+
+export function nextMonth({ month, year }: MonthRef): MonthRef {
+  return month === 12 ? { month: 1, year: year + 1 } : { month: month + 1, year };
 }

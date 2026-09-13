@@ -43,8 +43,7 @@ describe('resolveFilenames', () => {
     expect(
       resolveFilenames(
         { transactions: '[{year}] Sheet - {mon}-{year}.csv', balance: 'B {mon}-{year}.csv' },
-        1,
-        2099
+        { month: 1, year: 2099 }
       )
     ).toEqual({ transactions: '[2099] Sheet - Jan-2099.csv', balance: 'B Jan-2099.csv' });
   });

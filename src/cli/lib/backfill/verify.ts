@@ -66,7 +66,7 @@ export function verifyPlan(plan: Plan): VerifyResult {
     record(4, `income into ${account}`, expected, byAccount.get(account) ?? 0);
   }
 
-  const key = monthKey(plan.month, plan.year);
+  const key = monthKey(plan);
   const escaped = plan.transactions.filter((t) => !t.date.startsWith(key));
   if (escaped.length > 0) {
     failures.push({

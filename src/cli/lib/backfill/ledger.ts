@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { nextMonth, ordinal, sameMonth } from './money';
 import { monthKey } from './plan';
-import type { Plan } from './types';
+import type { MonthRef, Plan } from './types';
 
 export interface LedgerEntry {
   month: number;
@@ -9,11 +10,6 @@ export interface LedgerEntry {
   status: 'loading' | 'loaded';
   planHash: string;
   loadedAt: string;
-}
-
-export interface MonthRef {
-  month: number;
-  year: number;
 }
 
 function stateDir(dataDir: string): string {
@@ -26,8 +22,8 @@ function ledgerPath(dataDir: string): string {
   return join(stateDir(dataDir), 'ledger.json');
 }
 
-function planPath(dataDir: string, month: number, year: number): string {
-  return join(stateDir(dataDir), 'plans', `${monthKey(month, year)}.json`);
+function planPath(dataDir: string, ref: MonthRef): string {
+  return join(stateDir(dataDir), 'plans', `${monthKey(ref)}.json`);
 }
 
 /**
@@ -58,17 +54,17 @@ function writeLedger(dataDir: string, entries: LedgerEntry[]): void {
  * Without the claim, an aborted load leaves rows the ownership check cannot
  * account for, and the repairing re-run would be refused.
  */
-export function claimMonth(dataDir: string, month: number, year: number, planHash: string): void {
-  const entries = readLedger(dataDir).filter((e) => !(e.month === month && e.year === year));
-  entries.push({ month, year, status: 'loading', planHash, loadedAt: '' });
+export function claimMonth(dataDir: string, ref: MonthRef, planHash: string): void {
+  const entries = readLedger(dataDir).filter((e) => !sameMonth(e, ref));
+  entries.push({ month: ref.month, year: ref.year, status: 'loading', planHash, loadedAt: '' });
   writeLedger(dataDir, entries);
 }
 
-export function commitMonth(dataDir: string, month: number, year: number): void {
+export function commitMonth(dataDir: string, ref: MonthRef): void {
   const entries = readLedger(dataDir);
-  const found = entries.find((e) => e.month === month && e.year === year);
+  const found = entries.find((e) => sameMonth(e, ref));
   if (!found) {
-    throw new Error(`Cannot commit ${monthKey(month, year)}: it was never claimed.`);
+    throw new Error(`Cannot commit ${monthKey(ref)}: it was never claimed.`);
   }
   found.status = 'loaded';
   found.loadedAt = new Date().toISOString();
@@ -76,27 +72,17 @@ export function commitMonth(dataDir: string, month: number, year: number): void 
 }
 
 /** Names every month from `earliest` up to (not including) the target that is not loaded. */
-export function findGaps(
-  entries: LedgerEntry[],
-  month: number,
-  year: number,
-  earliest: MonthRef
-): string[] {
-  const loaded = new Set(
-    entries.filter((e) => e.status === 'loaded').map((e) => monthKey(e.month, e.year))
-  );
+export function findGaps(entries: LedgerEntry[], target: MonthRef, earliest: MonthRef): string[] {
+  const loaded = new Set(entries.filter((e) => e.status === 'loaded').map((e) => monthKey(e)));
 
   const gaps: string[] = [];
-  let cursorMonth = earliest.month;
-  let cursorYear = earliest.year;
-  while (cursorYear < year || (cursorYear === year && cursorMonth < month)) {
-    const key = monthKey(cursorMonth, cursorYear);
+  for (
+    let cursor = { ...earliest };
+    ordinal(cursor) < ordinal(target);
+    cursor = nextMonth(cursor)
+  ) {
+    const key = monthKey(cursor);
     if (!loaded.has(key)) gaps.push(key);
-    cursorMonth += 1;
-    if (cursorMonth > 12) {
-      cursorMonth = 1;
-      cursorYear += 1;
-    }
   }
   return gaps;
 }
@@ -110,13 +96,13 @@ export function newestLoaded(entries: LedgerEntry[]): LedgerEntry | null {
 }
 
 export function savePlan(dataDir: string, plan: Plan): void {
-  const path = planPath(dataDir, plan.month, plan.year);
+  const path = planPath(dataDir, plan);
   mkdirSync(join(stateDir(dataDir), 'plans'), { recursive: true });
   writeAtomic(path, `${JSON.stringify(plan, null, 2)}\n`);
 }
 
-export function readSavedPlan(dataDir: string, month: number, year: number): Plan | null {
-  const path = planPath(dataDir, month, year);
+export function readSavedPlan(dataDir: string, ref: MonthRef): Plan | null {
+  const path = planPath(dataDir, ref);
   if (!existsSync(path)) return null;
   return JSON.parse(readFileSync(path, 'utf8')) as Plan;
 }

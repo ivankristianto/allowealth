@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BackfillClient } from './client';
+import { nextMonth, ordinal } from './money';
 import type { BackfillConfig } from './config.schema';
 import { DirectiveError } from './errors';
-import type { MonthRef } from './ledger';
+import type { MonthRef } from './types';
 import { parseMonth } from './parse';
 import type { RawMonth } from './parse';
 
@@ -64,28 +65,20 @@ export function parseMonthArg(value: string, defaultYear: number): MonthRef {
 }
 
 export function monthRange(from: MonthRef, to: MonthRef): MonthRef[] {
-  const ordinal = (m: MonthRef) => m.year * 12 + m.month;
   if (ordinal(from) > ordinal(to)) {
     throw new UsageError('The range start is after its end.');
   }
 
   const months: MonthRef[] = [];
-  let { month, year } = from;
-  while (year * 12 + month <= ordinal(to)) {
-    months.push({ month, year });
-    month += 1;
-    if (month > 12) {
-      month = 1;
-      year += 1;
-    }
+  for (let cursor = { ...from }; ordinal(cursor) <= ordinal(to); cursor = nextMonth(cursor)) {
+    months.push(cursor);
   }
   return months;
 }
 
 export function resolveFilenames(
   templates: BackfillConfig['filenames'],
-  month: number,
-  year: number
+  { month, year }: MonthRef
 ): { transactions: string; balance: string } {
   const fill = (template: string) =>
     template.replace(/\{mon\}/g, MONTH_NAMES[month - 1]!).replace(/\{year\}/g, String(year));
@@ -96,10 +89,9 @@ export function resolveFilenames(
 export function readMonth(
   dataDir: string,
   config: Pick<BackfillConfig, 'filenames'>,
-  month: number,
-  year: number
+  ref: MonthRef
 ): RawMonth {
-  const names = resolveFilenames(config.filenames, month, year);
+  const names = resolveFilenames(config.filenames, ref);
   const read = (name: string) => {
     try {
       return readFileSync(join(dataDir, name), 'utf8');
@@ -107,7 +99,7 @@ export function readMonth(
       throw new UsageError(`Missing CSV: ${name}\nExpected it in the data directory.`);
     }
   };
-  return parseMonth(read(names.transactions), read(names.balance), month, year);
+  return parseMonth(read(names.transactions), read(names.balance), ref);
 }
 
 export function earliestFromConfig(config: BackfillConfig): MonthRef {

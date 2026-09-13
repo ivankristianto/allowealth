@@ -91,7 +91,7 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
   const sum = (items: { amount: string; currency?: string }[]) =>
     items.reduce((total, t) => total + toLocal(t.amount, t.currency, plan.rate), 0);
 
-  const key = monthKey(plan.month, plan.year);
+  const key = monthKey(plan);
 
   compare(
     'expense total',
@@ -241,7 +241,7 @@ export async function runAudit(
   plan: Plan,
   newestPlan?: Plan
 ): Promise<AuditRow[]> {
-  const transactions = await fetchMonthTransactions(client, plan.month, plan.year);
+  const transactions = await fetchMonthTransactions(client, plan);
   const budgets = await client.get<{ category?: string; budget_amount: string }[]>(
     `/api/budgets?month=${plan.month}&year=${plan.year}`
   );
@@ -249,7 +249,7 @@ export async function runAudit(
 
   const history: Record<string, string> = {};
   const balances: Record<string, string> = {};
-  const monthPrefix = monthKey(plan.month, plan.year);
+  const monthPrefix = monthKey(plan);
 
   for (const account of accounts ?? []) {
     balances[account.name] = account.balance ?? '0';
@@ -309,28 +309,29 @@ export async function runAuditCommand(args: AuditArgs): Promise<number> {
   const config = loadConfig(dataDir);
   if (!args.month) throw new UsageError('Pass --month to name the month to audit.');
 
-  const year = args.year ? Number(args.year) : new Date().getFullYear();
-  const { month, year: y } = parseMonthArg(args.month, year);
+  const defaultYear = args.year ? Number(args.year) : new Date().getFullYear();
+  const ref = parseMonthArg(args.month, defaultYear);
 
-  const plan = buildPlan(readMonth(dataDir, config, month, y), config);
+  const plan = buildPlan(readMonth(dataDir, config, ref), config);
 
   // Current balance is settled against the newest loaded month, so auditing an
   // earlier month must compare against that month's closings, not this month's.
   const { newestLoaded, readLedger } = await import('./ledger');
+  const { sameMonth } = await import('./money');
   const newest = newestLoaded(readLedger(dataDir));
   const newestPlan =
-    newest && (newest.month !== month || newest.year !== y)
-      ? buildPlan(readMonth(dataDir, config, newest.month, newest.year), config)
+    newest && !sameMonth(newest, ref)
+      ? buildPlan(readMonth(dataDir, config, newest), config)
       : undefined;
 
   const client = await createClient();
   const rows = await runAudit(client, plan, newestPlan);
 
-  const label = monthKey(month, y);
+  const label = monthKey(ref);
 
   if (args.json) {
     const { createOutput } = await import('../output');
-    createOutput(args).write({ month, year: y, ok: rows.length === 0, mismatches: rows }, '');
+    createOutput(args).write({ ...ref, ok: rows.length === 0, mismatches: rows }, '');
     return rows.length === 0 ? 0 : 1;
   }
 

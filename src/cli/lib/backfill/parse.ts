@@ -1,6 +1,6 @@
 import { isFootnote, parseAmount, parseCsv } from './csv';
 import { DirectiveError } from './errors';
-import type { Amount } from './types';
+import type { Amount, MonthRef } from './types';
 
 export interface RawRow {
   description: string;
@@ -194,18 +194,13 @@ function parseAccounts(rows: string[][]): RawAccountRow[] {
 }
 
 /** Turns a transactions/balance CSV pair into the month's raw, unresolved shape. */
-export function parseMonth(
-  txnCsv: string,
-  balanceCsv: string,
-  month: number,
-  year: number
-): RawMonth {
+export function parseMonth(txnCsv: string, balanceCsv: string, ref: MonthRef): RawMonth {
   const { expenses, incomes } = parseTransactions(txnCsv);
   const balanceRows = parseCsv(balanceCsv);
 
   return {
-    month,
-    year,
+    month: ref.month,
+    year: ref.year,
     rate: requireScalar(balanceRows, 'USD to IDR'),
     expenses,
     incomes,

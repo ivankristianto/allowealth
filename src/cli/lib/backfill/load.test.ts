@@ -68,7 +68,6 @@ function deps(overrides: Partial<LoadDeps> = {}) {
     savePlan: () => {},
     readSavedPlan: () => null,
     hashPlan: () => 'plan-hash',
-    buildPlanForMonth: () => samplePlan(),
     planFor: () => samplePlan(),
     settle: async () => {
       calls.push('settle');
@@ -83,38 +82,38 @@ function deps(overrides: Partial<LoadDeps> = {}) {
 describe('loadMonth', () => {
   it('claims the month before any write and commits after', async () => {
     const { calls, d } = deps();
-    await loadMonth(d, 1, 2099, {});
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(calls[0]).toBe('claim');
     expect(calls.at(-1)).toBe('commit');
   });
 
   it('settles before committing', async () => {
     const { calls, d } = deps();
-    await loadMonth(d, 1, 2099, {});
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(calls.indexOf('settle')).toBeLessThan(calls.indexOf('commit'));
   });
 
   it('aborts on a ledger gap, naming the missing months', async () => {
     const { d } = deps({ readLedger: () => [] });
-    expect(loadMonth(d, 3, 2099, {})).rejects.toThrow(/2099-01|2099-02/);
+    expect(loadMonth(d, { month: 3, year: 2099 }, {})).rejects.toThrow(/2099-01|2099-02/);
   });
 
   it('writes nothing in dry-run mode', async () => {
     const { calls, d } = deps();
-    await loadMonth(d, 1, 2099, { dryRun: true });
+    await loadMonth(d, { month: 1, year: 2099 }, { dryRun: true });
     expect(calls.filter((c) => c.startsWith('POST'))).toEqual([]);
     expect(calls).not.toContain('claim');
   });
 
   it('aborts before writing when the plan fails verification', async () => {
     const { calls, d } = deps({
-      buildPlanForMonth: () => {
+      planFor: () => {
         const plan = samplePlan();
         plan.checks.expenseTotal = 999;
         return plan;
       },
     });
-    expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/expense total/);
+    expect(loadMonth(d, { month: 1, year: 2099 }, {})).rejects.toThrow(/expense total/);
     expect(calls).not.toContain('claim');
   });
 
@@ -123,12 +122,12 @@ describe('loadMonth', () => {
       { month: 1, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
     ];
     const { d } = deps({ readLedger: () => loaded });
-    expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/--force/);
+    expect(loadMonth(d, { month: 1, year: 2099 }, {})).rejects.toThrow(/--force/);
   });
 
   it('posts the month transactions', async () => {
     const { calls, d } = deps();
-    await loadMonth(d, 1, 2099, {});
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(calls.filter((c) => c === 'POST /api/transactions')).toHaveLength(1);
   });
 });
@@ -143,7 +142,7 @@ describe('offlineClient', () => {
 
   it('carries a plan through a dry run without touching the client', async () => {
     const { calls, d } = deps({ client: offlineClientFor() });
-    const report = await loadMonth(d, 1, 2099, { dryRun: true });
+    const report = await loadMonth(d, { month: 1, year: 2099 }, { dryRun: true });
     expect(report.dryRun).toBe(true);
     expect(report.plan.transactions).toHaveLength(1);
     expect(calls).toEqual([]);
@@ -168,12 +167,12 @@ describe('loadMonth ordering', () => {
   it('aborts a dry run that is out of order, before building the plan', async () => {
     let built = 0;
     const { d } = deps({
-      buildPlanForMonth: () => {
+      planFor: () => {
         built++;
         return samplePlan();
       },
     });
-    expect(loadMonth(d, 3, 2099, { dryRun: true })).rejects.toThrow(/2099-01/);
+    expect(loadMonth(d, { month: 3, year: 2099 }, { dryRun: true })).rejects.toThrow(/2099-01/);
     expect(built).toBe(0);
   });
 
@@ -182,7 +181,7 @@ describe('loadMonth ordering', () => {
       { month: 1, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
     ];
     const { d } = deps({ readLedger: () => loaded });
-    const report = await loadMonth(d, 1, 2099, { dryRun: true });
+    const report = await loadMonth(d, { month: 1, year: 2099 }, { dryRun: true });
     expect(report.dryRun).toBe(true);
   });
 });
@@ -190,8 +189,8 @@ describe('loadMonth ordering', () => {
 describe('loadMonth verification gates', () => {
   it('claims the month with the plan hash, not a placeholder', async () => {
     const claims: string[] = [];
-    const { d } = deps({ claimMonth: (_m, _y, hash) => claims.push(hash) });
-    await loadMonth(d, 1, 2099, {});
+    const { d } = deps({ claimMonth: (_ref, hash) => claims.push(hash) });
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(claims).toEqual(['plan-hash']);
   });
 
@@ -216,7 +215,7 @@ describe('loadMonth verification gates', () => {
         patch: async () => ({}),
         del: async () => ({}),
       } as unknown as LoadDeps['client'],
-      buildPlanForMonth: () => {
+      planFor: () => {
         const plan = samplePlan();
         plan.snapshots = [
           {
@@ -231,7 +230,7 @@ describe('loadMonth verification gates', () => {
         return plan;
       },
     });
-    expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/Link 2/);
+    expect(loadMonth(d, { month: 1, year: 2099 }, {})).rejects.toThrow(/Link 2/);
     expect(calls).not.toContain('commit');
   });
 });
@@ -246,12 +245,12 @@ describe('loadMonth settle target', () => {
         { month: 1, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
         { month: 6, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: '' },
       ],
-      planFor: () => later,
+      planFor: (ref) => (ref.month === 6 ? later : samplePlan()),
       settle: async (plan) => {
         settled.push(plan);
       },
     });
-    await loadMonth(d, 1, 2099, { force: true });
+    await loadMonth(d, { month: 1, year: 2099 }, { force: true });
     expect(settled[0]?.month).toBe(6);
   });
 
@@ -262,7 +261,7 @@ describe('loadMonth settle target', () => {
         settled.push(plan);
       },
     });
-    await loadMonth(d, 1, 2099, {});
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(settled[0]?.month).toBe(1);
   });
 });
@@ -310,14 +309,14 @@ describe('loadMonth ownership', () => {
     const { d } = deps({
       config: twoOwners,
       client: ownerClient(patched, [{ id: 'user-a', name: 'OwnerA' }]),
-      buildPlanForMonth: () => {
+      planFor: () => {
         const plan = samplePlan();
         plan.checks.expenseTotal = 0;
         plan.transactions = [];
         return plan;
       },
     });
-    await loadMonth(d, 1, 2099, {});
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(patched).toContain('/api/accounts/acct-1/transfer-owner');
   });
 
@@ -325,19 +324,19 @@ describe('loadMonth ownership', () => {
     const { d } = deps({
       config: twoOwners,
       client: ownerClient([], [{ id: 'user-z', name: 'Somebody Else' }]),
-      buildPlanForMonth: () => {
+      planFor: () => {
         const plan = samplePlan();
         plan.checks.expenseTotal = 0;
         plan.transactions = [];
         return plan;
       },
     });
-    expect(loadMonth(d, 1, 2099, {})).rejects.toThrow(/OwnerA/);
+    expect(loadMonth(d, { month: 1, year: 2099 }, {})).rejects.toThrow(/OwnerA/);
   });
 
   it('does not call the members endpoint when every account has one owner', async () => {
     const { calls, d } = deps();
-    await loadMonth(d, 1, 2099, {});
+    await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(calls.some((c) => c.includes('transfer-owner'))).toBe(false);
   });
 });

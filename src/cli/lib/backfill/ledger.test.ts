@@ -16,6 +16,7 @@ import type { LedgerEntry } from './ledger';
 import type { Plan } from './types';
 
 const dir = () => mkdtempSync(join(tmpdir(), 'bf-ledger-'));
+const jan = { month: 1, year: 2099 };
 
 const entry = (month: number, year: number, status: LedgerEntry['status']): LedgerEntry => ({
   month,
@@ -28,21 +29,21 @@ const entry = (month: number, year: number, status: LedgerEntry['status']): Ledg
 describe('ledger', () => {
   it('records a claim as loading before the load completes', () => {
     const d = dir();
-    claimMonth(d, 1, 2099, 'h1');
+    claimMonth(d, jan, 'h1');
     expect(readLedger(d)[0]).toMatchObject({ month: 1, status: 'loading' });
   });
 
   it('flips to loaded on commit', () => {
     const d = dir();
-    claimMonth(d, 1, 2099, 'h1');
-    commitMonth(d, 1, 2099);
+    claimMonth(d, jan, 'h1');
+    commitMonth(d, jan);
     expect(readLedger(d)[0]?.status).toBe('loaded');
   });
 
   it('re-claiming an existing month replaces rather than duplicates', () => {
     const d = dir();
-    claimMonth(d, 1, 2099, 'h1');
-    claimMonth(d, 1, 2099, 'h2');
+    claimMonth(d, jan, 'h1');
+    claimMonth(d, jan, 'h2');
     expect(readLedger(d)).toHaveLength(1);
     expect(readLedger(d)[0]?.planHash).toBe('h2');
   });
@@ -52,24 +53,24 @@ describe('ledger', () => {
   });
 
   it('names missing months behind the target', () => {
-    expect(findGaps([entry(1, 2099, 'loaded')], 3, 2099, { month: 1, year: 2099 })).toEqual([
+    expect(findGaps([entry(1, 2099, 'loaded')], { month: 3, year: 2099 }, jan)).toEqual([
       '2099-02',
     ]);
   });
 
   it('reports no gap when every earlier month is loaded', () => {
     const entries = [entry(1, 2099, 'loaded'), entry(2, 2099, 'loaded')];
-    expect(findGaps(entries, 3, 2099, { month: 1, year: 2099 })).toEqual([]);
+    expect(findGaps(entries, { month: 3, year: 2099 }, jan)).toEqual([]);
   });
 
   it('treats a loading month as a gap, since it is not finished', () => {
-    expect(findGaps([entry(1, 2099, 'loading')], 2, 2099, { month: 1, year: 2099 })).toEqual([
+    expect(findGaps([entry(1, 2099, 'loading')], { month: 2, year: 2099 }, jan)).toEqual([
       '2099-01',
     ]);
   });
 
   it('walks gaps across a year boundary', () => {
-    expect(findGaps([], 1, 2099, { month: 11, year: 2098 })).toEqual(['2098-11', '2098-12']);
+    expect(findGaps([], jan, { month: 11, year: 2098 })).toEqual(['2098-11', '2098-12']);
   });
 
   it('finds the newest loaded month across a year boundary', () => {
@@ -92,7 +93,7 @@ describe('ledger', () => {
     const d = dir();
     const plan = { month: 1, year: 2099, transactions: [] } as unknown as Plan;
     savePlan(d, plan);
-    expect(readSavedPlan(d, 1, 2099)).toEqual(plan);
-    expect(readSavedPlan(d, 2, 2099)).toBeNull();
+    expect(readSavedPlan(d, jan)).toEqual(plan);
+    expect(readSavedPlan(d, { month: 2, year: 2099 })).toBeNull();
   });
 });

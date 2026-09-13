@@ -105,7 +105,7 @@ export async function runScaffoldCommand(args: ScaffoldArgs): Promise<void> {
     // No config yet: that is the normal case for scaffolding.
   }
 
-  const raw = months.map((m) => readMonth(dataDir, { filenames: templates }, m.month, m.year));
+  const raw = months.map((ref) => readMonth(dataDir, { filenames: templates }, ref));
   const { config, ambiguities } = scaffoldConfig(raw);
 
   const skeleton = {

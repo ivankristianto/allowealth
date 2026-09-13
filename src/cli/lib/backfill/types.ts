@@ -8,6 +8,18 @@
 export type Currency = 'IDR' | 'USD';
 
 /**
+ * One calendar month.
+ *
+ * `Plan`, `RawMonth` and `LedgerEntry` all carry `month` and `year` flat, so
+ * each satisfies this structurally and can be passed wherever a month is
+ * wanted — without changing any on-disk shape.
+ */
+export interface MonthRef {
+  month: number;
+  year: number;
+}
+
+/**
  * A parsed amount cell. Blank and unparseable are distinct from zero so a new
  * export defect aborts instead of silently dropping a row.
  */

@@ -3,9 +3,9 @@ import { decimal, lastDayOfMonth, LOCAL_CURRENCY as LOCAL } from './money';
 import type { RawMonth, RawRow } from './parse';
 import { assertCategoriesKnown, DetectionError, resolveAccounts } from './resolve';
 import type { ResolvedAccount } from './resolve';
-import type { Currency, Plan, PlanSnapshot, PlanTransaction } from './types';
+import type { Currency, MonthRef, Plan, PlanSnapshot, PlanTransaction } from './types';
 
-export function monthKey(month: number, year: number): string {
+export function monthKey({ month, year }: MonthRef): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
@@ -13,7 +13,7 @@ export function monthKey(month: number, year: number): string {
  * Normalises a sheet date cell (`M/D/YYYY`, optionally with a time) to
  * `YYYY-MM-DD`, and refuses anything that would land outside the plan month.
  */
-function normaliseDate(cell: string, month: number, year: number, label: string): string {
+function normaliseDate(cell: string, ref: MonthRef, label: string): string {
   const parts = cell.trim().split(' ')[0]?.split('/') ?? [];
   if (parts.length !== 3) {
     throw new DetectionError(
@@ -26,9 +26,9 @@ function normaliseDate(cell: string, month: number, year: number, label: string)
       `Unreadable date "${cell}" on ${label}. Expected M/D/YYYY in the Date column.`
     );
   }
-  if (m !== month || y !== year) {
+  if (m !== ref.month || y !== ref.year) {
     throw new DetectionError(
-      `Date "${cell}" on ${label} falls outside ${monthKey(month, year)}.\n` +
+      `Date "${cell}" on ${label} falls outside ${monthKey(ref)}.\n` +
         `Fix the cell in the CSV, or add a \`suppressedRows\` entry for this row.`
     );
   }
@@ -178,7 +178,7 @@ function accountIncomeChecks(accounts: ResolvedAccount[]): Record<string, number
 
 /** Turns a parsed month into the serialisable Plan the loader executes. */
 export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
-  const key = monthKey(raw.month, raw.year);
+  const key = monthKey(raw);
   assertCategoriesKnown(raw, config);
 
   const accounts = resolveAccounts(raw, config, key);
@@ -202,7 +202,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
     }
     transactions.push({
       kind: 'expense',
-      date: normaliseDate(row.date, raw.month, raw.year, `expense "${row.description}"`),
+      date: normaliseDate(row.date, raw, `expense "${row.description}"`),
       description: row.description,
       category: rename(row.category),
       account: config.syntheticAccounts.expense,
@@ -247,7 +247,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
     });
   }
 
-  const lastDay = String(lastDayOfMonth(raw.month, raw.year)).padStart(2, '0');
+  const lastDay = String(lastDayOfMonth(raw)).padStart(2, '0');
   const snapshots: PlanSnapshot[] = accounts.map((a) => ({
     account: a.name,
     opening: decimal(a.awal),
