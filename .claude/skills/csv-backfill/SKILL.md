@@ -104,6 +104,13 @@ Four links check the load, at two different moments.
 | 2    | After the load   | Yes    | The month read back out of the app reconciles as predicted |
 | 3    | After the load   | No     | The recombined figure against the sheet's balance          |
 
+Links 1 and 4 both sum the CSV's **local** column and never convert a foreign
+amount. The reference rate is a month-end figure while receipts cleared at other
+rates, so converting would introduce a spread the sheet's printed totals do not
+contain — and both links are exact in every month. The one exception is the
+closing total, which the sheet itself prints already recombined at the reference
+rate, so that side must convert to match.
+
 Link 4 closes a hole Link 1 cannot see: the totals still match when every
 income row is routed to the wrong account. It compares in **local**
 currency — the foreign column would reintroduce the rate spread — and

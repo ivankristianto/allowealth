@@ -31,16 +31,22 @@ export function verifyPlan(plan: Plan): VerifyResult {
     }
   };
 
+  // Totals sum the CSV's own local column, never a converted foreign amount.
+  // The reference rate is a month-end figure while receipts cleared at other
+  // rates, so converting would introduce a spread the sheet's printed totals do
+  // not contain — and Link 1 is exact, every month.
   const expenseTotal = plan.transactions
     .filter((t) => t.kind === 'expense')
-    .reduce((sum, t) => sum + toLocal(t.amount, t.currency, plan.rate), 0);
+    .reduce((sum, t) => sum + Number(t.localAmount), 0);
   record(1, 'expense total', plan.checks.expenseTotal, expenseTotal);
 
   const incomeTotal = plan.transactions
     .filter((t) => t.kind === 'income')
-    .reduce((sum, t) => sum + toLocal(t.amount, t.currency, plan.rate), 0);
+    .reduce((sum, t) => sum + Number(t.localAmount), 0);
   record(1, 'income total', plan.checks.incomeTotal, incomeTotal);
 
+  // Closing balances are the exception: the sheet prints `Total Akhir Bulan`
+  // already recombined at the reference rate, so this side must convert to match.
   const closingTotal = plan.snapshots.reduce(
     (sum, s) => sum + toLocal(s.closing, s.currency, plan.rate),
     0

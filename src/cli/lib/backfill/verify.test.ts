@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parseMonth } from './parse';
 import { buildPlan } from './plan';
 import { verifyPlan } from './verify';
+import type { Plan } from './types';
 import { fixtureConfig } from './__fixtures__/config';
 
 const dir = join(import.meta.dir, '__fixtures__');
@@ -50,5 +51,38 @@ describe('verifyPlan', () => {
     const broken = structuredClone(plan);
     broken.transactions[0]!.date = '2099-02-01';
     expect(verifyPlan(broken).ok).toBe(false);
+  });
+});
+
+describe('verifyPlan currency handling', () => {
+  /**
+   * The fixture's USD salary clears at exactly the reference rate, so it cannot
+   * distinguish summing the local column from converting the foreign one. A
+   * real month never does: the rate is a month-end figure and receipts cleared
+   * at other rates.
+   */
+  function withClearedRateSpread(): Plan {
+    const broken = structuredClone(plan);
+    const salary = broken.transactions.find((t) => t.description === 'Salary OwnerA')!;
+    // Same local figure the sheet totals, but cleared at 9,800 rather than 10,000.
+    salary.amount = '1020.41';
+    salary.localAmount = '10000000';
+    return broken;
+  }
+
+  it('passes Link 1 when a foreign row cleared at a rate other than the reference', () => {
+    const result = verifyPlan(withClearedRateSpread());
+    expect(result.failures.filter((f) => f.label === 'income total')).toEqual([]);
+  });
+
+  it('passes Link 4 for the same row', () => {
+    const result = verifyPlan(withClearedRateSpread());
+    expect(result.failures.filter((f) => f.link === 4)).toEqual([]);
+  });
+
+  it('still fails Link 1 when the local figure itself is wrong', () => {
+    const broken = structuredClone(plan);
+    broken.transactions.find((t) => t.description === 'Salary OwnerA')!.localAmount = '1';
+    expect(verifyPlan(broken).failures.some((f) => f.label === 'income total')).toBe(true);
   });
 });
