@@ -1,0 +1,42 @@
+{
+  "filenames": {
+    "transactions": "[{year}] Sheet - {mon}-{year}.csv",
+    "balance": "[{year}] Sheet - Balance {mon}-{year}.csv"
+  },
+  "members": { "primary": "OwnerA", "secondary": "OwnerB", "fallback": "OwnerA" },
+  "accounts": [
+    { "name": "Bank1 OwnerA", "currency": "IDR", "owner": "OwnerA" },
+    { "name": "Bank2 OwnerA USD", "currency": "USD", "owner": "OwnerA" },
+    { "name": "Bank1 OwnerB", "currency": "IDR", "owner": "OwnerB" }
+  ],
+  "accountAliases": [{ "from": "Bank1 OwnerA (old spelling)", "to": "Bank1 OwnerA" }],
+  "duplicateRules": [
+    { "month": "2099-01", "name": "Bank1 OwnerA", "occurrence": 2, "rename": "Bank1 OwnerA (2)" }
+  ],
+  "syntheticAccounts": {
+    "expense": "Household (historical)",
+    "passiveIncome": {
+      "OwnerA": "Passive Income (OwnerA)",
+      "OwnerB": "Passive Income (OwnerB)"
+    }
+  },
+  "categories": {
+    "expense": ["Cat1", "Cat2", "Cat3"],
+    "income": [
+      { "name": "IncSalaryA", "sourceType": "active" },
+      { "name": "IncSalaryB", "sourceType": "active" },
+      { "name": "IncInterest", "sourceType": "passive" }
+    ]
+  },
+  "categoryRenames": [{ "from": "Seeded Category", "to": "Cat2" }],
+  "incomeRouting": [{ "match": "Coupon OwnerA", "account": "Bank2 OwnerA USD" }],
+  "suppressedRows": [
+    {
+      "month": "2099-01",
+      "side": "income",
+      "match": "Placeholder row",
+      "reason": "blank local amount with a populated foreign amount"
+    }
+  ],
+  "dateRules": { "incomeDayOfMonth": 10 }
+}
