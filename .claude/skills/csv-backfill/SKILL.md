@@ -90,12 +90,14 @@ account or the service rejects it. A local-currency entry appearing in
 `incomeRouting` is a signal that this scope is drifting — Link 4 subtracts
 those rows, so a wrong entry there silently weakens the check.
 
-**Expense ownership is configured, never inferred.** The app records a
+**Transaction ownership is configured, never inferred.** The app records a
 transaction as owned by whoever posts it, so `run` signs in as each member who
 owns a row and posts it as them. `expenseOwners` gives an expense to a member
 by exact category or by a whole word in the description; an expense no rule
-matches, and every income row, belongs to `members.fallback`. Two rules giving
-one row to different members abort the run rather than pick one.
+matches belongs to `members.fallback`. Two rules giving one row to different
+members abort the run rather than pick one. Income needs no rule: it belongs to
+whoever owns the account it is paid into — the roster owner, or the member a
+passive-income bucket is kept for.
 
 **Rename or closure?** An account that stops appearing at a **non-zero**
 balance was renamed — map it with `accountAliases`. At **zero** it was closed —

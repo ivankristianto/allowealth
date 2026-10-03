@@ -97,6 +97,19 @@ function expenseOwner(description: string, category: string, config: BackfillCon
   return [...owners][0] ?? config.members.fallback;
 }
 
+/**
+ * The member an income row belongs to: whoever owns the account it is paid
+ * into — the roster owner, or the member a passive-income bucket is kept for.
+ */
+function incomeOwner(account: string, config: BackfillConfig): string {
+  const rostered = config.accounts.find((a) => a.name === account);
+  if (rostered) return rostered.owner;
+  const bucket = Object.entries(config.syntheticAccounts.passiveIncome).find(
+    ([, name]) => name === account
+  );
+  return bucket?.[0] ?? config.members.fallback;
+}
+
 function isSuppressed(
   row: RawRow,
   side: 'expense' | 'income',
@@ -276,7 +289,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       description: row.description,
       category: rename(row.category),
       account,
-      owner: config.members.fallback,
+      owner: incomeOwner(account, config),
       amount: decimal(amount),
       currency,
       localAmount: decimal(local),

@@ -45,7 +45,8 @@ export const configSchema = v.object({
   categoryRenames: v.array(v.object({ from: v.string(), to: v.string() })),
   // Which member owns an expense. A rule matches by exact category (after
   // renames) or by a whole word in the description; an expense no rule matches
-  // belongs to `members.fallback`. Strict, so a rule carrying both keys fails
+  // belongs to `members.fallback`. Income needs no rule: it belongs to whoever
+  // owns the account it is paid into. Strict, so a rule carrying both keys fails
   // rather than silently dropping one.
   expenseOwners: v.array(
     v.union([

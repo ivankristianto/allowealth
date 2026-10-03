@@ -41,7 +41,8 @@ export interface PlanTransaction {
   localAmount: string;
   /**
    * The member who owns the row in the app, which records whoever posts it.
-   * Expenses follow `expenseOwners`; everything else is `members.fallback`.
+   * Expenses follow `expenseOwners`, else `members.fallback`; income belongs to
+   * whoever owns the account it is paid into.
    */
   owner: string;
   /**

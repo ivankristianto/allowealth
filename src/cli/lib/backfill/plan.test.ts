@@ -169,14 +169,15 @@ describe('buildPlan detection', () => {
   });
 });
 
-describe('buildPlan expense ownership', () => {
+describe('buildPlan transaction ownership', () => {
   const owned = (expenseOwners: typeof fixtureConfig.expenseOwners) =>
     buildPlan(raw, { ...fixtureConfig, expenseOwners });
   const ownerOf = (p: ReturnType<typeof buildPlan>, description: string) =>
     p.transactions.find((t) => t.description === description)?.owner;
 
-  it('gives every transaction to the fallback member when no rule matches', () => {
-    expect(new Set(plan.transactions.map((t) => t.owner))).toEqual(new Set(['OwnerA']));
+  it('gives every expense to the fallback member when no rule matches', () => {
+    const expenses = plan.transactions.filter((t) => t.kind === 'expense');
+    expect(new Set(expenses.map((t) => t.owner))).toEqual(new Set(['OwnerA']));
   });
 
   it('gives an expense to the owner a category rule names', () => {
@@ -192,9 +193,14 @@ describe('buildPlan expense ownership', () => {
     expect(ownerOf(p, 'Item A')).toBe('OwnerA');
   });
 
-  it('leaves income with the fallback member', () => {
-    const p = owned([{ category: 'Cat1', owner: 'OwnerB' }]);
-    expect(ownerOf(p, 'Salary OwnerB')).toBe('OwnerA');
+  it('gives income to the member who owns the account it is paid into', () => {
+    expect(ownerOf(plan, 'Salary OwnerA')).toBe('OwnerA');
+    expect(ownerOf(plan, 'Salary OwnerB')).toBe('OwnerB');
+  });
+
+  it('gives passive income to the member whose passive-income account receives it', () => {
+    expect(ownerOf(plan, 'Payout OwnerB')).toBe('OwnerB');
+    expect(ownerOf(plan, 'Coupon OwnerA')).toBe('OwnerA');
   });
 
   it('aborts when two rules give one expense to different owners', () => {
