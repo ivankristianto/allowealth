@@ -47,7 +47,12 @@ export function scaffoldConfig(months: RawMonth[]): ScaffoldResult {
 
   return {
     config: {
-      accounts: accountNames.map((name) => ({ name, currency: 'IDR' as const, owner: '' })),
+      accounts: accountNames.map((name) => ({
+        name,
+        currency: 'IDR' as const,
+        owner: '',
+        category: '',
+      })),
       accountAliases: [],
       duplicateRules: [],
       categories: {
@@ -112,7 +117,7 @@ export async function runScaffoldCommand(args: ScaffoldArgs): Promise<void> {
     filenames: templates,
     members: { primary: '', secondary: '', fallback: '' },
     ...config,
-    syntheticAccounts: { expense: '', passiveIncome: {} },
+    syntheticAccounts: { expense: '', passiveIncome: {}, category: '' },
     dateRules: {
       incomeDayOfMonth: 10,
       earliestMonth: `${months[0]!.year}-${String(months[0]!.month).padStart(2, '0')}`,

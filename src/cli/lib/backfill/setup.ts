@@ -22,6 +22,11 @@ interface ApiCategory {
   transaction_count?: number;
 }
 
+interface ApiAccountCategory {
+  id: string;
+  name: string;
+}
+
 interface TransactionPage {
   pagination?: { total?: number };
 }
@@ -46,6 +51,7 @@ async function countTransactions(client: SetupClient, category: ApiCategory): Pr
  *
  * Accounts are deliberately not created here: they are created on first
  * appearance during load, where the opening balance for that month is known.
+ * The account categories they are filed under are, so load can resolve them.
  */
 export async function runSetup(
   client: SetupClient,
@@ -119,11 +125,42 @@ export async function runSetup(
     report.skipped.push(`deleted empty category:${category.name}`);
   }
 
+  await ensureAccountCategories(client, config, report);
+
   if (opts.createUser) {
     await createSecondaryMember(client, config, opts, report);
   }
 
   return report;
+}
+
+/**
+ * Creates each account category the roster names that the workspace lacks.
+ *
+ * Defaults such as 'Bank Account' are seeded with the workspace; anything else
+ * (a 'Time Deposit', say) is created as a custom asset category, which the app
+ * files as non-liquid. Never deletes: the app's defaults stay available.
+ */
+async function ensureAccountCategories(
+  client: SetupClient,
+  config: BackfillConfig,
+  report: SetupReport
+): Promise<void> {
+  const existing = await client.get<ApiAccountCategory[]>('/api/account-categories');
+  const have = new Set(existing.map((c) => c.name));
+  const wanted = new Set([
+    ...config.accounts.map((a) => a.category),
+    config.syntheticAccounts.category,
+  ]);
+
+  for (const name of wanted) {
+    if (have.has(name)) {
+      report.alreadyCorrect.push(`account category:${name}`);
+      continue;
+    }
+    await client.post('/api/account-categories', { name, isLiability: false });
+    report.created.push(`account category:${name}`);
+  }
 }
 
 /**

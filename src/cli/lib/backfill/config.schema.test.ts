@@ -20,12 +20,13 @@ const MINIMAL = JSON.stringify({
     balance: '[{year}] Sheet - Balance {mon}-{year}.csv',
   },
   members: { primary: 'OwnerA', secondary: 'OwnerB', fallback: 'OwnerA' },
-  accounts: [{ name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA' }],
+  accounts: [{ name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' }],
   accountAliases: [],
   duplicateRules: [],
   syntheticAccounts: {
     expense: 'Household (historical)',
     passiveIncome: { OwnerA: 'Passive Income (OwnerA)', OwnerB: 'Passive Income (OwnerB)' },
+    category: 'Other',
   },
   categories: { expense: ['Cat1'], income: [{ name: 'Inc1', sourceType: 'active' }] },
   categoryRenames: [],
@@ -40,6 +41,28 @@ describe('loadConfig', () => {
     const cfg = loadConfig(withConfig(MINIMAL));
     expect(cfg.members.primary).toBe('OwnerA');
     expect(cfg.accounts[0]?.currency).toBe('IDR');
+  });
+
+  it('reads the account category each account is filed under', () => {
+    const cfg = loadConfig(withConfig(MINIMAL));
+    expect(cfg.accounts[0]?.category).toBe('Bank Account');
+    expect(cfg.syntheticAccounts.category).toBe('Other');
+  });
+
+  it('rejects an account with no category rather than guessing one', () => {
+    const config = JSON.parse(MINIMAL);
+    delete config.accounts[0].category;
+    expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
+      ConfigError
+    );
+  });
+
+  it('rejects synthetic accounts with no category', () => {
+    const config = JSON.parse(MINIMAL);
+    delete config.syntheticAccounts.category;
+    expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
+      ConfigError
+    );
   });
 
   it('aborts with a directive message when the config is absent', () => {
@@ -62,7 +85,12 @@ describe('loadConfig', () => {
 
   it('rejects a duplicate account name in the roster', () => {
     const bad = JSON.parse(MINIMAL);
-    bad.accounts.push({ name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA' });
+    bad.accounts.push({
+      name: 'Bank1 OwnerA',
+      currency: 'IDR',
+      owner: 'OwnerA',
+      category: 'Bank Account',
+    });
     expect(() => loadConfig(withConfig(JSON.stringify(bad)))).toThrow(/duplicate/i);
   });
 });

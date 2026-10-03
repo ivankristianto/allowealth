@@ -18,7 +18,10 @@ const filledIn = v.pipe(v.string(), v.nonEmpty('Fill this in; the scaffold leave
 export const configSchema = v.object({
   filenames: v.object({ transactions: v.string(), balance: v.string() }),
   members: v.object({ primary: filledIn, secondary: filledIn, fallback: filledIn }),
-  accounts: v.array(v.object({ name: filledIn, currency, owner: filledIn })),
+  // `category` is the app's account category (a default such as 'Bank Account',
+  // or a custom one `setup` creates). It decides type and liquidity, which, like
+  // currency, are never inferred from the label.
+  accounts: v.array(v.object({ name: filledIn, currency, owner: filledIn, category: filledIn })),
   accountAliases: v.array(v.object({ from: v.string(), to: v.string() })),
   duplicateRules: v.array(
     v.object({
@@ -31,6 +34,7 @@ export const configSchema = v.object({
   syntheticAccounts: v.object({
     expense: filledIn,
     passiveIncome: v.record(v.string(), filledIn),
+    category: filledIn,
   }),
   categories: v.object({
     expense: v.array(filledIn),
@@ -73,7 +77,7 @@ export function loadConfig(dataDir: string): BackfillConfig {
     throw new ConfigError(
       `No config.json at ${path}\n` +
         `Run \`aw backfill scaffold --from <Mon> --to <Mon>\` to generate a skeleton, ` +
-        `then set the currency for each account by hand.`
+        `then set the currency and category for each account by hand.`
     );
   }
 

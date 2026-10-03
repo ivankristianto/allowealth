@@ -9,13 +9,28 @@ interface FakeCategory {
   transaction_count?: number;
 }
 
-function fakeClient(state: { categories: FakeCategory[] }) {
+interface FakeAccountCategory {
+  id: string;
+  name: string;
+  isLiability?: boolean;
+}
+
+function fakeClient(state: {
+  categories: FakeCategory[];
+  accountCategories?: FakeAccountCategory[];
+}) {
   let nextId = 0;
+  state.accountCategories ??= [{ id: 'ac-bank', name: 'Bank Account' }];
   return {
-    get: async (p: string) => (p.startsWith('/api/categories') ? state.categories : []),
+    get: async (p: string) => {
+      if (p.startsWith('/api/categories')) return state.categories;
+      if (p.startsWith('/api/account-categories')) return state.accountCategories;
+      return [];
+    },
     post: async (p: string, b: Record<string, unknown>) => {
-      const row = { id: `id-${nextId++}`, ...b } as FakeCategory;
+      const row = { id: `id-${nextId++}`, ...b } as FakeCategory & FakeAccountCategory;
       if (p.startsWith('/api/categories')) state.categories.push(row);
+      if (p.startsWith('/api/account-categories')) state.accountCategories!.push(row);
       return row;
     },
     patch: async (p: string, b: Record<string, unknown>) => {
@@ -39,6 +54,11 @@ const cfg = {
     income: [{ name: 'Inc1', sourceType: 'active' }],
   },
   categoryRenames: [{ from: 'Seeded', to: 'Cat2' }],
+  accounts: [
+    { name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' },
+    { name: 'Deposit1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Time Deposit' },
+  ],
+  syntheticAccounts: { expense: 'Household', passiveIncome: {}, category: 'Bank Account' },
 } as unknown as BackfillConfig;
 
 type Client = Parameters<typeof runSetup>[0];
@@ -93,5 +113,32 @@ describe('runSetup', () => {
       income_source_type?: string;
     };
     expect(inc?.income_source_type).toBe('active');
+  });
+});
+
+describe('runSetup account categories', () => {
+  it('creates an account category the roster names but the workspace lacks, as an asset', async () => {
+    const state = { categories: [] as FakeCategory[], accountCategories: undefined };
+    const r = await runSetup(fakeClient(state) as unknown as Client, cfg, {});
+    expect(r.created).toContain('account category:Time Deposit');
+    const created = (
+      state as { accountCategories?: FakeAccountCategory[] }
+    ).accountCategories!.find((c) => c.name === 'Time Deposit');
+    expect(created?.isLiability).toBe(false);
+  });
+
+  it('leaves an account category that already exists alone', async () => {
+    const state = { categories: [] as FakeCategory[] };
+    const r = await runSetup(fakeClient(state) as unknown as Client, cfg, {});
+    expect(r.created).not.toContain('account category:Bank Account');
+    expect(r.alreadyCorrect).toContain('account category:Bank Account');
+  });
+
+  it('creates account categories once across re-runs', async () => {
+    const state = { categories: [] as FakeCategory[] };
+    const c = fakeClient(state) as unknown as Client;
+    await runSetup(c, cfg, {});
+    const second = await runSetup(c, cfg, {});
+    expect(second.created.filter((x) => x.startsWith('account category:'))).toEqual([]);
   });
 });

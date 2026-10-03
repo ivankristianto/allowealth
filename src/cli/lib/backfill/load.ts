@@ -50,6 +50,27 @@ interface ApiAccount {
   initial_balance?: string;
   currency?: string;
   created_by_user_id?: string;
+  category_id?: string | null;
+}
+
+interface ApiAccountCategory {
+  id: string;
+  name: string;
+}
+
+/** The account category the config files `name` under, if it names the account. */
+function configuredCategory(config: BackfillConfig, name: string): string | undefined {
+  const rostered = config.accounts.find((a) => a.name === name);
+  if (rostered) return rostered.category;
+  const synthetic = config.syntheticAccounts;
+  const isSynthetic =
+    name === synthetic.expense || Object.values(synthetic.passiveIncome).includes(name);
+  return isSynthetic ? synthetic.category : undefined;
+}
+
+/** The first instant of the plan's month: an account's opening balance is true then. */
+function monthStart(plan: Plan): string {
+  return `${monthKey(plan)}-01T00:00:00.000Z`;
 }
 
 interface ApiCategory {
@@ -97,11 +118,28 @@ function assertNotAlreadyLoaded(deps: LoadDeps, ref: MonthRef, force: boolean): 
 
 async function ensureAccounts(
   client: BackfillClient,
-  plan: Plan
+  plan: Plan,
+  config: BackfillConfig
 ): Promise<{ accounts: Map<string, ApiAccount>; created: number }> {
   const existing = await client.get<ApiAccount[]>('/api/accounts');
   const byName = new Map((existing ?? []).map((a) => [a.name, a]));
   let created = 0;
+
+  // Read once, on first need: setup creates every category the config names.
+  let categoryIds: Map<string, string> | undefined;
+  const categoryId = async (category: string): Promise<string> => {
+    categoryIds ??= new Map(
+      (await client.get<ApiAccountCategory[]>('/api/account-categories')).map((c) => [c.name, c.id])
+    );
+    const id = categoryIds.get(category);
+    if (!id) {
+      throw new LoadError(
+        `Account category "${category}" does not exist in the workspace.\n` +
+          `Run \`aw backfill setup\` first; it creates every account category the config names.`
+      );
+    }
+    return id;
+  };
 
   // An account is created with its first-appearance opening balance, which the
   // service also stores as initial_balance; getBalanceAtMonthStart falls back to
@@ -138,13 +176,31 @@ async function ensureAccounts(
             `That means months were loaded out of order. Purge the later months and reload in order.`
         );
       }
+      // The config is the source of truth for classification, so an edit to an
+      // account's category there reaches accounts created by earlier months.
+      const wanted = configuredCategory(config, name);
+      if (wanted) {
+        const wantedId = await categoryId(wanted);
+        if (found.category_id !== wantedId) {
+          await client.put(`/api/accounts/${found.id}`, { categoryId: wantedId });
+        }
+      }
       continue;
+    }
+
+    const category = configuredCategory(config, name);
+    if (!category) {
+      throw new LoadError(
+        `Account "${name}" has no category in the config.\n` +
+          `Add it to \`accounts\` with its \`category\`; type and liquidity are never inferred.`
+      );
     }
     const account = await client.post<ApiAccount>('/api/accounts', {
       name,
-      type: 'other',
+      categoryId: await categoryId(category),
       balance: spec.opening,
       currency: spec.currency,
+      opened_at: monthStart(plan),
     });
     byName.set(name, account);
     created++;
@@ -274,7 +330,11 @@ export async function loadMonth(
   deps.claimMonth(ref, deps.hashPlan(plan));
 
   const purged = await purgeMonth(deps.client, ref);
-  const { accounts, created: createdAccounts } = await ensureAccounts(deps.client, plan);
+  const { accounts, created: createdAccounts } = await ensureAccounts(
+    deps.client,
+    plan,
+    deps.config
+  );
   const transferred = await transferOwnership(deps.client, deps.config, accounts);
   const categories = await categoryIndex(deps.client);
 

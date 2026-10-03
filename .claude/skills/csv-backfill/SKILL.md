@@ -67,6 +67,8 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 | Abort                                                | Fix                                                                                                         |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Account "X" is not in the roster`                   | Add it to `accounts` with its currency, or map it with `accountAliases` if it is a rename                   |
+| `Account "X" has no category in the config`          | Give it a `category` in `accounts` (or `syntheticAccounts.category`)                                        |
+| `Account category "X" does not exist`                | Run `aw backfill setup`; it creates every account category the config names                                 |
 | `Account "X" appears N times … with no rule`         | Add a `duplicateRules` entry for that month, name and occurrence, and add the renamed account to `accounts` |
 | `Unknown expense/income category: "X"`               | Add it to `categories.expense` / `categories.income`, or map it with `categoryRenames`                      |
 | `… blank local amount but a foreign amount`          | A placeholder row. Add a `suppressedRows` entry for it                                                      |
@@ -92,6 +94,14 @@ leave it out of later months; `settle` will write its balance to `0`.
 
 Currency is never inferred. It comes from `accounts` and cannot be recovered
 from the data once an account has been created with the wrong one.
+
+Classification is never inferred either. Each roster account names the app
+account `category` it is filed under — a default such as `Bank Account` or
+`Bond`, or a custom one (`Time Deposit`) that `setup` creates as a non-liquid
+asset. The category decides the account's type and liquidity. Editing it in the
+config moves an existing account on the next load. Accounts are opened on the
+first day of their first month, so balance history carries no entry dated on
+the day of the load.
 
 ## 4. Reading `verify` output
 

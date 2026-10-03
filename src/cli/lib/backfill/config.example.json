@@ -3,37 +3,92 @@
     "transactions": "[{year}] Sheet - {mon}-{year}.csv",
     "balance": "[{year}] Sheet - Balance {mon}-{year}.csv"
   },
-  "members": { "primary": "OwnerA", "secondary": "OwnerB", "fallback": "OwnerA" },
+  "members": {
+    "primary": "OwnerA",
+    "secondary": "OwnerB",
+    "fallback": "OwnerA"
+  },
   "accounts": [
-    { "name": "Bank1 OwnerA", "currency": "IDR", "owner": "OwnerA" },
-    { "name": "Bank2 OwnerA USD", "currency": "USD", "owner": "OwnerA" },
-    { "name": "Bank1 OwnerB", "currency": "IDR", "owner": "OwnerB" }
+    {
+      "name": "Bank1 OwnerA",
+      "currency": "IDR",
+      "owner": "OwnerA",
+      "category": "Bank Account"
+    },
+    {
+      "name": "Bank2 OwnerA USD",
+      "currency": "USD",
+      "owner": "OwnerA",
+      "category": "Bank Account"
+    },
+    {
+      "name": "Bank1 OwnerB",
+      "currency": "IDR",
+      "owner": "OwnerB",
+      "category": "Time Deposit"
+    }
   ],
-  "accountAliases": [{ "from": "Bank1 OwnerA (old spelling)", "to": "Bank1 OwnerA" }],
+  "accountAliases": [
+    {
+      "from": "Bank1 OwnerA (old spelling)",
+      "to": "Bank1 OwnerA"
+    }
+  ],
   "duplicateRules": [
-    { "month": "2099-01", "name": "Bank1 OwnerA", "occurrence": 2, "rename": "Bank1 OwnerA (2)" }
+    {
+      "month": "2099-01",
+      "name": "Bank1 OwnerA",
+      "occurrence": 2,
+      "rename": "Bank1 OwnerA (2)"
+    }
   ],
   "syntheticAccounts": {
     "expense": "Household (historical)",
     "passiveIncome": {
       "OwnerA": "Passive Income (OwnerA)",
       "OwnerB": "Passive Income (OwnerB)"
-    }
+    },
+    "category": "Other"
   },
   "categories": {
     "expense": ["Cat1", "Cat2", "Cat3"],
     "income": [
-      { "name": "IncSalaryA", "sourceType": "active" },
-      { "name": "IncSalaryB", "sourceType": "active" },
-      { "name": "IncInterest", "sourceType": "passive" }
+      {
+        "name": "IncSalaryA",
+        "sourceType": "active"
+      },
+      {
+        "name": "IncSalaryB",
+        "sourceType": "active"
+      },
+      {
+        "name": "IncInterest",
+        "sourceType": "passive"
+      }
     ]
   },
-  "categoryRenames": [{ "from": "Seeded Category", "to": "Cat2" }],
-  "salaryRouting": [
-    { "category": "IncSalaryA", "account": "Bank2 OwnerA USD" },
-    { "category": "IncSalaryB", "account": "Bank1 OwnerB" }
+  "categoryRenames": [
+    {
+      "from": "Seeded Category",
+      "to": "Cat2"
+    }
   ],
-  "incomeRouting": [{ "match": "IncInterest", "account": "Bank2 OwnerA USD" }],
+  "salaryRouting": [
+    {
+      "category": "IncSalaryA",
+      "account": "Bank2 OwnerA USD"
+    },
+    {
+      "category": "IncSalaryB",
+      "account": "Bank1 OwnerB"
+    }
+  ],
+  "incomeRouting": [
+    {
+      "match": "IncInterest",
+      "account": "Bank2 OwnerA USD"
+    }
+  ],
   "suppressedRows": [
     {
       "month": "2099-01",
@@ -42,5 +97,8 @@
       "reason": "blank local amount with a populated foreign amount"
     }
   ],
-  "dateRules": { "incomeDayOfMonth": 10, "earliestMonth": "2099-01" }
+  "dateRules": {
+    "incomeDayOfMonth": 10,
+    "earliestMonth": "2099-01"
+  }
 }

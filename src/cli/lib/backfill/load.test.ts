@@ -39,8 +39,17 @@ function deps(overrides: Partial<LoadDeps> = {}) {
       if (path.startsWith('/api/categories')) {
         return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
       }
+      if (path.startsWith('/api/account-categories')) return [{ id: 'ac-other', name: 'Other' }];
       if (path.startsWith('/api/accounts')) {
-        return [{ id: 'acct-1', name: 'Household (historical)', currency: 'IDR', balance: '0' }];
+        return [
+          {
+            id: 'acct-1',
+            name: 'Household (historical)',
+            currency: 'IDR',
+            balance: '0',
+            category_id: 'ac-other',
+          },
+        ];
       }
       return [];
     },
@@ -73,7 +82,14 @@ function deps(overrides: Partial<LoadDeps> = {}) {
       calls.push('settle');
     },
     earliest: { month: 1, year: 2099 },
-    config: { accounts: [] } as unknown as LoadDeps['config'],
+    config: {
+      accounts: [],
+      syntheticAccounts: {
+        expense: 'Household (historical)',
+        passiveIncome: {},
+        category: 'Other',
+      },
+    } as unknown as LoadDeps['config'],
     ...overrides,
   };
   return { calls, d, posted };
@@ -200,6 +216,9 @@ describe('loadMonth verification gates', () => {
         get: async (path: string) => {
           if (path.startsWith('/api/categories')) {
             return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
+          }
+          if (path.startsWith('/api/account-categories')) {
+            return [{ id: 'ac-other', name: 'Other' }];
           }
           if (path.startsWith('/api/accounts')) {
             return [{ id: 'acct-1', name: 'A', currency: 'IDR', balance: '999999' }];
@@ -339,5 +358,164 @@ describe('loadMonth ownership', () => {
     const { calls, d } = deps();
     await loadMonth(d, { month: 1, year: 2099 }, {});
     expect(calls.some((c) => c.includes('transfer-owner'))).toBe(false);
+  });
+});
+
+describe('loadMonth account creation', () => {
+  const roster = {
+    accounts: [
+      { name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' },
+    ],
+    syntheticAccounts: { expense: 'Household (historical)', passiveIncome: {}, category: 'Other' },
+  } as unknown as LoadDeps['config'];
+
+  const accountCategories = [
+    { id: 'ac-bank', name: 'Bank Account' },
+    { id: 'ac-other', name: 'Other' },
+  ];
+
+  /** A plan whose only account is `Bank1 OwnerA`, opening at 500. */
+  const bankPlan = () => {
+    const plan = samplePlan();
+    plan.checks.expenseTotal = 0;
+    plan.checks.closingTotal = 500;
+    plan.transactions = [];
+    plan.snapshots = [
+      {
+        account: 'Bank1 OwnerA',
+        opening: '500',
+        closing: '500',
+        localClosing: '500',
+        currency: 'IDR',
+        recordedAt: '2099-01-31T23:00:00.000Z',
+      },
+    ];
+    return plan;
+  };
+
+  function accountClient(
+    existing: Record<string, unknown>[],
+    writes: { method: string; path: string; body: Record<string, unknown> }[],
+    categories = accountCategories
+  ) {
+    return {
+      get: async (path: string) => {
+        if (path.startsWith('/api/categories')) {
+          return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
+        }
+        if (path.startsWith('/api/account-categories')) return categories;
+        if (path.startsWith('/api/workspace/members')) return { members: [] };
+        if (path.startsWith('/api/accounts')) return existing;
+        return [];
+      },
+      // Stateful, so Link 2 reads back what the load wrote.
+      getAll: async () => writes.filter((w) => w.path === '/api/transactions').map((w) => w.body),
+      post: async (path: string, body: Record<string, unknown>) => {
+        writes.push({ method: 'POST', path, body });
+        if (path !== '/api/accounts') return { id: 'x' };
+        const account = { id: `new-${existing.length}`, ...body };
+        existing.push(account);
+        return account;
+      },
+      put: async (path: string, body: Record<string, unknown>) => {
+        writes.push({ method: 'PUT', path, body });
+        return {};
+      },
+      patch: async () => ({}),
+      del: async () => ({}),
+    } as unknown as LoadDeps['client'];
+  }
+
+  it("creates an account under its roster category, opened on the month's first day", async () => {
+    const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
+    const { d } = deps({
+      config: roster,
+      client: accountClient([], writes),
+      planFor: bankPlan,
+    });
+
+    await loadMonth(d, { month: 1, year: 2099 }, {});
+
+    const created = writes.find((w) => w.method === 'POST' && w.path === '/api/accounts');
+    expect(created?.body).toEqual({
+      name: 'Bank1 OwnerA',
+      categoryId: 'ac-bank',
+      balance: '500',
+      currency: 'IDR',
+      opened_at: '2099-01-01T00:00:00.000Z',
+    });
+  });
+
+  it('files a synthetic account under the synthetic category', async () => {
+    const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
+    const { d } = deps({ config: roster, client: accountClient([], writes) });
+
+    await loadMonth(d, { month: 1, year: 2099 }, {});
+
+    const created = writes.find((w) => w.method === 'POST' && w.path === '/api/accounts');
+    expect(created?.body.name).toBe('Household (historical)');
+    expect(created?.body.categoryId).toBe('ac-other');
+  });
+
+  it('moves an existing account to the category the config now names', async () => {
+    const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
+    const existing = [
+      {
+        id: 'acct-1',
+        name: 'Bank1 OwnerA',
+        currency: 'IDR',
+        balance: '500',
+        initial_balance: '500',
+        category_id: 'ac-other',
+      },
+    ];
+    const { d } = deps({
+      config: roster,
+      client: accountClient(existing, writes),
+      planFor: bankPlan,
+    });
+
+    await loadMonth(d, { month: 1, year: 2099 }, {});
+
+    expect(writes).toContainEqual({
+      method: 'PUT',
+      path: '/api/accounts/acct-1',
+      body: { categoryId: 'ac-bank' },
+    });
+  });
+
+  it('leaves an existing account already in its category untouched', async () => {
+    const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
+    const existing = [
+      {
+        id: 'acct-1',
+        name: 'Bank1 OwnerA',
+        currency: 'IDR',
+        balance: '500',
+        initial_balance: '500',
+        category_id: 'ac-bank',
+      },
+    ];
+    const { d } = deps({
+      config: roster,
+      client: accountClient(existing, writes),
+      planFor: bankPlan,
+    });
+
+    await loadMonth(d, { month: 1, year: 2099 }, {});
+
+    expect(writes.some((w) => w.method === 'PUT')).toBe(false);
+  });
+
+  it('aborts naming setup when the workspace lacks the account category', async () => {
+    const { d } = deps({
+      config: roster,
+      client: accountClient([], [], [{ id: 'ac-other', name: 'Other' }]),
+      planFor: bankPlan,
+    });
+
+    await expect(loadMonth(d, { month: 1, year: 2099 }, {})).rejects.toThrow(
+      /"Bank Account".*\n.*aw backfill setup/s
+    );
   });
 });
