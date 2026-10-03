@@ -4,20 +4,20 @@ import { thrown } from './test-helpers/throws';
 import type { Plan } from './types';
 
 describe('nextSlot', () => {
-  it('starts at 23:00:00 when no history exists for the day', () => {
-    expect(nextSlot([], '2099-01-31')).toBe('2099-01-31T23:00:00.000Z');
+  it('starts at 12:00:00 UTC, mid-day on the last day in any timezone within ±11 hours', () => {
+    expect(nextSlot([], '2099-01-31')).toBe('2099-01-31T12:00:00.000Z');
   });
 
   it('takes one second past the latest existing entry', () => {
-    expect(nextSlot(['2099-01-31T23:00:00.000Z'], '2099-01-31')).toBe('2099-01-31T23:00:01.000Z');
+    expect(nextSlot(['2099-01-31T12:00:00.000Z'], '2099-01-31')).toBe('2099-01-31T12:00:01.000Z');
   });
 
   it('ignores entries from other days', () => {
-    expect(nextSlot(['2099-01-30T23:00:05.000Z'], '2099-01-31')).toBe('2099-01-31T23:00:00.000Z');
+    expect(nextSlot(['2099-01-30T12:00:05.000Z'], '2099-01-31')).toBe('2099-01-31T12:00:00.000Z');
   });
 
-  it('aborts rather than crossing midnight', () => {
-    expect(thrown(() => nextSlot(['2099-01-31T23:59:59.000Z'], '2099-01-31'))).toBeInstanceOf(
+  it('aborts rather than leaving the 12:00–12:59 window', () => {
+    expect(thrown(() => nextSlot(['2099-01-31T12:59:59.000Z'], '2099-01-31'))).toBeInstanceOf(
       SlotExhaustedError
     );
   });
@@ -72,6 +72,6 @@ describe('settle', () => {
   it("dates a settling write at the newest month's end, never now", async () => {
     const { client, posted } = settleClient({ b: '55' });
     await settle(client as never, plan, [{ id: 'b', name: 'B' }]);
-    expect(posted[0]?.body.recorded_at).toBe('2099-01-31T23:00:00.000Z');
+    expect(posted[0]?.body.recorded_at).toBe('2099-01-31T12:00:00.000Z');
   });
 });

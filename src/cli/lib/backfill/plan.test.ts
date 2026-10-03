@@ -81,9 +81,9 @@ describe('buildPlan', () => {
     expect(s?.routedByException).toBeUndefined();
   });
 
-  it('emits one snapshot per account at 23:00:00 on the last day', () => {
+  it('emits one snapshot per account at 12:00:00 UTC on the last day', () => {
     expect(plan.snapshots).toHaveLength(6);
-    expect(plan.snapshots[0]?.recordedAt).toMatch(/^2099-01-31T23:00:00/);
+    expect(plan.snapshots[0]?.recordedAt).toMatch(/^2099-01-31T12:00:00/);
   });
 
   it('converts a foreign account balance out of the local column', () => {

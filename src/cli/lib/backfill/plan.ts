@@ -10,6 +10,14 @@ export function monthKey({ month, year }: MonthRef): string {
 }
 
 /**
+ * The first balance-history slot on a month's last day (`YYYY-MM-DD`): 12:00 UTC,
+ * which is still that day in every timezone from UTC-11 to UTC+11.
+ */
+export function monthEndSlot(lastDay: string): string {
+  return `${lastDay}T12:00:00.000Z`;
+}
+
+/**
  * Normalises a sheet date cell (`M/D/YYYY`, optionally with a time) to
  * `YYYY-MM-DD`, and refuses anything that would land outside the plan month.
  */
@@ -257,7 +265,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
     closing: decimal(fromLocal(a.akhir, a.currency, raw.rate)),
     localClosing: decimal(a.akhir),
     currency: a.currency,
-    recordedAt: `${key}-${lastDay}T23:00:00.000Z`,
+    recordedAt: monthEndSlot(`${key}-${lastDay}`),
   }));
 
   return {

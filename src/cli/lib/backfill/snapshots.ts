@@ -1,14 +1,15 @@
 import type { BackfillClient } from './client';
 import { DirectiveError } from './errors';
 import { lastDayOfMonth } from './money';
-import { monthKey } from './plan';
+import { monthEndSlot, monthKey } from './plan';
 import type { Plan } from './types';
 
 /**
- * Thrown when a day's 23:00:00–23:59:59 window is full.
+ * Thrown when a day's 12:00:00–12:59:59 UTC window is full.
  *
- * A wrapped write would land in the following month and corrupt the single
- * lookup net worth depends on, so it aborts instead.
+ * A write past the window drifts toward the next day in the timezones east of
+ * UTC, where the app's month boundary would file it under the following month,
+ * so it aborts instead.
  */
 export class SlotExhaustedError extends DirectiveError {}
 
@@ -21,13 +22,14 @@ interface HistoryEntry {
   recorded_at: string;
 }
 
-const SLOT_START_HOUR = 23;
-
 /**
- * Picks the next free timestamp on `lastDay`, starting at 23:00:00.
+ * Picks the next free timestamp on `lastDay`, starting at 12:00:00 UTC.
  *
  * Balance history is keyed by timestamp, so two snapshots on the same day need
- * distinct slots; the day's last hour is reserved for them.
+ * distinct slots; one hour is reserved for them. The app cuts months at
+ * midnight in the server's local time, so the hour sits mid-day in UTC: it
+ * falls on `lastDay` in every timezone from UTC-11 to UTC+11, where 23:00 UTC
+ * would already be the next month east of UTC.
  */
 export function nextSlot(existing: string[], lastDay: string): string {
   const sameDay = existing
@@ -35,14 +37,14 @@ export function nextSlot(existing: string[], lastDay: string): string {
     .map((value) => Date.parse(value))
     .filter((value) => !Number.isNaN(value));
 
-  const base = Date.parse(`${lastDay}T${String(SLOT_START_HOUR).padStart(2, '0')}:00:00.000Z`);
+  const base = Date.parse(monthEndSlot(lastDay));
   const candidate = sameDay.length === 0 ? base : Math.max(base, Math.max(...sameDay) + 1000);
-  const dayEnd = Date.parse(`${lastDay}T23:59:59.999Z`);
+  const windowEnd = base + 60 * 60 * 1000 - 1;
 
-  if (candidate > dayEnd) {
+  if (candidate > windowEnd) {
     throw new SlotExhaustedError(
-      `No free balance-history slot left on ${lastDay}: the 23:00:00–23:59:59 window is full.\n` +
-        `A later timestamp would land in the next month and corrupt its closing balance.`
+      `No free balance-history slot left on ${lastDay}: the 12:00:00–12:59:59 UTC window is full.\n` +
+        `A later timestamp would drift toward the next month and corrupt its closing balance.`
     );
   }
   return new Date(candidate).toISOString();

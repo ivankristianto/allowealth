@@ -243,7 +243,7 @@ describe('loadMonth verification gates', () => {
             closing: '0',
             localClosing: '0',
             currency: 'IDR',
-            recordedAt: '2099-01-31T23:00:00.000Z',
+            recordedAt: '2099-01-31T12:00:00.000Z',
           },
         ];
         plan.checks.closingTotal = 0;
@@ -387,7 +387,7 @@ describe('loadMonth account creation', () => {
         closing: '500',
         localClosing: '500',
         currency: 'IDR',
-        recordedAt: '2099-01-31T23:00:00.000Z',
+        recordedAt: '2099-01-31T12:00:00.000Z',
       },
     ];
     return plan;

@@ -78,7 +78,7 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 | `Date "…" falls outside <month>`                     | Fix the cell, or suppress the row                                                                           |
 | `… is already loaded`                                | Re-run with `--force` to purge and reload                                                                   |
 | `rows diverge from the plan this tool saved`         | Something else wrote into the month. Investigate before passing `--force`                                   |
-| `No free balance-history slot left`                  | The day's 23:00–23:59 window is full. Clear the stale snapshots for that day first                          |
+| `No free balance-history slot left`                  | The day's 12:00–12:59 UTC window is full. Clear the stale snapshots for that day first                      |
 | `loaded but does not reconcile`                      | Link 2 failed. The month stays `loading`; investigate, then re-run                                          |
 
 **Salary is not `incomeRouting`.** Salary routes by category through
@@ -102,6 +102,11 @@ asset. The category decides the account's type and liquidity. Editing it in the
 config moves an existing account on the next load. Accounts are opened on the
 first day of their first month, so balance history carries no entry dated on
 the day of the load.
+
+Month-end snapshots are written at 12:00 UTC on the month's last day. The app
+cuts months at midnight in the server's local time, so a snapshot at 23:00 UTC
+lands in the next month for any server east of UTC, and that month's historical
+view and reconciliation pick it up instead of this one.
 
 ## 4. Reading `verify` output
 
