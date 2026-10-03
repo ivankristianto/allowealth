@@ -43,6 +43,11 @@ function normaliseDate(cell: string, ref: MonthRef, label: string): string {
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
+/** Matches `word` as a whole word anywhere, case-insensitively. */
+function wholeWord(word: string): RegExp {
+  return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+}
+
 /**
  * Resolves the member named in a description by whole word, anywhere in it.
  *
@@ -55,9 +60,7 @@ function resolveOwner(
   unmarked: string[]
 ): { owner: string; fellBack: boolean } {
   const names = [config.members.primary, config.members.secondary];
-  const matched = names.filter((name) =>
-    new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(description)
-  );
+  const matched = names.filter((name) => wholeWord(name).test(description));
 
   if (matched.length > 1) {
     throw new DetectionError(
@@ -69,6 +72,29 @@ function resolveOwner(
 
   unmarked.push(description);
   return { owner: config.members.fallback, fellBack: true };
+}
+
+/**
+ * The member an expense belongs to: the owner every matching `expenseOwners`
+ * rule agrees on, or `members.fallback` when none matches.
+ */
+function expenseOwner(description: string, category: string, config: BackfillConfig): string {
+  const owners = new Set(
+    config.expenseOwners
+      .filter((rule) =>
+        'category' in rule ? rule.category === category : wholeWord(rule.match).test(description)
+      )
+      .map((rule) => rule.owner)
+  );
+
+  if (owners.size > 1) {
+    throw new DetectionError(
+      `Expense "${description}" (${category}) matches \`expenseOwners\` rules for ` +
+        `${[...owners].join(' and ')}; the owner is ambiguous.\n` +
+        `Narrow the rules in \`expenseOwners\` so only one owner matches.`
+    );
+  }
+  return [...owners][0] ?? config.members.fallback;
 }
 
 function isSuppressed(
@@ -208,12 +234,14 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       skipped.push({ reason: 'zero amount', description: row.description });
       continue;
     }
+    const category = rename(row.category);
     transactions.push({
       kind: 'expense',
       date: normaliseDate(row.date, raw, `expense "${row.description}"`),
       description: row.description,
-      category: rename(row.category),
+      category,
       account: config.syntheticAccounts.expense,
+      owner: expenseOwner(row.description, category, config),
       amount: decimal(amount),
       currency: LOCAL,
       localAmount: decimal(amount),
@@ -248,6 +276,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       description: row.description,
       category: rename(row.category),
       account,
+      owner: config.members.fallback,
       amount: decimal(amount),
       currency,
       localAmount: decimal(local),

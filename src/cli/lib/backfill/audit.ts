@@ -20,6 +20,8 @@ export interface ActualTransaction {
   account?: string;
   currency?: string;
   description?: string;
+  /** The member who created the row; the app treats them as its owner. */
+  owner?: string;
 }
 
 export interface ActualState {
@@ -121,6 +123,14 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
     actual.transactions.filter((t) => t.type === 'income'),
     (t) => t.category,
     (t) => t.category ?? '',
+    compare
+  );
+  groupCompare(
+    'transactions per owner',
+    plan.transactions,
+    actual.transactions,
+    (t) => `${t.owner} ${t.kind}`,
+    (t) => `${t.owner ?? ''} ${t.type}`,
     compare
   );
   groupCompare(
@@ -279,6 +289,7 @@ export async function runAudit(
     category: t.category,
     account: t.account,
     currency: (t as { currency?: string }).currency,
+    owner: t.owner,
   }));
 
   return diffMonth(plan, {

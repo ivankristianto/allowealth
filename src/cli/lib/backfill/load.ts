@@ -23,6 +23,11 @@ export interface LoadDeps {
   /** Re-parses a month's CSVs into a plan. Also used to settle a later month. */
   planFor: (ref: MonthRef) => Plan;
   settle: (plan: Plan, accounts: { id: string; name: string }[]) => Promise<void>;
+  /**
+   * A client signed in as `member`. The app records a transaction as owned by
+   * whoever posts it, so each member's rows must be posted as that member.
+   */
+  clientFor: (member: WorkspaceMember) => Promise<BackfillClient>;
   earliest: MonthRef;
   config: BackfillConfig;
 }
@@ -209,7 +214,7 @@ async function ensureAccounts(
   return { accounts: byName, created };
 }
 
-interface WorkspaceMember {
+export interface WorkspaceMember {
   id: string;
   name: string;
   email: string;
@@ -230,8 +235,7 @@ async function transferOwnership(
   const distinct = new Set([...owners.values()]);
   if (distinct.size <= 1) return [];
 
-  const page = await client.get<{ members?: WorkspaceMember[] }>('/api/workspace/members');
-  const members = page?.members ?? [];
+  const members = await fetchMembers(client);
 
   const moved: string[] = [];
   for (const [name, account] of accounts) {
@@ -255,6 +259,35 @@ async function transferOwnership(
     moved.push(name);
   }
   return moved;
+}
+
+async function fetchMembers(client: BackfillClient): Promise<WorkspaceMember[]> {
+  const page = await client.get<{ members?: WorkspaceMember[] }>('/api/workspace/members');
+  return page?.members ?? [];
+}
+
+/**
+ * Signs in once per member who owns a transaction in the plan, keyed by the
+ * owner name the plan uses. Runs before the claim, so a missing member or
+ * credential aborts with nothing written.
+ */
+async function postingClients(deps: LoadDeps, plan: Plan): Promise<Map<string, BackfillClient>> {
+  const owners = new Set(plan.transactions.map((t) => t.owner));
+  const clients = new Map<string, BackfillClient>();
+  if (owners.size === 0) return clients;
+
+  const members = await fetchMembers(deps.client);
+  for (const owner of owners) {
+    const member = members.find((m) => m.name === owner || m.email === owner);
+    if (!member) {
+      throw new LoadError(
+        `A transaction belongs to "${owner}", but no workspace member matches that name or ` +
+          `email.\nCreate the member, or correct \`members\` / \`expenseOwners\` in the config.`
+      );
+    }
+    clients.set(owner, await deps.clientFor(member));
+  }
+  return clients;
 }
 
 async function categoryIndex(client: BackfillClient): Promise<Map<string, ApiCategory>> {
@@ -322,6 +355,7 @@ export async function loadMonth(
   const ledgerStatus = deps.readLedger().find((e) => sameMonth(e, ref))?.status;
   const existingRows = await fetchMonthTransactions(deps.client, ref);
   assertOwnership(existingRows, deps.readSavedPlan(ref), ledgerStatus, opts.force ?? false);
+  const posters = await postingClients(deps, plan);
 
   // Claimed before the first write, so an aborted load stays purgeable. The
   // hash records which plan the claim belongs to, so a later re-derivation that
@@ -353,7 +387,7 @@ export async function loadMonth(
   }
 
   await inBatches(plan.transactions, TRANSACTION_CONCURRENCY, async (transaction) => {
-    await deps.client.post('/api/transactions', {
+    await posters.get(transaction.owner)!.post('/api/transactions', {
       type: transaction.kind,
       amount: transaction.amount,
       currency: transaction.currency,
@@ -464,6 +498,7 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
   const {
     createClient,
     earliestFromConfig,
+    memberClients,
     monthRange,
     parseMonthArg,
     readMonth,
@@ -499,6 +534,7 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
     hashPlan: ledger.hashPlan,
     planFor: (ref) => buildPlan(readMonth(dataDir, config, ref), config),
     settle: (plan, accounts) => settle(client, plan, accounts),
+    clientFor: memberClients(client),
     earliest: earliestFromConfig(config),
     config,
   };

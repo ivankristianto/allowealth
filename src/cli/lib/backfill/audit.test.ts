@@ -14,6 +14,7 @@ const plan = {
       description: 'a',
       category: 'Cat1',
       account: 'Household (historical)',
+      owner: 'OwnerA',
       amount: '100',
       currency: 'IDR',
       localAmount: '100',
@@ -43,6 +44,7 @@ const clean: ActualState = {
       amount: '100',
       category: 'Cat1',
       account: 'Household (historical)',
+      owner: 'OwnerA',
       currency: 'IDR',
     },
   ],
@@ -133,6 +135,7 @@ describe('diffMonth grouped dimensions', () => {
       description: 'i',
       category: 'Inc1',
       account: 'A',
+      owner: 'OwnerA',
       amount: '500',
       currency: 'IDR',
       localAmount: '500',
@@ -148,6 +151,7 @@ describe('diffMonth grouped dimensions', () => {
           amount: '500',
           category: 'Inc1',
           account: 'B',
+          owner: 'OwnerA',
           currency: 'IDR',
         },
       ],
@@ -177,6 +181,7 @@ describe('diffMonth currency handling', () => {
     description: 'salary',
     category: 'Inc1',
     account: 'Bank1 OwnerA USD',
+    owner: 'OwnerA',
     amount: '10',
     currency: 'USD',
     localAmount: '99000',
@@ -193,6 +198,7 @@ describe('diffMonth currency handling', () => {
         amount,
         category: 'Inc1',
         account: 'Bank1 OwnerA USD',
+        owner: 'OwnerA',
         currency: 'USD',
       },
     ],
@@ -219,5 +225,26 @@ describe('toActualBudgets', () => {
     expect(toActualBudgets([{ budget_amount: '400', category: { name: 'Cat1' } }])).toEqual([
       { category: 'Cat1', budget_amount: '400' },
     ]);
+  });
+});
+
+describe('diffMonth owners', () => {
+  it('reports a transaction the app holds under a different owner than the plan', () => {
+    const rows = diffMonth(plan, {
+      ...clean,
+      transactions: [{ ...clean.transactions[0]!, owner: 'OwnerB' }],
+    });
+    expect(rows).toContainEqual({
+      dimension: 'transactions per owner',
+      key: 'OwnerA expense IDR',
+      expected: '100.00',
+      actual: '0.00',
+    });
+    expect(rows).toContainEqual({
+      dimension: 'transactions per owner',
+      key: 'OwnerB expense IDR',
+      expected: '0.00',
+      actual: '100.00',
+    });
   });
 });

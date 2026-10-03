@@ -20,12 +20,15 @@ export interface ExistingTransaction {
   category?: string;
   account?: string;
   currency?: string;
+  /** The name of the member who created the row, which the app treats as its owner. */
+  owner?: string;
 }
 
 /** A transaction as `GET /api/transactions` returns it: category and account are nested. */
-interface ApiTransaction extends Omit<ExistingTransaction, 'category' | 'account'> {
+interface ApiTransaction extends Omit<ExistingTransaction, 'category' | 'account' | 'owner'> {
   category?: { name?: string } | null;
   account?: { name?: string } | null;
+  created_by_user_name?: string;
 }
 
 interface ExistingBudget {
@@ -139,10 +142,11 @@ export async function fetchMonthTransactions(
     'transactions'
   );
   // Keyed by name everywhere downstream, to compare against the plan.
-  return rows.map(({ category, account, ...rest }) => ({
+  return rows.map(({ category, account, created_by_user_name, ...rest }) => ({
     ...rest,
     category: category?.name,
     account: account?.name,
+    owner: created_by_user_name,
   }));
 }
 

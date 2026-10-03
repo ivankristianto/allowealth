@@ -117,4 +117,22 @@ describe('fetchMonthTransactions', () => {
 
     expect(() => assertOwnership(existing, saved, 'loaded', false)).not.toThrow();
   });
+
+  it('reads the owner from the name of the member who created the row', async () => {
+    const client = {
+      getAll: async () => [
+        {
+          id: 't1',
+          type: 'expense',
+          transaction_date: '2099-01-02',
+          amount: '10',
+          category: { name: 'Cat1' },
+          account: { name: 'Household (historical)' },
+          created_by_user_name: 'OwnerB',
+        },
+      ],
+    } as unknown as Parameters<typeof fetchMonthTransactions>[0];
+    const [row] = await fetchMonthTransactions(client, { month: 1, year: 2099 });
+    expect(row?.owner).toBe('OwnerB');
+  });
 });

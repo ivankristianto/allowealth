@@ -73,6 +73,16 @@
       "to": "Cat2"
     }
   ],
+  "expenseOwners": [
+    {
+      "category": "Cat3",
+      "owner": "OwnerB"
+    },
+    {
+      "match": "Word",
+      "owner": "OwnerB"
+    }
+  ],
   "salaryRouting": [
     {
       "category": "IncSalaryA",

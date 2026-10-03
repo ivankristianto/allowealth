@@ -30,6 +30,7 @@ const MINIMAL = JSON.stringify({
   },
   categories: { expense: ['Cat1'], income: [{ name: 'Inc1', sourceType: 'active' }] },
   categoryRenames: [],
+  expenseOwners: [],
   salaryRouting: [{ category: 'Inc1', account: 'Bank1 OwnerA' }],
   incomeRouting: [],
   suppressedRows: [],
@@ -92,5 +93,38 @@ describe('loadConfig', () => {
       category: 'Bank Account',
     });
     expect(() => loadConfig(withConfig(JSON.stringify(bad)))).toThrow(/duplicate/i);
+  });
+
+  it('reads expense ownership rules keyed by category or by description word', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseOwners = [
+      { category: 'Cat1', owner: 'OwnerB' },
+      { match: 'Word', owner: 'OwnerB' },
+    ];
+    const cfg = loadConfig(withConfig(JSON.stringify(config)));
+    expect(cfg.expenseOwners).toEqual([
+      { category: 'Cat1', owner: 'OwnerB' },
+      { match: 'Word', owner: 'OwnerB' },
+    ]);
+  });
+
+  it('rejects an expense ownership rule whose owner is not a member', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseOwners = [{ category: 'Cat1', owner: 'Nobody' }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/expenseOwners.*Nobody/s);
+  });
+
+  it('rejects an expense ownership rule naming an unknown expense category', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseOwners = [{ category: 'CatTypo', owner: 'OwnerB' }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/CatTypo/);
+  });
+
+  it('rejects an expense ownership rule with both a category and a match', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseOwners = [{ category: 'Cat1', match: 'Word', owner: 'OwnerB' }];
+    expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
+      ConfigError
+    );
   });
 });

@@ -16,6 +16,7 @@ const samplePlan = (): Plan => ({
       description: 'a',
       category: 'Cat1',
       account: 'Household (historical)',
+      owner: 'OwnerA',
       amount: '100',
       currency: 'IDR',
       localAmount: '100',
@@ -25,6 +26,11 @@ const samplePlan = (): Plan => ({
   skipped: [],
   unmarkedOwner: [],
 });
+
+const MEMBERS = [
+  { id: 'user-a', name: 'OwnerA', email: 'a@example.test' },
+  { id: 'user-b', name: 'OwnerB', email: 'b@example.test' },
+];
 
 /**
  * A stateful fake of the app: transactions posted during the load are readable
@@ -40,6 +46,7 @@ function deps(overrides: Partial<LoadDeps> = {}) {
         return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
       }
       if (path.startsWith('/api/account-categories')) return [{ id: 'ac-other', name: 'Other' }];
+      if (path.startsWith('/api/workspace/members')) return { members: MEMBERS };
       if (path.startsWith('/api/accounts')) {
         return [
           {
@@ -81,6 +88,8 @@ function deps(overrides: Partial<LoadDeps> = {}) {
     settle: async () => {
       calls.push('settle');
     },
+    // Every member posts through whichever client the test settled on.
+    clientFor: async () => d.client,
     earliest: { month: 1, year: 2099 },
     config: {
       accounts: [],
@@ -220,6 +229,7 @@ describe('loadMonth verification gates', () => {
           if (path.startsWith('/api/account-categories')) {
             return [{ id: 'ac-other', name: 'Other' }];
           }
+          if (path.startsWith('/api/workspace/members')) return { members: MEMBERS };
           if (path.startsWith('/api/accounts')) {
             return [{ id: 'acct-1', name: 'A', currency: 'IDR', balance: '999999' }];
           }
@@ -361,6 +371,59 @@ describe('loadMonth ownership', () => {
   });
 });
 
+describe('loadMonth transaction owners', () => {
+  /** One expense per member, so each must arrive through its own member's client. */
+  const twoOwnerPlan = () => {
+    const plan = samplePlan();
+    const [first] = plan.transactions;
+    plan.transactions = [
+      { ...first!, description: 'mine' },
+      { ...first!, description: 'theirs', owner: 'OwnerB' },
+    ];
+    plan.checks.expenseTotal = 200;
+    return plan;
+  };
+
+  it('posts each transaction as its owner, so the app records it as theirs', async () => {
+    const { calls, d, posted } = deps({ planFor: twoOwnerPlan });
+    const secondaryPosts: string[] = [];
+    // Shares the fake app's state, so Link 2 reads back both members' rows.
+    const secondary = {
+      post: async (p: string, body: Record<string, unknown>) => {
+        if (p === '/api/transactions') {
+          secondaryPosts.push(String(body.description));
+          posted.push(body as (typeof posted)[number]);
+        }
+        return { id: 'y' };
+      },
+    } as unknown as LoadDeps['client'];
+    const signedInAs: string[] = [];
+    d.clientFor = async (member) => {
+      signedInAs.push(member.email);
+      return member.name === 'OwnerB' ? secondary : d.client;
+    };
+
+    await loadMonth(d, { month: 1, year: 2099 }, {});
+
+    expect(signedInAs.sort()).toEqual(['a@example.test', 'b@example.test']);
+    expect(calls.filter((c) => c === 'POST /api/transactions')).toHaveLength(1);
+    expect(secondaryPosts).toEqual(['theirs']);
+  });
+
+  it('aborts before any write when a transaction owner is not a workspace member', async () => {
+    const { calls, d } = deps({
+      planFor: () => {
+        const plan = samplePlan();
+        plan.transactions[0]!.owner = 'Stranger';
+        return plan;
+      },
+    });
+
+    expect(loadMonth(d, { month: 1, year: 2099 }, {})).rejects.toThrow(/Stranger/);
+    expect(calls).not.toContain('claim');
+  });
+});
+
 describe('loadMonth account creation', () => {
   const roster = {
     accounts: [
@@ -404,7 +467,7 @@ describe('loadMonth account creation', () => {
           return [{ id: 'cat-1', name: 'Cat1', type: 'expense' }];
         }
         if (path.startsWith('/api/account-categories')) return categories;
-        if (path.startsWith('/api/workspace/members')) return { members: [] };
+        if (path.startsWith('/api/workspace/members')) return { members: MEMBERS };
         if (path.startsWith('/api/accounts')) return existing;
         return [];
       },

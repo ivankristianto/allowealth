@@ -23,9 +23,11 @@ $AW_BACKFILL_DIR/
 ```
 
 Environment: `AW_BACKFILL_DIR`, `AW_BACKFILL_BASE_URL`, `AW_BACKFILL_EMAIL`,
-`AW_BACKFILL_PASSWORD`, and `AW_BACKFILL_SECONDARY_PASSWORD` for
-`setup --create-user`. There is no password flag on any subcommand, so a
-secret cannot land in shell history.
+`AW_BACKFILL_PASSWORD`, and `AW_BACKFILL_SECONDARY_EMAIL` /
+`AW_BACKFILL_SECONDARY_PASSWORD` for the second member — used by
+`setup --create-user` and by `run` whenever that member owns a transaction.
+There is no password flag on any subcommand, so a secret cannot land in shell
+history.
 
 ```bash
 bun run aw backfill scaffold --from <first> --to <last>   # once, then edit by hand
@@ -87,6 +89,13 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 account or the service rejects it. A local-currency entry appearing in
 `incomeRouting` is a signal that this scope is drifting — Link 4 subtracts
 those rows, so a wrong entry there silently weakens the check.
+
+**Expense ownership is configured, never inferred.** The app records a
+transaction as owned by whoever posts it, so `run` signs in as each member who
+owns a row and posts it as them. `expenseOwners` gives an expense to a member
+by exact category or by a whole word in the description; an expense no rule
+matches, and every income row, belongs to `members.fallback`. Two rules giving
+one row to different members abort the run rather than pick one.
 
 **Rename or closure?** An account that stops appearing at a **non-zero**
 balance was renamed — map it with `accountAliases`. At **zero** it was closed —
@@ -154,9 +163,10 @@ Link 3 cannot be exact. It recombines currencies at a single month-end rate,
 while the sheet's balance moved at whatever rate applied on each day. It
 informs and never gates.
 
-`verify` checks nine dimensions: expense and income count and total, expense
-and income per category, income per account, budget per category, account
-closing balance, current account balance, and reconciliation variance. Its
+`verify` checks ten dimensions: expense and income count and total, expense
+and income per category, income per account, transactions per owner, budget
+per category, account closing balance, current account balance, and
+reconciliation variance. Its
 reconciliation figure uses the month's own balance **history** for end
 balances, not the account's current balance, which is settled to the newest
 loaded month and would be the wrong end point for any earlier month.

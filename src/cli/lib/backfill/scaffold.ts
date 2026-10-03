@@ -61,6 +61,7 @@ export function scaffoldConfig(months: RawMonth[]): ScaffoldResult {
         income: income.map((name) => ({ name, sourceType: 'other' as const })),
       },
       categoryRenames: [],
+      expenseOwners: [],
       salaryRouting: [],
       incomeRouting: [],
       suppressedRows: [],

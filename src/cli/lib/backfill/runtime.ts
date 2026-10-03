@@ -107,16 +107,20 @@ export function earliestFromConfig(config: BackfillConfig): MonthRef {
   return { month: month!, year: year! };
 }
 
-/** Credentials come from the environment only, so a secret cannot land in shell history. */
-export async function createClient(): Promise<BackfillClient> {
+/**
+ * Credentials come from the environment only, so a secret cannot land in shell
+ * history. `emailVar`/`passwordVar` name the variables to read.
+ */
+export async function createClient(
+  emailVar = 'AW_BACKFILL_EMAIL',
+  passwordVar = 'AW_BACKFILL_PASSWORD'
+): Promise<BackfillClient> {
   const baseUrl = process.env.AW_BACKFILL_BASE_URL ?? 'http://localhost:4321';
-  const email = process.env.AW_BACKFILL_EMAIL;
-  const password = process.env.AW_BACKFILL_PASSWORD;
+  const email = process.env[emailVar];
+  const password = process.env[passwordVar];
 
   if (!email || !password) {
-    throw new UsageError(
-      'AW_BACKFILL_EMAIL and AW_BACKFILL_PASSWORD must be set. There is no password flag.'
-    );
+    throw new UsageError(`${emailVar} and ${passwordVar} must be set. There is no password flag.`);
   }
 
   const client = new BackfillClient({ baseUrl, email, password });
@@ -125,11 +129,38 @@ export async function createClient(): Promise<BackfillClient> {
   } catch (error) {
     throw new UsageError(
       `Could not sign in at ${baseUrl}: ${error instanceof Error ? error.message : String(error)}\n` +
-        `Check that the app is running and that AW_BACKFILL_BASE_URL, AW_BACKFILL_EMAIL and ` +
-        `AW_BACKFILL_PASSWORD are correct. Pass --dry-run to build and verify a plan offline.`
+        `Check that the app is running and that AW_BACKFILL_BASE_URL, ${emailVar} and ` +
+        `${passwordVar} are correct. Pass --dry-run to build and verify a plan offline.`
     );
   }
   return client;
+}
+
+/**
+ * Maps a workspace member to a client signed in as them: the primary login for
+ * its own address, a second login from `AW_BACKFILL_SECONDARY_*` for the other
+ * member. Each member signs in at most once.
+ */
+export function memberClients(
+  primary: BackfillClient,
+  env: Record<string, string | undefined> = process.env,
+  connect: (emailVar: string, passwordVar: string) => Promise<BackfillClient> = createClient
+): (member: { name: string; email: string }) => Promise<BackfillClient> {
+  const same = (a: string | undefined, b: string) => a?.toLowerCase() === b.toLowerCase();
+  let secondary: Promise<BackfillClient> | undefined;
+
+  return async (member) => {
+    if (same(env.AW_BACKFILL_EMAIL, member.email)) return primary;
+    if (same(env.AW_BACKFILL_SECONDARY_EMAIL, member.email)) {
+      secondary ??= connect('AW_BACKFILL_SECONDARY_EMAIL', 'AW_BACKFILL_SECONDARY_PASSWORD');
+      return secondary;
+    }
+    throw new UsageError(
+      `Transactions belong to ${member.name} <${member.email}>, but neither ` +
+        `AW_BACKFILL_EMAIL nor AW_BACKFILL_SECONDARY_EMAIL is that address.\n` +
+        `Export AW_BACKFILL_SECONDARY_EMAIL and AW_BACKFILL_SECONDARY_PASSWORD for this member.`
+    );
+  };
 }
 
 /**

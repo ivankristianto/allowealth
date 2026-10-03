@@ -34,6 +34,7 @@ export const fixtureConfig: BackfillConfig = {
     ],
   },
   categoryRenames: [],
+  expenseOwners: [],
   salaryRouting: [
     { category: 'IncSalaryA', account: 'Bank2 OwnerA USD' },
     { category: 'IncSalaryB', account: 'Bank1 OwnerB' },

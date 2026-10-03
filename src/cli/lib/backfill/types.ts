@@ -40,6 +40,11 @@ export interface PlanTransaction {
    */
   localAmount: string;
   /**
+   * The member who owns the row in the app, which records whoever posts it.
+   * Expenses follow `expenseOwners`; everything else is `members.fallback`.
+   */
+  owner: string;
+  /**
    * True when `incomeRouting` placed this row. The balance sheet's `Income`
    * column excludes such rows, so Link 4 subtracts them.
    */

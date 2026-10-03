@@ -168,3 +168,42 @@ describe('buildPlan detection', () => {
     expect(Array.isArray(plan.unmarkedOwner)).toBe(true);
   });
 });
+
+describe('buildPlan expense ownership', () => {
+  const owned = (expenseOwners: typeof fixtureConfig.expenseOwners) =>
+    buildPlan(raw, { ...fixtureConfig, expenseOwners });
+  const ownerOf = (p: ReturnType<typeof buildPlan>, description: string) =>
+    p.transactions.find((t) => t.description === description)?.owner;
+
+  it('gives every transaction to the fallback member when no rule matches', () => {
+    expect(new Set(plan.transactions.map((t) => t.owner))).toEqual(new Set(['OwnerA']));
+  });
+
+  it('gives an expense to the owner a category rule names', () => {
+    const p = owned([{ category: 'Cat2', owner: 'OwnerB' }]);
+    expect(ownerOf(p, 'Item C')).toBe('OwnerB');
+    expect(ownerOf(p, 'Item D')).toBe('OwnerB');
+    expect(ownerOf(p, 'Item A')).toBe('OwnerA');
+  });
+
+  it('gives an expense to the owner a description rule names, by whole word', () => {
+    const p = owned([{ match: 'item b', owner: 'OwnerB' }]);
+    expect(ownerOf(p, 'Item B')).toBe('OwnerB');
+    expect(ownerOf(p, 'Item A')).toBe('OwnerA');
+  });
+
+  it('leaves income with the fallback member', () => {
+    const p = owned([{ category: 'Cat1', owner: 'OwnerB' }]);
+    expect(ownerOf(p, 'Salary OwnerB')).toBe('OwnerA');
+  });
+
+  it('aborts when two rules give one expense to different owners', () => {
+    const conflicting = () =>
+      owned([
+        { category: 'Cat1', owner: 'OwnerB' },
+        { match: 'Item A', owner: 'OwnerA' },
+      ]);
+    expect(thrown(conflicting)).toBeInstanceOf(DetectionError);
+    expect(conflicting).toThrow(/Item A/);
+  });
+});

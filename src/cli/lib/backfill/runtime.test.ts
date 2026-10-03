@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'bun:test';
-import { parseMonthArg, monthRange, resolveFilenames, resolveDataDir } from './runtime';
+import type { BackfillClient } from './client';
+import {
+  memberClients,
+  monthRange,
+  parseMonthArg,
+  resolveDataDir,
+  resolveFilenames,
+  UsageError,
+} from './runtime';
 import { thrown } from './test-helpers/throws';
 
 describe('parseMonthArg', () => {
@@ -62,5 +70,46 @@ describe('resolveDataDir', () => {
     expect((thrown(() => resolveDataDir(undefined, undefined)) as Error).message).toMatch(
       /AW_BACKFILL_DIR/
     );
+  });
+});
+
+describe('memberClients', () => {
+  const primary = { label: 'primary' } as unknown as BackfillClient;
+  const secondary = { label: 'secondary' } as unknown as BackfillClient;
+  const env = {
+    AW_BACKFILL_EMAIL: 'a@example.test',
+    AW_BACKFILL_SECONDARY_EMAIL: 'b@example.test',
+  };
+
+  function connector() {
+    const connected: string[] = [];
+    const connect = async (emailVar: string, passwordVar: string) => {
+      connected.push(`${emailVar}/${passwordVar}`);
+      return secondary;
+    };
+    return { connected, connect };
+  }
+
+  it('reuses the primary login for the member it signed in as', async () => {
+    const { connected, connect } = connector();
+    const clientFor = memberClients(primary, env, connect);
+    expect(await clientFor({ name: 'OwnerA', email: 'A@Example.test' })).toBe(primary);
+    expect(connected).toEqual([]);
+  });
+
+  it('signs in once with the secondary credentials for the other member', async () => {
+    const { connected, connect } = connector();
+    const clientFor = memberClients(primary, env, connect);
+    expect(await clientFor({ name: 'OwnerB', email: 'b@example.test' })).toBe(secondary);
+    expect(await clientFor({ name: 'OwnerB', email: 'b@example.test' })).toBe(secondary);
+    expect(connected).toEqual(['AW_BACKFILL_SECONDARY_EMAIL/AW_BACKFILL_SECONDARY_PASSWORD']);
+  });
+
+  it('aborts naming the variables when no login matches the member', async () => {
+    const { connect } = connector();
+    const clientFor = memberClients(primary, env, connect);
+    const error = await clientFor({ name: 'OwnerC', email: 'c@example.test' }).catch((e) => e);
+    expect(error).toBeInstanceOf(UsageError);
+    expect((error as Error).message).toMatch(/AW_BACKFILL_SECONDARY_EMAIL/);
   });
 });

@@ -43,6 +43,16 @@ export const configSchema = v.object({
     ),
   }),
   categoryRenames: v.array(v.object({ from: v.string(), to: v.string() })),
+  // Which member owns an expense. A rule matches by exact category (after
+  // renames) or by a whole word in the description; an expense no rule matches
+  // belongs to `members.fallback`. Strict, so a rule carrying both keys fails
+  // rather than silently dropping one.
+  expenseOwners: v.array(
+    v.union([
+      v.strictObject({ category: filledIn, owner: filledIn }),
+      v.strictObject({ match: filledIn, owner: filledIn }),
+    ])
+  ),
   // Salary is routed by category to a member's own account. It is kept apart
   // from `incomeRouting`, which exists only for foreign-currency non-salary
   // income: a local-currency entry appearing there signals the scope drifting.
@@ -105,5 +115,26 @@ export function loadConfig(dataDir: string): BackfillConfig {
     }
     seen.add(account.name);
   }
+  assertExpenseOwnersKnown(result.output, path);
   return result.output;
+}
+
+/** A rule naming a non-member or a misspelt category would otherwise never match. */
+function assertExpenseOwnersKnown(config: BackfillConfig, path: string): void {
+  const members = [config.members.primary, config.members.secondary];
+  const categories = new Set(config.categories.expense);
+  for (const rule of config.expenseOwners) {
+    if (!members.includes(rule.owner)) {
+      throw new ConfigError(
+        `\`expenseOwners\` names "${rule.owner}", which is neither member ` +
+          `(${members.join(', ')}).\nEdit \`expenseOwners\` in ${path}.`
+      );
+    }
+    if ('category' in rule && !categories.has(rule.category)) {
+      throw new ConfigError(
+        `\`expenseOwners\` names the category "${rule.category}", which is not in ` +
+          `\`categories.expense\`.\nEdit \`expenseOwners\` in ${path}.`
+      );
+    }
+  }
 }
