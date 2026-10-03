@@ -15,7 +15,7 @@ const samplePlan = (): Plan => ({
       date: '2099-01-02',
       description: 'a',
       category: 'Cat1',
-      account: 'Household (historical)',
+      account: 'Bank1 OwnerA',
       owner: 'OwnerA',
       amount: '100',
       currency: 'IDR',
@@ -51,7 +51,7 @@ function deps(overrides: Partial<LoadDeps> = {}) {
         return [
           {
             id: 'acct-1',
-            name: 'Household (historical)',
+            name: 'Bank1 OwnerA',
             currency: 'IDR',
             balance: '0',
             category_id: 'ac-other',
@@ -92,12 +92,8 @@ function deps(overrides: Partial<LoadDeps> = {}) {
     clientFor: async () => d.client,
     earliest: { month: 1, year: 2099 },
     config: {
-      accounts: [],
-      syntheticAccounts: {
-        expense: 'Household (historical)',
-        passiveIncome: {},
-        category: 'Other',
-      },
+      accounts: [{ name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Other' }],
+      syntheticAccounts: { passiveIncome: {}, category: 'Other' },
     } as unknown as LoadDeps['config'],
     ...overrides,
   };
@@ -299,7 +295,7 @@ describe('loadMonth settle target', () => {
 describe('loadMonth ownership', () => {
   const twoOwners = {
     accounts: [
-      { name: 'Household (historical)', currency: 'IDR', owner: 'OwnerA' },
+      { name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA' },
       { name: 'B', currency: 'IDR', owner: 'OwnerB' },
     ],
   } as unknown as LoadDeps['config'];
@@ -315,7 +311,7 @@ describe('loadMonth ownership', () => {
           return [
             {
               id: 'acct-1',
-              name: 'Household (historical)',
+              name: 'Bank1 OwnerA',
               currency: 'IDR',
               balance: '0',
               created_by_user_id: 'admin',
@@ -429,7 +425,7 @@ describe('loadMonth account creation', () => {
     accounts: [
       { name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' },
     ],
-    syntheticAccounts: { expense: 'Household (historical)', passiveIncome: {}, category: 'Other' },
+    syntheticAccounts: { passiveIncome: { OwnerA: 'Passive Income (OwnerA)' }, category: 'Other' },
   } as unknown as LoadDeps['config'];
 
   const accountCategories = [
@@ -511,12 +507,34 @@ describe('loadMonth account creation', () => {
 
   it('files a synthetic account under the synthetic category', async () => {
     const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
-    const { d } = deps({ config: roster, client: accountClient([], writes) });
+    const passivePlan = () => {
+      const plan = samplePlan();
+      plan.transactions = plan.transactions.map((t) => ({
+        ...t,
+        kind: 'income' as const,
+        category: 'Inc1',
+        account: 'Passive Income (OwnerA)',
+      }));
+      plan.checks = { ...plan.checks, expenseTotal: 0, incomeTotal: 100 };
+      return plan;
+    };
+    const incomeCategories = accountClient([], writes);
+    const { d } = deps({
+      config: roster,
+      client: {
+        ...incomeCategories,
+        get: async (path: string) =>
+          path.startsWith('/api/categories')
+            ? [{ id: 'cat-inc', name: 'Inc1', type: 'income' }]
+            : incomeCategories.get(path),
+      } as LoadDeps['client'],
+      planFor: passivePlan,
+    });
 
     await loadMonth(d, { month: 1, year: 2099 }, {});
 
     const created = writes.find((w) => w.method === 'POST' && w.path === '/api/accounts');
-    expect(created?.body.name).toBe('Household (historical)');
+    expect(created?.body.name).toBe('Passive Income (OwnerA)');
     expect(created?.body.categoryId).toBe('ac-other');
   });
 

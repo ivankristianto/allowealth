@@ -20,11 +20,15 @@ const MINIMAL = JSON.stringify({
     balance: '[{year}] Sheet - Balance {mon}-{year}.csv',
   },
   members: { primary: 'OwnerA', secondary: 'OwnerB', fallback: 'OwnerA' },
-  accounts: [{ name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' }],
+  accounts: [
+    { name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' },
+    { name: 'Bank1 OwnerB', currency: 'IDR', owner: 'OwnerB', category: 'Bank Account' },
+    { name: 'Bank2 OwnerA USD', currency: 'USD', owner: 'OwnerA', category: 'Bank Account' },
+  ],
   accountAliases: [],
   duplicateRules: [],
+  expenseAccounts: { OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' },
   syntheticAccounts: {
-    expense: 'Household (historical)',
     passiveIncome: { OwnerA: 'Passive Income (OwnerA)', OwnerB: 'Passive Income (OwnerB)' },
     category: 'Other',
   },
@@ -126,5 +130,38 @@ describe('loadConfig', () => {
     expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
       ConfigError
     );
+  });
+
+  it('reads the account each member pays expenses from', () => {
+    const cfg = loadConfig(withConfig(MINIMAL));
+    expect(cfg.expenseAccounts).toEqual({ OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' });
+  });
+
+  it('rejects a member with no expense account', () => {
+    const config = JSON.parse(MINIMAL);
+    delete config.expenseAccounts.OwnerB;
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(
+      /expenseAccounts.*OwnerB/s
+    );
+  });
+
+  it('rejects an expense account keyed by a non-member', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseAccounts.Nobody = 'Bank1 OwnerA';
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(
+      /expenseAccounts.*Nobody/s
+    );
+  });
+
+  it('rejects an expense account that is not in the roster', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseAccounts.OwnerA = 'BankTypo';
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/BankTypo/);
+  });
+
+  it('rejects a foreign-currency expense account, since expenses post in local currency', () => {
+    const config = JSON.parse(MINIMAL);
+    config.expenseAccounts.OwnerA = 'Bank2 OwnerA USD';
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/Bank2 OwnerA USD/);
   });
 });

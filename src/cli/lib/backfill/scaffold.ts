@@ -118,7 +118,8 @@ export async function runScaffoldCommand(args: ScaffoldArgs): Promise<void> {
     filenames: templates,
     members: { primary: '', secondary: '', fallback: '' },
     ...config,
-    syntheticAccounts: { expense: '', passiveIncome: {}, category: '' },
+    expenseAccounts: {},
+    syntheticAccounts: { passiveIncome: {}, category: '' },
     dateRules: {
       incomeDayOfMonth: 10,
       earliestMonth: `${months[0]!.year}-${String(months[0]!.month).padStart(2, '0')}`,

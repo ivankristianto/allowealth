@@ -127,7 +127,7 @@ describe('fetchMonthTransactions', () => {
           transaction_date: '2099-01-02',
           amount: '10',
           category: { name: 'Cat1' },
-          account: { name: 'Household (historical)' },
+          account: { name: 'Bank1 OwnerA' },
           created_by_user_name: 'OwnerB',
         },
       ],

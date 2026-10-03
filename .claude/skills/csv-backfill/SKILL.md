@@ -66,22 +66,23 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 
 ## 3. Responding to a detection abort
 
-| Abort                                                | Fix                                                                                                         |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `Account "X" is not in the roster`                   | Add it to `accounts` with its currency, or map it with `accountAliases` if it is a rename                   |
-| `Account "X" has no category in the config`          | Give it a `category` in `accounts` (or `syntheticAccounts.category`)                                        |
-| `Account category "X" does not exist`                | Run `aw backfill setup`; it creates every account category the config names                                 |
-| `Account "X" appears N times … with no rule`         | Add a `duplicateRules` entry for that month, name and occurrence, and add the renamed account to `accounts` |
-| `Unknown expense/income category: "X"`               | Add it to `categories.expense` / `categories.income`, or map it with `categoryRenames`                      |
-| `… blank local amount but a foreign amount`          | A placeholder row. Add a `suppressedRows` entry for it                                                      |
-| `… has a blank amount`                               | Fill the cell in the CSV, or add a `suppressedRows` entry                                                   |
-| `… carries a foreign amount but has no routing rule` | Add an `incomeRouting` entry mapping the category to a foreign-currency account                             |
-| `Row "…" names both members`                         | Rename the row in the CSV, or suppress it                                                                   |
-| `Date "…" falls outside <month>`                     | Fix the cell, or suppress the row                                                                           |
-| `… is already loaded`                                | Re-run with `--force` to purge and reload                                                                   |
-| `rows diverge from the plan this tool saved`         | Something else wrote into the month. Investigate before passing `--force`                                   |
-| `No free balance-history slot left`                  | The day's 12:00–12:59 UTC window is full. Clear the stale snapshots for that day first                      |
-| `loaded but does not reconcile`                      | Link 2 failed. The month stays `loading`; investigate, then re-run                                          |
+| Abort                                                                          | Fix                                                                                                         |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `Account "X" is not in the roster`                                             | Add it to `accounts` with its currency, or map it with `accountAliases` if it is a rename                   |
+| `` `expenseAccounts.X` points at "Y", which is not in this month's accounts `` | The paying account closed or was renamed. Point `expenseAccounts` at an account in the sheet                |
+| `Account "X" has no category in the config`                                    | Give it a `category` in `accounts` (or `syntheticAccounts.category`)                                        |
+| `Account category "X" does not exist`                                          | Run `aw backfill setup`; it creates every account category the config names                                 |
+| `Account "X" appears N times … with no rule`                                   | Add a `duplicateRules` entry for that month, name and occurrence, and add the renamed account to `accounts` |
+| `Unknown expense/income category: "X"`                                         | Add it to `categories.expense` / `categories.income`, or map it with `categoryRenames`                      |
+| `… blank local amount but a foreign amount`                                    | A placeholder row. Add a `suppressedRows` entry for it                                                      |
+| `… has a blank amount`                                                         | Fill the cell in the CSV, or add a `suppressedRows` entry                                                   |
+| `… carries a foreign amount but has no routing rule`                           | Add an `incomeRouting` entry mapping the category to a foreign-currency account                             |
+| `Row "…" names both members`                                                   | Rename the row in the CSV, or suppress it                                                                   |
+| `Date "…" falls outside <month>`                                               | Fix the cell, or suppress the row                                                                           |
+| `… is already loaded`                                                          | Re-run with `--force` to purge and reload                                                                   |
+| `rows diverge from the plan this tool saved`                                   | Something else wrote into the month. Investigate before passing `--force`                                   |
+| `No free balance-history slot left`                                            | The day's 12:00–12:59 UTC window is full. Clear the stale snapshots for that day first                      |
+| `loaded but does not reconcile`                                                | Link 2 failed. The month stays `loading`; investigate, then re-run                                          |
 
 **Salary is not `incomeRouting`.** Salary routes by category through
 `salaryRouting`, to the member's own account. `incomeRouting` exists only for
@@ -95,7 +96,10 @@ transaction as owned by whoever posts it, so `run` signs in as each member who
 owns a row and posts it as them. `expenseOwners` gives an expense to a member
 by exact category or by a whole word in the description; an expense no rule
 matches belongs to `members.fallback`. Two rules giving one row to different
-members abort the run rather than pick one. Income needs no rule: it belongs to
+members abort the run rather than pick one. An expense is paid from its
+owner's account in `expenseAccounts` — a local-currency roster account — so an
+ownership rule moves the paying account too. That account must appear in the
+month's sheet, or the run aborts rather than create it at a zero balance. Income needs no rule: it belongs to
 whoever owns the account it is paid into — the roster owner, or the member a
 passive-income bucket is kept for.
 
@@ -152,8 +156,8 @@ Link 4 closes a hole Link 1 cannot see: the totals still match when every
 income row is routed to the wrong account. It compares in **local**
 currency — the foreign column would reintroduce the rate spread — and
 subtracts rows placed by `incomeRouting`, because the sheet's `Income`
-column excludes them. Synthetic buckets (`Household (historical)`,
-`Passive Income (…)`) have no column to compare against and are out of scope.
+column excludes them. Synthetic buckets (`Passive Income (…)`) have no
+column to compare against and are out of scope.
 
 Link 2 recomputes the variance from the accounts and transactions read back
 out of the app, because the app derives reconciliation only for its own

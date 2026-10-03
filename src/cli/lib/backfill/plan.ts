@@ -110,6 +110,19 @@ function incomeOwner(account: string, config: BackfillConfig): string {
   return bucket?.[0] ?? config.members.fallback;
 }
 
+/**
+ * The account an expense is paid from: its owner's configured account. It must
+ * appear in this month's sheet, or the loader would create it at a zero balance.
+ */
+function expenseAccount(
+  owner: string,
+  roster: Map<string, ResolvedAccount>,
+  config: BackfillConfig
+): string {
+  const name = config.expenseAccounts[owner] ?? '';
+  return rosterAccount(roster, name, `expenseAccounts.${owner}`).name;
+}
+
 function isSuppressed(
   row: RawRow,
   side: 'expense' | 'income',
@@ -248,13 +261,14 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       continue;
     }
     const category = rename(row.category);
+    const owner = expenseOwner(row.description, category, config);
     transactions.push({
       kind: 'expense',
       date: normaliseDate(row.date, raw, `expense "${row.description}"`),
       description: row.description,
       category,
-      account: config.syntheticAccounts.expense,
-      owner: expenseOwner(row.description, category, config),
+      account: expenseAccount(owner, roster, config),
+      owner,
       amount: decimal(amount),
       currency: LOCAL,
       localAmount: decimal(amount),

@@ -16,9 +16,22 @@ const raw = parseMonth(
 const plan = buildPlan(raw, fixtureConfig);
 
 describe('buildPlan', () => {
-  it('sends every expense to the synthetic household account', () => {
+  it("pays every expense from its owner's configured account", () => {
     const expenses = plan.transactions.filter((t) => t.kind === 'expense');
-    expect(new Set(expenses.map((t) => t.account))).toEqual(new Set(['Household (historical)']));
+    expect(expenses.length).toBeGreaterThan(0);
+    for (const expense of expenses) {
+      expect(expense.account).toBe(fixtureConfig.expenseAccounts[expense.owner]!);
+    }
+  });
+
+  it("aborts when an owner's expense account is not in the month's sheet", () => {
+    const config = {
+      ...fixtureConfig,
+      expenseAccounts: { ...fixtureConfig.expenseAccounts, OwnerA: 'Closed OwnerA' },
+    };
+    const error = thrown(() => buildPlan(raw, config));
+    expect(error).toBeInstanceOf(DetectionError);
+    expect((error as Error).message).toMatch(/expenseAccounts\.OwnerA.*Closed OwnerA/s);
   });
 
   it('skips zero-amount rows and records why', () => {
@@ -185,6 +198,14 @@ describe('buildPlan transaction ownership', () => {
     expect(ownerOf(p, 'Item C')).toBe('OwnerB');
     expect(ownerOf(p, 'Item D')).toBe('OwnerB');
     expect(ownerOf(p, 'Item A')).toBe('OwnerA');
+  });
+
+  it("pays an expense from its owner's account, so a rule moves the account too", () => {
+    const p = owned([{ category: 'Cat2', owner: 'OwnerB' }]);
+    const accountOf = (description: string) =>
+      p.transactions.find((t) => t.description === description)?.account;
+    expect(accountOf('Item C')).toBe('Bank1 OwnerB');
+    expect(accountOf('Item A')).toBe('Bank1 OwnerA');
   });
 
   it('gives an expense to the owner a description rule names, by whole word', () => {

@@ -17,8 +17,8 @@ export const fixtureConfig: BackfillConfig = {
   ],
   accountAliases: [],
   duplicateRules: [],
+  expenseAccounts: { OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' },
   syntheticAccounts: {
-    expense: 'Household (historical)',
     passiveIncome: {
       OwnerA: 'Passive Income (OwnerA)',
       OwnerB: 'Passive Income (OwnerB)',

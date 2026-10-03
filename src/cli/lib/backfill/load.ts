@@ -68,9 +68,7 @@ function configuredCategory(config: BackfillConfig, name: string): string | unde
   const rostered = config.accounts.find((a) => a.name === name);
   if (rostered) return rostered.category;
   const synthetic = config.syntheticAccounts;
-  const isSynthetic =
-    name === synthetic.expense || Object.values(synthetic.passiveIncome).includes(name);
-  return isSynthetic ? synthetic.category : undefined;
+  return Object.values(synthetic.passiveIncome).includes(name) ? synthetic.category : undefined;
 }
 
 /** The first instant of the plan's month: an account's opening balance is true then. */

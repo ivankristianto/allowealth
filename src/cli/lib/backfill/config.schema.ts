@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { DirectiveError } from './errors';
+import { LOCAL_CURRENCY } from './money';
 
 /** Thrown when the config is absent or does not validate. Always actionable. */
 export class ConfigError extends DirectiveError {}
@@ -31,8 +32,11 @@ export const configSchema = v.object({
       rename: v.string(),
     })
   ),
+  // The account each member's expenses are paid from, keyed by member name. An
+  // expense is recorded against its owner's account, so `expenseOwners` decides
+  // both who an expense belongs to and where it is paid from.
+  expenseAccounts: v.record(v.string(), filledIn),
   syntheticAccounts: v.object({
-    expense: filledIn,
     passiveIncome: v.record(v.string(), filledIn),
     category: filledIn,
   }),
@@ -117,6 +121,7 @@ export function loadConfig(dataDir: string): BackfillConfig {
     seen.add(account.name);
   }
   assertExpenseOwnersKnown(result.output, path);
+  assertExpenseAccountsKnown(result.output, path);
   return result.output;
 }
 
@@ -135,6 +140,38 @@ function assertExpenseOwnersKnown(config: BackfillConfig, path: string): void {
       throw new ConfigError(
         `\`expenseOwners\` names the category "${rule.category}", which is not in ` +
           `\`categories.expense\`.\nEdit \`expenseOwners\` in ${path}.`
+      );
+    }
+  }
+}
+
+/**
+ * Every member needs a paying account, or an expense they own has nowhere to go.
+ * It must be a local-currency roster account: expenses are posted in local currency.
+ */
+function assertExpenseAccountsKnown(config: BackfillConfig, path: string): void {
+  const members = [config.members.primary, config.members.secondary];
+  for (const member of Object.keys(config.expenseAccounts)) {
+    if (!members.includes(member)) {
+      throw new ConfigError(
+        `\`expenseAccounts\` names "${member}", which is neither member ` +
+          `(${members.join(', ')}).\nEdit \`expenseAccounts\` in ${path}.`
+      );
+    }
+  }
+  for (const member of members) {
+    const name = config.expenseAccounts[member];
+    if (!name) {
+      throw new ConfigError(
+        `\`expenseAccounts\` has no account for "${member}".\n` +
+          `Add the account their expenses are paid from to \`expenseAccounts\` in ${path}.`
+      );
+    }
+    const account = config.accounts.find((a) => a.name === name);
+    if (!account || account.currency !== LOCAL_CURRENCY) {
+      throw new ConfigError(
+        `\`expenseAccounts\` gives "${member}" the account "${name}", which is not a ` +
+          `local-currency account in \`accounts\`.\nEdit \`expenseAccounts\` in ${path}.`
       );
     }
   }
