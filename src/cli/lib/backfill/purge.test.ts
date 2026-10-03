@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { assertOwnership, OwnershipError } from './purge';
+import { assertOwnership, fetchMonthTransactions, OwnershipError } from './purge';
 import type { ExistingTransaction } from './purge';
 import { thrown } from './test-helpers/throws';
 import type { Plan } from './types';
@@ -66,5 +66,55 @@ describe('assertOwnership', () => {
         )
       )
     ).toBeInstanceOf(OwnershipError);
+  });
+});
+
+describe('fetchMonthTransactions', () => {
+  it('flattens the nested category and account objects the API returns into names', async () => {
+    const client = {
+      getAll: async () => [
+        {
+          id: 't1',
+          type: 'income',
+          transaction_date: '2099-01-10',
+          amount: '10',
+          currency: 'USD',
+          category: { id: 'c1', name: 'Inc1' },
+          account: { id: 'a1', name: 'Bank1 OwnerA USD' },
+        },
+      ],
+    } as unknown as Parameters<typeof fetchMonthTransactions>[0];
+
+    const [row] = await fetchMonthTransactions(client, { month: 1, year: 2099 });
+
+    expect(row).toEqual({
+      id: 't1',
+      type: 'income',
+      transaction_date: '2099-01-10',
+      amount: '10',
+      currency: 'USD',
+      category: 'Inc1',
+      account: 'Bank1 OwnerA USD',
+    });
+  });
+
+  it('lets the ownership check match rows the API returned against the saved plan', async () => {
+    const client = {
+      getAll: async () => [
+        {
+          transaction_date: '2099-01-02',
+          amount: '100',
+          category: { name: 'Cat1' },
+          account: { name: 'A' },
+        },
+      ],
+    } as unknown as Parameters<typeof fetchMonthTransactions>[0];
+    const saved = {
+      transactions: [{ date: '2099-01-02', amount: '100', category: 'Cat1', account: 'A' }],
+    } as unknown as Plan;
+
+    const existing = await fetchMonthTransactions(client, { month: 1, year: 2099 });
+
+    expect(() => assertOwnership(existing, saved, 'loaded', false)).not.toThrow();
   });
 });

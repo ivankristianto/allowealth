@@ -22,6 +22,12 @@ export interface ExistingTransaction {
   currency?: string;
 }
 
+/** A transaction as `GET /api/transactions` returns it: category and account are nested. */
+interface ApiTransaction extends Omit<ExistingTransaction, 'category' | 'account'> {
+  category?: { name?: string } | null;
+  account?: { name?: string } | null;
+}
+
 interface ExistingBudget {
   id: string;
 }
@@ -128,10 +134,16 @@ export async function fetchMonthTransactions(
   ref: MonthRef
 ): Promise<ExistingTransaction[]> {
   const { start, end } = monthDateRange(ref);
-  return client.getAll<ExistingTransaction>(
+  const rows = await client.getAll<ApiTransaction>(
     `/api/transactions?start_date=${start}&end_date=${end}`,
     'transactions'
   );
+  // Keyed by name everywhere downstream, to compare against the plan.
+  return rows.map(({ category, account, ...rest }) => ({
+    ...rest,
+    category: category?.name,
+    account: account?.name,
+  }));
 }
 
 /** Deletes every transaction and budget in the month. Ownership is proved by the caller. */

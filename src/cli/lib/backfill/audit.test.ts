@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { diffMonth } from './audit';
+import { diffMonth, toActualBudgets } from './audit';
 import type { ActualState } from './audit';
 import type { Plan } from './types';
 
@@ -164,5 +164,60 @@ describe('audit reconciliation dimension', () => {
   it('reports drift between the plan and the app figures', () => {
     const rows = diffMonth(plan, { ...clean, reconciliation: { IDR: 250, USD: 0 } });
     expect(rows.some((x) => x.dimension === 'reconciliation' && x.key === 'IDR')).toBe(true);
+  });
+});
+
+describe('diffMonth currency handling', () => {
+  // A foreign receipt cleared at its own rate, so the sheet's local figure is not
+  // amount × the month-end reference rate. The app holds the foreign amount.
+  const withForeignIncome = structuredClone(plan);
+  withForeignIncome.transactions.push({
+    kind: 'income',
+    date: '2099-01-10',
+    description: 'salary',
+    category: 'Inc1',
+    account: 'Bank1 OwnerA USD',
+    amount: '10',
+    currency: 'USD',
+    localAmount: '99000',
+  });
+  withForeignIncome.checks.incomeTotal = 99000;
+
+  const foreignIncome = (amount: string): ActualState => ({
+    ...clean,
+    transactions: [
+      ...clean.transactions,
+      {
+        type: 'income',
+        transaction_date: '2099-01-10',
+        amount,
+        category: 'Inc1',
+        account: 'Bank1 OwnerA USD',
+        currency: 'USD',
+      },
+    ],
+  });
+
+  it('compares the foreign amount the app holds, never a converted figure', () => {
+    expect(diffMonth(withForeignIncome, foreignIncome('10'))).toEqual([]);
+  });
+
+  it('reports a foreign amount posted wrong, keyed by its currency', () => {
+    const rows = diffMonth(withForeignIncome, foreignIncome('11'));
+    expect(rows).toContainEqual({
+      dimension: 'income total',
+      key: '2099-01 USD',
+      expected: '10.00',
+      actual: '11.00',
+    });
+    expect(rows.some((x) => x.dimension === 'income per account')).toBe(true);
+  });
+});
+
+describe('toActualBudgets', () => {
+  it('reads the category name from the nested object the API returns', () => {
+    expect(toActualBudgets([{ budget_amount: '400', category: { name: 'Cat1' } }])).toEqual([
+      { category: 'Cat1', budget_amount: '400' },
+    ]);
   });
 });

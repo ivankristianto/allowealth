@@ -1,5 +1,5 @@
 import type { BackfillClient } from './client';
-import { closeEnough, toLocal } from './money';
+import { closeEnough } from './money';
 import { actualVariance, expectedVariance } from './reconcile';
 import { monthKey } from './plan';
 import { fetchMonthTransactions } from './purge';
@@ -47,7 +47,12 @@ function money(value: number): string {
 }
 
 /**
- * Compares plan against app totals grouped by some key, in local currency.
+ * Compares plan against app totals grouped by some key and by currency.
+ *
+ * Both sides are summed in the currency each transaction was posted in, so a
+ * foreign amount is never converted: the month-end rate is not the rate a
+ * receipt cleared at, and converting would invent a spread. Link 1 has already
+ * tied the plan's amounts to the sheet's printed totals.
  *
  * Keys present on either side are reported, so a category the app holds but the
  * plan does not shows up rather than being skipped.
@@ -58,18 +63,18 @@ function groupCompare(
   actual: ActualTransaction[],
   planKey: (t: PlanTransaction) => string,
   actualKey: (t: ActualTransaction) => string,
-  compare: (dimension: string, key: string, expected: number, got: number) => void,
-  rate: number
+  compare: (dimension: string, key: string, expected: number, got: number) => void
 ): void {
   const sums = new Map<string, { expected: number; got: number }>();
-  const bucket = (key: string) => {
-    const found = sums.get(key) ?? { expected: 0, got: 0 };
-    sums.set(key, found);
+  const bucket = (key: string, currency: string | undefined) => {
+    const bucketKey = `${key} ${currency ?? 'IDR'}`;
+    const found = sums.get(bucketKey) ?? { expected: 0, got: 0 };
+    sums.set(bucketKey, found);
     return found;
   };
 
-  for (const t of planned) bucket(planKey(t)).expected += Number(t.localAmount);
-  for (const t of actual) bucket(actualKey(t)).got += toLocal(t.amount, t.currency, rate);
+  for (const t of planned) bucket(planKey(t), t.currency).expected += Number(t.amount);
+  for (const t of actual) bucket(actualKey(t), t.currency).got += Number(t.amount);
 
   for (const [key, { expected, got }] of sums) compare(dimension, key, expected, got);
 }
@@ -88,23 +93,18 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
     }
   };
 
-  const sum = (items: { amount: string; currency?: string }[]) =>
-    items.reduce((total, t) => total + toLocal(t.amount, t.currency, plan.rate), 0);
-
   const key = monthKey(plan);
 
-  compare(
-    'expense total',
-    key,
-    plan.checks.expenseTotal,
-    sum(actual.transactions.filter((t) => t.type === 'expense'))
-  );
-  compare(
-    'income total',
-    key,
-    plan.checks.incomeTotal,
-    sum(actual.transactions.filter((t) => t.type === 'income'))
-  );
+  for (const kind of ['expense', 'income'] as const) {
+    groupCompare(
+      `${kind} total`,
+      plan.transactions.filter((t) => t.kind === kind),
+      actual.transactions.filter((t) => t.type === kind),
+      () => key,
+      () => key,
+      compare
+    );
+  }
   compare('transaction count', key, plan.transactions.length, actual.transactions.length);
 
   groupCompare(
@@ -113,8 +113,7 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
     actual.transactions.filter((t) => t.type === 'expense'),
     (t) => t.category,
     (t) => t.category ?? '',
-    compare,
-    plan.rate
+    compare
   );
   groupCompare(
     'income per category',
@@ -122,8 +121,7 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
     actual.transactions.filter((t) => t.type === 'income'),
     (t) => t.category,
     (t) => t.category ?? '',
-    compare,
-    plan.rate
+    compare
   );
   groupCompare(
     'income per account',
@@ -131,8 +129,7 @@ export function diffMonth(plan: Plan, actual: ActualState): AuditRow[] {
     actual.transactions.filter((t) => t.type === 'income'),
     (t) => t.account,
     (t) => t.account ?? '',
-    compare,
-    plan.rate
+    compare
   );
 
   const actualBudgets = new Map(actual.budgets.map((b) => [b.category, b.budget_amount]));
@@ -235,6 +232,17 @@ function auditReconciliation(
   return { IDR: actual.IDR - expected.IDR, USD: actual.USD - expected.USD };
 }
 
+/** A budget as `GET /api/budgets` returns it: the category is a nested object. */
+interface ApiBudget {
+  budget_amount: string;
+  category?: { name?: string } | null;
+}
+
+/** Keys the app's budgets by category name, to compare against the plan. */
+export function toActualBudgets(budgets: ApiBudget[]): ActualState['budgets'] {
+  return budgets.map((b) => ({ category: b.category?.name ?? '', budget_amount: b.budget_amount }));
+}
+
 /** Reads the app's state for the month. Performs no writes. */
 export async function runAudit(
   client: BackfillClient,
@@ -242,7 +250,7 @@ export async function runAudit(
   newestPlan?: Plan
 ): Promise<AuditRow[]> {
   const transactions = await fetchMonthTransactions(client, plan);
-  const budgets = await client.get<{ category?: string; budget_amount: string }[]>(
+  const budgets = await client.get<ApiBudget[]>(
     `/api/budgets?month=${plan.month}&year=${plan.year}`
   );
   const accounts = await client.get<ApiAccount[]>('/api/accounts');
@@ -275,10 +283,7 @@ export async function runAudit(
 
   return diffMonth(plan, {
     transactions: monthTransactions,
-    budgets: (budgets ?? []).map((b) => ({
-      category: b.category ?? '',
-      budget_amount: b.budget_amount,
-    })),
+    budgets: toActualBudgets(budgets ?? []),
     history,
     balances,
     newestClosing: newestPlan
