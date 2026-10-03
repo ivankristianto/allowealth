@@ -93,7 +93,8 @@ export async function seedAccountCategories(
       created_at: now,
       updated_at: now,
     });
-    categoryMap.set(category.legacyType, id);
+    // First category per type wins, so 'other' stays 'Other', not 'Commodities & Precious Metals'.
+    if (!categoryMap.has(category.legacyType)) categoryMap.set(category.legacyType, id);
   }
 
   console.log(`✓ Created ${categoryMap.size} account categories`);
