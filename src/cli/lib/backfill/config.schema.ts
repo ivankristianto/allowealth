@@ -36,10 +36,6 @@ export const configSchema = v.object({
   // expense is recorded against its owner's account, so `expenseOwners` decides
   // both who an expense belongs to and where it is paid from.
   expenseAccounts: v.record(v.string(), filledIn),
-  syntheticAccounts: v.object({
-    passiveIncome: v.record(v.string(), filledIn),
-    category: filledIn,
-  }),
   categories: v.object({
     expense: v.array(filledIn),
     income: v.array(
@@ -58,11 +54,28 @@ export const configSchema = v.object({
       v.strictObject({ match: filledIn, owner: filledIn }),
     ])
   ),
-  // Salary is routed by category to a member's own account. It is kept apart
-  // from `incomeRouting`, which exists only for foreign-currency non-salary
-  // income: a local-currency entry appearing there signals the scope drifting.
+  // Salary is routed by category to a member's own account. The sheet's
+  // `Income` column records exactly these rows, which is what Link 4 checks.
   salaryRouting: v.array(v.object({ category: filledIn, account: filledIn })),
-  incomeRouting: v.array(v.object({ match: v.string(), account: v.string() })),
+  // Every other income row is placed by the first rule that matches it: by
+  // exact category (after renames), by terms that must all start a word in the
+  // description, or both. A row no rule matches aborts the plan. `convert`
+  // lets a rule credit a foreign-currency account with a row that carries only
+  // a local amount, divided by the month's rate.
+  incomeRouting: v.array(
+    v.pipe(
+      v.strictObject({
+        category: v.optional(filledIn),
+        match: v.optional(v.pipe(v.array(filledIn), v.minLength(1))),
+        account: filledIn,
+        convert: v.optional(v.boolean()),
+      }),
+      v.check(
+        (rule) => rule.category !== undefined || rule.match !== undefined,
+        'A rule needs a `category`, a `match`, or both'
+      )
+    )
+  ),
   suppressedRows: v.array(
     v.object({
       month: v.string(),
@@ -122,6 +135,7 @@ export function loadConfig(dataDir: string): BackfillConfig {
   }
   assertExpenseOwnersKnown(result.output, path);
   assertExpenseAccountsKnown(result.output, path);
+  assertIncomeRoutingKnown(result.output, path);
   return result.output;
 }
 
@@ -172,6 +186,19 @@ function assertExpenseAccountsKnown(config: BackfillConfig, path: string): void 
       throw new ConfigError(
         `\`expenseAccounts\` gives "${member}" the account "${name}", which is not a ` +
           `local-currency account in \`accounts\`.\nEdit \`expenseAccounts\` in ${path}.`
+      );
+    }
+  }
+}
+
+/** A rule pointing at an account outside the roster would only fail mid-plan. */
+function assertIncomeRoutingKnown(config: BackfillConfig, path: string): void {
+  const roster = new Set(config.accounts.map((a) => a.name));
+  for (const rule of config.incomeRouting) {
+    if (!roster.has(rule.account)) {
+      throw new ConfigError(
+        `\`incomeRouting\` points at "${rule.account}", which is not in \`accounts\`.\n` +
+          `Edit \`incomeRouting\` in ${path}.`
       );
     }
   }

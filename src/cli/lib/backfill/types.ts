@@ -47,7 +47,7 @@ export interface PlanTransaction {
   owner: string;
   /**
    * True when `incomeRouting` placed this row. The balance sheet's `Income`
-   * column excludes such rows, so Link 4 subtracts them.
+   * column records salary only, so Link 4 subtracts every routed row.
    */
   routedByException?: boolean;
 }
@@ -97,5 +97,4 @@ export interface Plan {
   snapshots: PlanSnapshot[];
   checks: PlanChecks;
   skipped: PlanSkip[];
-  unmarkedOwner: string[];
 }

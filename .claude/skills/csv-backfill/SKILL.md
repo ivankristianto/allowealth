@@ -70,14 +70,14 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | `Account "X" is not in the roster`                                             | Add it to `accounts` with its currency, or map it with `accountAliases` if it is a rename                   |
 | `` `expenseAccounts.X` points at "Y", which is not in this month's accounts `` | The paying account closed or was renamed. Point `expenseAccounts` at an account in the sheet                |
-| `Account "X" has no category in the config`                                    | Give it a `category` in `accounts` (or `syntheticAccounts.category`)                                        |
+| `Account "X" has no category in the config`                                    | Give it a `category` in `accounts`                                                                          |
 | `Account category "X" does not exist`                                          | Run `aw backfill setup`; it creates every account category the config names                                 |
 | `Account "X" appears N times … with no rule`                                   | Add a `duplicateRules` entry for that month, name and occurrence, and add the renamed account to `accounts` |
 | `Unknown expense/income category: "X"`                                         | Add it to `categories.expense` / `categories.income`, or map it with `categoryRenames`                      |
 | `… blank local amount but a foreign amount`                                    | A placeholder row. Add a `suppressedRows` entry for it                                                      |
 | `… has a blank amount`                                                         | Fill the cell in the CSV, or add a `suppressedRows` entry                                                   |
-| `… carries a foreign amount but has no routing rule`                           | Add an `incomeRouting` entry mapping the category to a foreign-currency account                             |
-| `Row "…" names both members`                                                   | Rename the row in the CSV, or suppress it                                                                   |
+| `Income row "…" matches no routing rule`                                       | Add an `incomeRouting` rule naming the account it is paid into                                              |
+| `… routes to a USD account but has no foreign amount`                          | Fill the foreign column, or set `convert` on the rule if converting at the month's rate is intended         |
 | `Date "…" falls outside <month>`                                               | Fix the cell, or suppress the row                                                                           |
 | `… is already loaded`                                                          | Re-run with `--force` to purge and reload                                                                   |
 | `rows diverge from the plan this tool saved`                                   | Something else wrote into the month. Investigate before passing `--force`                                   |
@@ -85,11 +85,19 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 | `loaded but does not reconcile`                                                | Link 2 failed. The month stays `loading`; investigate, then re-run                                          |
 
 **Salary is not `incomeRouting`.** Salary routes by category through
-`salaryRouting`, to the member's own account. `incomeRouting` exists only for
-**foreign-currency non-salary** income, which must land in a foreign-currency
-account or the service rejects it. A local-currency entry appearing in
-`incomeRouting` is a signal that this scope is drifting — Link 4 subtracts
-those rows, so a wrong entry there silently weakens the check.
+`salaryRouting`, to the member's own account; the sheet's `Income` column
+records exactly those rows. Every other income row — coupons, dividends,
+deposit interest, one-off receipts — is placed by `incomeRouting`, an
+**ordered** list where the first matching rule wins. A rule matches by exact
+`category`, by `match` terms that must each start a word in the description
+(case-insensitive, so `INDON` finds `INDON28newnew`), or both; put specific
+rules before the broad ones they would otherwise lose to. A row no rule
+matches aborts: there is no default bucket for unexplained income.
+
+A foreign-currency account takes the row's foreign figure. A row carrying only
+a local amount aborts unless its rule sets `convert`, which divides the local
+amount by the month's rate — an explicit choice, since that rate is a
+month-end figure and the coupon may have cleared at another.
 
 **Transaction ownership is configured, never inferred.** The app records a
 transaction as owned by whoever posts it, so `run` signs in as each member who
@@ -99,9 +107,9 @@ matches belongs to `members.fallback`. Two rules giving one row to different
 members abort the run rather than pick one. An expense is paid from its
 owner's account in `expenseAccounts` — a local-currency roster account — so an
 ownership rule moves the paying account too. That account must appear in the
-month's sheet, or the run aborts rather than create it at a zero balance. Income needs no rule: it belongs to
-whoever owns the account it is paid into — the roster owner, or the member a
-passive-income bucket is kept for.
+month's sheet, or the run aborts rather than create it at a zero balance.
+Income needs no owner rule: it belongs to the roster owner of the account it
+is paid into, whatever the description says.
 
 **Rename or closure?** An account that stops appearing at a **non-zero**
 balance was renamed — map it with `accountAliases`. At **zero** it was closed —
@@ -156,8 +164,9 @@ Link 4 closes a hole Link 1 cannot see: the totals still match when every
 income row is routed to the wrong account. It compares in **local**
 currency — the foreign column would reintroduce the rate spread — and
 subtracts rows placed by `incomeRouting`, because the sheet's `Income`
-column excludes them. Synthetic buckets (`Passive Income (…)`) have no
-column to compare against and are out of scope.
+column excludes them. Those rows have no per-account figure in the sheet to
+check against; Link 1's income total is the only sheet check they get, so a
+rule pointing at the wrong account is caught by nothing but review.
 
 Link 2 recomputes the variance from the accounts and transactions read back
 out of the app, because the app derives reconciliation only for its own

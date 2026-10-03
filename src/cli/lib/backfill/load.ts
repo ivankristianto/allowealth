@@ -65,10 +65,7 @@ interface ApiAccountCategory {
 
 /** The account category the config files `name` under, if it names the account. */
 function configuredCategory(config: BackfillConfig, name: string): string | undefined {
-  const rostered = config.accounts.find((a) => a.name === name);
-  if (rostered) return rostered.category;
-  const synthetic = config.syntheticAccounts;
-  return Object.values(synthetic.passiveIncome).includes(name) ? synthetic.category : undefined;
+  return config.accounts.find((a) => a.name === name)?.category;
 }
 
 /** The first instant of the plan's month: an account's opening balance is true then. */
@@ -562,9 +559,6 @@ export async function runLoadCommand(args: LoadArgs): Promise<void> {
     }
     for (const skip of report.plan.skipped) {
       console.log(`  skipped (${skip.reason}): ${skip.description}`);
-    }
-    for (const row of report.plan.unmarkedOwner) {
-      console.log(`  owner fell back to the default: ${row}`);
     }
   }
 

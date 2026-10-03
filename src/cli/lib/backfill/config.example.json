@@ -46,13 +46,6 @@
     "OwnerA": "Bank1 OwnerA",
     "OwnerB": "Bank1 OwnerB"
   },
-  "syntheticAccounts": {
-    "passiveIncome": {
-      "OwnerA": "Passive Income (OwnerA)",
-      "OwnerB": "Passive Income (OwnerB)"
-    },
-    "category": "Other"
-  },
   "categories": {
     "expense": ["Cat1", "Cat2", "Cat3"],
     "income": [
@@ -98,8 +91,18 @@
   ],
   "incomeRouting": [
     {
-      "match": "IncInterest",
-      "account": "Bank2 OwnerA USD"
+      "match": ["Coupon", "OwnerA"],
+      "account": "Bank2 OwnerA USD",
+      "convert": true
+    },
+    {
+      "category": "IncInterest",
+      "match": ["OwnerB"],
+      "account": "Bank1 OwnerB"
+    },
+    {
+      "category": "IncInterest",
+      "account": "Bank1 OwnerA"
     }
   ],
   "suppressedRows": [

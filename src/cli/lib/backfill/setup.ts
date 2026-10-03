@@ -148,10 +148,7 @@ async function ensureAccountCategories(
 ): Promise<void> {
   const existing = await client.get<ApiAccountCategory[]>('/api/account-categories');
   const have = new Set(existing.map((c) => c.name));
-  const wanted = new Set([
-    ...config.accounts.map((a) => a.category),
-    config.syntheticAccounts.category,
-  ]);
+  const wanted = new Set(config.accounts.map((a) => a.category));
 
   for (const name of wanted) {
     if (have.has(name)) {

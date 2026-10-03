@@ -71,8 +71,7 @@ export function verifyPlan(plan: Plan): VerifyResult {
 
   // Link 4 compares in local currency: the foreign column would reintroduce the
   // rate spread. Rows placed by `incomeRouting` are subtracted, because the
-  // sheet's Income column excludes them — it is zero outside salary. Synthetic
-  // buckets have no column to compare against and are out of scope.
+  // sheet's Income column excludes them — it is zero outside salary.
   const byAccount = new Map<string, number>();
   for (const t of plan.transactions) {
     if (t.kind !== 'income' || t.routedByException) continue;

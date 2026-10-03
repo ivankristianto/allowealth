@@ -18,13 +18,6 @@ export const fixtureConfig: BackfillConfig = {
   accountAliases: [],
   duplicateRules: [],
   expenseAccounts: { OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' },
-  syntheticAccounts: {
-    passiveIncome: {
-      OwnerA: 'Passive Income (OwnerA)',
-      OwnerB: 'Passive Income (OwnerB)',
-    },
-    category: 'Other',
-  },
   categories: {
     expense: ['Cat1', 'Cat2', 'Cat3'],
     income: [
@@ -39,7 +32,10 @@ export const fixtureConfig: BackfillConfig = {
     { category: 'IncSalaryA', account: 'Bank2 OwnerA USD' },
     { category: 'IncSalaryB', account: 'Bank1 OwnerB' },
   ],
-  incomeRouting: [],
+  incomeRouting: [
+    { category: 'IncInterest', match: ['OwnerB'], account: 'Bond1 OwnerB' },
+    { category: 'IncInterest', account: 'Bond1 OwnerA' },
+  ],
   suppressedRows: [],
   dateRules: { incomeDayOfMonth: 10, earliestMonth: '2099-01' },
 };

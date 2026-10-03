@@ -49,32 +49,6 @@ function wholeWord(word: string): RegExp {
 }
 
 /**
- * Resolves the member named in a description by whole word, anywhere in it.
- *
- * Owners are written mid-string as often as they are suffixed, so a suffix
- * match would silently fall back for a large share of rows.
- */
-function resolveOwner(
-  description: string,
-  config: BackfillConfig,
-  unmarked: string[]
-): { owner: string; fellBack: boolean } {
-  const names = [config.members.primary, config.members.secondary];
-  const matched = names.filter((name) => wholeWord(name).test(description));
-
-  if (matched.length > 1) {
-    throw new DetectionError(
-      `Row "${description}" names both ${names.join(' and ')}; the owner is ambiguous.\n` +
-        `Rename the row in the CSV, or add a \`suppressedRows\` entry for it.`
-    );
-  }
-  if (matched.length === 1) return { owner: matched[0]!, fellBack: false };
-
-  unmarked.push(description);
-  return { owner: config.members.fallback, fellBack: true };
-}
-
-/**
  * The member an expense belongs to: the owner every matching `expenseOwners`
  * rule agrees on, or `members.fallback` when none matches.
  */
@@ -97,17 +71,9 @@ function expenseOwner(description: string, category: string, config: BackfillCon
   return [...owners][0] ?? config.members.fallback;
 }
 
-/**
- * The member an income row belongs to: whoever owns the account it is paid
- * into — the roster owner, or the member a passive-income bucket is kept for.
- */
-function incomeOwner(account: string, config: BackfillConfig): string {
-  const rostered = config.accounts.find((a) => a.name === account);
-  if (rostered) return rostered.owner;
-  const bucket = Object.entries(config.syntheticAccounts.passiveIncome).find(
-    ([, name]) => name === account
-  );
-  return bucket?.[0] ?? config.members.fallback;
+/** Matches `term` where it starts a word, so `INDON` also finds `INDON28`. */
+function wordStart(term: string): RegExp {
+  return new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
 }
 
 /**
@@ -158,6 +124,8 @@ interface Route {
   currency: Currency;
   /** Set when `incomeRouting` placed the row, so Link 4 can subtract it. */
   byException?: boolean;
+  /** Set when the rule allows a local-only row into a foreign account. */
+  convert?: boolean;
 }
 
 function rosterAccount(
@@ -176,14 +144,15 @@ function rosterAccount(
 }
 
 /**
- * Routing keys on category, never on the presence of a foreign amount — some
- * non-salary rows carry one too.
+ * Salary routes by category to its member's account. Every other row goes where
+ * the first matching `incomeRouting` rule sends it; with no match it aborts,
+ * because there is no default account to put unexplained income in.
  */
 function routeIncome(
   row: RawRow,
+  category: string,
   config: BackfillConfig,
-  roster: Map<string, ResolvedAccount>,
-  owner: string
+  roster: Map<string, ResolvedAccount>
 ): Route {
   const salary = config.salaryRouting.find((r) => r.category === row.category);
   if (salary) {
@@ -192,43 +161,40 @@ function routeIncome(
   }
 
   const rule = config.incomeRouting.find(
-    (r) => r.match === row.category || r.match === row.description
+    (r) =>
+      (r.category === undefined || r.category === category) &&
+      (r.match ?? []).every((term) => wordStart(term).test(row.description))
   );
-  if (rule) {
-    const account = rosterAccount(roster, rule.account, 'incomeRouting');
-    return { account: account.name, currency: account.currency, byException: true };
-  }
-
-  // A foreign figure with nowhere to go is a routing gap, not a passive row:
-  // the passive bucket is local-currency and would silently lose the rate.
-  if (row.usd.kind === 'value' && row.usd.value !== 0) {
+  if (!rule) {
     throw new DetectionError(
-      `Income row "${row.description}" (${row.category}) carries a foreign amount ` +
-        `but has no routing rule.\n` +
-        `Add an \`incomeRouting\` entry mapping "${row.category}" to a foreign-currency account.`
+      `Income row "${row.description}" (${category}) matches no routing rule.\n` +
+        `Add an \`incomeRouting\` rule naming the account it is paid into.`
     );
   }
-
-  const bucket = config.syntheticAccounts.passiveIncome[owner];
-  if (!bucket) {
-    throw new DetectionError(
-      `No passive-income account configured for "${owner}".\n` +
-        `Add it to \`syntheticAccounts.passiveIncome\`.`
-    );
-  }
-  return { account: bucket, currency: LOCAL };
+  const account = rosterAccount(roster, rule.account, 'incomeRouting');
+  return {
+    account: account.name,
+    currency: account.currency,
+    byException: true,
+    ...(rule.convert ? { convert: true } : {}),
+  };
 }
 
-function amountFor(row: RawRow, currency: Currency, local: number): number {
-  if (currency === LOCAL) return local;
-  if (row.usd.kind !== 'value') {
-    throw new DetectionError(
-      `Income row "${row.description}" routes to a ${currency} account ` +
-        `but has no foreign amount.\n` +
-        `Fill the foreign column in the CSV, or route it to a local-currency account.`
-    );
-  }
-  return row.usd.value;
+/**
+ * The amount in the account's currency. A foreign account takes the row's
+ * foreign figure; only a rule marked `convert` may derive one from the local
+ * amount at the month's rate.
+ */
+function amountFor(row: RawRow, route: Route, local: number, rate: number): number {
+  if (route.currency === LOCAL) return local;
+  if (row.usd.kind === 'value') return row.usd.value;
+  if (route.convert) return fromLocal(local, route.currency, rate);
+  throw new DetectionError(
+    `Income row "${row.description}" routes to a ${route.currency} account ` +
+      `but has no foreign amount.\n` +
+      `Fill the foreign column in the CSV, set \`convert\` on its \`incomeRouting\` rule, ` +
+      `or route it to a local-currency account.`
+  );
 }
 
 function accountIncomeChecks(accounts: ResolvedAccount[]): Record<string, number> {
@@ -248,7 +214,6 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
 
   const transactions: PlanTransaction[] = [];
   const skipped: Plan['skipped'] = [];
-  const unmarkedOwner: string[] = [];
 
   for (const row of raw.expenses) {
     if (isSuppressed(row, 'expense', config, key)) {
@@ -290,9 +255,9 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       skipped.push({ reason: 'zero amount', description: row.description });
       continue;
     }
-    const { owner } = resolveOwner(row.description, config, unmarkedOwner);
-    const { account, currency, byException } = routeIncome(row, config, roster, owner);
-    const amount = amountFor(row, currency, local);
+    const category = rename(row.category);
+    const route = routeIncome(row, category, config, roster);
+    const amount = amountFor(row, route, local, raw.rate);
     if (amount === 0) {
       skipped.push({ reason: 'zero amount', description: row.description });
       continue;
@@ -301,13 +266,14 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       kind: 'income',
       date: incomeDate,
       description: row.description,
-      category: rename(row.category),
-      account,
-      owner: incomeOwner(account, config),
+      category,
+      account: route.account,
+      // Income belongs to whoever owns the account it is paid into.
+      owner: roster.get(route.account)!.owner,
       amount: decimal(amount),
-      currency,
+      currency: route.currency,
       localAmount: decimal(local),
-      ...(byException ? { routedByException: true } : {}),
+      ...(route.byException ? { routedByException: true } : {}),
     });
   }
 
@@ -342,6 +308,5 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       accountIncome: accountIncomeChecks(accounts),
     },
     skipped,
-    unmarkedOwner,
   };
 }

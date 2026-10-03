@@ -33,7 +33,6 @@ const plan = {
   ],
   checks: { expenseTotal: 100, incomeTotal: 0, closingTotal: 1200, accountIncome: {} },
   skipped: [],
-  unmarkedOwner: [],
 } as unknown as Plan;
 
 const clean: ActualState = {

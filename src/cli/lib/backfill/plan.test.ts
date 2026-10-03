@@ -53,9 +53,13 @@ describe('buildPlan', () => {
     expect(s?.amount).toBe('5000000');
   });
 
-  it('routes non-salary income to the owner passive bucket', () => {
-    const c = plan.transactions.find((t) => t.description === 'Payout OwnerB');
-    expect(c?.account).toBe('Passive Income (OwnerB)');
+  it('routes non-salary income by the first incomeRouting rule that matches', () => {
+    const accountOf = (description: string) =>
+      plan.transactions.find((t) => t.description === description)?.account;
+    // Both are IncInterest; only the payout names OwnerB, so the coupon falls
+    // through to the category-only rule after it.
+    expect(accountOf('Payout OwnerB')).toBe('Bond1 OwnerB');
+    expect(accountOf('Coupon OwnerA')).toBe('Bond1 OwnerA');
   });
 
   it('dates every income row on the configured day', () => {
@@ -65,11 +69,6 @@ describe('buildPlan', () => {
 
   it('keeps every transaction inside the plan month', () => {
     expect(plan.transactions.every((t) => t.date.startsWith('2099-01'))).toBe(true);
-  });
-
-  it('resolves owner by whole word anywhere in the description', () => {
-    // "Item E OwnerB" carries the owner mid-string, not as a suffix.
-    expect(plan.transactions.find((t) => t.description === 'Item E OwnerB')).toBeDefined();
   });
 
   it('records the sheet totals and per-account income as checks', () => {
@@ -127,12 +126,6 @@ describe('buildPlan', () => {
 });
 
 describe('buildPlan detection', () => {
-  it('aborts when a description names both members', () => {
-    const bad = structuredClone(raw);
-    bad.incomes[3]!.description = 'Payout OwnerA and OwnerB';
-    expect(thrown(() => buildPlan(bad, fixtureConfig))).toBeInstanceOf(DetectionError);
-  });
-
   it('aborts on a populated foreign amount with a blank local amount', () => {
     const bad = structuredClone(raw);
     bad.incomes[1]!.amount = { kind: 'blank' };
@@ -141,12 +134,14 @@ describe('buildPlan detection', () => {
   });
 
   it('marks an incomeRouting row so Link 4 can subtract it', () => {
-    // Foreign-currency non-salary income: the only thing incomeRouting is for.
     const foreign = structuredClone(raw);
     foreign.incomes[2]!.usd = { kind: 'value', value: 75 };
     const routed = buildPlan(foreign, {
       ...fixtureConfig,
-      incomeRouting: [{ match: 'Coupon OwnerA', account: 'Bank2 OwnerA USD' }],
+      incomeRouting: [
+        { match: ['Coupon', 'OwnerA'], account: 'Bank2 OwnerA USD' },
+        ...fixtureConfig.incomeRouting,
+      ],
     });
     const c = routed.transactions.find((t) => t.description === 'Coupon OwnerA');
     expect(c?.routedByException).toBe(true);
@@ -155,10 +150,47 @@ describe('buildPlan detection', () => {
     expect(c?.localAmount).toBe('750000');
   });
 
-  it('aborts on a foreign amount with no routing entry', () => {
-    const bad = structuredClone(raw);
-    bad.incomes[3]!.usd = { kind: 'value', value: 25 };
-    expect(() => buildPlan(bad, fixtureConfig)).toThrow(/incomeRouting/);
+  it('aborts on a non-salary income row that no rule matches', () => {
+    const error = thrown(() => buildPlan(raw, { ...fixtureConfig, incomeRouting: [] }));
+    expect(error).toBeInstanceOf(DetectionError);
+    expect((error as Error).message).toMatch(/Coupon OwnerA.*incomeRouting/s);
+  });
+
+  it('matches a rule term where it starts a word, case-insensitively', () => {
+    const renamed = structuredClone(raw);
+    renamed.incomes[2]!.description = 'COUPON2099 OwnerA';
+    const routed = buildPlan(renamed, {
+      ...fixtureConfig,
+      incomeRouting: [
+        { match: ['coupon'], account: 'Bank1 OwnerA' },
+        ...fixtureConfig.incomeRouting,
+      ],
+    });
+    const c = routed.transactions.find((t) => t.description === 'COUPON2099 OwnerA');
+    expect(c?.account).toBe('Bank1 OwnerA');
+  });
+
+  it('converts a local-only row into a foreign account when its rule says convert', () => {
+    const routed = buildPlan(raw, {
+      ...fixtureConfig,
+      incomeRouting: [
+        { match: ['Coupon'], account: 'Bank2 OwnerA USD', convert: true },
+        ...fixtureConfig.incomeRouting,
+      ],
+    });
+    const c = routed.transactions.find((t) => t.description === 'Coupon OwnerA');
+    expect(c).toMatchObject({ currency: 'USD', amount: '75', localAmount: '750000' });
+  });
+
+  it('aborts on a local-only row routed to a foreign account without convert', () => {
+    const config = {
+      ...fixtureConfig,
+      incomeRouting: [
+        { match: ['Coupon'], account: 'Bank2 OwnerA USD' },
+        ...fixtureConfig.incomeRouting,
+      ],
+    };
+    expect(() => buildPlan(raw, config)).toThrow(/no foreign amount.*convert/s);
   });
 
   it('drops a row matched by suppressedRows', () => {
@@ -175,10 +207,6 @@ describe('buildPlan detection', () => {
     };
     const suppressed = buildPlan(raw, config);
     expect(suppressed.transactions.some((t) => t.description === 'Payout OwnerB')).toBe(false);
-  });
-
-  it('reports rows whose owner fell back rather than hiding them', () => {
-    expect(Array.isArray(plan.unmarkedOwner)).toBe(true);
   });
 });
 
@@ -219,9 +247,14 @@ describe('buildPlan transaction ownership', () => {
     expect(ownerOf(plan, 'Salary OwnerB')).toBe('OwnerB');
   });
 
-  it('gives passive income to the member whose passive-income account receives it', () => {
+  it('gives routed income to the owner of the account it is routed to', () => {
     expect(ownerOf(plan, 'Payout OwnerB')).toBe('OwnerB');
-    expect(ownerOf(plan, 'Coupon OwnerA')).toBe('OwnerA');
+    const routed = buildPlan(raw, {
+      ...fixtureConfig,
+      incomeRouting: [{ category: 'IncInterest', account: 'Bond1 OwnerB' }],
+    });
+    // The description names OwnerA; the account decides.
+    expect(ownerOf(routed, 'Coupon OwnerA')).toBe('OwnerB');
   });
 
   it('aborts when two rules give one expense to different owners', () => {

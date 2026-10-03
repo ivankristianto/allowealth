@@ -28,10 +28,6 @@ const MINIMAL = JSON.stringify({
   accountAliases: [],
   duplicateRules: [],
   expenseAccounts: { OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' },
-  syntheticAccounts: {
-    passiveIncome: { OwnerA: 'Passive Income (OwnerA)', OwnerB: 'Passive Income (OwnerB)' },
-    category: 'Other',
-  },
   categories: { expense: ['Cat1'], income: [{ name: 'Inc1', sourceType: 'active' }] },
   categoryRenames: [],
   expenseOwners: [],
@@ -51,20 +47,11 @@ describe('loadConfig', () => {
   it('reads the account category each account is filed under', () => {
     const cfg = loadConfig(withConfig(MINIMAL));
     expect(cfg.accounts[0]?.category).toBe('Bank Account');
-    expect(cfg.syntheticAccounts.category).toBe('Other');
   });
 
   it('rejects an account with no category rather than guessing one', () => {
     const config = JSON.parse(MINIMAL);
     delete config.accounts[0].category;
-    expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
-      ConfigError
-    );
-  });
-
-  it('rejects synthetic accounts with no category', () => {
-    const config = JSON.parse(MINIMAL);
-    delete config.syntheticAccounts.category;
     expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
       ConfigError
     );
@@ -163,5 +150,33 @@ describe('loadConfig', () => {
     const config = JSON.parse(MINIMAL);
     config.expenseAccounts.OwnerA = 'Bank2 OwnerA USD';
     expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/Bank2 OwnerA USD/);
+  });
+
+  it('reads income routing rules keyed by category, by description terms, or both', () => {
+    const config = JSON.parse(MINIMAL);
+    config.incomeRouting = [
+      { match: ['Coupon', 'OwnerA'], account: 'Bank2 OwnerA USD', convert: true },
+      { category: 'Inc1', account: 'Bank1 OwnerA' },
+    ];
+    const cfg = loadConfig(withConfig(JSON.stringify(config)));
+    expect(cfg.incomeRouting[0]).toEqual({
+      match: ['Coupon', 'OwnerA'],
+      account: 'Bank2 OwnerA USD',
+      convert: true,
+    });
+  });
+
+  it('rejects an income routing rule with neither a category nor a match', () => {
+    const config = JSON.parse(MINIMAL);
+    config.incomeRouting = [{ account: 'Bank1 OwnerA' }];
+    expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
+      ConfigError
+    );
+  });
+
+  it('rejects an income routing rule pointing at an account not in the roster', () => {
+    const config = JSON.parse(MINIMAL);
+    config.incomeRouting = [{ category: 'Inc1', account: 'BankTypo' }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/BankTypo/);
   });
 });

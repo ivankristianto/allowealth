@@ -58,7 +58,6 @@ const cfg = {
     { name: 'Bank1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Bank Account' },
     { name: 'Deposit1 OwnerA', currency: 'IDR', owner: 'OwnerA', category: 'Time Deposit' },
   ],
-  syntheticAccounts: { passiveIncome: {}, category: 'Bank Account' },
 } as unknown as BackfillConfig;
 
 type Client = Parameters<typeof runSetup>[0];
