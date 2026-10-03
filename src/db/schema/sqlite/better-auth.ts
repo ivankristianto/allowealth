@@ -86,6 +86,9 @@ export const twoFactor = sqliteTable(
       .notNull()
       .unique()
       .references(() => user.id, { onDelete: 'cascade' }),
+    verified: integer('verified', { mode: 'boolean' }).notNull().default(true),
+    failedVerificationCount: integer('failedVerificationCount').notNull().default(0),
+    lockedUntil: integer('lockedUntil', { mode: 'timestamp' }),
   },
   (table) => [
     index('two_factor_user_id_idx').on(table.userId),

@@ -15,6 +15,13 @@
       "when": 1773488885799,
       "tag": "0001_eminent_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791035405687,
+      "tag": "0002_two_factor_lockout_columns",
+      "breakpoints": true
     }
   ]
 }
