@@ -73,17 +73,18 @@ const yearApiValidation = pipe(
   maxValue(2100, 'Year must be 2100 or earlier')
 );
 
-// Budget amount validation (required, positive decimal as string)
+// Budget amount validation (required, non-negative decimal as string).
+// Zero is a real budget: a category deliberately given nothing this month.
 const budgetAmountValidation = pipe(
   string(),
   minLength(1, 'Budget amount is required'),
   check((value) => {
     const parsedAmount = Number.parseFloat(value);
-    return !Number.isNaN(parsedAmount) && parsedAmount > 0;
-  }, 'Budget amount must be a positive number')
+    return !Number.isNaN(parsedAmount) && parsedAmount >= 0;
+  }, 'Budget amount must be zero or a positive number')
 );
 
-// Budget amount for update (optional but must be positive if provided)
+// Budget amount for update (optional but must be non-negative if provided)
 const budgetAmountUpdateValidation = optional(
   pipe(
     string(),
@@ -91,8 +92,8 @@ const budgetAmountUpdateValidation = optional(
       if (value === '') return true;
 
       const parsedAmount = Number.parseFloat(value);
-      return !Number.isNaN(parsedAmount) && parsedAmount > 0;
-    }, 'Budget amount must be a positive number')
+      return !Number.isNaN(parsedAmount) && parsedAmount >= 0;
+    }, 'Budget amount must be zero or a positive number')
   )
 );
 
