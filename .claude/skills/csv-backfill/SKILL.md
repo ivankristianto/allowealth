@@ -146,6 +146,12 @@ reconciliation figure uses the month's own balance **history** for end
 balances, not the account's current balance, which is settled to the newest
 loaded month and would be the wrong end point for any earlier month.
 
+The transaction totals and grouped dimensions compare the app against the
+**plan**, not the sheet: each side is summed in the currency it was posted in,
+keyed `<key> <currency>`, and nothing is converted. Link 1 has already tied the
+plan to the sheet's printed totals; converting the app's foreign amounts at the
+month-end rate would reintroduce the spread Links 1 and 4 avoid.
+
 `verify` also audits the account's **current** balance, separately from its
 balance history. `settle` writes it and net worth reads it, yet no
 history-based check would notice it going stale.
