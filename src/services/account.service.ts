@@ -1,5 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction, accounts as accountsTable } from '@/db';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, lt, lte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AccountServiceError, ServiceErrorCode } from './service-errors';
 import type { AccountType, Currency } from '@/lib/types/account';
@@ -684,16 +684,9 @@ export class AccountService {
             includeInactive: true,
           });
 
-          // Filter out accounts created after the snapshot month
-          const accountsExistingAtTime = allAccounts.filter(
-            (account) => new Date(account.created_at) <= endOfMonth
-          );
-          perf?.recordPhase(
-            'AccountService.getSnapshotForMonth.accountCount',
-            accountsExistingAtTime.length
-          );
+          perf?.recordPhase('AccountService.getSnapshotForMonth.accountCount', allAccounts.length);
 
-          if (accountsExistingAtTime.length === 0) {
+          if (allAccounts.length === 0) {
             return [];
           }
 
@@ -701,13 +694,10 @@ export class AccountService {
           // Two-step approach: 1) get max recorded_at per account, 2) fetch full rows.
           // This avoids dialect-specific raw SQL (DISTINCT ON for PG, self-join for SQLite)
           // and works through Drizzle's query builder on all drivers.
-          const accountIds = accountsExistingAtTime.map((a) => a.id);
+          const accountIds = allAccounts.map((a) => a.id);
           const idChunks = this.chunkIds(accountIds, 500);
           perf?.recordPhase('AccountService.getSnapshotForMonth.chunkCount', idChunks.length);
           const historyTable = this.schema.accountHistory;
-          // SQLite stores timestamps as integers (epoch milliseconds via sqliteTimestampNow)
-          // — raw sql templates need a primitive, not a Date object.
-          const endOfMonthEpoch = endOfMonth.getTime();
           const allHistory: Array<{ account_id: string; balance: string; recorded_at: Date }> = [];
 
           for (const chunk of idChunks) {
@@ -723,7 +713,8 @@ export class AccountService {
               .where(
                 and(
                   inArray(historyTable.account_id, chunk),
-                  sql`${historyTable.recorded_at} <= ${endOfMonthEpoch}`
+                  // lte() maps the Date through the column, which stores epoch seconds.
+                  lte(historyTable.recorded_at, endOfMonth)
                 )
               )
               .groupBy(historyTable.account_id);
@@ -767,6 +758,13 @@ export class AccountService {
               historyMap.set(history.account_id, history);
             }
           }
+
+          // An account existed in the month if it had a balance recorded by its end.
+          // created_at alone is not enough: an account entered later with a dated
+          // opening balance was created after the month it opened in.
+          const accountsExistingAtTime = allAccounts.filter(
+            (account) => historyMap.has(account.id) || new Date(account.created_at) <= endOfMonth
+          );
 
           // Map accounts to snapshots with O(1) lookups
           const snapshots = accountsExistingAtTime.map((account) => {
@@ -943,12 +941,12 @@ export class AccountService {
       throw new AccountServiceError(ServiceErrorCode.ACCOUNT_NOT_FOUND, 'Account not found', 404);
     }
 
-    const startOfMonthMs = new Date(year, month - 1, 1).getTime();
+    const startOfMonth = new Date(year, month - 1, 1);
 
     const lastEntry = await this.db.query.accountHistory.findFirst({
       where: and(
         eq(this.schema.accountHistory.account_id, accountId),
-        sql`${this.schema.accountHistory.recorded_at} < ${startOfMonthMs}`
+        lt(this.schema.accountHistory.recorded_at, startOfMonth)
       ),
       orderBy: (h: any, { desc }: any) => [desc(h.recorded_at)],
     });
