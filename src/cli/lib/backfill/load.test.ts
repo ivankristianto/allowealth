@@ -244,6 +244,7 @@ describe('loadMonth verification gates', () => {
           {
             account: 'A',
             opening: '0',
+            localOpening: '0',
             closing: '0',
             localClosing: '0',
             currency: 'IDR',
@@ -440,6 +441,7 @@ describe('loadMonth account creation', () => {
       {
         account: 'Bank1 OwnerA',
         opening: '500',
+        localOpening: '500',
         closing: '500',
         localClosing: '500',
         currency: 'IDR',
@@ -550,6 +552,106 @@ describe('loadMonth account creation', () => {
     await loadMonth(d, { month: 1, year: 2099 }, {});
 
     expect(writes.some((w) => w.method === 'PUT')).toBe(false);
+  });
+
+  describe('opening balance of an account that already exists', () => {
+    const february = { month: 2, year: 2099 };
+    const januaryLoaded = () => [
+      { month: 1, year: 2099, status: 'loaded' as const, planHash: 'h', loadedAt: 'x' },
+    ];
+
+    /** A February plan for one account, opening at `localOpening` in rupiah. */
+    const februaryPlan = (snapshot: Partial<Plan['snapshots'][number]>) => () => {
+      const plan = bankPlan();
+      plan.month = 2;
+      plan.snapshots = [
+        {
+          account: 'Bank1 OwnerA',
+          opening: '800',
+          localOpening: '800',
+          closing: '500',
+          localClosing: '500',
+          currency: 'IDR',
+          recordedAt: '2099-02-28T12:00:00.000Z',
+          ...snapshot,
+        },
+      ];
+      plan.checks.closingTotal = Number(plan.snapshots[0]!.localClosing);
+      return plan;
+    };
+
+    /** January's saved plan, closing the account at `localClosing` in rupiah. */
+    const januarySaved = (localClosing: string | null) => (ref: { month: number }) => {
+      if (ref.month !== 1) return null;
+      const plan = bankPlan();
+      plan.snapshots = localClosing === null ? [] : [{ ...plan.snapshots[0]!, localClosing }];
+      return plan;
+    };
+
+    const existing = (initial: string, currency = 'IDR') => [
+      {
+        id: 'acct-1',
+        name: 'Bank1 OwnerA',
+        currency,
+        balance: initial,
+        initial_balance: initial,
+        category_id: 'ac-bank',
+      },
+    ];
+
+    function februaryDeps(overrides: Partial<LoadDeps>) {
+      const writes: { method: string; path: string; body: Record<string, unknown> }[] = [];
+      const { d } = deps({
+        config: roster,
+        client: accountClient(existing('500'), writes),
+        readLedger: januaryLoaded,
+        ...overrides,
+      });
+      return d;
+    }
+
+    it("loads when this month's rupiah opening continues last month's closing", async () => {
+      // The origin balance (500) is January's opening; February opens at
+      // January's closing (800). That is the normal case, not an ordering error.
+      const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: januarySaved('800') });
+
+      await expect(loadMonth(d, february, {})).resolves.toBeDefined();
+    });
+
+    it('compares a foreign account in rupiah, where the rate cannot move it', async () => {
+      const d = februaryDeps({
+        // The fake app never moves a balance, so it already holds the closing.
+        client: accountClient(existing('75', 'USD'), []),
+        planFor: februaryPlan({
+          // At the plan's rate of 10,000: January's 800,000 closing was a
+          // different USD figure at January's rate, but the same rupiah.
+          currency: 'USD',
+          opening: '80',
+          localOpening: '800000',
+          closing: '75',
+          localClosing: '750000',
+        }),
+        readSavedPlan: januarySaved('800000'),
+      });
+
+      await expect(loadMonth(d, february, {})).resolves.toBeDefined();
+    });
+
+    it("aborts when this month's rupiah opening breaks from last month's closing", async () => {
+      const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: januarySaved('750') });
+
+      await expect(loadMonth(d, february, {})).rejects.toThrow(
+        /Bank1 OwnerA.*2099-01.*750.*2099-02.*800/s
+      );
+    });
+
+    it('checks the origin balance when last month did not have the account', async () => {
+      // First appearance in this month: the existing account must have been
+      // opened at this month's opening, or something else created it.
+      const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: januarySaved(null) });
+
+      await expect(loadMonth(d, february, {})).rejects.toThrow(/origin balance of 500.*800/s);
+    });
   });
 
   it('aborts naming setup when the workspace lacks the account category', async () => {

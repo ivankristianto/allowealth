@@ -116,9 +116,15 @@ function assertNotAlreadyLoaded(deps: LoadDeps, ref: MonthRef, force: boolean): 
   }
 }
 
+/** The month before `ref`. */
+function previousMonth({ month, year }: MonthRef): MonthRef {
+  return month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year };
+}
+
 async function ensureAccounts(
   client: BackfillClient,
   plan: Plan,
+  previous: Plan | null,
   config: BackfillConfig
 ): Promise<{ accounts: Map<string, ApiAccount>; created: number }> {
   const existing = await client.get<ApiAccount[]>('/api/accounts');
@@ -144,10 +150,17 @@ async function ensureAccounts(
   // An account is created with its first-appearance opening balance, which the
   // service also stores as initial_balance; getBalanceAtMonthStart falls back to
   // it when no history precedes the month, so only closings are posted later.
-  const needed = new Map<string, { currency: string; opening: string }>();
+  const needed = new Map<string, { currency: string; opening: string; localOpening?: string }>();
   for (const snapshot of plan.snapshots) {
-    needed.set(snapshot.account, { currency: snapshot.currency, opening: snapshot.opening });
+    needed.set(snapshot.account, {
+      currency: snapshot.currency,
+      opening: snapshot.opening,
+      localOpening: snapshot.localOpening,
+    });
   }
+  const closedLastMonth = new Map(
+    (previous?.snapshots ?? []).map((s) => [s.account, s.localClosing])
+  );
   for (const transaction of plan.transactions) {
     if (needed.has(transaction.account)) continue;
     needed.set(transaction.account, { currency: transaction.currency, opening: '0' });
@@ -162,10 +175,25 @@ async function ensureAccounts(
             `Fix the currency in \`accounts\`, or rename one of them.`
         );
       }
-      // A different origin balance means the months were loaded out of order,
-      // which would silently misstate every balance derived from it.
+      // An account last month also had must open where it closed then. Compared
+      // in local currency, where the sheet carries balances over exactly; a
+      // foreign balance moves with each month's rate.
+      const lastClosing = closedLastMonth.get(name);
+      if (lastClosing !== undefined && spec.localOpening !== undefined) {
+        if (!closeEnough(Number(lastClosing), Number(spec.localOpening))) {
+          throw new LoadError(
+            `Account "${name}" closed ${monthKey(previous!)} at ${lastClosing}, ` +
+              `but ${monthKey(plan)} opens it at ${spec.localOpening} (local currency).\n` +
+              `The sheet does not carry the balance over. Check both months' balance sheets.`
+          );
+        }
+      }
+      // An account new to the backfill this month must have been opened at this
+      // month's opening; a different origin balance means a later month created
+      // it first, which would silently misstate every balance derived from it.
       const existingOpening = found.initial_balance;
       if (
+        lastClosing === undefined &&
         existingOpening !== undefined &&
         spec.opening !== '0' &&
         !closeEnough(Number(existingOpening), Number(spec.opening))
@@ -362,6 +390,7 @@ export async function loadMonth(
   const { accounts, created: createdAccounts } = await ensureAccounts(
     deps.client,
     plan,
+    deps.readSavedPlan(previousMonth(ref)),
     deps.config
   );
   const transferred = await transferOwnership(deps.client, deps.config, accounts);

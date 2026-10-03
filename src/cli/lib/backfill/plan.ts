@@ -284,6 +284,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
   const snapshots: PlanSnapshot[] = accounts.map((a) => ({
     account: a.name,
     opening: decimal(fromLocal(a.awal, a.currency, raw.rate)),
+    localOpening: decimal(a.awal),
     closing: decimal(fromLocal(a.akhir, a.currency, raw.rate)),
     localClosing: decimal(a.akhir),
     currency: a.currency,

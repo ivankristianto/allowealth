@@ -56,6 +56,12 @@ export interface PlanSnapshot {
   account: string;
   /** First-appearance `Awal Bulan`, in `currency`, stored as initial_balance. */
   opening: string;
+  /**
+   * The sheet's own `Awal Bulan` figure, always local currency. Compared with
+   * the previous month's `localClosing`: in local currency the sheet carries
+   * every balance over exactly, while a foreign `opening` moves with the rate.
+   */
+  localOpening: string;
   /** `Akhir Bulan` in `currency` — divided by the rate for a foreign account. */
   closing: string;
   /**
