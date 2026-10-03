@@ -23,6 +23,11 @@ export interface CreateAccountInput {
   currency: Currency;
   credit_limit?: string | null;
   is_cash_account?: boolean;
+  /**
+   * When the opening balance was true. Dates the first history entry and
+   * last_updated; created_at stays the real creation time. Defaults to now.
+   */
+  opened_at?: Date;
 }
 
 export interface UpdateAccountInput {
@@ -136,6 +141,7 @@ export class AccountService {
 
     const id = nanoid();
     const now = new Date();
+    const openedAt = input.opened_at ?? now;
 
     // Insert the account
     const [account] = await (this.db as any)
@@ -151,7 +157,7 @@ export class AccountService {
         balance: input.balance,
         initial_balance: input.balance,
         currency: input.currency,
-        last_updated: now,
+        last_updated: openedAt,
         created_at: now,
         updated_at: now,
       })
@@ -163,7 +169,7 @@ export class AccountService {
         id: nanoid(),
         account_id: id,
         balance: input.balance,
-        recorded_at: now,
+        recorded_at: openedAt,
       });
     } catch (historyError) {
       // Compensating transaction: delete the orphaned account to maintain data integrity
@@ -346,12 +352,13 @@ export class AccountService {
     const previousLastUpdated = currentAccount.last_updated;
     const previousUpdatedAt = currentAccount.updated_at;
 
-    // Update account
+    // Update account. last_updated is when the balance was true, which a dated
+    // entry (e.g. a past month-end) says; updated_at is when the row changed.
     await this.db
       .update(this.schema.accounts)
       .set({
         balance: input.balance,
-        last_updated: now,
+        last_updated: input.recorded_at ?? now,
         updated_at: now,
       })
       .where(
