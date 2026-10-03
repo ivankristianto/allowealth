@@ -25,37 +25,53 @@ describe('nextSlot', () => {
 
 describe('settle', () => {
   const plan = {
+    month: 1,
+    year: 2099,
     snapshots: [
       { account: 'A', closing: '100', localClosing: '100', currency: 'IDR', recordedAt: '' },
     ],
   } as unknown as Plan;
 
-  it('posts 0 for accounts absent from the newest month', async () => {
-    const posted: Record<string, string> = {};
+  /** Accounts as the app holds them now; posts are recorded for inspection. */
+  function settleClient(balances: Record<string, string>) {
+    const posted: { path: string; body: { balance: string; recorded_at?: string } }[] = [];
     const client = {
-      get: async () => [],
-      post: async (p: string, b: { balance: string }) => {
-        posted[p] = b.balance;
+      get: async (path: string) =>
+        path === '/api/accounts'
+          ? Object.entries(balances).map(([id, balance]) => ({ id, balance }))
+          : [],
+      post: async (path: string, body: { balance: string; recorded_at?: string }) => {
+        posted.push({ path, body });
         return {};
       },
     };
+    return { client, posted };
+  }
+
+  it('posts 0 for accounts absent from the newest month', async () => {
+    const { client, posted } = settleClient({ a: '100', b: '55' });
     await settle(client as never, plan, [
       { id: 'a', name: 'A' },
       { id: 'b', name: 'B' },
     ]);
-    expect(posted['/api/accounts/b/balance']).toBe('0');
+    expect(posted.find((p) => p.path === '/api/accounts/b/balance')?.body.balance).toBe('0');
   });
 
-  it("posts the newest month's closing for accounts it covers", async () => {
-    const posted: Record<string, string> = {};
-    const client = {
-      get: async () => [],
-      post: async (p: string, b: { balance: string }) => {
-        posted[p] = b.balance;
-        return {};
-      },
-    };
+  it("posts the newest month's closing for an account that drifted from it", async () => {
+    const { client, posted } = settleClient({ a: '999' });
     await settle(client as never, plan, [{ id: 'a', name: 'A' }]);
-    expect(posted['/api/accounts/a/balance']).toBe('100');
+    expect(posted.find((p) => p.path === '/api/accounts/a/balance')?.body.balance).toBe('100');
+  });
+
+  it('writes nothing for an account already at its newest closing', async () => {
+    const { client, posted } = settleClient({ a: '100.00' });
+    await settle(client as never, plan, [{ id: 'a', name: 'A' }]);
+    expect(posted).toEqual([]);
+  });
+
+  it("dates a settling write at the newest month's end, never now", async () => {
+    const { client, posted } = settleClient({ b: '55' });
+    await settle(client as never, plan, [{ id: 'b', name: 'B' }]);
+    expect(posted[0]?.body.recorded_at).toBe('2099-01-31T23:00:00.000Z');
   });
 });

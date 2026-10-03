@@ -1,5 +1,7 @@
 import type { BackfillClient } from './client';
 import { DirectiveError } from './errors';
+import { lastDayOfMonth } from './money';
+import { monthKey } from './plan';
 import type { Plan } from './types';
 
 /**
@@ -52,6 +54,10 @@ export function nextSlot(existing: string[], lastDay: string): string {
  * Covers every account the workspace knows, not just the newest month's
  * roster: otherwise a since-closed account keeps an old balance and net worth
  * counts an account that no longer exists.
+ *
+ * Writes only where the balance differs: in an in-order load the month-end
+ * snapshot has already set it. A write is dated in the newest month's
+ * month-end slot, so a backfill never leaves an entry dated today.
  */
 export async function settle(
   client: Pick<BackfillClient, 'get' | 'post'>,
@@ -59,11 +65,23 @@ export async function settle(
   accounts: AccountRef[]
 ): Promise<void> {
   const closing = new Map(plan.snapshots.map((s) => [s.account, s.closing]));
+  // Read fresh: the snapshots written moments ago moved these balances.
+  const current = new Map(
+    (await client.get<{ id: string; balance?: string }[]>('/api/accounts')).map((a) => [
+      a.id,
+      a.balance,
+    ])
+  );
+  const lastDay = `${monthKey(plan)}-${String(lastDayOfMonth(plan)).padStart(2, '0')}`;
 
   for (const account of accounts) {
+    const target = closing.get(account.name) ?? '0';
+    if (Number(current.get(account.id)) === Number(target)) continue;
+
     await client.post(`/api/accounts/${account.id}/balance`, {
-      balance: closing.get(account.name) ?? '0',
+      balance: target,
       notes: 'backfill settle',
+      recorded_at: nextSlot(await historyTimestamps(client, account.id), lastDay),
     });
   }
 }
