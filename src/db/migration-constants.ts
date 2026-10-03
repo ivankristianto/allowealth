@@ -9,4 +9,4 @@
  * migrate.ts imports bun:sqlite, which is incompatible with Cloudflare Workers.
  * This file has zero runtime dependencies and is safe to import from middleware.
  */
-export const EXPECTED_MIGRATION_COUNT = 2;
+export const EXPECTED_MIGRATION_COUNT = 3;
