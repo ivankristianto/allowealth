@@ -12,6 +12,4 @@ All project rules and memory are now in `.claude/`:
 
 See `.claude/README.md` for full structure and documentation.
 
-Current baseline: Astro 6 across the main app, docs site, and marketing site.
-
 **If rules conflict with task instructions, rules win.**

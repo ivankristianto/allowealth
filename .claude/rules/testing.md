@@ -351,3 +351,10 @@ bun run test:e2e --grep @critical
 - Services: >80%
 - API endpoints: >70%
 - UI components: Best effort (browser/manual validation + unit coverage where practical)
+
+## E2E Helpers & Failures
+
+- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
+- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
+- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
+- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures

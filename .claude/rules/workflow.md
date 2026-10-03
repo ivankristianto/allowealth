@@ -62,11 +62,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 
 ## Debugging Process
 
-- ✅ Fix root cause of typecheck errors (update API usage, fix imports)
 - ✅ Trace bugs through full flow: DB → Service → API → Session → UI
-- ✅ Test after every code change
-- ✅ Check all usages after changing types or imports (`grep` the codebase)
-- ✅ Verify root cause is fixed, not just symptoms
 - ✅ Stop and ask when blocked or unclear - don't guess, don't force through
 - ✅ Report actual state, not agent claims - check VCS diff to verify changes
 - ❌ Add unnecessary error handling for impossible scenarios
@@ -82,10 +78,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Trace ALL consumers of a shared component before declaring done** - check every render path (SSR, API, Dashboard, etc.)
 - ✅ **Fix tests before committing, never push with known failures**
 - ✅ **Verify return types don't silently strip new fields** - explicit inline return types discard unlisted properties
-- ✅ **Use systematic debugging from the start** - diagnose root cause with evidence before changing code
 - ✅ **Confirm user intent before implementing UI changes** - ask clarifying questions first
-- ✅ **Think through mobile vs desktop UX separately** - mobile uses dropdowns, desktop uses inline icons
-- ✅ **Add tooltips/labels to icon-only buttons proactively**
 - ✅ **Update tests to match user intent, not broken implementation**
 - ✅ **Verify feature requests against existing codebase before creating issues**
 - ✅ **Confirm with user before deleting "dead" code** - endpoints may be used externally
@@ -97,34 +90,21 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ❌ **Delete tests without replacing coverage**
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
 - ✅ **Clean up dead error handling after simplifying methods** - when removing functionality (e.g., balance mutation), also remove corresponding error handlers in API routes
-- ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
-- ✅ **Exclude debt from account allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
-- ✅ **New client-side filters must compose with existing filters** - when adding a filter (e.g., overbudget toggle), ensure it composes with text search and applies to both card and table views; a card should only be visible when it passes ALL active filters
-- ✅ **Update E2E tests when changing conditional rendering** - when changing from disabled-but-visible to conditionally-absent (`{condition && ...}` instead of disabled prop), E2E tests that assert `toBeVisible()` will fail; update to check visibility first and skip gracefully
 - ✅ **Use `??` not `||` when 0 is a valid value** - `value || fallback` treats 0 as falsy; use `value ?? fallback` for budget limits, amounts, or any numeric field where 0 is meaningful
-- ✅ **Keyboard event handlers must check activeElement** - when intercepting arrow keys or other navigation in modals/overlays, check if `document.activeElement` is input/textarea/select and skip to allow normal typing behavior
-- ✅ **Scope DOM queries to the active view container** - when both card view and table view exist in DOM (one hidden), global `querySelectorAll` returns duplicates; scope queries to the visible view's container element
 
 ## CLI Conventions
 
-- ✅ **Add new CLI scripts as `aw` subcommands** — register in `src/cli/index.ts` subCommands, create command file in `src/cli/commands/`
-- ✅ **Use `src/cli/lib/exec.ts` for shell-out commands** — wraps `execFileSync` with clean error handling
-- ✅ **Use lazy `await import()` inside `run()` for logic commands** — avoids loading DB/services at CLI startup
 - ❌ **Create standalone scripts in `src/cli/` or `scripts/`** — use `aw` subcommands instead; the `aw` CLI (`bun run aw`) is the single entry point
 
 ## Subprocess Patterns
 
 - ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
 - ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run ${script} ${param}\`)` breaks on shell metacharacters and is a command injection vector
-- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
-- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
 
 ## Subagent Patterns
 
 - ✅ **Check `git log` after subagent connection errors** - ConnectionRefused errors may occur after the subagent already committed; always verify with `git log` before assuming work was lost
 - ✅ **Verify file state after subagent completes** - subagents may make partial changes; always read files and run typecheck before trusting their report
-- ✅ **Run typecheck immediately after subagent work** - stale diagnostics from mid-edit can appear; fresh typecheck reveals actual state
-- ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
 - ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
 - ❌ **Trust subagent "all checks passed" reports without independent verification** - subagents may report success while leaving partial changes
 - ✅ **Group parallel subagents by file dependency** - Wave 1 (services + utils + seeders), then Wave 2 (components + pages that consume them); prevents merge conflicts
@@ -138,6 +118,4 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 ## Dependency Changes
 
 - ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
-- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
-- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
 - ✅ **Check dev server port when using worktrees** - multiple worktrees run dev servers on different ports (4321, 4322, 4323...); use `lsof -i -P | grep LISTEN | grep 432` to find the correct port for your worktree before browser testing

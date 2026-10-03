@@ -43,14 +43,4 @@ The main SSR app enables `security: { csp: true }`, but `src/middleware/security
 - Design system: `design-system/` (start with `START.md`)
 - Scripts and CLI: `COMMANDS.md`
 
-## Quick Start for New Agents
-
-1. Read `.claude/rules/principles.md` - understand core principles
-2. Read `.claude/rules/workflow.md` - understand session behavior and quality gates
-3. Read `.claude/rules/frontend/design-system.md` - understand design system
-4. Read task context (spec, plan, or issue)
-5. Create a plan before coding
-6. Execute following implementation order: UI → Service → API → CLI → Seeder
-7. Run quality gates before committing
-
 **If rules conflict with task instructions, rules win.**
