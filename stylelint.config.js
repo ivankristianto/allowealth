@@ -21,6 +21,7 @@ export default {
           'theme',
           'source',
           'plugin',
+          'custom-variant', // Tailwind v4 custom variants (e.g. data-theme driven dark:)
           'property', // CSS Houdini @property for DaisyUI v5 radial progress animations
         ],
       },
