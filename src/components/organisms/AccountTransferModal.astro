@@ -51,7 +51,7 @@ import Button from '@/components/atoms/Button.astro';
       </div>
 
       {/* Form */}
-      <form id={`${id}-form`} data-transfer-form class="space-y-6">
+      <form method="post" id={`${id}-form`} data-transfer-form class="space-y-6">
         {/* From Account */}
         <FormField label="From" htmlFor={`${id}-from`} required>
           <select

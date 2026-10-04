@@ -177,280 +177,286 @@ const cspNonce = Astro.locals.cspNonce || '';
 <script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
 
 <script>
-  const form = document.querySelector('[data-registration-form]') as HTMLFormElement | null;
-  const messagesContainer = document.getElementById('form-messages');
+  import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Read server values from data attributes
-  const loginLink = form?.dataset.loginLink || '/login';
-  const initialServerError = form?.dataset.initialServerError || '';
-  const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement | null;
-  const buttonText = submitButton?.querySelector('[data-button-text]');
-  const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+  function initRegistrationForm() {
+    const form = document.querySelector('[data-registration-form]') as HTMLFormElement | null;
+    const messagesContainer = document.getElementById('form-messages');
 
-  if (form) {
-    // Helper functions for dynamic aria-describedby management
-    // This ensures screen readers announce form-level errors when they appear
+    // Read server values from data attributes
+    const loginLink = form?.dataset.loginLink || '/login';
+    const initialServerError = form?.dataset.initialServerError || '';
+    const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement | null;
+    const buttonText = submitButton?.querySelector('[data-button-text]');
+    const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
-    /**
-     * Add aria-describedby="form-messages" to all form inputs
-     * Associates inputs with the error message container for screen readers
-     */
-    const addFormMessagesAssociation = () => {
-      const inputs = form.querySelectorAll('input');
-      inputs.forEach((input) => {
-        const currentDescribedBy = input.getAttribute('aria-describedby') || '';
-        // Preserve existing aria-describedby values (like password requirements)
-        const describedByIds = currentDescribedBy
-          ? `${currentDescribedBy} form-messages`
-          : 'form-messages';
-        input.setAttribute('aria-describedby', describedByIds);
-      });
-    };
+    if (form) {
+      // Helper functions for dynamic aria-describedby management
+      // This ensures screen readers announce form-level errors when they appear
 
-    /**
-     * Remove aria-describedby="form-messages" from all form inputs
-     * Removes association when error messages are cleared
-     */
-    const removeFormMessagesAssociation = () => {
-      const inputs = form.querySelectorAll('input');
-      inputs.forEach((input) => {
-        const currentDescribedBy = input.getAttribute('aria-describedby') || '';
-        // Remove form-messages while preserving other aria-describedby values
-        const newDescribedBy = currentDescribedBy
-          .split(' ')
-          .filter((id) => id !== 'form-messages')
-          .join(' ')
-          .trim();
-        if (newDescribedBy) {
-          input.setAttribute('aria-describedby', newDescribedBy);
-        } else {
-          input.removeAttribute('aria-describedby');
-        }
-      });
-    };
-
-    // Display initial server error if provided
-    if (initialServerError && messagesContainer) {
-      const errorAlert = document.createElement('div');
-      errorAlert.setAttribute('role', 'alert');
-      errorAlert.className = 'alert alert-error';
-
-      // Create Lucide CircleX icon using DOM methods
-      const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      xIcon.setAttribute('width', '24');
-      xIcon.setAttribute('height', '24');
-      xIcon.setAttribute('viewBox', '0 0 24 24');
-      xIcon.setAttribute('fill', 'none');
-      xIcon.setAttribute('stroke', 'currentColor');
-      xIcon.setAttribute('stroke-width', '2');
-      xIcon.setAttribute('stroke-linecap', 'round');
-      xIcon.setAttribute('stroke-linejoin', 'round');
-      xIcon.classList.add('shrink-0', 'h-6', 'w-6');
-      xIcon.setAttribute('aria-hidden', 'true');
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', '12');
-      circle.setAttribute('cy', '12');
-      circle.setAttribute('r', '10');
-      const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path1.setAttribute('d', 'm15 9-6 6');
-      const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path2.setAttribute('d', 'm9 9 6 6');
-      xIcon.appendChild(circle);
-      xIcon.appendChild(path1);
-      xIcon.appendChild(path2);
-
-      const messageSpan = document.createElement('span');
-      messageSpan.textContent = initialServerError;
-
-      errorAlert.appendChild(xIcon);
-      errorAlert.appendChild(messageSpan);
-      messagesContainer.textContent = '';
-      messagesContainer.appendChild(errorAlert);
-      // Associate inputs with error messages for screen readers
-      addFormMessagesAssociation();
-    }
-    // Password toggle for confirm-password is handled by PasswordField's
-    // bundled script (binds to all [data-toggle-password] buttons globally)
-
-    // Clear messages on input
-    const inputs = form.querySelectorAll('input');
-    inputs.forEach((input) => {
-      input.addEventListener('input', () => {
-        if (messagesContainer) {
-          messagesContainer.innerHTML = '';
-          // Remove association when messages are cleared
-          removeFormMessagesAssociation();
-        }
-      });
-    });
-
-    // Form submission
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (messagesContainer) {
-        messagesContainer.innerHTML = '';
-      }
-
-      const formData = new FormData(form);
-      const entries = Object.fromEntries(formData.entries());
-      const data = {
-        name: String(entries.name || ''),
-        email: String(entries.email || ''),
-        password: String(entries.password || ''),
-        'confirm-password': String(entries['confirm-password'] || ''),
+      /**
+       * Add aria-describedby="form-messages" to all form inputs
+       * Associates inputs with the error message container for screen readers
+       */
+      const addFormMessagesAssociation = () => {
+        const inputs = form.querySelectorAll('input');
+        inputs.forEach((input) => {
+          const currentDescribedBy = input.getAttribute('aria-describedby') || '';
+          // Preserve existing aria-describedby values (like password requirements)
+          const describedByIds = currentDescribedBy
+            ? `${currentDescribedBy} form-messages`
+            : 'form-messages';
+          input.setAttribute('aria-describedby', describedByIds);
+        });
       };
 
-      // Use shared validation from RegistrationValidation module
-      const emailInput = document.getElementById('email') as HTMLInputElement | null;
-      const validationResult = window.RegistrationValidation.validateRegistrationForm(
-        data,
-        emailInput
-      );
-
-      // Display validation errors
-      if (!validationResult.isValid) {
-        if (messagesContainer) {
-          messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors(
-            validationResult.errors
-          );
-          // Associate inputs with error messages for screen readers
-          addFormMessagesAssociation();
-          // Move focus to first invalid input or message container for accessibility
-          const firstInvalidInput = form.querySelector(
-            'input[aria-invalid="true"]'
-          ) as HTMLElement | null;
-          if (firstInvalidInput) {
-            firstInvalidInput.focus();
+      /**
+       * Remove aria-describedby="form-messages" from all form inputs
+       * Removes association when error messages are cleared
+       */
+      const removeFormMessagesAssociation = () => {
+        const inputs = form.querySelectorAll('input');
+        inputs.forEach((input) => {
+          const currentDescribedBy = input.getAttribute('aria-describedby') || '';
+          // Remove form-messages while preserving other aria-describedby values
+          const newDescribedBy = currentDescribedBy
+            .split(' ')
+            .filter((id) => id !== 'form-messages')
+            .join(' ')
+            .trim();
+          if (newDescribedBy) {
+            input.setAttribute('aria-describedby', newDescribedBy);
           } else {
+            input.removeAttribute('aria-describedby');
+          }
+        });
+      };
+
+      // Display initial server error if provided
+      if (initialServerError && messagesContainer) {
+        const errorAlert = document.createElement('div');
+        errorAlert.setAttribute('role', 'alert');
+        errorAlert.className = 'alert alert-error';
+
+        // Create Lucide CircleX icon using DOM methods
+        const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        xIcon.setAttribute('width', '24');
+        xIcon.setAttribute('height', '24');
+        xIcon.setAttribute('viewBox', '0 0 24 24');
+        xIcon.setAttribute('fill', 'none');
+        xIcon.setAttribute('stroke', 'currentColor');
+        xIcon.setAttribute('stroke-width', '2');
+        xIcon.setAttribute('stroke-linecap', 'round');
+        xIcon.setAttribute('stroke-linejoin', 'round');
+        xIcon.classList.add('shrink-0', 'h-6', 'w-6');
+        xIcon.setAttribute('aria-hidden', 'true');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path1.setAttribute('d', 'm15 9-6 6');
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('d', 'm9 9 6 6');
+        xIcon.appendChild(circle);
+        xIcon.appendChild(path1);
+        xIcon.appendChild(path2);
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = initialServerError;
+
+        errorAlert.appendChild(xIcon);
+        errorAlert.appendChild(messageSpan);
+        messagesContainer.textContent = '';
+        messagesContainer.appendChild(errorAlert);
+        // Associate inputs with error messages for screen readers
+        addFormMessagesAssociation();
+      }
+      // Password toggle for confirm-password is handled by PasswordField's
+      // bundled script (binds to all [data-toggle-password] buttons globally)
+
+      // Clear messages on input
+      const inputs = form.querySelectorAll('input');
+      inputs.forEach((input) => {
+        input.addEventListener('input', () => {
+          if (messagesContainer) {
+            messagesContainer.innerHTML = '';
+            // Remove association when messages are cleared
+            removeFormMessagesAssociation();
+          }
+        });
+      });
+
+      // Form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (messagesContainer) {
+          messagesContainer.innerHTML = '';
+        }
+
+        const formData = new FormData(form);
+        const entries = Object.fromEntries(formData.entries());
+        const data = {
+          name: String(entries.name || ''),
+          email: String(entries.email || ''),
+          password: String(entries.password || ''),
+          'confirm-password': String(entries['confirm-password'] || ''),
+        };
+
+        // Use shared validation from RegistrationValidation module
+        const emailInput = document.getElementById('email') as HTMLInputElement | null;
+        const validationResult = window.RegistrationValidation.validateRegistrationForm(
+          data,
+          emailInput
+        );
+
+        // Display validation errors
+        if (!validationResult.isValid) {
+          if (messagesContainer) {
+            messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors(
+              validationResult.errors
+            );
+            // Associate inputs with error messages for screen readers
+            addFormMessagesAssociation();
+            // Move focus to first invalid input or message container for accessibility
+            const firstInvalidInput = form.querySelector(
+              'input[aria-invalid="true"]'
+            ) as HTMLElement | null;
+            if (firstInvalidInput) {
+              firstInvalidInput.focus();
+            } else {
+              messagesContainer.focus();
+            }
+          }
+          return;
+        }
+
+        // Show loading state
+        form.classList.add('submitting');
+        if (buttonText) buttonText.classList.add('hidden');
+        if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+        if (submitButton) submitButton.disabled = true;
+
+        try {
+          // PLACEHOLDER SIMULATION: This component provides a simulated submission
+          // so it works standalone in prototypes, demos, or pages that don't
+          // require real registration. Pages that need real API behavior should
+          // enhance this component by overriding the submit handler (see below).
+          //
+          // HOW TO OVERRIDE (page-level enhancement pattern):
+          // 1. In your page's script tag, use DOMContentLoaded listener
+          // 2. Get the form: document.querySelector('[data-registration-form]')
+          // 3. Add submit listener with e.stopImmediatePropagation() to block this handler
+          // 4. Implement your fetch() API call
+          // 5. Use the same UI state management (submitting class, loading spinner, etc.)
+          //
+          // EXAMPLE: See /src/pages/register.astro lines 56-204 for full implementation
+
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          // Show success message
+          if (messagesContainer) {
+            const successAlert = document.createElement('div');
+            successAlert.setAttribute('role', 'alert');
+            successAlert.className = 'alert alert-success';
+
+            // Create Lucide CircleCheck icon using DOM methods
+            const checkIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            checkIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            checkIcon.setAttribute('width', '24');
+            checkIcon.setAttribute('height', '24');
+            checkIcon.setAttribute('viewBox', '0 0 24 24');
+            checkIcon.setAttribute('fill', 'none');
+            checkIcon.setAttribute('stroke', 'currentColor');
+            checkIcon.setAttribute('stroke-width', '2');
+            checkIcon.setAttribute('stroke-linecap', 'round');
+            checkIcon.setAttribute('stroke-linejoin', 'round');
+            checkIcon.classList.add('shrink-0', 'h-6', 'w-6');
+            checkIcon.setAttribute('aria-hidden', 'true');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', '12');
+            circle.setAttribute('cy', '12');
+            circle.setAttribute('r', '10');
+            const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path1.setAttribute('d', 'm9 12 2 2 4-4');
+            checkIcon.appendChild(circle);
+            checkIcon.appendChild(path1);
+
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = 'Account created successfully! Redirecting to login...';
+
+            successAlert.appendChild(checkIcon);
+            successAlert.appendChild(messageSpan);
+            messagesContainer.textContent = '';
+            messagesContainer.appendChild(successAlert);
+            // Associate inputs with success message for screen readers
+            addFormMessagesAssociation();
+            // Move focus to message container for accessibility
             messagesContainer.focus();
           }
+
+          // Reset form
+          form.reset();
+
+          // Redirect to login after delay
+          setTimeout(() => {
+            window.location.href = loginLink;
+          }, 2000);
+        } catch (error) {
+          // Show error message
+          if (messagesContainer) {
+            const errorAlert = document.createElement('div');
+            errorAlert.setAttribute('role', 'alert');
+            errorAlert.className = 'alert alert-error';
+
+            // Create Lucide CircleX icon using DOM methods
+            const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            xIcon.setAttribute('width', '24');
+            xIcon.setAttribute('height', '24');
+            xIcon.setAttribute('viewBox', '0 0 24 24');
+            xIcon.setAttribute('fill', 'none');
+            xIcon.setAttribute('stroke', 'currentColor');
+            xIcon.setAttribute('stroke-width', '2');
+            xIcon.setAttribute('stroke-linecap', 'round');
+            xIcon.setAttribute('stroke-linejoin', 'round');
+            xIcon.classList.add('shrink-0', 'h-6', 'w-6');
+            xIcon.setAttribute('aria-hidden', 'true');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', '12');
+            circle.setAttribute('cy', '12');
+            circle.setAttribute('r', '10');
+            const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path1.setAttribute('d', 'm15 9-6 6');
+            const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path2.setAttribute('d', 'm9 9 6 6');
+            xIcon.appendChild(circle);
+            xIcon.appendChild(path1);
+            xIcon.appendChild(path2);
+
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = 'An error occurred. Please try again.';
+
+            errorAlert.appendChild(xIcon);
+            errorAlert.appendChild(messageSpan);
+            messagesContainer.textContent = '';
+            messagesContainer.appendChild(errorAlert);
+            // Associate inputs with error message for screen readers
+            addFormMessagesAssociation();
+            // Move focus to message container for accessibility
+            messagesContainer.focus();
+          }
+        } finally {
+          // Reset loading state
+          form.classList.remove('submitting');
+          if (buttonText) buttonText.classList.remove('hidden');
+          if (loadingSpinner) loadingSpinner.classList.add('hidden');
+          if (submitButton) submitButton.disabled = false;
         }
-        return;
-      }
-
-      // Show loading state
-      form.classList.add('submitting');
-      if (buttonText) buttonText.classList.add('hidden');
-      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
-      if (submitButton) submitButton.disabled = true;
-
-      try {
-        // PLACEHOLDER SIMULATION: This component provides a simulated submission
-        // so it works standalone in prototypes, demos, or pages that don't
-        // require real registration. Pages that need real API behavior should
-        // enhance this component by overriding the submit handler (see below).
-        //
-        // HOW TO OVERRIDE (page-level enhancement pattern):
-        // 1. In your page's script tag, use DOMContentLoaded listener
-        // 2. Get the form: document.querySelector('[data-registration-form]')
-        // 3. Add submit listener with e.stopImmediatePropagation() to block this handler
-        // 4. Implement your fetch() API call
-        // 5. Use the same UI state management (submitting class, loading spinner, etc.)
-        //
-        // EXAMPLE: See /src/pages/register.astro lines 56-204 for full implementation
-
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Show success message
-        if (messagesContainer) {
-          const successAlert = document.createElement('div');
-          successAlert.setAttribute('role', 'alert');
-          successAlert.className = 'alert alert-success';
-
-          // Create Lucide CircleCheck icon using DOM methods
-          const checkIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          checkIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-          checkIcon.setAttribute('width', '24');
-          checkIcon.setAttribute('height', '24');
-          checkIcon.setAttribute('viewBox', '0 0 24 24');
-          checkIcon.setAttribute('fill', 'none');
-          checkIcon.setAttribute('stroke', 'currentColor');
-          checkIcon.setAttribute('stroke-width', '2');
-          checkIcon.setAttribute('stroke-linecap', 'round');
-          checkIcon.setAttribute('stroke-linejoin', 'round');
-          checkIcon.classList.add('shrink-0', 'h-6', 'w-6');
-          checkIcon.setAttribute('aria-hidden', 'true');
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('cx', '12');
-          circle.setAttribute('cy', '12');
-          circle.setAttribute('r', '10');
-          const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path1.setAttribute('d', 'm9 12 2 2 4-4');
-          checkIcon.appendChild(circle);
-          checkIcon.appendChild(path1);
-
-          const messageSpan = document.createElement('span');
-          messageSpan.textContent = 'Account created successfully! Redirecting to login...';
-
-          successAlert.appendChild(checkIcon);
-          successAlert.appendChild(messageSpan);
-          messagesContainer.textContent = '';
-          messagesContainer.appendChild(successAlert);
-          // Associate inputs with success message for screen readers
-          addFormMessagesAssociation();
-          // Move focus to message container for accessibility
-          messagesContainer.focus();
-        }
-
-        // Reset form
-        form.reset();
-
-        // Redirect to login after delay
-        setTimeout(() => {
-          window.location.href = loginLink;
-        }, 2000);
-      } catch (error) {
-        // Show error message
-        if (messagesContainer) {
-          const errorAlert = document.createElement('div');
-          errorAlert.setAttribute('role', 'alert');
-          errorAlert.className = 'alert alert-error';
-
-          // Create Lucide CircleX icon using DOM methods
-          const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-          xIcon.setAttribute('width', '24');
-          xIcon.setAttribute('height', '24');
-          xIcon.setAttribute('viewBox', '0 0 24 24');
-          xIcon.setAttribute('fill', 'none');
-          xIcon.setAttribute('stroke', 'currentColor');
-          xIcon.setAttribute('stroke-width', '2');
-          xIcon.setAttribute('stroke-linecap', 'round');
-          xIcon.setAttribute('stroke-linejoin', 'round');
-          xIcon.classList.add('shrink-0', 'h-6', 'w-6');
-          xIcon.setAttribute('aria-hidden', 'true');
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('cx', '12');
-          circle.setAttribute('cy', '12');
-          circle.setAttribute('r', '10');
-          const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path1.setAttribute('d', 'm15 9-6 6');
-          const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path2.setAttribute('d', 'm9 9 6 6');
-          xIcon.appendChild(circle);
-          xIcon.appendChild(path1);
-          xIcon.appendChild(path2);
-
-          const messageSpan = document.createElement('span');
-          messageSpan.textContent = 'An error occurred. Please try again.';
-
-          errorAlert.appendChild(xIcon);
-          errorAlert.appendChild(messageSpan);
-          messagesContainer.textContent = '';
-          messagesContainer.appendChild(errorAlert);
-          // Associate inputs with error message for screen readers
-          addFormMessagesAssociation();
-          // Move focus to message container for accessibility
-          messagesContainer.focus();
-        }
-      } finally {
-        // Reset loading state
-        form.classList.remove('submitting');
-        if (buttonText) buttonText.classList.remove('hidden');
-        if (loadingSpinner) loadingSpinner.classList.add('hidden');
-        if (submitButton) submitButton.disabled = false;
-      }
-    });
+      });
+    }
   }
+
+  onPageReady(initRegistrationForm);
 </script>

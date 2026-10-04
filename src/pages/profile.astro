@@ -35,208 +35,213 @@ const demoMode = isDemoMode();
   import { addToast } from '@/lib/stores/toastStore';
   import { setButtonLoading } from '@/lib/client-utils';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  const API_PROFILE_URL = '/api/user/profile';
-  const API_RESEND_EMAIL_CHANGE_URL = '/api/user/resend-email-change';
-  const API_CANCEL_EMAIL_CHANGE_URL = '/api/user/cancel-email-change';
+  function initProfilePage() {
+    const API_PROFILE_URL = '/api/user/profile';
+    const API_RESEND_EMAIL_CHANGE_URL = '/api/user/resend-email-change';
+    const API_CANCEL_EMAIL_CHANGE_URL = '/api/user/cancel-email-change';
 
-  // ==================== PROFILE FORM ====================
-  const profileForm = document.getElementById('profile-form');
-  const profileNameInput = document.getElementById('full-name');
-  const profileEmailInput = document.getElementById('email');
-  const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
+    // ==================== PROFILE FORM ====================
+    const profileForm = document.getElementById('profile-form');
+    const profileNameInput = document.getElementById('full-name');
+    const profileEmailInput = document.getElementById('email');
+    const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
 
-  if (
-    profileForm instanceof HTMLFormElement &&
-    profileNameInput instanceof HTMLInputElement &&
-    profileEmailInput instanceof HTMLInputElement &&
-    profileSubmitButton instanceof HTMLButtonElement
-  ) {
-    const hadPendingEmailOnLoad = profileForm.dataset.hadPendingEmail === 'true';
+    if (
+      profileForm instanceof HTMLFormElement &&
+      profileNameInput instanceof HTMLInputElement &&
+      profileEmailInput instanceof HTMLInputElement &&
+      profileSubmitButton instanceof HTMLButtonElement
+    ) {
+      const hadPendingEmailOnLoad = profileForm.dataset.hadPendingEmail === 'true';
 
-    profileForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+      profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-      const errors = [];
+        const errors = [];
 
-      if (!profileNameInput.value || !profileNameInput.value.trim()) {
-        errors.push('Please enter your name');
-      }
+        if (!profileNameInput.value || !profileNameInput.value.trim()) {
+          errors.push('Please enter your name');
+        }
 
-      if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
-        errors.push('Please enter a valid email address');
-      }
+        if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
+          errors.push('Please enter a valid email address');
+        }
 
-      if (errors.length > 0) {
-        addToast(errors.join('. '), 'error');
-        return;
-      }
-
-      setButtonLoading(profileSubmitButton, true);
-
-      try {
-        const formData = new FormData(profileForm);
-
-        // All profile data in one request
-        const profileData = {
-          name: formData.get('name'),
-          email: formData.get('email'),
-          phone: formData.get('phone') || '',
-        };
-
-        const response = await fetch(API_PROFILE_URL, {
-          method: 'PUT',
-          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-          credentials: 'include',
-          body: JSON.stringify(profileData),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          addToast(result.error?.message || 'Failed to update profile.', 'error');
+        if (errors.length > 0) {
+          addToast(errors.join('. '), 'error');
           return;
         }
 
-        if (result.data?.pendingEmail) {
-          addToast(
-            result.data.message || `Verification email sent to ${result.data.pendingEmail}`,
-            'info'
-          );
-          window.location.reload();
-          return;
-        }
+        setButtonLoading(profileSubmitButton, true);
 
-        if (hadPendingEmailOnLoad) {
+        try {
+          const formData = new FormData(profileForm);
+
+          // All profile data in one request
+          const profileData = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone') || '',
+          };
+
+          const response = await fetch(API_PROFILE_URL, {
+            method: 'PUT',
+            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
+            body: JSON.stringify(profileData),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            addToast(result.error?.message || 'Failed to update profile.', 'error');
+            return;
+          }
+
+          if (result.data?.pendingEmail) {
+            addToast(
+              result.data.message || `Verification email sent to ${result.data.pendingEmail}`,
+              'info'
+            );
+            window.location.reload();
+            return;
+          }
+
+          if (hadPendingEmailOnLoad) {
+            addToast('Profile updated successfully!', 'success');
+            window.location.reload();
+            return;
+          }
+
           addToast('Profile updated successfully!', 'success');
-          window.location.reload();
-          return;
+        } catch (error) {
+          console.error('Profile update error:', error);
+          addToast('An error occurred. Please check your connection and try again.', 'error');
+        } finally {
+          setButtonLoading(profileSubmitButton, false);
         }
-
-        addToast('Profile updated successfully!', 'success');
-      } catch (error) {
-        console.error('Profile update error:', error);
-        addToast('An error occurred. Please check your connection and try again.', 'error');
-      } finally {
-        setButtonLoading(profileSubmitButton, false);
-      }
-    });
-  }
-
-  // ==================== RESEND EMAIL CHANGE ====================
-  const resendBtn = document.getElementById('resend-email-change-btn');
-  const COOLDOWN_KEY = 'resend-email-change-cooldown';
-  const COOLDOWN_SECONDS = 60;
-
-  function startCooldown(btn: HTMLButtonElement, endsAt: number) {
-    btn.disabled = true;
-    const tick = () => {
-      const remaining = Math.ceil((endsAt - Date.now()) / 1000);
-      if (remaining <= 0) {
-        localStorage.removeItem(COOLDOWN_KEY);
-        btn.textContent = 'Resend email';
-        btn.disabled = false;
-      } else {
-        btn.textContent = `Resend (${remaining}s)`;
-        requestAnimationFrame(() => setTimeout(tick, 1000));
-      }
-    };
-    tick();
-  }
-
-  if (resendBtn instanceof HTMLButtonElement) {
-    // Restore cooldown from previous page load
-    const savedCooldown = localStorage.getItem(COOLDOWN_KEY);
-    if (savedCooldown) {
-      const endsAt = parseInt(savedCooldown, 10);
-      if (endsAt > Date.now()) {
-        startCooldown(resendBtn, endsAt);
-      } else {
-        localStorage.removeItem(COOLDOWN_KEY);
-      }
+      });
     }
 
-    resendBtn.addEventListener('click', async () => {
-      if (resendBtn.disabled) return;
+    // ==================== RESEND EMAIL CHANGE ====================
+    const resendBtn = document.getElementById('resend-email-change-btn');
+    const COOLDOWN_KEY = 'resend-email-change-cooldown';
+    const COOLDOWN_SECONDS = 60;
 
-      resendBtn.disabled = true;
-      resendBtn.textContent = 'Sending…';
-
-      try {
-        const response = await fetch(API_RESEND_EMAIL_CHANGE_URL, {
-          method: 'POST',
-          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-          credentials: 'include',
-        });
-
-        const result = await response.json();
-
-        if (response.status === 429) {
-          const msg =
-            result.error?.message || result.error || 'Too many requests. Please try again later.';
-          addToast(msg, 'warning');
-          resendBtn.textContent = 'Resend email';
-          resendBtn.disabled = false;
-          return;
+    function startCooldown(btn: HTMLButtonElement, endsAt: number) {
+      btn.disabled = true;
+      const tick = () => {
+        const remaining = Math.ceil((endsAt - Date.now()) / 1000);
+        if (remaining <= 0) {
+          localStorage.removeItem(COOLDOWN_KEY);
+          btn.textContent = 'Resend email';
+          btn.disabled = false;
+        } else {
+          btn.textContent = `Resend (${remaining}s)`;
+          requestAnimationFrame(() => setTimeout(tick, 1000));
         }
+      };
+      tick();
+    }
 
-        if (!response.ok || !result.success) {
-          addToast(result.error?.message || 'Failed to resend verification email.', 'error');
-          resendBtn.textContent = 'Resend email';
-          resendBtn.disabled = false;
-          return;
+    if (resendBtn instanceof HTMLButtonElement) {
+      // Restore cooldown from previous page load
+      const savedCooldown = localStorage.getItem(COOLDOWN_KEY);
+      if (savedCooldown) {
+        const endsAt = parseInt(savedCooldown, 10);
+        if (endsAt > Date.now()) {
+          startCooldown(resendBtn, endsAt);
+        } else {
+          localStorage.removeItem(COOLDOWN_KEY);
         }
-
-        addToast('Verification email resent. Check your inbox.', 'success');
-
-        // Start cooldown persisted in localStorage
-        const endsAt = Date.now() + COOLDOWN_SECONDS * 1000;
-        localStorage.setItem(COOLDOWN_KEY, String(endsAt));
-        startCooldown(resendBtn, endsAt);
-      } catch (error) {
-        console.error('Resend email change error:', error);
-        addToast('An error occurred. Please try again.', 'error');
-        resendBtn.textContent = 'Resend email';
-        resendBtn.disabled = false;
       }
-    });
-  }
 
-  // ==================== CANCEL EMAIL CHANGE ====================
-  const cancelBtn = document.getElementById('cancel-email-change-btn');
+      resendBtn.addEventListener('click', async () => {
+        if (resendBtn.disabled) return;
 
-  if (cancelBtn instanceof HTMLButtonElement) {
-    cancelBtn.addEventListener('click', async () => {
-      if (cancelBtn.disabled) return;
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending…';
 
-      cancelBtn.disabled = true;
-      cancelBtn.textContent = 'Cancelling…';
+        try {
+          const response = await fetch(API_RESEND_EMAIL_CHANGE_URL, {
+            method: 'POST',
+            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
+          });
 
-      try {
-        const response = await fetch(API_CANCEL_EMAIL_CHANGE_URL, {
-          method: 'POST',
-          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-          credentials: 'include',
-        });
+          const result = await response.json();
 
-        const result = await response.json();
+          if (response.status === 429) {
+            const msg =
+              result.error?.message || result.error || 'Too many requests. Please try again later.';
+            addToast(msg, 'warning');
+            resendBtn.textContent = 'Resend email';
+            resendBtn.disabled = false;
+            return;
+          }
 
-        if (!response.ok || !result.success) {
-          addToast(result.error?.message || 'Failed to cancel email change.', 'error');
+          if (!response.ok || !result.success) {
+            addToast(result.error?.message || 'Failed to resend verification email.', 'error');
+            resendBtn.textContent = 'Resend email';
+            resendBtn.disabled = false;
+            return;
+          }
+
+          addToast('Verification email resent. Check your inbox.', 'success');
+
+          // Start cooldown persisted in localStorage
+          const endsAt = Date.now() + COOLDOWN_SECONDS * 1000;
+          localStorage.setItem(COOLDOWN_KEY, String(endsAt));
+          startCooldown(resendBtn, endsAt);
+        } catch (error) {
+          console.error('Resend email change error:', error);
+          addToast('An error occurred. Please try again.', 'error');
+          resendBtn.textContent = 'Resend email';
+          resendBtn.disabled = false;
+        }
+      });
+    }
+
+    // ==================== CANCEL EMAIL CHANGE ====================
+    const cancelBtn = document.getElementById('cancel-email-change-btn');
+
+    if (cancelBtn instanceof HTMLButtonElement) {
+      cancelBtn.addEventListener('click', async () => {
+        if (cancelBtn.disabled) return;
+
+        cancelBtn.disabled = true;
+        cancelBtn.textContent = 'Cancelling…';
+
+        try {
+          const response = await fetch(API_CANCEL_EMAIL_CHANGE_URL, {
+            method: 'POST',
+            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            addToast(result.error?.message || 'Failed to cancel email change.', 'error');
+            cancelBtn.disabled = false;
+            cancelBtn.textContent = 'Cancel change';
+            return;
+          }
+
+          addToast('Email change cancelled.', 'success');
+          localStorage.removeItem(COOLDOWN_KEY);
+          window.location.reload();
+        } catch (error) {
+          console.error('Cancel email change error:', error);
+          addToast('An error occurred. Please try again.', 'error');
           cancelBtn.disabled = false;
           cancelBtn.textContent = 'Cancel change';
-          return;
         }
-
-        addToast('Email change cancelled.', 'success');
-        localStorage.removeItem(COOLDOWN_KEY);
-        window.location.reload();
-      } catch (error) {
-        console.error('Cancel email change error:', error);
-        addToast('An error occurred. Please try again.', 'error');
-        cancelBtn.disabled = false;
-        cancelBtn.textContent = 'Cancel change';
-      }
-    });
+      });
+    }
   }
+
+  onPageReady(initProfilePage);
 </script>

@@ -87,6 +87,7 @@ import Button from '@/components/atoms/Button.astro';
     </div>
 
     <form
+      method="post"
       id="onboarding-add-category-form"
       class="flex flex-col gap-2 sm:flex-row sm:items-end"
       novalidate
@@ -117,7 +118,7 @@ import Button from '@/components/atoms/Button.astro';
     </form>
   </div>
 
-  <form id="onboarding-allocate-form" class="space-y-3" novalidate>
+  <form method="post" id="onboarding-allocate-form" class="space-y-3" novalidate>
     {
       categories.map((cat) => (
         <div class="grid grid-cols-1 gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-center">
@@ -217,7 +218,7 @@ import Button from '@/components/atoms/Button.astro';
         </p>
       </div>
 
-      <form id="onboarding-rename-category-form" class="space-y-3" novalidate>
+      <form method="post" id="onboarding-rename-category-form" class="space-y-3" novalidate>
         <input type="hidden" name="categoryId" />
         <div class="form-control gap-1.5">
           <label class="label px-0 pb-0" for="onboarding-rename-category-name">

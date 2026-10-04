@@ -39,10 +39,35 @@ Astro view transitions swap the DOM but preserve module state. Init guards must 
 
 Scripts MUST work on initial load AND after ViewTransitions navigation. The golden rule: **Always listen to `astro:page-load`, never rely solely on `DOMContentLoaded`.**
 
+Astro runs a bundled `<script>` **once per full page load**. Setup at module top level never sees DOM swapped in by a soft navigation.
+
 ### Required Pattern for All Client Scripts
 
 ```typescript
-// ✅ CORRECT: Standard pattern for all client scripts
+// ✅ CORRECT: onPageReady runs setup when the DOM is parsed and after every soft navigation
+import { onPageReady } from '@/lib/page-lifecycle.client';
+
+function initMyComponent(signal: AbortSignal) {
+  const container = document.querySelector('[data-my-component]');
+  if (!container) return; // Also runs on pages without the component; return quietly
+
+  container.addEventListener('click', handleClick);
+  // Listeners on document/window/transition:persist elements outlive the page: pass the signal
+  document.addEventListener('keydown', handleKeydown, { signal });
+}
+
+onPageReady(initMyComponent);
+```
+
+`onPageReady` keys each run on the swapped `<body>`, so the initial `astro:page-load` (which fires only after `window.load`) does not run setup twice, and it aborts the previous run's signal.
+
+- ✅ **Declare an explicit `method` on every `<form>`** — `method="post"` for JS-handled forms; enforced by `src/__tests__/architecture/form-submission-safety.test.ts`
+- ❌ **Leave `method` off a JS-handled form** — if the submit handler isn't bound yet (soft navigation, script still loading), the native submission is a GET and ClientRouter navigates to `?email=…&password=…`
+- ❌ **Bind submit handlers at module top level** — the form swapped in by a soft navigation never gets the listener
+
+Equivalent manual pattern used by existing scripts:
+
+```typescript
 const CONTROLLER_KEY = '__myComponentController';
 
 // Window interface augmentation for type safety
@@ -122,7 +147,7 @@ Does your component need to handle dynamic elements?
 │   └── Use event delegation with AbortController signal
 │
 └── NO (static elements, just needs re-init on navigation)
-    └── Use AbortController + window[CONTROLLER_KEY]
+    └── Use onPageReady (signal for document/window listeners)
 ```
 
 ### For Persisted Elements (`transition:persist`)

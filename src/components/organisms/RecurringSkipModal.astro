@@ -11,7 +11,13 @@ import Button from '@/components/atoms/Button.astro';
   backdropClose={true}
   ariaLabel="Skip this occurrence"
 >
-  <form slot="default" id="recurring-skip-form" class="flex flex-col gap-6" novalidate>
+  <form
+    method="post"
+    slot="default"
+    id="recurring-skip-form"
+    class="flex flex-col gap-6"
+    novalidate
+  >
     <div class="flex items-center gap-4">
       <div
         class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning"

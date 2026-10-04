@@ -47,7 +47,7 @@ const { id } = Astro.props;
       </div>
 
       <!-- Form -->
-      <form id={`${id}-form`} data-payment-method-form class="flex flex-col gap-5">
+      <form method="post" id={`${id}-form`} data-payment-method-form class="flex flex-col gap-5">
         <input type="hidden" name="id" value="" data-method-id />
 
         <FormField label="Name" htmlFor={`${id}-name`} required>

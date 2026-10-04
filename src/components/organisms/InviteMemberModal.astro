@@ -41,7 +41,7 @@ const { id } = Astro.props;
         </div>
       </div>
 
-      <form id={`${id}-form`} data-invite-form class="flex flex-col gap-5">
+      <form method="post" id={`${id}-form`} data-invite-form class="flex flex-col gap-5">
         <div class="form-control">
           <Label htmlFor={`${id}-email`} required>Email Address</Label>
           <Input

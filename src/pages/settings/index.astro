@@ -300,7 +300,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                 </header>
                 <div class="divider my-0"></div>
 
-                <form id="workspace-settings-form" class="flex flex-col gap-5">
+                <form method="post" id="workspace-settings-form" class="flex flex-col gap-5">
                   <div class="grid gap-5 xl:grid-cols-2">
                     <section
                       class={groupedSectionClass}
@@ -1009,224 +1009,241 @@ const inviteMemberButtonClassName = accentGhostBtn
   import { addToast } from '@/lib/stores/toastStore';
   import { setButtonLoading } from '@/lib/client-utils';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  const container = document.querySelector('[data-settings-page]') as HTMLElement | null;
-  if (!container) throw new Error('Settings page container not found');
+  function initSettingsPage(signal: AbortSignal) {
+    const container = document.querySelector('[data-settings-page]') as HTMLElement | null;
+    if (!container) return; // Not on the settings page
 
-  const isAdmin = container.dataset.isAdmin === 'true';
+    const isAdmin = container.dataset.isAdmin === 'true';
 
-  // ==================== WORKSPACE SETTINGS FORM ====================
-  const saveBtnBottom = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
-  const settingsForm = document.getElementById('workspace-settings-form') as HTMLFormElement | null;
-  const primaryCurrencySelect = document.getElementById(
-    'primary-currency'
-  ) as HTMLSelectElement | null;
-  const secondaryCurrencySelect = document.getElementById(
-    'secondary-currency'
-  ) as HTMLSelectElement | null;
+    // ==================== WORKSPACE SETTINGS FORM ====================
+    const saveBtnBottom = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
+    const settingsForm = document.getElementById(
+      'workspace-settings-form'
+    ) as HTMLFormElement | null;
+    const primaryCurrencySelect = document.getElementById(
+      'primary-currency'
+    ) as HTMLSelectElement | null;
+    const secondaryCurrencySelect = document.getElementById(
+      'secondary-currency'
+    ) as HTMLSelectElement | null;
 
-  async function handleSave() {
-    const allSaveBtns = [saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
-    allSaveBtns.forEach((btn) => setButtonLoading(btn, true));
-
-    try {
-      const formData = new FormData(settingsForm!);
-      const canEditCurrencySettings =
-        !primaryCurrencySelect?.disabled && !secondaryCurrencySelect?.disabled;
-
-      const payload: Record<string, unknown> = {
-        weekStart: formData.get('weekStart'),
-      };
-      if (canEditCurrencySettings) {
-        payload.currency = primaryCurrencySelect?.value ?? formData.get('currency');
-        payload.secondaryCurrency = secondaryCurrencySelect?.value ?? '';
-      }
-
-      // Include workspace name only if admin
-      if (isAdmin) {
-        const workspaceName = formData.get('workspaceName');
-        if (workspaceName) {
-          payload.name = workspaceName;
-        }
-      }
-
-      const response = await fetch('/api/workspace/settings', {
-        method: 'PUT',
-        headers: getCsrfHeaders({
-          'Content-Type': 'application/json',
-        }),
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        addToast('Settings saved successfully!', 'success');
-      } else {
-        const errorMessage = result.error?.message || 'Failed to save settings. Please try again.';
-        addToast(errorMessage, 'error');
-      }
-    } catch (error) {
-      console.error('Settings update error:', error);
-      addToast('An error occurred. Please check your connection and try again.', 'error');
-    } finally {
-      allSaveBtns.forEach((btn) => setButtonLoading(btn, false));
-    }
-  }
-
-  if (saveBtnBottom && settingsForm) {
-    saveBtnBottom.addEventListener('click', handleSave);
-  }
-
-  if (primaryCurrencySelect && secondaryCurrencySelect) {
-    const syncSecondaryCurrencyOptions = () => {
-      const selectedPrimary = primaryCurrencySelect.value;
-      for (const option of Array.from(secondaryCurrencySelect.options)) {
-        if (option.value === '') continue;
-        option.hidden = option.value === selectedPrimary;
-      }
-      if (secondaryCurrencySelect.value === selectedPrimary) {
-        secondaryCurrencySelect.value = '';
-      }
-    };
-
-    primaryCurrencySelect.addEventListener('change', syncSecondaryCurrencyOptions);
-    syncSecondaryCurrencyOptions();
-  }
-
-  // ==================== CANCEL INVITATION ====================
-  const cancelInvitationModal = document.getElementById(
-    'cancel-invitation-modal'
-  ) as HTMLDialogElement | null;
-  const invitationEmailDisplay = cancelInvitationModal?.querySelector(
-    '[data-invitation-email-display]'
-  );
-  const confirmCancelBtn = cancelInvitationModal?.querySelector(
-    '[data-confirm-cancel-invitation]'
-  ) as HTMLButtonElement | null;
-
-  // Handle cancel invitation button clicks - open modal
-  document.querySelectorAll('[data-cancel-invitation]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const invitationId = btn.getAttribute('data-invitation-id');
-      const invitationEmail = btn.getAttribute('data-invitation-email');
-
-      if (
-        invitationId &&
-        invitationEmail &&
-        invitationEmailDisplay &&
-        confirmCancelBtn &&
-        cancelInvitationModal
-      ) {
-        invitationEmailDisplay.textContent = invitationEmail;
-        confirmCancelBtn.setAttribute('data-canceling-invitation-id', invitationId);
-        cancelInvitationModal.showModal();
-      }
-    });
-  });
-
-  // Handle confirm cancel in modal
-  if (confirmCancelBtn && cancelInvitationModal) {
-    confirmCancelBtn.addEventListener('click', async () => {
-      const invitationId = confirmCancelBtn.getAttribute('data-canceling-invitation-id');
-      if (!invitationId) return;
-
-      setButtonLoading(confirmCancelBtn, true);
+    async function handleSave() {
+      const allSaveBtns = [saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
+      allSaveBtns.forEach((btn) => setButtonLoading(btn, true));
 
       try {
-        const response = await fetch(`/api/workspace/invitations?invitationId=${invitationId}`, {
-          method: 'DELETE',
+        const formData = new FormData(settingsForm!);
+        const canEditCurrencySettings =
+          !primaryCurrencySelect?.disabled && !secondaryCurrencySelect?.disabled;
+
+        const payload: Record<string, unknown> = {
+          weekStart: formData.get('weekStart'),
+        };
+        if (canEditCurrencySettings) {
+          payload.currency = primaryCurrencySelect?.value ?? formData.get('currency');
+          payload.secondaryCurrency = secondaryCurrencySelect?.value ?? '';
+        }
+
+        // Include workspace name only if admin
+        if (isAdmin) {
+          const workspaceName = formData.get('workspaceName');
+          if (workspaceName) {
+            payload.name = workspaceName;
+          }
+        }
+
+        const response = await fetch('/api/workspace/settings', {
+          method: 'PUT',
+          headers: getCsrfHeaders({
+            'Content-Type': 'application/json',
+          }),
           credentials: 'include',
-          headers: getCsrfHeaders(),
+          body: JSON.stringify(payload),
         });
 
         const result = await response.json();
 
-        if (!response.ok || !result.success) {
-          throw new Error(result.error?.message || 'Failed to cancel invitation');
+        if (response.ok && result.success) {
+          addToast('Settings saved successfully!', 'success');
+        } else {
+          const errorMessage =
+            result.error?.message || 'Failed to save settings. Please try again.';
+          addToast(errorMessage, 'error');
         }
-
-        addToast('Invitation cancelled', 'success');
-        cancelInvitationModal.close();
-
-        // Remove the invitation row from the list
-        const invitationRow = document.querySelector(
-          `[data-invitation-item][data-invitation-id="${invitationId}"]`
-        );
-        if (invitationRow) {
-          invitationRow.remove();
-        }
-
-        // Check if there are no more invitations
-        const remainingInvitations = document.querySelectorAll('[data-invitation-item]');
-        if (remainingInvitations.length === 0) {
-          const invitationsList = document.querySelector('[data-invitations-list]');
-          if (invitationsList) {
-            invitationsList.parentElement?.remove();
-          }
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to cancel invitation';
-        addToast(message, 'error');
+      } catch (error) {
+        console.error('Settings update error:', error);
+        addToast('An error occurred. Please check your connection and try again.', 'error');
       } finally {
-        setButtonLoading(confirmCancelBtn, false);
+        allSaveBtns.forEach((btn) => setButtonLoading(btn, false));
       }
+    }
+
+    if (saveBtnBottom && settingsForm) {
+      saveBtnBottom.addEventListener('click', handleSave);
+      // Enter in a field submits the form; save via the API instead of a native submission
+      settingsForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        void handleSave();
+      });
+    }
+
+    if (primaryCurrencySelect && secondaryCurrencySelect) {
+      const syncSecondaryCurrencyOptions = () => {
+        const selectedPrimary = primaryCurrencySelect.value;
+        for (const option of Array.from(secondaryCurrencySelect.options)) {
+          if (option.value === '') continue;
+          option.hidden = option.value === selectedPrimary;
+        }
+        if (secondaryCurrencySelect.value === selectedPrimary) {
+          secondaryCurrencySelect.value = '';
+        }
+      };
+
+      primaryCurrencySelect.addEventListener('change', syncSecondaryCurrencyOptions);
+      syncSecondaryCurrencyOptions();
+    }
+
+    // ==================== CANCEL INVITATION ====================
+    const cancelInvitationModal = document.getElementById(
+      'cancel-invitation-modal'
+    ) as HTMLDialogElement | null;
+    const invitationEmailDisplay = cancelInvitationModal?.querySelector(
+      '[data-invitation-email-display]'
+    );
+    const confirmCancelBtn = cancelInvitationModal?.querySelector(
+      '[data-confirm-cancel-invitation]'
+    ) as HTMLButtonElement | null;
+
+    // Handle cancel invitation button clicks - open modal
+    document.querySelectorAll('[data-cancel-invitation]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const invitationId = btn.getAttribute('data-invitation-id');
+        const invitationEmail = btn.getAttribute('data-invitation-email');
+
+        if (
+          invitationId &&
+          invitationEmail &&
+          invitationEmailDisplay &&
+          confirmCancelBtn &&
+          cancelInvitationModal
+        ) {
+          invitationEmailDisplay.textContent = invitationEmail;
+          confirmCancelBtn.setAttribute('data-canceling-invitation-id', invitationId);
+          cancelInvitationModal.showModal();
+        }
+      });
     });
+
+    // Handle confirm cancel in modal
+    if (confirmCancelBtn && cancelInvitationModal) {
+      confirmCancelBtn.addEventListener('click', async () => {
+        const invitationId = confirmCancelBtn.getAttribute('data-canceling-invitation-id');
+        if (!invitationId) return;
+
+        setButtonLoading(confirmCancelBtn, true);
+
+        try {
+          const response = await fetch(`/api/workspace/invitations?invitationId=${invitationId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: getCsrfHeaders(),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to cancel invitation');
+          }
+
+          addToast('Invitation cancelled', 'success');
+          cancelInvitationModal.close();
+
+          // Remove the invitation row from the list
+          const invitationRow = document.querySelector(
+            `[data-invitation-item][data-invitation-id="${invitationId}"]`
+          );
+          if (invitationRow) {
+            invitationRow.remove();
+          }
+
+          // Check if there are no more invitations
+          const remainingInvitations = document.querySelectorAll('[data-invitation-item]');
+          if (remainingInvitations.length === 0) {
+            const invitationsList = document.querySelector('[data-invitations-list]');
+            if (invitationsList) {
+              invitationsList.parentElement?.remove();
+            }
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to cancel invitation';
+          addToast(message, 'error');
+        } finally {
+          setButtonLoading(confirmCancelBtn, false);
+        }
+      });
+    }
+
+    // ==================== DATA PANEL ====================
+    document.querySelectorAll<HTMLButtonElement>('[data-open-modal]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const modalId = btn.dataset.openModal;
+        if (!modalId) return;
+        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
+        modal?.showModal();
+      });
+    });
+
+    const confirmClearHistoryBtn = document.querySelector(
+      '[data-confirm-clear-history]'
+    ) as HTMLButtonElement | null;
+
+    if (confirmClearHistoryBtn) {
+      confirmClearHistoryBtn.addEventListener('click', () => {
+        addToast('Clear History is not yet implemented.', 'info');
+        (document.getElementById('clear-history-modal') as HTMLDialogElement | null)?.close();
+      });
+    }
+
+    const resetInput = document.getElementById(
+      'factory-reset-confirm-input'
+    ) as HTMLInputElement | null;
+    const confirmResetBtn = document.querySelector(
+      '[data-confirm-factory-reset]'
+    ) as HTMLButtonElement | null;
+    const factoryResetModal = document.getElementById(
+      'factory-reset-modal'
+    ) as HTMLDialogElement | null;
+
+    if (resetInput && confirmResetBtn) {
+      resetInput.addEventListener('input', () => {
+        confirmResetBtn.disabled = resetInput.value !== 'RESET';
+      });
+    }
+
+    factoryResetModal?.addEventListener('close', () => {
+      if (resetInput) resetInput.value = '';
+      if (confirmResetBtn) confirmResetBtn.disabled = true;
+    });
+
+    if (confirmResetBtn) {
+      confirmResetBtn.addEventListener('click', () => {
+        addToast('Factory Reset is not yet implemented.', 'info');
+        factoryResetModal?.close();
+      });
+    }
+
+    // Listen for new invitations to refresh the page
+    document.addEventListener(
+      'invitation:created',
+      () => {
+        // Reload the page to show the new invitation
+        window.location.reload();
+      },
+      { signal }
+    );
   }
 
-  // ==================== DATA PANEL ====================
-  document.querySelectorAll<HTMLButtonElement>('[data-open-modal]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const modalId = btn.dataset.openModal;
-      if (!modalId) return;
-      const modal = document.getElementById(modalId) as HTMLDialogElement | null;
-      modal?.showModal();
-    });
-  });
-
-  const confirmClearHistoryBtn = document.querySelector(
-    '[data-confirm-clear-history]'
-  ) as HTMLButtonElement | null;
-
-  if (confirmClearHistoryBtn) {
-    confirmClearHistoryBtn.addEventListener('click', () => {
-      addToast('Clear History is not yet implemented.', 'info');
-      (document.getElementById('clear-history-modal') as HTMLDialogElement | null)?.close();
-    });
-  }
-
-  const resetInput = document.getElementById(
-    'factory-reset-confirm-input'
-  ) as HTMLInputElement | null;
-  const confirmResetBtn = document.querySelector(
-    '[data-confirm-factory-reset]'
-  ) as HTMLButtonElement | null;
-  const factoryResetModal = document.getElementById(
-    'factory-reset-modal'
-  ) as HTMLDialogElement | null;
-
-  if (resetInput && confirmResetBtn) {
-    resetInput.addEventListener('input', () => {
-      confirmResetBtn.disabled = resetInput.value !== 'RESET';
-    });
-  }
-
-  factoryResetModal?.addEventListener('close', () => {
-    if (resetInput) resetInput.value = '';
-    if (confirmResetBtn) confirmResetBtn.disabled = true;
-  });
-
-  if (confirmResetBtn) {
-    confirmResetBtn.addEventListener('click', () => {
-      addToast('Factory Reset is not yet implemented.', 'info');
-      factoryResetModal?.close();
-    });
-  }
-
-  // Listen for new invitations to refresh the page
-  document.addEventListener('invitation:created', () => {
-    // Reload the page to show the new invitation
-    window.location.reload();
-  });
+  onPageReady(initSettingsPage);
 </script>

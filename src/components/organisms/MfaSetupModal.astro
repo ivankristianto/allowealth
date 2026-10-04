@@ -38,7 +38,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         </div>
       </div>
 
-      <form data-step="credentials" class="space-y-4">
+      <form method="post" data-step="credentials" class="space-y-4">
         <div class="form-control">
           <label for={`${id}-password`} class="label">
             <span class="label-text font-semibold">Account password</span>
@@ -109,7 +109,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         </Button>
       </div>
 
-      <form data-step="verify" class="hidden space-y-4">
+      <form method="post" data-step="verify" class="hidden space-y-4">
         <div class="form-control">
           <label for={`${id}-code`} class="label">
             <span class="label-text font-semibold">Verification code</span>

@@ -70,7 +70,7 @@ import Button from '@/components/atoms/Button.astro';
       </div>
 
       {/* Form */}
-      <form id={`${id}-form`} class="space-y-6">
+      <form method="post" id={`${id}-form`} class="space-y-6">
         {/* Category Select */}
         <FormField label="Category" htmlFor={`${id}-category`} required>
           <select

@@ -62,7 +62,7 @@ import Button from '@/components/atoms/Button.astro';
       </div>
 
       <!-- Form -->
-      <form data-account-category-form class="flex flex-col gap-5">
+      <form method="post" data-account-category-form class="flex flex-col gap-5">
         <input type="hidden" name="id" value={values.id || ''} />
 
         <FormField
