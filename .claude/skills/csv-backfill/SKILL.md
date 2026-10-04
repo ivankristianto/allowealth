@@ -95,7 +95,7 @@ records exactly those rows. Every other income row — coupons, dividends,
 deposit interest, one-off receipts — is placed by `incomeRouting`, an
 **ordered** list where the first matching rule wins. A rule matches by exact
 `category`, by `match` terms that must each start a word in the description
-(case-insensitive, so `INDON` finds `INDON28newnew`), or both; put specific
+(case-insensitive, so `BOND` finds `BOND28`), or both; put specific
 rules before the broad ones they would otherwise lose to. A row no rule
 matches aborts: there is no default bucket for unexplained income.
 

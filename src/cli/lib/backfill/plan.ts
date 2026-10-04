@@ -71,7 +71,7 @@ function expenseOwner(description: string, category: string, config: BackfillCon
   return [...owners][0] ?? config.members.fallback;
 }
 
-/** Matches `term` where it starts a word, so `INDON` also finds `INDON28`. */
+/** Matches `term` where it starts a word, so `BOND` also finds `BOND28`. */
 function wordStart(term: string): RegExp {
   return new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
 }
