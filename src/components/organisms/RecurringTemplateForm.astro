@@ -29,7 +29,12 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
 ---
 
 <Drawer id="recurring-template-drawer" title="New Recurring" width="w-full sm:max-w-md">
-  <form id="recurring-template-form" class="flex flex-col gap-4 pb-20 sm:pb-4" novalidate>
+  <form
+    method="post"
+    id="recurring-template-form"
+    class="flex flex-col gap-4 pb-20 sm:pb-4"
+    novalidate
+  >
     <input type="hidden" name="template_id" />
 
     <p class="text-sm font-medium text-base-content/60" data-drawer-subtitle>

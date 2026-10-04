@@ -32,7 +32,7 @@ const { redirectTo = '' } = Astro.props;
 
     <div id="mfa-messages" aria-live="polite" aria-atomic="true"></div>
 
-    <form id="mfa-form" data-redirect={redirectTo} class="space-y-5" novalidate>
+    <form method="post" id="mfa-form" data-redirect={redirectTo} class="space-y-5" novalidate>
       <div id="totp-section">
         <FormField label="Verification Code" htmlFor="mfa-code" required>
           <input
@@ -115,131 +115,140 @@ const { redirectTo = '' } = Astro.props;
 <script>
   import { authClient } from '@/lib/auth/client';
   import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
+  import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  const form = document.getElementById('mfa-form') as HTMLFormElement | null;
-  const messagesContainer = document.getElementById('mfa-messages');
-  const totpSection = document.getElementById('totp-section');
-  const backupSection = document.getElementById('backup-section');
-  const toggleButton = document.getElementById('toggle-backup-code');
-  const toggleText = toggleButton?.querySelector('[data-toggle-text]');
-  const mfaCodeInput = document.getElementById('mfa-code') as HTMLInputElement | null;
-  const backupCodeInput = document.getElementById('backup-code') as HTMLInputElement | null;
-  const submitButton = document.getElementById('mfa-submit-button') as HTMLButtonElement | null;
-  const buttonText = submitButton?.querySelector('[data-button-text]');
-  const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+  // Runs per page (not per module load) so the form stays bound after soft navigation
+  function initMfaVerifyForm() {
+    const form = document.getElementById('mfa-form') as HTMLFormElement | null;
+    if (!form) return; // This page does not render the form
+    const messagesContainer = document.getElementById('mfa-messages');
+    const totpSection = document.getElementById('totp-section');
+    const backupSection = document.getElementById('backup-section');
+    const toggleButton = document.getElementById('toggle-backup-code');
+    const toggleText = toggleButton?.querySelector('[data-toggle-text]');
+    const mfaCodeInput = document.getElementById('mfa-code') as HTMLInputElement | null;
+    const backupCodeInput = document.getElementById('backup-code') as HTMLInputElement | null;
+    const submitButton = document.getElementById('mfa-submit-button') as HTMLButtonElement | null;
+    const buttonText = submitButton?.querySelector('[data-button-text]');
+    const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
-  if (!form || !submitButton) {
-    console.error('MFA form elements not found');
-  } else {
-    const redirectTo = sanitizePostAuthRedirect(form.dataset.redirect);
-    let isBackupMode = false;
+    if (!form || !submitButton) {
+      console.error('MFA form elements not found');
+    } else {
+      const redirectTo = sanitizePostAuthRedirect(form.dataset.redirect);
+      let isBackupMode = false;
 
-    const getErrorIcon = () => {
-      const template = document.getElementById('icon-error-template-mfa');
-      if (!template?.firstElementChild) return null;
-      const clone = template.firstElementChild.cloneNode(true) as Element;
-      clone.removeAttribute('id');
-      return clone;
-    };
+      const getErrorIcon = () => {
+        const template = document.getElementById('icon-error-template-mfa');
+        if (!template?.firstElementChild) return null;
+        const clone = template.firstElementChild.cloneNode(true) as Element;
+        clone.removeAttribute('id');
+        return clone;
+      };
 
-    const showError = (message: string) => {
-      if (!messagesContainer) return;
+      const showError = (message: string) => {
+        if (!messagesContainer) return;
 
-      messagesContainer.innerHTML = '';
-      const alertDiv = document.createElement('div');
-      alertDiv.setAttribute('role', 'alert');
-      alertDiv.className = 'alert alert-error';
-
-      const icon = getErrorIcon();
-      if (icon) {
-        alertDiv.appendChild(icon);
-      }
-
-      const textSpan = document.createElement('span');
-      textSpan.textContent = message;
-      alertDiv.appendChild(textSpan);
-      messagesContainer.appendChild(alertDiv);
-    };
-
-    toggleButton?.addEventListener('click', () => {
-      isBackupMode = !isBackupMode;
-
-      if (isBackupMode) {
-        totpSection?.classList.add('hidden');
-        backupSection?.classList.remove('hidden');
-        if (toggleText) toggleText.textContent = 'Use authenticator code instead';
-        backupCodeInput?.focus();
-      } else {
-        totpSection?.classList.remove('hidden');
-        backupSection?.classList.add('hidden');
-        if (toggleText) toggleText.textContent = 'Use a backup code instead';
-        mfaCodeInput?.focus();
-      }
-
-      if (messagesContainer) {
         messagesContainer.innerHTML = '';
-      }
-    });
+        const alertDiv = document.createElement('div');
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.className = 'alert alert-error';
 
-    mfaCodeInput?.addEventListener('input', (event) => {
-      const target = event.target as HTMLInputElement;
-      target.value = target.value.replace(/\D/g, '');
-      if (target.value.length === 6) {
-        form.dispatchEvent(new Event('submit', { cancelable: true }));
-      }
-    });
+        const icon = getErrorIcon();
+        if (icon) {
+          alertDiv.appendChild(icon);
+        }
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
+        const textSpan = document.createElement('span');
+        textSpan.textContent = message;
+        alertDiv.appendChild(textSpan);
+        messagesContainer.appendChild(alertDiv);
+      };
 
-      if (messagesContainer) {
-        messagesContainer.innerHTML = '';
-      }
+      toggleButton?.addEventListener('click', () => {
+        isBackupMode = !isBackupMode;
 
-      const code = isBackupMode ? backupCodeInput?.value.trim() : mfaCodeInput?.value.trim();
-      if (!code) {
-        showError(isBackupMode ? 'Please enter a backup code' : 'Please enter a verification code');
-        return;
-      }
+        if (isBackupMode) {
+          totpSection?.classList.add('hidden');
+          backupSection?.classList.remove('hidden');
+          if (toggleText) toggleText.textContent = 'Use authenticator code instead';
+          backupCodeInput?.focus();
+        } else {
+          totpSection?.classList.remove('hidden');
+          backupSection?.classList.add('hidden');
+          if (toggleText) toggleText.textContent = 'Use a backup code instead';
+          mfaCodeInput?.focus();
+        }
 
-      if (!isBackupMode && !/^\d{6}$/.test(code)) {
-        showError('Please enter a valid 6-digit code');
-        return;
-      }
+        if (messagesContainer) {
+          messagesContainer.innerHTML = '';
+        }
+      });
 
-      if (buttonText) buttonText.classList.add('hidden');
-      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
-      submitButton.disabled = true;
+      mfaCodeInput?.addEventListener('input', (event) => {
+        const target = event.target as HTMLInputElement;
+        target.value = target.value.replace(/\D/g, '');
+        if (target.value.length === 6) {
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
 
-      try {
-        const result = isBackupMode
-          ? await authClient.twoFactor.verifyBackupCode({
-              code,
-              trustDevice: false,
-            })
-          : await authClient.twoFactor.verifyTotp({
-              code,
-              trustDevice: false,
-            });
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
 
-        if (result.error) {
-          showError(result.error.message || 'Invalid verification code');
+        if (messagesContainer) {
+          messagesContainer.innerHTML = '';
+        }
+
+        const code = isBackupMode ? backupCodeInput?.value.trim() : mfaCodeInput?.value.trim();
+        if (!code) {
+          showError(
+            isBackupMode ? 'Please enter a backup code' : 'Please enter a verification code'
+          );
           return;
         }
 
-        if (result.data) {
-          window.location.href = redirectTo || '/dashboard';
+        if (!isBackupMode && !/^\d{6}$/.test(code)) {
+          showError('Please enter a valid 6-digit code');
           return;
         }
 
-        showError('Invalid verification code');
-      } catch {
-        showError('An error occurred. Please try again.');
-      } finally {
-        if (buttonText) buttonText.classList.remove('hidden');
-        if (loadingSpinner) loadingSpinner.classList.add('hidden');
-        submitButton.disabled = false;
-      }
-    });
+        if (buttonText) buttonText.classList.add('hidden');
+        if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+        submitButton.disabled = true;
+
+        try {
+          const result = isBackupMode
+            ? await authClient.twoFactor.verifyBackupCode({
+                code,
+                trustDevice: false,
+              })
+            : await authClient.twoFactor.verifyTotp({
+                code,
+                trustDevice: false,
+              });
+
+          if (result.error) {
+            showError(result.error.message || 'Invalid verification code');
+            return;
+          }
+
+          if (result.data) {
+            window.location.href = redirectTo || '/dashboard';
+            return;
+          }
+
+          showError('Invalid verification code');
+        } catch {
+          showError('An error occurred. Please try again.');
+        } finally {
+          if (buttonText) buttonText.classList.remove('hidden');
+          if (loadingSpinner) loadingSpinner.classList.add('hidden');
+          submitButton.disabled = false;
+        }
+      });
+    }
   }
+
+  onPageReady(initMfaVerifyForm);
 </script>

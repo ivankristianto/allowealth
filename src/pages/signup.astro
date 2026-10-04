@@ -198,6 +198,7 @@ const invitationErrorMessage =
           )}
 
           <form
+            method="post"
             id="signup-form"
             class="space-y-5"
             data-signup-form
@@ -360,13 +361,26 @@ const invitationErrorMessage =
 
 <script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
 
-<script nonce={cspNonce} is:inline>
-  document.addEventListener('DOMContentLoaded', () => {
-    const authClientModulePromise = import('@/lib/auth/client');
-    const captchaClientModulePromise = import('@/lib/auth/captcha-client');
-    const form = document.querySelector('[data-signup-form]');
+<script>
+  import { authClient } from '@/lib/auth/client';
+  import {
+    buildCaptchaHeaders,
+    hasCaptchaWidget,
+    resetCaptchaWidget,
+  } from '@/lib/auth/captcha-client';
+  import { onPageReady } from '@/lib/page-lifecycle.client';
+
+  // Extra body fields read by the user-create hook in auth.service.ts; not in better-auth's client type
+  type SignUpRequest = Parameters<typeof authClient.signUp.email>[0] & {
+    invitationToken: string;
+    workspaceName?: string;
+  };
+
+  // Runs per page (not per module load) so the form stays bound after soft navigation
+  function initSignupForm() {
+    const form = document.querySelector<HTMLFormElement>('[data-signup-form]');
     const messagesContainer = document.getElementById('form-messages');
-    const submitButton = form?.querySelector('[data-submit-button]');
+    const submitButton = form?.querySelector<HTMLButtonElement>('[data-submit-button]');
     const buttonText = submitButton?.querySelector('[data-button-text]');
     const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
@@ -396,15 +410,16 @@ const invitationErrorMessage =
       messagesContainer.innerHTML = '';
 
       const formData = new FormData(form);
+      const readField = (name: string) => String(formData.get(name) ?? '');
       const data = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        'confirm-password': formData.get('confirm-password'),
+        name: readField('name'),
+        email: readField('email'),
+        password: readField('password'),
+        'confirm-password': readField('confirm-password'),
       };
 
       // Use shared validation from RegistrationValidation module
-      const emailInput = document.getElementById('email');
+      const emailInput = document.getElementById('email') as HTMLInputElement | null;
       const validationResult = window.RegistrationValidation.validateRegistrationForm(
         data,
         emailInput
@@ -418,8 +433,6 @@ const invitationErrorMessage =
         return;
       }
 
-      const { buildCaptchaHeaders, hasCaptchaWidget, resetCaptchaWidget } =
-        await captchaClientModulePromise;
       const captchaHeaders = buildCaptchaHeaders(form);
       if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
         messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors([
@@ -435,22 +448,19 @@ const invitationErrorMessage =
       if (submitButton) submitButton.disabled = true;
 
       try {
-        const { authClient } = await authClientModulePromise;
-        const result = await authClient.signUp.email({
-          name: String(data.name || ''),
-          email: String(data.email || ''),
-          password: String(data.password || ''),
+        const workspaceName = readField('workspaceName').trim();
+        const signUpRequest: SignUpRequest = {
+          name: data.name,
+          email: data.email,
+          password: data.password,
           callbackURL: '/dashboard',
           invitationToken,
-          workspaceName:
-            typeof formData.get('workspaceName') === 'string' &&
-            String(formData.get('workspaceName')).trim().length > 0
-              ? String(formData.get('workspaceName')).trim()
-              : undefined,
+          workspaceName: workspaceName.length > 0 ? workspaceName : undefined,
           fetchOptions: {
             headers: captchaHeaders,
           },
-        });
+        };
+        const result = await authClient.signUp.email(signUpRequest);
 
         if (!result.error) {
           messagesContainer.innerHTML = `
@@ -476,7 +486,7 @@ const invitationErrorMessage =
                 <path d="m15 9-6 6"></path>
                 <path d="m9 9 6 6"></path>
               </svg>
-              <span>${window.RegistrationValidation.escapeHtml(result?.message || result?.error?.message || 'Registration failed. Please try again.')}</span>
+              <span>${window.RegistrationValidation.escapeHtml(result.error.message || 'Registration failed. Please try again.')}</span>
             </div>
           `;
         }
@@ -501,5 +511,7 @@ const invitationErrorMessage =
         resetCaptchaWidget();
       }
     });
-  });
+  }
+
+  onPageReady(initSignupForm);
 </script>

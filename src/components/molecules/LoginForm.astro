@@ -78,6 +78,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
     </div>
 
     <form
+      method="post"
       id="login-form"
       data-testid="login-form"
       data-redirect={redirectTo}
@@ -214,266 +215,274 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
     sanitizeClientAuthNavigationTarget,
     sanitizePostAuthRedirect,
   } from '@/lib/auth/redirect';
+  import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Read server values from data attributes
-  const loginForm = document.getElementById('login-form');
-  const redirectTo = sanitizePostAuthRedirect(loginForm?.dataset.redirect);
+  // Runs per page (not per module load) so the form stays bound after soft navigation
+  function initLoginForm() {
+    // Read server values from data attributes
+    const loginForm = document.getElementById('login-form');
+    if (!loginForm) return; // This page does not render the form
+    const redirectTo = sanitizePostAuthRedirect(loginForm?.dataset.redirect);
 
-  // Helper function to clone icon from template
-  const getIcon = (type: 'error' | 'info') => {
-    const templateId = type === 'error' ? 'icon-error-template' : 'icon-info-template';
-    const template = document.getElementById(templateId);
-    if (!template?.firstElementChild) {
-      console.warn(`${type} icon template not found or empty`);
-      return null;
-    }
-    const clone = template.firstElementChild.cloneNode(true) as Element;
-    clone.removeAttribute('id'); // Remove ID to avoid duplicates
-    return clone;
-  };
+    // Helper function to clone icon from template
+    const getIcon = (type: 'error' | 'info') => {
+      const templateId = type === 'error' ? 'icon-error-template' : 'icon-info-template';
+      const template = document.getElementById(templateId);
+      if (!template?.firstElementChild) {
+        console.warn(`${type} icon template not found or empty`);
+        return null;
+      }
+      const clone = template.firstElementChild.cloneNode(true) as Element;
+      clone.removeAttribute('id'); // Remove ID to avoid duplicates
+      return clone;
+    };
 
-  // Backward compatibility: getErrorIcon is now getIcon('error')
-  const getErrorIcon = () => getIcon('error');
+    // Backward compatibility: getErrorIcon is now getIcon('error')
+    const getErrorIcon = () => getIcon('error');
 
-  // Helper function to show alert messages
-  const showErrorAlert = (message: string) => {
-    if (!messagesContainer) return;
+    // Helper function to show alert messages
+    const showErrorAlert = (message: string) => {
+      if (!messagesContainer) return;
 
-    messagesContainer.innerHTML = '';
+      messagesContainer.innerHTML = '';
 
-    const alertDiv = document.createElement('div');
-    alertDiv.setAttribute('role', 'alert');
-    alertDiv.className = 'alert alert-error';
+      const alertDiv = document.createElement('div');
+      alertDiv.setAttribute('role', 'alert');
+      alertDiv.className = 'alert alert-error';
 
-    const icon = getErrorIcon();
-    if (icon) {
-      alertDiv.appendChild(icon);
-    }
+      const icon = getErrorIcon();
+      if (icon) {
+        alertDiv.appendChild(icon);
+      }
 
-    const textSpan = document.createElement('span');
-    // Safe: textContent prevents XSS
-    textSpan.textContent = message;
-    alertDiv.appendChild(textSpan);
+      const textSpan = document.createElement('span');
+      // Safe: textContent prevents XSS
+      textSpan.textContent = message;
+      alertDiv.appendChild(textSpan);
 
-    messagesContainer.appendChild(alertDiv);
-  };
+      messagesContainer.appendChild(alertDiv);
+    };
 
-  const form = loginForm as HTMLFormElement | null;
-  const messagesContainer = document.getElementById('login-messages');
-  const emailInput = document.getElementById('email') as HTMLInputElement | null;
-  const passwordInput = document.getElementById('password') as HTMLInputElement | null;
-  const submitButton = document.getElementById('login-submit-button') as HTMLButtonElement | null;
-  const buttonText = submitButton?.querySelector('[data-button-text]');
-  const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+    const form = loginForm as HTMLFormElement | null;
+    const messagesContainer = document.getElementById('login-messages');
+    const emailInput = document.getElementById('email') as HTMLInputElement | null;
+    const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+    const submitButton = document.getElementById('login-submit-button') as HTMLButtonElement | null;
+    const buttonText = submitButton?.querySelector('[data-button-text]');
+    const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
-  if (!form || !emailInput || !passwordInput || !submitButton) {
-    console.error('Login form elements not found');
-  } else {
-    // Add autocomplete attributes for security, UX, and WebAuthn conditional UI
-    emailInput.setAttribute('autocomplete', 'username webauthn');
-    passwordInput.setAttribute('autocomplete', 'current-password');
+    if (!form || !emailInput || !passwordInput || !submitButton) {
+      console.error('Login form elements not found');
+    } else {
+      // Add autocomplete attributes for security, UX, and WebAuthn conditional UI
+      emailInput.setAttribute('autocomplete', 'username webauthn');
+      passwordInput.setAttribute('autocomplete', 'current-password');
 
-    // Add required attributes
-    emailInput.required = true;
-    passwordInput.required = true;
+      // Add required attributes
+      emailInput.required = true;
+      passwordInput.required = true;
 
-    // Email validation pattern
-    emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
-    emailInput.title = 'Please enter a valid email address';
+      // Email validation pattern
+      emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
+      emailInput.title = 'Please enter a valid email address';
 
-    // Clear messages on input
-    const inputs = form.querySelectorAll('input');
-    inputs.forEach((input) => {
-      input.addEventListener('input', () => {
-        if (messagesContainer) {
-          const existingError = messagesContainer.querySelector('[role="alert"]');
-          if (existingError) {
-            existingError.remove();
+      // Clear messages on input
+      const inputs = form.querySelectorAll('input');
+      inputs.forEach((input) => {
+        input.addEventListener('input', () => {
+          if (messagesContainer) {
+            const existingError = messagesContainer.querySelector('[role="alert"]');
+            if (existingError) {
+              existingError.remove();
+            }
           }
-        }
-      });
-    });
-
-    // Passkey conditional UI autofill (browser shows passkey suggestions in email field)
-    if (
-      typeof PublicKeyCredential !== 'undefined' &&
-      PublicKeyCredential.isConditionalMediationAvailable
-    ) {
-      PublicKeyCredential.isConditionalMediationAvailable()
-        .then((available) => {
-          if (available) {
-            authClient.signIn
-              .passkey({ autoFill: true })
-              .then((result) => {
-                if (!result?.error) {
-                  window.location.href = redirectTo || '/dashboard';
-                }
-              })
-              .catch(() => {
-                // Conditional UI silently fails if user cancels or no passkeys
-              });
-          }
-        })
-        .catch(() => {});
-    }
-
-    // Form submission with fetch API
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Clear previous messages
-      if (messagesContainer) {
-        messagesContainer.innerHTML = '';
-      }
-
-      // Client-side validation
-      const errors = [];
-
-      if (!emailInput.value || !emailInput.checkValidity()) {
-        errors.push('Please enter a valid email address');
-      }
-
-      if (!passwordInput.value) {
-        errors.push('Please enter your password');
-      }
-
-      const captchaHeaders = buildCaptchaHeaders(form);
-      if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
-        errors.push('Please complete the bot protection check');
-      }
-
-      // Display validation errors
-      if (errors.length > 0) {
-        showErrorAlert(errors.join(', '));
-        return;
-      }
-
-      // Show loading state
-      if (buttonText) buttonText.classList.add('hidden');
-      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
-      if (submitButton) submitButton.disabled = true;
-
-      try {
-        let shouldRedirectToTwoFactor = false;
-        const result = await authClient.signIn.email({
-          email: emailInput.value.trim(),
-          password: passwordInput.value,
-          rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)?.checked,
-          callbackURL: redirectTo || '/dashboard',
-          fetchOptions: {
-            headers: captchaHeaders,
-            onSuccess(context) {
-              shouldRedirectToTwoFactor = context.data?.twoFactorRedirect === true;
-            },
-          },
         });
+      });
 
-        if (result.error) {
-          showErrorAlert(result.error.message || 'Login failed. Please try again.');
+      // Passkey conditional UI autofill (browser shows passkey suggestions in email field)
+      if (
+        typeof PublicKeyCredential !== 'undefined' &&
+        PublicKeyCredential.isConditionalMediationAvailable
+      ) {
+        PublicKeyCredential.isConditionalMediationAvailable()
+          .then((available) => {
+            if (available) {
+              authClient.signIn
+                .passkey({ autoFill: true })
+                .then((result) => {
+                  if (!result?.error) {
+                    window.location.href = redirectTo || '/dashboard';
+                  }
+                })
+                .catch(() => {
+                  // Conditional UI silently fails if user cancels or no passkeys
+                });
+            }
+          })
+          .catch(() => {});
+      }
+
+      // Form submission with fetch API
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Clear previous messages
+        if (messagesContainer) {
+          messagesContainer.innerHTML = '';
+        }
+
+        // Client-side validation
+        const errors = [];
+
+        if (!emailInput.value || !emailInput.checkValidity()) {
+          errors.push('Please enter a valid email address');
+        }
+
+        if (!passwordInput.value) {
+          errors.push('Please enter your password');
+        }
+
+        const captchaHeaders = buildCaptchaHeaders(form);
+        if (hasCaptchaWidget(form) && !captchaHeaders['x-captcha-response']) {
+          errors.push('Please complete the bot protection check');
+        }
+
+        // Display validation errors
+        if (errors.length > 0) {
+          showErrorAlert(errors.join(', '));
           return;
         }
 
-        if (shouldRedirectToTwoFactor) {
-          const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
-          window.location.href = mfaUrl;
-          return;
-        }
+        // Show loading state
+        if (buttonText) buttonText.classList.add('hidden');
+        if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+        if (submitButton) submitButton.disabled = true;
 
-        if (typeof result.data?.url === 'string' && result.data.url.length > 0) {
-          const safeTarget = sanitizeClientAuthNavigationTarget(result.data.url, {
-            currentOrigin: window.location.origin,
+        try {
+          let shouldRedirectToTwoFactor = false;
+          const result = await authClient.signIn.email({
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+            rememberMe: (form.querySelector('[name="remember"]') as HTMLInputElement | null)
+              ?.checked,
+            callbackURL: redirectTo || '/dashboard',
+            fetchOptions: {
+              headers: captchaHeaders,
+              onSuccess(context) {
+                shouldRedirectToTwoFactor = context.data?.twoFactorRedirect === true;
+              },
+            },
           });
 
-          if (safeTarget) {
-            window.location.href = safeTarget;
+          if (result.error) {
+            showErrorAlert(result.error.message || 'Login failed. Please try again.');
             return;
           }
 
-          showErrorAlert(
-            'Received an invalid redirect target. Sending you to a safe page instead.'
-          );
+          if (shouldRedirectToTwoFactor) {
+            const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
+            window.location.href = mfaUrl;
+            return;
+          }
+
+          if (typeof result.data?.url === 'string' && result.data.url.length > 0) {
+            const safeTarget = sanitizeClientAuthNavigationTarget(result.data.url, {
+              currentOrigin: window.location.origin,
+            });
+
+            if (safeTarget) {
+              window.location.href = safeTarget;
+              return;
+            }
+
+            showErrorAlert(
+              'Received an invalid redirect target. Sending you to a safe page instead.'
+            );
+          }
+
+          window.location.href = redirectTo || '/dashboard';
+        } catch (error) {
+          console.error('Login error:', error);
+          // Show error message
+          showErrorAlert('An error occurred. Please try again.');
+        } finally {
+          // Reset loading state
+          if (buttonText) buttonText.classList.remove('hidden');
+          if (loadingSpinner) loadingSpinner.classList.add('hidden');
+          if (submitButton) submitButton.disabled = false;
+          resetCaptchaWidget();
         }
-
-        window.location.href = redirectTo || '/dashboard';
-      } catch (error) {
-        console.error('Login error:', error);
-        // Show error message
-        showErrorAlert('An error occurred. Please try again.');
-      } finally {
-        // Reset loading state
-        if (buttonText) buttonText.classList.remove('hidden');
-        if (loadingSpinner) loadingSpinner.classList.add('hidden');
-        if (submitButton) submitButton.disabled = false;
-        resetCaptchaWidget();
-      }
-    });
-  }
-
-  // Helper: show an info-level alert (non-error feedback)
-  const showInfoAlert = (message: string) => {
-    if (!messagesContainer) return;
-    messagesContainer.replaceChildren();
-    const alertDiv = document.createElement('div');
-    alertDiv.setAttribute('role', 'alert');
-    alertDiv.className = 'alert alert-info';
-    const icon = getIcon('info');
-    if (icon) {
-      alertDiv.appendChild(icon);
+      });
     }
-    const textSpan = document.createElement('span');
-    textSpan.textContent = message;
-    alertDiv.appendChild(textSpan);
-    messagesContainer.appendChild(alertDiv);
-  };
 
-  // Helper: detect if the passkey operation was cancelled by the user
-  const isPasskeyCancellation = (err: unknown): boolean => {
-    // DOMException: NotAllowedError is thrown when user cancels the WebAuthn ceremony
-    if (err instanceof DOMException && err.name === 'NotAllowedError') return true;
-    const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-    return msg.includes('cancel') || msg.includes('abort') || msg.includes('not allowed');
-  };
+    // Helper: show an info-level alert (non-error feedback)
+    const showInfoAlert = (message: string) => {
+      if (!messagesContainer) return;
+      messagesContainer.replaceChildren();
+      const alertDiv = document.createElement('div');
+      alertDiv.setAttribute('role', 'alert');
+      alertDiv.className = 'alert alert-info';
+      const icon = getIcon('info');
+      if (icon) {
+        alertDiv.appendChild(icon);
+      }
+      const textSpan = document.createElement('span');
+      textSpan.textContent = message;
+      alertDiv.appendChild(textSpan);
+      messagesContainer.appendChild(alertDiv);
+    };
 
-  // Passkey sign-in button handler
-  const passkeyBtn = document.getElementById('passkey-signin-btn') as HTMLButtonElement | null;
-  if (passkeyBtn) {
-    passkeyBtn.addEventListener('click', async () => {
-      passkeyBtn.disabled = true;
-      const originalContent = passkeyBtn.innerHTML;
-      passkeyBtn.innerHTML =
-        '<span class="loading loading-spinner loading-sm"></span><span>Signing In...</span>';
+    // Helper: detect if the passkey operation was cancelled by the user
+    const isPasskeyCancellation = (err: unknown): boolean => {
+      // DOMException: NotAllowedError is thrown when user cancels the WebAuthn ceremony
+      if (err instanceof DOMException && err.name === 'NotAllowedError') return true;
+      const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+      return msg.includes('cancel') || msg.includes('abort') || msg.includes('not allowed');
+    };
 
-      try {
-        const result = await authClient.signIn.passkey();
+    // Passkey sign-in button handler
+    const passkeyBtn = document.getElementById('passkey-signin-btn') as HTMLButtonElement | null;
+    if (passkeyBtn) {
+      passkeyBtn.addEventListener('click', async () => {
+        passkeyBtn.disabled = true;
+        const originalContent = passkeyBtn.innerHTML;
+        passkeyBtn.innerHTML =
+          '<span class="loading loading-spinner loading-sm"></span><span>Signing In...</span>';
 
-        if (result?.error) {
-          const code = (result.error as { code?: string }).code || '';
-          const msg = result.error.message || '';
+        try {
+          const result = await authClient.signIn.passkey();
 
-          if (
-            code === 'PASSKEY_NOT_FOUND' ||
-            (code === 'AUTHENTICATION_FAILED' && msg.toLowerCase().includes('no passkey'))
-          ) {
-            showInfoAlert('No passkeys registered yet. Sign in with your password first.');
-          } else if (isPasskeyCancellation(msg)) {
+          if (result?.error) {
+            const code = (result.error as { code?: string }).code || '';
+            const msg = result.error.message || '';
+
+            if (
+              code === 'PASSKEY_NOT_FOUND' ||
+              (code === 'AUTHENTICATION_FAILED' && msg.toLowerCase().includes('no passkey'))
+            ) {
+              showInfoAlert('No passkeys registered yet. Sign in with your password first.');
+            } else if (isPasskeyCancellation(msg)) {
+              showInfoAlert('Passkey sign-in was cancelled.');
+            } else {
+              showErrorAlert(msg || 'Passkey sign-in failed. Please try again.');
+            }
+            return;
+          }
+
+          window.location.href = redirectTo || '/dashboard';
+        } catch (err) {
+          if (isPasskeyCancellation(err)) {
             showInfoAlert('Passkey sign-in was cancelled.');
           } else {
-            showErrorAlert(msg || 'Passkey sign-in failed. Please try again.');
+            showErrorAlert('Passkey sign-in failed. Please try again.');
           }
-          return;
+        } finally {
+          passkeyBtn.disabled = false;
+          passkeyBtn.innerHTML = originalContent;
         }
-
-        window.location.href = redirectTo || '/dashboard';
-      } catch (err) {
-        if (isPasskeyCancellation(err)) {
-          showInfoAlert('Passkey sign-in was cancelled.');
-        } else {
-          showErrorAlert('Passkey sign-in failed. Please try again.');
-        }
-      } finally {
-        passkeyBtn.disabled = false;
-        passkeyBtn.innerHTML = originalContent;
-      }
-    });
+      });
+    }
   }
+
+  onPageReady(initLoginForm);
 </script>

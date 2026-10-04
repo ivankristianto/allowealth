@@ -93,7 +93,12 @@ import Button from '@/components/atoms/Button.astro';
       </div>
 
       {/* Form */}
-      <form id={`${id}-form`} class="flex flex-col gap-6" aria-describedby={`${id}-error`}>
+      <form
+        method="post"
+        id={`${id}-form`}
+        class="flex flex-col gap-6"
+        aria-describedby={`${id}-error`}
+      >
         {/* Hidden field for account ID (edit mode) */}
         <input type="hidden" name="account_id" id={`${id}-account-id`} value="" />
         <input type="hidden" name="original_owner_id" id={`${id}-original-owner-id`} value="" />

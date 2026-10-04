@@ -26,7 +26,7 @@ import Button from '@/components/atoms/Button.astro';
     spending categories.
   </p>
 
-  <form id="onboarding-income-form" class="space-y-4" novalidate>
+  <form method="post" id="onboarding-income-form" class="space-y-4" novalidate>
     {
       currencies.map((currency) => (
         <div class="rounded-xl border border-base-300 bg-base-200/50 p-4 sm:p-5">

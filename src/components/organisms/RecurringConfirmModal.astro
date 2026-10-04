@@ -28,7 +28,7 @@ const { categories = [], accounts = [], defaultCurrency = DEFAULT_CURRENCY } = A
 ---
 
 <Modal id="recurring-confirm-modal" size="sm" closable={false} backdropClose={true}>
-  <form id="recurring-confirm-form" class="flex flex-col gap-6" novalidate>
+  <form method="post" id="recurring-confirm-form" class="flex flex-col gap-6" novalidate>
     <input type="hidden" name="occurrence_id" />
 
     {/* Header with icon — matches ConfirmationModal pattern */}

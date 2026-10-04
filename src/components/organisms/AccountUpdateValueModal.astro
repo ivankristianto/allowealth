@@ -55,7 +55,12 @@ import Button from '@/components/atoms/Button.astro';
       </div>
 
       {/* Form */}
-      <form id={`${id}-form`} class="flex flex-col gap-6" aria-describedby={`${id}-error`}>
+      <form
+        method="post"
+        id={`${id}-form`}
+        class="flex flex-col gap-6"
+        aria-describedby={`${id}-error`}
+      >
         <input type="hidden" name="account_id" id={`${id}-account-id`} value="" />
 
         {/* Date */}
