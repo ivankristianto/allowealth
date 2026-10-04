@@ -74,7 +74,7 @@ import SpotIllustrations from '@/components/atoms/SpotIllustrations.astro';
                   sizes="(max-width: 640px) 400px, (max-width: 1024px) 800px, 1148px"
                 />
                 <div
-                  class={`absolute inset-0 bg-gradient-to-${isReverse ? 'bl' : 'tr'} ${item.gradientClass} pointer-events-none rounded-2xl sm:rounded-3xl`}
+                  class={`absolute inset-0 ${isReverse ? 'bg-linear-to-bl' : 'bg-linear-to-tr'} ${item.gradientClass} pointer-events-none rounded-2xl sm:rounded-3xl`}
                   aria-hidden="true"
                 />
               </figure>

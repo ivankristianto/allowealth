@@ -1,4 +1,5 @@
 ---
+import { Font } from 'astro:assets';
 import '../styles/globals.css';
 
 interface Props {
@@ -13,7 +14,7 @@ const {
   title = 'allowealth',
   description,
   canonical,
-  ogImage = 'https://allowealth.io/screenshots/dashboard-light.png',
+  ogImage = 'https://allowealth.io/screenshots/dashboard.jpg',
   ogType = 'website',
 } = Astro.props;
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
@@ -44,23 +45,9 @@ const canonicalURL = canonical ?? Astro.url.origin + Astro.url.pathname;
     <meta name="twitter:image" content={ogImage} />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- External theme init preserves CSP and applies the saved theme before paint -->
-    <script is:inline defer src="/scripts/theme-init.js"></script>
-    <!-- Standard font stylesheet keeps the markup CSP-safe -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="preload"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-      />
-    </noscript>
+    <!-- Parser-blocking on purpose: sets data-theme before first paint. External file keeps CSP free of inline scripts. -->
+    <script is:inline src="/scripts/theme-init.js"></script>
+    <Font cssVariable="--font-inter" preload={[{ style: 'normal' }]} />
     <slot name="head" />
   </head>
   <body>

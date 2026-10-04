@@ -11,6 +11,7 @@ import { heroContent } from '@/lib/landing-content';
 import Button from '@/components/atoms/Button.astro';
 
 const { typingHeadlines } = heroContent;
+const firstHeadline = typingHeadlines[0] ?? '';
 ---
 
 <header class="relative z-10 pt-36 sm:pt-48 pb-16 sm:pb-32 px-6 overflow-hidden">
@@ -36,13 +37,24 @@ const { typingHeadlines } = heroContent;
     >
       <span class="sr-only">{typingHeadlines.join(', ')} {heroContent.titleSuffix}</span>
       <span
-        class="hero-typing-wrapper block"
+        class="hero-typing-wrapper"
         data-headlines={JSON.stringify(typingHeadlines)}
-        style="min-height: 2em; contain: layout;"
         aria-hidden="true"
       >
-        <span class="hero-typing-text">{typingHeadlines[0]}</span>
-        <span class="typing-cursor">|</span>
+        {
+          /* Invisible copies of every headline share one grid cell, so the box always fits
+            the longest headline at the current width. The visible line renders every
+            character up front and the script only toggles their visibility, so typing
+            never reflows text and never causes layout shift. */
+        }
+        {typingHeadlines.map((headline) => <span class="hero-typing-sizer">{headline}</span>)}
+        <span class="hero-typing-line">
+          {
+            [...firstHeadline].map((char, index, chars) => (
+              <span data-caret={index === chars.length - 1 ? 'end' : undefined}>{char}</span>
+            ))
+          }
+        </span>
       </span>
       <span class="text-accent">{heroContent.titleSuffix}</span>
     </h1>
@@ -79,119 +91,131 @@ const { typingHeadlines } = heroContent;
 </header>
 
 <script>
-  // Typing animation for hero headline
-  document.addEventListener('DOMContentLoaded', () => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+  // Typing animation for the hero headline. Every character of the current headline is
+  // already in the DOM; typing toggles visibility only, so text never reflows.
+  // Starts from the server-rendered first headline. Disabled for reduced motion.
+  const TYPING_SPEED = 60;
+  const DELETING_SPEED = 40;
+  const PAUSE_AFTER_TYPE = 3000;
+  const PAUSE_AFTER_DELETE = 500;
 
-    const wrapper = document.querySelector('.hero-typing-wrapper') as HTMLElement | null;
-    const typingElement = wrapper?.querySelector('.hero-typing-text') as HTMLElement | null;
+  const wrapper = document.querySelector<HTMLElement>('.hero-typing-wrapper');
+  const line = wrapper?.querySelector<HTMLElement>('.hero-typing-line');
+  const parsedHeadlines: unknown = JSON.parse(wrapper?.dataset.headlines ?? '[]');
+  const headlines = Array.isArray(parsedHeadlines) ? parsedHeadlines.map(String) : [];
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (!wrapper || !typingElement) return;
-
-    const headlines = JSON.parse(wrapper.dataset.headlines || '[]');
-    if (!Array.isArray(headlines) || headlines.length === 0) return;
-
+  if (line && headlines.length > 1 && !prefersReducedMotion) {
+    let chars = Array.from(line.children) as HTMLElement[];
     let currentIndex = 0;
-    let isTyping = true;
-    let charIndex = 0;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let isActive = true;
+    let visibleCount = chars.length;
+    let isTyping = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    const TYPING_SPEED = 60;
-    const DELETING_SPEED = 40;
-    const PAUSE_AFTER_TYPE = 3000;
-    const PAUSE_AFTER_DELETE = 500;
+    const render = () => {
+      chars.forEach((char, index) => {
+        char.toggleAttribute('data-hidden', index >= visibleCount);
+        char.removeAttribute('data-caret');
+      });
+      if (visibleCount > 0) chars[visibleCount - 1].dataset.caret = 'end';
+      else if (chars[0]) chars[0].dataset.caret = 'start';
+    };
 
-    function cleanup() {
-      isActive = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-    }
+    const loadHeadline = (text: string) => {
+      chars = Array.from(text, (character) => {
+        const char = document.createElement('span');
+        char.textContent = character;
+        return char;
+      });
+      line.replaceChildren(...chars);
+    };
 
-    function scheduleNext(callback: () => void, delay: number) {
-      if (!isActive) return;
-      timeoutId = setTimeout(() => {
-        if (isActive) callback();
-      }, delay);
-    }
+    const scheduleNext = (delay: number) => {
+      timeoutId = setTimeout(step, delay);
+    };
 
-    function type() {
-      if (!isActive) return;
-
-      const fullText = headlines[currentIndex];
-
-      if (isTyping) {
-        if (charIndex < fullText.length) {
-          typingElement!.textContent = fullText.slice(0, charIndex + 1);
-          charIndex++;
-          scheduleNext(type, TYPING_SPEED);
-        } else {
-          isTyping = false;
-          scheduleNext(type, PAUSE_AFTER_TYPE);
-        }
+    function step() {
+      if (isTyping && visibleCount < chars.length) {
+        visibleCount++;
+        render();
+        scheduleNext(TYPING_SPEED);
+      } else if (isTyping) {
+        isTyping = false;
+        scheduleNext(PAUSE_AFTER_TYPE);
+      } else if (visibleCount > 0) {
+        visibleCount--;
+        render();
+        scheduleNext(DELETING_SPEED);
       } else {
-        if (charIndex > 0) {
-          typingElement!.textContent = fullText.slice(0, charIndex - 1);
-          charIndex--;
-          scheduleNext(type, DELETING_SPEED);
-        } else {
-          currentIndex = (currentIndex + 1) % headlines.length;
-          isTyping = true;
-          scheduleNext(type, PAUSE_AFTER_DELETE);
-        }
+        currentIndex = (currentIndex + 1) % headlines.length;
+        loadHeadline(headlines[currentIndex]);
+        isTyping = true;
+        render();
+        scheduleNext(PAUSE_AFTER_DELETE);
       }
     }
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        cleanup();
-      } else {
-        isActive = true;
-        type();
-      }
+      clearTimeout(timeoutId);
+      if (!document.hidden) scheduleNext(PAUSE_AFTER_DELETE);
     });
 
-    scheduleNext(type, 800);
-  });
+    scheduleNext(PAUSE_AFTER_TYPE);
+  }
 </script>
 
 <style>
   .hero-typing-wrapper {
+    display: grid;
     text-wrap: balance;
-    word-break: normal;
     overflow-wrap: break-word;
   }
 
-  .typing-cursor {
-    animation: blink 1s step-end infinite;
+  .hero-typing-wrapper > * {
+    grid-area: 1 / 1;
+  }
+
+  .hero-typing-sizer {
+    visibility: hidden;
+  }
+
+  /* Shorter headlines sit in the middle of the reserved box instead of leaving a gap below. */
+  .hero-typing-line {
+    align-self: center;
+  }
+
+  /* Characters are created at runtime too, so match them without scoped attributes. */
+  .hero-typing-line > :global([data-hidden]) {
+    visibility: hidden;
+  }
+
+  .hero-typing-line > :global([data-caret]) {
+    position: relative;
+  }
+
+  /* Absolutely positioned caret sits after (or before) its character without taking up space. */
+  .hero-typing-line > :global([data-caret='end'])::after,
+  .hero-typing-line > :global([data-caret='start'])::before {
+    content: '|';
+    position: absolute;
+    visibility: visible;
     color: var(--color-accent);
-    margin-left: 2px;
+  }
+
+  .hero-typing-line > :global([data-caret='start'])::before {
+    right: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-typing-line > :global([data-caret])::after,
+    .hero-typing-line > :global([data-caret])::before {
+      animation: blink 1s step-end infinite;
+    }
   }
 
   @keyframes blink {
     50% {
       opacity: 0;
-    }
-  }
-
-  @media (max-width: 639px) {
-    .hero-typing-wrapper {
-      min-height: 2.4em;
-    }
-  }
-
-  @media (min-width: 640px) and (max-width: 767px) {
-    .hero-typing-wrapper {
-      min-height: 2.2em;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .hero-typing-wrapper {
-      min-height: 2em;
     }
   }
 </style>

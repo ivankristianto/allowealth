@@ -85,78 +85,47 @@ const config = sizeClasses[size];
 </style>
 
 <script>
+  // The initial theme is applied before first paint by public/scripts/theme-init.js.
   type Theme = 'light' | 'dark';
 
   const THEME_STORAGE_KEY = 'theme';
-  const THEME_ATTRIBUTE = 'data-theme';
-  const TOGGLE_SELECTOR = '[data-theme-toggle]';
-  const INIT_ATTRIBUTE = 'data-theme-toggle-init';
-  let controller: AbortController | null = null;
+  const root = document.documentElement;
+  const toggles = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
 
-  function initThemeToggle() {
-    controller?.abort();
-    controller = new AbortController();
-    const { signal } = controller;
-
-    const toggles = document.querySelectorAll(TOGGLE_SELECTOR);
-    if (toggles.length === 0) return;
-
-    function getCurrentTheme(): Theme {
+  function readSavedTheme(): Theme | null {
+    try {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
-
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
-
-      return 'light';
+      return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : null;
+    } catch {
+      return null;
     }
-
-    function updateAllToggles(theme: Theme) {
-      toggles.forEach((toggle) => {
-        toggle.setAttribute(
-          'aria-label',
-          theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-        );
-      });
-    }
-
-    function setTheme(theme: Theme) {
-      document.documentElement.setAttribute(THEME_ATTRIBUTE, theme);
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-      updateAllToggles(theme);
-    }
-
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute(THEME_ATTRIBUTE);
-      const next = current === 'dark' ? 'light' : 'dark';
-      setTheme(next);
-    }
-
-    const existingTheme = document.documentElement.getAttribute(THEME_ATTRIBUTE);
-    if (existingTheme === 'light' || existingTheme === 'dark') {
-      updateAllToggles(existingTheme);
-    } else {
-      setTheme(getCurrentTheme());
-    }
-
-    toggles.forEach((toggle) => {
-      if (toggle.getAttribute(INIT_ATTRIBUTE) === 'true') return;
-      toggle.setAttribute(INIT_ATTRIBUTE, 'true');
-      toggle.addEventListener('click', toggleTheme);
-    });
-
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener(
-      'change',
-      (event) => {
-        if (!localStorage.getItem(THEME_STORAGE_KEY)) {
-          setTheme(event.matches ? 'dark' : 'light');
-        }
-      },
-      { signal }
-    );
   }
 
-  initThemeToggle();
-  document.addEventListener('astro:page-load', initThemeToggle);
+  function saveTheme(theme: Theme) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // localStorage may be unavailable (e.g. private browsing restrictions)
+    }
+  }
+
+  function applyTheme(theme: Theme) {
+    root.setAttribute('data-theme', theme);
+    const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    toggles.forEach((toggle) => toggle.setAttribute('aria-label', label));
+  }
+
+  applyTheme(root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+
+  toggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const nextTheme: Theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+      saveTheme(nextTheme);
+    });
+  });
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+    if (!readSavedTheme()) applyTheme(event.matches ? 'dark' : 'light');
+  });
 </script>
