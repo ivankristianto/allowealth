@@ -645,12 +645,46 @@ describe('loadMonth account creation', () => {
       );
     });
 
+    it('catches a break in a dry run', async () => {
+      const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: januarySaved('750') });
+
+      await expect(loadMonth(d, february, { dryRun: true })).rejects.toThrow(
+        /closed 2099-01 at 750/
+      );
+    });
+
+    it('aborts on a break before claiming the month', async () => {
+      const claimed: string[] = [];
+      const d = februaryDeps({
+        planFor: februaryPlan({}),
+        readSavedPlan: januarySaved('750'),
+        claimMonth: () => {
+          claimed.push('claim');
+        },
+      });
+
+      await expect(loadMonth(d, february, {})).rejects.toThrow(/closed 2099-01 at 750/);
+      expect(claimed).toEqual([]);
+    });
+
+    it('aborts naming last month when its saved plan is missing', async () => {
+      // Without it there is nothing to check the carry-over against; falling
+      // back to the origin check would blame the load order instead.
+      const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: () => null });
+
+      await expect(loadMonth(d, february, { dryRun: true })).rejects.toThrow(
+        /no plan is saved for 2099-01/
+      );
+    });
+
     it('checks the origin balance when last month did not have the account', async () => {
       // First appearance in this month: the existing account must have been
       // opened at this month's opening, or something else created it.
       const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: januarySaved(null) });
 
-      await expect(loadMonth(d, february, {})).rejects.toThrow(/origin balance of 500.*800/s);
+      await expect(loadMonth(d, february, {})).rejects.toThrow(
+        /origin balance of 500.*800.*out of order.*left the sheet/s
+      );
     });
   });
 

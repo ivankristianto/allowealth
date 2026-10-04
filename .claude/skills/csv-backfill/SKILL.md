@@ -41,10 +41,11 @@ bun run aw backfill verify --month <mon>                   # read-only, exits 1 
 nothing — not to the app, not to the ledger.
 
 **Months load in order.** An account is created on its first appearance, and
-its opening balance is stamped from that month. For an account that already
-exists, `run` checks the month's opening against the previous month's closing
-in the saved plan, in **local currency**: the sheet carries every balance over
-exactly there, while a foreign balance moves with each month's rate. Loading a later month first
+its opening balance is stamped from that month. For an account last month also
+had, `run` checks the month's opening against last month's closing in its saved
+plan, in **local currency**: the sheet carries every balance over exactly
+there, while a foreign balance moves with each month's rate. The check reads
+only saved plans, so it runs before any write — a dry run included. Loading a later month first
 stamps the wrong origin balance onto every account it creates, silently. Gap
 detection walks forward from `dateRules.earliestMonth` and aborts naming any
 month behind the target that is not loaded.
@@ -69,25 +70,26 @@ defect aborts the run rather than being silently recorded as a zero-value row.
 
 ## 3. Responding to a detection abort
 
-| Abort                                                                               | Fix                                                                                                                                     |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `Account "X" is not in the roster`                                                  | Add it to `accounts` with its currency, or map it with `accountAliases` if it is a rename                                               |
-| `` `expenseAccounts.X` points at "Y", which is not in this month's accounts ``      | The paying account closed or was renamed. Point `expenseAccounts` at an account in the sheet                                            |
-| `Account "X" has no category in the config`                                         | Give it a `category` in `accounts`                                                                                                      |
-| `Account category "X" does not exist`                                               | Run `aw backfill setup`; it creates every account category the config names                                                             |
-| `Account "X" appears N times … with no rule`                                        | Add a `duplicateRules` entry for that month, name and occurrence, and add the renamed account to `accounts`                             |
-| `Unknown expense/income category: "X"`                                              | Add it to `categories.expense` / `categories.income`, or map it with `categoryRenames`                                                  |
-| `… blank local amount but a foreign amount`                                         | A placeholder row. Add a `suppressedRows` entry for it                                                                                  |
-| `… has a blank amount`                                                              | Fill the cell in the CSV, or add a `suppressedRows` entry                                                                               |
-| `Income row "…" matches no routing rule`                                            | Add an `incomeRouting` rule naming the account it is paid into                                                                          |
-| `… routes to a USD account but has no foreign amount`                               | Fill the foreign column, or set `convert` on the rule if converting at the month's rate is intended                                     |
-| `Account "X" closed <prev> at A, but <month> opens it at B (local currency)`        | The sheet does not carry the balance over. Compare both months' balance sheets; never edit the config to pass                           |
-| `Account "X" already exists with an origin balance of A, but <month> opens it at B` | An account new to this month already exists at another balance — a later month or a manual entry created it. Investigate before purging |
-| `Date "…" falls outside <month>`                                                    | Fix the cell, or suppress the row                                                                                                       |
-| `… is already loaded`                                                               | Re-run with `--force` to purge and reload                                                                                               |
-| `rows diverge from the plan this tool saved`                                        | Something else wrote into the month. Investigate before passing `--force`                                                               |
-| `No free balance-history slot left`                                                 | The day's 12:00–12:59 UTC window is full. Clear the stale snapshots for that day first                                                  |
-| `loaded but does not reconcile`                                                     | Link 2 failed. The month stays `loading`; investigate, then re-run                                                                      |
+| Abort                                                                               | Fix                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Account "X" is not in the roster`                                                  | Add it to `accounts` with its currency, or map it with `accountAliases` if it is a rename                                                                                  |
+| `` `expenseAccounts.X` points at "Y", which is not in this month's accounts ``      | The paying account closed or was renamed. Point `expenseAccounts` at an account in the sheet                                                                               |
+| `Account "X" has no category in the config`                                         | Give it a `category` in `accounts`                                                                                                                                         |
+| `Account category "X" does not exist`                                               | Run `aw backfill setup`; it creates every account category the config names                                                                                                |
+| `Account "X" appears N times … with no rule`                                        | Add a `duplicateRules` entry for that month, name and occurrence, and add the renamed account to `accounts`                                                                |
+| `Unknown expense/income category: "X"`                                              | Add it to `categories.expense` / `categories.income`, or map it with `categoryRenames`                                                                                     |
+| `… blank local amount but a foreign amount`                                         | A placeholder row. Add a `suppressedRows` entry for it                                                                                                                     |
+| `… has a blank amount`                                                              | Fill the cell in the CSV, or add a `suppressedRows` entry                                                                                                                  |
+| `Income row "…" matches no routing rule`                                            | Add an `incomeRouting` rule naming the account it is paid into                                                                                                             |
+| `… routes to a USD account but has no foreign amount`                               | Fill the foreign column, or set `convert` on the rule if converting at the month's rate is intended                                                                        |
+| `Account "X" closed <prev> at A, but <month> opens it at B (local currency)`        | The sheet does not carry the balance over. Compare both months' balance sheets; never edit the config to pass                                                              |
+| `Cannot check <month> against <prev>: no plan is saved for <prev>`                  | The saved plan was deleted. Reload `<prev>` with `--force`; every load saves the plan the next month is checked against                                                    |
+| `Account "X" already exists with an origin balance of A, but <month> opens it at B` | An account last month lacked already exists at another balance: a later month or a manual entry created it, or it left the sheet and came back. Investigate before purging |
+| `Date "…" falls outside <month>`                                                    | Fix the cell, or suppress the row                                                                                                                                          |
+| `… is already loaded`                                                               | Re-run with `--force` to purge and reload                                                                                                                                  |
+| `rows diverge from the plan this tool saved`                                        | Something else wrote into the month. Investigate before passing `--force`                                                                                                  |
+| `No free balance-history slot left`                                                 | The day's 12:00–12:59 UTC window is full. Clear the stale snapshots for that day first                                                                                     |
+| `loaded but does not reconcile`                                                     | Link 2 failed. The month stays `loading`; investigate, then re-run                                                                                                         |
 
 **Salary is not `incomeRouting`.** Salary routes by category through
 `salaryRouting`, to the member's own account; the sheet's `Income` column
