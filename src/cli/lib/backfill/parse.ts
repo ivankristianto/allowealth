@@ -84,6 +84,14 @@ function requireScalar(rows: string[][], label: string): number {
   return requireValue(found, `"${label}"`);
 }
 
+/** Every foreign figure is divided by the rate, so zero or less would post nonsense. */
+function requireRate(rows: string[][]): number {
+  const label = 'USD to IDR';
+  const rate = requireScalar(rows, label);
+  if (rate <= 0) throw new ParseError(`"${label}" must be positive, but is ${rate}`);
+  return rate;
+}
+
 function parseTransactions(txnCsv: string): { expenses: RawRow[]; incomes: RawRow[] } {
   const rows = parseCsv(txnCsv);
   const expenses: RawRow[] = [];
@@ -201,7 +209,7 @@ export function parseMonth(txnCsv: string, balanceCsv: string, ref: MonthRef): R
   return {
     month: ref.month,
     year: ref.year,
-    rate: requireScalar(balanceRows, 'USD to IDR'),
+    rate: requireRate(balanceRows),
     expenses,
     incomes,
     budgets: parseBudgets(balanceRows),

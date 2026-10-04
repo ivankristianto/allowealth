@@ -62,4 +62,13 @@ describe('parseMonth', () => {
     const broken = txn.replace('"100,000.00"', 'n/a');
     expect(() => parseMonth(broken, bal, { month: 1, year: 2099 })).toThrow(/n\/a/);
   });
+
+  it('aborts on a rate that is not positive, since every conversion divides by it', () => {
+    for (const rate of ['0.00', '"-10,000.00"']) {
+      const broken = bal.replace('"10,000.00"', rate);
+      expect(() => parseMonth(txn, broken, { month: 1, year: 2099 })).toThrow(
+        /"USD to IDR" must be positive/
+      );
+    }
+  });
 });
