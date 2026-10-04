@@ -2,6 +2,8 @@
 
 This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with a single **SQLite-compatible schema** shared by local SQLite development and Cloudflare D1 production, with a focus on data integrity, precision, and multi-tenancy.
 
+For drawn diagrams and a generated column reference, open `database-schema.html` in this folder. Regenerate it with `bun run aw db docs` after schema changes.
+
 ## Core Principles
 
 1. **Workspace Isolation**: All financial data is scoped to workspaces via `workspace_id` foreign key with cascade delete

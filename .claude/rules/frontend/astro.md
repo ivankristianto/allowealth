@@ -497,3 +497,12 @@ const token = document.cookie.split('csrf_token=')[1];
 - ✅ **Rely on Nano Stores `subscribe()` for initial visibility** - `subscribe()` fires immediately with current value, so SSR→client hydration handles visibility of elements like toggles and tab panels without SSR-side hacks
 - ❌ **Wrap components in a div for SSR visibility when client toggles on the component's data attribute** - client code uses `querySelector('[data-year-toggle-group]')` to toggle `hidden` on the component's own root element; wrapping in an outer div means the client toggles the inner element while the outer div remains hidden
 - ✅ **Make tab/toggle SSR state dynamic via `class:list`** - use `class:list={[condition && 'active-class']}` for SSR-correct initial tab states so `subscribe()` doesn't need to correct visual state
+
+## UI Behavior Checklist
+
+- ✅ **Think through mobile vs desktop UX separately** - mobile uses dropdowns, desktop uses inline icons
+- ✅ **Add tooltips/labels to icon-only buttons proactively**
+- ✅ **New client-side filters must compose with existing filters** - when adding a filter (e.g., overbudget toggle), ensure it composes with text search and applies to both card and table views; a card should only be visible when it passes ALL active filters
+- ✅ **Keyboard event handlers must check activeElement** - when intercepting arrow keys or other navigation in modals/overlays, check if `document.activeElement` is input/textarea/select and skip to allow normal typing behavior
+- ✅ **Scope DOM queries to the active view container** - when both card view and table view exist in DOM (one hidden), global `querySelectorAll` returns duplicates; scope queries to the visible view's container element
+- ✅ **Update E2E tests when changing conditional rendering** - when changing from disabled-but-visible to conditionally-absent (`{condition && ...}` instead of disabled prop), E2E tests that assert `toBeVisible()` will fail; update to check visibility first and skip gracefully

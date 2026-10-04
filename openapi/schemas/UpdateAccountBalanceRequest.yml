@@ -8,3 +8,9 @@ UpdateAccountBalanceRequest:
       pattern: '^\d+(\.\d{1,2})?$'
     notes:
       type: string
+    recorded_at:
+      type: string
+      format: date-time
+      description: >-
+        When the balance was observed, as an ISO 8601 timestamp with a timezone
+        (e.g. 2026-01-31T12:00:00.000Z). Defaults to the current time.

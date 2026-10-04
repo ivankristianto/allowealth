@@ -20,7 +20,7 @@ CreateBudgetRequest:
     budget_amount:
       type: string
       pattern: '^\d+(\.\d{1,2})?$'
-      description: Budget amount as positive decimal string
+      description: Budget amount as a non-negative decimal string (0 is allowed)
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]

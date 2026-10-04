@@ -1,0 +1,184 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { BackfillClient } from './client';
+import { nextMonth, ordinal } from './money';
+import type { BackfillConfig } from './config.schema';
+import { DirectiveError } from './errors';
+import type { MonthRef } from './types';
+import { parseMonth } from './parse';
+import type { RawMonth } from './parse';
+
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+export class UsageError extends DirectiveError {}
+
+/**
+ * The data directory holds the config, the ledger, the saved plans and the
+ * CSVs. It never lives in the working tree: none of it may enter the repo.
+ */
+export function resolveDataDir(flag: string | undefined, env: string | undefined): string {
+  const dir = flag ?? env;
+  if (!dir || dir.trim() === '') {
+    throw new UsageError(
+      'No data directory. Pass --dir, or export AW_BACKFILL_DIR to point at the directory ' +
+        'holding the CSVs and the .aw-backfill state.'
+    );
+  }
+  return dir;
+}
+
+/** Accepts `Jan`, `1`, or `2099-01`. Anything else aborts rather than being guessed at. */
+export function parseMonthArg(value: string, defaultYear: number): MonthRef {
+  const trimmed = value.trim();
+
+  const explicit = /^(\d{4})-(\d{1,2})$/.exec(trimmed);
+  if (explicit) {
+    const month = Number(explicit[2]);
+    if (month < 1 || month > 12) throw new UsageError(`Month out of range: ${value}`);
+    return { month, year: Number(explicit[1]) };
+  }
+
+  if (/^\d{1,2}$/.test(trimmed)) {
+    const month = Number(trimmed);
+    if (month < 1 || month > 12) throw new UsageError(`Month out of range: ${value}`);
+    return { month, year: defaultYear };
+  }
+
+  const index = MONTH_NAMES.findIndex((n) => n.toLowerCase() === trimmed.slice(0, 3).toLowerCase());
+  if (index === -1) {
+    throw new UsageError(`Unrecognised month "${value}". Use Jan, 1, or 2099-01.`);
+  }
+  return { month: index + 1, year: defaultYear };
+}
+
+export function monthRange(from: MonthRef, to: MonthRef): MonthRef[] {
+  if (ordinal(from) > ordinal(to)) {
+    throw new UsageError('The range start is after its end.');
+  }
+
+  const months: MonthRef[] = [];
+  for (let cursor = { ...from }; ordinal(cursor) <= ordinal(to); cursor = nextMonth(cursor)) {
+    months.push(cursor);
+  }
+  return months;
+}
+
+export function resolveFilenames(
+  templates: BackfillConfig['filenames'],
+  { month, year }: MonthRef
+): { transactions: string; balance: string } {
+  const fill = (template: string) =>
+    template.replace(/\{mon\}/g, MONTH_NAMES[month - 1]!).replace(/\{year\}/g, String(year));
+  return { transactions: fill(templates.transactions), balance: fill(templates.balance) };
+}
+
+/** Reads one month's CSV pair. Takes only the filename templates it needs. */
+export function readMonth(
+  dataDir: string,
+  config: Pick<BackfillConfig, 'filenames'>,
+  ref: MonthRef
+): RawMonth {
+  const names = resolveFilenames(config.filenames, ref);
+  const read = (name: string) => {
+    try {
+      return readFileSync(join(dataDir, name), 'utf8');
+    } catch {
+      throw new UsageError(`Missing CSV: ${name}\nExpected it in the data directory.`);
+    }
+  };
+  return parseMonth(read(names.transactions), read(names.balance), ref);
+}
+
+export function earliestFromConfig(config: BackfillConfig): MonthRef {
+  const [year, month] = config.dateRules.earliestMonth.split('-').map(Number);
+  return { month: month!, year: year! };
+}
+
+/**
+ * Credentials come from the environment only, so a secret cannot land in shell
+ * history. `emailVar`/`passwordVar` name the variables to read.
+ */
+export async function createClient(
+  emailVar = 'AW_BACKFILL_EMAIL',
+  passwordVar = 'AW_BACKFILL_PASSWORD'
+): Promise<BackfillClient> {
+  const baseUrl = process.env.AW_BACKFILL_BASE_URL ?? 'http://localhost:4321';
+  const email = process.env[emailVar];
+  const password = process.env[passwordVar];
+
+  if (!email || !password) {
+    throw new UsageError(`${emailVar} and ${passwordVar} must be set. There is no password flag.`);
+  }
+
+  const client = new BackfillClient({ baseUrl, email, password });
+  try {
+    await client.signIn();
+  } catch (error) {
+    throw new UsageError(
+      `Could not sign in at ${baseUrl}: ${error instanceof Error ? error.message : String(error)}\n` +
+        `Check that the app is running and that AW_BACKFILL_BASE_URL, ${emailVar} and ` +
+        `${passwordVar} are correct. Pass --dry-run to build and verify a plan offline.`
+    );
+  }
+  return client;
+}
+
+/**
+ * Maps a workspace member to a client signed in as them: the primary login for
+ * its own address, a second login from `AW_BACKFILL_SECONDARY_*` for the other
+ * member. Each member signs in at most once.
+ */
+export function memberClients(
+  primary: BackfillClient,
+  env: Record<string, string | undefined> = process.env,
+  connect: (emailVar: string, passwordVar: string) => Promise<BackfillClient> = createClient
+): (member: { name: string; email: string }) => Promise<BackfillClient> {
+  const same = (a: string | undefined, b: string) => a?.toLowerCase() === b.toLowerCase();
+  let secondary: Promise<BackfillClient> | undefined;
+
+  return async (member) => {
+    if (same(env.AW_BACKFILL_EMAIL, member.email)) return primary;
+    if (same(env.AW_BACKFILL_SECONDARY_EMAIL, member.email)) {
+      secondary ??= connect('AW_BACKFILL_SECONDARY_EMAIL', 'AW_BACKFILL_SECONDARY_PASSWORD');
+      return secondary;
+    }
+    throw new UsageError(
+      `Transactions belong to ${member.name} <${member.email}>, but neither ` +
+        `AW_BACKFILL_EMAIL nor AW_BACKFILL_SECONDARY_EMAIL is that address.\n` +
+        `Export AW_BACKFILL_SECONDARY_EMAIL and AW_BACKFILL_SECONDARY_PASSWORD for this member.`
+    );
+  };
+}
+
+/**
+ * Runs a command, printing a directive abort as its message alone.
+ *
+ * Every abort names the config field that resolves it; a stack trace buries
+ * that under frames the operator cannot act on. Unexpected errors still throw
+ * with their trace intact.
+ */
+export async function withDirectiveErrors(fn: () => Promise<number | void>): Promise<number> {
+  try {
+    const code = await fn();
+    return typeof code === 'number' ? code : 0;
+  } catch (error) {
+    if (error instanceof DirectiveError) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
+}

@@ -1,0 +1,806 @@
+<title>Allowealth Data Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap"
+/>
+<style>
+  /* Layout: a single reading column for prose; diagrams and the reference grid break out wider. Ledger-paper neutrals, ink text, one money green and one key indigo. */
+  :root {
+    --bg: #f5f6f4;
+    --surface: #ffffff;
+    --head: #eceee9;
+    --fg: #1d2420;
+    --muted: #5e6862;
+    --line: #cdd2cc;
+    --edge: #6c766f;
+    --money: #0d7a55;
+    --key: #3d4bc4;
+    --warn: #9a5a00;
+    --warn-bg: #fbf3e3;
+    --font-display: 'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --bg: #121614;
+      --surface: #1a1f1c;
+      --head: #232a26;
+      --fg: #e3e8e4;
+      --muted: #96a29a;
+      --line: #36403a;
+      --edge: #85918a;
+      --money: #4cc896;
+      --key: #9aa5ff;
+      --warn: #e8b058;
+      --warn-bg: #2a2416;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #121614;
+    --surface: #1a1f1c;
+    --head: #232a26;
+    --fg: #e3e8e4;
+    --muted: #96a29a;
+    --line: #36403a;
+    --edge: #85918a;
+    --money: #4cc896;
+    --key: #9aa5ff;
+    --warn: #e8b058;
+    --warn-bg: #2a2416;
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.6 var(--font-body);
+  }
+  .page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 48px 80px;
+  }
+  .prose {
+    max-width: 68ch;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-wrap: balance;
+    line-height: 1.15;
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: 1.6rem;
+    margin-bottom: 12px;
+  }
+  h3 {
+    font-size: 1.15rem;
+  }
+  p {
+    margin: 0 0 12px;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+  a {
+    color: var(--key);
+  }
+  .eyebrow {
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .lead {
+    font-size: 1.08rem;
+    color: var(--fg);
+    margin-top: 16px;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin-top: 20px;
+    font: 13px/1.4 var(--font-mono);
+    color: var(--muted);
+  }
+  .facts b {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  section.block {
+    margin-top: 64px;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* conventions */
+  .rules {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px 32px;
+    margin-top: 20px;
+  }
+  .rule h3 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+  .rule p {
+    color: var(--muted);
+    font-size: 0.94rem;
+    margin: 0;
+  }
+  .rule code {
+    color: var(--fg);
+  }
+
+  /* diagrams */
+  figure {
+    margin: 24px 0 0;
+  }
+  .fig-scroll {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .diagram {
+    display: block;
+    width: 100%;
+    min-width: 860px;
+    height: auto;
+    color: var(--edge);
+  }
+  figcaption {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 10px;
+    max-width: 80ch;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin-top: 10px;
+    font: 12px/1.4 var(--font-mono);
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .lg-line {
+    width: 26px;
+    height: 0;
+    border-top: 1.5px solid var(--edge);
+  }
+  .lg-dash {
+    border-top-style: dashed;
+  }
+  .lg-key {
+    border-top: 2px dashed var(--key);
+  }
+  .lg-ws {
+    font-size: 10px;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: var(--head);
+    border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .lg-money {
+    color: var(--money);
+    font-weight: 600;
+  }
+
+  .d-body {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .d-head {
+    fill: var(--head);
+  }
+  .d-rule {
+    stroke: var(--line);
+  }
+  .d-name {
+    font: 600 12px var(--font-mono);
+    fill: var(--fg);
+  }
+  .d-col {
+    font: 11px var(--font-mono);
+    fill: var(--fg);
+  }
+  .d-col-money {
+    fill: var(--money);
+    font-weight: 600;
+  }
+  .d-col-pk {
+    font-weight: 600;
+  }
+  .d-tag {
+    font: 600 8.5px var(--font-mono);
+    fill: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .d-tag-fk,
+  .d-tag-fkn {
+    fill: var(--key);
+  }
+  .d-tag-money {
+    fill: var(--money);
+    font-size: 11px;
+  }
+  .d-hint {
+    font: 9.5px var(--font-mono);
+    fill: var(--muted);
+  }
+  .d-ws rect {
+    fill: var(--surface);
+    stroke: var(--line);
+  }
+  .d-ws text {
+    font: 600 9px var(--font-mono);
+    fill: var(--muted);
+  }
+  .d-edge {
+    fill: none;
+    stroke: var(--edge);
+    stroke-width: 1.3;
+  }
+  .d-dashed {
+    stroke-dasharray: 5 4;
+  }
+  .d-soft {
+    stroke-dasharray: 1.5 4;
+    stroke-linecap: round;
+  }
+  .d-key {
+    stroke: var(--key);
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+  }
+  .d-mk-key {
+    color: var(--key);
+  }
+  .d-dot {
+    fill: var(--edge);
+  }
+  .d-elabel {
+    font: 10px var(--font-mono);
+    fill: var(--muted);
+  }
+  .d-keylabel {
+    fill: var(--key);
+    font-weight: 600;
+  }
+  .d-divider {
+    stroke: var(--line);
+    stroke-dasharray: 3 5;
+  }
+  .d-zone {
+    font: 600 10.5px var(--font-mono);
+    letter-spacing: 0.1em;
+    fill: var(--muted);
+  }
+  .d-group {
+    fill: none;
+    stroke: var(--line);
+    stroke-dasharray: 4 4;
+  }
+  .d-grouplabel {
+    font: 10.5px var(--font-mono);
+    fill: var(--muted);
+  }
+  .d-chip rect {
+    fill: var(--head);
+    stroke: var(--line);
+  }
+  .d-chip text {
+    font: 11px var(--font-mono);
+    fill: var(--muted);
+  }
+  .d-node rect {
+    fill: var(--surface);
+    stroke: var(--fg);
+    stroke-width: 1.2;
+  }
+  .d-node-muted rect {
+    stroke: var(--line);
+    fill: var(--head);
+  }
+  .d-ntitle {
+    font: 600 11.5px var(--font-mono);
+    fill: var(--fg);
+  }
+  .d-nsub {
+    font: 10.5px var(--font-mono);
+    fill: var(--muted);
+  }
+
+  /* explanation columns under figures */
+  .areas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+    gap: 24px 32px;
+    margin-top: 28px;
+  }
+  .area {
+    min-width: 0;
+  }
+  .area h3 {
+    margin-bottom: 6px;
+  }
+  .area p {
+    font-size: 0.94rem;
+  }
+
+  /* gotchas */
+  .gotchas {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+    display: grid;
+    gap: 14px;
+    max-width: 80ch;
+  }
+  .gotchas li {
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .gotchas li.warn {
+    background: var(--warn-bg);
+    border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
+  }
+  .gotchas strong {
+    display: block;
+    margin-bottom: 2px;
+  }
+  .gotchas li.warn strong {
+    color: var(--warn);
+  }
+  .gotchas p {
+    margin: 0;
+    font-size: 0.94rem;
+  }
+
+  /* reference */
+  .ref-group {
+    margin-top: 36px;
+  }
+  .ref-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ref-head p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 18px;
+    margin-top: 16px;
+    align-items: start;
+  }
+  .t {
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .t h4 {
+    margin: 0;
+    padding: 9px 12px;
+    background: var(--head);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .t h4 code {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .t-count {
+    font: 11px var(--font-mono);
+    color: var(--muted);
+  }
+  .t-scroll {
+    overflow-x: auto;
+  }
+  .t table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 12px/1.35 var(--font-mono);
+  }
+  .t td {
+    padding: 4px 12px;
+    border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+    vertical-align: top;
+  }
+  .t tr:first-child td {
+    border-top: 0;
+  }
+  .c-name {
+    white-space: nowrap;
+  }
+  .c-null::after {
+    content: '?';
+    color: var(--muted);
+  }
+  .c-type {
+    color: var(--muted);
+  }
+  .c-money {
+    color: var(--money);
+    font-weight: 500;
+  }
+  .c-def {
+    color: var(--muted);
+    opacity: 0.8;
+  }
+  .c-flags {
+    text-align: right;
+  }
+  .b {
+    display: inline-block;
+    font-size: 10px;
+    padding: 0 5px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+    margin: 1px 0;
+  }
+  .b-pk {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .b-fk {
+    color: var(--key);
+    border-color: color-mix(in srgb, var(--key) 35%, var(--line));
+  }
+  .t-idx {
+    margin: 0;
+    padding: 7px 12px;
+    border-top: 1px solid var(--line);
+    font: 11px/1.45 var(--font-mono);
+    color: var(--muted);
+  }
+  .t-idx span {
+    color: var(--fg);
+  }
+  .footnote {
+    margin-top: 48px;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 560px) {
+    .page {
+      padding-inline: 16px;
+      padding-block: 32px 56px;
+    }
+    .fig-scroll {
+      padding: 10px;
+    }
+  }
+</style>
+
+<main class="page">
+  <header class="prose">
+    <div class="eyebrow">docs / architecture</div>
+    <h1>Allowealth Data Model</h1>
+    <p class="lead">
+      How the household finance app stores its money, its members and its logins. One SQLite-dialect
+      schema, defined with Drizzle, runs on local SQLite during development and on Cloudflare D1 in
+      production.
+    </p>
+    <div class="facts">
+      <span><b class="num">32</b> tables</span>
+      <span><b class="num">83</b> indexes &amp; unique keys</span>
+      <span>source <b>src/db/schema/sqlite/</b></span>
+      <span>migrations <b>drizzle/sqlite/</b></span>
+    </div>
+  </header>
+
+  <section class="block">
+    <h2>Rules every table follows</h2>
+    <div class="rules">
+      <div class="rule">
+        <h3>Scoped to a workspace</h3>
+        <p>
+          A workspace is one household's books. Financial rows carry <code>workspace_id</code> with
+          <code>ON DELETE CASCADE</code>, and every service query filters on it.
+        </p>
+      </div>
+      <div class="rule">
+        <h3>Money is text</h3>
+        <p>
+          <code>amount</code>, <code>balance</code> and <code>budget_amount</code> are decimal
+          strings, never floats. Every money row stores its own <code>currency</code>.
+        </p>
+      </div>
+      <div class="rule">
+        <h3>Who did it</h3>
+        <p>
+          <code>created_by_user_id</code> on every financial row. Transactions also record who last
+          edited and who deleted them.
+        </p>
+      </div>
+      <div class="rule">
+        <h3>Soft deletes</h3>
+        <p>
+          <code>transactions</code>, <code>accounts</code> and <code>users</code> set
+          <code>deleted_at</code> instead of losing history. Closed accounts keep
+          <code>status = closed</code>.
+        </p>
+      </div>
+      <div class="rule">
+        <h3>Text ids</h3>
+        <p>
+          Primary keys are text ids generated in the app (nanoid). There are no autoincrement keys.
+        </p>
+      </div>
+      <div class="rule">
+        <h3>Integer timestamps</h3>
+        <p>
+          Dates are integers mapped to <code>Date</code> by Drizzle. Recurring dates
+          (<code>start_date</code>, <code>due_date</code>) are ISO text instead.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>The financial core</h2>
+    <p class="prose">
+      Eleven tables hold the household's money. Arrows point from the row that holds a foreign key
+      to the table it references, so each arrow reads as "many of these belong to one of those".
+    </p>
+    <figure>
+      <div class="fig-scroll"><svg class="diagram" viewBox="0 0 1070 682" role="img" aria-label="Financial tables. Transactions, budgets and recurring templates point at budget categories; transactions and recurring templates point at accounts; account history, reminders and snapshot items hang off accounts. Every table except account_history and account_snapshot_items carries workspace_id."><defs><marker id="f1-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="currentColor"/></marker><marker id="f1-ak" class="d-mk-key" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="currentColor"/></marker></defs><path class="d-edge d-solid" d="M130 168V240" marker-end="url(#f1-a)"/><text class="d-elabel " x="138" y="208" text-anchor="start">category_id</text><path class="d-edge d-dashed" d="M290 134.5H265V280H240" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M290 543.5H265V332H240" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M510 100.5H560" marker-end="url(#f1-a)"/><path class="d-edge d-dashed" d="M510 117.5H560" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M510 560.5H535V205H560" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M400 435V490" marker-end="url(#f1-a)"/><text class="d-elabel " x="408" y="466.5" text-anchor="start">template_id</text><path class="d-edge d-dashed" d="M400 280V219" marker-end="url(#f1-a)"/><text class="d-elabel " x="408" y="253.5" text-anchor="start">transaction_id · 1:1</text><path class="d-edge d-dashed" d="M780 83.5H830" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M830 243.5H815V180H780" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M830 383.5H800V216H780" marker-end="url(#f1-a)"/><path class="d-edge d-solid" d="M670 490V236" marker-end="url(#f1-a)"/><text class="d-elabel " x="678" y="367" text-anchor="start">account_id</text><path class="d-edge d-solid" d="M780 543.5H830" marker-end="url(#f1-a)"/><g class="d-box"><rect class="d-body" x="20" y="30" width="220" height="138" rx="5"/><path class="d-head" d="M20 52V35a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V52Z"/><line class="d-rule" x1="20" x2="240" y1="52" y2="52"/><text class="d-name" x="30" y="45.5">budgets</text><g class="d-ws"><rect x="210" y="35" width="22" height="13" rx="3"/><text x="221" y="44.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="30" y="70.5">PK</text><text class="d-col d-col-pk" x="58" y="70.5">id</text><text class="d-tag d-tag-fk" x="30" y="87.5">FK</text><text class="d-col d-col-fk" x="58" y="87.5">category_id</text><text class="d-tag d-tag-plain" x="30" y="104.5"></text><text class="d-col d-col-plain" x="58" y="104.5">month · year</text><text class="d-hint" x="230" y="104.5" text-anchor="end">1–12 · yyyy</text><text class="d-tag d-tag-money" x="30" y="121.5">¤</text><text class="d-col d-col-money" x="58" y="121.5">budget_amount</text><text class="d-tag d-tag-plain" x="30" y="138.5"></text><text class="d-col d-col-plain" x="58" y="138.5">currency</text><text class="d-tag d-tag-plain" x="30" y="155.5"></text><text class="d-col d-col-plain" x="58" y="155.5">is_closed</text><text class="d-hint" x="230" y="155.5" text-anchor="end">book closing</text></g><g class="d-box"><rect class="d-body" x="20" y="240" width="220" height="138" rx="5"/><path class="d-head" d="M20 262V245a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V262Z"/><line class="d-rule" x1="20" x2="240" y1="262" y2="262"/><text class="d-name" x="30" y="255.5">budget_categories</text><g class="d-ws"><rect x="210" y="245" width="22" height="13" rx="3"/><text x="221" y="254.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="30" y="280.5">PK</text><text class="d-col d-col-pk" x="58" y="280.5">id</text><text class="d-tag d-tag-plain" x="30" y="297.5"></text><text class="d-col d-col-plain" x="58" y="297.5">name</text><text class="d-tag d-tag-enum" x="30" y="314.5"></text><text class="d-col d-col-enum" x="58" y="314.5">type</text><text class="d-hint" x="230" y="314.5" text-anchor="end">expense | income</text><text class="d-tag d-tag-enum" x="30" y="331.5"></text><text class="d-col d-col-enum" x="58" y="331.5">income_source_type</text><text class="d-tag d-tag-plain" x="30" y="348.5"></text><text class="d-col d-col-plain" x="58" y="348.5">icon · color</text><text class="d-hint" x="230" y="348.5" text-anchor="end">lucide · daisy</text><text class="d-tag d-tag-plain" x="30" y="365.5"></text><text class="d-col d-col-plain" x="58" y="365.5">is_active</text></g><g class="d-box"><rect class="d-body" x="290" y="30" width="220" height="189" rx="5"/><path class="d-head" d="M290 52V35a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V52Z"/><line class="d-rule" x1="290" x2="510" y1="52" y2="52"/><text class="d-name" x="300" y="45.5">transactions</text><g class="d-ws"><rect x="480" y="35" width="22" height="13" rx="3"/><text x="491" y="44.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="300" y="70.5">PK</text><text class="d-col d-col-pk" x="328" y="70.5">id</text><text class="d-tag d-tag-enum" x="300" y="87.5"></text><text class="d-col d-col-enum" x="328" y="87.5">type</text><text class="d-hint" x="500" y="87.5" text-anchor="end">exp | inc | transfer</text><text class="d-tag d-tag-fk" x="300" y="104.5">FK</text><text class="d-col d-col-fk" x="328" y="104.5">account_id</text><text class="d-hint" x="500" y="104.5" text-anchor="end">source</text><text class="d-tag d-tag-fkn" x="300" y="121.5">FK?</text><text class="d-col d-col-fkn" x="328" y="121.5">to_account_id</text><text class="d-hint" x="500" y="121.5" text-anchor="end">transfers only</text><text class="d-tag d-tag-fkn" x="300" y="138.5">FK?</text><text class="d-col d-col-fkn" x="328" y="138.5">category_id</text><text class="d-hint" x="500" y="138.5" text-anchor="end">null on transfer</text><text class="d-tag d-tag-money" x="300" y="155.5">¤</text><text class="d-col d-col-money" x="328" y="155.5">amount</text><text class="d-tag d-tag-plain" x="300" y="172.5"></text><text class="d-col d-col-plain" x="328" y="172.5">currency</text><text class="d-tag d-tag-plain" x="300" y="189.5"></text><text class="d-col d-col-plain" x="328" y="189.5">transaction_date</text><text class="d-tag d-tag-plain" x="300" y="206.5"></text><text class="d-col d-col-plain" x="328" y="206.5">deleted_at</text><text class="d-hint" x="500" y="206.5" text-anchor="end">soft delete</text></g><g class="d-box"><rect class="d-body" x="290" y="280" width="220" height="155" rx="5"/><path class="d-head" d="M290 302V285a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V302Z"/><line class="d-rule" x1="290" x2="510" y1="302" y2="302"/><text class="d-name" x="300" y="295.5">recurring_occurrences</text><g class="d-ws"><rect x="480" y="285" width="22" height="13" rx="3"/><text x="491" y="294.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="300" y="320.5">PK</text><text class="d-col d-col-pk" x="328" y="320.5">id</text><text class="d-tag d-tag-fk" x="300" y="337.5">FK</text><text class="d-col d-col-fk" x="328" y="337.5">template_id</text><text class="d-tag d-tag-fkn" x="300" y="354.5">FK?</text><text class="d-col d-col-fkn" x="328" y="354.5">transaction_id</text><text class="d-hint" x="500" y="354.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="300" y="371.5"></text><text class="d-col d-col-plain" x="328" y="371.5">due_date</text><text class="d-tag d-tag-plain" x="300" y="388.5"></text><text class="d-col d-col-plain" x="328" y="388.5">occurrence_number</text><text class="d-tag d-tag-enum" x="300" y="405.5"></text><text class="d-col d-col-enum" x="328" y="405.5">status</text><text class="d-hint" x="500" y="405.5" text-anchor="end">pending | conf | skip</text><text class="d-tag d-tag-money" x="300" y="422.5">¤</text><text class="d-col d-col-money" x="328" y="422.5">confirmed_amount</text></g><g class="d-box"><rect class="d-body" x="290" y="490" width="220" height="172" rx="5"/><path class="d-head" d="M290 512V495a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V512Z"/><line class="d-rule" x1="290" x2="510" y1="512" y2="512"/><text class="d-name" x="300" y="505.5">recurring_templates</text><g class="d-ws"><rect x="480" y="495" width="22" height="13" rx="3"/><text x="491" y="504.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="300" y="530.5">PK</text><text class="d-col d-col-pk" x="328" y="530.5">id</text><text class="d-tag d-tag-fk" x="300" y="547.5">FK</text><text class="d-col d-col-fk" x="328" y="547.5">category_id</text><text class="d-tag d-tag-fk" x="300" y="564.5">FK</text><text class="d-col d-col-fk" x="328" y="564.5">account_id</text><text class="d-tag d-tag-money" x="300" y="581.5">¤</text><text class="d-col d-col-money" x="328" y="581.5">amount</text><text class="d-tag d-tag-plain" x="300" y="598.5"></text><text class="d-col d-col-plain" x="328" y="598.5">frequency · interval</text><text class="d-hint" x="500" y="598.5" text-anchor="end">wk | mo</text><text class="d-tag d-tag-plain" x="300" y="615.5"></text><text class="d-col d-col-plain" x="328" y="615.5">day_of_month</text><text class="d-tag d-tag-plain" x="300" y="632.5"></text><text class="d-col d-col-plain" x="328" y="632.5">is_installment</text><text class="d-tag d-tag-enum" x="300" y="649.5"></text><text class="d-col d-col-enum" x="328" y="649.5">status</text><text class="d-hint" x="500" y="649.5" text-anchor="end">active | paused | …</text></g><g class="d-box"><rect class="d-body" x="560" y="30" width="220" height="206" rx="5"/><path class="d-head" d="M560 52V35a5 5 0 0 1 5-5H775a5 5 0 0 1 5 5V52Z"/><line class="d-rule" x1="560" x2="780" y1="52" y2="52"/><text class="d-name" x="570" y="45.5">accounts</text><g class="d-ws"><rect x="750" y="35" width="22" height="13" rx="3"/><text x="761" y="44.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="570" y="70.5">PK</text><text class="d-col d-col-pk" x="598" y="70.5">id</text><text class="d-tag d-tag-fkn" x="570" y="87.5">FK?</text><text class="d-col d-col-fkn" x="598" y="87.5">category_id</text><text class="d-tag d-tag-enum" x="570" y="104.5"></text><text class="d-col d-col-enum" x="598" y="104.5">type</text><text class="d-hint" x="770" y="104.5" text-anchor="end">10 types</text><text class="d-tag d-tag-enum" x="570" y="121.5"></text><text class="d-col d-col-enum" x="598" y="121.5">account_class</text><text class="d-hint" x="770" y="121.5" text-anchor="end">3 classes</text><text class="d-tag d-tag-money" x="570" y="138.5">¤</text><text class="d-col d-col-money" x="598" y="138.5">balance</text><text class="d-hint" x="770" y="138.5" text-anchor="end">current</text><text class="d-tag d-tag-money" x="570" y="155.5">¤</text><text class="d-col d-col-money" x="598" y="155.5">initial_balance</text><text class="d-tag d-tag-plain" x="570" y="172.5"></text><text class="d-col d-col-plain" x="598" y="172.5">currency</text><text class="d-tag d-tag-money" x="570" y="189.5">¤</text><text class="d-col d-col-money" x="598" y="189.5">credit_limit</text><text class="d-hint" x="770" y="189.5" text-anchor="end">cards</text><text class="d-tag d-tag-enum" x="570" y="206.5"></text><text class="d-col d-col-enum" x="598" y="206.5">status</text><text class="d-hint" x="770" y="206.5" text-anchor="end">active | closed</text><text class="d-tag d-tag-plain" x="570" y="223.5"></text><text class="d-col d-col-plain" x="598" y="223.5">deleted_at</text><text class="d-hint" x="770" y="223.5" text-anchor="end">soft delete</text></g><g class="d-box"><rect class="d-body" x="560" y="490" width="220" height="121" rx="5"/><path class="d-head" d="M560 512V495a5 5 0 0 1 5-5H775a5 5 0 0 1 5 5V512Z"/><line class="d-rule" x1="560" x2="780" y1="512" y2="512"/><text class="d-name" x="570" y="505.5">account_snapshot_items</text><text class="d-tag d-tag-pk" x="570" y="530.5">PK</text><text class="d-col d-col-pk" x="598" y="530.5">id</text><text class="d-tag d-tag-fk" x="570" y="547.5">FK</text><text class="d-col d-col-fk" x="598" y="547.5">snapshot_id</text><text class="d-tag d-tag-fk" x="570" y="564.5">FK</text><text class="d-col d-col-fk" x="598" y="564.5">account_id</text><text class="d-tag d-tag-money" x="570" y="581.5">¤</text><text class="d-col d-col-money" x="598" y="581.5">balance</text><text class="d-hint" x="770" y="581.5" text-anchor="end">copied</text><text class="d-tag d-tag-plain" x="570" y="598.5"></text><text class="d-col d-col-plain" x="598" y="598.5">currency</text></g><g class="d-box"><rect class="d-body" x="830" y="30" width="220" height="121" rx="5"/><path class="d-head" d="M830 52V35a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V52Z"/><line class="d-rule" x1="830" x2="1050" y1="52" y2="52"/><text class="d-name" x="840" y="45.5">account_categories</text><g class="d-ws"><rect x="1020" y="35" width="22" height="13" rx="3"/><text x="1031" y="44.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="840" y="70.5">PK</text><text class="d-col d-col-pk" x="868" y="70.5">id</text><text class="d-tag d-tag-plain" x="840" y="87.5"></text><text class="d-col d-col-plain" x="868" y="87.5">name</text><text class="d-hint" x="1040" y="87.5" text-anchor="end">unique per ws</text><text class="d-tag d-tag-plain" x="840" y="104.5"></text><text class="d-col d-col-plain" x="868" y="104.5">is_liability</text><text class="d-tag d-tag-plain" x="840" y="121.5"></text><text class="d-col d-col-plain" x="868" y="121.5">is_system</text><text class="d-tag d-tag-plain" x="840" y="138.5"></text><text class="d-col d-col-plain" x="868" y="138.5">sort_order</text></g><g class="d-box"><rect class="d-body" x="830" y="190" width="220" height="104" rx="5"/><path class="d-head" d="M830 212V195a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V212Z"/><line class="d-rule" x1="830" x2="1050" y1="212" y2="212"/><text class="d-name" x="840" y="205.5">account_history</text><text class="d-tag d-tag-pk" x="840" y="230.5">PK</text><text class="d-col d-col-pk" x="868" y="230.5">id</text><text class="d-tag d-tag-fk" x="840" y="247.5">FK</text><text class="d-col d-col-fk" x="868" y="247.5">account_id</text><text class="d-tag d-tag-money" x="840" y="264.5">¤</text><text class="d-col d-col-money" x="868" y="264.5">balance</text><text class="d-hint" x="1040" y="264.5" text-anchor="end">append-only</text><text class="d-tag d-tag-plain" x="840" y="281.5"></text><text class="d-col d-col-plain" x="868" y="281.5">recorded_at</text></g><g class="d-box"><rect class="d-body" x="830" y="330" width="220" height="121" rx="5"/><path class="d-head" d="M830 352V335a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V352Z"/><line class="d-rule" x1="830" x2="1050" y1="352" y2="352"/><text class="d-name" x="840" y="345.5">account_update_reminders</text><g class="d-ws"><rect x="1020" y="335" width="22" height="13" rx="3"/><text x="1031" y="344.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="840" y="370.5">PK</text><text class="d-col d-col-pk" x="868" y="370.5">id</text><text class="d-tag d-tag-fk" x="840" y="387.5">FK</text><text class="d-col d-col-fk" x="868" y="387.5">account_id</text><text class="d-tag d-tag-enum" x="840" y="404.5"></text><text class="d-col d-col-enum" x="868" y="404.5">frequency</text><text class="d-hint" x="1040" y="404.5" text-anchor="end">wk | mo | qtr</text><text class="d-tag d-tag-plain" x="840" y="421.5"></text><text class="d-col d-col-plain" x="868" y="421.5">next_reminder</text><text class="d-tag d-tag-plain" x="840" y="438.5"></text><text class="d-col d-col-plain" x="868" y="438.5">is_dismissed</text></g><g class="d-box"><rect class="d-body" x="830" y="490" width="220" height="104" rx="5"/><path class="d-head" d="M830 512V495a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V512Z"/><line class="d-rule" x1="830" x2="1050" y1="512" y2="512"/><text class="d-name" x="840" y="505.5">account_snapshots</text><g class="d-ws"><rect x="1020" y="495" width="22" height="13" rx="3"/><text x="1031" y="504.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-pk" x="840" y="530.5">PK</text><text class="d-col d-col-pk" x="868" y="530.5">id</text><text class="d-tag d-tag-plain" x="840" y="547.5"></text><text class="d-col d-col-plain" x="868" y="547.5">snapshot_date</text><text class="d-tag d-tag-plain" x="840" y="564.5"></text><text class="d-col d-col-plain" x="868" y="564.5">month · year</text><text class="d-tag d-tag-plain" x="840" y="581.5"></text><text class="d-col d-col-plain" x="868" y="581.5">notes</text></g></svg></div>
+      <div class="legend">
+        <span><i class="lg-line"></i>required FK</span>
+        <span><i class="lg-line lg-dash"></i>nullable FK</span>
+        <span><i class="lg-ws">ws</i>has workspace_id, cascade delete</span>
+        <span><b class="lg-money">¤</b>decimal stored as text</span>
+      </div>
+      <figcaption>
+        Budget categories and accounts are the two anchors. Transactions sit between them.
+        account_history and account_snapshot_items have no workspace_id of their own; they reach the
+        workspace through their parent.
+      </figcaption>
+    </figure>
+    <div class="areas">
+      <div class="area">
+        <h3>Budgeting</h3>
+        <p>
+          <code>budget_categories</code> are the labels for spending and income. They are not the
+          same as account categories. A <code>budgets</code> row sets one category's limit for one
+          month in one currency. The unique key is
+          <code>(workspace, category, month, year, currency)</code>. <code>is_closed</code> locks a
+          month after the books are closed.
+        </p>
+      </div>
+      <div class="area">
+        <h3>Ledger</h3>
+        <p>
+          Each row in <code>transactions</code> is one expense, income or transfer.
+          <code>account_id</code> is always the source. A transfer also sets
+          <code>to_account_id</code> and leaves <code>category_id</code> empty. Six of its 14
+          indexes start with <code>workspace_id</code> and end with <code>transaction_date</code>,
+          to serve monthly reports.
+        </p>
+      </div>
+      <div class="area">
+        <h3>Recurring</h3>
+        <p>
+          A <code>recurring_templates</code> row describes a bill, salary or installment plan.
+          Active templates generate <code>recurring_occurrences</code>, one per due date. The unique
+          key <code>(template_id, occurrence_number)</code> makes it safe to run generation more
+          than once. Confirming an occurrence creates exactly one transaction and links it back
+          through the unique <code>transaction_id</code>.
+        </p>
+      </div>
+      <div class="area">
+        <h3>Accounts &amp; net worth</h3>
+        <p>
+          <code>accounts</code> are bank accounts, wallets, investments and debts.
+          <code>account_class</code> sorts them into liquid, non-liquid and debt. Each balance
+          change appends a row to <code>account_history</code>. A month-end
+          <code>account_snapshots</code> row copies every account's balance into
+          <code>account_snapshot_items</code>, so later edits never rewrite the past.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Two separate records of money</h2>
+    <p class="prose">
+      This is the part of the model most likely to surprise a new contributor. Transactions record
+      what happened. Account balances record what the household has. Writing a transaction does not
+      change any balance.
+    </p>
+    <figure>
+      <div class="fig-scroll"><svg class="diagram" viewBox="0 0 1070 296" role="img" aria-label="Two independent lanes. Ledger: an active recurring template generates pending occurrences; confirming one inserts a transaction, and transactions are summed into budgets and reports. Balances: the user sets an account balance, which logs an account_history row and feeds month-end snapshots and the net worth trend. No arrow connects the two lanes: transactions never change account balances."><defs><marker id="f3-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="currentColor"/></marker><marker id="f3-ak" class="d-mk-key" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="currentColor"/></marker></defs><text class="d-zone" x="20" y="28">LEDGER · WHAT HAPPENED</text><text class="d-zone" x="20" y="208">BALANCES · WHAT YOU HAVE</text><line class="d-divider" x1="20" x2="1050" y1="181" y2="181"/><path class="d-edge d-solid" d="M190 73H250" marker-end="url(#f3-a)"/><text class="d-elabel " x="220" y="66" text-anchor="middle">generates</text><path class="d-edge d-solid" d="M400 73H460" marker-end="url(#f3-a)"/><text class="d-elabel " x="430" y="66" text-anchor="middle">confirm</text><path class="d-edge d-dashed" d="M370 96V149H460" marker-end="url(#f3-a)"/><text class="d-elabel " x="376" y="142" text-anchor="start">skip</text><path class="d-edge d-key" d="M610 73H670" marker-end="url(#f3-ak)"/><text class="d-elabel d-keylabel" x="640" y="66" text-anchor="middle">inserts</text><path class="d-edge d-solid" d="M820 73H880" marker-end="url(#f3-a)"/><text class="d-elabel " x="850" y="66" text-anchor="middle">summed</text><path class="d-edge d-solid" d="M190 253H250" marker-end="url(#f3-a)"/><text class="d-elabel " x="220" y="246" text-anchor="middle">sets</text><path class="d-edge d-solid" d="M400 253H460" marker-end="url(#f3-a)"/><text class="d-elabel " x="430" y="246" text-anchor="middle">logs</text><path class="d-edge d-solid" d="M610 253H670" marker-end="url(#f3-a)"/><text class="d-elabel " x="640" y="246" text-anchor="middle">month-end</text><path class="d-edge d-solid" d="M820 253H880" marker-end="url(#f3-a)"/><text class="d-elabel " x="850" y="246" text-anchor="middle">charts</text><g class="d-node"><rect x="20" y="50" width="170" height="46" rx="6"/><text class="d-ntitle" x="32" y="69">recurring_templates</text><text class="d-nsub" x="32" y="86">status = active</text></g><g class="d-node"><rect x="250" y="50" width="150" height="46" rx="6"/><text class="d-ntitle" x="262" y="69">occurrence</text><text class="d-nsub" x="262" y="86">status = pending</text></g><g class="d-node"><rect x="460" y="50" width="150" height="46" rx="6"/><text class="d-ntitle" x="472" y="69">occurrence</text><text class="d-nsub" x="472" y="86">status = confirmed</text></g><g class="d-node d-node-muted"><rect x="460" y="126" width="150" height="46" rx="6"/><text class="d-ntitle" x="472" y="145">occurrence</text><text class="d-nsub" x="472" y="162">status = skipped</text></g><g class="d-node"><rect x="670" y="50" width="150" height="46" rx="6"/><text class="d-ntitle" x="682" y="69">transactions</text><text class="d-nsub" x="682" y="86">one row per event</text></g><g class="d-node d-node-muted"><rect x="880" y="50" width="170" height="46" rx="6"/><text class="d-ntitle" x="892" y="69">budgets &amp; reports</text><text class="d-nsub" x="892" y="86">actuals by month</text></g><g class="d-node d-node-muted"><rect x="20" y="230" width="170" height="46" rx="6"/><text class="d-ntitle" x="32" y="249">User updates balance</text><text class="d-nsub" x="32" y="266">or transfers</text></g><g class="d-node"><rect x="250" y="230" width="150" height="46" rx="6"/><text class="d-ntitle" x="262" y="249">accounts.balance</text><text class="d-nsub" x="262" y="266">overwritten</text></g><g class="d-node"><rect x="460" y="230" width="150" height="46" rx="6"/><text class="d-ntitle" x="472" y="249">account_history</text><text class="d-nsub" x="472" y="266">row appended</text></g><g class="d-node"><rect x="670" y="230" width="150" height="46" rx="6"/><text class="d-ntitle" x="682" y="249">account_snapshots</text><text class="d-nsub" x="682" y="266">+ one item per account</text></g><g class="d-node d-node-muted"><rect x="880" y="230" width="170" height="46" rx="6"/><text class="d-ntitle" x="892" y="249">net worth trend</text><text class="d-nsub" x="892" y="266">balances over time</text></g></svg></div>
+      <figcaption>
+        No arrow crosses between the lanes. <code>TransactionService</code> never touches
+        <code>accounts.balance</code>. Balances change only through
+        <code>AccountService.updateBalance</code> or <code>AccountService.transfer</code>, and both
+        write <code>account_history</code>.
+      </figcaption>
+    </figure>
+    <div class="prose" style="margin-top: 20px">
+      <p>
+        The design matches how the household actually works. Balances are read off a bank app and
+        entered by hand, often for a past month-end. Transactions are logged for budgeting. Keeping
+        the two separate means a missing receipt never makes a balance wrong. The cost is that the
+        two can disagree, and nothing in the schema reconciles them.
+      </p>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Identity and workspaces</h2>
+    <p class="prose">
+      Login is handled by Better Auth, which owns its own tables and column naming (camelCase). The
+      app keeps a separate <code>users</code> table for workspace membership and roles. The two are
+      joined by sharing the same id.
+    </p>
+    <figure>
+      <div class="fig-scroll"><svg class="diagram" viewBox="0 0 1080 643" role="img" aria-label="Identity tables. Better Auth's user table and the app's users table share the same id with no foreign key between them. Better Auth's session, account, twoFactor and passkey reference user. The app's users table optionally points at workspaces; user_meta and audit_logs point at users; workspace_meta and workspace_invitations point at workspaces."><defs><marker id="f2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="currentColor"/></marker><marker id="f2-ak" class="d-mk-key" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="currentColor"/></marker></defs><line class="d-divider" x1="535" x2="535" y1="8" y2="635"/><text class="d-zone" x="20" y="22">MANAGED BY BETTER AUTH</text><text class="d-zone" x="560" y="22">OWNED BY THE APP</text><rect class="d-group" x="278" y="298" width="244" height="337" rx="8"/><text class="d-grouplabel" x="290" y="317">MCP OAuth provider</text><rect class="d-group" x="560" y="470" width="490" height="144" rx="8"/><text class="d-grouplabel" x="572" y="491">Legacy auth tables · each user_id → users · cleanup pending</text><g class="d-chip"><rect x="572" y="504" width="228" height="26" rx="4"/><text x="582" y="521">sessions</text></g><g class="d-chip"><rect x="812" y="504" width="228" height="26" rx="4"/><text x="822" y="521">password_reset_tokens</text></g><g class="d-chip"><rect x="572" y="538" width="228" height="26" rx="4"/><text x="582" y="555">email_verification_tokens</text></g><g class="d-chip"><rect x="812" y="538" width="228" height="26" rx="4"/><text x="822" y="555">oauth_accounts</text></g><g class="d-chip"><rect x="572" y="572" width="228" height="26" rx="4"/><text x="582" y="589">user_mfa</text></g><g class="d-chip"><rect x="812" y="572" width="228" height="26" rx="4"/><text x="822" y="589">user_mfa_backup_codes</text></g><path class="d-edge d-solid" d="M240 93.5H290" marker-end="url(#f2-a)"/><path class="d-edge d-solid" d="M240 220.5H265M240 316.5H265"/><path class="d-edge d-solid" d="M240 426.5H265V125H290" marker-end="url(#f2-a)"/><circle class="d-dot" cx="265" cy="220.5" r="2.5"/><circle class="d-dot" cx="265" cy="316.5" r="2.5"/><text class="d-elabel " x="271" y="420.5" text-anchor="start">userId</text><path class="d-edge d-key" d="M510 76.5H560" marker-end="url(#f2-ak)"/><text class="d-elabel d-keylabel" x="535" y="68.5" text-anchor="middle">same id</text><path class="d-edge d-soft" d="M400 298V144" marker-end="url(#f2-a)"/><text class="d-elabel " x="408" y="225" text-anchor="start">userId · not enforced</text><path class="d-edge d-dashed" d="M780 93.5H830" marker-end="url(#f2-a)"/><path class="d-edge d-solid" d="M670 200V161" marker-end="url(#f2-a)"/><text class="d-elabel " x="678" y="184.5" text-anchor="start">user_id</text><path class="d-edge d-solid" d="M780 373.5H795V144H780" marker-end="url(#f2-a)"/><path class="d-edge d-solid" d="M940 160V127" marker-end="url(#f2-a)"/><path class="d-edge d-solid" d="M1050 316.5H1065V80H1050" marker-end="url(#f2-a)"/><g class="d-box"><rect class="d-body" x="20" y="40" width="220" height="87" rx="5"/><path class="d-head" d="M20 62V45a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V62Z"/><line class="d-rule" x1="20" x2="240" y1="62" y2="62"/><text class="d-name" x="30" y="55.5">session</text><text class="d-tag d-tag-plain" x="30" y="80.5"></text><text class="d-col d-col-plain" x="58" y="80.5">token</text><text class="d-hint" x="230" y="80.5" text-anchor="end">cookie</text><text class="d-tag d-tag-fk" x="30" y="97.5">FK</text><text class="d-col d-col-fk" x="58" y="97.5">userId</text><text class="d-tag d-tag-plain" x="30" y="114.5"></text><text class="d-col d-col-plain" x="58" y="114.5">expiresAt</text></g><g class="d-box"><rect class="d-body" x="20" y="150" width="220" height="104" rx="5"/><path class="d-head" d="M20 172V155a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V172Z"/><line class="d-rule" x1="20" x2="240" y1="172" y2="172"/><text class="d-name" x="30" y="165.5">account</text><text class="d-tag d-tag-plain" x="30" y="190.5"></text><text class="d-col d-col-plain" x="58" y="190.5">providerId</text><text class="d-hint" x="230" y="190.5" text-anchor="end">credential | google</text><text class="d-tag d-tag-plain" x="30" y="207.5"></text><text class="d-col d-col-plain" x="58" y="207.5">accountId</text><text class="d-tag d-tag-fk" x="30" y="224.5">FK</text><text class="d-col d-col-fk" x="58" y="224.5">userId</text><text class="d-tag d-tag-plain" x="30" y="241.5"></text><text class="d-col d-col-plain" x="58" y="241.5">password</text><text class="d-hint" x="230" y="241.5" text-anchor="end">hash</text></g><g class="d-box"><rect class="d-body" x="20" y="280" width="220" height="87" rx="5"/><path class="d-head" d="M20 302V285a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V302Z"/><line class="d-rule" x1="20" x2="240" y1="302" y2="302"/><text class="d-name" x="30" y="295.5">twoFactor</text><text class="d-tag d-tag-fk" x="30" y="320.5">FK</text><text class="d-col d-col-fk" x="58" y="320.5">userId</text><text class="d-hint" x="230" y="320.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="30" y="337.5"></text><text class="d-col d-col-plain" x="58" y="337.5">secret</text><text class="d-tag d-tag-plain" x="30" y="354.5"></text><text class="d-col d-col-plain" x="58" y="354.5">backupCodes</text></g><g class="d-box"><rect class="d-body" x="20" y="390" width="220" height="87" rx="5"/><path class="d-head" d="M20 412V395a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V412Z"/><line class="d-rule" x1="20" x2="240" y1="412" y2="412"/><text class="d-name" x="30" y="405.5">passkey</text><text class="d-tag d-tag-fk" x="30" y="430.5">FK</text><text class="d-col d-col-fk" x="58" y="430.5">userId</text><text class="d-tag d-tag-plain" x="30" y="447.5"></text><text class="d-col d-col-plain" x="58" y="447.5">credentialID</text><text class="d-hint" x="230" y="447.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="30" y="464.5"></text><text class="d-col d-col-plain" x="58" y="464.5">publicKey</text></g><g class="d-box"><rect class="d-body" x="20" y="500" width="220" height="87" rx="5"/><path class="d-head" d="M20 522V505a5 5 0 0 1 5-5H235a5 5 0 0 1 5 5V522Z"/><line class="d-rule" x1="20" x2="240" y1="522" y2="522"/><text class="d-name" x="30" y="515.5">verification</text><text class="d-tag d-tag-plain" x="30" y="540.5"></text><text class="d-col d-col-plain" x="58" y="540.5">identifier</text><text class="d-hint" x="230" y="540.5" text-anchor="end">no FK</text><text class="d-tag d-tag-plain" x="30" y="557.5"></text><text class="d-col d-col-plain" x="58" y="557.5">value</text><text class="d-tag d-tag-plain" x="30" y="574.5"></text><text class="d-col d-col-plain" x="58" y="574.5">expiresAt</text></g><g class="d-box"><rect class="d-body" x="290" y="40" width="220" height="104" rx="5"/><path class="d-head" d="M290 62V45a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V62Z"/><line class="d-rule" x1="290" x2="510" y1="62" y2="62"/><text class="d-name" x="300" y="55.5">user</text><text class="d-tag d-tag-pk" x="300" y="80.5">PK</text><text class="d-col d-col-pk" x="328" y="80.5">id</text><text class="d-tag d-tag-plain" x="300" y="97.5"></text><text class="d-col d-col-plain" x="328" y="97.5">email</text><text class="d-hint" x="500" y="97.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="300" y="114.5"></text><text class="d-col d-col-plain" x="328" y="114.5">emailVerified</text><text class="d-tag d-tag-plain" x="300" y="131.5"></text><text class="d-col d-col-plain" x="328" y="131.5">twoFactorEnabled</text></g><g class="d-box"><rect class="d-body" x="290" y="330" width="220" height="87" rx="5"/><path class="d-head" d="M290 352V335a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V352Z"/><line class="d-rule" x1="290" x2="510" y1="352" y2="352"/><text class="d-name" x="300" y="345.5">oauthApplication</text><text class="d-tag d-tag-plain" x="300" y="370.5"></text><text class="d-col d-col-plain" x="328" y="370.5">clientId</text><text class="d-hint" x="500" y="370.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="300" y="387.5"></text><text class="d-col d-col-plain" x="328" y="387.5">redirectUrls</text><text class="d-tag d-tag-plain" x="300" y="404.5"></text><text class="d-col d-col-plain" x="328" y="404.5">userId</text><text class="d-hint" x="500" y="404.5" text-anchor="end">no FK</text></g><g class="d-box"><rect class="d-body" x="290" y="433" width="220" height="87" rx="5"/><path class="d-head" d="M290 455V438a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V455Z"/><line class="d-rule" x1="290" x2="510" y1="455" y2="455"/><text class="d-name" x="300" y="448.5">oauthAccessToken</text><text class="d-tag d-tag-plain" x="300" y="473.5"></text><text class="d-col d-col-plain" x="328" y="473.5">accessToken</text><text class="d-hint" x="500" y="473.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="300" y="490.5"></text><text class="d-col d-col-plain" x="328" y="490.5">clientId</text><text class="d-tag d-tag-plain" x="300" y="507.5"></text><text class="d-col d-col-plain" x="328" y="507.5">userId</text><text class="d-hint" x="500" y="507.5" text-anchor="end">no FK</text></g><g class="d-box"><rect class="d-body" x="290" y="536" width="220" height="87" rx="5"/><path class="d-head" d="M290 558V541a5 5 0 0 1 5-5H505a5 5 0 0 1 5 5V558Z"/><line class="d-rule" x1="290" x2="510" y1="558" y2="558"/><text class="d-name" x="300" y="551.5">oauthConsent</text><text class="d-tag d-tag-plain" x="300" y="576.5"></text><text class="d-col d-col-plain" x="328" y="576.5">clientId</text><text class="d-tag d-tag-plain" x="300" y="593.5"></text><text class="d-col d-col-plain" x="328" y="593.5">userId</text><text class="d-hint" x="500" y="593.5" text-anchor="end">no FK</text><text class="d-tag d-tag-plain" x="300" y="610.5"></text><text class="d-col d-col-plain" x="328" y="610.5">scopes</text></g><g class="d-box"><rect class="d-body" x="560" y="40" width="220" height="121" rx="5"/><path class="d-head" d="M560 62V45a5 5 0 0 1 5-5H775a5 5 0 0 1 5 5V62Z"/><line class="d-rule" x1="560" x2="780" y1="62" y2="62"/><text class="d-name" x="570" y="55.5">users</text><text class="d-tag d-tag-pk" x="570" y="80.5">PK</text><text class="d-col d-col-pk" x="598" y="80.5">id</text><text class="d-hint" x="770" y="80.5" text-anchor="end">= user.id</text><text class="d-tag d-tag-fkn" x="570" y="97.5">FK?</text><text class="d-col d-col-fkn" x="598" y="97.5">workspace_id</text><text class="d-tag d-tag-enum" x="570" y="114.5"></text><text class="d-col d-col-enum" x="598" y="114.5">role</text><text class="d-hint" x="770" y="114.5" text-anchor="end">admin | member | super</text><text class="d-tag d-tag-plain" x="570" y="131.5"></text><text class="d-col d-col-plain" x="598" y="131.5">email</text><text class="d-hint" x="770" y="131.5" text-anchor="end">unique</text><text class="d-tag d-tag-plain" x="570" y="148.5"></text><text class="d-col d-col-plain" x="598" y="148.5">deleted_at</text><text class="d-hint" x="770" y="148.5" text-anchor="end">member removed</text></g><g class="d-box"><rect class="d-body" x="560" y="200" width="220" height="87" rx="5"/><path class="d-head" d="M560 222V205a5 5 0 0 1 5-5H775a5 5 0 0 1 5 5V222Z"/><line class="d-rule" x1="560" x2="780" y1="222" y2="222"/><text class="d-name" x="570" y="215.5">user_meta</text><text class="d-tag d-tag-fk" x="570" y="240.5">FK</text><text class="d-col d-col-fk" x="598" y="240.5">user_id</text><text class="d-tag d-tag-plain" x="570" y="257.5"></text><text class="d-col d-col-plain" x="598" y="257.5">meta_key</text><text class="d-hint" x="770" y="257.5" text-anchor="end">unique per user</text><text class="d-tag d-tag-plain" x="570" y="274.5"></text><text class="d-col d-col-plain" x="598" y="274.5">meta_value</text><text class="d-hint" x="770" y="274.5" text-anchor="end">≤ 4 KB</text></g><g class="d-box"><rect class="d-body" x="560" y="320" width="220" height="104" rx="5"/><path class="d-head" d="M560 342V325a5 5 0 0 1 5-5H775a5 5 0 0 1 5 5V342Z"/><line class="d-rule" x1="560" x2="780" y1="342" y2="342"/><text class="d-name" x="570" y="335.5">audit_logs</text><g class="d-ws"><rect x="750" y="325" width="22" height="13" rx="3"/><text x="761" y="334.5" text-anchor="middle">ws</text></g><text class="d-tag d-tag-plain" x="570" y="360.5"></text><text class="d-col d-col-plain" x="598" y="360.5">action</text><text class="d-tag d-tag-fk" x="570" y="377.5">FK</text><text class="d-col d-col-fk" x="598" y="377.5">user_id</text><text class="d-tag d-tag-plain" x="570" y="394.5"></text><text class="d-col d-col-plain" x="598" y="394.5">entity_type · entity_id</text><text class="d-tag d-tag-plain" x="570" y="411.5"></text><text class="d-col d-col-plain" x="598" y="411.5">old_value · new_value</text><text class="d-hint" x="770" y="411.5" text-anchor="end">JSON</text></g><g class="d-box"><rect class="d-body" x="830" y="40" width="220" height="87" rx="5"/><path class="d-head" d="M830 62V45a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V62Z"/><line class="d-rule" x1="830" x2="1050" y1="62" y2="62"/><text class="d-name" x="840" y="55.5">workspaces</text><text class="d-tag d-tag-pk" x="840" y="80.5">PK</text><text class="d-col d-col-pk" x="868" y="80.5">id</text><text class="d-tag d-tag-plain" x="840" y="97.5"></text><text class="d-col d-col-plain" x="868" y="97.5">name</text><text class="d-tag d-tag-enum" x="840" y="114.5"></text><text class="d-col d-col-enum" x="868" y="114.5">status</text><text class="d-hint" x="1040" y="114.5" text-anchor="end">active | inactive</text></g><g class="d-box"><rect class="d-body" x="830" y="160" width="220" height="87" rx="5"/><path class="d-head" d="M830 182V165a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V182Z"/><line class="d-rule" x1="830" x2="1050" y1="182" y2="182"/><text class="d-name" x="840" y="175.5">workspace_meta</text><text class="d-tag d-tag-fk" x="840" y="200.5">FK</text><text class="d-col d-col-fk" x="868" y="200.5">workspace_id</text><text class="d-tag d-tag-plain" x="840" y="217.5"></text><text class="d-col d-col-plain" x="868" y="217.5">meta_key</text><text class="d-hint" x="1040" y="217.5" text-anchor="end">unique per ws</text><text class="d-tag d-tag-plain" x="840" y="234.5"></text><text class="d-col d-col-plain" x="868" y="234.5">meta_value</text></g><g class="d-box"><rect class="d-body" x="830" y="280" width="220" height="121" rx="5"/><path class="d-head" d="M830 302V285a5 5 0 0 1 5-5H1045a5 5 0 0 1 5 5V302Z"/><line class="d-rule" x1="830" x2="1050" y1="302" y2="302"/><text class="d-name" x="840" y="295.5">workspace_invitations</text><text class="d-tag d-tag-fk" x="840" y="320.5">FK</text><text class="d-col d-col-fk" x="868" y="320.5">workspace_id</text><text class="d-tag d-tag-plain" x="840" y="337.5"></text><text class="d-col d-col-plain" x="868" y="337.5">email</text><text class="d-tag d-tag-plain" x="840" y="354.5"></text><text class="d-col d-col-plain" x="868" y="354.5">token</text><text class="d-hint" x="1040" y="354.5" text-anchor="end">unique</text><text class="d-tag d-tag-enum" x="840" y="371.5"></text><text class="d-col d-col-enum" x="868" y="371.5">role</text><text class="d-hint" x="1040" y="371.5" text-anchor="end">admin | member</text><text class="d-tag d-tag-plain" x="840" y="388.5"></text><text class="d-col d-col-plain" x="868" y="388.5">expires_at · accepted_at</text></g></svg></div>
+      <div class="legend">
+        <span><i class="lg-line lg-key"></i>same id, joined by convention, no FK</span>
+        <span><i class="lg-line lg-dash"></i>nullable FK</span>
+      </div>
+      <figcaption>
+        When Better Auth creates a <code>user</code>, a hook in <code>auth.service.ts</code> inserts
+        a <code>users</code> row with the same id. It also creates a workspace, or joins one from an
+        invitation. Every financial table references <code>users.id</code>, never Better Auth's
+        <code>user.id</code>.
+      </figcaption>
+    </figure>
+    <div class="areas">
+      <div class="area">
+        <h3>Better Auth tables</h3>
+        <p>
+          <code>user</code>, <code>session</code>, <code>account</code> (password and Google
+          credentials), <code>verification</code>, <code>twoFactor</code> and
+          <code>passkey</code> follow Better Auth's expected shape. Change them only together with a
+          Better Auth upgrade.
+        </p>
+      </div>
+      <div class="area">
+        <h3>MCP OAuth provider</h3>
+        <p>
+          <code>oauthApplication</code>, <code>oauthAccessToken</code> and
+          <code>oauthConsent</code> come from Better Auth's MCP plugin. They let AI clients connect
+          to the MCP server. Their <code>userId</code> and <code>clientId</code> columns have no
+          foreign-key constraint.
+        </p>
+      </div>
+      <div class="area">
+        <h3>Membership</h3>
+        <p>
+          A user belongs to at most one workspace, with role <code>admin</code> or
+          <code>member</code>. <code>super_admin</code> is a system role. Invitations carry a
+          single-use token and an expiry. <code>user_meta</code> and <code>workspace_meta</code> are
+          key-value stores for preferences, with keys checked against an allowlist in the service
+          layer.
+        </p>
+      </div>
+      <div class="area">
+        <h3>Audit</h3>
+        <p>
+          <code>audit_logs</code> records each action with old and new values as JSON, keyed by
+          <code>entity_type</code> and <code>entity_id</code>. It is the only table whose
+          <code>created_at</code> uses Drizzle's millisecond timestamp mode.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Before you change it</h2>
+    <ul class="gotchas">
+      <li class="warn">
+        <strong>Timestamp defaults are in milliseconds, reads are in seconds</strong>
+        <p>
+          The SQL default <code>sqliteTimestampNow</code> writes milliseconds. Columns declared
+          <code>integer(…, { mode: 'timestamp' })</code> are read by Drizzle as seconds. A row that
+          relies on the default reads back as the year 58727. Services pass
+          <code>created_at</code> and <code>updated_at</code> explicitly, which hides this. Set them
+          explicitly in new code, or fix the default and its migration.
+        </p>
+      </li>
+      <li>
+        <strong>Users are removed by soft delete for a reason</strong>
+        <p>
+          Every <code>created_by_user_id</code> references <code>users.id</code> without an
+          <code>ON DELETE</code> action. Hard-deleting a member who created records will fail the
+          foreign-key check. Use <code>deleted_at</code>.
+        </p>
+      </li>
+      <li>
+        <strong>Two kinds of category</strong>
+        <p>
+          The Drizzle export <code>categories</code> maps to the SQL table
+          <code>budget_categories</code>, for spending and income.
+          <code>account_categories</code> groups accounts on the net-worth page. They are unrelated.
+        </p>
+      </li>
+      <li>
+        <strong>Some references are not enforced</strong>
+        <p>
+          <code>workspace_invitations.invited_by_user_id</code>, the OAuth provider tables'
+          <code>userId</code>, and the <code>user</code> ↔ <code>users</code> join have no FK. Clean
+          them up in the service layer when deleting.
+        </p>
+      </li>
+      <li>
+        <strong>Legacy tables are still in the schema</strong>
+        <p>
+          <code>sessions</code>, <code>password_reset_tokens</code>,
+          <code>email_verification_tokens</code>, <code>oauth_accounts</code>,
+          <code>user_mfa</code> and <code>user_mfa_backup_codes</code> predate Better Auth. Don't
+          build on them. <code>user_mfa</code> and its backup codes are no longer exported from the
+          schema index.
+        </p>
+      </li>
+      <li>
+        <strong>ADR 004 lists an <code>api_keys</code> table</strong>
+        <p>No such table exists in the schema. The ADR is out of date on this point.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="block" id="reference">
+    <h2>Table reference</h2>
+    <p class="prose">
+      Generated from the Drizzle definitions. A trailing <code>?</code> marks a nullable column.
+      Defaults appear after <code>=</code>. Arrows give the referenced table and the delete rule,
+      when there is one.
+    </p>
+    <section class="ref-group"><div class="ref-head"><h3>Budgeting &amp; ledger</h3><p>Categories, monthly budgets and every recorded expense, income or transfer.</p></div><div class="ref-grid"><article class="t" id="t-budget_categories"><h4><code>budget_categories</code><span class="t-count">12 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">type</td><td class="c-type">expense | income</td><td class="c-flags"></td></tr><tr><td class="c-name">income_source_type</td><td class="c-type">active | passive | other <span class="c-def">= &quot;other&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">description</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">icon</td><td class="c-type">text <span class="c-def">= &quot;tag&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name">color</td><td class="c-type">text <span class="c-def">= &quot;bg-neutral&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name">is_active</td><td class="c-type">boolean <span class="c-def">= true</span></td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article><article class="t" id="t-budgets"><h4><code>budgets</code><span class="t-count">12 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">category_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ budget_categories · cascade</span></td></tr><tr><td class="c-name">month</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">year</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">budget_amount</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name">currency</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">is_closed</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">notes</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>3 indexes</span> · (workspace_id, month, year, currency) · unique (workspace_id, category_id, month, year, currency)</p></article><article class="t" id="t-transactions"><h4><code>transactions</code><span class="t-count">16 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name c-null">category_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ budget_categories</span></td></tr><tr><td class="c-name">account_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ accounts</span></td></tr><tr><td class="c-name c-null">to_account_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ accounts</span></td></tr><tr><td class="c-name">type</td><td class="c-type">expense | income | transfer</td><td class="c-flags"></td></tr><tr><td class="c-name">amount</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name">currency</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">description</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">transaction_date</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">updated_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name c-null">deleted_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name c-null">deleted_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>14 indexes</span> · (workspace_id, type, currency, transaction_date) · (workspace_id, category_id, type, currency, transaction_date) · (workspace_id, created_by_user_id, transaction_date) · (workspace_id, transaction_date) · (workspace_id, account_id, transaction_date) · (workspace_id, to_account_id, transaction_date)</p></article></div></section><section class="ref-group"><div class="ref-head"><h3>Recurring</h3><p>Templates generate dated occurrences; confirming one writes a transaction.</p></div><div class="ref-grid"><article class="t" id="t-recurring_templates"><h4><code>recurring_templates</code><span class="t-count">22 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">type</td><td class="c-type">expense | income</td><td class="c-flags"></td></tr><tr><td class="c-name">amount</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name">currency</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">category_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ budget_categories</span></td></tr><tr><td class="c-name">account_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ accounts</span></td></tr><tr><td class="c-name">day_of_month</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">frequency</td><td class="c-type">weekly | monthly <span class="c-def">= &quot;monthly&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name">interval_count</td><td class="c-type">integer <span class="c-def">= 1</span></td><td class="c-flags"></td></tr><tr><td class="c-name">start_date</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">end_date</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">total_occurrences</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">is_installment</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">installment_label</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">starting_occurrence_number</td><td class="c-type">integer <span class="c-def">= 1</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">description</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">status</td><td class="c-type">active | paused | completed | cancelled <span class="c-def">= &quot;active&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>5 indexes</span> · (workspace_id, status) · (workspace_id, account_id) · (workspace_id, type)</p></article><article class="t" id="t-recurring_occurrences"><h4><code>recurring_occurrences</code><span class="t-count">12 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">template_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ recurring_templates · cascade</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">due_date</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">occurrence_number</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">status</td><td class="c-type">pending | confirmed | skipped <span class="c-def">= &quot;pending&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">transaction_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ transactions</span> <span class="b">unique</span></td></tr><tr><td class="c-name c-null">confirmed_amount</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">skip_reason</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">confirmed_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>5 indexes</span> · (workspace_id, status) · (workspace_id, due_date) · (workspace_id, status, due_date) · unique (template_id, occurrence_number)</p></article></div></section><section class="ref-group"><div class="ref-head"><h3>Accounts &amp; net worth</h3><p>What the household holds or owes, and how that changed over time.</p></div><div class="ref-grid"><article class="t" id="t-accounts"><h4><code>accounts</code><span class="t-count">19 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">type</td><td class="c-type">cash | bank_account | e_wallet | mutual_fund | bond | crypto | stock | other | credit_card | loan</td><td class="c-flags"></td></tr><tr><td class="c-name">account_class</td><td class="c-type">liquid | non_liquid | debt <span class="c-def">= &quot;liquid&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">category_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ account_categories</span></td></tr><tr><td class="c-name">balance</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">initial_balance</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name">currency</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">credit_limit</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name">is_cash_account</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">status</td><td class="c-type">active | closed <span class="c-def">= &quot;active&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">closed_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">closed_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · set null</span></td></tr><tr><td class="c-name">last_updated</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">deleted_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>5 indexes</span> · (workspace_id, status, deleted_at)</p></article><article class="t" id="t-account_categories"><h4><code>account_categories</code><span class="t-count">10 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">description</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">is_liability</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">is_system</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">sort_order</td><td class="c-type">integer <span class="c-def">= 0</span></td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>3 indexes</span> · unique (workspace_id, name)</p></article><article class="t" id="t-account_history"><h4><code>account_history</code><span class="t-count">5 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">account_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ accounts · cascade</span></td></tr><tr><td class="c-name">balance</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">notes</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">recorded_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>3 indexes</span> · (account_id, recorded_at)</p></article><article class="t" id="t-account_update_reminders"><h4><code>account_update_reminders</code><span class="t-count">9 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">account_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ accounts · cascade</span></td></tr><tr><td class="c-name">frequency</td><td class="c-type">weekly | monthly | quarterly <span class="c-def">= &quot;monthly&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">last_updated</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">next_reminder</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">is_dismissed</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>4 indexes</span></p></article><article class="t" id="t-account_snapshots"><h4><code>account_snapshots</code><span class="t-count">8 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">created_by_user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">snapshot_date</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">month</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">year</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">notes</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article><article class="t" id="t-account_snapshot_items"><h4><code>account_snapshot_items</code><span class="t-count">5 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">snapshot_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ account_snapshots · cascade</span></td></tr><tr><td class="c-name">account_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ accounts</span></td></tr><tr><td class="c-name">balance</td><td class="c-type c-money">decimal as text</td><td class="c-flags"></td></tr><tr><td class="c-name">currency</td><td class="c-type">text</td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article></div></section><section class="ref-group"><div class="ref-head"><h3>Workspaces &amp; users</h3><p>The tenant boundary, its members, their preferences and the audit trail.</p></div><div class="ref-grid"><article class="t" id="t-workspaces"><h4><code>workspaces</code><span class="t-count">5 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">status</td><td class="c-type">active | inactive <span class="c-def">= &quot;active&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div></article><article class="t" id="t-workspace_meta"><h4><code>workspace_meta</code><span class="t-count">6 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">meta_key</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">meta_value</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>1 index</span> · unique (workspace_id, meta_key)</p></article><article class="t" id="t-workspace_invitations"><h4><code>workspace_invitations</code><span class="t-count">9 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">email</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">token</td><td class="c-type">text</td><td class="c-flags"><span class="b">unique</span></td></tr><tr><td class="c-name c-null">invited_by_user_id</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">role</td><td class="c-type">admin | member</td><td class="c-flags"></td></tr><tr><td class="c-name">expires_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">accepted_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span> · (workspace_id, accepted_at, expires_at, created_at)</p></article><article class="t" id="t-users"><h4><code>users</code><span class="t-count">11 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name c-null">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">email</td><td class="c-type">text</td><td class="c-flags"><span class="b">unique</span></td></tr><tr><td class="c-name c-null">password_hash</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">avatar_url</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">role</td><td class="c-type">admin | member | super_admin</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">email_verified_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">deleted_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>1 index</span></p></article><article class="t" id="t-user_meta"><h4><code>user_meta</code><span class="t-count">6 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">meta_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · cascade</span></td></tr><tr><td class="c-name">meta_key</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">meta_value</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span> · unique (user_id, meta_key)</p></article><article class="t" id="t-audit_logs"><h4><code>audit_logs</code><span class="t-count">9 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">workspace_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ workspaces · cascade</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users</span></td></tr><tr><td class="c-name">action</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">entity_type</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">entity_id</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">old_value</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">new_value</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp (ms) <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>5 indexes</span> · (workspace_id, created_at) · (workspace_id, entity_type, entity_id, action)</p></article></div></section><section class="ref-group"><div class="ref-head"><h3>Better Auth</h3><p>Identity, sessions, credentials and MCP OAuth clients. Shape is dictated by Better Auth.</p></div><div class="ref-grid"><article class="t" id="t-user"><h4><code>user</code><span class="t-count">8 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">email</td><td class="c-type">text</td><td class="c-flags"><span class="b">unique</span></td></tr><tr><td class="c-name">emailVerified</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">image</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">twoFactorEnabled</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>1 index</span></p></article><article class="t" id="t-session"><h4><code>session</code><span class="t-count">8 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">expiresAt</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">token</td><td class="c-type">text</td><td class="c-flags"><span class="b">unique</span></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">ipAddress</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">userAgent</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">userId</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ user · cascade</span></td></tr></tbody></table></div><p class="t-idx"><span>3 indexes</span> · unique (token)</p></article><article class="t" id="t-account"><h4><code>account</code><span class="t-count">13 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">accountId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">providerId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">userId</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ user · cascade</span></td></tr><tr><td class="c-name c-null">accessToken</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">refreshToken</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">idToken</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">accessTokenExpiresAt</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">refreshTokenExpiresAt</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">scope</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">password</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>3 indexes</span> · unique (providerId, accountId)</p></article><article class="t" id="t-verification"><h4><code>verification</code><span class="t-count">6 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">identifier</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">value</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">expiresAt</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>1 index</span></p></article><article class="t" id="t-twoFactor"><h4><code>twoFactor</code><span class="t-count">7 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">secret</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">backupCodes</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">userId</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ user · cascade</span> <span class="b">unique</span></td></tr><tr><td class="c-name">verified</td><td class="c-type">boolean <span class="c-def">= true</span></td><td class="c-flags"></td></tr><tr><td class="c-name">failedVerificationCount</td><td class="c-type">integer <span class="c-def">= 0</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">lockedUntil</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article><article class="t" id="t-passkey"><h4><code>passkey</code><span class="t-count">12 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name c-null">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">publicKey</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">userId</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ user · cascade</span></td></tr><tr><td class="c-name">credentialID</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">counter</td><td class="c-type">integer</td><td class="c-flags"></td></tr><tr><td class="c-name">deviceType</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">backedUp</td><td class="c-type">boolean</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">transports</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">aaguid</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span> · unique (credentialID)</p></article><article class="t" id="t-oauthApplication"><h4><code>oauthApplication</code><span class="t-count">12 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">clientId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">clientSecret</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">name</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">icon</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">metadata</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">type</td><td class="c-type">public | web | native | user-agent-based <span class="c-def">= &quot;web&quot;</span></td><td class="c-flags"></td></tr><tr><td class="c-name c-null">disabled</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">redirectUrls</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">userId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>1 index</span> · unique (clientId)</p></article><article class="t" id="t-oauthAccessToken"><h4><code>oauthAccessToken</code><span class="t-count">10 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">accessToken</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">refreshToken</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">accessTokenExpiresAt</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">refreshTokenExpiresAt</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">clientId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">userId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">scopes</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span> · unique (accessToken) · unique (refreshToken)</p></article><article class="t" id="t-oauthConsent"><h4><code>oauthConsent</code><span class="t-count">7 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">clientId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">userId</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">scopes</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">consentGiven</td><td class="c-type">boolean</td><td class="c-flags"></td></tr><tr><td class="c-name">createdAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updatedAt</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div></article></div></section><section class="ref-group"><div class="ref-head"><h3>Legacy</h3><p>Lucia-era tables kept for migration cleanup. Not the source of truth for auth.</p></div><div class="ref-grid"><article class="t" id="t-sessions"><h4><code>sessions</code><span class="t-count">3 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · cascade</span></td></tr><tr><td class="c-name">expires_at</td><td class="c-type">integer</td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article><article class="t" id="t-password_reset_tokens"><h4><code>password_reset_tokens</code><span class="t-count">5 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">token</td><td class="c-type">text</td><td class="c-flags"><span class="b">unique</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · cascade</span></td></tr><tr><td class="c-name">expires_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article><article class="t" id="t-email_verification_tokens"><h4><code>email_verification_tokens</code><span class="t-count">5 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">token</td><td class="c-type">text</td><td class="c-flags"><span class="b">unique</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · cascade</span></td></tr><tr><td class="c-name">expires_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span></p></article><article class="t" id="t-oauth_accounts"><h4><code>oauth_accounts</code><span class="t-count">6 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · cascade</span></td></tr><tr><td class="c-name">provider</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">provider_account_id</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">email</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>2 indexes</span> · unique (provider, provider_account_id)</p></article><article class="t" id="t-user_mfa"><h4><code>user_mfa</code><span class="t-count">6 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">user_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ users · cascade</span> <span class="b">unique</span></td></tr><tr><td class="c-name">mfa_enabled</td><td class="c-type">boolean <span class="c-def">= false</span></td><td class="c-flags"></td></tr><tr><td class="c-name">totp_secret</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr><tr><td class="c-name">updated_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div></article><article class="t" id="t-user_mfa_backup_codes"><h4><code>user_mfa_backup_codes</code><span class="t-count">5 cols</span></h4><div class="t-scroll"><table><tbody><tr><td class="c-name">id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-pk">PK</span></td></tr><tr><td class="c-name">user_mfa_id</td><td class="c-type">text</td><td class="c-flags"><span class="b b-fk">→ user_mfa · cascade</span></td></tr><tr><td class="c-name">code_hash</td><td class="c-type">text</td><td class="c-flags"></td></tr><tr><td class="c-name c-null">used_at</td><td class="c-type">timestamp</td><td class="c-flags"></td></tr><tr><td class="c-name">created_at</td><td class="c-type">timestamp <span class="c-def">= now</span></td><td class="c-flags"></td></tr></tbody></table></div><p class="t-idx"><span>1 index</span></p></article></div></section>
+  </section>
+
+  <p class="footnote">
+    Generated 4 October 2026 by <code>bun run aw db docs</code>. See also
+    <code>docs/architecture/004-database-schema.md</code>,
+    <code>006-database-connection-architecture.md</code> and
+    <code>007-database-migrations.md</code>.
+  </p>
+</main>

@@ -9,18 +9,15 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
-import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
+import {
+  DEFAULT_CATEGORY_NAME_BY_TYPE,
+  DEFAULT_TYPE_BY_CATEGORY_NAME,
+} from '@/lib/constants/account-categories';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { AccountServiceError } from '@/services/service-errors';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 
 // Validation schemas
-const LEGACY_TYPE_BY_NAME = new Map(
-  DEFAULT_ACCOUNT_CATEGORIES.map((category) => [category.name, category.legacyType])
-);
-const LEGACY_NAME_BY_TYPE = new Map(
-  DEFAULT_ACCOUNT_CATEGORIES.map((category) => [category.legacyType, category.name])
-);
 
 const updateAccountSchema = object({
   name: optional(pipe(string(), minLength(1), maxLength(255))),
@@ -103,10 +100,10 @@ export const PUT: APIRoute = async (context) => {
       }
       resolvedCategoryId = category.id;
       resolvedType = category.is_system
-        ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
+        ? DEFAULT_TYPE_BY_CATEGORY_NAME.get(category.name) || 'other'
         : 'other';
     } else if (validation.data.type) {
-      const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
+      const categoryName = DEFAULT_CATEGORY_NAME_BY_TYPE.get(validation.data.type);
       if (categoryName) {
         const category = await accountCategoryService.findByName(categoryName, auth.workspaceId);
         resolvedCategoryId = category?.id || null;

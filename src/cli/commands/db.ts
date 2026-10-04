@@ -241,6 +241,22 @@ export default defineCommand({
         exec('drizzle-kit', ['studio']);
       },
     }),
+    docs: defineCommand({
+      meta: {
+        name: 'docs',
+        description: 'Generate the schema diagram page (docs/architecture/database-schema.html)',
+      },
+      args: {
+        out: {
+          type: 'string',
+          description: 'Output path (default: docs/architecture/database-schema.html)',
+        },
+      },
+      async run({ args }) {
+        const { runSchemaDocCommand } = await import('../lib/schema-doc');
+        runSchemaDocCommand({ out: args.out as string | undefined });
+      },
+    }),
     seed: defineCommand({
       meta: { name: 'seed', description: 'Seed database with demo data' },
       args: {

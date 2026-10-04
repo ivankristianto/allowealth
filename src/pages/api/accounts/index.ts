@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import {
   check,
+  isoTimestamp,
   forward,
   maxLength,
   minLength,
@@ -21,19 +22,15 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { ACCOUNT_TYPE_LABELS, type AccountType } from '@/lib/types/account';
-import { DEFAULT_ACCOUNT_CATEGORIES } from '@/lib/constants';
+import {
+  DEFAULT_CATEGORY_NAME_BY_TYPE,
+  DEFAULT_TYPE_BY_CATEGORY_NAME,
+} from '@/lib/constants/account-categories';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { AVAILABLE_CURRENCIES, isValidCurrency } from '@/lib/constants/currency';
 
 // Valid account types derived from the canonical source of truth
 const VALID_ACCOUNT_TYPES = Object.keys(ACCOUNT_TYPE_LABELS) as [AccountType, ...AccountType[]];
-
-const LEGACY_TYPE_BY_NAME = new Map(
-  DEFAULT_ACCOUNT_CATEGORIES.map((category) => [category.name, category.legacyType])
-);
-const LEGACY_NAME_BY_TYPE = new Map(
-  DEFAULT_ACCOUNT_CATEGORIES.map((category) => [category.legacyType, category.name])
-);
 
 // Validation schemas using the shared account types
 const createAccountSchema = pipe(
@@ -43,6 +40,8 @@ const createAccountSchema = pipe(
     type: optional(picklist(VALID_ACCOUNT_TYPES)),
     balance: pipe(string(), regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number')),
     currency: picklist(AVAILABLE_CURRENCIES),
+    // When the opening balance was true, for accounts recorded after the fact.
+    opened_at: optional(pipe(string(), isoTimestamp('Invalid datetime format'))),
   }),
   forward(
     check((data) => Boolean(data.categoryId || data.type), 'Category or type is required'),
@@ -127,10 +126,10 @@ export const POST: APIRoute = async (context) => {
       // Custom categories always map to 'other' type since they don't have legacy type mappings.
       // System categories use their defined legacy type from DEFAULT_ACCOUNT_CATEGORIES.
       resolvedType = category.is_system
-        ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
+        ? DEFAULT_TYPE_BY_CATEGORY_NAME.get(category.name) || 'other'
         : 'other';
     } else if (validation.data.type) {
-      const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
+      const categoryName = DEFAULT_CATEGORY_NAME_BY_TYPE.get(validation.data.type);
       if (categoryName) {
         const category = await accountCategoryService.findByName(categoryName, auth.workspaceId);
         resolvedCategoryId = category?.id || null;
@@ -149,6 +148,7 @@ export const POST: APIRoute = async (context) => {
       category_id: resolvedCategoryId,
       balance: validation.data.balance,
       currency: validation.data.currency,
+      opened_at: validation.data.opened_at ? new Date(validation.data.opened_at) : undefined,
     });
 
     // Invalidate layout cache since accounts changed (best-effort)

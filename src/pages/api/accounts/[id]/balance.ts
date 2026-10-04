@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { isoDateTime, object, optional, pipe, regex, string } from 'valibot';
+import { isoTimestamp, object, optional, pipe, regex, string } from 'valibot';
 import { accountService } from '@/services';
 import {
   successResponse,
@@ -14,7 +14,9 @@ import { logError } from '@/lib/utils';
 const updateBalanceSchema = object({
   balance: pipe(string(), regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number')),
   notes: optional(string()),
-  recorded_at: optional(pipe(string(), isoDateTime('Invalid datetime format'))),
+  // A full ISO 8601 timestamp with a timezone, as Date.toISOString() produces.
+  // isoDateTime() would accept only minute precision with no zone.
+  recorded_at: optional(pipe(string(), isoTimestamp('Invalid datetime format'))),
 });
 
 /**

@@ -1,0 +1,120 @@
+{
+  "filenames": {
+    "transactions": "[{year}] Sheet - {mon}-{year}.csv",
+    "balance": "[{year}] Sheet - Balance {mon}-{year}.csv"
+  },
+  "members": {
+    "primary": "OwnerA",
+    "secondary": "OwnerB",
+    "fallback": "OwnerA"
+  },
+  "accounts": [
+    {
+      "name": "Bank1 OwnerA",
+      "currency": "IDR",
+      "owner": "OwnerA",
+      "category": "Bank Account"
+    },
+    {
+      "name": "Bank2 OwnerA USD",
+      "currency": "USD",
+      "owner": "OwnerA",
+      "category": "Bank Account"
+    },
+    {
+      "name": "Bank1 OwnerB",
+      "currency": "IDR",
+      "owner": "OwnerB",
+      "category": "Time Deposit"
+    }
+  ],
+  "accountAliases": [
+    {
+      "from": "Bank1 OwnerA (old spelling)",
+      "to": "Bank1 OwnerA"
+    }
+  ],
+  "duplicateRules": [
+    {
+      "month": "2099-01",
+      "name": "Bank1 OwnerA",
+      "occurrence": 2,
+      "rename": "Bank1 OwnerA (2)"
+    }
+  ],
+  "expenseAccounts": {
+    "OwnerA": "Bank1 OwnerA",
+    "OwnerB": "Bank1 OwnerB"
+  },
+  "categories": {
+    "expense": ["Cat1", "Cat2", "Cat3"],
+    "income": [
+      {
+        "name": "IncSalaryA",
+        "sourceType": "active"
+      },
+      {
+        "name": "IncSalaryB",
+        "sourceType": "active"
+      },
+      {
+        "name": "IncInterest",
+        "sourceType": "passive"
+      }
+    ]
+  },
+  "categoryRenames": [
+    {
+      "from": "Seeded Category",
+      "to": "Cat2"
+    }
+  ],
+  "expenseOwners": [
+    {
+      "category": "Cat3",
+      "owner": "OwnerB"
+    },
+    {
+      "match": "Word",
+      "owner": "OwnerB"
+    }
+  ],
+  "salaryRouting": [
+    {
+      "category": "IncSalaryA",
+      "account": "Bank2 OwnerA USD"
+    },
+    {
+      "category": "IncSalaryB",
+      "account": "Bank1 OwnerB"
+    }
+  ],
+  "incomeRouting": [
+    {
+      "match": ["Coupon", "OwnerA"],
+      "account": "Bank2 OwnerA USD",
+      "convert": true
+    },
+    {
+      "category": "IncInterest",
+      "match": ["OwnerB"],
+      "account": "Bank1 OwnerB"
+    },
+    {
+      "category": "IncInterest",
+      "account": "Bank1 OwnerA"
+    }
+  ],
+  "suppressedRows": [
+    {
+      "month": "2099-01",
+      "side": "income",
+      "match": "Placeholder row",
+      "reason": "blank local amount with a populated foreign amount"
+    }
+  ],
+  "dateRules": {
+    "incomeDayOfMonth": 10,
+    "earliestMonth": "2099-01"
+  }
+}

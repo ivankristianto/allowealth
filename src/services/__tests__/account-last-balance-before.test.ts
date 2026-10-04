@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
+import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { AccountService } from '../account.service';
 import { createMockDatabase, createMockAccount, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager } from '@/lib/cache';
@@ -76,5 +77,17 @@ describe('AccountService.getLastBalanceBefore()', () => {
 
     // Should have queried accountHistory.findFirst
     expect(mockDb.query.accountHistory.findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it('bounds the history lookup in seconds, the unit recorded_at is stored in', async () => {
+    const account = createMockAccount({ id: 'account-1', balance: '5000000' });
+    (mockDb.query.accounts.findFirst as any).mockResolvedValueOnce(account);
+    (mockDb.query.accountHistory.findFirst as any).mockResolvedValueOnce(undefined);
+
+    await accountService.getLastBalanceBefore('account-1', 'workspace-1', 2099, 2);
+
+    const [query] = (mockDb.query.accountHistory.findFirst as any).mock.calls.at(-1);
+    const { params } = new SQLiteSyncDialect().sqlToQuery(query.where);
+    expect(params).toContain(new Date(2099, 1, 1).getTime() / 1000);
   });
 });

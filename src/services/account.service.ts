@@ -1,5 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction, accounts as accountsTable } from '@/db';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, lt, lte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AccountServiceError, ServiceErrorCode } from './service-errors';
 import type { AccountType, Currency } from '@/lib/types/account';
@@ -23,6 +23,11 @@ export interface CreateAccountInput {
   currency: Currency;
   credit_limit?: string | null;
   is_cash_account?: boolean;
+  /**
+   * When the opening balance was true. Dates the first history entry and
+   * last_updated; created_at stays the real creation time. Defaults to now.
+   */
+  opened_at?: Date;
 }
 
 export interface UpdateAccountInput {
@@ -136,6 +141,7 @@ export class AccountService {
 
     const id = nanoid();
     const now = new Date();
+    const openedAt = input.opened_at ?? now;
 
     // Insert the account
     const [account] = await (this.db as any)
@@ -151,7 +157,7 @@ export class AccountService {
         balance: input.balance,
         initial_balance: input.balance,
         currency: input.currency,
-        last_updated: now,
+        last_updated: openedAt,
         created_at: now,
         updated_at: now,
       })
@@ -163,7 +169,7 @@ export class AccountService {
         id: nanoid(),
         account_id: id,
         balance: input.balance,
-        recorded_at: now,
+        recorded_at: openedAt,
       });
     } catch (historyError) {
       // Compensating transaction: delete the orphaned account to maintain data integrity
@@ -346,12 +352,13 @@ export class AccountService {
     const previousLastUpdated = currentAccount.last_updated;
     const previousUpdatedAt = currentAccount.updated_at;
 
-    // Update account
+    // Update account. last_updated is when the balance was true, which a dated
+    // entry (e.g. a past month-end) says; updated_at is when the row changed.
     await this.db
       .update(this.schema.accounts)
       .set({
         balance: input.balance,
-        last_updated: now,
+        last_updated: input.recorded_at ?? now,
         updated_at: now,
       })
       .where(
@@ -677,16 +684,9 @@ export class AccountService {
             includeInactive: true,
           });
 
-          // Filter out accounts created after the snapshot month
-          const accountsExistingAtTime = allAccounts.filter(
-            (account) => new Date(account.created_at) <= endOfMonth
-          );
-          perf?.recordPhase(
-            'AccountService.getSnapshotForMonth.accountCount',
-            accountsExistingAtTime.length
-          );
+          perf?.recordPhase('AccountService.getSnapshotForMonth.accountCount', allAccounts.length);
 
-          if (accountsExistingAtTime.length === 0) {
+          if (allAccounts.length === 0) {
             return [];
           }
 
@@ -694,13 +694,10 @@ export class AccountService {
           // Two-step approach: 1) get max recorded_at per account, 2) fetch full rows.
           // This avoids dialect-specific raw SQL (DISTINCT ON for PG, self-join for SQLite)
           // and works through Drizzle's query builder on all drivers.
-          const accountIds = accountsExistingAtTime.map((a) => a.id);
+          const accountIds = allAccounts.map((a) => a.id);
           const idChunks = this.chunkIds(accountIds, 500);
           perf?.recordPhase('AccountService.getSnapshotForMonth.chunkCount', idChunks.length);
           const historyTable = this.schema.accountHistory;
-          // SQLite stores timestamps as integers (epoch milliseconds via sqliteTimestampNow)
-          // — raw sql templates need a primitive, not a Date object.
-          const endOfMonthEpoch = endOfMonth.getTime();
           const allHistory: Array<{ account_id: string; balance: string; recorded_at: Date }> = [];
 
           for (const chunk of idChunks) {
@@ -716,7 +713,8 @@ export class AccountService {
               .where(
                 and(
                   inArray(historyTable.account_id, chunk),
-                  sql`${historyTable.recorded_at} <= ${endOfMonthEpoch}`
+                  // lte() maps the Date through the column, which stores epoch seconds.
+                  lte(historyTable.recorded_at, endOfMonth)
                 )
               )
               .groupBy(historyTable.account_id);
@@ -760,6 +758,13 @@ export class AccountService {
               historyMap.set(history.account_id, history);
             }
           }
+
+          // An account existed in the month if it had a balance recorded by its end.
+          // created_at alone is not enough: an account entered later with a dated
+          // opening balance was created after the month it opened in.
+          const accountsExistingAtTime = allAccounts.filter(
+            (account) => historyMap.has(account.id) || new Date(account.created_at) <= endOfMonth
+          );
 
           // Map accounts to snapshots with O(1) lookups
           const snapshots = accountsExistingAtTime.map((account) => {
@@ -936,12 +941,12 @@ export class AccountService {
       throw new AccountServiceError(ServiceErrorCode.ACCOUNT_NOT_FOUND, 'Account not found', 404);
     }
 
-    const startOfMonthMs = new Date(year, month - 1, 1).getTime();
+    const startOfMonth = new Date(year, month - 1, 1);
 
     const lastEntry = await this.db.query.accountHistory.findFirst({
       where: and(
         eq(this.schema.accountHistory.account_id, accountId),
-        sql`${this.schema.accountHistory.recorded_at} < ${startOfMonthMs}`
+        lt(this.schema.accountHistory.recorded_at, startOfMonth)
       ),
       orderBy: (h: any, { desc }: any) => [desc(h.recorded_at)],
     });

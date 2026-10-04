@@ -47,14 +47,14 @@ describe('validateBudgetAmount', () => {
     });
   });
 
-  it('rejects zero and negative values', () => {
-    expect(validateBudgetAmount('0')).toEqual({
-      valid: false,
-      error: 'Budget amount must be a positive number',
-    });
+  it('accepts zero', () => {
+    expect(validateBudgetAmount('0')).toEqual({ valid: true });
+  });
+
+  it('rejects negative values', () => {
     expect(validateBudgetAmount('-100')).toEqual({
       valid: false,
-      error: 'Budget amount must be a positive number',
+      error: 'Budget amount must be zero or a positive number',
     });
   });
 

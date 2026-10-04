@@ -1,0 +1,16 @@
+No,Name,Percentage,Budget (IDR),Expense (IDR),Balance (IDR),,INCOME,,,,
+1,Cat1,50.00%,"400,000.00","350,000.00","50,000.00",,Category,Total (IDR),,,
+2,Cat2,30.00%,"500,000.00","450,000.00","50,000.00",,IncSalaryA,"10,000,000.00",,,
+3,Cat3,20.00%,"300,000.00","200,000.00","100,000.00",,IncSalaryB,"5,000,000.00",,,
+,Total,100.00%,"1,200,000.00","1,000,000.00",,,IncInterest,"1,000,000.00",,,
+,,,,,,,,,,,
+,,,,,,,Total Income,"16,000,000.00",IDR,,
+,,,,,,,Total Expenses,"1,000,000.00",IDR,,
+,,,,,,,USD to IDR,"10,000.00",,,
+,,,,,,,Total Akhir Bulan,"50,750,000.00",,,
+,,,,,,,,,,,
+No,Name,Awal Bulan,Income,Akhir Bulan,Selisih,,Name,Awal Bulan,Income,Akhir Bulan,Selisih
+1,Bank1 OwnerA,"5,000,000.00",0.00,"4,000,000.00","-1,000,000",,Bank1 OwnerB,"3,000,000.00","5,000,000.00","8,000,000.00","5,000,000"
+2,Bank2 OwnerA USD,"10,000,000.00","10,000,000.00","20,000,000.00","10,000,000",,Bank2 OwnerB,"2,000,000.00",0.00,"2,750,000.00","750,000"
+,Bond1 OwnerA,"10,000,000.00",0.00,"10,000,000.00",0,,Bond1 OwnerB,"6,000,000.00",0.00,"6,000,000.00",0
+,* footnote line,,,,,,* footnote line,,,,

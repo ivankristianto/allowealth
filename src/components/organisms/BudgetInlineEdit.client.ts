@@ -54,8 +54,8 @@ export function validateBudgetAmount(value: string): { valid: boolean; error?: s
     return { valid: false, error: 'Budget amount must be a valid number' };
   }
 
-  if (num <= 0) {
-    return { valid: false, error: 'Budget amount must be a positive number' };
+  if (num < 0) {
+    return { valid: false, error: 'Budget amount must be zero or a positive number' };
   }
 
   return { valid: true };

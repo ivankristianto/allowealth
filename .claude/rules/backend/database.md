@@ -318,3 +318,8 @@ return transactions.map((tx) => ({
 - ✅ **Use null-safe access (`?.` and `??`) for all relational query properties** - Drizzle returns `null` when FK is null, not undefined
 - ❌ **Access relational properties directly without null check** - transfer transactions have null `category_id`
 - ❌ **Wrap service calls in silent catch blocks that return `[]`** - masks real errors, makes debugging impossible
+
+## Schema & Calculation Checklist
+
+- ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
+- ✅ **Exclude debt from account allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)

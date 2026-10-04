@@ -37,6 +37,7 @@ const main = defineCommand({
     'account-categories': () => import('./commands/account-categories').then((m) => m.default),
     accounts: () => import('./commands/accounts').then((m) => m.default),
     admin: () => import('./commands/admin').then((m) => m.default),
+    backfill: () => import('./commands/backfill').then((m) => m.default),
     bdg: () => import('./commands/bdg').then((m) => m.default),
     budgets: () => import('./commands/budgets').then((m) => m.default),
     categories: () => import('./commands/categories').then((m) => m.default),

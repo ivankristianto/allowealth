@@ -3,9 +3,18 @@ import { parse } from 'valibot';
 import {
   copyBudgetsAPISchema,
   copyBudgetsSchema,
+  createBudgetAPISchema,
   createBudgetSchema,
   initializeBudgetsAPISchema,
+  updateBudgetSchema,
 } from './budgets';
+
+const apiBudget = {
+  category_id: 'category-1',
+  month: 3,
+  year: 2026,
+  currency: 'IDR',
+};
 
 describe('budget validation', () => {
   it('parses required service-layer budget fields', () => {
@@ -64,5 +73,27 @@ describe('budget validation', () => {
       year: 2026,
       currency: 'USD',
     });
+  });
+
+  it('accepts a zero budget amount on create', () => {
+    const parsed = parse(createBudgetAPISchema, { ...apiBudget, budget_amount: '0' });
+
+    expect(parsed.budget_amount).toBe('0');
+  });
+
+  it('rejects a negative budget amount on create', () => {
+    expect(() => parse(createBudgetAPISchema, { ...apiBudget, budget_amount: '-1' })).toThrow(
+      'Budget amount must be zero or a positive number'
+    );
+  });
+
+  it('accepts a zero budget amount on update', () => {
+    expect(parse(updateBudgetSchema, { budget_amount: '0' }).budget_amount).toBe('0');
+  });
+
+  it('rejects a negative budget amount on update', () => {
+    expect(() => parse(updateBudgetSchema, { budget_amount: '-1' })).toThrow(
+      'Budget amount must be zero or a positive number'
+    );
   });
 });

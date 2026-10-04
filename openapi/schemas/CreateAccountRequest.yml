@@ -16,6 +16,12 @@ CreateAccountRequest:
         currency:
           type: string
           enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+        opened_at:
+          type: string
+          format: date-time
+          description: >-
+            When the opening balance was true, as an ISO 8601 timestamp with a timezone.
+            Dates the first balance-history entry and last_updated. Defaults to now.
     - type: object
       required: [name, type, balance, currency]
       properties:
@@ -33,3 +39,9 @@ CreateAccountRequest:
         currency:
           type: string
           enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+        opened_at:
+          type: string
+          format: date-time
+          description: >-
+            When the opening balance was true, as an ISO 8601 timestamp with a timezone.
+            Dates the first balance-history entry and last_updated. Defaults to now.

@@ -80,3 +80,24 @@ export const DEFAULT_ACCOUNT_CATEGORIES: DefaultAccountCategory[] = [
     legacyType: 'loan',
   },
 ];
+
+/** Default category name → its account type. Names are unique. */
+export const DEFAULT_TYPE_BY_CATEGORY_NAME: ReadonlyMap<string, AccountType> = new Map(
+  DEFAULT_ACCOUNT_CATEGORIES.map((category) => [category.name, category.legacyType])
+);
+
+/**
+ * Account type → the default category an account of that type is filed under.
+ *
+ * Several categories can share a type ('Other' and 'Commodities & Precious
+ * Metals' are both 'other'), so the FIRST category declaring a type wins. A
+ * plain `new Map(entries)` keeps the last one and files every 'other' account
+ * under Commodities.
+ */
+export const DEFAULT_CATEGORY_NAME_BY_TYPE: ReadonlyMap<AccountType, string> = (() => {
+  const byType = new Map<AccountType, string>();
+  for (const category of DEFAULT_ACCOUNT_CATEGORIES) {
+    if (!byType.has(category.legacyType)) byType.set(category.legacyType, category.name);
+  }
+  return byType;
+})();
