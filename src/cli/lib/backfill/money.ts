@@ -63,3 +63,7 @@ export function sameMonth(a: MonthRef, b: MonthRef): boolean {
 export function nextMonth({ month, year }: MonthRef): MonthRef {
   return month === 12 ? { month: 1, year: year + 1 } : { month: month + 1, year };
 }
+
+export function previousMonth({ month, year }: MonthRef): MonthRef {
+  return month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year };
+}

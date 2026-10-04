@@ -645,6 +645,26 @@ describe('loadMonth account creation', () => {
       );
     });
 
+    it("aborts when a stated opening breaks from last month's closing in its own currency", async () => {
+      // The rupiah carries over; the stated dollars do not, because an entry
+      // changed after January was loaded.
+      const stated = { currency: 'USD' as const, localOpening: '800000', localClosing: '800000' };
+      const d = februaryDeps({
+        client: accountClient(existing('70', 'USD'), []),
+        planFor: februaryPlan({ ...stated, opening: '80', closing: '80', stated: true }),
+        readSavedPlan: (ref: { month: number }) => {
+          if (ref.month !== 1) return null;
+          const plan = bankPlan();
+          plan.snapshots = [{ ...plan.snapshots[0]!, ...stated, closing: '70', stated: true }];
+          return plan;
+        },
+      });
+
+      await expect(loadMonth(d, february, { dryRun: true })).rejects.toThrow(
+        /closed 2099-01 at 70 USD.*foreignBalances.*2099-02 at 80/s
+      );
+    });
+
     it('catches a break in a dry run', async () => {
       const d = februaryDeps({ planFor: februaryPlan({}), readSavedPlan: januarySaved('750') });
 

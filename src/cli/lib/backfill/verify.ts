@@ -55,8 +55,10 @@ export function verifyPlan(plan: Plan): VerifyResult {
   // actually receives — a conversion that went the wrong way leaves
   // `localClosing` untouched and the total still exact. So each balance is
   // checked back against the column it came from, to the precision the two
-  // decimal places allow: half a cent of the account's own currency.
+  // decimal places allow: half a cent of the account's own currency. A balance
+  // `foreignBalances` states was never converted, so it has nothing to check.
   for (const snapshot of plan.snapshots) {
+    if (snapshot.stated) continue;
     const slack = snapshot.currency === LOCAL_CURRENCY ? TOLERANCE : TOLERANCE + plan.rate / 200;
     const local = toLocal(snapshot.closing, snapshot.currency, plan.rate);
     if (Math.abs(local - Number(snapshot.localClosing)) > slack) {

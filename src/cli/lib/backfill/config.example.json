@@ -42,6 +42,13 @@
       "rename": "Bank1 OwnerA (2)"
     }
   ],
+  "foreignBalances": [
+    {
+      "account": "Bank2 OwnerA USD",
+      "from": "2099-01",
+      "balance": 2000
+    }
+  ],
   "expenseAccounts": {
     "OwnerA": "Bank1 OwnerA",
     "OwnerB": "Bank1 OwnerB"

@@ -126,4 +126,13 @@ describe('verifyPlan closing conversion', () => {
 
     expect(verifyPlan(rounded).ok).toBe(true);
   });
+
+  it('leaves a balance foreignBalances states, which was never converted', () => {
+    const stated = structuredClone(plan);
+    const usd = stated.snapshots.find((s) => s.currency === 'USD')!;
+    usd.closing = '2500';
+    usd.stated = true;
+
+    expect(verifyPlan(stated).ok).toBe(true);
+  });
 });

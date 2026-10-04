@@ -267,3 +267,85 @@ describe('buildPlan transaction ownership', () => {
     expect(conflicting).toThrow(/Item A/);
   });
 });
+
+describe('buildPlan foreign balances', () => {
+  const withBalances = (foreignBalances: typeof fixtureConfig.foreignBalances, month = raw) =>
+    buildPlan(month, { ...fixtureConfig, foreignBalances });
+  const usdOf = (p: ReturnType<typeof buildPlan>) =>
+    p.snapshots.find((s) => s.account === 'Bank2 OwnerA USD');
+
+  it('closes at the entry in effect and opens at the one in effect last month', () => {
+    const p = withBalances([
+      { account: 'Bank2 OwnerA USD', from: '2098-12', balance: 900 },
+      { account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2500 },
+    ]);
+    expect(usdOf(p)).toMatchObject({
+      opening: '900',
+      closing: '2500',
+      localOpening: '10000000',
+      localClosing: '20000000',
+      stated: true,
+    });
+  });
+
+  it('opens at the closing balance when no entry covers last month and the sheet stays put', () => {
+    const still = structuredClone(raw);
+    const row = still.accounts.find((a) => a.name === 'Bank2 OwnerA USD')!;
+    row.akhir = row.awal;
+    const p = withBalances(
+      [{ account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2500 }],
+      still
+    );
+    expect(usdOf(p)).toMatchObject({ opening: '2500', closing: '2500' });
+  });
+
+  it('aborts when the sheet figure moves and no entry covers last month', () => {
+    const error = thrown(() =>
+      withBalances([{ account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2500 }])
+    );
+    expect(error).toBeInstanceOf(DetectionError);
+    expect((error as Error).message).toMatch(/no balance to open it at.*entry from 2098-12/s);
+  });
+
+  it('carries an earlier entry over while the sheet figure stays put', () => {
+    const still = structuredClone(raw);
+    const row = still.accounts.find((a) => a.name === 'Bank2 OwnerA USD')!;
+    row.akhir = row.awal;
+    const p = withBalances(
+      [{ account: 'Bank2 OwnerA USD', from: '2098-11', balance: 1200 }],
+      still
+    );
+    expect(usdOf(p)).toMatchObject({ opening: '1200', closing: '1200' });
+  });
+
+  it('leaves a foreign account with no entry converted at the month rate', () => {
+    expect(usdOf(plan)).toMatchObject({ opening: '1000', closing: '2000' });
+    expect(usdOf(plan)?.stated).toBeUndefined();
+  });
+
+  it('leaves the other accounts alone when one has entries', () => {
+    const p = withBalances([
+      { account: 'Bank2 OwnerA USD', from: '2098-12', balance: 900 },
+      { account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2500 },
+    ]);
+    const idr = p.snapshots.find((s) => s.account === 'Bank1 OwnerA');
+    expect(idr).toMatchObject({ opening: '5000000', closing: '4000000' });
+    expect(idr?.stated).toBeUndefined();
+  });
+
+  it('aborts when the sheet figure moves but the entry is from an earlier month', () => {
+    const error = thrown(() =>
+      withBalances([{ account: 'Bank2 OwnerA USD', from: '2098-12', balance: 900 }])
+    );
+    expect(error).toBeInstanceOf(DetectionError);
+    expect((error as Error).message).toMatch(/moves from.*over from 2098-12.*entry from 2099-01/s);
+  });
+
+  it('aborts when no entry covers the month', () => {
+    const error = thrown(() =>
+      withBalances([{ account: 'Bank2 OwnerA USD', from: '2099-02', balance: 900 }])
+    );
+    expect(error).toBeInstanceOf(DetectionError);
+    expect((error as Error).message).toMatch(/no balance from 2099-01 or earlier/);
+  });
+});
