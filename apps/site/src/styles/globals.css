@@ -41,7 +41,7 @@
   --color-success-content: #fff;
   --color-warning: #b45309; /* amber-700 — 5.0:1 */
   --color-warning-content: #fff;
-  --color-error: #e11d48; /* rose-600 — 5.2:1 */
+  --color-error: #be123c; /* rose-700 — 6.3:1 on white, AA on error/5 tints too */
   --color-error-content: #fff;
 
   /* Hover shade for accent surfaces and links (exposed as the accent-hover colour) */
