@@ -11,7 +11,7 @@ import { Glob } from 'bun';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const SRC_DIR = join(import.meta.dir, '..');
+const SRC_DIR = join(import.meta.dir, '..', '..');
 
 const readSources = (pattern: string) =>
   Array.from(new Glob(pattern).scanSync({ cwd: SRC_DIR }))
@@ -29,9 +29,23 @@ describe('form submission safety', () => {
     expect(formsWithoutMethod).toEqual([]);
   });
 
+  it('never submits password fields with method GET', () => {
+    const passwordGetForms = readSources('**/*.astro').flatMap(({ file, source }) =>
+      Array.from(source.matchAll(/<form\b([^>]*)>([\s\S]*?)<\/form>/g))
+        .filter(
+          ([, attributes, body]) =>
+            /\bmethod=["']get["']/i.test(attributes ?? '') &&
+            /type=["']password["']|<PasswordField\b/.test(body ?? '')
+        )
+        .map(({ index }) => `${file}:${source.slice(0, index).split('\n').length}`)
+    );
+
+    expect(passwordGetForms).toEqual([]);
+  });
+
   it('re-binds submit handlers after ClientRouter soft navigations', () => {
     const submitListener = /addEventListener\(\s*['"]submit['"]|^\s*['"]submit['"],\s*$/m;
-    const reinitialized = /onPageReady\(|astro:page-load/;
+    const reinitialized = /onPageReady\(|addEventListener\(\s*['"]astro:page-load['"]/;
 
     const bindOnlyOnce = readSources('**/*.{astro,ts}')
       .filter(({ source }) => submitListener.test(source) && !reinitialized.test(source))

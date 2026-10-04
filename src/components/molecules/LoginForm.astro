@@ -217,7 +217,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
   } from '@/lib/auth/redirect';
   import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Runs per page (not per module load) so the form stays bound after soft navigation
   function initLoginForm() {
     // Read server values from data attributes
     const loginForm = document.getElementById('login-form');

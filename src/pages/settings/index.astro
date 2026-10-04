@@ -1011,7 +1011,6 @@ const inviteMemberButtonClassName = accentGhostBtn
   import { getCsrfHeaders } from '@/lib/csrf-client';
   import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Runs per page (not per module load) so handlers stay bound after soft navigation
   function initSettingsPage(signal: AbortSignal) {
     const container = document.querySelector('[data-settings-page]') as HTMLElement | null;
     if (!container) return; // Not on the settings page

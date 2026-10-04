@@ -179,7 +179,6 @@ const cspNonce = Astro.locals.cspNonce || '';
 <script>
   import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Runs per page (not per module load) so the form stays bound after soft navigation
   function initRegistrationForm() {
     const form = document.querySelector('[data-registration-form]') as HTMLFormElement | null;
     const messagesContainer = document.getElementById('form-messages');

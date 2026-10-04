@@ -153,6 +153,36 @@ test.describe('auth core', () => {
         .toMatch(/^\/(dashboard|onboarding)$/);
     });
 
+    test('login after a soft navigation signs in via the API, never via URL params', async ({
+      page,
+      request,
+    }) => {
+      const { email, password } = await registerUser(request);
+      await page.goto('/login');
+
+      // The logo link is a ClientRouter soft navigation back to /login: the form is swapped
+      // in but the bundled login script is not re-executed by Astro
+      const softNavigated = page.evaluate(
+        () =>
+          new Promise<void>((resolve) =>
+            document.addEventListener('astro:page-load', () => resolve(), { once: true })
+          )
+      );
+      await page.click('a[aria-label="allowealth Sign In"]');
+      await softNavigated;
+
+      const signInRequest = page.waitForRequest(
+        (req) => req.method() === 'POST' && req.url().endsWith('/api/auth/sign-in/email')
+      );
+      await submitLoginForm(page, email, password);
+      await signInRequest;
+
+      await expect
+        .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+        .toMatch(/^\/(dashboard|onboarding)$/);
+      expect(page.url()).not.toContain('password');
+    });
+
     test('2FA-required login reaches the verification step', async ({ page, request }) => {
       const { email, password } = await registerUser(request);
 

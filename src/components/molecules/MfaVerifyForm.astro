@@ -117,7 +117,6 @@ const { redirectTo = '' } = Astro.props;
   import { sanitizePostAuthRedirect } from '@/lib/auth/redirect';
   import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Runs per page (not per module load) so the form stays bound after soft navigation
   function initMfaVerifyForm() {
     const form = document.getElementById('mfa-form') as HTMLFormElement | null;
     if (!form) return; // This page does not render the form

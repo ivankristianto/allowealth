@@ -37,7 +37,6 @@ const demoMode = isDemoMode();
   import { getCsrfHeaders } from '@/lib/csrf-client';
   import { onPageReady } from '@/lib/page-lifecycle.client';
 
-  // Runs per page (not per module load) so the form stays bound after soft navigation
   function initProfilePage() {
     const API_PROFILE_URL = '/api/user/profile';
     const API_RESEND_EMAIL_CHANGE_URL = '/api/user/resend-email-change';
