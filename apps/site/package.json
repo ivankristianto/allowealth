@@ -14,7 +14,6 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "6.0.8",
     "daisyui": "^5.7.47",
-    "motion": "^12.43.0",
     "tailwindcss": "^4.3.3",
     "wrangler": "^4.147.0"
   },

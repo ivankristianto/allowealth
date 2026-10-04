@@ -2,11 +2,13 @@
 /**
  * FaqSection Component
  *
- * An interactive, polished FAQ section with animated accordions.
+ * FAQ built on native <details name="faq"> (exclusive accordion, keyboard and
+ * find-in-page support for free). Opening animates via ::details-content and
+ * entrance effects use scroll-driven animations — no client JavaScript.
  */
 
 import { faqItems } from '@/lib/landing-content';
-import { Plus } from '@lucide/astro';
+import { ArrowRight, Plus } from '@lucide/astro';
 ---
 
 <section
@@ -24,7 +26,7 @@ import { Plus } from '@lucide/astro';
 
   <div class="relative max-w-4xl mx-auto">
     <!-- Section Header -->
-    <header class="mb-16 sm:mb-24 faq-header opacity-0 translate-y-8 max-w-2xl">
+    <header class="faq-reveal mb-16 sm:mb-24 max-w-2xl">
       <h2
         id="faq-title"
         class="text-4xl sm:text-5xl md:text-7xl font-black text-base-content tracking-tighter mb-6 leading-[1.1]"
@@ -38,44 +40,34 @@ import { Plus } from '@lucide/astro';
     </header>
 
     <!-- FAQ Accordion -->
-    <div class="space-y-4 sm:space-y-6 faq-list">
+    <div class="space-y-4 sm:space-y-6">
       {
-        faqItems.map((item, index) => (
-          <article class="faq-item group opacity-0 translate-y-8 rounded-3xl bg-base-200/50 border border-base-300/50 hover:border-accent/30 hover:bg-base-200 transition-colors duration-300 overflow-hidden">
-            <button
-              class="faq-button flex w-full items-center justify-between p-6 sm:p-8 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-base-100 rounded-3xl"
-              aria-expanded="false"
-              aria-controls={`faq-answer-${index}`}
-              id={`faq-question-${index}`}
-            >
-              <h3 class="text-xl sm:text-2xl font-bold text-base-content tracking-tight pr-8">
+        faqItems.map((item) => (
+          <details
+            name="faq"
+            class="faq-item faq-reveal group rounded-3xl bg-base-200/50 border border-base-300/50 hover:border-accent/30 hover:bg-base-200 transition-colors duration-300 overflow-hidden"
+          >
+            <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-8 p-6 sm:p-8 text-left rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-base-100">
+              <h3 class="text-xl sm:text-2xl font-bold text-base-content tracking-tight">
                 {item.question}
               </h3>
-              <div class="faq-icon-wrapper flex-shrink-0 w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-base-content/60 group-hover:text-accent group-hover:border-accent/30 transition-all duration-300">
-                <Plus
-                  size={20}
-                  class="faq-icon transition-transform duration-500"
-                  aria-hidden="true"
-                />
-              </div>
-            </button>
-            <div
-              id={`faq-answer-${index}`}
-              role="region"
-              aria-labelledby={`faq-question-${index}`}
-              class="faq-content faq-collapsed"
-            >
-              <div class="p-6 sm:p-8 pt-0 text-base-content/70 sm:text-lg leading-relaxed border-t border-base-300/30">
-                <p>{item.answer}</p>
-              </div>
+              <span
+                class="faq-icon-wrapper shrink-0 w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-base-content/60 group-hover:text-accent group-hover:border-accent/30"
+                aria-hidden="true"
+              >
+                <Plus size={20} class="faq-icon" />
+              </span>
+            </summary>
+            <div class="p-6 sm:p-8 pt-0 text-base-content/70 sm:text-lg leading-relaxed border-t border-base-300/30">
+              <p>{item.answer}</p>
             </div>
-          </article>
+          </details>
         ))
       }
     </div>
 
     <!-- Secondary CTA -->
-    <div class="mt-20 text-center faq-footer opacity-0">
+    <div class="faq-reveal mt-20 text-center">
       <div
         class="inline-flex flex-col sm:flex-row items-center justify-center gap-4 p-8 rounded-3xl bg-base-200/80 border border-base-300/80 shadow-sm w-full relative overflow-hidden group"
       >
@@ -94,152 +86,80 @@ import { Plus } from '@lucide/astro';
           class="relative z-10 inline-flex items-center gap-2 text-accent font-bold hover:text-(--color-accent-hover) transition-colors"
         >
           <span>Ask us on GitHub</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="transition-transform group-hover:translate-x-1"
-            ><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg
-          >
+          <ArrowRight
+            size={16}
+            class="transition-transform motion-safe:group-hover:translate-x-1"
+            aria-hidden="true"
+          />
         </a>
       </div>
     </div>
   </div>
 </section>
 
-<script>
-  // Wait for the DOM to be fully loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    const faqSection = document.getElementById('faq');
-    if (!faqSection) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          observer.disconnect();
-          initFaq();
-        }
-      },
-      { rootMargin: '200px' }
-    );
-
-    observer.observe(faqSection);
-
-    async function initFaq() {
-      const { animate } = await import('motion/mini');
-
-      // 1. Entrance Animations
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      if (!prefersReducedMotion) {
-        // Header animation
-        const header = document.querySelector('.faq-header');
-        if (header) {
-          animate(
-            header,
-            { opacity: [0, 1], y: [32, 0] },
-            { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-          );
-        }
-
-        // Staggered list animation
-        const items = document.querySelectorAll('.faq-item');
-        items.forEach((item, index) => {
-          animate(
-            item,
-            { opacity: [0, 1], y: [32, 0] },
-            { duration: 0.8, delay: 0.1 + index * 0.1, ease: [0.16, 1, 0.3, 1] }
-          );
-        });
-
-        // Footer animation
-        const footer = document.querySelector('.faq-footer');
-        if (footer) {
-          animate(footer, { opacity: [0, 1] }, { duration: 1, delay: 0.6 });
-        }
-      } else {
-        // Fallback for reduced motion
-        document.querySelectorAll('.faq-header, .faq-item, .faq-footer').forEach((el) => {
-          el.classList.remove('opacity-0', 'translate-y-8');
-        });
-      }
-
-      // 2. Accordion Logic — uses grid-template-rows, not height
-      const faqButtons = document.querySelectorAll('.faq-button');
-
-      faqButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          const isExpanded = button.getAttribute('aria-expanded') === 'true';
-          const content = button.nextElementSibling as HTMLElement;
-          const icon = button.querySelector('.faq-icon') as HTMLElement;
-          const iconWrapper = button.querySelector('.faq-icon-wrapper') as HTMLElement;
-
-          // Close all other accordions
-          faqButtons.forEach((otherButton) => {
-            if (otherButton !== button && otherButton.getAttribute('aria-expanded') === 'true') {
-              const otherIcon = otherButton.querySelector('.faq-icon') as HTMLElement;
-              const otherIconWrapper = otherButton.querySelector(
-                '.faq-icon-wrapper'
-              ) as HTMLElement;
-              const otherContent = otherButton.nextElementSibling as HTMLElement;
-
-              otherButton.setAttribute('aria-expanded', 'false');
-              otherIcon.style.transform = 'rotate(0deg)';
-              otherIconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
-              otherIconWrapper.classList.add('bg-base-100', 'text-base-content/60');
-              otherContent.classList.add('faq-collapsed');
-              otherContent.classList.remove('faq-expanded');
-            }
-          });
-
-          // Toggle current accordion
-          if (!isExpanded) {
-            button.setAttribute('aria-expanded', 'true');
-            icon.style.transform = 'rotate(45deg)';
-            iconWrapper.classList.remove('bg-base-100', 'text-base-content/60');
-            iconWrapper.classList.add('bg-accent', 'text-white', 'border-accent');
-            content.classList.remove('faq-collapsed');
-            content.classList.add('faq-expanded');
-          } else {
-            button.setAttribute('aria-expanded', 'false');
-            icon.style.transform = 'rotate(0deg)';
-            iconWrapper.classList.remove('bg-accent', 'text-white', 'border-accent');
-            iconWrapper.classList.add('bg-base-100', 'text-base-content/60');
-            content.classList.add('faq-collapsed');
-            content.classList.remove('faq-expanded');
-          }
-        });
-      });
-    }
-  });
-</script>
-
 <style>
-  /* Accordion expand/collapse via grid-template-rows (no layout animation) */
-  .faq-content {
-    display: grid;
-    grid-template-rows: 1fr;
-    transition: grid-template-rows 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  .faq-item summary::-webkit-details-marker {
+    display: none;
   }
 
-  .faq-content.faq-collapsed {
-    grid-template-rows: 0fr;
-  }
-
-  .faq-content > div {
-    overflow: hidden;
-  }
-
-  /* Ensure smooth transitions on the icon wrapper */
   .faq-icon-wrapper {
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-property: color, background-color, border-color;
     transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .faq-item[open] .faq-icon-wrapper {
+    color: var(--color-accent-content);
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .faq-item[open] .faq-icon {
+    rotate: 45deg;
+  }
+
+  /*
+   * Answer height animation. Browsers without ::details-content drop this rule and
+   * toggle instantly; browsers without interpolate-size also toggle instantly.
+   */
+  .faq-item::details-content {
+    block-size: 0;
+    overflow-y: clip;
+  }
+
+  .faq-item[open]::details-content {
+    block-size: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .faq-item {
+      interpolate-size: allow-keywords;
+    }
+
+    .faq-item::details-content {
+      transition:
+        block-size 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+        content-visibility 0.4s allow-discrete;
+    }
+
+    .faq-icon {
+      transition: rotate 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Scroll-driven entrance; content is fully visible where unsupported. */
+    @supports (animation-timeline: view()) {
+      .faq-reveal {
+        animation: faq-reveal linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 80%;
+      }
+    }
+  }
+
+  @keyframes faq-reveal {
+    from {
+      opacity: 0;
+      translate: 0 2rem;
+    }
   }
 </style>
