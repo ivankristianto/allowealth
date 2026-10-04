@@ -18,12 +18,14 @@ This is not a workspace monorepo. There are **four independent trees, each with 
 | `apps/site` | Marketing site      | `landing:check`, `landing:build`                                          |
 | `apps/mcp`  | MCP server          | **no `scripts` block** — verify with `bun install --frozen-lockfile` only |
 
-Use `--cwd` rather than `cd`, so you never lose track of which tree you are in:
+Use `--cwd` rather than `cd`, so you never lose track of which tree you are in. **Pass it an absolute path**: on bun 1.3.9, `bun update --cwd apps/docs` fails with `failed to change directory to "apps/docs": ENOENT`, even though `bun outdated` and `bun install` accept the same relative path:
 
 ```bash
-for d in . apps/docs apps/site apps/mcp; do bun outdated --cwd "$d"; done
+R=$(git rev-parse --show-toplevel)
+for d in . apps/docs apps/site apps/mcp; do bun outdated --cwd "$R/$d"; done
 ```
 
+- ✅ **Prefix every `--cwd` with `$R/`** — one form that works for `outdated`, `update` and `install` alike
 - ✅ **Run every step in all four trees** — `.`, `apps/docs`, `apps/site`, `apps/mcp`
 - ❌ **Say "three trees"** — `apps/mcp` is the one that gets forgotten, and it drifts the furthest because of it
 - ❌ **Assume root `bun update` reaches the sub-apps** — it does not; they have separate lockfiles and drift independently
@@ -67,8 +69,28 @@ Run in all four trees at each step.
 2. **Branch** — `chore/deps-YYYY-MM-DD` off current `origin/main`.
 3. **Green baseline first** — run the gates _and_ `bun run bundle:report` **before** changing anything, saving the bundle numbers to the scratchpad. A later failure is then attributable to the sweep rather than pre-existing, and you have something to diff the bundle against.
 4. **Record `bun outdated`** per tree into the scratchpad. This table becomes the PR body.
-5. **Sweep** — `bun update` in each tree. Never `bun update --latest`.
-6. **Verify the lockfile ranges actually synced** — `bun install --frozen-lockfile` must exit 0 in each tree. #386 bumped `package.json` but left stale range strings in `bun.lock`, needing the follow-up `5cdbc9e3`. This check is what catches it.
+5. **Sweep** — `bun update --cwd "$R/$d"` in each tree, **then a plain `bun install --cwd "$R/$d"`**. Never `bun update --latest`. `bun update` rewrites `package.json` to the new ranges but records the _old_ ranges in the `bun.lock` workspace block (e.g. `wrangler: ^4.131.1` in the lockfile against `^4.147.0` in `package.json`). The follow-up `bun install` resyncs the range strings without moving any resolved version.
+6. **Verify the lockfile ranges actually synced** — two checks, both must pass in each tree:
+   - `bun install --frozen-lockfile --cwd "$R/$d"` exits 0, which catches resolution drift.
+   - The range check below exits 0, which catches stale range strings. **`--frozen-lockfile` does not catch these**: it exits 0 even when every range in the lockfile's workspace block is stale. #386 shipped exactly this and needed the follow-up `5cdbc9e3`.
+
+   ```bash
+   for d in . apps/docs apps/site apps/mcp; do
+     bun -e '
+       const dir = process.argv[1];
+       const pkg = await Bun.file(`${dir}/package.json`).json();
+       const lock = Bun.JSONC.parse(await Bun.file(`${dir}/bun.lock`).text()).workspaces[""];
+       let stale = 0;
+       for (const field of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"])
+         for (const [name, range] of Object.entries(pkg[field] ?? {}))
+           if (lock[field]?.[name] !== range) { stale++; console.log(`${dir}: ${name} package.json=${range} bun.lock=${lock[field]?.[name]}`); }
+       if (stale) process.exit(1);
+     ' "$R/$d" && echo "$d: ranges in sync"
+   done
+   ```
+
+   If it reports a mismatch, run a plain `bun install --cwd "$R/$d"` in that tree and re-run both checks.
+
 7. **Read release notes for multi-minor jumps** — an in-range minor can still break. Prioritise `better-auth` (auth is the highest-risk surface; 1.6.23 → 1.7.4 is 1 minor but many releases), `drizzle-orm`, `daisyui`/`tailwindcss` (visual), `wrangler` (deploy config).
 8. **Verify** — `bun run lint:fix`, `stylelint:fix`, `format:fix`, `typecheck`; `grep -r "bun:" src/ --exclude-dir=node_modules`; `bun run build`, `docs:build`, `landing:build`; `bun test`.
 9. **Check the bundle budget** — `bun run bundle:report`, compare against the pre-sweep baseline. Budget is 250 kB gzipped client JS (`rules/principles.md`); `rules/workflow.md` requires this after _every_ dependency change. A client-side bump (`chart.js`, `motion`, `daisyui`, `nanostores`) can blow it silently.
@@ -112,15 +134,16 @@ Body uses `.github/pull_request_template.md` with `chore` ticked, plus:
 
 Every excuse below was produced by an agent doing this task without this skill.
 
-| Excuse                                          | Reality                                                                                                                |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| "It's only a patch, the pin won't mind"         | The pin is the decision. A patch that defeats it is still defeating it.                                                |
-| "Majors, but dev-tooling only, so it's safe"    | `husky` 9 rewrites hook invocation; `stylelint` 17 changes autofix output. Dev-tooling majors edit your source. Defer. |
-| "I'll bump one major per commit inside this PR" | Then it is no longer a routine sweep and can't be reviewed as one. Separate PR.                                        |
-| "There's surely a 6.4.8 patch out"              | `Update` == `Current` means no in-range release exists. Read the column.                                               |
-| "Root `bun update` covers the repo"             | Four lockfiles. `apps/mcp` is 5 minors behind because of this exact assumption.                                        |
-| "It's in-range, so it can't break"              | `better-auth` moved 1.6.23 → 1.7.4 inside one caret. Auth is the highest-risk surface here.                            |
-| "The maintainer is in a hurry"                  | `bun update` is the fast part. The frozen-lockfile check and the builds are what make the PR trustworthy.              |
+| Excuse                                              | Reality                                                                                                                |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| "It's only a patch, the pin won't mind"             | The pin is the decision. A patch that defeats it is still defeating it.                                                |
+| "Majors, but dev-tooling only, so it's safe"        | `husky` 9 rewrites hook invocation; `stylelint` 17 changes autofix output. Dev-tooling majors edit your source. Defer. |
+| "I'll bump one major per commit inside this PR"     | Then it is no longer a routine sweep and can't be reviewed as one. Separate PR.                                        |
+| "There's surely a 6.4.8 patch out"                  | `Update` == `Current` means no in-range release exists. Read the column.                                               |
+| "Root `bun update` covers the repo"                 | Four lockfiles. `apps/mcp` is 5 minors behind because of this exact assumption.                                        |
+| "It's in-range, so it can't break"                  | `better-auth` moved 1.6.23 → 1.7.4 inside one caret. Auth is the highest-risk surface here.                            |
+| "The maintainer is in a hurry"                      | `bun update` is the fast part. The lockfile checks and the builds are what make the PR trustworthy.                    |
+| "`--frozen-lockfile` passed, so the lock is synced" | It passes with every workspace range stale. Run the range check too.                                                   |
 
 ## Red Flags — Stop
 
@@ -128,6 +151,7 @@ Every excuse below was produced by an agent doing this task without this skill.
 - About to hand-edit a pinned `astro`/`@astrojs/*` version
 - Listed only three package trees
 - `bun install --frozen-lockfile` fails after the sweep
+- The range check reports a `package.json` / `bun.lock` mismatch after the sweep
 - A `src/` diff you cannot classify
 - Reaching for `bun update --latest`
 - Pulling "one easy major" in because it looked harmless
