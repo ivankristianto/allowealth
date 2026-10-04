@@ -47,7 +47,15 @@ const firstHeadline = typingHeadlines[0] ?? '';
             character up front and the script only toggles their visibility, so typing
             never reflows text and never causes layout shift. */
         }
-        {typingHeadlines.map((headline) => <span class="hero-typing-sizer">{headline}</span>)}
+        {
+          typingHeadlines.map((headline) => (
+            <span class="hero-typing-sizer">
+              {[...headline].map((char) => (
+                <span>{char}</span>
+              ))}
+            </span>
+          ))
+        }
         <span class="hero-typing-line">
           {
             [...firstHeadline].map((char, index, chars) => (
@@ -56,7 +64,7 @@ const firstHeadline = typingHeadlines[0] ?? '';
           }
         </span>
       </span>
-      <span class="text-accent">{heroContent.titleSuffix}</span>
+      <span class="text-accent" aria-hidden="true">{heroContent.titleSuffix}</span>
     </h1>
 
     <!-- Description -->
@@ -106,28 +114,28 @@ const firstHeadline = typingHeadlines[0] ?? '';
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (line && headlines.length > 1 && !prefersReducedMotion) {
-    let chars = Array.from(line.children) as HTMLElement[];
+    let charSpans = Array.from(line.children) as HTMLElement[];
     let currentIndex = 0;
-    let visibleCount = chars.length;
+    let visibleCount = charSpans.length;
     let isTyping = false;
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const render = () => {
-      chars.forEach((char, index) => {
-        char.toggleAttribute('data-hidden', index >= visibleCount);
-        char.removeAttribute('data-caret');
+      charSpans.forEach((charSpan, index) => {
+        charSpan.toggleAttribute('data-hidden', index >= visibleCount);
+        charSpan.removeAttribute('data-caret');
       });
-      if (visibleCount > 0) chars[visibleCount - 1].dataset.caret = 'end';
-      else if (chars[0]) chars[0].dataset.caret = 'start';
+      if (visibleCount > 0) charSpans[visibleCount - 1].dataset.caret = 'end';
+      else if (charSpans[0]) charSpans[0].dataset.caret = 'start';
     };
 
     const loadHeadline = (text: string) => {
-      chars = Array.from(text, (character) => {
-        const char = document.createElement('span');
-        char.textContent = character;
-        return char;
+      charSpans = Array.from(text, (character) => {
+        const charSpan = document.createElement('span');
+        charSpan.textContent = character;
+        return charSpan;
       });
-      line.replaceChildren(...chars);
+      line.replaceChildren(...charSpans);
     };
 
     const scheduleNext = (delay: number) => {
@@ -135,7 +143,7 @@ const firstHeadline = typingHeadlines[0] ?? '';
     };
 
     function step() {
-      if (isTyping && visibleCount < chars.length) {
+      if (isTyping && visibleCount < charSpans.length) {
         visibleCount++;
         render();
         scheduleNext(TYPING_SPEED);

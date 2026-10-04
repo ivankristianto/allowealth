@@ -182,8 +182,8 @@ export const featureGridItems: FeatureGridItem[] = [
   {
     id: 'fast',
     spotIllustration: 'fast',
-    iconColor: 'text-white',
-    iconBg: 'bg-white/10',
+    iconColor: 'text-primary-content',
+    iconBg: 'bg-primary-content/10',
     title: 'Fast',
     description: 'Snappy on every device. No wait screens, no bloat.',
     colSpan: 'md:col-span-8',

@@ -76,7 +76,7 @@ const navLinks = [
   </div>
 
   <!-- Mobile Menu. No display utilities here: the popover UA style must keep it hidden when closed. -->
-  <div id="mobile-menu" popover class="mobile-menu" aria-label="Mobile navigation menu">
+  <div id="mobile-menu" popover class="mobile-menu">
     <div
       class="bg-base-100/98 backdrop-blur-xl border border-base-300/30 rounded-3xl shadow-premium-lg p-6"
     >
@@ -154,6 +154,14 @@ const navLinks = [
 
   @media (width >= 1024px) {
     .mobile-menu {
+      display: none;
+    }
+  }
+
+  /* Without the Popover API the panel would never hide; drop the mobile menu (footer keeps the links). */
+  @supports not selector(:popover-open) {
+    .mobile-menu,
+    [popovertarget] {
       display: none;
     }
   }
