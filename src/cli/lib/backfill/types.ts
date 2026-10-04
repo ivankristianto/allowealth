@@ -49,7 +49,7 @@ export interface PlanTransaction {
    * True when `incomeRouting` placed this row. The balance sheet's `Income`
    * column records salary only, so Link 4 subtracts every routed row.
    */
-  routedByException?: boolean;
+  routedByRule?: boolean;
 }
 
 export interface PlanSnapshot {

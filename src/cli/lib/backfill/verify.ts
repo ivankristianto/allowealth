@@ -74,7 +74,7 @@ export function verifyPlan(plan: Plan): VerifyResult {
   // sheet's Income column excludes them — it is zero outside salary.
   const byAccount = new Map<string, number>();
   for (const t of plan.transactions) {
-    if (t.kind !== 'income' || t.routedByException) continue;
+    if (t.kind !== 'income' || t.routedByRule) continue;
     byAccount.set(t.account, (byAccount.get(t.account) ?? 0) + Number(t.localAmount));
   }
   for (const [account, expected] of Object.entries(plan.checks.accountIncome)) {

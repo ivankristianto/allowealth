@@ -152,26 +152,30 @@ export function loadConfig(dataDir: string): BackfillConfig {
   return result.output;
 }
 
+/** The two members, by name: everything the config gives an owner must be one. */
+function memberNames(config: BackfillConfig): string[] {
+  return [config.members.primary, config.members.secondary];
+}
+
+/** Aborts unless `name`, given at `field` in the config, is one of the members. */
+function assertMember(config: BackfillConfig, name: string, field: string, path: string): void {
+  const members = memberNames(config);
+  if (members.includes(name)) return;
+  throw new ConfigError(
+    `\`${field}\` names "${name}", which is neither member (${members.join(', ')}).\n` +
+      `Edit \`${field.split('.')[0]}\` in ${path}.`
+  );
+}
+
 /**
  * A rule naming a non-member or a misspelt category would otherwise never match,
  * and a fallback naming a non-member would own every unmatched expense.
  */
 function assertExpenseOwnersKnown(config: BackfillConfig, path: string): void {
-  const members = [config.members.primary, config.members.secondary];
-  if (!members.includes(config.members.fallback)) {
-    throw new ConfigError(
-      `\`members.fallback\` names "${config.members.fallback}", which is neither member ` +
-        `(${members.join(', ')}).\nEdit \`members\` in ${path}.`
-    );
-  }
+  assertMember(config, config.members.fallback, 'members.fallback', path);
   const categories = new Set(config.categories.expense);
   for (const rule of config.expenseOwners) {
-    if (!members.includes(rule.owner)) {
-      throw new ConfigError(
-        `\`expenseOwners\` names "${rule.owner}", which is neither member ` +
-          `(${members.join(', ')}).\nEdit \`expenseOwners\` in ${path}.`
-      );
-    }
+    assertMember(config, rule.owner, 'expenseOwners', path);
     if ('category' in rule && !categories.has(rule.category)) {
       throw new ConfigError(
         `\`expenseOwners\` names the category "${rule.category}", which is not in ` +
@@ -186,16 +190,10 @@ function assertExpenseOwnersKnown(config: BackfillConfig, path: string): void {
  * It must be a local-currency roster account: expenses are posted in local currency.
  */
 function assertExpenseAccountsKnown(config: BackfillConfig, path: string): void {
-  const members = [config.members.primary, config.members.secondary];
   for (const member of Object.keys(config.expenseAccounts)) {
-    if (!members.includes(member)) {
-      throw new ConfigError(
-        `\`expenseAccounts\` names "${member}", which is neither member ` +
-          `(${members.join(', ')}).\nEdit \`expenseAccounts\` in ${path}.`
-      );
-    }
+    assertMember(config, member, 'expenseAccounts', path);
   }
-  for (const member of members) {
+  for (const member of memberNames(config)) {
     const name = config.expenseAccounts[member];
     if (!name) {
       throw new ConfigError(

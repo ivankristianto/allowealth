@@ -90,7 +90,7 @@ describe('buildPlan', () => {
 
   it('does not mark salary rows as exception-routed', () => {
     const s = plan.transactions.find((t) => t.description === 'Salary OwnerA');
-    expect(s?.routedByException).toBeUndefined();
+    expect(s?.routedByRule).toBeUndefined();
   });
 
   it('emits one snapshot per account at 12:00:00 UTC on the last day', () => {
@@ -144,7 +144,7 @@ describe('buildPlan detection', () => {
       ],
     });
     const c = routed.transactions.find((t) => t.description === 'Coupon OwnerA');
-    expect(c?.routedByException).toBe(true);
+    expect(c?.routedByRule).toBe(true);
     expect(c?.currency).toBe('USD');
     expect(c?.amount).toBe('75');
     expect(c?.localAmount).toBe('750000');

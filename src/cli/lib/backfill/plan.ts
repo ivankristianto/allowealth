@@ -43,9 +43,14 @@ function normaliseDate(cell: string, ref: MonthRef, label: string): string {
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
+/** `text` with every regular-expression metacharacter escaped, to match literally. */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** Matches `word` as a whole word anywhere, case-insensitively. */
 function wholeWord(word: string): RegExp {
-  return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+  return new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i');
 }
 
 /**
@@ -73,7 +78,7 @@ function expenseOwner(description: string, category: string, config: BackfillCon
 
 /** Matches `term` where it starts a word, so `BOND` also finds `BOND28`. */
 function wordStart(term: string): RegExp {
-  return new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+  return new RegExp(`\\b${escapeRegExp(term)}`, 'i');
 }
 
 /**
@@ -123,7 +128,7 @@ interface Route {
   account: string;
   currency: Currency;
   /** Set when `incomeRouting` placed the row, so Link 4 can subtract it. */
-  byException?: boolean;
+  byRule?: boolean;
   /** Set when the rule allows a local-only row into a foreign account. */
   convert?: boolean;
 }
@@ -175,7 +180,7 @@ function routeIncome(
   return {
     account: account.name,
     currency: account.currency,
-    byException: true,
+    byRule: true,
     ...(rule.convert ? { convert: true } : {}),
   };
 }
@@ -273,7 +278,7 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
       amount: decimal(amount),
       currency: route.currency,
       localAmount: decimal(local),
-      ...(route.byException ? { routedByException: true } : {}),
+      ...(route.byRule ? { routedByRule: true } : {}),
     });
   }
 
