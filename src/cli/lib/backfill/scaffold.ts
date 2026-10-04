@@ -55,6 +55,7 @@ export function scaffoldConfig(months: RawMonth[]): ScaffoldResult {
       })),
       accountAliases: [],
       duplicateRules: [],
+      foreignBalances: [],
       categories: {
         expense,
         // Source type is a judgement the sheet does not record; the operator sets it.

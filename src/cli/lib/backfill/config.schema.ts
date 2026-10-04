@@ -29,6 +29,8 @@ const wordStartTerm = v.pipe(
   )
 );
 
+const yearMonth = v.pipe(v.string(), v.regex(/^\d{4}-\d{2}$/, 'Expected YYYY-MM'));
+
 export const configSchema = v.object({
   filenames: v.object({ transactions: v.string(), balance: v.string() }),
   members: v.object({ primary: filledIn, secondary: filledIn, fallback: filledIn }),
@@ -45,6 +47,12 @@ export const configSchema = v.object({
       rename: v.string(),
     })
   ),
+  // The balance of a foreign-currency account in its own currency, from a month
+  // onward. For an account the sheet records at a book rate of its own rather
+  // than the month's, where dividing by the month's rate would invent a balance
+  // that drifts with the rate. An entry for the month before an account's first
+  // gives its opening balance.
+  foreignBalances: v.array(v.object({ account: filledIn, from: yearMonth, balance: v.number() })),
   // The account each member's expenses are paid from, keyed by member name. An
   // expense is recorded against its owner's account, so `expenseOwners` decides
   // both who an expense belongs to and where it is paid from.
@@ -102,7 +110,7 @@ export const configSchema = v.object({
     // The first month of the range. Gap detection walks forward from here, so
     // without it a later month could be loaded first and stamp every account
     // with the wrong origin balance.
-    earliestMonth: v.pipe(v.string(), v.regex(/^\d{4}-\d{2}$/, 'Expected YYYY-MM')),
+    earliestMonth: yearMonth,
   }),
 });
 
@@ -149,6 +157,7 @@ export function loadConfig(dataDir: string): BackfillConfig {
   assertExpenseOwnersKnown(result.output, path);
   assertExpenseAccountsKnown(result.output, path);
   assertIncomeRoutingKnown(result.output, path);
+  assertForeignBalancesValid(result.output, path);
   return result.output;
 }
 
@@ -221,5 +230,30 @@ function assertIncomeRoutingKnown(config: BackfillConfig, path: string): void {
           `Edit \`incomeRouting\` in ${path}.`
       );
     }
+  }
+}
+
+/**
+ * A balance given for a local account would replace the sheet's own figure, and
+ * two entries from one month leave its balance ambiguous.
+ */
+function assertForeignBalancesValid(config: BackfillConfig, path: string): void {
+  const seen = new Set<string>();
+  for (const entry of config.foreignBalances) {
+    const account = config.accounts.find((a) => a.name === entry.account);
+    if (!account || account.currency === LOCAL_CURRENCY) {
+      throw new ConfigError(
+        `\`foreignBalances\` gives a balance for "${entry.account}", which is not a ` +
+          `foreign-currency account in \`accounts\`.\nEdit \`foreignBalances\` in ${path}.`
+      );
+    }
+    const key = `${entry.account}|${entry.from}`;
+    if (seen.has(key)) {
+      throw new ConfigError(
+        `\`foreignBalances\` has two entries for "${entry.account}" from ${entry.from}.\n` +
+          `Edit \`foreignBalances\` in ${path}.`
+      );
+    }
+    seen.add(key);
   }
 }

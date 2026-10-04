@@ -17,6 +17,7 @@ export const fixtureConfig: BackfillConfig = {
   ],
   accountAliases: [],
   duplicateRules: [],
+  foreignBalances: [],
   expenseAccounts: { OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' },
   categories: {
     expense: ['Cat1', 'Cat2', 'Cat3'],

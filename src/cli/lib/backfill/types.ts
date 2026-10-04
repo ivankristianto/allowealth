@@ -74,6 +74,11 @@ export interface PlanSnapshot {
   localClosing: string;
   currency: Currency;
   recordedAt: string; // ISO
+  /**
+   * Set when `foreignBalances` gave `opening` and `closing`. They were not
+   * converted from the sheet, so Link 1 has no conversion to check back.
+   */
+  stated?: boolean;
 }
 
 export interface PlanBudget {

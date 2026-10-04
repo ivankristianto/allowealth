@@ -1,5 +1,12 @@
 import type { BackfillConfig } from './config.schema';
-import { decimal, fromLocal, lastDayOfMonth, LOCAL_CURRENCY as LOCAL } from './money';
+import {
+  closeEnough,
+  decimal,
+  fromLocal,
+  lastDayOfMonth,
+  LOCAL_CURRENCY as LOCAL,
+  previousMonth,
+} from './money';
 import type { RawMonth, RawRow } from './parse';
 import { assertCategoriesKnown, DetectionError, resolveAccounts } from './resolve';
 import type { ResolvedAccount } from './resolve';
@@ -202,6 +209,65 @@ function amountFor(row: RawRow, route: Route, local: number, rate: number): numb
   );
 }
 
+type ForeignBalance = BackfillConfig['foreignBalances'][number];
+
+/** The latest entry from `key` or earlier. `YYYY-MM` keys order as strings. */
+function balanceInEffect(entries: ForeignBalance[], key: string): ForeignBalance | undefined {
+  return entries
+    .filter((entry) => entry.from <= key)
+    .reduce<ForeignBalance | undefined>(
+      (latest, entry) => (latest && latest.from > entry.from ? latest : entry),
+      undefined
+    );
+}
+
+/**
+ * A foreign account's balances as `foreignBalances` gives them, or null when it
+ * gives none and the sheet's figure is converted at the month's rate. The
+ * closing is the entry in effect this month and the opening the one in effect
+ * last month, so the account opens where it closed. With no entry for last
+ * month it opens at its closing, but only while the sheet figure stays put.
+ */
+function statedBalances(
+  account: ResolvedAccount,
+  raw: RawMonth,
+  config: BackfillConfig
+): { opening: number; closing: number } | null {
+  const entries = config.foreignBalances.filter((entry) => entry.account === account.name);
+  if (entries.length === 0) return null;
+
+  const key = monthKey(raw);
+  const closing = balanceInEffect(entries, key);
+  if (!closing) {
+    throw new DetectionError(
+      `\`foreignBalances\` gives "${account.name}" no balance from ${key} or earlier.\n` +
+        `Add an entry from ${key} with its ${account.currency} balance.`
+    );
+  }
+  // A sheet figure that moves means the balance moved, or the rate it is booked
+  // at did; either way an entry carried over from an earlier month is stale.
+  if (!closeEnough(account.awal, account.akhir) && closing.from !== key) {
+    throw new DetectionError(
+      `"${account.name}" moves from ${account.awal} to ${account.akhir} in ${key} ` +
+        `(local currency), but \`foreignBalances\` carries its ${account.currency} balance ` +
+        `over from ${closing.from}.\n` +
+        `Add an entry from ${key} with its ${account.currency} balance at month end.`
+    );
+  }
+  // With no entry for last month, only a sheet figure that stayed put says the
+  // account opened where it closed; one that moved leaves the opening unknown.
+  const lastKey = monthKey(previousMonth(raw));
+  const opening = balanceInEffect(entries, lastKey);
+  if (!opening && !closeEnough(account.awal, account.akhir)) {
+    throw new DetectionError(
+      `"${account.name}" moves from ${account.awal} to ${account.akhir} in ${key} ` +
+        `(local currency), but \`foreignBalances\` gives no balance to open it at.\n` +
+        `Add an entry from ${lastKey} with its ${account.currency} balance at the start of ${key}.`
+    );
+  }
+  return { opening: (opening ?? closing).balance, closing: closing.balance };
+}
+
 function accountIncomeChecks(accounts: ResolvedAccount[]): Record<string, number> {
   // Denominated in each account's own currency, exactly as the sheet prints it.
   return Object.fromEntries(accounts.map((a) => [a.name, a.income]));
@@ -285,16 +351,21 @@ export function buildPlan(raw: RawMonth, config: BackfillConfig): Plan {
   const lastDay = String(lastDayOfMonth(raw)).padStart(2, '0');
   // The account table is denominated in local currency for every account, so a
   // foreign account's balance is divided by the month's rate to reach the
-  // currency the app holds it in. `localClosing` keeps the sheet's own figure.
-  const snapshots: PlanSnapshot[] = accounts.map((a) => ({
-    account: a.name,
-    opening: decimal(fromLocal(a.awal, a.currency, raw.rate)),
-    localOpening: decimal(a.awal),
-    closing: decimal(fromLocal(a.akhir, a.currency, raw.rate)),
-    localClosing: decimal(a.akhir),
-    currency: a.currency,
-    recordedAt: monthEndSlot(`${key}-${lastDay}`),
-  }));
+  // currency the app holds it in, unless `foreignBalances` states it.
+  // `localClosing` keeps the sheet's own figure.
+  const snapshots: PlanSnapshot[] = accounts.map((a) => {
+    const stated = statedBalances(a, raw, config);
+    return {
+      account: a.name,
+      opening: decimal(stated?.opening ?? fromLocal(a.awal, a.currency, raw.rate)),
+      localOpening: decimal(a.awal),
+      closing: decimal(stated?.closing ?? fromLocal(a.akhir, a.currency, raw.rate)),
+      localClosing: decimal(a.akhir),
+      currency: a.currency,
+      recordedAt: monthEndSlot(`${key}-${lastDay}`),
+      ...(stated ? { stated: true } : {}),
+    };
+  });
 
   return {
     month: raw.month,

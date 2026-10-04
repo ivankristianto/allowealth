@@ -27,6 +27,7 @@ const MINIMAL = JSON.stringify({
   ],
   accountAliases: [],
   duplicateRules: [],
+  foreignBalances: [],
   expenseAccounts: { OwnerA: 'Bank1 OwnerA', OwnerB: 'Bank1 OwnerB' },
   categories: { expense: ['Cat1'], income: [{ name: 'Inc1', sourceType: 'active' }] },
   categoryRenames: [],
@@ -194,5 +195,43 @@ describe('loadConfig', () => {
     const config = JSON.parse(MINIMAL);
     config.incomeRouting = [{ category: 'Inc1', account: 'BankTypo' }];
     expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/BankTypo/);
+  });
+
+  it('reads foreign balances given by month', () => {
+    const config = JSON.parse(MINIMAL);
+    config.foreignBalances = [{ account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2000 }];
+    const cfg = loadConfig(withConfig(JSON.stringify(config)));
+    expect(cfg.foreignBalances).toEqual([
+      { account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2000 },
+    ]);
+  });
+
+  it('rejects a foreign balance for a local-currency account', () => {
+    const config = JSON.parse(MINIMAL);
+    config.foreignBalances = [{ account: 'Bank1 OwnerA', from: '2099-01', balance: 2000 }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(
+      /foreignBalances.*Bank1 OwnerA.*foreign-currency/s
+    );
+  });
+
+  it('rejects a foreign balance for an account not in the roster', () => {
+    const config = JSON.parse(MINIMAL);
+    config.foreignBalances = [{ account: 'BankTypo', from: '2099-01', balance: 2000 }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/BankTypo/);
+  });
+
+  it('rejects two foreign balances for one account from the same month', () => {
+    const config = JSON.parse(MINIMAL);
+    const entry = { account: 'Bank2 OwnerA USD', from: '2099-01', balance: 2000 };
+    config.foreignBalances = [entry, { ...entry, balance: 2100 }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/two entries.*2099-01/s);
+  });
+
+  it('rejects a foreign balance whose month is not YYYY-MM', () => {
+    const config = JSON.parse(MINIMAL);
+    config.foreignBalances = [{ account: 'Bank2 OwnerA USD', from: 'Jan-2099', balance: 2000 }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(
+      /foreignBalances\.0\.from.*YYYY-MM/s
+    );
   });
 });

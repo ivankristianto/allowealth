@@ -1,7 +1,7 @@
 import type { BackfillClient } from './client';
 import type { BackfillConfig } from './config.schema';
 import { DirectiveError } from './errors';
-import { closeEnough, ordinal, sameMonth } from './money';
+import { closeEnough, ordinal, previousMonth, sameMonth } from './money';
 import type { LedgerEntry } from './ledger';
 import { findGaps, newestLoaded } from './ledger';
 import { monthKey } from './plan';
@@ -116,11 +116,6 @@ function assertNotAlreadyLoaded(deps: LoadDeps, ref: MonthRef, force: boolean): 
   }
 }
 
-/** The month before `ref`. */
-function previousMonth({ month, year }: MonthRef): MonthRef {
-  return month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year };
-}
-
 /**
  * An account last month also had must open where it closed then. Read from the
  * saved plans alone, so a dry run catches a break and a load aborts before its
@@ -142,15 +137,25 @@ function assertCarriesOver(deps: LoadDeps, plan: Plan): Set<string> {
     );
   }
 
-  const closedAt = new Map(last.snapshots.map((s) => [s.account, s.localClosing]));
+  const closedAt = new Map(last.snapshots.map((s) => [s.account, s]));
   for (const snapshot of plan.snapshots) {
-    const lastClosing = closedAt.get(snapshot.account);
-    if (lastClosing === undefined) continue;
-    if (!closeEnough(Number(lastClosing), Number(snapshot.localOpening))) {
+    const lastSnapshot = closedAt.get(snapshot.account);
+    if (lastSnapshot === undefined) continue;
+    if (!closeEnough(Number(lastSnapshot.localClosing), Number(snapshot.localOpening))) {
       throw new LoadError(
-        `Account "${snapshot.account}" closed ${monthKey(lastRef)} at ${lastClosing}, ` +
+        `Account "${snapshot.account}" closed ${monthKey(lastRef)} at ${lastSnapshot.localClosing}, ` +
           `but ${monthKey(plan)} opens it at ${snapshot.localOpening} (local currency).\n` +
           `The sheet does not carry the balance over. Check both months' balance sheets.`
+      );
+    }
+    // A stated balance never comes from the sheet, so it is checked in its own
+    // currency too: an entry changed after last month was loaded breaks it.
+    if (snapshot.stated && !closeEnough(Number(lastSnapshot.closing), Number(snapshot.opening))) {
+      throw new LoadError(
+        `Account "${snapshot.account}" closed ${monthKey(lastRef)} at ${lastSnapshot.closing} ` +
+          `${snapshot.currency}, but \`foreignBalances\` opens ${monthKey(plan)} at ` +
+          `${snapshot.opening}.\nIts entries changed after ${monthKey(lastRef)} was loaded. ` +
+          `Reload from the first month they change, in order, with --force.`
       );
     }
   }
