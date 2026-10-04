@@ -15,11 +15,14 @@
       "Bash(bd comments:*)"
     ]
   },
-  "remote": {
-    "defaultEnvironmentId": "env_01FHJM9bNLk3FW2W4X5qoMcu"
-  },
   "skillOverrides": {
     "cloudflare-r2-uploader": "off",
-    "docs-writer-skill": "off"
+    "docs-writer-skill": "off",
+    "agent-browser": "off",
+    "wp-block-development": "off",
+    "wp-block-themes": "off"
+  },
+  "remote": {
+    "defaultEnvironmentId": "env_01FHJM9bNLk3FW2W4X5qoMcu"
   }
 }
