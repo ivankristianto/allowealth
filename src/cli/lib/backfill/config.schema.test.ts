@@ -105,6 +105,14 @@ describe('loadConfig', () => {
     expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(/expenseOwners.*Nobody/s);
   });
 
+  it('rejects a fallback owner that is not a member', () => {
+    const config = JSON.parse(MINIMAL);
+    config.members.fallback = 'Nobody';
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(
+      /members\.fallback.*Nobody/s
+    );
+  });
+
   it('rejects an expense ownership rule naming an unknown expense category', () => {
     const config = JSON.parse(MINIMAL);
     config.expenseOwners = [{ category: 'CatTypo', owner: 'OwnerB' }];
@@ -171,6 +179,14 @@ describe('loadConfig', () => {
     config.incomeRouting = [{ account: 'Bank1 OwnerA' }];
     expect(thrown(() => loadConfig(withConfig(JSON.stringify(config))))).toBeInstanceOf(
       ConfigError
+    );
+  });
+
+  it('rejects a match term that cannot start a word, so it never silently fails to match', () => {
+    const config = JSON.parse(MINIMAL);
+    config.incomeRouting = [{ match: ['(Coupon)'], account: 'Bank1 OwnerA' }];
+    expect(() => loadConfig(withConfig(JSON.stringify(config)))).toThrow(
+      /incomeRouting.*\(Coupon\)/s
     );
   });
 

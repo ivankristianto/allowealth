@@ -16,6 +16,19 @@ const currency = v.picklist(['IDR', 'USD']);
  */
 const filledIn = v.pipe(v.string(), v.nonEmpty('Fill this in; the scaffold leaves it blank'));
 
+/**
+ * A routing term matches where a word starts, and a word cannot start with
+ * punctuation: such a term would never match, and its rule would lose every
+ * row to a later one without a word.
+ */
+const wordStartTerm = v.pipe(
+  filledIn,
+  v.regex(
+    /^\w/,
+    (issue) => `"${String(issue.input)}" must start with a letter or digit to match a word`
+  )
+);
+
 export const configSchema = v.object({
   filenames: v.object({ transactions: v.string(), balance: v.string() }),
   members: v.object({ primary: filledIn, secondary: filledIn, fallback: filledIn }),
@@ -66,7 +79,7 @@ export const configSchema = v.object({
     v.pipe(
       v.strictObject({
         category: v.optional(filledIn),
-        match: v.optional(v.pipe(v.array(filledIn), v.minLength(1))),
+        match: v.optional(v.pipe(v.array(wordStartTerm), v.minLength(1))),
         account: filledIn,
         convert: v.optional(v.boolean()),
       }),
@@ -139,9 +152,18 @@ export function loadConfig(dataDir: string): BackfillConfig {
   return result.output;
 }
 
-/** A rule naming a non-member or a misspelt category would otherwise never match. */
+/**
+ * A rule naming a non-member or a misspelt category would otherwise never match,
+ * and a fallback naming a non-member would own every unmatched expense.
+ */
 function assertExpenseOwnersKnown(config: BackfillConfig, path: string): void {
   const members = [config.members.primary, config.members.secondary];
+  if (!members.includes(config.members.fallback)) {
+    throw new ConfigError(
+      `\`members.fallback\` names "${config.members.fallback}", which is neither member ` +
+        `(${members.join(', ')}).\nEdit \`members\` in ${path}.`
+    );
+  }
   const categories = new Set(config.categories.expense);
   for (const rule of config.expenseOwners) {
     if (!members.includes(rule.owner)) {
