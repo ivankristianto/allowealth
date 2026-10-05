@@ -11,7 +11,8 @@ This is the static marketing site for Allowealth, deployed to Cloudflare Pages a
 | Framework  | Astro 6.x (static output)    |
 | Styling    | Tailwind CSS v4 + DaisyUI v5 |
 | Icons      | @lucide/astro                |
-| Animations | motion (client-side)         |
+| Fonts      | Astro Fonts API (Inter)      |
+| Animations | CSS (no animation library)   |
 | Deployment | Cloudflare Pages             |
 
 ## Project Structure
@@ -47,6 +48,10 @@ apps/site/
 3. **External Links**: All "Sign In" / "Get Started" links point to `PUBLIC_APP_URL` (configured in Cloudflare Pages environment).
 
 4. **Performance**: Keep bundle size minimal. Landing page should load in < 1.5s.
+
+5. **Platform First**: Prefer native HTML/CSS over client JavaScript — `<details name>` for accordions, `popover`/`popovertarget` for menus, scroll-driven animations for reveals, `@starting-style` for entry transitions. Content must be visible and usable without JavaScript; never hide content with `opacity-0` waiting for a script.
+
+**Browser Support:** Baseline Widely available features are used freely. Newly/limited-availability features are allowed only as progressive enhancement: they must degrade to working, unanimated UI (e.g. instant accordion toggle, no reveal animation). No polyfills.
 
 ## Environment Variables
 

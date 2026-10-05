@@ -8,7 +8,6 @@
  * @param {string} variant - Button style variant: primary (accent/indigo CTAs), secondary, outline, ghost, danger, warning, success
  * @param {string} size - Button size: sm, md, lg, xl (DaisyUI btn sizes)
  * @param {boolean} disabled - Whether the button is disabled
- * @param {boolean} loading - Show loading spinner
  * @param {string} type - Button type: button, submit, reset
  * @param {string} className - Additional CSS classes
  * @param {string} id - Element ID
@@ -27,7 +26,6 @@ export interface Props extends ButtonAttributes, AnchorAttributes {
     'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'warning' | 'success';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   disabled?: boolean;
-  loading?: boolean;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   id?: string;
@@ -46,7 +44,6 @@ const {
   variant = 'primary',
   size = 'md',
   disabled = false,
-  loading = false,
   type = 'button',
   className = '',
   id = '',
@@ -55,8 +52,6 @@ const {
   dataAstroReload = false,
   ...rest
 } = Astro.props;
-
-const isDisabled = disabled || loading;
 
 // Base classes - focus ring uses accent color for theme-aware consistency
 // rounded-2xl (1rem) follows design system borderRadius.2xl
@@ -95,7 +90,7 @@ const buttonClasses = [
   baseClasses,
   variantClasses[variant] || variantClasses.primary,
   sizeClasses[size] || sizeClasses.md,
-  isDisabled ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0' : 'cursor-pointer',
+  disabled ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0' : 'cursor-pointer',
   className,
 ]
   .filter(Boolean)
@@ -106,29 +101,24 @@ const buttonClasses = [
   href ? (
     <a
       class={buttonClasses}
-      id={id}
+      id={id || undefined}
       href={href}
-      aria-disabled={isDisabled}
-      aria-busy={loading}
+      aria-disabled={disabled || undefined}
       data-testid={dataTestId || undefined}
       data-astro-reload={dataAstroReload ? true : undefined}
       {...rest}
     >
-      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
       <slot />
     </a>
   ) : (
     <button
       class={buttonClasses}
-      id={id}
-      disabled={isDisabled}
+      id={id || undefined}
+      disabled={disabled}
       type={type}
-      aria-disabled={isDisabled}
-      aria-busy={loading}
       data-testid={dataTestId || undefined}
       {...rest}
     >
-      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
       <slot />
     </button>
   )

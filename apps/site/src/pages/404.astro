@@ -29,18 +29,17 @@ const randomMessage = messages[Math.floor(Math.random() * messages.length)];
   description="Oops! That page seems to have vanished like unaccounted expenses."
   showBackground={false}
 >
-  <div class="relative min-h-screen flex items-center justify-center px-6 py-32">
+  <div class="relative min-h-dvh flex items-center justify-center px-6 py-32">
     <!-- Animated background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       <div
-        class="absolute top-20 left-10 w-32 h-32 rounded-full animate-pulse"
+        class="absolute top-20 left-10 w-32 h-32 rounded-full motion-safe:animate-pulse"
         style="background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 5%, transparent) 0%, transparent 70%);"
       >
       </div>
       <div
-        class="absolute bottom-20 right-10 w-48 h-48 rounded-full animate-pulse"
-        style="background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 5%, transparent) 0%, transparent 70%);"
-        style="animation-delay: 1s;"
+        class="absolute bottom-20 right-10 w-48 h-48 rounded-full motion-safe:animate-pulse"
+        style="background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 5%, transparent) 0%, transparent 70%); animation-delay: 1s;"
       >
       </div>
       <div
@@ -113,14 +112,15 @@ const randomMessage = messages[Math.floor(Math.random() * messages.length)];
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
         <a
           href="/"
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-accent text-white font-bold rounded-full hover:bg-accent-hover transition-colors shadow-lg shadow-accent/25"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-accent text-accent-content font-bold rounded-full hover:bg-accent-hover transition-colors shadow-lg shadow-accent/25"
         >
           <Home size={20} aria-hidden="true" />
           Take me home
         </a>
 
         <button
-          onclick="history.back()"
+          type="button"
+          data-history-back
           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-base-200 text-base-content font-bold rounded-full hover:bg-base-300 transition-colors"
         >
           <ArrowLeft size={20} aria-hidden="true" />
@@ -169,8 +169,10 @@ const randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
   <!-- Fun confetti easter egg on Konami code -->
   <script>
+    document.querySelector('[data-history-back]')?.addEventListener('click', () => history.back());
+
     // Simple Konami code implementation
-    let konamiCode = [
+    const konamiCode = [
       'ArrowUp',
       'ArrowUp',
       'ArrowDown',
@@ -199,8 +201,9 @@ const randomMessage = messages[Math.floor(Math.random() * messages.length)];
     function activateEasterEgg() {
       // Create confetti effect
       const colors = ['#15803d', '#22c55e', '#0ea5e9', '#f59e0b', '#f43f5e'];
+      const confettiCount = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 50;
 
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < confettiCount; i++) {
         setTimeout(() => {
           const confetti = document.createElement('div');
           confetti.style.cssText = `

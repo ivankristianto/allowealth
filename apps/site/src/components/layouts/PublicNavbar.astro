@@ -2,12 +2,13 @@
 /**
  * PublicNavbar Component
  *
- * Glass-effect navigation bar for public landing pages.
- * Shows logo, nav links (desktop only), and CTA button.
+ * Navigation bar for public landing pages: logo, desktop links, and a mobile
+ * menu. The mobile menu is a native popover opened via popovertarget, so the
+ * browser handles Escape, light dismiss, top-layer stacking, and aria-expanded.
  */
 
 import { brandContent } from '@/lib/landing-content';
-import { Menu, X, ExternalLink } from '@lucide/astro';
+import { ArrowRight, ExternalLink, Menu, X } from '@lucide/astro';
 
 const navLinks = [
   { label: 'Features', href: '/#features' },
@@ -16,11 +17,7 @@ const navLinks = [
 ];
 ---
 
-<nav
-  class="fixed top-0 left-0 right-0 z-50 px-4 py-4 md:px-8"
-  role="navigation"
-  aria-label="Main navigation"
->
+<nav class="fixed top-0 left-0 right-0 z-50 px-4 py-4 md:px-8" aria-label="Main navigation">
   <div
     class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 bg-base-100/95 border border-base-300/20 rounded-3xl shadow-premium"
   >
@@ -28,11 +25,10 @@ const navLinks = [
     <a
       href="/"
       class="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-lg group"
-      data-logo
       aria-label={`${brandContent.name} - Go to homepage`}
     >
       <div
-        class="w-9 h-9 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-accent/10 to-accent/20 p-1.5 group-hover:from-accent/20 group-hover:to-accent/30 transition-all duration-300"
+        class="w-9 h-9 flex items-center justify-center overflow-hidden rounded-xl bg-linear-to-br from-accent/10 to-accent/20 p-1.5 group-hover:from-accent/20 group-hover:to-accent/30 transition-all duration-300"
       >
         <img
           src="/favicon.svg"
@@ -67,26 +63,20 @@ const navLinks = [
       }
     </ul>
 
-    <!-- Mobile Menu Button -->
+    <!-- Mobile Menu Button — popovertarget wires up toggling and aria-expanded natively -->
     <button
-      id="mobile-menu-button"
+      type="button"
+      popovertarget="mobile-menu"
       class="lg:hidden p-2 rounded-xl text-base-content/60 hover:text-base-content hover:bg-base-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       aria-label="Toggle navigation menu"
-      aria-expanded="false"
-      aria-controls="mobile-menu"
     >
       <Menu size={24} class="menu-icon-open" aria-hidden="true" />
-      <X size={24} class="menu-icon-close hidden" aria-hidden="true" />
+      <X size={24} class="menu-icon-close" aria-hidden="true" />
     </button>
   </div>
 
-  <!-- Mobile Menu Overlay -->
-  <div
-    id="mobile-menu"
-    class="lg:hidden fixed inset-x-4 top-[88px] z-40 opacity-0 invisible transition-all duration-300 ease-out"
-    role="dialog"
-    aria-label="Mobile navigation menu"
-  >
+  <!-- Mobile Menu. No display utilities here: the popover UA style must keep it hidden when closed. -->
+  <div id="mobile-menu" popover class="mobile-menu">
     <div
       class="bg-base-100/98 backdrop-blur-xl border border-base-300/30 rounded-3xl shadow-premium-lg p-6"
     >
@@ -104,22 +94,7 @@ const navLinks = [
                 {link.external ? (
                   <ExternalLink size={18} class="text-base-content/40" aria-hidden="true" />
                 ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="text-base-content/40"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
+                  <ArrowRight size={18} class="text-base-content/40" aria-hidden="true" />
                 )}
               </a>
             </li>
@@ -128,119 +103,97 @@ const navLinks = [
       </ul>
     </div>
   </div>
-
-  <!-- Mobile Menu Backdrop -->
-  <div
-    id="mobile-menu-backdrop"
-    class="lg:hidden fixed inset-0 bg-base-100/50 backdrop-blur-sm z-30 opacity-0 invisible transition-opacity duration-300"
-    aria-hidden="true"
-  >
-  </div>
 </nav>
 
 <script>
-  // Mobile menu toggle with focus trap
-  document.addEventListener('DOMContentLoaded', () => {
-    const menuButtonEl = document.getElementById('mobile-menu-button');
-    const mobileMenuEl = document.getElementById('mobile-menu');
-    const backdropEl = document.getElementById('mobile-menu-backdrop');
+  // In-page links (e.g. /#features) don't navigate away, so close the menu ourselves.
+  const mobileMenu = document.getElementById('mobile-menu');
 
-    if (!menuButtonEl || !mobileMenuEl || !backdropEl) return;
-
-    const menuButton = menuButtonEl;
-    const mobileMenu = mobileMenuEl;
-    const backdrop = backdropEl;
-
-    const menuIconOpen = menuButton.querySelector('.menu-icon-open');
-    const menuIconClose = menuButton.querySelector('.menu-icon-close');
-    let isOpen = false;
-
-    function getFocusableElements(): Element[] {
-      return Array.from(
-        mobileMenu.querySelectorAll<HTMLElement>(
-          'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
-        )
-      ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex >= 0);
+  mobileMenu?.addEventListener('click', (event) => {
+    if (event.target instanceof Element && event.target.closest('a:not([target])')) {
+      mobileMenu.hidePopover();
     }
-
-    function trapFocus(e: KeyboardEvent) {
-      if (e.key !== 'Tab') return;
-
-      const focusable = getFocusableElements();
-      if (focusable.length === 0) {
-        e.preventDefault();
-        return;
-      }
-
-      const first = focusable[0] as HTMLElement;
-      const last = focusable[focusable.length - 1] as HTMLElement;
-
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-
-    function toggleMenu() {
-      isOpen = !isOpen;
-
-      if (isOpen) {
-        mobileMenu.classList.remove('opacity-0', 'invisible');
-        mobileMenu.classList.add('opacity-100', 'visible');
-        backdrop.classList.remove('opacity-0', 'invisible');
-        backdrop.classList.add('opacity-100', 'visible');
-        menuIconOpen?.classList.add('hidden');
-        menuIconClose?.classList.remove('hidden');
-        menuButton.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('keydown', trapFocus);
-
-        // Move focus to first link
-        requestAnimationFrame(() => {
-          const firstLink = getFocusableElements()[0] as HTMLElement | undefined;
-          firstLink?.focus();
-        });
-      } else {
-        mobileMenu.classList.add('opacity-0', 'invisible');
-        mobileMenu.classList.remove('opacity-100', 'visible');
-        backdrop.classList.add('opacity-0', 'invisible');
-        backdrop.classList.remove('opacity-100', 'visible');
-        menuIconOpen?.classList.remove('hidden');
-        menuIconClose?.classList.add('hidden');
-        menuButton.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-        document.removeEventListener('keydown', trapFocus);
-
-        // Return focus to toggle button
-        menuButton.focus();
-      }
-    }
-
-    menuButton.addEventListener('click', toggleMenu);
-
-    backdrop.addEventListener('click', () => {
-      if (isOpen) toggleMenu();
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        toggleMenu();
-      }
-    });
-
-    mobileMenu.querySelectorAll('a').forEach((link) => {
-      link.addEventListener('click', () => {
-        if (isOpen && !link.getAttribute('target')) {
-          toggleMenu();
-        }
-      });
-    });
   });
 </script>
+
+<style>
+  /* Reset UA popover box and pin the panel below the navbar. */
+  .mobile-menu {
+    position: fixed;
+    inset: 5.5rem 1rem auto;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    overflow: visible;
+  }
+
+  /* Start below the navbar so the bar and its close button stay crisp above the dimmed page. */
+  .mobile-menu::backdrop {
+    inset: 5.25rem 0 0;
+    background-color: color-mix(in srgb, var(--color-base-100) 50%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .menu-icon-close,
+  nav:has(.mobile-menu:popover-open) .menu-icon-open {
+    display: none;
+  }
+
+  nav:has(.mobile-menu:popover-open) .menu-icon-close {
+    display: block;
+  }
+
+  @media (width < 1024px) {
+    :global(html:has(.mobile-menu:popover-open)) {
+      overflow: hidden;
+    }
+  }
+
+  @media (width >= 1024px) {
+    .mobile-menu {
+      display: none;
+    }
+  }
+
+  /* Without the Popover API the panel would never hide; drop the mobile menu (footer keeps the links). */
+  @supports not selector(:popover-open) {
+    .mobile-menu,
+    [popovertarget] {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mobile-menu,
+    .mobile-menu::backdrop {
+      transition:
+        opacity 0.3s ease-out,
+        translate 0.3s ease-out,
+        display 0.3s allow-discrete,
+        overlay 0.3s allow-discrete;
+    }
+
+    .mobile-menu:not(:popover-open) {
+      opacity: 0;
+      translate: 0 -0.5rem;
+    }
+
+    .mobile-menu:not(:popover-open)::backdrop {
+      opacity: 0;
+    }
+
+    @starting-style {
+      .mobile-menu:popover-open {
+        opacity: 0;
+        translate: 0 -0.5rem;
+      }
+
+      .mobile-menu:popover-open::backdrop {
+        opacity: 0;
+      }
+    }
+  }
+</style>

@@ -83,7 +83,7 @@ const useCases: UseCase[] = [
       {
         useCases.map((useCase) => (
           <article class="group relative bg-base-100 rounded-3xl p-6 sm:p-8 border border-base-300/50 hover:border-accent/30 hover:shadow-premium-lg transition-all duration-300">
-            <div class="w-12 h-12 sm:w-14 sm:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-6 motion-safe:group-hover:scale-110 transition-transform">
               {useCase.icon === 'Heart' && <Heart size={28} aria-hidden="true" />}
               {useCase.icon === 'Users' && <Users size={28} aria-hidden="true" />}
               {useCase.icon === 'Home' && <Home size={28} aria-hidden="true" />}
