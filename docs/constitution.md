@@ -1,12 +1,11 @@
 # Development Constitution v3.0.0
 
-> **Superseded in part — 2026-10-24.** Cloudflare Workers and D1 support was
-> removed from the project. Bun with the `@astrojs/node` adapter is now the
-> only deployment target, and the database runs on `bun:sqlite` in every
-> environment — there is no separate production dialect. The
-> Workers/D1-specific sections below are retained as historical record and no
-> longer describe the codebase. Cloudflare **Pages** hosting for `apps/docs`
-> and `apps/site` and Cloudflare **Turnstile** are unaffected.
+> **Updated — 2026-10-24.** Cloudflare Workers and D1 support was removed
+> from the project. Bun with the `@astrojs/node` adapter is now the only
+> deployment target, and the database runs on `bun:sqlite` in every
+> environment. The Runtime Compatibility, Database and Deployment sections
+> were rewritten to match. Cloudflare **Pages** hosting for `apps/docs` and
+> `apps/site` and Cloudflare **Turnstile** are unaffected.
 
 ## I. Code Quality
 
@@ -63,11 +62,11 @@ grep -r "bun:" src/ --exclude-dir=node_modules
 
 **Correct pattern:**
 
-- Middleware: Workers-compatible imports only (no native addons, no `bun:` APIs)
-- API routes: Can use Bun-specific APIs (local dev context)
+- Middleware: no `bun:` imports; reach the database through `@/db`
+- API routes: Can use Bun-specific APIs
 - CLI scripts: Can use Bun-specific APIs
-- Database: Use abstraction layer with environment-specific drivers
-- Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only on Workers)
+- Database: Use `getDb()` and `runTransaction()` from `@/db`
+- Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only)
 
 ### Testing Strategy
 

@@ -136,14 +136,13 @@ bun run landing:deploy
 
 ### Docs Deployment
 
-| Command                                                       | Description                         |
-| ------------------------------------------------------------- | ----------------------------------- |
-| `bun run docs:build`                                          | Build docs output before deployment |
-| `bunx wrangler pages deploy --config apps/docs/wrangler.toml` | Deploy docs Pages project           |
+| Command               | Description                         |
+| --------------------- | ----------------------------------- |
+| `bun run docs:build`  | Build docs output before deployment |
+| `bun run docs:deploy` | Build and deploy docs to Pages      |
 
 ```bash
-bun run docs:build
-bunx wrangler pages deploy --config apps/docs/wrangler.toml
+bun run docs:deploy
 ```
 
 ### Docs Domain Go-Live Checklist (Manual)

@@ -551,14 +551,12 @@ Each deployment should have its own `PUBLIC_URL`, database file, and secrets. Th
 ```bash
 # Marketing site
 bun install --cwd apps/site
-bun run --cwd apps/site build
 # Configure PUBLIC_APP_URL in Cloudflare Pages to point at your self-hosted app
-bunx wrangler pages deploy --config apps/site/wrangler.toml
+bun run landing:deploy
 
 # Docs site
 bun install --cwd apps/docs
-bun run docs:build
-bunx wrangler pages deploy --config apps/docs/wrangler.toml
+bun run docs:deploy
 ```
 
 ### First deployment checklist
