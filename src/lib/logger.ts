@@ -143,7 +143,7 @@ const baseLogger = createConsola({
  *
  * @example
  * const log = createLogger('database');
- * log.info('dialect=sqlite d1=true');
+ * log.info('dialect=sqlite');
  * log.error('connection failed', error);
  */
 export function createLogger(tag: string) {

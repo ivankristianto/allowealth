@@ -1076,7 +1076,7 @@ export class TransactionService {
     return resolved;
   }
 
-  /** Max rows per INSERT statement to stay within D1's 100 bound-parameter limit (7 × 13 cols = 91 params) */
+  /** Max rows per INSERT statement sized for the former D1 target's 100 bound-parameter limit (7 × 13 cols = 91 params) */
   private static readonly BULK_INSERT_CHUNK_SIZE = 7;
 
   /**

@@ -59,7 +59,7 @@ export class CategoryService {
 **Benefits:**
 
 - Testability: Inject mock database in unit tests
-- Flexibility: Same service works with SQLite (dev) and D1 (prod)
+- Flexibility: Services depend on an injected database, not a concrete driver
 - No hidden dependencies: All dependencies are explicit
 
 #### 2. Factory Pattern

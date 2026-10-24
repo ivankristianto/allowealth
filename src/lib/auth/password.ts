@@ -76,7 +76,7 @@ const facade = createPasswordFacade();
  * Hash a plain text password using the runtime-appropriate algorithm.
  *
  * @param password - Plain text password (minimum 12 characters)
- * @returns Hash string in `$argon2id$` (Bun) or `$pbkdf2-sha256$` (Workers) format
+ * @returns Hash string in `$argon2id$` (Bun) or `$pbkdf2-sha256$` (other runtimes) format
  */
 export async function hashPassword(password: string): Promise<string> {
   return facade.hashPassword(password);

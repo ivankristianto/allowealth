@@ -97,7 +97,7 @@ bunx wrangler pages deploy
     PUBLIC_APP_URL=https://preview.allowealth.io
    ```
 
-   Replace with the URL of your deployed Allowealth app worker.
+   Replace with the URL of your deployed Allowealth app.
 
 4. **Add custom domain**:
    - Go to Pages project > Custom domains

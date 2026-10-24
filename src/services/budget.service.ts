@@ -101,7 +101,7 @@ export interface CategoryTrendData {
 }
 
 export class BudgetService {
-  /** Max rows per INSERT to stay within D1's 100 bound-parameter limit (9 × 10 cols = 90 params for copyBudgets which has 10 bound fields) */
+  /** Max rows per INSERT sized for the former D1 target's 100 bound-parameter limit (9 × 10 cols = 90 params for copyBudgets which has 10 bound fields) */
   private static readonly BULK_INSERT_CHUNK_SIZE = 9;
 
   private get schema() {
@@ -1096,7 +1096,7 @@ export class BudgetService {
       }));
 
       // Conflict-safe write for idempotency under concurrent requests.
-      // Chunked to stay within D1's 100 bound-parameter limit.
+      // Chunked for the former D1 target's 100 bound-parameter limit (bun:sqlite allows far more).
       for (
         let offset = 0;
         offset < newBudgets.length;
@@ -1208,7 +1208,7 @@ export class BudgetService {
         is_closed: false,
       }));
 
-      // Chunked insert to stay within D1's 100 bound-parameter limit.
+      // Chunked insert sized for the former D1 target's 100 bound-parameter limit (bun:sqlite allows far more).
       await runTransaction(this.db, async (tx) => {
         for (
           let offset = 0;

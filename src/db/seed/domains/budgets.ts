@@ -66,7 +66,7 @@ export async function seedBudgets(
   }
 
   if (budgetRecords.length > 0) {
-    // D1 allows at most 100 bound params per statement.
+    // Sized for the former D1 target (max 100 bound params per statement); bun:sqlite allows far more.
     // This insert binds 12 columns per row, so max safe batch size is 8 rows (96 params).
     const BATCH_SIZE = 8;
     for (let index = 0; index < budgetRecords.length; index += BATCH_SIZE) {

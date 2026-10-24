@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the static marketing site for Allowealth, deployed to Cloudflare Pages at `allowealth.io`. It is a completely separate deployment surface from the main application (Cloudflare Workers) and the docs site (`apps/docs`).
+This is the static marketing site for Allowealth, deployed to Cloudflare Pages at `allowealth.io`. It is a completely separate deployment surface from the main application (self-hosted on Bun) and the docs site (`apps/docs`).
 
 ## Tech Stack
 
@@ -108,7 +108,7 @@ The site deploys automatically on pushes to `main` that affect `apps/site/**`:
    - Root directory: `apps/site`
 
 3. **Set environment variables**:
-   - `PUBLIC_APP_URL`: URL of your deployed app worker
+   - `PUBLIC_APP_URL`: URL of your deployed app
 
 4. **Add custom domain**:
    - Add `allowealth.io` as a custom domain
