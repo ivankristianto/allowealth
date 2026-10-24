@@ -9,18 +9,15 @@
     "docs:build": "bun run --cwd apps/docs build",
     "docs:preview": "bun run --cwd apps/docs preview",
     "docs:check": "bun run --cwd apps/docs astro check",
-    "docs:deploy": "bun run docs:build && cd apps/docs && wrangler pages deploy",
+    "docs:deploy": "bun run docs:build && bun run --cwd apps/docs wrangler pages deploy",
     "landing:dev": "bun run --cwd apps/site dev",
     "landing:build": "bun run --cwd apps/site build",
     "landing:preview": "bun run --cwd apps/site preview",
     "landing:check": "bun run --cwd apps/site astro check",
-    "landing:deploy": "bun run landing:build && cd apps/site && wrangler pages deploy",
+    "landing:deploy": "bun run landing:build && bun run --cwd apps/site wrangler pages deploy",
     "build": "astro build",
     "build:analyze": "bun run build && echo '\n📊 Bundle analysis available at dist/stats.html'",
-    "build:node": "DEPLOY_TARGET=node astro build",
-    "build:cloudflare": "DEPLOY_TARGET=cloudflare astro build",
     "build:scripts": "NODE_ENV=production bun build src/db/seed/index.ts --target=bun --outfile=dist/scripts/seed.js && NODE_ENV=production bun build src/db/empty.ts --target=bun --outfile=dist/scripts/empty.js",
-    "deploy:cloudflare": "bun run build:cloudflare && wrangler deploy",
     "docker:start": "./scripts/docker-start.sh",
     "docker:seed": "./scripts/docker-seed.sh",
     "docker:stop": "docker compose -f docker/docker-compose.yml down",
@@ -85,7 +82,6 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
-    "@astrojs/cloudflare": "13.6.1",
     "@astrojs/ts-plugin": "1.10.9",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/typography": "^0.5.20",
@@ -108,8 +104,7 @@
     "stylelint": "^16.26.1",
     "stylelint-config-recommended": "^17.0.0",
     "stylelint-config-standard": "^39.0.1",
-    "typescript": "^5.9.3",
-    "wrangler": "^4.147.0"
+    "typescript": "^5.9.3"
   },
   "lint-staged": {
     "*.{js,ts,astro,mjs,cjs}": [

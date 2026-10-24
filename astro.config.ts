@@ -1,5 +1,5 @@
 import { defineConfig } from 'astro/config';
-import type { AstroIntegration } from 'astro';
+import node from '@astrojs/node';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
@@ -13,54 +13,13 @@ const { PORT, DEV_HOST } = loadEnv(process.env.NODE_ENV || 'development', proces
 const devHost = DEV_HOST || '0.0.0.0';
 const port = parseInt(PORT || '4321', 10);
 
-/**
- * Deployment Target Configuration
- *
- * Set DEPLOY_TARGET to switch between platforms:
- * - node (default): Local development and traditional Node.js hosting
- * - cloudflare: Cloudflare Workers/Pages
- */
-type DeployTarget = 'node' | 'cloudflare';
-
-const rawDeployTarget = process.env.DEPLOY_TARGET || 'node';
-const validTargets: DeployTarget[] = ['node', 'cloudflare'];
-
-if (!validTargets.includes(rawDeployTarget as DeployTarget)) {
-  throw new Error(
-    `Invalid DEPLOY_TARGET "${rawDeployTarget}". ` +
-      `Valid targets are: ${validTargets.join(', ')}. ` +
-      `Support for "vercel" and "netlify" has been removed.`
-  );
-}
-
-const DEPLOY_TARGET = rawDeployTarget as DeployTarget;
-
-/**
- * Get the appropriate adapter based on DEPLOY_TARGET
- */
-async function getAdapter(): Promise<AstroIntegration> {
-  switch (DEPLOY_TARGET) {
-    case 'cloudflare': {
-      const cloudflare = await import('@astrojs/cloudflare');
-      return cloudflare.default({});
-    }
-    case 'node':
-    default: {
-      const node = await import('@astrojs/node');
-      return node.default({ mode: 'standalone' });
-    }
-  }
-}
-
-const adapter = await getAdapter();
-
 export default defineConfig({
   server: {
     host: devHost,
     port: port,
   },
   output: 'server',
-  adapter,
+  adapter: node({ mode: 'standalone' }),
   security: {
     csp: true,
   },
@@ -156,8 +115,7 @@ export default defineConfig({
         'node:module',
         'node:http2',
         'esbuild',
-        // Bun-specific modules (for Cloudflare Workers compatibility)
-        // These are only used in local SQLite development, not in Workers
+        // Bun-specific modules resolved by the Bun runtime, not bundled by Vite
         'bun:sqlite',
         'bun:test',
       ],
