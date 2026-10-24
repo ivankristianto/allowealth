@@ -28,7 +28,6 @@ mockModule('@/lib/installer/detection', () => ({
 }));
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
-const originalD1Enabled = process.env.D1_ENABLED;
 const originalInstallerSecret = process.env.INSTALLER_SECRET;
 const originalSeedDefaultCategories = AccountCategoryService.prototype.seedDefaultCategories;
 
@@ -49,7 +48,6 @@ function setupTestDatabase(dbPath: string) {
     env: {
       ...process.env,
       DATABASE_URL: dbPath,
-      D1_ENABLED: 'false',
     },
     stdio: 'ignore',
   });
@@ -72,7 +70,6 @@ describe('POST /api/installer/setup', () => {
     deleteSqliteArtifacts(testDbPath);
 
     process.env.DATABASE_URL = testDbPath;
-    process.env.D1_ENABLED = 'false';
     delete process.env.INSTALLER_SECRET;
 
     setupTestDatabase(testDbPath);
@@ -89,12 +86,6 @@ describe('POST /api/installer/setup', () => {
       delete process.env.DATABASE_URL;
     } else {
       process.env.DATABASE_URL = originalDatabaseUrl;
-    }
-
-    if (originalD1Enabled === undefined) {
-      delete process.env.D1_ENABLED;
-    } else {
-      process.env.D1_ENABLED = originalD1Enabled;
     }
 
     if (originalInstallerSecret === undefined) {
@@ -184,21 +175,6 @@ describe('POST /api/installer/setup', () => {
 
     expect(firstResponse.status).toBe(201);
     expect(secondResponse.status).toBe(409);
-  });
-
-  it('returns 404 when installer is called in D1 runtime', async () => {
-    process.env.D1_ENABLED = 'true';
-
-    const response = await POST(
-      createApiContext({
-        workspaceName: 'Installer Workspace',
-        name: 'Installer Admin',
-        email: 'installer@example.com',
-        password: 'InstallerPassword123!',
-      })
-    );
-
-    expect(response.status).toBe(404);
   });
 
   it('rolls back installer records when category seeding fails', async () => {

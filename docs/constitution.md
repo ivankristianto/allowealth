@@ -1,5 +1,12 @@
 # Development Constitution v3.0.0
 
+> **Updated — 2026-10-24.** Cloudflare Workers and D1 support was removed
+> from the project. Bun with the `@astrojs/node` adapter is now the only
+> deployment target, and the database runs on `bun:sqlite` in every
+> environment. The Runtime Compatibility, Database and Deployment sections
+> were rewritten to match. Cloudflare **Pages** hosting for `apps/docs` and
+> `apps/site` and Cloudflare **Turnstile** are unaffected.
+
 ## I. Code Quality
 
 Clarity over cleverness.
@@ -39,7 +46,7 @@ Automated checks run on every change. No exceptions.
 
 ### Runtime Compatibility
 
-The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev). Any code imported by middleware MUST be Workers-compatible.
+The project deploys via **Bun** with the `@astrojs/node` adapter — there is no separate edge runtime. Any code imported by middleware MUST be compatible with that runtime.
 
 **Forbidden in middleware-imported code:**
 
@@ -55,11 +62,11 @@ grep -r "bun:" src/ --exclude-dir=node_modules
 
 **Correct pattern:**
 
-- Middleware: Workers-compatible imports only (no native addons, no `bun:` APIs)
-- API routes: Can use Bun-specific APIs (local dev context)
+- Middleware: no `bun:` imports; reach the database through `@/db`
+- API routes: Can use Bun-specific APIs
 - CLI scripts: Can use Bun-specific APIs
-- Database: Use abstraction layer with environment-specific drivers
-- Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only on Workers)
+- Database: Use `getDb()` and `runTransaction()` from `@/db`
+- Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only)
 
 ### Testing Strategy
 
@@ -83,22 +90,22 @@ Full specification: `design-system/START.md`
 
 ## V. Architecture
 
-### Dual-Dialect Database
+### Database
 
-The project uses SQLite (local dev) and Cloudflare D1 (production) with Drizzle ORM.
+The project uses SQLite (`bun:sqlite`) in every environment, with Drizzle ORM.
 
 - Maintain the shared schema in `src/db/schema/sqlite/`
-- Generate SQLite migrations (drizzle/sqlite), apply them locally, and deploy the same SQL to D1 on every schema change
+- Generate SQLite migrations (drizzle/sqlite) and apply them on every schema change
 - Use `getActiveSchema()` in services — never import tables directly
 - See `docs/architecture/007-database-migrations.md`
 
-### Deployment (Cloudflare Workers)
+### Deployment (Bun)
 
-- **Runtime**: Workers with `nodejs_compat` flag
-- **Database**: Cloudflare D1 in production, SQLite locally
+- **Runtime**: Bun with the `@astrojs/node` adapter
+- **Database**: SQLite (`bun:sqlite`) in every environment
 - **Cache**: CacheManager with tag-based invalidation (Upstash prod, Memory dev)
-- **Logging**: Structured consola loggers (JSON on Workers, pretty in dev)
-- **Secrets**: `getEnv()` helper — Workers secrets aren't available at module load
+- **Logging**: Structured consola loggers (JSON in production, pretty in dev)
+- **Secrets**: `getEnv()` helper for environment variable access across runtimes
 
 ### Interactive Pages
 

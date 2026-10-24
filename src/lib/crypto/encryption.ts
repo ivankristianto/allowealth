@@ -14,8 +14,7 @@ const TAG_LENGTH = 128; // bits
 /**
  * Get the encryption key from environment variable
  *
- * Checks runtime env first (Cloudflare Workers), then falls back to
- * import.meta.env for local development.
+ * Reads EMAIL_ENCRYPTION_KEY via getEnv() (process.env, then import.meta.env).
  */
 function getEncryptionKey(): Uint8Array {
   const keyBase64 = getEnv('EMAIL_ENCRYPTION_KEY');

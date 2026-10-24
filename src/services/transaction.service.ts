@@ -486,7 +486,7 @@ export class TransactionService {
    * Returns month keys in MM-YYYY format with labels.
    *
    * Replaces the pattern of fetching 10,000 rows and extracting months in JS,
-   * reducing CPU time from ~30-80ms to ~2ms on Cloudflare Workers.
+   * reducing CPU time from ~30-80ms to ~2ms (measured on the former Workers deployment).
    */
   async getAvailableMonths(
     workspaceId: string,
@@ -1076,7 +1076,7 @@ export class TransactionService {
     return resolved;
   }
 
-  /** Max rows per INSERT statement to stay within D1's 100 bound-parameter limit (7 × 13 cols = 91 params) */
+  /** Max rows per INSERT statement sized for the former D1 target's 100 bound-parameter limit (7 × 13 cols = 91 params) */
   private static readonly BULK_INSERT_CHUNK_SIZE = 7;
 
   /**

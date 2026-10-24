@@ -7,9 +7,9 @@ paths:
 
 # Database Patterns
 
-## SQLite/D1 Architecture
+## SQLite Architecture
 
-The project uses **SQLite** for local development and **Cloudflare D1** in production with the same Drizzle schema.
+The project uses **SQLite** via `bun:sqlite` with a Drizzle schema.
 
 ### Schema Maintenance
 
@@ -26,18 +26,12 @@ bun run db:generate
 bun run db:migrate
 
 # 4. Commit schema changes and drizzle/sqlite/
-
-# 5. Deploy production D1
-for f in drizzle/sqlite/*.sql; do
-  wrangler d1 execute allowealth-db --remote --file="$f"
-done
 ```
 
 ### Migration Rules
 
 - ✅ **Use `db:generate` + `db:migrate`** for tracked, incremental changes
 - ✅ **Use `db:push`** only for local SQLite rapid iteration (never for production)
-- ✅ **Treat the SQLite schema as canonical** - D1 uses the same SQLite-compatible structure
 - ❌ **Create parallel PostgreSQL migration flows** - the codebase no longer supports them
 - ❌ **Manually edit migration SQL files** - regenerate instead
 - ❌ **Check for double-prefix bugs** during mass replace (`this.schema.this.schema`)
@@ -70,12 +64,12 @@ class BudgetService {
 
 ## Transaction Patterns
 
-### SQLite (Local Dev)
+### SQLite
 
-SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` which handles dialect differences automatically.
+SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` as the single entry point for transactions.
 
 ```typescript
-// ✅ Correct: Use runTransaction() for cross-dialect compatibility
+// ✅ Correct: Use runTransaction() for atomic multi-step writes
 import { runTransaction } from '@/db';
 
 await runTransaction(db, async (tx) => {
@@ -86,18 +80,9 @@ await runTransaction(db, async (tx) => {
 
 **Rules:**
 
-- ✅ **Use `runTransaction()` for transactions** - handles SQLite/D1 differences
+- ✅ **Use `runTransaction()` — never call `db.transaction()` directly** — single entry point for atomic multi-step writes
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
-
-### Cloudflare D1
-
-D1 does **not** support `BEGIN`/`COMMIT`/`ROLLBACK` SQL statements. Drizzle ORM's D1 adapter (`drizzle-orm/d1/session.js`) implements `.transaction()` by executing raw `sql.raw('begin')`, which D1 rejects with `Failed query: begin params:`.
-
-`runTransaction()` handles this by treating D1 the same as local SQLite — running the callback directly without a transaction wrapper. D1's single-writer model provides sequential consistency.
-
-- ✅ **Use `runTransaction()` — never call `db.transaction()` directly** — D1 will crash on raw `BEGIN`
-- ❌ **Add fake PostgreSQL branches for D1** — D1 follows the SQLite-compatible path in this codebase
-- ❌ **Assume D1 supports raw SQL transaction statements** — D1 uses a different execution model
+- ❌ **Add PostgreSQL branches** — the codebase is SQLite-only
 
 ## Query Patterns
 

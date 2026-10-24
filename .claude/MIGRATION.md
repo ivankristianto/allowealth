@@ -22,7 +22,7 @@ Successfully reorganized Claude Code configuration from a monolithic `CLAUDE.md`
     │   └── bundle.md            # Bundle performance rules
     ├── backend/
     │   ├── database.md          # DB patterns, migrations, dual-dialect
-    │   ├── deployment.md        # Workers deployment patterns
+    │   ├── deployment.md        # Deployment patterns
     │   └── api.md               # API patterns & OpenAPI
     ├── testing.md               # Testing patterns (E2E, Playwright, unit)
     └── learned-patterns.md      # Learned patterns from experience

@@ -1,5 +1,11 @@
 # Database Migrations
 
+> **Superseded in part — 2026-10-24.** Cloudflare Workers and D1 support was
+> removed from the project. `drizzle/sqlite` remains the canonical migration
+> history, but it is now applied only to local SQLite via `bun run db:migrate`;
+> there is no D1 production target and no `aw --target d1 db migrate` path. The
+> D1 portions of the strategy below are retained as historical record.
+
 ## Overview
 
 This project uses Drizzle ORM with a single SQLite-compatible migration strategy:

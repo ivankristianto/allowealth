@@ -18,7 +18,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build the Node.js standalone server
-RUN bun run build:node
+RUN bun run build
 
 # Bundle the maintenance scripts (seed, empty) so they can run inside the
 # slim runtime image without the source tree.

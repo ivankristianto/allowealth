@@ -15,7 +15,6 @@ import { DEMO_ADMIN, DEMO_MEMBER } from './config';
 import { getTrailingMonths } from './lib/dates';
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
-const originalD1Enabled = process.env.D1_ENABLED;
 
 let testDbPath = '';
 
@@ -34,7 +33,6 @@ function setupTestDatabase(dbPath: string) {
     env: {
       ...process.env,
       DATABASE_URL: dbPath,
-      D1_ENABLED: 'false',
     },
     stdio: 'ignore',
   });
@@ -46,7 +44,6 @@ describe('seed integration', () => {
     deleteSqliteArtifacts(testDbPath);
 
     process.env.DATABASE_URL = testDbPath;
-    process.env.D1_ENABLED = 'false';
 
     setupTestDatabase(testDbPath);
     await closeDatabase();
@@ -61,12 +58,6 @@ describe('seed integration', () => {
       delete process.env.DATABASE_URL;
     } else {
       process.env.DATABASE_URL = originalDatabaseUrl;
-    }
-
-    if (originalD1Enabled === undefined) {
-      delete process.env.D1_ENABLED;
-    } else {
-      process.env.D1_ENABLED = originalD1Enabled;
     }
 
     deleteSqliteArtifacts(testDbPath);

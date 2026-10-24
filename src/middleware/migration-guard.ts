@@ -8,8 +8,8 @@
  *
  * Placed after `csrf` and before `routeGuard` in the middleware chain.
  *
- * WORKERS-SAFE: Imports MigrationService which uses the shared db proxy from
- * @/db — auto-selects D1 driver in Workers, bun:sqlite in local dev.
+ * Imports MigrationService, which uses the shared db proxy from @/db
+ * (bun:sqlite).
  */
 
 import type { MiddlewareHandler } from 'astro';

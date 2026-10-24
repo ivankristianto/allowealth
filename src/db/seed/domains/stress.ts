@@ -415,7 +415,7 @@ export async function seedStressData(
     }).filter((record) => !!record.category_id);
 
     if (budgetValues.length > 0) {
-      // Chunk to stay within D1's SQL variable limit (999 params)
+      // Chunked for the former D1 target's SQL variable limit; bun:sqlite allows far more
       // Budgets have 12 bound columns, so 10 rows = 120 params (extremely safe)
       const BUDGET_CHUNK_SIZE = 10;
       for (let i = 0; i < budgetValues.length; i += BUDGET_CHUNK_SIZE) {
@@ -453,7 +453,7 @@ export async function seedStressData(
       });
     }
     if (historyValues.length > 0) {
-      // Chunk to stay within D1's SQL variable limit (999 params)
+      // Chunked for the former D1 target's SQL variable limit; bun:sqlite allows far more
       // account_history has 5 bound columns, so 25 rows = 125 params (extremely safe)
       const HISTORY_CHUNK_SIZE = 25;
       for (let i = 0; i < historyValues.length; i += HISTORY_CHUNK_SIZE) {
@@ -493,7 +493,7 @@ export async function seedStressData(
         };
       });
     if (snapshotItems.length > 0) {
-      // Chunk to stay within D1's SQL variable limit (999 params)
+      // Chunked for the former D1 target's SQL variable limit; bun:sqlite allows far more
       // account_snapshot_items has 5 bound columns, so 25 rows = 125 params (extremely safe)
       const SNAPSHOT_CHUNK_SIZE = 25;
       for (let i = 0; i < snapshotItems.length; i += SNAPSHOT_CHUNK_SIZE) {

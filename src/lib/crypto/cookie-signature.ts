@@ -2,7 +2,7 @@
  * HMAC-SHA256 Cookie Signing
  *
  * Signs and verifies cookie values using HMAC-SHA256 via Web Crypto API.
- * Cross-runtime compatible (Node.js, Bun, Cloudflare Workers).
+ * Cross-runtime compatible (Node.js, Bun).
  *
  * Format: base64(json).hmac_hex
  */

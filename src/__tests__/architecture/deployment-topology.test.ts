@@ -65,16 +65,19 @@ describe('deployment topology', () => {
     expect(workflow).toContain('workingDirectory: apps/docs');
   });
 
-  test('worker example and site workflow document the split topology', () => {
-    const wranglerExample = readFileSync('wrangler.toml.example', 'utf-8');
+  test('site workflow deploys apps/site to Cloudflare Pages', () => {
     const siteWorkflow = readFileSync('.github/workflows/deploy-site.yml', 'utf-8');
 
-    expect(wranglerExample).toContain('YOUR_WORKER_NAME');
-    expect(wranglerExample).toContain('PUBLIC_SITE_URL');
-    expect(wranglerExample).not.toContain('APP_MODE');
     expect(siteWorkflow).toContain("paths:\n      - 'apps/site/**'");
     expect(siteWorkflow).toContain('workingDirectory: apps/site');
     expect(siteWorkflow).toContain('command: pages deploy');
+  });
+
+  test('the Cloudflare Workers SSR target is gone', () => {
+    expect(existsSync('wrangler.toml')).toBe(false);
+    expect(existsSync('wrangler.toml.example')).toBe(false);
+    expect(existsSync('.github/workflows/deploy-cloudflare.yml')).toBe(false);
+    expect(readFileSync('package.json', 'utf-8')).not.toContain('build:cloudflare');
   });
 
   test('non-historical source files no longer reference docs/sites', () => {

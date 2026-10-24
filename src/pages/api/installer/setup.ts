@@ -11,7 +11,7 @@ import type { APIRoute } from 'astro';
 import * as v from 'valibot';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { getActiveSchema, getDatabaseConfig, getDb, runTransaction, type Database } from '@/db';
+import { getActiveSchema, getDb, runTransaction, type Database } from '@/db';
 import { hashPassword } from '@/lib/auth/password';
 import { AccountCategoryService } from '@/services/account-category.service';
 import { getEnv } from '@/lib/env';
@@ -63,14 +63,6 @@ export const installerSetupSchema = v.object({
 });
 
 export const POST: APIRoute = async ({ request }) => {
-  // Installer flow is Bun/SQLite-only.
-  if (getDatabaseConfig().isD1) {
-    return new Response(JSON.stringify({ error: 'Installer is not available for D1 runtime' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
   const database = getDb();
 
   // Guard: already installed

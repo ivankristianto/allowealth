@@ -10,7 +10,7 @@ const PREFIX = 'cache';
 
 /**
  * Simple hash function (djb2 variant) for cross-runtime compatibility.
- * Works in Node.js, Bun, and Cloudflare Workers without native crypto.
+ * Works in Node.js and Bun without native crypto.
  */
 export function simpleHash(str: string): string {
   let hash = 5381;
@@ -93,7 +93,7 @@ export const CacheKeys = {
 /**
  * Hash filter object to create stable cache key.
  * Uses a simple hash function for cross-runtime compatibility
- * (works in Node.js, Bun, and Cloudflare Workers).
+ * (works in Node.js and Bun).
  */
 export function hashFilters(filters: Record<string, unknown>): string {
   const cleaned: Record<string, unknown> = {};

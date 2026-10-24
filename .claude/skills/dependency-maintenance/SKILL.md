@@ -39,7 +39,7 @@ Some packages are pinned to exact versions **on purpose** (commit `15f91caf`). `
 | Package                                  | root        | `apps/docs` / `apps/site`   |
 | ---------------------------------------- | ----------- | --------------------------- |
 | `astro`                                  | exact pin   | exact pin                   |
-| `@astrojs/node`, `@astrojs/cloudflare`   | exact pin   | not present                 |
+| `@astrojs/node`                          | exact pin   | not present                 |
 | `@astrojs/check`, `@astrojs/ts-plugin`   | exact pin   | **caret — sweeps normally** |
 | `@astrojs/sitemap`, `@astrojs/starlight` | not present | **caret — sweeps normally** |
 
@@ -111,7 +111,7 @@ A `chore(deps)` PR that silently edits application code is unreviewable. #386 to
 
 **Every row where `Latest` ≠ `Update` is deferred.** Derive the list from the `bun outdated` you just ran — do not copy a list from this file or from a previous PR, because it goes stale between windows.
 
-As of writing this covered `astro` 7, `typescript` 7, `stylelint` (+ its two configs), `eslint` 10, `lucide`/`@lucide/astro` 1, `nanoid` 6, `motion` 13, `husky` 9, `lint-staged` 17, `prettier-plugin-astro` 1, `rollup-plugin-visualizer` 7, `@astrojs/node` 11, `@astrojs/cloudflare` 14, `@astrojs/starlight` 0.42 — treat that as illustrative, not as the current answer.
+As of writing this covered `astro` 7, `typescript` 7, `stylelint` (+ its two configs), `eslint` 10, `lucide`/`@lucide/astro` 1, `nanoid` 6, `motion` 13, `husky` 9, `lint-staged` 17, `prettier-plugin-astro` 1, `rollup-plugin-visualizer` 7, `@astrojs/node` 11, `@astrojs/starlight` 0.42 — treat that as illustrative, not as the current answer.
 
 Note: the local `chore/maintenance-astro-7-upgrade` branch already prototypes many of these. Point the tracking issue at it rather than opening a duplicate.
 

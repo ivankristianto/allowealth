@@ -1,5 +1,5 @@
 # Cloudflare Pages configuration for the Allowealth marketing site.
-# Deploys independently from the app worker.
+# Deploys independently from the self-hosted app.
 # Set PUBLIC_APP_URL in the Pages project environment
 # (for example: https://preview.allowealth.io).
 

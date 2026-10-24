@@ -4,6 +4,10 @@
 
 Accepted
 
+> **Note — 2026-10-24.** The Cloudflare Workers deployment this ADR refers to
+> was removed; the app is now self-hosted on Bun. The decision still holds,
+> and the Workers references below are historical context.
+
 ## Context
 
 To enable AI assistants (Claude, Gemini, etc.) to securely interact with Allowealth on behalf of users, we need to provide a standardized interface. The Model Context Protocol (MCP) is the industry standard for this purpose.

@@ -442,8 +442,8 @@ describe('PerfCollector', () => {
 
     test('allows runtime updates', () => {
       perf.setRuntime('bun');
-      perf.setRuntime('workers');
-      expect(perf.getRuntime()).toBe('workers');
+      perf.setRuntime('node');
+      expect(perf.getRuntime()).toBe('node');
     });
   });
 
@@ -460,29 +460,12 @@ describe('PerfCollector', () => {
       expect(cpuTime).toBeCloseTo(Math.max(0, totalTime - dbTime), 0);
     });
 
-    test('workers runtime: CPU = total (CPU-time clock)', () => {
-      perf.setRuntime('workers');
-      perf.recordDbQuery('query1', 10);
-
-      const cpuTime = perf.getEstimatedCpuTime();
-      const totalTime = perf.getTotalTime();
-
-      expect(cpuTime).toBeCloseTo(totalTime, 0);
-    });
-
     test('bun runtime: I/O wait = DB time', () => {
       perf.setRuntime('bun');
       perf.recordDbQuery('query1', 10);
       perf.recordDbQuery('query2', 15);
 
       expect(perf.getIoWaitTime()).toBe(25);
-    });
-
-    test('workers runtime: I/O wait = 0', () => {
-      perf.setRuntime('workers');
-      perf.recordDbQuery('query1', 10);
-
-      expect(perf.getIoWaitTime()).toBe(0);
     });
 
     test('unset runtime: CPU = max(0, total - DB time)', () => {
@@ -515,14 +498,6 @@ describe('PerfCollector', () => {
       expect(output).toContain('CPU: ~');
       expect(output).toContain('I/O Wait: ~');
       expect(output).toContain('Runtime: bun');
-    });
-
-    test('workers runtime shows CPU time', () => {
-      perf.setRuntime('workers');
-      const output = perf.toHtmlComment();
-
-      expect(output).toContain('(CPU time)');
-      expect(output).toContain('Runtime: workers (CPU-time clock)');
     });
 
     test('unset runtime shows simple total', () => {

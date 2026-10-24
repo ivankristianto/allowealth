@@ -120,21 +120,6 @@ describe('admin upgrade API routes', () => {
     expect(runMigrationsMock).toHaveBeenCalledTimes(1);
   });
 
-  it('POST /api/admin/upgrade/run returns 501 for unsupported deployments', async () => {
-    runMigrationsMock.mockResolvedValue({
-      success: false,
-      error:
-        'Web-triggered migrations are not supported in this deployment. Run: bun run db:migrate',
-    });
-
-    const response = await POST(createPostContext('super_admin'));
-    const payload = await response.json();
-
-    expect(response.status).toBe(501);
-    expect(payload.success).toBe(false);
-    expect(payload.error?.code).toBe('NOT_IMPLEMENTED');
-  });
-
   it('POST /api/admin/upgrade/run returns 500 for migration failures', async () => {
     runMigrationsMock.mockResolvedValue({
       success: false,

@@ -4,6 +4,10 @@
 
 Accepted
 
+> **Note — 2026-10-24.** The Cloudflare Workers deployment this ADR refers to
+> was removed; the app is now self-hosted on Bun. The decision still holds,
+> and the Workers references below are historical context.
+
 ## Context
 
 The application previously relied on ad-hoc `console.log`, `console.warn`, and `console.error` calls for server-side logging. This approach has several drawbacks:

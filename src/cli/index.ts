@@ -1,9 +1,9 @@
 import { defineCommand, runMain } from 'citty';
 import { normalizeTargetArgv, targetArg, validateTarget } from './lib/target';
 
-// Normalize `--target d1` → `--target=d1` before citty parses argv.
+// Normalize `--target sqlite` → `--target=sqlite` before citty parses argv.
 // Citty treats the first non-flag token as a subcommand name, so space-separated
-// values like `--target d1 db migrate` would interpret "d1" as a subcommand.
+// values like `--target sqlite db migrate` would interpret "sqlite" as a subcommand.
 normalizeTargetArgv();
 
 const main = defineCommand({
@@ -14,23 +14,8 @@ const main = defineCommand({
   args: {
     target: targetArg,
   },
-  async setup({ args }) {
-    const target = validateTarget(args.target as string);
-
-    // Only set AW_TARGET for non-default targets so leaf commands
-    // can still override via their own --target arg.
-    if (target !== 'sqlite') {
-      process.env.AW_TARGET = target;
-
-      if (target === 'd1') {
-        const { loadEnvFile } = await import('./lib/env-loader');
-        loadEnvFile('.env.production');
-      }
-
-      if (target === 'd1' || target === 'd1-local') {
-        process.env.D1_ENABLED = 'true';
-      }
-    }
+  setup({ args }) {
+    validateTarget(args.target as string);
   },
   subCommands: {
     acc: () => import('./commands/acc').then((m) => m.default),
@@ -43,7 +28,6 @@ const main = defineCommand({
     categories: () => import('./commands/categories').then((m) => m.default),
     db: () => import('./commands/db').then((m) => m.default),
     demo: () => import('./commands/demo').then((m) => m.default),
-    deploy: () => import('./commands/deploy').then((m) => m.default),
     mcp: () => import('./commands/mcp').then((m) => m.default),
     recurring: () => import('./commands/recurring').then((m) => m.default),
     release: () => import('./commands/release').then((m) => m.default),

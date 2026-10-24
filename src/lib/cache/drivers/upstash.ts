@@ -2,7 +2,7 @@
  * Upstash Redis Cache Driver
  *
  * Production cache driver using Upstash Redis with REST API.
- * Works in all environments including Cloudflare Workers.
+ * Talks HTTP, so it needs no TCP connection to Redis.
  *
  * Features:
  * - Fail-silent: Returns null on errors instead of throwing

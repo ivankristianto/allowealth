@@ -1,4 +1,0 @@
-# Exclude worker files from static asset serving
-# https://docs.astro.build/en/guides/integrations-guide/cloudflare/
-_worker.js
-_routes.json

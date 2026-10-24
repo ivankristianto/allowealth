@@ -1,28 +1,15 @@
 /**
  * Database connection configuration
  *
- * Provides a database abstraction layer supporting SQLite and D1 dialects.
- *
- * SQLite:
- * - Uses bun:sqlite with drizzle-orm/bun-sqlite (local development)
- *
- * Cloudflare D1:
- * - Uses D1 binding with drizzle-orm/d1 (Cloudflare Workers)
- * - SQLite-compatible, no connection management needed
- *
- * The driver is selected automatically based on configuration:
- * - D1 binding present (cloudflare:workers env.DB) or D1_ENABLED=true -> D1
- * - Otherwise -> SQLite
+ * Uses bun:sqlite with drizzle-orm/bun-sqlite.
  *
  * @see https://bun.sh/docs/api/sqlite
- * @see https://developers.cloudflare.com/d1/
  */
 import { createRequire } from 'node:module';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { getDatabaseConfig } from './config';
 import type { DatabaseDriver } from './driver';
 import { createBunDriver } from './drivers/bun';
-import { createD1Database, getD1Binding } from './drivers/d1';
 
 // Import schema for type inference
 import * as sqliteSchema from './schema/sqlite';
@@ -31,9 +18,7 @@ import * as sqliteSchema from './schema/sqlite';
 export * from './schema';
 
 /**
- * Get the active schema based on current database dialect
- *
- * Returns the SQLite schema, used by both local SQLite and D1.
+ * Get the active schema for the current database dialect
  */
 export function getActiveSchema(): typeof sqliteSchema {
   return sqliteSchema;
@@ -94,20 +79,16 @@ export interface IDatabase {
 }
 
 /**
- * Run an async callback in a database transaction when available.
+ * Run an async callback in a database transaction.
  *
- * SQLite uses Drizzle's native transaction support. D1 falls back to a direct
- * callback because Cloudflare D1 does not support the same transaction API.
+ * Wraps Drizzle's native SQLite transaction support so services have a single
+ * entry point for atomic multi-step writes.
  */
 export async function runTransaction<T>(
   db: IDatabase,
   callback: (tx: IDatabase) => Promise<T>
 ): Promise<T> {
-  if (typeof db.transaction === 'function') {
-    return db.transaction((tx) => callback(tx as IDatabase));
-  }
-
-  return callback(db);
+  return db.transaction((tx) => callback(tx as IDatabase));
 }
 
 /**
@@ -125,56 +106,15 @@ function applyPragmas(driver: DatabaseDriver): void {
 }
 
 /**
- * Get a require function for loading npm packages at runtime
- */
-function getRequire() {
-  return createRequire(import.meta.url);
-}
-
-/**
- * Create the Drizzle database instance
- *
- * Automatically selects the correct driver:
- * - D1 binding present or D1_ENABLED=true -> D1 via drizzle-orm/d1
- * - Otherwise -> bun:sqlite driver
+ * Create the Drizzle database instance backed by bun:sqlite
  */
 function createDatabase(): Database {
   const config = getDatabaseConfig();
   let driver: (DatabaseDriver & { _raw: unknown }) | null = null;
 
   try {
-    // D1 path - Cloudflare Workers binding or CLI HTTP/local drivers
-    if (config.isD1) {
-      const d1Binding = getD1Binding();
-      if (d1Binding) {
-        return createD1Database(d1Binding, sqliteSchema) as unknown as Database;
-      }
-
-      const awTarget = process.env.AW_TARGET;
-      if (awTarget === 'd1') {
-        const dynamicRequire = getRequire();
-        const { createD1HttpDatabase } = dynamicRequire('./drivers/d1-http');
-        return createD1HttpDatabase(sqliteSchema) as unknown as Database;
-      }
-
-      if (awTarget === 'd1-local') {
-        const localRequire = getRequire();
-        const { findLocalD1Path } = localRequire('./drivers/d1-local');
-        const localPath = findLocalD1Path(process.cwd());
-        driver = createBunDriver(localPath);
-        const { drizzle } = localRequire('drizzle-orm/bun-sqlite');
-        return drizzle(driver._raw, { schema: sqliteSchema });
-      }
-
-      throw new Error(
-        'D1 is configured but no D1 driver is available. ' +
-          'Use --target d1 or --target d1-local, or run in Cloudflare Workers.'
-      );
-    }
-
-    // SQLite path - uses bun:sqlite via Bun runtime
     driver = createBunDriver(config.url);
-    const dynamicRequire = getRequire();
+    const dynamicRequire = createRequire(import.meta.url);
     const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
 
     applyPragmas(driver);
@@ -213,9 +153,10 @@ export function resetDb(): void {
 }
 
 /**
- * Prepare database for a new request (Cloudflare Workers)
+ * Prepare database for a new request
  *
- * Discards stale connection references from previous requests.
+ * Discards stale connection references from previous requests. The request
+ * middleware calls it before any database work.
  */
 export function prepareForRequest(): void {
   dbInstance = null;
@@ -225,7 +166,7 @@ export function prepareForRequest(): void {
 /**
  * Close database connections
  *
- * For SQLite/D1, this resets the singleton. No connection pool to close.
+ * For SQLite, this resets the singleton. No connection pool to close.
  */
 export async function closeDatabase(): Promise<void> {
   if (isClosing) return;

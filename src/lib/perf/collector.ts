@@ -56,7 +56,7 @@ export class PerfCollector {
   private milestones: TimedOperation[] = [];
   private renderStartTime: number | null = null;
   private renderEndTime: number | null = null;
-  private runtime: 'workers' | 'bun' | 'node' | '' = '';
+  private runtime: 'bun' | 'node' | '' = '';
 
   constructor() {
     this.startTime = performance.now();
@@ -237,7 +237,7 @@ export class PerfCollector {
   /**
    * Set the runtime environment
    */
-  setRuntime(runtime: 'workers' | 'bun' | 'node' | ''): void {
+  setRuntime(runtime: 'bun' | 'node' | ''): void {
     this.runtime = runtime;
   }
 
@@ -249,27 +249,16 @@ export class PerfCollector {
   }
 
   /**
-   * Get estimated CPU time in milliseconds.
-   * For bun/node: wall-clock time minus DB I/O wait time.
-   * For workers: total time (performance.now() already measures CPU time).
+   * Get estimated CPU time in milliseconds: wall-clock time minus DB I/O wait time.
    */
   getEstimatedCpuTime(): number {
-    const total = this.getTotalTime();
-    if (this.runtime === 'workers') {
-      return total;
-    }
-    return Math.max(0, total - this.getTotalDbTime());
+    return Math.max(0, this.getTotalTime() - this.getTotalDbTime());
   }
 
   /**
-   * Get estimated I/O wait time in milliseconds.
-   * For bun/node: total DB query time.
-   * For workers: 0 (CPU-time clock doesn't include I/O wait).
+   * Get estimated I/O wait time in milliseconds: total DB query time.
    */
   getIoWaitTime(): number {
-    if (this.runtime === 'workers') {
-      return 0;
-    }
     return this.getTotalDbTime();
   }
 
@@ -313,13 +302,9 @@ export class PerfCollector {
 
   /**
    * Get memory usage in megabytes
-   * Returns null if memory info is not available (e.g., Workers polyfills
-   * process.memoryUsage but returns zeros)
+   * Returns null if memory info is not available
    */
   private getMemoryUsage(): number | null {
-    if (this.runtime === 'workers') {
-      return null;
-    }
     if (typeof process !== 'undefined' && process.memoryUsage) {
       const usage = process.memoryUsage();
       if (usage.heapUsed === 0) return null;
@@ -466,10 +451,7 @@ export class PerfCollector {
 
     // Total time + CPU breakdown
     const totalTime = this.getTotalTime();
-    if (this.runtime === 'workers') {
-      lines.push(`Total: ${this.formatDuration(totalTime)} (CPU time)`);
-      lines.push(`Runtime: workers (CPU-time clock)`);
-    } else if (this.runtime) {
+    if (this.runtime) {
       const cpuTime = this.getEstimatedCpuTime();
       const ioTime = this.getIoWaitTime();
       const trackedCpu = this.getTotalPhaseTime();

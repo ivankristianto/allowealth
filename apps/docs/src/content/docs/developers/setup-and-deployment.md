@@ -1,6 +1,6 @@
 ---
 title: Setup and Deployment
-description: Set up Allowealth locally and deploy it to Cloudflare Workers.
+description: Set up Allowealth locally and deploy it as a self-hosted Bun server.
 draft: false
 head: []
 sidebar:
@@ -72,70 +72,66 @@ If you edit only documentation, run `bun run docs:check` and `bun run docs:build
 
 ## Deployment
 
-Allowealth supports multiple deployment targets. Use the `DEPLOY_TARGET` environment variable to select the appropriate Astro adapter at build time.
+Allowealth builds a standalone server with the `@astrojs/node` adapter and runs
+on Bun against SQLite.
 
-### Cloudflare Workers
-
-Allowealth runs on Cloudflare Workers at the edge using the `@astrojs/cloudflare` adapter.
-
-Use Cloudflare D1 for the production database. It runs SQLite-compatible storage at the edge and matches the local schema.
-
-#### 1. Configure D1
-
-Create the D1 database:
+### Building
 
 ```bash
-wrangler d1 create allowealth-db
+bun run build
 ```
 
-Copy `wrangler.toml.example` to `wrangler.toml` and add your database ID:
+#### 1. Provision the database
 
-```toml
-[[d1_databases]]
-binding = "DB"
-database_name = "allowealth-db"
-database_id = "<your-database-id>"
+Point `DATABASE_URL` at a file on a persistent volume and apply migrations:
+
+```bash
+DATABASE_URL=/var/lib/allowealth/app.db bun run db:migrate
 ```
 
 #### 2. Set secrets
 
-D1 does not use `DATABASE_URL`. Set the application secrets instead:
+Provide the application secrets through the process environment:
 
 ```bash
-wrangler secret put EMAIL_API_KEY
-wrangler secret put BETTER_AUTH_SECRET
-wrangler secret put GOOGLE_CLIENT_ID
-wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put PUBLIC_URL
+DATABASE_URL=/var/lib/allowealth/app.db
+BETTER_AUTH_SECRET=...
+EMAIL_API_KEY=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+PUBLIC_URL=https://your-app.example.com
 ```
 
-#### 3. Migrate and deploy
-
-Apply SQLite migrations to the remote D1 database, then deploy:
+#### 3. Start the server
 
 ```bash
-for file in drizzle/sqlite/*.sql; do
-  wrangler d1 execute allowealth-db --remote --file="$file"
-done
-
-bun run deploy:cloudflare
+bun run ./dist/server/entry.mjs
 ```
 
-After the Better Auth migration, the first deployment forces a one-time logout because legacy sessions are not preserved.
+Docker helpers are available via `bun run docker:start` and `bun run docker:stop`.
 
 #### 4. Create the first workspace
 
-Use the CLI against remote D1:
-
 ```bash
-bun run aw workspace create --target d1 --name "My Family" --email admin@example.com
+bun run aw workspace create --name "My Family" --email admin@example.com
 ```
 
-## CI/CD and Custom Domains (Cloudflare)
+## Static Sites on Cloudflare Pages
 
-The GitHub Actions workflow (`.github/workflows/deploy-cloudflare.yml`) deploys automatically when you push to the `release` branch or create version tags. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in your GitHub repository secrets.
+The marketing site (`apps/site`) and this documentation site (`apps/docs`) deploy
+to Cloudflare Pages, each with its own `wrangler.toml`:
 
-To use a custom domain, add it to your Cloudflare account and update the `routes` pattern in `wrangler.toml`:
+```bash
+bun run landing:deploy
+bun run docs:deploy
+```
+
+The `deploy-site.yml` and `deploy-docs-site.yml` workflows deploy them on pushes
+that touch `apps/site/**` or `apps/docs/**`. Set `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in your GitHub repository secrets.
+
+To use a custom domain, add it to your Cloudflare account and set the `routes`
+pattern in the relevant `wrangler.toml`:
 
 ```toml
 routes = [
@@ -145,8 +141,6 @@ routes = [
 
 ## Troubleshooting
 
-- **"Cannot perform I/O on behalf of a different request":** The `database` middleware must call `prepareForRequest()` to reset connections per request.
-- **"D1_ENABLED is set but D1 binding is not available":** Uncomment the `[[d1_databases]]` section in `wrangler.toml` and verify the database ID.
 - **`import.meta.env.DATABASE_URL` is undefined:** Use `getEnv('DATABASE_URL')` to read from the runtime environment instead of the build-time environment.
 - **Google OAuth callback fails:** Verify Google is configured with `/api/auth/callback/google` and that `PUBLIC_URL` matches the deployed origin exactly.
 

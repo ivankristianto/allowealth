@@ -44,15 +44,7 @@ Use the `aw demo reset` command to refresh demo data without changing schema:
 ```bash
 # Reset local SQLite demo data
 bun run aw demo reset
-
-# Reset local D1 demo data
-bun run aw demo reset --target d1-local
-
-# Reset remote D1 demo data non-interactively
-bun run aw demo reset --target d1 --yes
 ```
-
-For remote D1 resets, local runs read `wrangler.toml`. CI can provide `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `D1_DATABASE_ID` directly.
 
 ## Local Development Setup
 
@@ -498,30 +490,28 @@ See `.github/workflows/e2e-tests.yml` for the full CI configuration.
 
 ## Deployment
 
-Allowealth now uses separate deployment surfaces in one repo:
+Allowealth uses separate deployment surfaces in one repo:
 
-- root app: Cloudflare Workers
+- root app: self-hosted Node/Bun server
 - `apps/site`: Cloudflare Pages for `allowealth.io`
 - `apps/docs`: Cloudflare Pages for docs
 
-Each app worker deployment uses its own D1 database. The marketing site and docs site stay static.
+The app runs against SQLite. The marketing site and docs site stay static.
 
 ### Supported targets
 
-| Platform   | Use Case                          | Adapter               |
-| ---------- | --------------------------------- | --------------------- |
-| Cloudflare | Supported production deployment   | `@astrojs/cloudflare` |
-| Node       | Build target for custom workflows | `@astrojs/node`       |
+| Platform | Use Case              | Adapter         |
+| -------- | --------------------- | --------------- |
+| Node/Bun | Production deployment | `@astrojs/node` |
 
 ### Production prerequisites
 
 Before deploying to production, create:
 
-1. a Cloudflare account
-2. one D1 database per app worker deployment
-3. a local worker config copied from `wrangler.toml.example`
-4. Cloudflare secrets for app integrations
-5. separate Cloudflare Pages projects for `apps/site` and `apps/docs`
+1. a host that can run the built Node/Bun server
+2. a persistent volume for the SQLite database
+3. environment variables for app integrations
+4. separate Cloudflare Pages projects for `apps/site` and `apps/docs`
 
 ### Production environment
 
@@ -536,46 +526,37 @@ SIGNUP_MODE=invite_only
 
 `SIGNUP_MODE=invite_only` enforces invitation-only registration. Set `SIGNUP_MODE=public` when you are ready to open signup.
 
-### Cloudflare Workers deployment
+### App deployment
 
 ```bash
-# Copy and configure a worker-specific wrangler file
-cp wrangler.toml.example wrangler.demo.toml
+# Build the standalone server
+bun run build
 
-# Create a D1 database for this worker
-wrangler d1 create your-demo-db
+# Apply migrations against the target database
+DATABASE_URL=/path/to/data/app.db bun run db:migrate
 
-# Apply migrations
-for file in drizzle/sqlite/*.sql; do
-  wrangler d1 execute your-demo-db --remote --file="$file"
-done
-
-# Set application secrets
-wrangler secret put BETTER_AUTH_SECRET
-wrangler secret put EMAIL_API_KEY
-wrangler secret put GOOGLE_CLIENT_ID
-wrangler secret put GOOGLE_CLIENT_SECRET
-
-# Build and deploy with the worker-specific config
-bun run build:cloudflare
-wrangler deploy --config wrangler.demo.toml
+# Start the server (set secrets in the process environment)
+DATABASE_URL=/path/to/data/app.db \
+BETTER_AUTH_SECRET=... \
+EMAIL_API_KEY=... \
+bun run ./dist/server/entry.mjs
 ```
 
-Repeat the worker setup for each app domain you operate (`demo`, `vv`, future customer instances). Each worker should have its own `PUBLIC_URL`, D1 database, and secrets. The app uses `PUBLIC_SITE_URL` for legal and marketing links back to the static site.
+Docker helpers are available via `bun run docker:start` and `bun run docker:stop`.
+
+Each deployment should have its own `PUBLIC_URL`, database file, and secrets. The app uses `PUBLIC_SITE_URL` for legal and marketing links back to the static site.
 
 ### Cloudflare Pages deployment
 
 ```bash
 # Marketing site
 bun install --cwd apps/site
-bun run --cwd apps/site build
-# Configure PUBLIC_APP_URL in Cloudflare Pages to point at your public app worker
-bunx wrangler pages deploy --config apps/site/wrangler.toml
+# Configure PUBLIC_APP_URL in Cloudflare Pages to point at your self-hosted app
+bun run landing:deploy
 
 # Docs site
 bun install --cwd apps/docs
-bun run docs:build
-bunx wrangler pages deploy --config apps/docs/wrangler.toml
+bun run docs:deploy
 ```
 
 ### First deployment checklist
@@ -583,24 +564,16 @@ bunx wrangler pages deploy --config apps/docs/wrangler.toml
 After deploying, complete these steps:
 
 ```bash
-# 1. Create the first workspace against remote D1
-bun run aw workspace create --target d1 --name "My Family" --email admin@example.com
+# 1. Create the first workspace
+bun run aw workspace create --name "My Family" --email admin@example.com
 
 # 2. Follow the CLI output to access the workspace
 
 # 3. Log in and finish setup in the app
 ```
 
-### Local D1 testing
-
-If you want a production-like database flow without touching remote D1, use the local D1 target:
-
-```bash
-bun run aw db migrate --target d1-local
-```
-
 ### Important notes
 
 - The seeder is disabled in production by default.
 - Use the CLI to create the first workspace and admin access path.
-- Never commit `.env` files or `wrangler.toml` with real credentials or IDs.
+- Never commit `.env` files with real credentials.

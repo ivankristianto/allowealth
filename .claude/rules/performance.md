@@ -116,25 +116,18 @@ const filtered = all.filter((t) => t.workspaceId === id);
 ### Database Connection Optimization
 
 ```typescript
-// ✅ Correct: Fresh connections per request in Workers
-export async function onRequest(context) {
-  const db = createConnection(getEnv('DATABASE_URL'));
-  // Use db...
-  await db.close();
-}
+// ✅ Correct: Resolve DATABASE_URL through getEnv()
+import { getEnv } from '@/lib/env';
+import { getDb } from '@/db';
 
-// ✅ Correct: Use D1 for Workers
-// - Local proxy with 0 overhead
-// - Connection pooling
-// - Direct connection (port 5432), not transaction pooler
+const db = getDb(); // bun:sqlite driver, WAL + pragmas applied once
 ```
 
 **Rules:**
 
-- ✅ **Use D1 for Workers database access** - native edge database, no external connection overhead
-- ✅ **Fresh connections per request in Workers** - no singletons
-- ❌ **Reintroduce external PostgreSQL connection layers for Workers** - use the D1 binding path
-- ❌ **Singleton connections in Workers** - edge runtime doesn't support
+- ✅ **Go through `getDb()`** - it applies the SQLite pragmas (WAL, synchronous, cache_size) once per connection
+- ✅ **Use `getEnv('DATABASE_URL')`** - never read `import.meta.env` for runtime values
+- ❌ **Reintroduce external PostgreSQL connection layers** - the app is SQLite-only
 
 ## Cache Strategy
 
@@ -452,7 +445,7 @@ export const prerender = true;
 
 - ✅ **Prerender public pages** - landing, pricing, about
 - ✅ **Client-side auth detection** for conditional UI
-- ✅ **Use `public/_headers` for prerendered page security headers** - Cloudflare serves prerendered HTML outside the worker
+- ✅ **Use `public/_headers` for prerendered page security headers on Cloudflare Pages** - static hosting serves prerendered HTML outside Astro middleware
 - ✅ **Keep shared prerendered-page scripts external** - static HTML cannot safely depend on per-request CSP nonces
 - ❌ **SSR for static content** - slower, no CDN caching
 
@@ -505,6 +498,5 @@ npm run lighthouse
 
 **Monitor in production:**
 
-- Cloudflare Workers Analytics - request duration, cache hit rate
-- Cloudflare Workers Logs - request and runtime diagnostics
+- Application logs - request duration, cache hit rate, runtime diagnostics
 - Upstash Console - cache operations, hit rate

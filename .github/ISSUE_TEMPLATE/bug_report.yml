@@ -34,8 +34,7 @@ body:
       label: Database Dialect
       description: Which database are you using?
       options:
-        - SQLite (dev)
-        - Cloudflare D1 (prod)
+        - SQLite
         - Not sure
     validations:
       required: false

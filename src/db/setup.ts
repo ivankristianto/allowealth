@@ -53,12 +53,6 @@ function execSetupSql(db: Database, sql: string) {
 async function setupDatabase() {
   console.log(`\n🔧 Setting up database (${config.dialect})...\n`);
 
-  if (config.isD1) {
-    console.error('❌ D1 setup should be done via Wrangler/D1 console.');
-    console.error('   Use: wrangler d1 execute <db-name> --file=./src/db/setup.sql');
-    process.exit(1);
-  }
-
   const dbPath = config.url;
 
   const dbDir = dirname(dbPath);

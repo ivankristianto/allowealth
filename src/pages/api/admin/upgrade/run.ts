@@ -9,8 +9,6 @@ import { logError } from '@/lib/logger';
  * Triggers database migrations synchronously. Blocks until complete.
  * Returns success/error result to the client.
  *
- * Returns 501 for Cloudflare/Vercel/Netlify deployments — use CLI instead.
- *
  * Super admin only. Requires x-csrf-token header (enforced by csrf middleware).
  */
 export const POST: APIRoute = async (context) => {
@@ -24,11 +22,7 @@ export const POST: APIRoute = async (context) => {
 
     if (!result.success) {
       logError('Migration run failed', result.error);
-      // Workers deployments return a specific message; surface as 501
-      const isNotSupported = result.error?.includes('not supported in this deployment');
-      const status = isNotSupported ? 501 : 500;
-      const code = isNotSupported ? 'NOT_IMPLEMENTED' : 'MIGRATION_RUN_ERROR';
-      return errorResponse(result.error ?? 'Migration failed', status, code);
+      return errorResponse(result.error ?? 'Migration failed', 500, 'MIGRATION_RUN_ERROR');
     }
 
     return successResponse({ success: true });

@@ -1164,7 +1164,7 @@ Errors: 1 (invalid category)
 **Backend:**
 
 - Runtime: Bun 1.x
-- Database: SQLite (development) / Cloudflare D1 (production)
+- Database: SQLite
 - ORM: Drizzle ORM
 - Authentication: Better Auth
 - Password Hashing: PBKDF2-SHA256 (Web Crypto API)
@@ -1182,7 +1182,7 @@ Errors: 1 (invalid category)
 **Deployment:**
 
 - Hosting: Self-hosted (VPS/Docker)
-- Database: Cloudflare D1
+- Database: SQLite
 - Reverse Proxy: Nginx or Caddy
 - SSL: Let's Encrypt
 
@@ -1223,10 +1223,8 @@ Errors: 1 (invalid category)
 
 **Database Strategy:**
 
-- Development: SQLite (single file, no setup)
-- Production: Cloudflare D1
+- SQLite (single file, no setup) for both development and production
 - Use Drizzle ORM with a shared SQLite-compatible schema
-- Environment configuration switches between local SQLite and D1
 
 **Schema Design:**
 

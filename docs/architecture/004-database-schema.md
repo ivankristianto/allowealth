@@ -1,6 +1,6 @@
 # Database Schema Architecture
 
-This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with a single **SQLite-compatible schema** shared by local SQLite development and Cloudflare D1 production, with a focus on data integrity, precision, and multi-tenancy.
+This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with a single **SQLite schema** used in every environment, with a focus on data integrity, precision, and multi-tenancy.
 
 For drawn diagrams and a generated column reference, open `database-schema.html` in this folder. Regenerate it with `bun run aw db docs` after schema changes.
 
@@ -917,11 +917,6 @@ bun run db:migrate
 
 # Push schema directly (dev only)
 bun run db:push
-
-# Deploy to D1 (production):
-for f in drizzle/sqlite/*.sql; do
-  wrangler d1 execute allowealth-db --remote --file="$f"
-done
 ```
 
 ### Best Practices
@@ -1013,12 +1008,12 @@ const myTxns = await db.query.transactions.findMany({
 
 ## Schema Location
 
-The schema is organized as a single SQLite-compatible schema used by both local development and D1 production:
+The schema is organized as a single SQLite schema used in every environment:
 
 ```
 src/db/schema/
 ├── index.ts                      # Export shared SQLite-compatible schema
-├── sqlite/                       # Shared schema for SQLite and D1
+├── sqlite/                       # Shared SQLite schema
 │   ├── index.ts                  # Export all SQLite tables
 │   ├── base.ts                   # Common utilities (timestamps)
 │   ├── relations.ts              # Drizzle ORM relations

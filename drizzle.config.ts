@@ -5,8 +5,7 @@ const url = process.env.DATABASE_URL || 'db/.dev.db';
 /**
  * Drizzle Kit Configuration
  *
- * SQLite only -- used for local development migrations.
- * D1 production uses the same SQLite-compatible migrations.
+ * SQLite only -- used for migrations in every environment.
  *
  * Usage:
  *   bun run db:generate

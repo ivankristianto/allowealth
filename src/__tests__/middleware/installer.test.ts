@@ -23,7 +23,6 @@ mockModule('@/db/migrate', () => ({
 
 // Import after mocks
 const { installerGuard, resetInstallerFlag } = await import('@/middleware/installer');
-const originalD1Enabled = process.env.D1_ENABLED;
 
 function createMockContext(pathname: string): APIContext {
   return {
@@ -43,11 +42,6 @@ describe('installer middleware', () => {
   });
 
   beforeEach(() => {
-    if (originalD1Enabled === undefined) {
-      delete process.env.D1_ENABLED;
-    } else {
-      process.env.D1_ENABLED = originalD1Enabled;
-    }
     mockIsMigrationApplied.mockReset();
     mockIsMigrationApplied.mockReturnValue(true);
     mockHasUsers.mockReset();
@@ -70,19 +64,6 @@ describe('installer middleware', () => {
     await installerGuard(ctx, next);
     expect(next).toHaveBeenCalledTimes(1);
     expect(mockIsMigrationApplied).not.toHaveBeenCalled();
-  });
-
-  test('skips installer guard entirely for D1 runtime', async () => {
-    process.env.D1_ENABLED = 'true';
-    mockHasUsers.mockReturnValue(false);
-    mockIsMigrationApplied.mockReturnValue(false);
-
-    const ctx = createMockContext('/dashboard');
-    await installerGuard(ctx, next);
-
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(mockIsMigrationApplied).not.toHaveBeenCalled();
-    expect(mockHasUsers).not.toHaveBeenCalled();
   });
 
   test('skips public script assets', async () => {

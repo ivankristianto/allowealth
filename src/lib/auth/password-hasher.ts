@@ -7,15 +7,13 @@ import { Pbkdf2Hasher } from './password-pbkdf2';
  * Implementations provide algorithm-specific hashing and verification.
  * The factory selects the runtime-appropriate hasher: Argon2id via
  * `Bun.password` on Bun (Docker, local dev), PBKDF2-SHA256 via Web Crypto
- * elsewhere (Cloudflare Workers, Node).
+ * elsewhere (Node.js).
  *
- * Hashes do not migrate between deployment targets. Workers cannot run
- * Argon2id within its 10ms CPU/request budget (pure-JS Argon2id exceeds
- * it; runtime WASM compilation is blocked by the embedder), so each
- * deployment owns its own hash format.
+ * Hashes do not migrate between hasher implementations, so each runtime
+ * owns its own hash format.
  *
  * Set `PASSWORD_HASHER=pbkdf2` to force PBKDF2 even when running on Bun
- * (used by the seeder to produce hashes for a Workers-targeted DB).
+ * (used by the seeder to produce hashes portable to a non-Bun runtime).
  */
 export interface PasswordHasher {
   hash(password: string): Promise<string>;

@@ -10,8 +10,8 @@ const AUTH_PATH_PREFIX = '/api/auth';
  * During SSR: fall back to PUBLIC_URL or localhost.
  *
  * IMPORTANT: Do NOT import `@/lib/env` here — this module is bundled into
- * the client JS and that import drags in a `cloudflare:workers` dynamic
- * import IIFE that violates CSP in the browser.
+ * the client JS and `@/lib/env` is server-side configuration plumbing that
+ * should not ship to the browser.
  */
 const authClientOrigin =
   typeof window !== 'undefined'
