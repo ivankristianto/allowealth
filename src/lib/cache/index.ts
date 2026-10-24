@@ -2,7 +2,7 @@
  * Cache Module
  *
  * Vendor-agnostic caching layer with support for:
- * - Upstash Redis (production, Cloudflare Workers compatible)
+ * - Upstash Redis (production)
  * - In-memory cache (development)
  * - No-op driver (disabled caching)
  *

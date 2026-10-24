@@ -1,13 +1,14 @@
 /**
  * PBKDF2-SHA256 password hasher
  *
- * Uses Web Crypto API for cross-runtime compatibility (Bun, Node, Cloudflare Workers).
+ * Uses the Web Crypto API, so it runs on any runtime (Bun, Node.js).
  *
- * Iteration count is pinned to 100,000 because Cloudflare Workers'
- * `crypto.subtle.deriveBits` rejects PBKDF2 iteration counts above 100,000
- * with `NotSupportedError`. This is below the OWASP 2023 recommendation
- * (600,000 for PBKDF2-HMAC-SHA256) but matches OWASP 2017 guidance and is
- * the maximum the production runtime accepts.
+ * Iteration count is pinned to 100,000, the maximum the former Cloudflare
+ * Workers deployment accepted (`crypto.subtle.deriveBits` rejected higher
+ * counts with `NotSupportedError`). This is below the OWASP 2023
+ * recommendation (600,000 for PBKDF2-HMAC-SHA256). The Workers limit no
+ * longer applies; verification already accepts up to 2,000,000 iterations,
+ * so the count can be raised without breaking existing hashes.
  *
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
  */

@@ -2,7 +2,7 @@
  * Redis Cache Driver
  *
  * Local/self-hosted cache driver using Bun's built-in Redis client (TCP).
- * Bun-only - not compatible with Cloudflare Workers (use UpstashDriver instead).
+ * Bun-only (uses Bun.RedisClient).
  *
  * Features:
  * - Fail-silent: Returns null on errors instead of throwing

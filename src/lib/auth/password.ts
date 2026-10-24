@@ -3,11 +3,12 @@
  *
  * Hashes new passwords with the runtime-appropriate algorithm:
  * Argon2id via `Bun.password` on Bun (Docker, local dev), PBKDF2-SHA256
- * via Web Crypto on Cloudflare Workers and any other non-Bun runtime.
+ * via Web Crypto on any other runtime (Node.js).
  *
- * Hashes do not migrate between deployment targets. An Argon2id hash
- * landing on a Workers deployment indicates a misconfigured seed and
- * surfaces a warning so it does not fail silently.
+ * Hashes do not migrate between hashers. An Argon2id hash reaching a
+ * non-Bun runtime cannot be verified and surfaces a warning so it does not
+ * fail silently. PBKDF2 hashes stay verifiable everywhere, including hashes
+ * created by the former Cloudflare Workers deployment.
  */
 
 import { createLogger } from '@/lib/logger';

@@ -486,7 +486,7 @@ export class TransactionService {
    * Returns month keys in MM-YYYY format with labels.
    *
    * Replaces the pattern of fetching 10,000 rows and extracting months in JS,
-   * reducing CPU time from ~30-80ms to ~2ms on Cloudflare Workers.
+   * reducing CPU time from ~30-80ms to ~2ms (measured on the former Workers deployment).
    */
   async getAvailableMonths(
     workspaceId: string,

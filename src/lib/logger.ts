@@ -2,7 +2,7 @@
  * Structured Logger
  *
  * Wraps consola to provide tagged, leveled logging that outputs
- * structured JSON in production (for Cloudflare Workers Logs)
+ * structured JSON in production (for log aggregation)
  * and pretty-printed output in development.
  *
  * Usage:
@@ -10,9 +10,6 @@
  *   const log = createLogger('database');
  *   log.info('connection established');
  *   log.error('query failed', error);
- *
- * Workers Logs automatically captures console.* output and
- * indexes JSON fields for querying in the Cloudflare dashboard.
  */
 
 /* eslint-disable no-console -- Logger is the console wrapper; direct console calls are intentional */
@@ -55,8 +52,8 @@ export function resolveLogLevel(): number {
 }
 
 /**
- * JSON reporter for production — outputs structured JSON that
- * Cloudflare Workers Logs auto-indexes for querying.
+ * JSON reporter for production — outputs one structured JSON object per
+ * line so log aggregators can index the fields.
  */
 /** Stringify a log argument — objects get JSON-serialized, everything else String() */
 function stringifyArg(arg: unknown): string {
@@ -87,7 +84,7 @@ const jsonReporter = {
 
     const json = JSON.stringify(entry);
 
-    // Route to appropriate console method so Workers Logs captures severity
+    // Route to the matching console method so log collectors capture severity
     switch (logObj.type) {
       case 'error':
       case 'fatal':

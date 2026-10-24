@@ -523,9 +523,8 @@
     <div class="eyebrow">docs / architecture</div>
     <h1>Allowealth Data Model</h1>
     <p class="lead">
-      How the household finance app stores its money, its members and its logins. One SQLite-dialect
-      schema, defined with Drizzle, runs on local SQLite during development and on Cloudflare D1 in
-      production.
+      How the household finance app stores its money, its members and its logins. One SQLite schema,
+      defined with Drizzle, backs every environment through bun:sqlite.
     </p>
     <div class="facts">
       <span><b class="num">32</b> tables</span>
@@ -798,7 +797,7 @@
   </section>
 
   <p class="footnote">
-    Generated 4 October 2026 by <code>bun run aw db docs</code>. See also
+    Generated 24 October 2026 by <code>bun run aw db docs</code>. See also
     <code>docs/architecture/004-database-schema.md</code>,
     <code>006-database-connection-architecture.md</code> and
     <code>007-database-migrations.md</code>.
