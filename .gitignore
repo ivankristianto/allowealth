@@ -74,6 +74,7 @@ test-results/
 # Platform-specific local files
 .wrangler/
 .astro/
+/wrangler*.toml
 !/apps/docs/wrangler.toml
 !/apps/site/wrangler.toml
 
