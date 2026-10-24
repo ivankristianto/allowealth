@@ -326,13 +326,9 @@ export default defineCommand({
         target: targetArg,
       },
       async run({ args }) {
-        const { resolveTarget, getTarget } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
 
-        if (getTarget() !== 'sqlite') {
-          console.error('Error: "db reset" is only supported for the sqlite target.');
-          process.exit(1);
-        }
         console.log('Resetting database...');
         exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
         exec('mkdir', ['-p', 'db']);
