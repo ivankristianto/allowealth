@@ -20,7 +20,7 @@ This directory contains Claude Code's project memory and rules.
     │   └── bundle.md            # Bundle performance
     ├── backend/
     │   ├── database.md          # DB patterns, migrations
-    │   ├── deployment.md        # Workers deployment
+    │   ├── deployment.md        # Deployment patterns
     │   └── api.md               # API patterns
     ├── testing.md               # Testing patterns
     └── learned-patterns.md      # Learned patterns from experience

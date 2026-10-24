@@ -1,8 +1,7 @@
 /**
  * Schema exports
  *
- * Exports SQLite schema for type inference and runtime use.
- * Both SQLite (local dev) and D1 (production) use the same schema.
+ * Exports the SQLite schema for type inference and runtime use.
  */
 
 export * from './sqlite';

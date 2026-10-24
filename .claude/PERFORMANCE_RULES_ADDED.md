@@ -155,7 +155,7 @@ npm run lighthouse
 Performance rules are ready to use. Consider:
 
 1. **Add performance tests** - E2E tests for page load times
-2. **Set up monitoring** - Cloudflare Analytics and Workers logs
+2. **Set up monitoring** - Application logs and Upstash Console metrics
 3. **Create performance dashboard** - Track metrics over time
 4. **Regular audits** - Monthly performance reviews
 

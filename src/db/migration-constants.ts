@@ -6,7 +6,7 @@
  * drizzle/sqlite/meta/_journal.json — a mismatch causes a CI failure.
  *
  * This constant is intentionally in its own file (not migrate.ts) because
- * migrate.ts imports bun:sqlite, which is incompatible with Cloudflare Workers.
- * This file has zero runtime dependencies and is safe to import from middleware.
+ * migrate.ts imports bun:sqlite. This file has zero runtime dependencies and
+ * is safe to import from middleware.
  */
 export const EXPECTED_MIGRATION_COUNT = 3;

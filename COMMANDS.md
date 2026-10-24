@@ -179,7 +179,6 @@ The SSR app builds with the `@astrojs/node` adapter (`mode: 'standalone'`).
 | Command                 | Description                                          |
 | ----------------------- | ---------------------------------------------------- |
 | `bun run build`         | Build the app                                        |
-| `bun run build:node`    | Alias for `bun run build`                            |
 | `bun run build:analyze` | Build and generate bundle stats at `dist/stats.html` |
 | `bun run bundle:report` | Build and run bundle size analysis                   |
 

@@ -408,13 +408,12 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { resolveTarget, getTarget } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-        const target = getTarget();
 
         const outputPath =
           (args.output as string | undefined) ??
-          resolve(DEFAULT_BACKUP_DIR, `${target}-${timestampForFile()}.db`);
+          resolve(DEFAULT_BACKUP_DIR, `sqlite-${timestampForFile()}.db`);
 
         backupToPath(outputPath);
         console.log(`✅ Backup created: ${outputPath}`);
@@ -497,7 +496,7 @@ export default defineCommand({
         const validFormats: BackupFormat[] = ['sql', 'sqlite-db'];
         if (!validFormats.includes(format)) {
           throw new Error(
-            `Format "${format}" is not valid for target "${target}". ` +
+            `Format "${format}" is not a valid backup format. ` +
               `Valid formats: ${validFormats.join(', ')}`
           );
         }
