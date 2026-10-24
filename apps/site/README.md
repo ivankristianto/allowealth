@@ -8,7 +8,7 @@ Static marketing site for Allowealth, built with Astro and deployed to Cloudflar
 
 This is the public-facing marketing site for the Allowealth financial application. It serves as the landing page and provides information about the product, features, privacy policy, and terms of service.
 
-> **Note:** This is a separate deployment surface from the main Allowealth application. The app itself is deployed to Cloudflare Workers, while this site is deployed to Cloudflare Pages.
+> **Note:** This is a separate deployment surface from the main Allowealth application. The app itself is self-hosted (Bun, typically via Docker), while this site is deployed to Cloudflare Pages.
 
 ## Tech Stack
 

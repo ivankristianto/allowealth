@@ -41,7 +41,6 @@ bun run aw workspace create --name "Ops" --email admin@example.com
 - `recurring`: recurring templates and occurrence operations
 - `admin`: super-admin and API key operations
 - `mcp`: start MCP server
-- `deploy`: Cloudflare deployment helpers
 
 ## Global options expectations
 

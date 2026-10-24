@@ -2,7 +2,7 @@
 
 > **ADR-006** | Created: 2026-02-04 | Updated: 2026-03-09
 
-> **Superseded in part — 2026-07-25.** Cloudflare Workers and D1 support was
+> **Superseded in part — 2026-10-24.** Cloudflare Workers and D1 support was
 > removed from the project. The `bun:sqlite` driver is now the only database
 > target: the D1 binding, D1 HTTP and D1 local drivers are deleted, and
 > `DatabaseConfig` no longer carries an `isD1` field. The Workers-specific

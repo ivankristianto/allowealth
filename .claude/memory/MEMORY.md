@@ -20,7 +20,7 @@ This file is managed by Claude Code's auto-memory system.
 
 ## Database
 
-- SQLite via `bun:sqlite` (only driver; Cloudflare D1 support removed 2026-07-25)
+- SQLite via `bun:sqlite` (only driver; Cloudflare D1 support removed 2026-10-24)
 - Migrations: Single SQLite flow; generate `drizzle/sqlite/*.sql` and apply with `bun run db:migrate`
 
 ## Key Architecture Patterns

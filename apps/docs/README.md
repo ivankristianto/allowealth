@@ -8,7 +8,7 @@ Documentation site for Allowealth, built with Astro + Starlight and deployed to 
 
 This is the user and developer documentation for the Allowealth financial application. It provides guides for end users, administrators, and developers working with the platform.
 
-> **Note:** This is a separate deployment surface from the main Allowealth application. The app itself is deployed to Cloudflare Workers, while this documentation is deployed to Cloudflare Pages.
+> **Note:** This is a separate deployment surface from the main Allowealth application. The app itself is self-hosted (Bun, typically via Docker), while this documentation is deployed to Cloudflare Pages.
 
 ## Tech Stack
 

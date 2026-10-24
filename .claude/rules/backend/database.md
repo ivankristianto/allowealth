@@ -64,12 +64,12 @@ class BudgetService {
 
 ## Transaction Patterns
 
-### SQLite (Local Dev)
+### SQLite
 
-SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` which handles dialect differences automatically.
+SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` as the single entry point for transactions.
 
 ```typescript
-// ✅ Correct: Use runTransaction() for cross-dialect compatibility
+// ✅ Correct: Use runTransaction() for atomic multi-step writes
 import { runTransaction } from '@/db';
 
 await runTransaction(db, async (tx) => {

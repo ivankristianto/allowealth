@@ -552,7 +552,7 @@ Each deployment should have its own `PUBLIC_URL`, database file, and secrets. Th
 # Marketing site
 bun install --cwd apps/site
 bun run --cwd apps/site build
-# Configure PUBLIC_APP_URL in Cloudflare Pages to point at your public app worker
+# Configure PUBLIC_APP_URL in Cloudflare Pages to point at your self-hosted app
 bunx wrangler pages deploy --config apps/site/wrangler.toml
 
 # Docs site

@@ -1,6 +1,6 @@
 # Development Constitution v3.0.0
 
-> **Superseded in part — 2026-07-25.** Cloudflare Workers and D1 support was
+> **Superseded in part — 2026-10-24.** Cloudflare Workers and D1 support was
 > removed from the project. Bun with the `@astrojs/node` adapter is now the
 > only deployment target, and the database runs on `bun:sqlite` in every
 > environment — there is no separate production dialect. The

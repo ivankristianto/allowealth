@@ -1,6 +1,6 @@
 ---
 title: Setup and Deployment
-description: Set up Allowealth locally and deploy it to Cloudflare Workers.
+description: Set up Allowealth locally and deploy it as a self-hosted Bun server.
 draft: false
 head: []
 sidebar:

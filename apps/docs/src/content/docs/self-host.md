@@ -307,7 +307,7 @@ The two compose files share volume names (`allowealth-data`, `redis-data`), so y
 ## Next steps
 
 - Review [Getting Started](/getting-started/) for first-run workflows and demo account credentials
-- Follow [Setup and Deployment](/developers/setup-and-deployment/) for Cloudflare and Node deployment details
+- Follow [Setup and Deployment](/developers/setup-and-deployment/) for self-hosted deployment details
 - Use [Deployment Guide](/admins/deployment-guide/) for rollout and rollback checks
 - Keep [Commands Reference](/reference/commands/) nearby for CLI syntax
 - Review [Database Management](/developers/database-management/) before planning backups

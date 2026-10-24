@@ -1,6 +1,6 @@
 # Database Migrations
 
-> **Superseded in part — 2026-07-25.** Cloudflare Workers and D1 support was
+> **Superseded in part — 2026-10-24.** Cloudflare Workers and D1 support was
 > removed from the project. `drizzle/sqlite` remains the canonical migration
 > history, but it is now applied only to local SQLite via `bun run db:migrate`;
 > there is no D1 production target and no `aw --target d1 db migrate` path. The
