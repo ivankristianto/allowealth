@@ -60,6 +60,8 @@ declare global {
     readonly SIGNUP_MODE?: 'invite_only' | 'public';
     /** Better Auth signing secret */
     readonly BETTER_AUTH_SECRET?: string;
+    /** Header a reverse proxy sets to the real client IP (e.g. cf-connecting-ip, x-real-ip) */
+    readonly CLIENT_IP_HEADER?: string;
 
     // Cache configuration
     readonly CACHE_DRIVER?: 'upstash' | 'redis' | 'memory' | 'none';

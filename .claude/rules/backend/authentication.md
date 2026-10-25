@@ -169,6 +169,13 @@ cloudflared tunnel --url http://localhost:4321
 | `RP_NAME`              | For passkeys | Display name in passkey prompts            |
 | `GOOGLE_CLIENT_ID`     | For OAuth    | Google OAuth client ID                     |
 | `GOOGLE_CLIENT_SECRET` | For OAuth    | Google OAuth client secret                 |
+| `CLIENT_IP_HEADER`     | Behind proxy | Proxy header holding the real client IP    |
+
+### Client IP for Rate Limiting
+
+- ✅ **Let Better Auth read the client IP only from `x-allowealth-client-ip`** — the `[...all].ts` route sets it via `withClientIpHeader()` (`src/lib/auth/client-ip.ts`) from the `CLIENT_IP_HEADER` proxy header, else `context.clientAddress`
+- ❌ **Add client-sendable headers (`cf-connecting-ip`, `x-forwarded-for`) to `ipAddressHeaders`** — an attacker picks a fresh rate-limit bucket per request
+- ❌ **Set Astro `security.allowedDomains`** without revisiting this — Astro then reports the leftmost `x-forwarded-for` entry as `clientAddress`, which the client controls
 
 ## Session Management
 

@@ -116,14 +116,15 @@ The following variables are required for production:
 
 Optional variables:
 
-| Variable          | Default                 | Description                                      |
-| ----------------- | ----------------------- | ------------------------------------------------ |
-| `DATABASE_URL`    | `/data/allowealth.db`   | SQLite path inside container                     |
-| `SIGNUP_MODE`     | `invite_only`           | `invite_only` or `public` registration           |
-| `EMAIL_MODE`      | `console`               | `console` logs emails, `real` sends via provider |
-| `CACHE_DRIVER`    | `redis`                 | `redis`, `memory`, or `upstash`                  |
-| `REDIS_PASSWORD`  | `changeme`              | Redis password (internal Docker network)         |
-| `PUBLIC_SITE_URL` | `https://allowealth.io` | Marketing site URL                               |
+| Variable           | Default                 | Description                                      |
+| ------------------ | ----------------------- | ------------------------------------------------ |
+| `DATABASE_URL`     | `/data/allowealth.db`   | SQLite path inside container                     |
+| `SIGNUP_MODE`      | `invite_only`           | `invite_only` or `public` registration           |
+| `EMAIL_MODE`       | `console`               | `console` logs emails, `real` sends via provider |
+| `CACHE_DRIVER`     | `redis`                 | `redis`, `memory`, or `upstash`                  |
+| `REDIS_PASSWORD`   | `changeme`              | Redis password (internal Docker network)         |
+| `PUBLIC_SITE_URL`  | `https://allowealth.io` | Marketing site URL                               |
+| `CLIENT_IP_HEADER` | unset                   | Proxy header with the client IP (see below)      |
 
 See `docker/.env.example` for email provider and cache configuration options.
 
@@ -179,6 +180,31 @@ server {
 ```
 
 Caddy and Traefik work equally well. Set `PUBLIC_URL` to the final HTTPS origin your proxy serves.
+
+### Client IPs behind a proxy
+
+Login, sign-up and password-reset rate limits are tracked per client IP. By default Allowealth uses the address of the connection it receives and ignores forwarding headers, because any client can send them. Behind a reverse proxy, that address is the proxy, so every user would share one limit: ten failed logins from anyone would lock everyone out for 15 minutes.
+
+Set `CLIENT_IP_HEADER` to the header your proxy fills with the real client IP:
+
+| Proxy                                                                     | `CLIENT_IP_HEADER` |
+| ------------------------------------------------------------------------- | ------------------ |
+| Cloudflare (proxied DNS or Cloudflare Tunnel)                             | `cf-connecting-ip` |
+| Nginx with `proxy_set_header X-Real-IP $remote_addr;` (the example above) | `x-real-ip`        |
+
+```dotenv
+CLIENT_IP_HEADER=cf-connecting-ip
+```
+
+:::caution
+Only set `CLIENT_IP_HEADER` when Allowealth is reachable **exclusively** through that proxy. The proxy overwrites the header, but anyone who can connect to the app port directly can send it with any value and bypass the rate limits. `docker-compose.prod.yml` publishes the port on all interfaces, so either:
+
+- firewall the port so only the proxy can reach it (for Cloudflare, allow only [Cloudflare's IP ranges](https://www.cloudflare.com/ips/)),
+- bind it to localhost when the proxy runs on the same host (`127.0.0.1:3000:3000`), or
+- use a Cloudflare Tunnel, which needs no published port at all.
+  :::
+
+To check the setting, sign in and open **Security → Active Sessions**. If your session shows the proxy's address instead of your own IP, `CLIENT_IP_HEADER` is missing or wrong.
 
 ## Updates
 

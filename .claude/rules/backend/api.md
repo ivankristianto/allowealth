@@ -169,6 +169,11 @@ export async function POST({ request, locals, cookies }) {
 }
 ```
 
+## Rebuilding Requests
+
+- ✅ **Build a modified request from scratch** — `new Request(request.url, { method, headers, body: request.body, signal })`
+- ❌ **Use `new Request(request, { headers })` to drop a header** — Bun merges the new headers into the original ones, so a deleted header survives (security-relevant when stripping client-supplied headers)
+
 ## Response Formats
 
 ### JSON Response

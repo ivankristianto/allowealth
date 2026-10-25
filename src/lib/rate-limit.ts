@@ -6,7 +6,7 @@
  *
  * Features:
  * - Sliding window algorithm for accurate rate limiting
- * - Per-IP tracking with configurable limits
+ * - Per-key tracking with configurable limits
  * - Standard rate limit headers (X-RateLimit-*)
  * - Automatic cleanup of expired entries
  *
@@ -21,10 +21,6 @@ export interface RateLimitConfig {
   maxRequests: number;
   /** Time window in milliseconds */
   windowMs: number;
-  /** Optional custom key generator (default: IP address) */
-  keyGenerator?: (request: Request) => string;
-  /** Skip rate limiting for certain requests */
-  skip?: (request: Request) => boolean;
   /** Custom message for rate limit exceeded */
   message?: string;
 }
@@ -100,128 +96,6 @@ export function stopCleanup(): void {
  */
 export function clearRateLimitStore(): void {
   rateLimitStore.clear();
-}
-
-/**
- * Get client IP address from request headers
- *
- * WARNING: These headers can be spoofed by attackers. Only use this as a fallback
- * when a trusted `clientAddress` from the server context is not available.
- *
- * For production deployments behind a reverse proxy, configure the proxy to set
- * these headers and ensure direct access to the app is blocked.
- *
- * @param request - The HTTP request
- * @returns IP address from headers, or a unique fallback to prevent shared buckets
- */
-export function getClientIp(request: Request): string {
-  // Check X-Forwarded-For header (common for proxies/load balancers)
-  // WARNING: Can be spoofed if not behind a trusted proxy
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    // Take the first IP (original client)
-    return forwardedFor.split(',')[0].trim();
-  }
-
-  // Check X-Real-IP header (nginx)
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp.trim();
-  }
-
-  // Check CF-Connecting-IP (Cloudflare)
-  const cfIp = request.headers.get('cf-connecting-ip');
-  if (cfIp) {
-    return cfIp.trim();
-  }
-
-  // SECURITY: Don't fall back to Host header (attacker-controlled, shared across users)
-  // Instead, return a unique identifier to fail safe (each request gets own bucket)
-  // This effectively disables rate limiting for these requests, but prevents
-  // the worse outcome of all users sharing a single bucket
-  return `unknown-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-/**
- * Check rate limit for a request
- *
- * @param request - The HTTP request
- * @param config - Rate limit configuration
- * @param clientAddress - Trusted client IP from server context (e.g., Astro's clientAddress)
- * @returns Rate limit result with allowed status and metadata
- *
- * IMPORTANT: Always pass `clientAddress` from the server context when available.
- * This prevents IP spoofing attacks via X-Forwarded-For headers.
- */
-export function checkRateLimit(
-  request: Request,
-  config: RateLimitConfig,
-  clientAddress?: string
-): RateLimitResult {
-  const { maxRequests, windowMs, keyGenerator, skip } = config;
-
-  // Check if request should skip rate limiting
-  if (skip && skip(request)) {
-    return {
-      allowed: true,
-      remaining: maxRequests,
-      limit: maxRequests,
-      resetTime: Math.floor((Date.now() + windowMs) / 1000),
-      retryAfter: 0,
-    };
-  }
-
-  // Generate key for this request
-  // Default: trusted client IP (or fallback) + endpoint path
-  const endpoint = new URL(request.url).pathname;
-  const ip = clientAddress || getClientIp(request);
-  const key = keyGenerator ? keyGenerator(request) : `${ip}:${endpoint}`;
-  const now = Date.now();
-
-  // Prevent unbounded memory growth (DoS protection)
-  if (rateLimitStore.size >= MAX_STORE_ENTRIES && !rateLimitStore.has(key)) {
-    // Evict oldest entry to make room
-    const oldestKey = rateLimitStore.keys().next().value;
-    if (oldestKey) {
-      rateLimitStore.delete(oldestKey);
-    }
-  }
-
-  // Get existing timestamps for this key
-  const timestamps = rateLimitStore.get(key) || [];
-
-  // Filter to only include timestamps within the window (sliding window)
-  const windowStart = now - windowMs;
-  const validTimestamps = timestamps.filter((ts) => ts > windowStart);
-
-  // Calculate reset time (end of current window)
-  const oldestTimestamp = validTimestamps[0] || now;
-  const resetTime = Math.floor((oldestTimestamp + windowMs) / 1000);
-  const retryAfter = Math.max(0, Math.ceil((oldestTimestamp + windowMs - now) / 1000));
-
-  // Check if under limit
-  if (validTimestamps.length < maxRequests) {
-    // Add current timestamp and store
-    validTimestamps.push(now);
-    rateLimitStore.set(key, validTimestamps);
-
-    return {
-      allowed: true,
-      remaining: maxRequests - validTimestamps.length,
-      limit: maxRequests,
-      resetTime,
-      retryAfter: 0,
-    };
-  }
-
-  // Rate limit exceeded
-  return {
-    allowed: false,
-    remaining: 0,
-    limit: maxRequests,
-    resetTime,
-    retryAfter,
-  };
 }
 
 /**

@@ -206,8 +206,7 @@ describe('better-auth server config', () => {
       max: 10,
     });
     expect(mod.auth.options.advanced?.ipAddress?.ipAddressHeaders).toEqual([
-      'cf-connecting-ip',
-      'x-forwarded-for',
+      'x-allowealth-client-ip',
     ]);
   });
 
