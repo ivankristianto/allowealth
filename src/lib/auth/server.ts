@@ -5,6 +5,7 @@ import { captcha, mcp, twoFactor } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
+import { INTERNAL_IP_HEADER } from '@/lib/auth/client-ip';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
@@ -212,8 +213,10 @@ function createAuthInstance() {
     },
     advanced: {
       cookiePrefix: 'allowealth',
+      // Only the server-set header: any client-sendable header would let an
+      // attacker choose a fresh rate-limit bucket per request.
       ipAddress: {
-        ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'],
+        ipAddressHeaders: [INTERNAL_IP_HEADER],
       },
     },
     plugins: authPlugins,

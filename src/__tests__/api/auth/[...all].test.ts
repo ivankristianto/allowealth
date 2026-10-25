@@ -85,4 +85,43 @@ describe('Better Auth catch-all route', () => {
     expect(response.status).toBe(200);
     expect(authHandlerMock).toHaveBeenCalledTimes(1);
   });
+
+  test('replaces a client-supplied client IP header with the connection address', async () => {
+    const { POST } = await importFreshRoute();
+    await POST({
+      clientAddress: '203.0.113.9',
+      request: new Request('http://localhost/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'cf-connecting-ip': '198.51.100.1',
+          'x-allowealth-client-ip': '198.51.100.2',
+        },
+        body: JSON.stringify({ email: 'user@example.com', password: 'secret' }),
+      }),
+    } as never);
+
+    const forwarded = (authHandlerMock as any).mock.calls[0]?.[0] as Request;
+    expect(forwarded.headers.get('x-allowealth-client-ip')).toBe('203.0.113.9');
+    expect(await forwarded.json()).toEqual({ email: 'user@example.com', password: 'secret' });
+  });
+
+  test('omits the client IP header when Astro cannot report a client address', async () => {
+    const { POST } = await importFreshRoute();
+    const context = {
+      request: new Request('http://localhost/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: { 'x-allowealth-client-ip': '198.51.100.2' },
+      }),
+      get clientAddress(): string {
+        throw new Error('ClientAddressNotAvailable');
+      },
+    };
+
+    const response = await POST(context as never);
+
+    expect(response.status).toBe(200);
+    const forwarded = (authHandlerMock as any).mock.calls[0]?.[0] as Request;
+    expect(forwarded.headers.has('x-allowealth-client-ip')).toBe(false);
+  });
 });
