@@ -98,6 +98,13 @@ export class BudgetPage extends BasePage {
 
     // Wait for the page to refresh (inline edit disappears)
     await expect(input).toBeHidden({ timeout: 10000 });
+    // The partial refresh replaces the cards; the JS click above bypasses the
+    // pointer-events lock, so a next edit opened mid-refresh gets wiped.
+    await expect(this.page.locator('#budget-cards-container')).not.toHaveAttribute(
+      'aria-busy',
+      'true',
+      { timeout: 10000 }
+    );
     await this.waitForPageLoad();
   }
 
