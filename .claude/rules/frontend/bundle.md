@@ -15,7 +15,7 @@ paths:
 - ✅ **Use specific imports** - Import only what you need
 - ✅ **Type-only imports for server libraries** - Prevent bundling server code in client
 - ❌ **Use barrel exports** (`@/lib/utils`) - imports everything, breaks tree-shaking
-- ❌ **Assume a `codeSplitting.groups` `test` regex captures transitive dependencies** - a pattern matching only the wrapper package won't pull in its dependencies; match the whole `node_modules` subtree the chunk needs
+- ✅ **Keep chunk groups in `codeSplitting.groups`** - see Code Splitting below
 
 ## Import Patterns
 
@@ -54,21 +54,18 @@ import { Chart } from 'chart.js/auto'; // +100KB
 
 ## Code Splitting
 
-Astro 7 builds on Vite 8, which uses Rolldown instead of Rollup. Rollup's
-`build.rollupOptions.output.manualChunks` no longer exists. Setting it is
-silently ignored, producing an unsplit bundle with no error. Use Rolldown's
-`codeSplitting.groups` instead, matching the shape in `astro.config.ts`:
+Astro 7 builds on Vite 8, which uses Rolldown instead of Rollup. Chunk groups live in
+`build.rolldownOptions.output.codeSplitting.groups` (`rollupOptions` is a deprecated alias):
 
 ```typescript
 // astro.config.ts
 export default defineConfig({
   vite: {
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           codeSplitting: {
             groups: [
-              // ✅ Match the whole node_modules subtree for the package
               { name: 'chartjs', test: /node_modules[\\/]chart\.js/ },
               { name: 'motion', test: /node_modules[\\/](motion|framer-motion)/ },
             ],
@@ -82,10 +79,10 @@ export default defineConfig({
 
 **Rules:**
 
-- ❌ **Use `manualChunks`** - Vite 8 / Rolldown has no such option; it is silently ignored, not an error
 - ✅ **Use `codeSplitting.groups`** with a `test` regex per chunk
-- ❌ **Write a narrow `test` regex that matches only the wrapper package** - e.g. `/node_modules[\\/]motion$/` misses `motion-dom`/`framer-motion`
-- ✅ **Match the shared `node_modules` path prefix** so transitive dependencies pulled in under the same package tree are captured too
+- ❌ **Use object-form `manualChunks`** - Rolldown dropped it. The function form still works, but keep chunk rules in `groups` so they live in one place
+- ✅ **Rely on `includeDependenciesRecursively`** - it defaults to `true`, so a group also takes the modules its matches import (e.g. `@kurkle/color` lands in `chartjs` without being matched)
+- ✅ **Verify chunk contents after changing a group** - check `dist/stats.html` or the `dist/client/_astro/*.js` files, not just the total size
 
 ## Checking Bundle Size
 

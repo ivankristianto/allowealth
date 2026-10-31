@@ -39,7 +39,7 @@ export default defineConfig({
       // Keep processed Astro scripts external so CSP does not require
       // per-request HTML nonce injection in middleware.
       assetsInlineLimit: 0,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           codeSplitting: {
             groups: [
