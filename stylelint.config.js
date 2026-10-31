@@ -26,6 +26,9 @@ export default {
         ],
       },
     ],
+    // Tailwind's @apply takes utility classes; csstree patches validate it as the
+    // CSS Mixins @apply, which only accepts dashed idents.
+    'at-rule-prelude-no-invalid': [true, { ignoreAtRules: ['apply'] }],
     // Allow custom class names
     'selector-class-pattern': null,
     // Allow custom property names (CSS variables)
