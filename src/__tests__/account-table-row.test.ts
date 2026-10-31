@@ -50,10 +50,8 @@ describe('AccountTableRow', () => {
 
   it('renders the actions cell only for non-historical view', () => {
     const content = readFileSync('src/components/molecules/AccountTableRow.astro', 'utf8');
-    const normalizedContent = content.replace(/\s+/g, ' ');
-
-    expect(normalizedContent).toContain(
-      '{ !isHistoricalView && ( <td class="px-2 py-2.5 text-right md:px-3">'
+    expect(content).toMatch(
+      /\{\s*!isHistoricalView && \(\s*<td class="px-2 py-2\.5 text-right md:px-3">/
     );
   });
 
