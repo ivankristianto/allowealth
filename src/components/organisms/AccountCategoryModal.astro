@@ -43,13 +43,11 @@ import Button from '@/components/atoms/Button.astro';
       <!-- Header -->
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
-          {
-            isEditMode ? (
-              <Pencil size={24} class="stroke-current text-accent" aria-hidden="true" />
-            ) : (
-              <Plus size={24} class="stroke-current text-accent" aria-hidden="true" />
-            )
-          }
+          {isEditMode ? (
+            <Pencil size={24} class="stroke-current text-accent" aria-hidden="true" />
+          ) : (
+            <Plus size={24} class="stroke-current text-accent" aria-hidden="true" />
+          )}
         </div>
         <div class="flex-1">
           <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
@@ -93,7 +91,10 @@ import Button from '@/components/atoms/Button.astro';
           errorMessage={errors.description}
         >
           <div slot="label">
-            <Label htmlFor={`${id}-description`} helpText="Optional"> Description </Label>
+            <Label htmlFor={`${id}-description`} helpText="Optional">
+              {' '}
+              Description{' '}
+            </Label>
           </div>
           <textarea
             name="description"
@@ -101,8 +102,8 @@ import Button from '@/components/atoms/Button.astro';
             class="textarea textarea-bordered w-full text-xs bg-base-200 min-h-[96px] focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
             maxlength="500"
             placeholder="Short note about this category"
-            data-testid="account-category-description-input">{values.description || ''}</textarea
-          >
+            data-testid="account-category-description-input"
+          >{values.description || ''}</textarea>
         </FormField>
 
         <FormField
@@ -122,7 +123,9 @@ import Button from '@/components/atoms/Button.astro';
             <option value="account" selected={values.type === 'account' || !values.type}>
               Account
             </option>
-            <option value="liability" selected={values.type === 'liability'}>Liability</option>
+            <option value="liability" selected={values.type === 'liability'}>
+              Liability
+            </option>
           </select>
         </FormField>
 

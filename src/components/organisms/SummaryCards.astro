@@ -108,171 +108,166 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
   role="region"
   aria-label="Financial summary"
 >
-  {
-    error ? (
-      // Error state
-      <div class="col-span-full" role="alert" aria-live="assertive">
-        <Card className="border-error">
-          <div class="flex items-center gap-3 text-error">
-            <CircleAlert size={24} class="shrink-0" aria-hidden="true" />
-            <div>
-              <p class="font-semibold">Unable to load summary data</p>
-              <p class="text-sm">Please try again later</p>
-            </div>
+  {error ? (
+    // Error state
+    <div class="col-span-full" role="alert" aria-live="assertive">
+      <Card className="border-error">
+        <div class="flex items-center gap-3 text-error">
+          <CircleAlert size={24} class="shrink-0" aria-hidden="true" />
+          <div>
+            <p class="font-semibold">Unable to load summary data</p>
+            <p class="text-sm">Please try again later</p>
           </div>
-        </Card>
-      </div>
-    ) : loading ? (
-      // Loading skeleton
-      <div role="status" aria-live="polite" aria-label="Loading financial summary">
-        <Card>
-          <div class="space-y-3" aria-hidden="true">
-            <Skeleton variant="text" width="33%" />
-            <Skeleton variant="heading" width="66%" />
-            <Skeleton variant="text" width="50%" />
+        </div>
+      </Card>
+    </div>
+  ) : loading ? (
+    // Loading skeleton
+    <div role="status" aria-live="polite" aria-label="Loading financial summary">
+      <Card>
+        <div class="space-y-3" aria-hidden="true">
+          <Skeleton variant="text" width="33%" />
+          <Skeleton variant="heading" width="66%" />
+          <Skeleton variant="text" width="50%" />
+        </div>
+      </Card>
+      <Card>
+        <div class="space-y-3" aria-hidden="true">
+          <Skeleton variant="text" width="33%" />
+          <Skeleton variant="rectangular" width="100%" height="5rem" className="rounded" />
+        </div>
+      </Card>
+      <Card>
+        <div class="space-y-3" aria-hidden="true">
+          <Skeleton variant="text" width="33%" />
+          <Skeleton variant="heading" width="50%" />
+        </div>
+      </Card>
+      <Card>
+        <div class="space-y-3" aria-hidden="true">
+          <Skeleton variant="text" width="33%" />
+          <Skeleton variant="rectangular" width="100%" height="5rem" className="rounded" />
+        </div>
+      </Card>
+      <Card>
+        <div class="space-y-3" aria-hidden="true">
+          <Skeleton variant="text" width="33%" />
+          <Skeleton variant="heading" width="50%" />
+        </div>
+      </Card>
+    </div>
+  ) : isEmpty ? (
+    // Empty state
+    <div class="col-span-full" role="status" aria-live="polite">
+      <Card>
+        <EmptyState
+          title="No data yet"
+          message="Start by adding your accounts and transactions"
+          iconName="trending"
+          variant="centered"
+          className="py-0"
+        />
+      </Card>
+    </div>
+  ) : (
+    // Normal state with data
+    <>
+      {/* Total Accounts Card */}
+      <StatCard
+        title="Total Accounts"
+        value={formatCurrency(data!.totalAccounts.converted, data!.totalAccounts.convertedCurrency)}
+        valueColor="text-success"
+        iconVariant="accent"
+        className="transition-all hover:shadow-md"
+      >
+        <DollarSign slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        <div slot="details" class="space-y-2">
+          <div class="flex justify-between items-baseline">
+            <span class="text-sm text-base-content/60">IDR:</span>
+            <span class="font-semibold text-lg text-success">
+              {formatCurrency(data!.totalAccounts.idr, 'IDR')}
+            </span>
           </div>
-        </Card>
-        <Card>
-          <div class="space-y-3" aria-hidden="true">
-            <Skeleton variant="text" width="33%" />
-            <Skeleton variant="rectangular" width="100%" height="5rem" className="rounded" />
+          <div class="flex justify-between items-baseline">
+            <span class="text-sm text-base-content/60">USD:</span>
+            <span class="font-semibold text-lg text-info">
+              {formatCurrency(data!.totalAccounts.usd, 'USD')}
+            </span>
           </div>
-        </Card>
-        <Card>
-          <div class="space-y-3" aria-hidden="true">
-            <Skeleton variant="text" width="33%" />
-            <Skeleton variant="heading" width="50%" />
-          </div>
-        </Card>
-        <Card>
-          <div class="space-y-3" aria-hidden="true">
-            <Skeleton variant="text" width="33%" />
-            <Skeleton variant="rectangular" width="100%" height="5rem" className="rounded" />
-          </div>
-        </Card>
-        <Card>
-          <div class="space-y-3" aria-hidden="true">
-            <Skeleton variant="text" width="33%" />
-            <Skeleton variant="heading" width="50%" />
-          </div>
-        </Card>
-      </div>
-    ) : isEmpty ? (
-      // Empty state
-      <div class="col-span-full" role="status" aria-live="polite">
-        <Card>
-          <EmptyState
-            title="No data yet"
-            message="Start by adding your accounts and transactions"
-            iconName="trending"
-            variant="centered"
-            className="py-0"
-          />
-        </Card>
-      </div>
-    ) : (
-      // Normal state with data
-      <>
-        {/* Total Accounts Card */}
-        <StatCard
-          title="Total Accounts"
-          value={formatCurrency(
-            data!.totalAccounts.converted,
-            data!.totalAccounts.convertedCurrency
-          )}
-          valueColor="text-success"
-          iconVariant="accent"
-          className="transition-all hover:shadow-md"
-        >
-          <DollarSign slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-          <div slot="details" class="space-y-2">
-            <div class="flex justify-between items-baseline">
-              <span class="text-sm text-base-content/60">IDR:</span>
-              <span class="font-semibold text-lg text-success">
-                {formatCurrency(data!.totalAccounts.idr, 'IDR')}
-              </span>
-            </div>
-            <div class="flex justify-between items-baseline">
-              <span class="text-sm text-base-content/60">USD:</span>
-              <span class="font-semibold text-lg text-info">
-                {formatCurrency(data!.totalAccounts.usd, 'USD')}
-              </span>
-            </div>
-          </div>
-        </StatCard>
+        </div>
+      </StatCard>
 
-        {/* Monthly Spent Card */}
-        <StatCard
-          title="This Month"
-          value={formatCurrency(data!.monthlySpent.spent, data!.monthlySpent.currency)}
-          subtitle={`of ${formatCurrency(data!.monthlySpent.budget, data!.monthlySpent.currency)}`}
-          subtitleColor="text-base-content/60"
-          iconVariant="accent"
-          className="transition-all hover:shadow-md"
-        >
-          <Calendar slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-          <div slot="details" class="space-y-2">
-            <div class="text-right">
-              <span
-                class={`text-lg font-semibold ${getBudgetStatusColor(
-                  data!.monthlySpent.percentage >= 100
-                    ? 'exceeded'
-                    : data!.monthlySpent.percentage >= 80
-                      ? 'warning'
-                      : 'ok'
-                )}`}
-              >
-                {formatPercentage(data!.monthlySpent.percentage)}
-              </span>
-            </div>
-            <ProgressBar
-              value={data!.monthlySpent.percentage}
-              status={getProgressStatus(data!.monthlySpent.percentage)}
-              size="sm"
-              ariaLabel={`Budget progress: ${formatPercentage(data!.monthlySpent.percentage)} used`}
-            />
-            <p class="text-xs text-base-content/60 text-center">
-              {data!.monthlySpent.percentage >= 100
-                ? `Over budget by ${formatPercentage(data!.monthlySpent.percentage - 100)}`
-                : `${formatCurrency(monthlySpentRemaining, data!.monthlySpent.currency)} remaining`}
-            </p>
-          </div>
-        </StatCard>
-
-        {/* Budget Health Card */}
-        <StatCard
-          title="Budget Health"
-          value={`${data!.budgetHealth.alertCount}`}
-          subtitle={`alert${data!.budgetHealth.alertCount !== 1 ? 's' : ''}`}
-          subtitleColor="text-base-content/60"
-          valueColor={getBudgetStatusColor(data!.budgetHealth.status)}
-          iconVariant="accent"
-          className="transition-all hover:shadow-md"
-        >
-          <ShieldCheck slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-          <div slot="details" class="space-y-3">
-            <Badge variant={getBudgetStatusBadge(data!.budgetHealth.status)} size="lg">
-              {data!.budgetHealth.status === 'healthy'
-                ? 'On Track'
-                : data!.budgetHealth.status === 'warning'
-                  ? 'Review'
-                  : 'Action Needed'}
-            </Badge>
-            <a
-              href="/budget"
-              class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-300 rounded-lg transition-colors text-sm font-medium group"
-              aria-label="View budget details"
+      {/* Monthly Spent Card */}
+      <StatCard
+        title="This Month"
+        value={formatCurrency(data!.monthlySpent.spent, data!.monthlySpent.currency)}
+        subtitle={`of ${formatCurrency(data!.monthlySpent.budget, data!.monthlySpent.currency)}`}
+        subtitleColor="text-base-content/60"
+        iconVariant="accent"
+        className="transition-all hover:shadow-md"
+      >
+        <Calendar slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        <div slot="details" class="space-y-2">
+          <div class="text-right">
+            <span
+              class={`text-lg font-semibold ${getBudgetStatusColor(
+                data!.monthlySpent.percentage >= 100
+                  ? 'exceeded'
+                  : data!.monthlySpent.percentage >= 80
+                    ? 'warning'
+                    : 'ok'
+              )}`}
             >
-              View Budget
-              <ChevronRight
-                size={16}
-                class="group-hover:translate-x-1 transition-transform"
-                aria-hidden="true"
-              />
-            </a>
+              {formatPercentage(data!.monthlySpent.percentage)}
+            </span>
           </div>
-        </StatCard>
-      </>
-    )
-  }
+          <ProgressBar
+            value={data!.monthlySpent.percentage}
+            status={getProgressStatus(data!.monthlySpent.percentage)}
+            size="sm"
+            ariaLabel={`Budget progress: ${formatPercentage(data!.monthlySpent.percentage)} used`}
+          />
+          <p class="text-xs text-base-content/60 text-center">
+            {data!.monthlySpent.percentage >= 100
+              ? `Over budget by ${formatPercentage(data!.monthlySpent.percentage - 100)}`
+              : `${formatCurrency(monthlySpentRemaining, data!.monthlySpent.currency)} remaining`}
+          </p>
+        </div>
+      </StatCard>
+
+      {/* Budget Health Card */}
+      <StatCard
+        title="Budget Health"
+        value={`${data!.budgetHealth.alertCount}`}
+        subtitle={`alert${data!.budgetHealth.alertCount !== 1 ? 's' : ''}`}
+        subtitleColor="text-base-content/60"
+        valueColor={getBudgetStatusColor(data!.budgetHealth.status)}
+        iconVariant="accent"
+        className="transition-all hover:shadow-md"
+      >
+        <ShieldCheck slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        <div slot="details" class="space-y-3">
+          <Badge variant={getBudgetStatusBadge(data!.budgetHealth.status)} size="lg">
+            {data!.budgetHealth.status === 'healthy'
+              ? 'On Track'
+              : data!.budgetHealth.status === 'warning'
+                ? 'Review'
+                : 'Action Needed'}
+          </Badge>
+          <a
+            href="/budget"
+            class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-300 rounded-lg transition-colors text-sm font-medium group"
+            aria-label="View budget details"
+          >
+            View Budget
+            <ChevronRight
+              size={16}
+              class="group-hover:translate-x-1 transition-transform"
+              aria-hidden="true"
+            />
+          </a>
+        </div>
+      </StatCard>
+    </>
+  )}
 </div>

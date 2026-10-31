@@ -75,107 +75,99 @@ const gridClasses = [
 
 <div class="@container">
   {/* Error state */}
-  {
-    error && (
-      <div class="alert alert-error" role="alert">
-        <CircleX size={24} class="stroke-current shrink-0" aria-hidden="true" />
-        <span>{error}</span>
-      </div>
-    )
-  }
+  {error && (
+    <div class="alert alert-error" role="alert">
+      <CircleX size={24} class="stroke-current shrink-0" aria-hidden="true" />
+      <span>{error}</span>
+    </div>
+  )}
 
   {/* Loading state */}
-  {
-    !error && loading && (
-      <div class={gridClasses} aria-busy="true" aria-label="Loading budgets">
-        {Array.from({ length: skeletonCount }).map(() => (
-          <div class="@container">
-            <BudgetCard categoryName="" spent={0} budget={0} percentageUsed={0} loading={true} />
-          </div>
-        ))}
-      </div>
-    )
-  }
+  {!error && loading && (
+    <div class={gridClasses} aria-busy="true" aria-label="Loading budgets">
+      {Array.from({ length: skeletonCount }).map(() => (
+        <div class="@container">
+          <BudgetCard categoryName="" spent={0} budget={0} percentageUsed={0} loading={true} />
+        </div>
+      ))}
+    </div>
+  )}
 
   {/* Empty state */}
-  {
-    !error && !loading && budgets.length === 0 && (
-      <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
-          <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
-        </div>
-        <h2 class="text-lg font-bold text-base-content mb-2">No budgets set</h2>
-        <p class="text-sm text-neutral max-w-sm">
-          Set up spending limits for your expense categories to start tracking your budget progress.
-        </p>
+  {!error && !loading && budgets.length === 0 && (
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
+        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
       </div>
-    )
-  }
+      <h2 class="text-lg font-bold text-base-content mb-2">No budgets set</h2>
+      <p class="text-sm text-neutral max-w-sm">
+        Set up spending limits for your expense categories to start tracking your budget progress.
+      </p>
+    </div>
+  )}
 
   {/* Budget grid - sorted by highest % used first (triage order) */}
-  {
-    !error && !loading && sortedBudgets.length > 0 && (
+  {!error && !loading && sortedBudgets.length > 0 && (
+    <div
+      class={gridClasses}
+      role="list"
+      aria-label="Budget categories"
+      aria-rowcount={sortedBudgets.length}
+    >
+      {sortedBudgets.map((budget) => {
+        const budgetAmt =
+          typeof budget.budget_amount === 'string'
+            ? Number(budget.budget_amount)
+            : budget.budget_amount;
+        const spentAmt =
+          typeof budget.spent_amount === 'string'
+            ? Number(budget.spent_amount)
+            : budget.spent_amount;
+        return (
+          <div
+            role="listitem"
+            class="h-full @container"
+            data-sort-title={budget.category_name}
+            data-sort-budget={budgetAmt}
+            data-sort-spent={spentAmt}
+            data-sort-usage={budget.percentage_used}
+            data-budget-status={budget.status}
+          >
+            <BudgetCard
+              categoryId={budget.category_id}
+              categoryName={budget.category_name}
+              icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
+              color={budget.category_color}
+              spent={
+                typeof budget.spent_amount === 'string'
+                  ? Number(budget.spent_amount)
+                  : budget.spent_amount
+              }
+              budget={
+                typeof budget.budget_amount === 'string'
+                  ? Number(budget.budget_amount)
+                  : budget.budget_amount
+              }
+              percentageUsed={budget.percentage_used}
+              status={budget.status}
+              recurringTotal={budget.recurringTotal}
+              isRecurringOverBudget={budget.isRecurringOverBudget}
+              currency={currency}
+              month={month}
+              year={year}
+            />
+          </div>
+        );
+      })}
+      {/* Hidden "no results" element for client-side filter - shown via JS when no cards match */}
       <div
-        class={gridClasses}
-        role="list"
-        aria-label="Budget categories"
-        aria-rowcount={sortedBudgets.length}
+        data-filter-no-results
+        class="hidden col-span-full text-center py-12 text-base-content/60"
+        aria-live="polite"
       >
-        {sortedBudgets.map((budget) => {
-          const budgetAmt =
-            typeof budget.budget_amount === 'string'
-              ? Number(budget.budget_amount)
-              : budget.budget_amount;
-          const spentAmt =
-            typeof budget.spent_amount === 'string'
-              ? Number(budget.spent_amount)
-              : budget.spent_amount;
-          return (
-            <div
-              role="listitem"
-              class="h-full @container"
-              data-sort-title={budget.category_name}
-              data-sort-budget={budgetAmt}
-              data-sort-spent={spentAmt}
-              data-sort-usage={budget.percentage_used}
-              data-budget-status={budget.status}
-            >
-              <BudgetCard
-                categoryId={budget.category_id}
-                categoryName={budget.category_name}
-                icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
-                color={budget.category_color}
-                spent={
-                  typeof budget.spent_amount === 'string'
-                    ? Number(budget.spent_amount)
-                    : budget.spent_amount
-                }
-                budget={
-                  typeof budget.budget_amount === 'string'
-                    ? Number(budget.budget_amount)
-                    : budget.budget_amount
-                }
-                percentageUsed={budget.percentage_used}
-                status={budget.status}
-                recurringTotal={budget.recurringTotal}
-                isRecurringOverBudget={budget.isRecurringOverBudget}
-                currency={currency}
-                month={month}
-                year={year}
-              />
-            </div>
-          );
-        })}
-        {/* Hidden "no results" element for client-side filter - shown via JS when no cards match */}
-        <div
-          data-filter-no-results
-          class="hidden col-span-full text-center py-12 text-base-content/60"
-          aria-live="polite"
-        >
-          <p class="text-lg font-medium">No budgets match your filter</p>
-          <p class="text-sm mt-1">Try a different search term</p>
-        </div>
+        <p class="text-lg font-medium">No budgets match your filter</p>
+        <p class="text-sm mt-1">Try a different search term</p>
       </div>
-    )
-  }
+    </div>
+  )}
 </div>

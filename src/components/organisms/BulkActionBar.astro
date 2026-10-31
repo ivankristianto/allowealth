@@ -40,7 +40,9 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
         <X size={18} class="stroke-current" aria-hidden="true" />
       </Button>
 
-      <span class="text-sm font-bold text-base-content" data-bulk-selected-count>0 selected</span>
+      <span class="text-sm font-bold text-base-content" data-bulk-selected-count>
+        0 selected
+      </span>
 
       <div class="flex-1"></div>
 
@@ -64,46 +66,42 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
           data-bulk-category-list
         >
           <div class="space-y-2 max-h-72 overflow-y-auto">
-            {
-              expenseCategories.length > 0 && (
-                <div class="space-y-1">
-                  <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
-                    Expense
-                  </div>
-                  {expenseCategories.map((category) => (
-                    <button
-                      type="button"
-                      role="option"
-                      class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
-                      data-bulk-action="update_category"
-                      data-bulk-value={category.id}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
+            {expenseCategories.length > 0 && (
+              <div class="space-y-1">
+                <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
+                  Expense
                 </div>
-              )
-            }
-            {
-              incomeCategories.length > 0 && (
-                <div class="space-y-1">
-                  <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
-                    Income
-                  </div>
-                  {incomeCategories.map((category) => (
-                    <button
-                      type="button"
-                      role="option"
-                      class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
-                      data-bulk-action="update_category"
-                      data-bulk-value={category.id}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
+                {expenseCategories.map((category) => (
+                  <button
+                    type="button"
+                    role="option"
+                    class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
+                    data-bulk-action="update_category"
+                    data-bulk-value={category.id}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {incomeCategories.length > 0 && (
+              <div class="space-y-1">
+                <div class="px-3 py-1.5 text-xs font-semibold text-base-content/40 uppercase tracking-wider">
+                  Income
                 </div>
-              )
-            }
+                {incomeCategories.map((category) => (
+                  <button
+                    type="button"
+                    role="option"
+                    class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
+                    data-bulk-action="update_category"
+                    data-bulk-value={category.id}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -128,19 +126,17 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
           data-bulk-account-list
         >
           <div class="space-y-1 max-h-72 overflow-y-auto">
-            {
-              accounts.map((account) => (
-                <button
-                  type="button"
-                  role="option"
-                  class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
-                  data-bulk-action="update_account"
-                  data-bulk-value={account.id}
-                >
-                  {account.name}
-                </button>
-              ))
-            }
+            {accounts.map((account) => (
+              <button
+                type="button"
+                role="option"
+                class="w-full text-left text-sm px-3 py-2 rounded-xl hover:bg-base-200 transition-colors"
+                data-bulk-action="update_account"
+                data-bulk-value={account.id}
+              >
+                {account.name}
+              </button>
+            ))}
           </div>
         </div>
       </div>

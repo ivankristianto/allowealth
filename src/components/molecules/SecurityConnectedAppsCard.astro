@@ -40,58 +40,54 @@ function getAuthorizeUrl(clientId: string): string {
       </p>
     </div>
 
-    {
-      apps.length === 0 ? (
-        <div class="text-sm text-base-content/50 py-4 text-center">
-          No apps connected yet.
-          <br />
-          Visit Security → Connected Apps and click Connect to authorize an AI assistant.
-        </div>
-      ) : (
-        <ul class="divide-y divide-base-200">
-          {apps.map((app) => (
-            <li class="flex items-center justify-between py-3 gap-4">
-              <div class="min-w-0">
-                <p class="font-medium text-sm truncate">{app.clientName}</p>
-                <p class="text-xs text-base-content/50">
-                  Authorized {app.createdAt.toLocaleDateString()} · Expires{' '}
-                  {app.accessTokenExpiresAt.toLocaleDateString()}
-                </p>
-              </div>
-              <form method="POST" action="/api/user/revoke-mcp-token" data-revoke-token-form>
-                <input type="hidden" name="tokenId" value={app.tokenId} />
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="sm"
-                  className="text-error shrink-0"
-                  data-revoke-token-button
-                >
-                  Revoke
-                </Button>
-              </form>
-            </li>
-          ))}
-        </ul>
-      )
-    }
+    {apps.length === 0 ? (
+      <div class="text-sm text-base-content/50 py-4 text-center">
+        No apps connected yet.
+        <br />
+        Visit Security → Connected Apps and click Connect to authorize an AI assistant.
+      </div>
+    ) : (
+      <ul class="divide-y divide-base-200">
+        {apps.map((app) => (
+          <li class="flex items-center justify-between py-3 gap-4">
+            <div class="min-w-0">
+              <p class="font-medium text-sm truncate">{app.clientName}</p>
+              <p class="text-xs text-base-content/50">
+                Authorized {app.createdAt.toLocaleDateString()} · Expires{' '}
+                {app.accessTokenExpiresAt.toLocaleDateString()}
+              </p>
+            </div>
+            <form method="POST" action="/api/user/revoke-mcp-token" data-revoke-token-form>
+              <input type="hidden" name="tokenId" value={app.tokenId} />
+              <Button
+                type="submit"
+                variant="ghost"
+                size="sm"
+                className="text-error shrink-0"
+                data-revoke-token-button
+              >
+                Revoke
+              </Button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    )}
 
     <div class="pt-2 border-t border-base-200">
       <p class="text-xs text-base-content/50 mb-3">Connect an AI assistant:</p>
       <div class="flex flex-wrap gap-2">
-        {
-          MCP_OAUTH_CLIENTS.map((client) => (
-            <Button
-              href={getAuthorizeUrl(client.clientId)}
-              variant="outline"
-              size="sm"
-              data-mcp-connect-link
-              data-client-id={client.clientId}
-            >
-              {client.name}
-            </Button>
-          ))
-        }
+        {MCP_OAUTH_CLIENTS.map((client) => (
+          <Button
+            href={getAuthorizeUrl(client.clientId)}
+            variant="outline"
+            size="sm"
+            data-mcp-connect-link
+            data-client-id={client.clientId}
+          >
+            {client.name}
+          </Button>
+        ))}
       </div>
     </div>
   </div>

@@ -170,16 +170,14 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
     </a>
 
     {/* Historical View Banner */}
-    {
-      !isCurrentMonth && (
-        <div class="flex items-center gap-3 rounded-card border border-info/30 bg-info/5 px-4 py-3">
-          <CalendarClock size={16} class="stroke-current text-info shrink-0" aria-hidden="true" />
-          <p class="text-sm text-base-content/70">
-            Showing balance and transactions for <strong>{selectedMonthLabel}</strong>.
-          </p>
-        </div>
-      )
-    }
+    {!isCurrentMonth && (
+      <div class="flex items-center gap-3 rounded-card border border-info/30 bg-info/5 px-4 py-3">
+        <CalendarClock size={16} class="stroke-current text-info shrink-0" aria-hidden="true" />
+        <p class="text-sm text-base-content/70">
+          Showing balance and transactions for <strong>{selectedMonthLabel}</strong>.
+        </p>
+      </div>
+    )}
 
     {/* Account Header + Balance (combined) */}
     <div class="rounded-card border border-base-300 bg-base-100 p-6 shadow-sm">
@@ -189,14 +187,10 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
             {account.name}
           </h2>
           <div class="mt-2 flex flex-wrap items-center gap-2">
-            <span
-              class="rounded-md bg-base-200 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-base-content/60"
-            >
+            <span class="rounded-md bg-base-200 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-base-content/60">
               {typeLabel}
             </span>
-            <span
-              class="rounded-md bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-accent"
-            >
+            <span class="rounded-md bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-accent">
               {classLabel}
             </span>
             <span
@@ -219,44 +213,40 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
             >
               {formatCurrency(displayBalance, account.currency)}
             </p>
-            {
-              isCurrentMonth && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="min-h-[44px] min-w-[44px] rounded-md border-0 text-base-content/40 hover:bg-accent/10 hover:text-accent"
-                  aria-label={`Update ${account.name} balance`}
-                  data-update-value-account={account.id}
-                  data-account-name={account.name}
-                  data-account-currency={account.currency}
-                  data-account-balance={displayBalance}
-                  data-testid="account-update-value-btn"
-                >
-                  <Pencil size={14} class="stroke-current" aria-hidden="true" />
-                </Button>
-              )
-            }
+            {isCurrentMonth && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="min-h-[44px] min-w-[44px] rounded-md border-0 text-base-content/40 hover:bg-accent/10 hover:text-accent"
+                aria-label={`Update ${account.name} balance`}
+                data-update-value-account={account.id}
+                data-account-name={account.name}
+                data-account-currency={account.currency}
+                data-account-balance={displayBalance}
+                data-testid="account-update-value-btn"
+              >
+                <Pencil size={14} class="stroke-current" aria-hidden="true" />
+              </Button>
+            )}
           </div>
-          {
-            showCalculatedHint && (
-              <div class="mt-1 flex items-center gap-1.5 justify-end">
-                <span class="text-xs text-base-content/60">
-                  Calculated: {formatCurrency(calcBalanceNum, account.currency as Currency)}
-                </span>
-                <div
-                  class="tooltip tooltip-left"
-                  data-tip="Based on last recorded balance + transactions since then. A mismatch may indicate unrecorded transactions."
-                >
-                  <Info
-                    size={12}
-                    class="stroke-current text-base-content/50 shrink-0 cursor-help"
-                    aria-hidden="true"
-                  />
-                </div>
+          {showCalculatedHint && (
+            <div class="mt-1 flex items-center gap-1.5 justify-end">
+              <span class="text-xs text-base-content/60">
+                Calculated: {formatCurrency(calcBalanceNum, account.currency as Currency)}
+              </span>
+              <div
+                class="tooltip tooltip-left"
+                data-tip="Based on last recorded balance + transactions since then. A mismatch may indicate unrecorded transactions."
+              >
+                <Info
+                  size={12}
+                  class="stroke-current text-base-content/50 shrink-0 cursor-help"
+                  aria-hidden="true"
+                />
               </div>
-            )
-          }
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -264,25 +254,33 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
     {/* Monthly Summary */}
     <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
       <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
-        <StatLabel size="sm" className="uppercase tracking-widest">Income</StatLabel>
+        <StatLabel size="sm" className="uppercase tracking-widest">
+          Income
+        </StatLabel>
         <p class="mt-1 text-lg font-bold tracking-tight text-success">
           {formatCurrency(parseFloat(summary.totalIncome), account.currency)}
         </p>
       </div>
       <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
-        <StatLabel size="sm" className="uppercase tracking-widest">Expenses</StatLabel>
+        <StatLabel size="sm" className="uppercase tracking-widest">
+          Expenses
+        </StatLabel>
         <p class="mt-1 text-lg font-bold tracking-tight text-error">
           {formatCurrency(parseFloat(summary.totalExpenses), account.currency)}
         </p>
       </div>
       <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
-        <StatLabel size="sm" className="uppercase tracking-widest">Transfers In</StatLabel>
+        <StatLabel size="sm" className="uppercase tracking-widest">
+          Transfers In
+        </StatLabel>
         <p class="mt-1 text-lg font-bold tracking-tight text-info">
           {formatCurrency(parseFloat(summary.totalTransfersIn), account.currency)}
         </p>
       </div>
       <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
-        <StatLabel size="sm" className="uppercase tracking-widest">Transfers Out</StatLabel>
+        <StatLabel size="sm" className="uppercase tracking-widest">
+          Transfers Out
+        </StatLabel>
         <p class="mt-1 text-lg font-bold tracking-tight text-warning">
           {formatCurrency(parseFloat(summary.totalTransfersOut), account.currency)}
         </p>
@@ -326,64 +324,62 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
         aria-labelledby="tab-transactions"
         data-tab-panel="transactions"
       >
-        {
-          transactions.length > 0 ? (
-            <div class="divide-y divide-base-200">
-              {transactions.map((tx: any) => {
-                const amount = parseFloat(tx.amount || '0');
-                const isIncome =
-                  tx.type === 'income' || (tx.type === 'transfer' && tx.to_account_id === id);
-                const isTransfer = tx.type === 'transfer';
-                const txDate = new Date(tx.transaction_date);
-                const formattedDate = txDate.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                });
+        {transactions.length > 0 ? (
+          <div class="divide-y divide-base-200">
+            {transactions.map((tx: any) => {
+              const amount = parseFloat(tx.amount || '0');
+              const isIncome =
+                tx.type === 'income' || (tx.type === 'transfer' && tx.to_account_id === id);
+              const isTransfer = tx.type === 'transfer';
+              const txDate = new Date(tx.transaction_date);
+              const formattedDate = txDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              });
 
-                return (
-                  <div class="flex items-center justify-between p-4 lg:px-6">
-                    <div class="flex min-w-0 items-center gap-3">
-                      <div
-                        class:list={[
-                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                          isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error',
-                        ]}
-                      >
-                        {isIncome ? (
-                          <ArrowDownLeft size={16} class="stroke-current" />
-                        ) : (
-                          <ArrowUpRight size={16} class="stroke-current" />
-                        )}
-                      </div>
-                      <div class="min-w-0">
-                        <p class="truncate text-sm font-bold text-base-content">
-                          {tx.description || (isTransfer ? 'Transfer' : tx.type)}
-                        </p>
-                        <p class="mt-0.5 text-xs text-base-content/50">
-                          {formattedDate}{' '}
-                          {isTransfer && <span class="ml-1 text-info">(Transfer)</span>}
-                        </p>
-                      </div>
-                    </div>
-                    <p
+              return (
+                <div class="flex items-center justify-between p-4 lg:px-6">
+                  <div class="flex min-w-0 items-center gap-3">
+                    <div
                       class:list={[
-                        'whitespace-nowrap text-sm font-bold tracking-tight',
-                        isIncome ? 'text-success' : 'text-error',
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                        isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error',
                       ]}
                     >
-                      {isIncome ? '+' : '-'}
-                      {formatCurrency(amount, account.currency)}
-                    </p>
+                      {isIncome ? (
+                        <ArrowDownLeft size={16} class="stroke-current" />
+                      ) : (
+                        <ArrowUpRight size={16} class="stroke-current" />
+                      )}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-bold text-base-content">
+                        {tx.description || (isTransfer ? 'Transfer' : tx.type)}
+                      </p>
+                      <p class="mt-0.5 text-xs text-base-content/50">
+                        {formattedDate}{' '}
+                        {isTransfer && <span class="ml-1 text-info">(Transfer)</span>}
+                      </p>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div class="p-8 text-center text-sm text-base-content/50">
-              No transactions for this period.
-            </div>
-          )
-        }
+                  <p
+                    class:list={[
+                      'whitespace-nowrap text-sm font-bold tracking-tight',
+                      isIncome ? 'text-success' : 'text-error',
+                    ]}
+                  >
+                    {isIncome ? '+' : '-'}
+                    {formatCurrency(amount, account.currency)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="p-8 text-center text-sm text-base-content/50">
+            No transactions for this period.
+          </div>
+        )}
       </div>
 
       {/* Panel: Balance History */}
@@ -394,163 +390,155 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
         data-tab-panel="balance-history"
         class="hidden"
       >
-        {
-          balanceHistory.length > 0 ? (
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="border-b border-base-200">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
-                      Date
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
-                      Balance
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
-                      Notes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-base-200">
-                  {balanceHistory.map((entry: any) => {
-                    const entryBalance = parseFloat(entry.balance || '0');
-                    const entryDate = new Date(entry.recorded_at);
-                    const formattedDate = entryDate.toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    });
-                    const formattedTime = entryDate.toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    });
+        {balanceHistory.length > 0 ? (
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-base-200">
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
+                    Date
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
+                    Balance
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
+                    Notes
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-base-200">
+                {balanceHistory.map((entry: any) => {
+                  const entryBalance = parseFloat(entry.balance || '0');
+                  const entryDate = new Date(entry.recorded_at);
+                  const formattedDate = entryDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+                  const formattedTime = entryDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
 
-                    return (
-                      <tr>
-                        <td class="whitespace-nowrap px-4 py-3 lg:px-6">
-                          <p class="text-sm font-medium text-base-content">{formattedDate}</p>
-                          <p class="text-xs text-base-content/40">{formattedTime}</p>
-                        </td>
-                        <td class="px-4 py-3 text-right lg:px-6">
-                          <span
-                            class:list={[
-                              'text-sm font-bold tracking-tight',
-                              account.currency === 'IDR' ? 'text-success' : 'text-info',
-                            ]}
-                          >
-                            {formatCurrency(entryBalance, account.currency)}
-                          </span>
-                        </td>
-                        <td class="px-4 py-3 lg:px-6">
-                          {entry.notes ? (
-                            <span class="text-xs text-base-content/60">{entry.notes}</span>
-                          ) : (
-                            <span class="text-xs text-base-content/40">&mdash;</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div class="p-8 text-center text-sm text-base-content/50">
-              No balance history recorded yet.
-            </div>
-          )
-        }
+                  return (
+                    <tr>
+                      <td class="whitespace-nowrap px-4 py-3 lg:px-6">
+                        <p class="text-sm font-medium text-base-content">{formattedDate}</p>
+                        <p class="text-xs text-base-content/40">{formattedTime}</p>
+                      </td>
+                      <td class="px-4 py-3 text-right lg:px-6">
+                        <span
+                          class:list={[
+                            'text-sm font-bold tracking-tight',
+                            account.currency === 'IDR' ? 'text-success' : 'text-info',
+                          ]}
+                        >
+                          {formatCurrency(entryBalance, account.currency)}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 lg:px-6">
+                        {entry.notes ? (
+                          <span class="text-xs text-base-content/60">{entry.notes}</span>
+                        ) : (
+                          <span class="text-xs text-base-content/40">&mdash;</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div class="p-8 text-center text-sm text-base-content/50">
+            No balance history recorded yet.
+          </div>
+        )}
       </div>
     </div>
 
     {/* Transfer Ownership - Admin only */}
-    {
-      isAdmin && workspaceMembers.length > 1 && (
-        <div
-          class="rounded-card border border-base-300 bg-base-100 p-6 shadow-sm"
-          data-transfer-ownership-section
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <UserRoundCog
-              size={20}
-              class="stroke-current text-base-content/60"
-              aria-hidden="true"
-            />
-            <h3 class="text-sm font-bold uppercase tracking-wider text-base-content/60">
-              Transfer Ownership
-            </h3>
-          </div>
+    {isAdmin && workspaceMembers.length > 1 && (
+      <div
+        class="rounded-card border border-base-300 bg-base-100 p-6 shadow-sm"
+        data-transfer-ownership-section
+      >
+        <div class="flex items-center gap-3 mb-4">
+          <UserRoundCog size={20} class="stroke-current text-base-content/60" aria-hidden="true" />
+          <h3 class="text-sm font-bold uppercase tracking-wider text-base-content/60">
+            Transfer Ownership
+          </h3>
+        </div>
 
-          <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-            <div class="form-control w-full sm:flex-1">
-              <label class="label py-1" for="transfer-owner-select">
-                <span class="text-xs text-base-content/50">
-                  Current owner:{' '}
-                  <strong>
-                    {workspaceMembers.find((m) => m.id === account.created_by_user_id)?.name ||
-                      'Unknown'}
-                  </strong>
-                </span>
-              </label>
-              <select
-                id="transfer-owner-select"
-                class="select select-bordered w-full rounded-xl text-sm"
-                data-transfer-owner-select
-                data-account-id={account.id}
-                data-current-owner={account.created_by_user_id}
-              >
-                {workspaceMembers.map((member) => (
-                  <option value={member.id} selected={member.id === account.created_by_user_id}>
-                    {member.name}
-                    {member.id === account.created_by_user_id ? ' (current)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+          <div class="form-control w-full sm:flex-1">
+            <label class="label py-1" for="transfer-owner-select">
+              <span class="text-xs text-base-content/50">
+                Current owner:{' '}
+                <strong>
+                  {workspaceMembers.find((m) => m.id === account.created_by_user_id)?.name ||
+                    'Unknown'}
+                </strong>
+              </span>
+            </label>
+            <select
+              id="transfer-owner-select"
+              class="select select-bordered w-full rounded-xl text-sm"
+              data-transfer-owner-select
+              data-account-id={account.id}
+              data-current-owner={account.created_by_user_id}
+            >
+              {workspaceMembers.map((member) => (
+                <option value={member.id} selected={member.id === account.created_by_user_id}>
+                  {member.name}
+                  {member.id === account.created_by_user_id ? ' (current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-12 rounded-xl px-6 font-bold"
+            data-transfer-owner-btn
+            disabled
+          >
+            Transfer
+          </Button>
+        </div>
+
+        {/* Confirmation area (hidden by default) */}
+        <div
+          data-transfer-confirm
+          class="hidden mt-4 p-3 rounded-xl bg-warning/10 border border-warning/20"
+        >
+          <p class="text-sm text-warning font-medium mb-3">
+            Are you sure you want to transfer ownership of this account?
+          </p>
+          <div class="flex gap-2">
             <Button
               type="button"
-              variant="outline"
+              variant="warning"
               size="sm"
-              className="h-12 rounded-xl px-6 font-bold"
-              data-transfer-owner-btn
-              disabled
+              className="rounded-xl font-bold"
+              data-transfer-confirm-btn
             >
-              Transfer
+              Yes, Transfer
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-xl border-0"
+              data-transfer-cancel-btn
+            >
+              Cancel
             </Button>
           </div>
-
-          {/* Confirmation area (hidden by default) */}
-          <div
-            data-transfer-confirm
-            class="hidden mt-4 p-3 rounded-xl bg-warning/10 border border-warning/20"
-          >
-            <p class="text-sm text-warning font-medium mb-3">
-              Are you sure you want to transfer ownership of this account?
-            </p>
-            <div class="flex gap-2">
-              <Button
-                type="button"
-                variant="warning"
-                size="sm"
-                className="rounded-xl font-bold"
-                data-transfer-confirm-btn
-              >
-                Yes, Transfer
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="rounded-xl border-0"
-                data-transfer-cancel-btn
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
         </div>
-      )
-    }
+      </div>
+    )}
   </div>
 
   {/* Update Balance Modal */}

@@ -85,18 +85,15 @@ const progressBarId = `progress-bar-${Math.random().toString(36).slice(2, 11)}`;
       style={animate ? 'width: 0%' : `width: ${clampedValue}%`}
       data-target-width={clampedValue}
       data-animate={animate.toString()}
-    >
-    </div>
+    ></div>
   </div>
-  {
-    showLabel && (
-      <span
-        class={`text-xs font-bold tracking-wider uppercase ${getProgressBarStatusColors(status)} px-2 py-1 rounded-full shrink-0`}
-      >
-        {clampedValue}% used
-      </span>
-    )
-  }
+  {showLabel && (
+    <span
+      class={`text-xs font-bold tracking-wider uppercase ${getProgressBarStatusColors(status)} px-2 py-1 rounded-full shrink-0`}
+    >
+      {clampedValue}% used
+    </span>
+  )}
 </div>
 
 <style>

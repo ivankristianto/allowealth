@@ -63,13 +63,11 @@ const errorId = `${name}-error`;
     disabled={disabled}
     aria-label="Currency"
   >
-    {
-      AVAILABLE_CURRENCIES.map((code) => (
-        <option value={code} selected={code === currency}>
-          {code}
-        </option>
-      ))
-    }
+    {AVAILABLE_CURRENCIES.map((code) => (
+      <option value={code} selected={code === currency}>
+        {code}
+      </option>
+    ))}
   </select>
 
   <!-- Amount Input -->
@@ -97,10 +95,8 @@ const errorId = `${name}-error`;
   />
 </div>
 
-{
-  error && errorMessage && (
-    <span id={errorId} class="text-error text-sm mt-1" role="alert">
-      {errorMessage}
-    </span>
-  )
-}
+{error && errorMessage && (
+  <span id={errorId} class="text-error text-sm mt-1" role="alert">
+    {errorMessage}
+  </span>
+)}

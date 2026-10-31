@@ -61,15 +61,13 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
   data-backdrop-close={backdropClose ? 'true' : 'false'}
 >
   <!-- Backdrop with blur effect -->
-  {
-    backdropClose && (
-      <div
-        class="modal-backdrop backdrop-blur-md bg-base-content/20"
-        data-modal-backdrop
-        aria-hidden="true"
-      />
-    )
-  }
+  {backdropClose && (
+    <div
+      class="modal-backdrop backdrop-blur-md bg-base-content/20"
+      data-modal-backdrop
+      aria-hidden="true"
+    />
+  )}
 
   <!-- Modal content -->
   <div
@@ -78,27 +76,25 @@ const resolvedAriaLabel = titleId ? undefined : ariaLabel;
     data-modal-content
   >
     {/* Header */}
-    {
-      (title || closable) && (
-        <div class="flex items-center justify-between mb-4">
-          {title && (
-            <h3 id={titleId} class="font-bold text-lg">
-              {title}
-            </h3>
-          )}
-          {closable && (
-            <form method="dialog">
-              <button
-                class="btn btn-sm btn-circle btn-ghost hover:bg-accent/10 hover:text-accent"
-                aria-label="Close modal"
-              >
-                <X size={16} class="stroke-current" aria-hidden="true" />
-              </button>
-            </form>
-          )}
-        </div>
-      )
-    }
+    {(title || closable) && (
+      <div class="flex items-center justify-between mb-4">
+        {title && (
+          <h3 id={titleId} class="font-bold text-lg">
+            {title}
+          </h3>
+        )}
+        {closable && (
+          <form method="dialog">
+            <button
+              class="btn btn-sm btn-circle btn-ghost hover:bg-accent/10 hover:text-accent"
+              aria-label="Close modal"
+            >
+              <X size={16} class="stroke-current" aria-hidden="true" />
+            </button>
+          </form>
+        )}
+      </div>
+    )}
 
     {/* Content */}
     <div class="py-4">

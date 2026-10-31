@@ -31,22 +31,20 @@ const lastNonLinkIndex = items.reduce((acc, item, i) => (!item.href ? i : acc), 
 <nav aria-label="Breadcrumb">
   <div class="breadcrumbs text-sm">
     <ul>
-      {
-        items.map((item, index) => (
-          <li>
-            {item.href ? (
-              <a href={item.href}>{item.label}</a>
-            ) : (
-              <span
-                class="font-semibold text-base-content"
-                aria-current={index === lastNonLinkIndex ? 'page' : undefined}
-              >
-                {item.label}
-              </span>
-            )}
-          </li>
-        ))
-      }
+      {items.map((item, index) => (
+        <li>
+          {item.href ? (
+            <a href={item.href}>{item.label}</a>
+          ) : (
+            <span
+              class="font-semibold text-base-content"
+              aria-current={index === lastNonLinkIndex ? 'page' : undefined}
+            >
+              {item.label}
+            </span>
+          )}
+        </li>
+      ))}
     </ul>
   </div>
 </nav>

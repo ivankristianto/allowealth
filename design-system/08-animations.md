@@ -169,9 +169,7 @@ The `.theme-transition` utility class provides smooth color transitions when the
 **Usage:**
 
 ```astro
-<div class="card theme-transition">
-  <!-- Card content -->
-</div>
+<div class="card theme-transition"><!-- Card content --></div>
 ```
 
 **CSS Definition (from globals.css):**

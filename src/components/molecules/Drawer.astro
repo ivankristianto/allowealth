@@ -65,8 +65,7 @@ const resolvedAriaLabel = title ? undefined : ariaLabel || 'Drawer';
     class="absolute inset-0 bg-base-content/20 backdrop-blur-sm transition-opacity"
     data-drawer-backdrop
     aria-hidden="true"
-  >
-  </div>
+  ></div>
 
   <!-- Drawer content -->
   <div
@@ -78,13 +77,11 @@ const resolvedAriaLabel = title ? undefined : ariaLabel || 'Drawer';
     >
       <!-- Header -->
       <div class="px-6 py-4 flex items-center justify-between border-b border-base-200">
-        {
-          title && (
-            <h2 id={titleId} class="text-lg font-bold text-primary">
-              {title}
-            </h2>
-          )
-        }
+        {title && (
+          <h2 id={titleId} class="text-lg font-bold text-primary">
+            {title}
+          </h2>
+        )}
         <Button
           type="button"
           variant="ghost"

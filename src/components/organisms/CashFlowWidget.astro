@@ -22,32 +22,30 @@ const { items = [], loading = false, className = '' } = Astro.props;
 <DashboardWidget
   loading={loading}
   isEmpty={items.length === 0}
-  ariaLabel={loading
-    ? 'Loading upcoming activity'
-    : items.length === 0
-      ? 'Upcoming activity'
-      : undefined}
+  ariaLabel={
+    loading ? 'Loading upcoming activity' : items.length === 0 ? 'Upcoming activity' : undefined
+  }
   ariaLabelledBy={!loading && items.length > 0 ? 'cash-flow-title' : undefined}
   class={className}
 >
   <!-- Loading skeleton — title repeated so it's visible during load -->
   <div slot="loading" class="space-y-6">
-    <StatLabel size="md" color="neutral">Upcoming Activity</StatLabel>
+    <StatLabel size="md" color="neutral">
+      Upcoming Activity
+    </StatLabel>
     <div class="space-y-5" role="status" aria-live="polite" aria-label="Loading upcoming activity">
-      {
-        [1, 2].map(() => (
-          <div class="flex items-center justify-between gap-4 p-6 rounded-card border border-base-200 bg-base-200/40">
-            <div class="flex items-center gap-4">
-              <Skeleton variant="rectangular" width="48px" height="48px" className="rounded-2xl" />
-              <div class="space-y-2">
-                <Skeleton variant="rectangular" width="128px" height="16px" />
-                <Skeleton variant="rectangular" width="80px" height="12px" />
-              </div>
+      {[1, 2].map(() => (
+        <div class="flex items-center justify-between gap-4 p-6 rounded-card border border-base-200 bg-base-200/40">
+          <div class="flex items-center gap-4">
+            <Skeleton variant="rectangular" width="48px" height="48px" className="rounded-2xl" />
+            <div class="space-y-2">
+              <Skeleton variant="rectangular" width="128px" height="16px" />
+              <Skeleton variant="rectangular" width="80px" height="12px" />
             </div>
-            <Skeleton variant="rectangular" width="96px" height="16px" />
           </div>
-        ))
-      }
+          <Skeleton variant="rectangular" width="96px" height="16px" />
+        </div>
+      ))}
     </div>
   </div>
 
@@ -59,10 +57,14 @@ const { items = [], loading = false, className = '' } = Astro.props;
   <!-- Normal content -->
   <div class="space-y-6">
     <div id="cash-flow-title">
-      <StatLabel size="md" color="neutral">Upcoming Activity</StatLabel>
+      <StatLabel size="md" color="neutral">
+        Upcoming Activity
+      </StatLabel>
     </div>
     <ul class="space-y-5" role="list">
-      {items.map((item) => <CashFlowItem {...item} />)}
+      {items.map((item) => (
+        <CashFlowItem {...item} />
+      ))}
     </ul>
   </div>
 </DashboardWidget>

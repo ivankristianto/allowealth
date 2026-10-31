@@ -86,107 +86,103 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
   <div class="flex flex-col gap-6 md:gap-8">
     {/* Header */}
     <div class="flex justify-between items-center">
-      <h2 class="font-bold text-base md:text-lg text-base-content tracking-tight">
-        {title}
-      </h2>
-      <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
+      <h2 class="font-bold text-base md:text-lg text-base-content tracking-tight">{title}</h2>
+      <StatLabel size="sm" color="neutral">
+        {subtitle}
+      </StatLabel>
     </div>
 
     {/* Loading State */}
-    {
-      loading ? (
-        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-80">
-          <div class="h-64 w-full sm:w-64 shrink-0">
-            <Skeleton variant="circular" className="h-64 w-full sm:w-64" />
-          </div>
-          <div class="flex-1 w-full space-y-3">
-            {Array.from({ length: 6 }).map(() => (
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <Skeleton variant="circular" width="8px" height="8px" />
-                  <Skeleton variant="rectangular" width="80px" height="12px" />
-                </div>
-                <Skeleton variant="rectangular" width="40px" height="12px" />
+    {loading ? (
+      <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-80">
+        <div class="h-64 w-full sm:w-64 shrink-0">
+          <Skeleton variant="circular" className="h-64 w-full sm:w-64" />
+        </div>
+        <div class="flex-1 w-full space-y-3">
+          {Array.from({ length: 6 }).map(() => (
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <Skeleton variant="circular" width="8px" height="8px" />
+                <Skeleton variant="rectangular" width="80px" height="12px" />
               </div>
-            ))}
-          </div>
+              <Skeleton variant="rectangular" width="40px" height="12px" />
+            </div>
+          ))}
         </div>
-      ) : error ? (
-        /* Error State */
-        <div class="p-12 text-center">
-          <p class="text-error font-medium" role="alert">
-            {error}
-          </p>
-        </div>
-      ) : data.length === 0 ? (
-        /* Empty State */
-        <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">{emptyText}</p>
-        </div>
-      ) : (
-        /* Chart and Legend */
+      </div>
+    ) : error ? (
+      /* Error State */
+      <div class="p-12 text-center">
+        <p class="text-error font-medium" role="alert">
+          {error}
+        </p>
+      </div>
+    ) : data.length === 0 ? (
+      /* Empty State */
+      <div class="p-12 text-center">
+        <p class="text-base-content/60 font-medium">{emptyText}</p>
+      </div>
+    ) : (
+      /* Chart and Legend */
+      <div
+        class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-80"
+        data-chart-data={serializedData}
+        data-chart-colors={serializedColors}
+      >
+        {/* Chart Container */}
         <div
-          class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-80"
-          data-chart-data={serializedData}
-          data-chart-colors={serializedColors}
+          class="h-64 w-full max-w-64 mx-auto sm:mx-0 shrink-0 relative"
+          id={`${chartId}-container`}
         >
-          {/* Chart Container */}
-          <div
-            class="h-64 w-full max-w-64 mx-auto sm:mx-0 shrink-0 relative"
-            id={`${chartId}-container`}
-          >
-            <canvas
-              id={chartId}
-              aria-label={`Expense breakdown chart showing ${data.length} categories`}
-              role="img"
-            />
-          </div>
-
-          {/* Legend */}
-          <div class="flex-1 space-y-3 w-full">
-            {dataWithPercentage.slice(0, 10).map((item) => (
-              <div class="flex items-center justify-between text-xs font-bold">
-                <div class="flex items-center gap-2">
-                  <div
-                    class="w-2 h-2 rounded-full"
-                    style={`background-color: ${item.color}`}
-                    aria-hidden="true"
-                  />
-                  <span class="text-base-content/60 uppercase tracking-tight text-xs">
-                    {item.name}
-                  </span>
-                </div>
-                <span class="text-base-content text-xs">{item.percentage}%</span>
-              </div>
-            ))}
-          </div>
+          <canvas
+            id={chartId}
+            aria-label={`Expense breakdown chart showing ${data.length} categories`}
+            role="img"
+          />
         </div>
-      )
-    }
+
+        {/* Legend */}
+        <div class="flex-1 space-y-3 w-full">
+          {dataWithPercentage.slice(0, 10).map((item) => (
+            <div class="flex items-center justify-between text-xs font-bold">
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-2 h-2 rounded-full"
+                  style={`background-color: ${item.color}`}
+                  aria-hidden="true"
+                />
+                <span class="text-base-content/60 uppercase tracking-tight text-xs">
+                  {item.name}
+                </span>
+              </div>
+              <span class="text-base-content text-xs">{item.percentage}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
 
     {/* Screen Reader Data Table */}
-    {
-      !loading && !error && data.length > 0 && (
-        <table class="sr-only" aria-label="Expense breakdown data table">
-          <thead>
+    {!loading && !error && data.length > 0 && (
+      <table class="sr-only" aria-label="Expense breakdown data table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dataWithPercentage.map((item) => (
             <tr>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Percentage</th>
+              <td>{item.name}</td>
+              <td>{item.value}</td>
+              <td>{item.percentage}%</td>
             </tr>
-          </thead>
-          <tbody>
-            {dataWithPercentage.map((item) => (
-              <tr>
-                <td>{item.name}</td>
-                <td>{item.value}</td>
-                <td>{item.percentage}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )
-    }
+          ))}
+        </tbody>
+      </table>
+    )}
   </div>
 </Card>
 

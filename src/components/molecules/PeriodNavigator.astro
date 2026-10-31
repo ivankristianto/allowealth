@@ -77,101 +77,99 @@ const navButtonClass = compactMobile
   : 'rounded-2xl';
 ---
 
-{
-  options.length > 0 && (
-    <div
-      class={`flex items-center ${rootGapClass} ${className}`}
-      data-period-navigator
-      data-period-options={JSON.stringify(options)}
-      data-prev-href={prevHref}
-      data-next-href={nextHref}
-      data-newest-first={newestFirst ? 'true' : 'false'}
+{options.length > 0 && (
+  <div
+    class={`flex items-center ${rootGapClass} ${className}`}
+    data-period-navigator
+    data-period-options={JSON.stringify(options)}
+    data-prev-href={prevHref}
+    data-next-href={nextHref}
+    data-newest-first={newestFirst ? 'true' : 'false'}
+  >
+    <Button
+      type="button"
+      variant="ghost"
+      size={compactMobile ? 'sm' : 'md'}
+      shape="square"
+      className={`border border-base-300 bg-base-100 shadow-sm ${navButtonClass} ${
+        isPrevDisabled
+          ? 'opacity-30 cursor-not-allowed pointer-events-none'
+          : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+      }`}
+      aria-label="Previous period"
+      aria-disabled={isPrevDisabled}
+      disabled={isPrevDisabled}
+      data-period-nav="prev"
+      data-has-prev={isPrevDisabled ? 'false' : 'true'}
     >
+      <ChevronLeft size={navIconSize} class="stroke-current" aria-hidden="true" />
+    </Button>
+
+    <div class="dropdown" data-period-dropdown>
+      <input type="hidden" name={inputName} data-period-input value={selected} />
       <Button
         type="button"
         variant="ghost"
-        size={compactMobile ? 'sm' : 'md'}
-        shape="square"
-        className={`border border-base-300 bg-base-100 shadow-sm ${navButtonClass} ${
-          isPrevDisabled
-            ? 'opacity-30 cursor-not-allowed pointer-events-none'
-            : 'text-base-content/40 hover:text-primary hover:border-accent/30'
-        }`}
-        aria-label="Previous period"
-        aria-disabled={isPrevDisabled}
-        disabled={isPrevDisabled}
-        data-period-nav="prev"
-        data-has-prev={isPrevDisabled ? 'false' : 'true'}
+        tabindex={0}
+        className={`${triggerClass} hover:bg-base-100`}
+        aria-label={ariaLabel}
+        aria-expanded="false"
+        data-period-trigger
       >
-        <ChevronLeft size={navIconSize} class="stroke-current" aria-hidden="true" />
+        <Calendar
+          size={calendarIconSize}
+          class="stroke-current text-base-content/40"
+          aria-hidden="true"
+        />
+        <span class="flex-1 text-left whitespace-nowrap" data-period-label>
+          {currentLabel}
+        </span>
+        <ChevronDown
+          size={chevronDownSize}
+          class="stroke-current text-base-content/40"
+          aria-hidden="true"
+        />
       </Button>
-
-      <div class="dropdown" data-period-dropdown>
-        <input type="hidden" name={inputName} data-period-input value={selected} />
-        <Button
-          type="button"
-          variant="ghost"
-          tabindex={0}
-          className={`${triggerClass} hover:bg-base-100`}
-          aria-label={ariaLabel}
-          aria-expanded="false"
-          data-period-trigger
-        >
-          <Calendar
-            size={calendarIconSize}
-            class="stroke-current text-base-content/40"
-            aria-hidden="true"
-          />
-          <span class="flex-1 text-left whitespace-nowrap" data-period-label>
-            {currentLabel}
-          </span>
-          <ChevronDown
-            size={chevronDownSize}
-            class="stroke-current text-base-content/40"
-            aria-hidden="true"
-          />
-        </Button>
-        <ul
-          tabindex={0}
-          data-period-options-list
-          class={`dropdown-content z-50 menu flex-nowrap p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] ${dropdownWidthClass}`}
-        >
-          {options.map((option) => (
-            <li class="w-full">
-              <button
-                type="button"
-                class={`w-full text-left whitespace-nowrap text-xs font-medium ${option.value === selected ? 'bg-primary/10 text-primary' : ''}`}
-                data-period-option={option.value}
-                data-period-label={option.label}
-              >
-                {option.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <Button
-        type="button"
-        variant="ghost"
-        size={compactMobile ? 'sm' : 'md'}
-        shape="square"
-        className={`border border-base-300 bg-base-100 shadow-sm ${navButtonClass} ${
-          isNextDisabled
-            ? 'opacity-30 cursor-not-allowed pointer-events-none'
-            : 'text-base-content/40 hover:text-primary hover:border-accent/30'
-        }`}
-        aria-label="Next period"
-        aria-disabled={isNextDisabled}
-        disabled={isNextDisabled}
-        data-period-nav="next"
-        data-has-next={isNextDisabled ? 'false' : 'true'}
+      <ul
+        tabindex={0}
+        data-period-options-list
+        class={`dropdown-content z-50 menu flex-nowrap p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] ${dropdownWidthClass}`}
       >
-        <ChevronRight size={navIconSize} class="stroke-current" aria-hidden="true" />
-      </Button>
+        {options.map((option) => (
+          <li class="w-full">
+            <button
+              type="button"
+              class={`w-full text-left whitespace-nowrap text-xs font-medium ${option.value === selected ? 'bg-primary/10 text-primary' : ''}`}
+              data-period-option={option.value}
+              data-period-label={option.label}
+            >
+              {option.label}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
-  )
-}
+
+    <Button
+      type="button"
+      variant="ghost"
+      size={compactMobile ? 'sm' : 'md'}
+      shape="square"
+      className={`border border-base-300 bg-base-100 shadow-sm ${navButtonClass} ${
+        isNextDisabled
+          ? 'opacity-30 cursor-not-allowed pointer-events-none'
+          : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+      }`}
+      aria-label="Next period"
+      aria-disabled={isNextDisabled}
+      disabled={isNextDisabled}
+      data-period-nav="next"
+      data-has-next={isNextDisabled ? 'false' : 'true'}
+    >
+      <ChevronRight size={navIconSize} class="stroke-current" aria-hidden="true" />
+    </Button>
+  </div>
+)}
 
 <script>
   // Import external initialization script

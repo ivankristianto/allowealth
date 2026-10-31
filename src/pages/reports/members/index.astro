@@ -178,119 +178,117 @@ const totalNet = totals.income - totals.expenses;
     />
   </div>
 
-  {
-    urlUserId && userReportForPartials ? (
-      <div
-        class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
-        data-reports-members-page
-        data-current-range={range}
-        data-current-period={defaultPeriod}
-        data-current-currency={currency}
-        data-current-user-id={urlUserId}
-      >
-        <Breadcrumb
-          items={[
-            { label: 'Expenses', href: '/reports/expenses' },
-            { label: 'Member Spending', href: overviewUrl },
-            { label: selectedMemberName },
-          ]}
-        />
+  {urlUserId && userReportForPartials ? (
+    <div
+      class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+      data-reports-members-page
+      data-current-range={range}
+      data-current-period={defaultPeriod}
+      data-current-currency={currency}
+      data-current-user-id={urlUserId}
+    >
+      <Breadcrumb
+        items={[
+          { label: 'Expenses', href: '/reports/expenses' },
+          { label: 'Member Spending', href: overviewUrl },
+          { label: selectedMemberName },
+        ]}
+      />
 
-        <ReportSummaryCardsPartial
-          totalIncome={userReportForPartials.totalIncome}
-          totalExpenses={userReportForPartials.totalExpenses}
-          netSavings={userReportForPartials.netSavings}
-          budgetHealth={userReportForPartials.budgetHealth}
-          expenseCategories={userReportForPartials.expenseCategories}
-          currency={currency}
-          showWealthCards={false}
-        />
+      <ReportSummaryCardsPartial
+        totalIncome={userReportForPartials.totalIncome}
+        totalExpenses={userReportForPartials.totalExpenses}
+        netSavings={userReportForPartials.netSavings}
+        budgetHealth={userReportForPartials.budgetHealth}
+        expenseCategories={userReportForPartials.expenseCategories}
+        currency={currency}
+        showWealthCards={false}
+      />
 
-        <ReportChartsPartial
-          expenseByCategory={userReportForPartials.expenseByCategory}
-          trendData={userReportForPartials.trendData}
-          currency={currency}
-          resourceAllocationSubtitle={range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX'}
-          financialVelocitySubtitle={range === 'monthly' ? 'LAST 3 MONTHS' : 'MONTHLY BREAKDOWN'}
-        />
+      <ReportChartsPartial
+        expenseByCategory={userReportForPartials.expenseByCategory}
+        trendData={userReportForPartials.trendData}
+        currency={currency}
+        resourceAllocationSubtitle={range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX'}
+        financialVelocitySubtitle={range === 'monthly' ? 'LAST 3 MONTHS' : 'MONTHLY BREAKDOWN'}
+      />
 
-        <CategoryTablePartial
-          categories={userReportForPartials.categoryIntelligence}
-          subtitle="SORTED BY AMOUNT SPENT"
-          range={range}
-        />
+      <CategoryTablePartial
+        categories={userReportForPartials.categoryIntelligence}
+        subtitle="SORTED BY AMOUNT SPENT"
+        range={range}
+      />
 
-        <CategoryDrillDownModal id="member-category-drilldown-modal" />
-      </div>
-    ) : (
-      <div
-        class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
-        data-reports-members-page
-        data-current-range={range}
-        data-current-period={defaultPeriod}
-        data-current-currency={currency}
-        data-current-user-id=""
-      >
-        <Breadcrumb
-          items={[{ label: 'Expenses', href: '/reports/expenses' }, { label: 'Member Spending' }]}
-        />
+      <CategoryDrillDownModal id="member-category-drilldown-modal" />
+    </div>
+  ) : (
+    <div
+      class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10"
+      data-reports-members-page
+      data-current-range={range}
+      data-current-period={defaultPeriod}
+      data-current-currency={currency}
+      data-current-user-id=""
+    >
+      <Breadcrumb
+        items={[{ label: 'Expenses', href: '/reports/expenses' }, { label: 'Member Spending' }]}
+      />
 
-        {/* Summary Stat Cards */}
-        <div class="@container">
-          <div class="grid grid-cols-1 @2xl:grid-cols-3 gap-4 @2xl:gap-6">
-            <StatCard title="TOTAL INCOME">
-              <Fragment slot="details">
+      {/* Summary Stat Cards */}
+      <div class="@container">
+        <div class="grid grid-cols-1 @2xl:grid-cols-3 gap-4 @2xl:gap-6">
+          <StatCard title="TOTAL INCOME">
+            <Fragment slot="details">
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge}>{currency}</span>
+                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                  {formatCurrency(totals.income, currency)}
+                </p>
+              </div>
+            </Fragment>
+          </StatCard>
+
+          <StatCard title="TOTAL EXPENSES">
+            <Fragment slot="details">
+              <div class="space-y-1.5">
                 <div class="flex items-center gap-2">
                   <span class={currencyBadge}>{currency}</span>
-                  <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-                    {formatCurrency(totals.income, currency)}
+                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                    {formatCurrency(totals.expenses, currency)}
                   </p>
                 </div>
-              </Fragment>
-            </StatCard>
+                <p class="text-xs font-bold uppercase text-base-content/40">
+                  {totals.count} TRANSACTIONS
+                </p>
+              </div>
+            </Fragment>
+          </StatCard>
 
-            <StatCard title="TOTAL EXPENSES">
-              <Fragment slot="details">
-                <div class="space-y-1.5">
-                  <div class="flex items-center gap-2">
-                    <span class={currencyBadge}>{currency}</span>
-                    <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                      {formatCurrency(totals.expenses, currency)}
-                    </p>
-                  </div>
-                  <p class="text-xs font-bold uppercase text-base-content/40">
-                    {totals.count} TRANSACTIONS
-                  </p>
-                </div>
-              </Fragment>
-            </StatCard>
-
-            <StatCard title="NET SAVINGS">
-              <Fragment slot="details">
-                <div class="flex items-center gap-2">
-                  <span class={currencyBadge}>{currency}</span>
-                  <p
-                    class={`text-lg font-bold tracking-tight leading-none truncate ${totalNet >= 0 ? 'text-success' : 'text-error'}`}
-                  >
-                    {formatCurrency(totalNet, currency)}
-                  </p>
-                </div>
-              </Fragment>
-            </StatCard>
-          </div>
+          <StatCard title="NET SAVINGS">
+            <Fragment slot="details">
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge}>{currency}</span>
+                <p
+                  class={`text-lg font-bold tracking-tight leading-none truncate ${totalNet >= 0 ? 'text-success' : 'text-error'}`}
+                >
+                  {formatCurrency(totalNet, currency)}
+                </p>
+              </div>
+            </Fragment>
+          </StatCard>
         </div>
-
-        {/* Member Spending Table */}
-        <MemberSpendingTablePartial
-          members={memberSummary}
-          totals={totals}
-          currency={currency}
-          range={range}
-          period={defaultPeriod}
-        />
       </div>
-    )
-  }
+
+      {/* Member Spending Table */}
+      <MemberSpendingTablePartial
+        members={memberSummary}
+        totals={totals}
+        currency={currency}
+        range={range}
+        period={defaultPeriod}
+      />
+    </div>
+  )}
 </ProtectedLayout>
 
 <script>

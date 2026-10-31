@@ -64,69 +64,67 @@ const chartId = `income-source-trend-chart-${Math.random().toString(36).slice(2,
       <h2 class="font-bold text-base md:text-lg text-base-content tracking-tight">
         Income Source Trend
       </h2>
-      <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
+      <StatLabel size="sm" color="neutral">
+        {subtitle}
+      </StatLabel>
     </div>
 
     {/* Loading State */}
-    {
-      loading ? (
-        <div class="py-6 min-h-80">
-          <Skeleton variant="rectangular" className="h-80 w-full rounded-2xl" />
-        </div>
-      ) : error ? (
-        /* Error State */
-        <div class="p-12 text-center">
-          <p class="text-error font-medium" role="alert">
-            {error}
-          </p>
-        </div>
-      ) : data.length === 0 ? (
-        /* Empty State */
-        <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No income trend data available.</p>
-        </div>
-      ) : (
-        /* Chart Container */
-        <div
-          class="h-80 w-full min-h-80"
-          data-chart-data={serializedData}
-          data-currency={currency}
-          id={`${chartId}-container`}
-        >
-          <canvas
-            id={chartId}
-            aria-label={`Income source trend chart for ${data.length} periods`}
-            role="img"
-          />
-        </div>
-      )
-    }
+    {loading ? (
+      <div class="py-6 min-h-80">
+        <Skeleton variant="rectangular" className="h-80 w-full rounded-2xl" />
+      </div>
+    ) : error ? (
+      /* Error State */
+      <div class="p-12 text-center">
+        <p class="text-error font-medium" role="alert">
+          {error}
+        </p>
+      </div>
+    ) : data.length === 0 ? (
+      /* Empty State */
+      <div class="p-12 text-center">
+        <p class="text-base-content/60 font-medium">No income trend data available.</p>
+      </div>
+    ) : (
+      /* Chart Container */
+      <div
+        class="h-80 w-full min-h-80"
+        data-chart-data={serializedData}
+        data-currency={currency}
+        id={`${chartId}-container`}
+      >
+        <canvas
+          id={chartId}
+          aria-label={`Income source trend chart for ${data.length} periods`}
+          role="img"
+        />
+      </div>
+    )}
 
     {/* Screen Reader Data Table */}
-    {
-      !loading && !error && data.length > 0 && (
-        <table class="sr-only" aria-label="Income source trend data table">
-          <thead>
+    {!loading && !error && data.length > 0 && (
+      <table class="sr-only" aria-label="Income source trend data table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Active</th>
+            <th>Passive</th>
+            <th>Other</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item) => (
             <tr>
-              <th>Period</th>
-              <th>Active</th>
-              <th>Passive</th>
-              <th>Other</th>
+              <td>{item.name}</td>
+              <td>{item.active}</td>
+              <td>{item.passive}</td>
+              <td>{item.other}</td>
             </tr>
-          </thead>
-          <tbody>
-            {data.map((item) => (
-              <tr>
-                <td>{item.name}</td>
-                <td>{item.active}</td>
-                <td>{item.passive}</td>
-                <td>{item.other}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )
-    }
+          ))}
+        </tbody>
+      </table>
+    )}
   </div>
 </Card>
 

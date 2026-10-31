@@ -77,9 +77,7 @@ import Button from '@/components/atoms/Button.astro';
     <div slot="default" class="flex flex-col gap-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
           <Store size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div class="flex-1">
@@ -152,11 +150,9 @@ import Button from '@/components/atoms/Button.astro';
             data-category-select
             data-testid="account-category-select"
           >
-            {
-              categoryOptions.map((category) => (
-                <option value={category.value}>{category.label}</option>
-              ))
-            }
+            {categoryOptions.map((category) => (
+              <option value={category.value}>{category.label}</option>
+            ))}
           </select>
 
           {/* Custom type input (hidden by default) */}
@@ -187,13 +183,11 @@ import Button from '@/components/atoms/Button.astro';
               class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
               data-testid="account-currency-select"
             >
-              {
-                resolvedCurrencies.map((currencyCode) => (
-                  <option value={currencyCode} selected={currencyCode === defaultSelectedCurrency}>
-                    {currencyCode}
-                  </option>
-                ))
-              }
+              {resolvedCurrencies.map((currencyCode) => (
+                <option value={currencyCode} selected={currencyCode === defaultSelectedCurrency}>
+                  {currencyCode}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -217,25 +211,23 @@ import Button from '@/components/atoms/Button.astro';
         </div>
 
         {/* Owner transfer (admin only, edit mode) */}
-        {
-          isAdmin && members.length > 1 && (
-            <div class="form-control w-full hidden" data-account-owner-field>
-              <label class="label" for={`${id}-owner`}>
-                <span class="label-text font-medium">Owner</span>
-              </label>
-              <select
-                id={`${id}-owner`}
-                name="ownerId"
-                class="select select-bordered w-full rounded-xl"
-                data-account-owner-select
-              >
-                {members.map((member) => (
-                  <option value={member.id}>{member.name}</option>
-                ))}
-              </select>
-            </div>
-          )
-        }
+        {isAdmin && members.length > 1 && (
+          <div class="form-control w-full hidden" data-account-owner-field>
+            <label class="label" for={`${id}-owner`}>
+              <span class="label-text font-medium">Owner</span>
+            </label>
+            <select
+              id={`${id}-owner`}
+              name="ownerId"
+              class="select select-bordered w-full rounded-xl"
+              data-account-owner-select
+            >
+              {members.map((member) => (
+                <option value={member.id}>{member.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Error message container */}
         <div
@@ -243,8 +235,7 @@ import Button from '@/components/atoms/Button.astro';
           class="hidden alert alert-error text-sm rounded-xl"
           role="alert"
           aria-live="polite"
-        >
-        </div>
+        ></div>
 
         {/* Actions */}
         <div class="flex gap-4 pt-2">

@@ -64,112 +64,102 @@ const actionAccentGhostClassName = accentGhostBtn
         </div>
 
         {/* Transfer - always visible */}
-        {
-          !isHistoricalView && (
-            <div class="tooltip tooltip-bottom" data-tip="Transfer between accounts">
+        {!isHistoricalView && (
+          <div class="tooltip tooltip-bottom" data-tip="Transfer between accounts">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={actionGhostClassName}
+              aria-label="Transfer between accounts"
+              data-transfer-btn
+              data-testid="account-transfer-btn"
+            >
+              <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+              <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+              <span class="hidden md:inline text-sm">Transfer</span>
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Expandable: Bulk Add, Closed accounts */}
+      {hasExpandableActions && (
+        <div slot="expandable" class="flex items-center gap-1 md:gap-2">
+          {/* Bulk Add */}
+          {!isHistoricalView && (
+            <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className={actionGhostClassName}
-                aria-label="Transfer between accounts"
-                data-transfer-btn
-                data-testid="account-transfer-btn"
+                aria-label="Bulk add accounts"
+                data-bulk-add-accounts-btn
+                data-testid="bulk-add-accounts-btn"
               >
-                <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
-                <ArrowRightLeft
-                  size={18}
-                  class="stroke-current hidden md:block"
-                  aria-hidden="true"
-                />
-                <span class="hidden md:inline text-sm">Transfer</span>
+                <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+                <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+                <span class="text-xs md:text-sm">Bulk</span>
               </Button>
             </div>
-          )
-        }
-      </div>
+          )}
 
-      {/* Expandable: Bulk Add, Closed accounts */}
-      {
-        hasExpandableActions && (
-          <div slot="expandable" class="flex items-center gap-1 md:gap-2">
-            {/* Bulk Add */}
-            {!isHistoricalView && (
-              <div class="tooltip tooltip-bottom" data-tip="Bulk add accounts">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={actionGhostClassName}
-                  aria-label="Bulk add accounts"
-                  data-bulk-add-accounts-btn
-                  data-testid="bulk-add-accounts-btn"
-                >
-                  <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-                  <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-                  <span class="text-xs md:text-sm">Bulk</span>
-                </Button>
-              </div>
-            )}
-
-            {/* Closed accounts */}
-            {closedCount > 0 && (
-              <div class="tooltip tooltip-bottom" data-tip="View closed accounts">
-                <a
-                  href="/accounts/closed"
-                  class={ghostBtn}
-                  aria-label="View closed accounts"
-                  data-testid="view-closed-accounts-btn"
-                >
-                  <span class="text-xs md:text-sm">Closed ({closedCount})</span>
-                </a>
-              </div>
-            )}
-          </div>
-        )
-      }
+          {/* Closed accounts */}
+          {closedCount > 0 && (
+            <div class="tooltip tooltip-bottom" data-tip="View closed accounts">
+              <a
+                href="/accounts/closed"
+                class={ghostBtn}
+                aria-label="View closed accounts"
+                data-testid="view-closed-accounts-btn"
+              >
+                <span class="text-xs md:text-sm">Closed ({closedCount})</span>
+              </a>
+            </div>
+          )}
+        </div>
+      )}
     </ActionExpandable>
   </div>
 
   {/* Primary Action - Add Account */}
-  {
-    isHistoricalView ? (
-      <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account (disabled)">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={`${actionAccentGhostClassName} opacity-40 pointer-events-none`}
-          disabled
-          aria-label="Add new account (disabled for historical view)"
-          data-testid="add-account-btn"
-        >
-          <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="hidden sm:inline">New Account</span>
-          <span class="sm:hidden">New</span>
-        </Button>
-      </div>
-    ) : (
-      <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={actionAccentGhostClassName}
-          aria-label="Add new account"
-          data-add-account-btn
-          data-default-category-id={defaultCategoryId}
-          data-testid="add-account-btn"
-        >
-          <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="hidden sm:inline">New Account</span>
-          <span class="sm:hidden">New</span>
-        </Button>
-      </div>
-    )
-  }
+  {isHistoricalView ? (
+    <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account (disabled)">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={`${actionAccentGhostClassName} opacity-40 pointer-events-none`}
+        disabled
+        aria-label="Add new account (disabled for historical view)"
+        data-testid="add-account-btn"
+      >
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden sm:inline">New Account</span>
+        <span class="sm:hidden">New</span>
+      </Button>
+    </div>
+  ) : (
+    <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={actionAccentGhostClassName}
+        aria-label="Add new account"
+        data-add-account-btn
+        data-default-category-id={defaultCategoryId}
+        data-testid="add-account-btn"
+      >
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden sm:inline">New Account</span>
+        <span class="sm:hidden">New</span>
+      </Button>
+    </div>
+  )}
 </ActionBar>
 
 <script>

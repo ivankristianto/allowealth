@@ -41,62 +41,60 @@ if (clientId) {
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="card bg-base-100 shadow-xl w-full max-w-sm">
       <div class="card-body gap-6" data-oauth-consent>
-        {
-          isValidRequest ? (
-            <>
-              <div class="text-center">
-                <h1 class="text-xl font-bold">{clientName}</h1>
-                <p class="text-base-content/60 text-sm mt-1">
-                  wants access to your Allowealth account
-                </p>
-              </div>
-
-              <div class="bg-base-200 rounded-box p-4">
-                <p class="text-sm font-medium mb-2">This will allow it to:</p>
-                <ul class="text-sm text-base-content/70 space-y-1">
-                  <li>• Read your accounts and balances</li>
-                  <li>• Read and create transactions</li>
-                  <li>• Read budget summaries</li>
-                  <li>• Read category and account lists</li>
-                </ul>
-              </div>
-
-              {consentError && (
-                <div class="alert alert-error" role="alert">
-                  <span>{consentError}</span>
-                </div>
-              )}
-
-              <div class="flex gap-3">
-                <form method="post" class="flex-1">
-                  <input type="hidden" name="accept" value="false" />
-                  <input type="hidden" name="oauth_query" value={oauthQuery} />
-                  <Button type="submit" variant="outline" className="w-full">
-                    Deny
-                  </Button>
-                </form>
-                <form method="post" class="flex-1">
-                  <input type="hidden" name="accept" value="true" />
-                  <input type="hidden" name="oauth_query" value={oauthQuery} />
-                  <Button type="submit" variant="primary" className="w-full">
-                    Authorize
-                  </Button>
-                </form>
-              </div>
-            </>
-          ) : (
-            <div class="text-center space-y-2">
-              <h1 class="text-xl font-bold">Authorization Link Expired</h1>
-              <p class="text-base-content/60 text-sm">
-                This authorization request is invalid or has expired. Start again from Security →
-                Connected Apps.
+        {isValidRequest ? (
+          <>
+            <div class="text-center">
+              <h1 class="text-xl font-bold">{clientName}</h1>
+              <p class="text-base-content/60 text-sm mt-1">
+                wants access to your Allowealth account
               </p>
-              <Button href="/security" variant="primary">
-                Go to Security
-              </Button>
             </div>
-          )
-        }
+
+            <div class="bg-base-200 rounded-box p-4">
+              <p class="text-sm font-medium mb-2">This will allow it to:</p>
+              <ul class="text-sm text-base-content/70 space-y-1">
+                <li>• Read your accounts and balances</li>
+                <li>• Read and create transactions</li>
+                <li>• Read budget summaries</li>
+                <li>• Read category and account lists</li>
+              </ul>
+            </div>
+
+            {consentError && (
+              <div class="alert alert-error" role="alert">
+                <span>{consentError}</span>
+              </div>
+            )}
+
+            <div class="flex gap-3">
+              <form method="post" class="flex-1">
+                <input type="hidden" name="accept" value="false" />
+                <input type="hidden" name="oauth_query" value={oauthQuery} />
+                <Button type="submit" variant="outline" className="w-full">
+                  Deny
+                </Button>
+              </form>
+              <form method="post" class="flex-1">
+                <input type="hidden" name="accept" value="true" />
+                <input type="hidden" name="oauth_query" value={oauthQuery} />
+                <Button type="submit" variant="primary" className="w-full">
+                  Authorize
+                </Button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <div class="text-center space-y-2">
+            <h1 class="text-xl font-bold">Authorization Link Expired</h1>
+            <p class="text-base-content/60 text-sm">
+              This authorization request is invalid or has expired. Start again from Security →
+              Connected Apps.
+            </p>
+            <Button href="/security" variant="primary">
+              Go to Security
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   </div>

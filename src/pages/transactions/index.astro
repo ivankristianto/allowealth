@@ -314,17 +314,15 @@ perf?.recordMilestone('preRender.elapsed');
       class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"
       aria-hidden="true"
     >
-      {
-        Array.from({ length: 3 }).map(() => (
-          <div class="card bg-base-100 border border-base-300 rounded-card shadow-sm relative overflow-hidden">
-            <div class:list={['card-body', tokenClasses.cardPaddingLg, tokenClasses.stackSm]}>
-              <Skeleton variant="text" width="50%" />
-              <Skeleton variant="heading" width="80%" />
-              <Skeleton variant="text" width="40%" />
-            </div>
+      {Array.from({ length: 3 }).map(() => (
+        <div class="card bg-base-100 border border-base-300 rounded-card shadow-sm relative overflow-hidden">
+          <div class:list={['card-body', tokenClasses.cardPaddingLg, tokenClasses.stackSm]}>
+            <Skeleton variant="text" width="50%" />
+            <Skeleton variant="heading" width="80%" />
+            <Skeleton variant="text" width="40%" />
           </div>
-        ))
-      }
+        </div>
+      ))}
     </div>
 
     <!-- Filters & Transaction List -->
@@ -357,61 +355,57 @@ perf?.recordMilestone('preRender.elapsed');
       >
         <!-- Loading Skeleton (hidden by default, shown during fetch) -->
         <div id="transaction-list-skeleton" class="divide-y divide-base-200 hidden">
-          {
-            Array.from({ length: 5 }).map(() => (
-              <div class:list={['flex items-center', tokenClasses.gapLg, tokenClasses.paddingMd]}>
-                <div class="shrink-0 w-24">
-                  <Skeleton width="80px" height="16px" />
-                </div>
-                <div class:list={['flex-1 flex items-center', tokenClasses.gapMd]}>
-                  <Skeleton variant="circular" width="40px" height="40px" />
-                  <div class="flex-1">
-                    <Skeleton width="128px" height="16px" className="mb-2" />
-                    <Skeleton width="80px" height="12px" />
-                  </div>
-                </div>
-                <div class="shrink-0 hidden sm:block">
-                  <Skeleton width="64px" height="12px" />
-                </div>
-                <div class="shrink-0 w-28">
-                  <Skeleton width="96px" height="20px" className="ml-auto" />
+          {Array.from({ length: 5 }).map(() => (
+            <div class:list={['flex items-center', tokenClasses.gapLg, tokenClasses.paddingMd]}>
+              <div class="shrink-0 w-24">
+                <Skeleton width="80px" height="16px" />
+              </div>
+              <div class:list={['flex-1 flex items-center', tokenClasses.gapMd]}>
+                <Skeleton variant="circular" width="40px" height="40px" />
+                <div class="flex-1">
+                  <Skeleton width="128px" height="16px" className="mb-2" />
+                  <Skeleton width="80px" height="12px" />
                 </div>
               </div>
-            ))
-          }
+              <div class="shrink-0 hidden sm:block">
+                <Skeleton width="64px" height="12px" />
+              </div>
+              <div class="shrink-0 w-28">
+                <Skeleton width="96px" height="20px" className="ml-auto" />
+              </div>
+            </div>
+          ))}
         </div>
 
         <!-- Transaction List -->
         <div id="transaction-list">
-          {
-            transactions.length > 0 ? (
-              <TransactionDateGroups
-                groups={dateGroups}
-                showActions={true}
-                showBulkSelection={true}
-                inCard={true}
-              />
-            ) : (
-              <div id="empty-state" class="py-24 text-center">
-                <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
-                  <Receipt size={40} class="stroke-current" aria-hidden="true" />
-                </div>
-                <h2 class="text-lg font-bold text-base-content mb-2">No matching transactions</h2>
-                <p class="text-neutral font-medium max-w-xs mx-auto mb-6">
-                  Try adjusting your filters or search terms to find what you're looking for.
-                </p>
-                <a
-                  href="/transactions"
-                  class="btn btn-outline btn-sm rounded-xl gap-2"
-                  data-reset-filters
-                  data-current-month={currentMonthKey}
-                >
-                  <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
-                  Reset filters
-                </a>
+          {transactions.length > 0 ? (
+            <TransactionDateGroups
+              groups={dateGroups}
+              showActions={true}
+              showBulkSelection={true}
+              inCard={true}
+            />
+          ) : (
+            <div id="empty-state" class="py-24 text-center">
+              <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
+                <Receipt size={40} class="stroke-current" aria-hidden="true" />
               </div>
-            )
-          }
+              <h2 class="text-lg font-bold text-base-content mb-2">No matching transactions</h2>
+              <p class="text-neutral font-medium max-w-xs mx-auto mb-6">
+                Try adjusting your filters or search terms to find what you're looking for.
+              </p>
+              <a
+                href="/transactions"
+                class="btn btn-outline btn-sm rounded-xl gap-2"
+                data-reset-filters
+                data-current-month={currentMonthKey}
+              >
+                <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+                Reset filters
+              </a>
+            </div>
+          )}
         </div>
 
         <!-- Pagination -->
@@ -427,9 +421,7 @@ perf?.recordMilestone('preRender.elapsed');
             class:list={['hidden sm:block text-base-content/60', tokenClasses.textSm]}
             data-pagination-info
           >
-            Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total}{
-              ' '
-            }
+            Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total}{' '}
             transactions
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
@@ -484,8 +476,7 @@ perf?.recordMilestone('preRender.elapsed');
       id="delete-dialog-details"
       class:list={['bg-base-200 rounded-2xl hidden', tokenClasses.paddingSm, tokenClasses.textSm]}
       data-confirm-details
-    >
-    </div>
+    ></div>
   </ConfirmationModal>
 
   <BulkActionBar
@@ -514,8 +505,7 @@ perf?.recordMilestone('preRender.elapsed');
       id="bulk-delete-dialog-details"
       class:list={['text-base-content/70 font-medium', tokenClasses.textSm]}
       data-confirm-details
-    >
-    </p>
+    ></p>
   </ConfirmationModal>
 </ProtectedLayout>
 

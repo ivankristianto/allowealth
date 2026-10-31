@@ -50,28 +50,24 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
   <div class="card-body p-8">
     <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
 
-    {
-      bannerMessage && (
-        <div
-          role="alert"
-          class={`alert mb-4 ${bannerType === 'success' ? 'alert-success' : bannerType === 'error' ? 'alert-error' : 'alert-info'}`}
-        >
-          {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
-          {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
-          {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
-          <span>{bannerMessage}</span>
-        </div>
-      )
-    }
+    {bannerMessage && (
+      <div
+        role="alert"
+        class={`alert mb-4 ${bannerType === 'success' ? 'alert-success' : bannerType === 'error' ? 'alert-error' : 'alert-info'}`}
+      >
+        {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
+        {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
+        {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
+        <span>{bannerMessage}</span>
+      </div>
+    )}
 
-    {
-      oauthMessage && (
-        <div role="alert" class="alert alert-error mb-4">
-          <CircleX size={20} class="stroke-current shrink-0" />
-          <span>{oauthMessage}</span>
-        </div>
-      )
-    }
+    {oauthMessage && (
+      <div role="alert" class="alert alert-error mb-4">
+        <CircleX size={20} class="stroke-current shrink-0" />
+        <span>{oauthMessage}</span>
+      </div>
+    )}
 
     <div id="login-messages" data-testid="login-error" aria-live="polite" aria-atomic="true">
       {errorMessage && <ErrorMessage message={errorMessage} />}
@@ -111,9 +107,9 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 
       <!-- Remember Me and Forgot Password -->
       <div class="flex items-center justify-between">
-        <Checkbox id="remember" name="remember" value="true" data-testid="remember-me"
-          >Remember me</Checkbox
-        >
+        <Checkbox id="remember" name="remember" value="true" data-testid="remember-me">
+          Remember me
+        </Checkbox>
         <a
           href="/forgot-password"
           class="text-sm text-primary hover:underline"
@@ -137,8 +133,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         >
           <span data-button-text>Sign In</span>
           <span data-loading-spinner class="hidden">
-            <span class="loading loading-spinner"></span>{' '}
-            Signing In...
+            <span class="loading loading-spinner"></span> Signing In...
           </span>
         </Button>
       </div>
@@ -179,13 +174,9 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
           aria-hidden="true"
           class="shrink-0"
         >
-          <path
-            d="M12.4 2.7a2.5 2.5 0 0 1 3.4 0l5.5 5.5a2.5 2.5 0 0 1 0 3.4l-3.7 3.7a2.5 2.5 0 0 1-3.4 0L8.7 9.8a2.5 2.5 0 0 1 0-3.4z"
-          ></path>
+          <path d="M12.4 2.7a2.5 2.5 0 0 1 3.4 0l5.5 5.5a2.5 2.5 0 0 1 0 3.4l-3.7 3.7a2.5 2.5 0 0 1-3.4 0L8.7 9.8a2.5 2.5 0 0 1 0-3.4z"></path>
           <path d="m14 7 3 3"></path>
-          <path
-            d="m9.4 10.6-6.814 6.814A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814"
-          ></path>
+          <path d="m9.4 10.6-6.814 6.814A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814"></path>
         </svg>
         <span>Sign in with Passkey</span>
       </Button>

@@ -75,81 +75,77 @@ const getMemberColor = (name: string) => {
         </tr>
       </thead>
       <tbody>
-        {
-          members.length === 0 ? (
-            <tr>
-              <td colspan="4" class="text-center py-12 text-base-content/50">
-                <div class="flex flex-col items-center gap-2">
-                  <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center">
-                    <Users class="w-6 h-6 opacity-40" />
-                  </div>
-                  <p class="font-medium">No income data found</p>
-                  <p class="text-sm">Try selecting a different period</p>
+        {members.length === 0 ? (
+          <tr>
+            <td colspan="4" class="text-center py-12 text-base-content/50">
+              <div class="flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center">
+                  <Users class="w-6 h-6 opacity-40" />
                 </div>
-              </td>
-            </tr>
-          ) : (
-            members.map((member) => {
-              const income = safeParseDecimal(member.totalIncome) || 0;
-              const share = totalIncomeNum > 0 ? (income / totalIncomeNum) * 100 : 0;
+                <p class="font-medium">No income data found</p>
+                <p class="text-sm">Try selecting a different period</p>
+              </div>
+            </td>
+          </tr>
+        ) : (
+          members.map((member) => {
+            const income = safeParseDecimal(member.totalIncome) || 0;
+            const share = totalIncomeNum > 0 ? (income / totalIncomeNum) * 100 : 0;
 
-              return (
-                <tr class="hover:bg-base-200/50 transition-colors">
-                  <td>
-                    <div class="flex items-center gap-3">
-                      <div
-                        class={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getMemberColor(member.userName)}`}
-                      >
-                        {getInitials(member.userName)}
-                      </div>
-                      <span class="font-semibold">{member.userName}</span>
+            return (
+              <tr class="hover:bg-base-200/50 transition-colors">
+                <td>
+                  <div class="flex items-center gap-3">
+                    <div
+                      class={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getMemberColor(member.userName)}`}
+                    >
+                      {getInitials(member.userName)}
                     </div>
-                  </td>
-                  <td class="text-right text-success font-medium">
-                    {formatCurrency(income, currency)}
-                  </td>
-                  <td class="text-right hidden sm:table-cell">
-                    <div class="flex items-center justify-end gap-2">
-                      <div class="w-16 h-1.5 rounded-full bg-base-200 overflow-hidden">
-                        <div class="h-full bg-success/60 rounded-full" style={`width: ${share}%`} />
-                      </div>
-                      <span class="text-xs font-medium text-base-content/60 w-10 text-right">
-                        {share.toFixed(0)}%
-                      </span>
-                    </div>
-                  </td>
-                  <td class="text-right">
-                    <span class="text-base-content/60">{member.transactionCount}</span>
-                  </td>
-                </tr>
-              );
-            })
-          )
-        }
-      </tbody>
-      {
-        members.length > 0 && (
-          <tfoot>
-            <tr class="border-t-2 border-base-300">
-              <td class="font-bold">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-base-200 flex items-center justify-center text-xs font-bold text-base-content/40 shrink-0">
-                    ALL
+                    <span class="font-semibold">{member.userName}</span>
                   </div>
-                  <span>Total</span>
+                </td>
+                <td class="text-right text-success font-medium">
+                  {formatCurrency(income, currency)}
+                </td>
+                <td class="text-right hidden sm:table-cell">
+                  <div class="flex items-center justify-end gap-2">
+                    <div class="w-16 h-1.5 rounded-full bg-base-200 overflow-hidden">
+                      <div class="h-full bg-success/60 rounded-full" style={`width: ${share}%`} />
+                    </div>
+                    <span class="text-xs font-medium text-base-content/60 w-10 text-right">
+                      {share.toFixed(0)}%
+                    </span>
+                  </div>
+                </td>
+                <td class="text-right">
+                  <span class="text-base-content/60">{member.transactionCount}</span>
+                </td>
+              </tr>
+            );
+          })
+        )}
+      </tbody>
+      {members.length > 0 && (
+        <tfoot>
+          <tr class="border-t-2 border-base-300">
+            <td class="font-bold">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-base-200 flex items-center justify-center text-xs font-bold text-base-content/40 shrink-0">
+                  ALL
                 </div>
-              </td>
-              <td class="text-right text-success font-bold">
-                {formatCurrency(totalIncomeNum, currency)}
-              </td>
-              <td class="text-right hidden sm:table-cell">
-                <span class="text-xs font-medium text-base-content/40">100%</span>
-              </td>
-              <td class="text-right font-bold">{totalTxns}</td>
-            </tr>
-          </tfoot>
-        )
-      }
+                <span>Total</span>
+              </div>
+            </td>
+            <td class="text-right text-success font-bold">
+              {formatCurrency(totalIncomeNum, currency)}
+            </td>
+            <td class="text-right hidden sm:table-cell">
+              <span class="text-xs font-medium text-base-content/40">100%</span>
+            </td>
+            <td class="text-right font-bold">{totalTxns}</td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   </div>
 </div>

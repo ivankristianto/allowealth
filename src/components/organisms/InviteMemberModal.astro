@@ -43,7 +43,9 @@ const { id } = Astro.props;
 
       <form method="post" id={`${id}-form`} data-invite-form class="flex flex-col gap-5">
         <div class="form-control">
-          <Label htmlFor={`${id}-email`} required>Email Address</Label>
+          <Label htmlFor={`${id}-email`} required>
+            Email Address
+          </Label>
           <Input
             id={`${id}-email`}
             name="email"
@@ -55,7 +57,9 @@ const { id } = Astro.props;
         </div>
 
         <div class="form-control">
-          <Label htmlFor={`${id}-role`} required>Role</Label>
+          <Label htmlFor={`${id}-role`} required>
+            Role
+          </Label>
           <select
             name="role"
             id={`${id}-role`}
@@ -77,8 +81,7 @@ const { id } = Astro.props;
           role="alert"
           aria-live="polite"
           data-form-error
-        >
-        </div>
+        ></div>
 
         <div
           id={`${id}-success`}
@@ -86,8 +89,7 @@ const { id } = Astro.props;
           role="status"
           aria-live="polite"
           data-form-success
-        >
-        </div>
+        ></div>
       </form>
     </div>
 

@@ -53,9 +53,7 @@ import Button from '@/components/atoms/Button.astro';
     <div class="space-y-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
           <ChartNoAxesCombined size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
@@ -63,8 +61,7 @@ import Button from '@/components/atoms/Button.astro';
             Create New Budget
           </h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium">
-            Configure spending limits for {monthName}{' '}
-            {year}.
+            Configure spending limits for {monthName} {year}.
           </p>
         </div>
       </div>
@@ -79,21 +76,19 @@ import Button from '@/components/atoms/Button.astro';
             required
             class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
           >
-            {
-              expenseCategories.map((category, index) => {
-                const existingBudget = budgetMap.get(category.id);
-                return (
-                  <option
-                    value={category.id}
-                    selected={!existingBudget && index === 0}
-                    disabled={!!existingBudget}
-                  >
-                    {category.name}
-                    {existingBudget ? ' (already set)' : ''}
-                  </option>
-                );
-              })
-            }
+            {expenseCategories.map((category, index) => {
+              const existingBudget = budgetMap.get(category.id);
+              return (
+                <option
+                  value={category.id}
+                  selected={!existingBudget && index === 0}
+                  disabled={!!existingBudget}
+                >
+                  {category.name}
+                  {existingBudget ? ' (already set)' : ''}
+                </option>
+              );
+            })}
           </select>
         </FormField>
 
@@ -115,8 +110,11 @@ import Button from '@/components/atoms/Button.astro';
         <input type="hidden" name="year" value={year} />
 
         {/* Error message container */}
-        <div id={`${id}-error`} class="hidden alert alert-error text-sm rounded-xl" role="alert">
-        </div>
+        <div
+          id={`${id}-error`}
+          class="hidden alert alert-error text-sm rounded-xl"
+          role="alert"
+        ></div>
 
         {/* ARIA live region for screen reader announcements (P1 accessibility) */}
         <div id={`${id}-status`} class="sr-only" role="status" aria-live="polite"></div>

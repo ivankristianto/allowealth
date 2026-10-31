@@ -44,30 +44,24 @@ const hasLabelSlot = Astro.slots.has('label');
 ---
 
 <div class:list={['form-control', className]}>
-  {
-    hasLabelSlot ? (
-      <slot name="label" />
-    ) : (
-      <Label htmlFor={htmlFor} required={required}>
-        {label}
-      </Label>
-    )
-  }
+  {hasLabelSlot ? (
+    <slot name="label" />
+  ) : (
+    <Label htmlFor={htmlFor} required={required}>
+      {label}
+    </Label>
+  )}
   <slot />
   {helpText && <p class="text-xs text-base-content/50 mt-1">{helpText}</p>}
-  {
-    shouldShowError && (
-      <ErrorMessage
-        id={errorId || undefined}
-        message={errorMessage}
-        variant="inline"
-        className="mt-1"
-      />
-    )
-  }
-  {
-    errorId && !shouldShowError && (
-      <ErrorMessage id={errorId} message="" variant="inline" className="hidden mt-1" />
-    )
-  }
+  {shouldShowError && (
+    <ErrorMessage
+      id={errorId || undefined}
+      message={errorMessage}
+      variant="inline"
+      className="mt-1"
+    />
+  )}
+  {errorId && !shouldShowError && (
+    <ErrorMessage id={errorId} message="" variant="inline" className="hidden mt-1" />
+  )}
 </div>

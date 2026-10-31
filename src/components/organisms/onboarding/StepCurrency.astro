@@ -36,13 +36,11 @@ import Button from '@/components/atoms/Button.astro';
         class="select select-bordered w-full rounded-lg border border-base-300"
         required
       >
-        {
-          CURRENCY_OPTIONS.map((opt) => (
-            <option value={opt.value} selected={opt.value === currentCurrency}>
-              {CURRENCY_META[opt.value].flagEmoji} {opt.label}
-            </option>
-          ))
-        }
+        {CURRENCY_OPTIONS.map((opt) => (
+          <option value={opt.value} selected={opt.value === currentCurrency}>
+            {CURRENCY_META[opt.value].flagEmoji} {opt.label}
+          </option>
+        ))}
       </select>
     </div>
 
@@ -71,13 +69,11 @@ import Button from '@/components/atoms/Button.astro';
           class="select select-bordered w-full rounded-lg border border-base-300"
         >
           <option value="">— None —</option>
-          {
-            CURRENCY_OPTIONS.map((opt) => (
-              <option value={opt.value} selected={opt.value === currentSecondaryCurrency}>
-                {CURRENCY_META[opt.value].flagEmoji} {opt.label}
-              </option>
-            ))
-          }
+          {CURRENCY_OPTIONS.map((opt) => (
+            <option value={opt.value} selected={opt.value === currentSecondaryCurrency}>
+              {CURRENCY_META[opt.value].flagEmoji} {opt.label}
+            </option>
+          ))}
         </select>
       </div>
     </div>
@@ -86,8 +82,7 @@ import Button from '@/components/atoms/Button.astro';
       id="currency-error"
       class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
       role="alert"
-    >
-    </div>
+    ></div>
 
     <div class="flex justify-end pt-2">
       <Button

@@ -80,140 +80,136 @@ import Button from '@/components/atoms/Button.astro';
     </div>
 
     {/* Loading State */}
-    {
-      loading ? (
-        <div class="flex flex-col @md:flex-row items-center gap-8 py-6">
-          <div class="h-44 w-full shrink-0 @md:w-44">
-            <Skeleton variant="circular" width="180" height="180" />
-          </div>
-          <div class="flex-1 w-full space-y-3">
-            {Array.from({ length: 4 }).map(() => (
-              <div class="flex items-center justify-between p-3.5 rounded-2xl">
-                <div class="flex items-center gap-3">
-                  <Skeleton variant="rectangular" width="14px" height="14px" />
-                  <Skeleton variant="rectangular" width="96px" height="16px" />
-                </div>
-                <Skeleton variant="rectangular" width="40px" height="16px" />
+    {loading ? (
+      <div class="flex flex-col @md:flex-row items-center gap-8 py-6">
+        <div class="h-44 w-full shrink-0 @md:w-44">
+          <Skeleton variant="circular" width="180" height="180" />
+        </div>
+        <div class="flex-1 w-full space-y-3">
+          {Array.from({ length: 4 }).map(() => (
+            <div class="flex items-center justify-between p-3.5 rounded-2xl">
+              <div class="flex items-center gap-3">
+                <Skeleton variant="rectangular" width="14px" height="14px" />
+                <Skeleton variant="rectangular" width="96px" height="16px" />
               </div>
-            ))}
-          </div>
-        </div>
-      ) : error ? (
-        /* Error State */
-        <div class="p-12 text-center">
-          <p class="text-error font-medium" role="alert">
-            {error}
-          </p>
-        </div>
-      ) : data.length === 0 ? (
-        /* Empty State */
-        <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">No spending data yet.</p>
-        </div>
-      ) : (
-        /* Chart and Legend */
-        <div
-          class="flex flex-col @md:flex-row items-center gap-8 py-2"
-          data-chart-data={serializedData}
-          data-chart-colors={serializedColors}
-          data-overall-percentage={overallPercentageRounded.toString()}
-        >
-          {/* Chart Container - Fixed size for proper center text alignment */}
-          <div class="relative mx-auto h-44 w-44 shrink-0 @md:mx-0" id={`${chartId}-container`}>
-            <canvas
-              id={chartId}
-              aria-label={`Spending breakdown chart showing ${data.length} categories`}
-              role="img"
-            />
-            {/* Center Text - Updated via JS */}
-            <div
-              id={`${chartId}-center-text`}
-              class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center transition-opacity duration-200"
-              aria-hidden="true"
-            >
-              <span class="text-2xl font-bold text-base-content tracking-tighter">
-                {overallPercentageRounded}%
-              </span>
-              <span class="text-xs font-bold text-base-content/50 tracking-wide mt-1 uppercase">
-                Spent
-              </span>
+              <Skeleton variant="rectangular" width="40px" height="16px" />
             </div>
-          </div>
-
-          {/* Legend - Using button elements for proper ARIA */}
+          ))}
+        </div>
+      </div>
+    ) : error ? (
+      /* Error State */
+      <div class="p-12 text-center">
+        <p class="text-error font-medium" role="alert">
+          {error}
+        </p>
+      </div>
+    ) : data.length === 0 ? (
+      /* Empty State */
+      <div class="p-12 text-center">
+        <p class="text-base-content/60 font-medium">No spending data yet.</p>
+      </div>
+    ) : (
+      /* Chart and Legend */
+      <div
+        class="flex flex-col @md:flex-row items-center gap-8 py-2"
+        data-chart-data={serializedData}
+        data-chart-colors={serializedColors}
+        data-overall-percentage={overallPercentageRounded.toString()}
+      >
+        {/* Chart Container - Fixed size for proper center text alignment */}
+        <div class="relative mx-auto h-44 w-44 shrink-0 @md:mx-0" id={`${chartId}-container`}>
+          <canvas
+            id={chartId}
+            aria-label={`Spending breakdown chart showing ${data.length} categories`}
+            role="img"
+          />
+          {/* Center Text - Updated via JS */}
           <div
-            id={`${chartId}-legend`}
-            class="flex-1 space-y-1.5 @xs:space-y-3 w-full"
-            role="group"
-            aria-label="Spending categories. Use arrow keys to navigate, Enter or Space to view details."
+            id={`${chartId}-center-text`}
+            class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center transition-opacity duration-200"
+            aria-hidden="true"
           >
-            {data.slice(0, 5).map((item, index) => (
-              <Button
-                type="button"
-                variant="ghost"
-                data-category-index={index}
-                className="spending-chart-legend-item h-auto w-full justify-between rounded-xl border border-transparent p-2.5 text-left opacity-80 hover:border-transparent hover:bg-base-200/50 hover:shadow-sm hover:opacity-100 @xs:rounded-2xl @xs:p-3.5"
-                aria-pressed="false"
-                aria-label={`${item.category}: ${item.percentage}%. Click to view details.${item.category === 'Other' && Array.isArray(item.otherCategoryNames) && item.otherCategoryNames.length > 0 ? ` Includes: ${item.otherCategoryNames.join(', ')}.` : ''}`}
-              >
-                <div class="flex items-center gap-2 @xs:gap-3">
-                  <div
-                    class="w-3 h-3 @xs:w-3.5 @xs:h-3.5 rounded-md @xs:rounded-lg shadow-sm shrink-0"
-                    style={`background-color: ${item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length]}`}
-                    aria-hidden="true"
-                  />
-                  <span
-                    class="max-w-36 truncate text-sm font-semibold tracking-tight text-base-content @xs:max-w-48 @xs:text-base"
-                    title={item.category}
-                  >
-                    {item.category}
-                  </span>
-                  {item.category === 'Other' &&
-                    Array.isArray(item.otherCategoryNames) &&
-                    item.otherCategoryNames.length > 0 && (
-                      <div
-                        class="tooltip tooltip-top"
-                        data-tip={`Includes: ${item.otherCategoryNames.join(', ')}`}
-                      >
-                        <Info
-                          size={14}
-                          class="stroke-current text-base-content/40 shrink-0"
-                          aria-hidden="true"
-                        />
-                      </div>
-                    )}
-                </div>
-                <span class="text-sm @xs:text-base font-bold text-base-content">
-                  {item.percentage}%
-                </span>
-              </Button>
-            ))}
+            <span class="text-2xl font-bold text-base-content tracking-tighter">
+              {overallPercentageRounded}%
+            </span>
+            <span class="text-xs font-bold text-base-content/50 tracking-wide mt-1 uppercase">
+              Spent
+            </span>
           </div>
         </div>
-      )
-    }
+
+        {/* Legend - Using button elements for proper ARIA */}
+        <div
+          id={`${chartId}-legend`}
+          class="flex-1 space-y-1.5 @xs:space-y-3 w-full"
+          role="group"
+          aria-label="Spending categories. Use arrow keys to navigate, Enter or Space to view details."
+        >
+          {data.slice(0, 5).map((item, index) => (
+            <Button
+              type="button"
+              variant="ghost"
+              data-category-index={index}
+              className="spending-chart-legend-item h-auto w-full justify-between rounded-xl border border-transparent p-2.5 text-left opacity-80 hover:border-transparent hover:bg-base-200/50 hover:shadow-sm hover:opacity-100 @xs:rounded-2xl @xs:p-3.5"
+              aria-pressed="false"
+              aria-label={`${item.category}: ${item.percentage}%. Click to view details.${item.category === 'Other' && Array.isArray(item.otherCategoryNames) && item.otherCategoryNames.length > 0 ? ` Includes: ${item.otherCategoryNames.join(', ')}.` : ''}`}
+            >
+              <div class="flex items-center gap-2 @xs:gap-3">
+                <div
+                  class="w-3 h-3 @xs:w-3.5 @xs:h-3.5 rounded-md @xs:rounded-lg shadow-sm shrink-0"
+                  style={`background-color: ${item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length]}`}
+                  aria-hidden="true"
+                />
+                <span
+                  class="max-w-36 truncate text-sm font-semibold tracking-tight text-base-content @xs:max-w-48 @xs:text-base"
+                  title={item.category}
+                >
+                  {item.category}
+                </span>
+                {item.category === 'Other' &&
+                  Array.isArray(item.otherCategoryNames) &&
+                  item.otherCategoryNames.length > 0 && (
+                    <div
+                      class="tooltip tooltip-top"
+                      data-tip={`Includes: ${item.otherCategoryNames.join(', ')}`}
+                    >
+                      <Info
+                        size={14}
+                        class="stroke-current text-base-content/40 shrink-0"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  )}
+              </div>
+              <span class="text-sm @xs:text-base font-bold text-base-content">
+                {item.percentage}%
+              </span>
+            </Button>
+          ))}
+        </div>
+      </div>
+    )}
 
     {/* Screen Reader Data Table */}
-    {
-      !loading && !error && data.length > 0 && (
-        <table class="sr-only" aria-label="Spending analysis data table">
-          <thead>
+    {!loading && !error && data.length > 0 && (
+      <table class="sr-only" aria-label="Spending analysis data table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item) => (
             <tr>
-              <th>Category</th>
-              <th>Percentage</th>
+              <td>{item.category}</td>
+              <td>{item.percentage}%</td>
             </tr>
-          </thead>
-          <tbody>
-            {data.map((item) => (
-              <tr>
-                <td>{item.category}</td>
-                <td>{item.percentage}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )
-    }
+          ))}
+        </tbody>
+      </table>
+    )}
   </div>
 </Card>
 

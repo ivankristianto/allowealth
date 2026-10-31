@@ -34,16 +34,14 @@ import Button from '@/components/atoms/Button.astro';
   data-page-size={limit}
   data-current-page={page}
 >
-  {
-    !hideSummary && (
-      <div
-        class:list={['hidden sm:block text-base-content/60', tokenClasses.textSm]}
-        data-pagination-info
-      >
-        Showing {start} to {end} of {total} transactions
-      </div>
-    )
-  }
+  {!hideSummary && (
+    <div
+      class:list={['hidden sm:block text-base-content/60', tokenClasses.textSm]}
+      data-pagination-info
+    >
+      Showing {start} to {end} of {total} transactions
+    </div>
+  )}
   <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
     <Button
       variant="ghost"

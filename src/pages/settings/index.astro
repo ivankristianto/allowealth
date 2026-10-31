@@ -230,51 +230,49 @@ const inviteMemberButtonClassName = accentGhostBtn
             </p>
           </div>
           <ul class="flex flex-col gap-1.5" role="tablist" aria-orientation="vertical">
-            {
-              navItems.map((item) => (
-                <li>
-                  <button
-                    type="button"
-                    id={`settings-tab-${item.id}`}
+            {navItems.map((item) => (
+              <li>
+                <button
+                  type="button"
+                  id={`settings-tab-${item.id}`}
+                  class:list={[
+                    'group flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors duration-200',
+                    item.id === activeSection
+                      ? 'bg-accent/10 font-semibold text-accent shadow-sm'
+                      : 'text-base-content/65 hover:bg-base-200 hover:text-base-content',
+                  ]}
+                  data-settings-tab
+                  data-tab={item.id}
+                  role="tab"
+                  aria-controls={`settings-panel-${item.id}`}
+                  aria-selected={item.id === activeSection ? 'true' : 'false'}
+                >
+                  <span
                     class:list={[
-                      'group flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors duration-200',
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors',
                       item.id === activeSection
-                        ? 'bg-accent/10 font-semibold text-accent shadow-sm'
-                        : 'text-base-content/65 hover:bg-base-200 hover:text-base-content',
+                        ? 'bg-accent/15 text-accent'
+                        : 'bg-base-200 text-base-content/50 group-hover:bg-base-300 group-hover:text-base-content/70',
                     ]}
-                    data-settings-tab
-                    data-tab={item.id}
-                    role="tab"
-                    aria-controls={`settings-panel-${item.id}`}
-                    aria-selected={item.id === activeSection ? 'true' : 'false'}
                   >
-                    <span
-                      class:list={[
-                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors',
-                        item.id === activeSection
-                          ? 'bg-accent/15 text-accent'
-                          : 'bg-base-200 text-base-content/50 group-hover:bg-base-300 group-hover:text-base-content/70',
-                      ]}
-                    >
-                      <item.icon size={18} class="stroke-current" aria-hidden="true" />
-                    </span>
-                    <span class="min-w-0 flex-1">{item.label}</span>
-                    <span
-                      class:list={[
-                        'rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-widest',
-                        item.id === activeSection
-                          ? 'bg-accent/15 text-accent'
-                          : 'bg-base-200 text-base-content/40',
-                      ]}
-                      data-active-dot
-                      aria-hidden="true"
-                    >
-                      {item.id === activeSection ? 'Live' : 'Tab'}
-                    </span>
-                  </button>
-                </li>
-              ))
-            }
+                    <item.icon size={18} class="stroke-current" aria-hidden="true" />
+                  </span>
+                  <span class="min-w-0 flex-1">{item.label}</span>
+                  <span
+                    class:list={[
+                      'rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-widest',
+                      item.id === activeSection
+                        ? 'bg-accent/15 text-accent'
+                        : 'bg-base-200 text-base-content/40',
+                    ]}
+                    data-active-dot
+                    aria-hidden="true"
+                  >
+                    {item.id === activeSection ? 'Live' : 'Tab'}
+                  </span>
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </nav>
@@ -317,45 +315,41 @@ const inviteMemberButtonClassName = accentGhostBtn
                         </p>
                       </div>
 
-                      {
-                        isAdmin && (
-                          <div class="form-control">
-                            <Label htmlFor="workspace-name">Workspace Name</Label>
-                            <div class="flex gap-2">
-                              <input
-                                type="text"
-                                id="workspace-name"
-                                name="workspaceName"
-                                value={workspaceData.name}
-                                class="input input-bordered flex-1 h-14 rounded-lg border border-base-300 bg-base-100 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                                placeholder="My Workspace"
-                              />
-                            </div>
-                            <p class="mt-2 ml-4 text-xs text-base-content/50">
-                              This name is visible to all workspace members.
-                            </p>
+                      {isAdmin && (
+                        <div class="form-control">
+                          <Label htmlFor="workspace-name">Workspace Name</Label>
+                          <div class="flex gap-2">
+                            <input
+                              type="text"
+                              id="workspace-name"
+                              name="workspaceName"
+                              value={workspaceData.name}
+                              class="input input-bordered flex-1 h-14 rounded-lg border border-base-300 bg-base-100 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                              placeholder="My Workspace"
+                            />
                           </div>
-                        )
-                      }
+                          <p class="mt-2 ml-4 text-xs text-base-content/50">
+                            This name is visible to all workspace members.
+                          </p>
+                        </div>
+                      )}
 
-                      {
-                        !isAdmin && (
-                          <div class="form-control">
-                            <Label>Workspace Name</Label>
-                            <div class="flex h-14 items-center gap-3 rounded-lg border border-base-300 bg-base-100 py-4 px-6">
-                              <BuildingComplex
-                                size={20}
-                                class="stroke-current text-base-content/50"
-                                aria-hidden="true"
-                              />
-                              <span class="text-base font-bold">{workspaceData.name}</span>
-                            </div>
-                            <p class="mt-2 ml-4 text-xs text-base-content/50">
-                              Only admins can change the workspace name.
-                            </p>
+                      {!isAdmin && (
+                        <div class="form-control">
+                          <Label>Workspace Name</Label>
+                          <div class="flex h-14 items-center gap-3 rounded-lg border border-base-300 bg-base-100 py-4 px-6">
+                            <BuildingComplex
+                              size={20}
+                              class="stroke-current text-base-content/50"
+                              aria-hidden="true"
+                            />
+                            <span class="text-base font-bold">{workspaceData.name}</span>
                           </div>
-                        )
-                      }
+                          <p class="mt-2 ml-4 text-xs text-base-content/50">
+                            Only admins can change the workspace name.
+                          </p>
+                        </div>
+                      )}
                     </section>
 
                     <section
@@ -385,16 +379,14 @@ const inviteMemberButtonClassName = accentGhostBtn
                             ]}
                             disabled={!canChangeCurrency}
                           >
-                            {
-                              currencyOptions.map((currency) => (
-                                <option
-                                  value={currency.value}
-                                  selected={workspaceData.settings.currency === currency.value}
-                                >
-                                  {currency.label}
-                                </option>
-                              ))
-                            }
+                            {currencyOptions.map((currency) => (
+                              <option
+                                value={currency.value}
+                                selected={workspaceData.settings.currency === currency.value}
+                              >
+                                {currency.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -413,49 +405,43 @@ const inviteMemberButtonClassName = accentGhostBtn
                             <option value="" selected={!workspaceData.settings.secondaryCurrency}>
                               None
                             </option>
-                            {
-                              currencyOptions
-                                .filter(
-                                  (currency) => currency.value !== workspaceData.settings.currency
-                                )
-                                .map((currency) => (
-                                  <option
-                                    value={currency.value}
-                                    selected={
-                                      workspaceData.settings.secondaryCurrency === currency.value
-                                    }
-                                  >
-                                    {currency.label}
-                                  </option>
-                                ))
-                            }
+                            {currencyOptions
+                              .filter(
+                                (currency) => currency.value !== workspaceData.settings.currency
+                              )
+                              .map((currency) => (
+                                <option
+                                  value={currency.value}
+                                  selected={
+                                    workspaceData.settings.secondaryCurrency === currency.value
+                                  }
+                                >
+                                  {currency.label}
+                                </option>
+                              ))}
                           </select>
                         </div>
                       </div>
 
                       <div class="mt-4">
-                        {
-                          !canChangeCurrency && (
-                            <div class="alert alert-info text-sm">
-                              <Info class="size-5 shrink-0" />
-                              <span>
-                                Currency settings are locked after creating accounts, budgets, or
-                                transactions.
-                              </span>
-                            </div>
-                          )
-                        }
-                        {
-                          canChangeCurrency && (
-                            <div class="alert alert-warning text-sm">
-                              <Info class="size-5 shrink-0" />
-                              <span>
-                                Choose carefully. Currency settings cannot be changed after you add
-                                accounts or transactions.
-                              </span>
-                            </div>
-                          )
-                        }
+                        {!canChangeCurrency && (
+                          <div class="alert alert-info text-sm">
+                            <Info class="size-5 shrink-0" />
+                            <span>
+                              Currency settings are locked after creating accounts, budgets, or
+                              transactions.
+                            </span>
+                          </div>
+                        )}
+                        {canChangeCurrency && (
+                          <div class="alert alert-warning text-sm">
+                            <Info class="size-5 shrink-0" />
+                            <span>
+                              Choose carefully. Currency settings cannot be changed after you add
+                              accounts or transactions.
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div class="mt-4 form-control">
@@ -465,16 +451,14 @@ const inviteMemberButtonClassName = accentGhostBtn
                           name="weekStart"
                           class="select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                         >
-                          {
-                            weekStartOptions.map((option) => (
-                              <option
-                                value={option.value}
-                                selected={workspaceData.settings.weekStart === option.value}
-                              >
-                                {option.label}
-                              </option>
-                            ))
-                          }
+                          {weekStartOptions.map((option) => (
+                            <option
+                              value={option.value}
+                              selected={workspaceData.settings.weekStart === option.value}
+                            >
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </section>
@@ -522,7 +506,10 @@ const inviteMemberButtonClassName = accentGhostBtn
                   </p>
                   <p class="text-xs text-base-content/50">
                     Linked sign-in methods and two-factor setup are managed from{' '}
-                    <a href="/security" class="link link-hover ml-1">Security</a>.
+                    <a href="/security" class="link link-hover ml-1">
+                      Security
+                    </a>
+                    .
                   </p>
                 </header>
                 <div class="divider my-0"></div>
@@ -537,27 +524,23 @@ const inviteMemberButtonClassName = accentGhostBtn
                         ready.
                       </p>
                     </div>
-                    {
-                      isAdmin && !demoMode && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className={`${inviteMemberButtonClassName} w-full sm:w-auto`}
-                          onclick="document.getElementById('invite-member-modal')?.showModal()"
-                        >
-                          <UserPlus size={16} class="stroke-current" aria-hidden="true" />
-                          Invite Member
-                        </Button>
-                      )
-                    }
+                    {isAdmin && !demoMode && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`${inviteMemberButtonClassName} w-full sm:w-auto`}
+                        onclick="document.getElementById('invite-member-modal')?.showModal()"
+                      >
+                        <UserPlus size={16} class="stroke-current" aria-hidden="true" />
+                        Invite Member
+                      </Button>
+                    )}
                   </div>
                 </div>
 
                 <section class={groupedSectionClass} aria-labelledby="settings-members-active">
-                  <div
-                    class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
+                  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="space-y-1">
                       <p class={sectionEyebrowClass}>Active Members</p>
                       <h3 id="settings-members-active" class={sectionTitleClass}>
@@ -573,95 +556,85 @@ const inviteMemberButtonClassName = accentGhostBtn
                 </section>
 
                 {/* Pending Invitations (Admin only) */}
-                {
-                  !demoMode && isAdmin && invitations.length > 0 && (
-                    <section class={groupedSectionClass} aria-labelledby="settings-members-pending">
-                      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="space-y-1">
-                          <p class={sectionEyebrowClass}>Pending Invitations</p>
-                          <h3 id="settings-members-pending" class={sectionTitleClass}>
-                            Waiting for a response
-                          </h3>
-                        </div>
-                        <span class="badge badge-warning badge-lg">
-                          {invitations.length} Pending
-                        </span>
+                {!demoMode && isAdmin && invitations.length > 0 && (
+                  <section class={groupedSectionClass} aria-labelledby="settings-members-pending">
+                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="space-y-1">
+                        <p class={sectionEyebrowClass}>Pending Invitations</p>
+                        <h3 id="settings-members-pending" class={sectionTitleClass}>
+                          Waiting for a response
+                        </h3>
                       </div>
+                      <span class="badge badge-warning badge-lg">{invitations.length} Pending</span>
+                    </div>
 
-                      <ul
-                        class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100"
-                        data-invitations-list
-                      >
-                        {invitations.map((invitation) => (
-                          <li
-                            class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
-                            data-invitation-item
-                            data-invitation-id={invitation.id}
-                          >
-                            <div class="flex items-center gap-4">
-                              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning">
-                                <Mail size={20} class="stroke-current" aria-hidden="true" />
-                              </div>
-                              <div>
-                                <p class="font-semibold text-base-content">{invitation.email}</p>
-                                <div class="flex items-center gap-2 text-xs text-base-content/60">
-                                  <Clock size={12} aria-hidden="true" />
-                                  <span>
-                                    Expires{' '}
-                                    {new Date(invitation.expiresAt).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                    })}
-                                  </span>
-                                </div>
+                    <ul
+                      class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100"
+                      data-invitations-list
+                    >
+                      {invitations.map((invitation) => (
+                        <li
+                          class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+                          data-invitation-item
+                          data-invitation-id={invitation.id}
+                        >
+                          <div class="flex items-center gap-4">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning">
+                              <Mail size={20} class="stroke-current" aria-hidden="true" />
+                            </div>
+                            <div>
+                              <p class="font-semibold text-base-content">{invitation.email}</p>
+                              <div class="flex items-center gap-2 text-xs text-base-content/60">
+                                <Clock size={12} aria-hidden="true" />
+                                <span>
+                                  Expires{' '}
+                                  {new Date(invitation.expiresAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </span>
                               </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                              <span class="badge badge-warning badge-outline">
-                                {invitation.role}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                shape="square"
-                                className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
-                                aria-label={`Cancel invitation to ${invitation.email}`}
-                                data-cancel-invitation
-                                data-invitation-id={invitation.id}
-                                data-invitation-email={invitation.email}
-                              >
-                                <X size={16} class="stroke-current" aria-hidden="true" />
-                              </Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )
-                }
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <span class="badge badge-warning badge-outline">{invitation.role}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              shape="square"
+                              className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
+                              aria-label={`Cancel invitation to ${invitation.email}`}
+                              data-cancel-invitation
+                              data-invitation-id={invitation.id}
+                              data-invitation-email={invitation.email}
+                            >
+                              <X size={16} class="stroke-current" aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
-                {
-                  !demoMode && isAdmin && invitations.length === 0 && (
-                    <section class={groupedSectionClass}>
-                      <p class={sectionEyebrowClass}>Pending Invitations</p>
-                      <p class="mt-2 text-sm text-base-content/60">
-                        No pending invitations. Use the "Invite Member" button to add new members.
-                      </p>
-                    </section>
-                  )
-                }
+                {!demoMode && isAdmin && invitations.length === 0 && (
+                  <section class={groupedSectionClass}>
+                    <p class={sectionEyebrowClass}>Pending Invitations</p>
+                    <p class="mt-2 text-sm text-base-content/60">
+                      No pending invitations. Use the "Invite Member" button to add new members.
+                    </p>
+                  </section>
+                )}
 
-                {
-                  isAdmin && demoMode && (
-                    <section class={groupedSectionClass}>
-                      <p class={sectionEyebrowClass}>Demo Mode</p>
-                      <p class="mt-2 text-sm text-base-content/60">
-                        Member invitations are disabled in demo mode.
-                      </p>
-                    </section>
-                  )
-                }
+                {isAdmin && demoMode && (
+                  <section class={groupedSectionClass}>
+                    <p class={sectionEyebrowClass}>Demo Mode</p>
+                    <p class="mt-2 text-sm text-base-content/60">
+                      Member invitations are disabled in demo mode.
+                    </p>
+                  </section>
+                )}
               </div>
             </section>
 
@@ -695,31 +668,29 @@ const inviteMemberButtonClassName = accentGhostBtn
                   </p>
                   <div class="mt-4 alert alert-info text-sm">
                     <Info class="size-5 shrink-0" />
-                    <span
-                      >Preview only for now. The toggles stay disabled until delivery is live.</span
-                    >
+                    <span>
+                      Preview only for now. The toggles stay disabled until delivery is live.
+                    </span>
                   </div>
                 </div>
 
                 <div class="flex flex-col gap-4">
-                  {
-                    notificationSettings.map((item) => (
-                      <div class="flex flex-col gap-4 rounded-3xl border border-base-300 bg-base-200/40 p-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="space-y-1">
-                          <p class="font-semibold text-base-content">{item.label}</p>
-                          <p class="text-sm text-base-content/60">{item.description}</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          class="toggle toggle-accent"
-                          name={`notification-${item.id}`}
-                          aria-label={item.label}
-                          checked={item.enabled}
-                          disabled
-                        />
+                  {notificationSettings.map((item) => (
+                    <div class="flex flex-col gap-4 rounded-3xl border border-base-300 bg-base-200/40 p-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="space-y-1">
+                        <p class="font-semibold text-base-content">{item.label}</p>
+                        <p class="text-sm text-base-content/60">{item.description}</p>
                       </div>
-                    ))
-                  }
+                      <input
+                        type="checkbox"
+                        class="toggle toggle-accent"
+                        name={`notification-${item.id}`}
+                        aria-label={item.label}
+                        checked={item.enabled}
+                        disabled
+                      />
+                    </div>
+                  ))}
                 </div>
                 <p class="text-center text-xs text-base-content/50">
                   Notification settings are coming soon.
@@ -747,9 +718,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                 <div class="divider my-0"></div>
 
                 <section class={groupedSectionClass} aria-labelledby="settings-data-backup">
-                  <div
-                    class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
+                  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="space-y-1">
                       <p class={sectionEyebrowClass}>Backup & Restore</p>
                       <h3 id="settings-data-backup" class={sectionTitleClass}>
@@ -758,9 +727,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                     </div>
                     <span class="badge badge-neutral badge-lg">Coming soon</span>
                   </div>
-                  <div
-                    class="flex flex-col gap-3 rounded-3xl border border-base-300 bg-base-100/60 p-6 opacity-60"
-                  >
+                  <div class="flex flex-col gap-3 rounded-3xl border border-base-300 bg-base-100/60 p-6 opacity-60">
                     <p class="text-sm text-base-content/60">
                       Backup and restore stay intentionally inactive until export and restore flows
                       are implemented end to end.
@@ -784,7 +751,8 @@ const inviteMemberButtonClassName = accentGhostBtn
                         rel="noopener noreferrer"
                       >
                         issue #351
-                      </a>.
+                      </a>
+                      .
                     </p>
                   </div>
                 </section>
@@ -801,9 +769,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                   </div>
 
                   <div class="grid gap-4 xl:grid-cols-2">
-                    <div
-                      class="flex flex-col gap-4 rounded-3xl border border-warning/30 bg-base-100 p-6"
-                    >
+                    <div class="flex flex-col gap-4 rounded-3xl border border-warning/30 bg-base-100 p-6">
                       <div class="space-y-1">
                         <p class="font-semibold text-base-content">Clear Transaction History</p>
                         <p class="text-sm text-base-content/60">
@@ -811,9 +777,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                           are kept.
                         </p>
                       </div>
-                      <div
-                        class="alert border border-accent/20 bg-accent/10 py-3 text-sm text-base-content"
-                      >
+                      <div class="alert border border-accent/20 bg-accent/10 py-3 text-sm text-base-content">
                         <Info size={16} class="shrink-0 text-accent" aria-hidden="true" />
                         <span>This cannot be undone.</span>
                       </div>
@@ -834,9 +798,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                       </div>
                     </div>
 
-                    <div
-                      class="flex flex-col gap-4 rounded-3xl border border-error/30 bg-base-100 p-6"
-                    >
+                    <div class="flex flex-col gap-4 rounded-3xl border border-error/30 bg-base-100 p-6">
                       <div class="space-y-1">
                         <p class="font-semibold text-base-content">Factory Reset</p>
                         <p class="text-sm text-base-content/60">
@@ -869,40 +831,38 @@ const inviteMemberButtonClassName = accentGhostBtn
               </div>
             </section>
 
-            {
-              isAdmin && (
-                <section
-                  id="settings-panel-server-stats"
-                  data-settings-panel
-                  data-tab="server-stats"
-                  role="tabpanel"
-                  aria-labelledby="settings-tab-server-stats"
-                  class="hidden"
-                >
-                  <div class="flex flex-col gap-6">
-                    <header class="space-y-1">
-                      <h2 class="text-xl font-semibold text-base-content">Server Stats</h2>
-                      <p class="text-sm text-base-content/60">
-                        Runtime configuration, database, and cache health.
-                      </p>
-                    </header>
-                    <div class="divider my-0" />
+            {isAdmin && (
+              <section
+                id="settings-panel-server-stats"
+                data-settings-panel
+                data-tab="server-stats"
+                role="tabpanel"
+                aria-labelledby="settings-tab-server-stats"
+                class="hidden"
+              >
+                <div class="flex flex-col gap-6">
+                  <header class="space-y-1">
+                    <h2 class="text-xl font-semibold text-base-content">Server Stats</h2>
+                    <p class="text-sm text-base-content/60">
+                      Runtime configuration, database, and cache health.
+                    </p>
+                  </header>
+                  <div class="divider my-0" />
 
-                    {diagnosticsError && (
-                      <div class="alert alert-error rounded-xl" role="alert">
-                        <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
-                        <div>
-                          <h3 class="font-bold">Error Loading Stats</h3>
-                          <p class="text-sm">{diagnosticsError}</p>
-                        </div>
+                  {diagnosticsError && (
+                    <div class="alert alert-error rounded-xl" role="alert">
+                      <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
+                      <div>
+                        <h3 class="font-bold">Error Loading Stats</h3>
+                        <p class="text-sm">{diagnosticsError}</p>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
-                  </div>
-                </section>
-              )
-            }
+                  {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
+                </div>
+              </section>
+            )}
           </div>
         </Card>
       </article>
@@ -923,15 +883,16 @@ const inviteMemberButtonClassName = accentGhostBtn
     <div data-cancel-invitation-modal>
       <h3 class="font-bold text-lg text-warning mb-2">Cancel Invitation</h3>
       <p class="text-base-content/70">
-        Are you sure you want to cancel the invitation to <span
-          class="font-semibold"
-          data-invitation-email-display></span>? They will no longer be able to join this workspace
-        using the invitation link.
+        Are you sure you want to cancel the invitation to{' '}
+        <span class="font-semibold" data-invitation-email-display></span>? They will no longer be
+        able to join this workspace using the invitation link.
       </p>
     </div>
     <div slot="actions" class="modal-action">
       <form method="dialog">
-        <Button type="submit" variant="ghost" className="rounded-2xl">Keep Invitation</Button>
+        <Button type="submit" variant="ghost" className="rounded-2xl">
+          Keep Invitation
+        </Button>
       </form>
       <Button
         type="button"
@@ -960,9 +921,13 @@ const inviteMemberButtonClassName = accentGhostBtn
     </div>
     <div slot="actions" class="modal-action">
       <form method="dialog">
-        <Button type="submit" variant="ghost" className="rounded-2xl">Cancel</Button>
+        <Button type="submit" variant="ghost" className="rounded-2xl">
+          Cancel
+        </Button>
       </form>
-      <Button type="button" variant="danger" data-confirm-clear-history>Clear History</Button>
+      <Button type="button" variant="danger" data-confirm-clear-history>
+        Clear History
+      </Button>
     </div>
   </Modal>
 
@@ -994,7 +959,9 @@ const inviteMemberButtonClassName = accentGhostBtn
     </div>
     <div slot="actions" class="modal-action">
       <form method="dialog">
-        <Button type="submit" variant="ghost" className="rounded-2xl">Cancel</Button>
+        <Button type="submit" variant="ghost" className="rounded-2xl">
+          Cancel
+        </Button>
       </form>
       <Button type="button" variant="danger" disabled data-confirm-factory-reset>
         Factory Reset

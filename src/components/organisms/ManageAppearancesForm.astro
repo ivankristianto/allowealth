@@ -49,31 +49,27 @@ const themes = [
 
     <fieldset id="appearances-form" class="space-y-3" data-current-theme={currentTheme}>
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {
-          themes.map((theme) => (
-            <label class="relative cursor-pointer">
-              <input
-                type="radio"
-                name="theme"
-                value={theme.value}
-                class="peer sr-only"
-                checked={currentTheme === theme.value}
-              />
-              <span
-                class="absolute -top-1.5 -right-1.5 z-10 hidden h-5 w-5 items-center justify-center rounded-full bg-accent peer-checked:flex"
-                aria-hidden="true"
-              >
-                <Check size={10} class="stroke-[3] text-accent-content" />
-              </span>
-              <span class="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-base-300 px-3 py-4 text-center transition-colors duration-150 hover:border-accent/50 peer-checked:border-accent peer-checked:bg-accent/10">
-                <span class="text-sm font-semibold text-base-content">{theme.label}</span>
-                <span class="text-xs leading-relaxed text-base-content/60">
-                  {theme.description}
-                </span>
-              </span>
-            </label>
-          ))
-        }
+        {themes.map((theme) => (
+          <label class="relative cursor-pointer">
+            <input
+              type="radio"
+              name="theme"
+              value={theme.value}
+              class="peer sr-only"
+              checked={currentTheme === theme.value}
+            />
+            <span
+              class="absolute -top-1.5 -right-1.5 z-10 hidden h-5 w-5 items-center justify-center rounded-full bg-accent peer-checked:flex"
+              aria-hidden="true"
+            >
+              <Check size={10} class="stroke-[3] text-accent-content" />
+            </span>
+            <span class="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-base-300 px-3 py-4 text-center transition-colors duration-150 hover:border-accent/50 peer-checked:border-accent peer-checked:bg-accent/10">
+              <span class="text-sm font-semibold text-base-content">{theme.label}</span>
+              <span class="text-xs leading-relaxed text-base-content/60">{theme.description}</span>
+            </span>
+          </label>
+        ))}
       </div>
     </fieldset>
   </div>

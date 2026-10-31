@@ -80,63 +80,59 @@ import Button from '@/components/atoms/Button.astro';
 
   {/* Content */}
   <div class="flex-1 min-w-0">
-    <StatLabel size="sm" className="mb-2">{title}</StatLabel>
+    <StatLabel size="sm" className="mb-2">
+      {title}
+    </StatLabel>
     <p class="text-sm text-base-content leading-relaxed">
-      {
-        status === 'exceeded' ? (
-          <>
-            Your <strong class="font-semibold">{categoryName}</strong> budget has been exceeded by{' '}
-            <strong class="text-error font-bold">{amount}</strong>. Consider reviewing your spending
-            or adjusting your budget allocation.
-          </>
-        ) : (
-          <>
-            Your <strong class="font-semibold">{categoryName}</strong> budget is at{' '}
-            <strong class="font-semibold">{percentageUsed}%</strong> usage. You have{' '}
-            <strong class="text-info font-bold">{amount}</strong> remaining for this period.
-          </>
-        )
-      }
+      {status === 'exceeded' ? (
+        <>
+          Your <strong class="font-semibold">{categoryName}</strong> budget has been exceeded by{' '}
+          <strong class="text-error font-bold">{amount}</strong>. Consider reviewing your spending
+          or adjusting your budget allocation.
+        </>
+      ) : (
+        <>
+          Your <strong class="font-semibold">{categoryName}</strong> budget is at{' '}
+          <strong class="font-semibold">{percentageUsed}%</strong> usage. You have{' '}
+          <strong class="text-info font-bold">{amount}</strong> remaining for this period.
+        </>
+      )}
     </p>
   </div>
 
   {/* CTA Button */}
-  {
-    ctaUrl ? (
-      <a
-        href={ctaUrl}
-        class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap w-full sm:w-auto shrink-0"
-      >
-        {ctaText}
-      </a>
-    ) : (
-      <Button
-        type="button"
-        variant="primary"
-        className="gap-2 whitespace-nowrap w-full sm:w-auto shrink-0"
-        data-execute-reallocation
-      >
-        {ctaText}
-      </Button>
-    )
-  }
+  {ctaUrl ? (
+    <a
+      href={ctaUrl}
+      class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap w-full sm:w-auto shrink-0"
+    >
+      {ctaText}
+    </a>
+  ) : (
+    <Button
+      type="button"
+      variant="primary"
+      className="gap-2 whitespace-nowrap w-full sm:w-auto shrink-0"
+      data-execute-reallocation
+    >
+      {ctaText}
+    </Button>
+  )}
 
   {/* Dismiss Button */}
-  {
-    dismissible && (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        shape="square"
-        className="absolute top-3 right-3 rounded-lg border-0 text-base-content/40 hover:bg-base-200/50 hover:text-base-content/60"
-        aria-label="Dismiss advice"
-        data-dismiss-advice
-      >
-        <X size={18} class="stroke-current" aria-hidden="true" />
-      </Button>
-    )
-  }
+  {dismissible && (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      shape="square"
+      className="absolute top-3 right-3 rounded-lg border-0 text-base-content/40 hover:bg-base-200/50 hover:text-base-content/60"
+      aria-label="Dismiss advice"
+      data-dismiss-advice
+    >
+      <X size={18} class="stroke-current" aria-hidden="true" />
+    </Button>
+  )}
 </aside>
 
 <script>

@@ -51,15 +51,14 @@ const { categories = [], accounts = [], defaultCurrency = DEFAULT_CURRENCY } = A
       role="alert"
       aria-live="polite"
       data-confirm-error
-    >
-    </div>
+    ></div>
 
     {/* Form fields */}
     <div class="space-y-4">
       <label class="form-control gap-1.5">
-        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-          >Amount</span
-        >
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Amount
+        </span>
         <AmountInput
           id="recurring-confirm-amount"
           name="amount"
@@ -94,13 +93,11 @@ const { categories = [], accounts = [], defaultCurrency = DEFAULT_CURRENCY } = A
           required
         >
           <option value="">Select category</option>
-          {
-            categories.map((category) => (
-              <option value={category.id} data-type={category.type}>
-                {category.name}
-              </option>
-            ))
-          }
+          {categories.map((category) => (
+            <option value={category.id} data-type={category.type}>
+              {category.name}
+            </option>
+          ))}
         </select>
       </label>
 
@@ -114,7 +111,9 @@ const { categories = [], accounts = [], defaultCurrency = DEFAULT_CURRENCY } = A
           required
         >
           <option value="">Select account</option>
-          {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
+          {accounts.map((account) => (
+            <option value={account.id}>{account.name}</option>
+          ))}
         </select>
       </label>
     </div>

@@ -57,34 +57,32 @@ const {
     <!-- Expense Breakdown Chart -->
     <ResourceAllocationChart data={expenseByCategory} subtitle={resourceAllocationSubtitle} />
 
-    {
-      hideFinancialVelocity ? (
-        recurringBreakdown && (
+    {hideFinancialVelocity ? (
+      recurringBreakdown && (
+        <RecurringVsOneTimeChart
+          recurringTotal={recurringBreakdown.recurringTotal}
+          oneTimeTotal={recurringBreakdown.oneTimeTotal}
+          currency={currency}
+          subtitle="RECURRING SPLIT"
+        />
+      )
+    ) : (
+      <>
+        <FinancialVelocityChart
+          data={trendData}
+          currency={currency}
+          subtitle={financialVelocitySubtitle}
+        />
+        {recurringBreakdown && (
           <RecurringVsOneTimeChart
             recurringTotal={recurringBreakdown.recurringTotal}
             oneTimeTotal={recurringBreakdown.oneTimeTotal}
             currency={currency}
             subtitle="RECURRING SPLIT"
+            className="@3xl:col-span-2"
           />
-        )
-      ) : (
-        <>
-          <FinancialVelocityChart
-            data={trendData}
-            currency={currency}
-            subtitle={financialVelocitySubtitle}
-          />
-          {recurringBreakdown && (
-            <RecurringVsOneTimeChart
-              recurringTotal={recurringBreakdown.recurringTotal}
-              oneTimeTotal={recurringBreakdown.oneTimeTotal}
-              currency={currency}
-              subtitle="RECURRING SPLIT"
-              className="@3xl:col-span-2"
-            />
-          )}
-        </>
-      )
-    }
+        )}
+      </>
+    )}
   </div>
 </div>

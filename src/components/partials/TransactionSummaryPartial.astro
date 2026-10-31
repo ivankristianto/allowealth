@@ -46,9 +46,7 @@ import Button from '@/components/atoms/Button.astro';
     <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
       Income
     </span>
-    <span class="text-sm font-bold text-success">
-      {formatCurrency(monthlyIncome, currency)}
-    </span>
+    <span class="text-sm font-bold text-success">{formatCurrency(monthlyIncome, currency)}</span>
   </div>
 
   <div
@@ -61,9 +59,7 @@ import Button from '@/components/atoms/Button.astro';
     <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
       Expenses
     </span>
-    <span class="text-sm font-bold text-error">
-      {formatCurrency(monthlyExpenses, currency)}
-    </span>
+    <span class="text-sm font-bold text-error">{formatCurrency(monthlyExpenses, currency)}</span>
   </div>
 
   <div

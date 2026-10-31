@@ -78,13 +78,11 @@ const buttonVariantMap: Record<
         <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
           {title}
         </h2>
-        {
-          description && (
-            <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
-              {description}
-            </p>
-          )
-        }
+        {description && (
+          <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
+            {description}
+          </p>
+        )}
       </div>
     </div>
 
@@ -96,8 +94,7 @@ const buttonVariantMap: Record<
       role="alert"
       aria-live="polite"
       data-confirm-error
-    >
-    </div>
+    ></div>
 
     <div class="flex gap-4 pt-2">
       <Button

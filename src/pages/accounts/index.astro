@@ -385,190 +385,182 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
       newestFirst
     />
 
-    {
-      !isViewingCurrentMonth && (
-        <a
-          href={currentMonthHref}
-          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 absolute right-0 lg:static lg:ml-1"
-          aria-label="Go to current month"
-          data-testid="account-current-month-btn"
-        >
-          <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
-          <span class="text-xs">Today</span>
-        </a>
-      )
-    }
+    {!isViewingCurrentMonth && (
+      <a
+        href={currentMonthHref}
+        class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 absolute right-0 lg:static lg:ml-1"
+        aria-label="Go to current month"
+        data-testid="account-current-month-btn"
+      >
+        <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+        <span class="text-xs">Today</span>
+      </a>
+    )}
   </div>
 
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="accounts-page">
     {/* Historical view indicator */}
-    {
-      !isViewingCurrentMonth && (
-        <div class="bg-warning/10 border border-warning/20 rounded-card px-4 py-3 text-sm text-warning font-medium flex items-center gap-2">
-          <CalendarDays size={16} class="stroke-current shrink-0" />
-          Showing portfolio values as of {currentMonthDisplay}. Update actions are disabled for
-          historical views.
-        </div>
-      )
-    }
+    {!isViewingCurrentMonth && (
+      <div class="bg-warning/10 border border-warning/20 rounded-card px-4 py-3 text-sm text-warning font-medium flex items-center gap-2">
+        <CalendarDays size={16} class="stroke-current shrink-0" />
+        Showing portfolio values as of {currentMonthDisplay}. Update actions are disabled for
+        historical views.
+      </div>
+    )}
 
     {/* Personal view indicator */}
-    {
-      isPersonalView && (
-        <div
-          class="bg-info/10 border border-info/20 rounded-card px-4 py-3 text-sm text-info font-medium flex items-center gap-2"
-          data-testid="personal-view-banner"
-        >
-          <Info size={16} class="stroke-current shrink-0" />
-          <span>
-            Showing your accounts only. Values reflect your portfolio.{' '}
-            <a href={allAccountsHref} class="underline font-bold ml-1">
-              View all accounts &rarr;
-            </a>
-          </span>
-        </div>
-      )
-    }
+    {isPersonalView && (
+      <div
+        class="bg-info/10 border border-info/20 rounded-card px-4 py-3 text-sm text-info font-medium flex items-center gap-2"
+        data-testid="personal-view-banner"
+      >
+        <Info size={16} class="stroke-current shrink-0" />
+        <span>
+          Showing your accounts only. Values reflect your portfolio.{' '}
+          <a href={allAccountsHref} class="underline font-bold ml-1">
+            View all accounts &rarr;
+          </a>
+        </span>
+      </div>
+    )}
 
-    {
-      accounts.length > 0 ? (
-        <>
-          {/* Accounts Summary */}
-          <AccountPortfolioSummary
-            accountTotals={accountTotalsByCurrency}
-            debtTotals={debtTotalsByCurrency}
-            distribution={accountAllocation}
-            loading={false}
-            latestUpdate={latestUpdate}
-            isHistoricalView={!isViewingCurrentMonth}
-          />
+    {accounts.length > 0 ? (
+      <>
+        {/* Accounts Summary */}
+        <AccountPortfolioSummary
+          accountTotals={accountTotalsByCurrency}
+          debtTotals={debtTotalsByCurrency}
+          distribution={accountAllocation}
+          loading={false}
+          latestUpdate={latestUpdate}
+          isHistoricalView={!isViewingCurrentMonth}
+        />
 
-          <AccountReconciliationCard
-            reconciliation={reconciliation}
-            periodLabel={currentMonthDisplay}
-            periodStart={new Date(selectedYear, selectedMonth - 1, 0)}
-            periodEnd={isViewingCurrentMonth ? now : periodEndDate}
-          />
+        <AccountReconciliationCard
+          reconciliation={reconciliation}
+          periodLabel={currentMonthDisplay}
+          periodStart={new Date(selectedYear, selectedMonth - 1, 0)}
+          periodEnd={isViewingCurrentMonth ? now : periodEndDate}
+        />
 
-          {/* Action Buttons - after allocation, before filter */}
-          <AccountActions
-            isHistoricalView={!isViewingCurrentMonth}
-            defaultCategoryId={defaultCategoryId}
-            closedCount={closedCount}
-          />
+        {/* Action Buttons - after allocation, before filter */}
+        <AccountActions
+          isHistoricalView={!isViewingCurrentMonth}
+          defaultCategoryId={defaultCategoryId}
+          closedCount={closedCount}
+        />
 
-          {/* Filter Bar */}
-          <AccountFilterControls
-            searchValue={searchParams.search || ''}
-            members={workspaceMembers.map((member) => ({ id: member.id, name: member.name }))}
-            userId={ownerUserId || ''}
-            currentUserId={user.id}
-            currentSearchParams={url.search}
-            baseUrl="/accounts"
-          />
+        {/* Filter Bar */}
+        <AccountFilterControls
+          searchValue={searchParams.search || ''}
+          members={workspaceMembers.map((member) => ({ id: member.id, name: member.name }))}
+          userId={ownerUserId || ''}
+          currentUserId={user.id}
+          currentSearchParams={url.search}
+          baseUrl="/accounts"
+        />
 
-          {/* Account Groups */}
-          <div data-view="card" class="hidden">
-            <div class="space-y-6">
-              {sortedGroups.map((group) => {
-                const groupTotals = calculateGroupTotalsByCurrency(
-                  group.accounts,
-                  orderedWorkspaceCurrencies
-                );
+        {/* Account Groups */}
+        <div data-view="card" class="hidden">
+          <div class="space-y-6">
+            {sortedGroups.map((group) => {
+              const groupTotals = calculateGroupTotalsByCurrency(
+                group.accounts,
+                orderedWorkspaceCurrencies
+              );
 
-                return (
-                  <AccountGroupCard
-                    type={group.label}
-                    accountClass={group.groupKey}
-                    count={group.accounts.length}
-                    totals={groupTotals}
-                    groupId={group.groupKey}
-                    isDebt={group.groupKey === 'debt'}
-                    defaultExpanded={true}
-                  >
-                    {group.accounts.map((account) => (
-                      <AccountItemRow
-                        id={account.id}
-                        name={account.name}
-                        type={account.type}
-                        accountClass={account.account_class}
-                        categoryId={account.category_id}
-                        categoryName={account.category_name}
-                        currency={account.currency}
-                        balance={parseFloat(account.balance)}
-                        initialBalance={
-                          account.initial_balance ? parseFloat(account.initial_balance) : undefined
-                        }
-                        ownerUserId={account.created_by_user_id}
-                        ownerName={memberNamesById.get(account.created_by_user_id)}
-                        lastUpdated={account.last_updated}
-                        isHistoricalView={!isViewingCurrentMonth}
-                      />
-                    ))}
-                  </AccountGroupCard>
-                );
-              })}
-            </div>
-          </div>
-
-          <div data-view="table">
-            <AccountTable
-              accounts={accountsWithDisplay}
-              primaryCurrency={
-                filters.currency ?? allocationCurrency ?? orderedWorkspaceCurrencies[0] ?? 'IDR'
-              }
-              currencyOrder={orderedWorkspaceCurrencies}
-              isHistoricalView={!isViewingCurrentMonth}
-            />
-          </div>
-
-          {/* No results message (hidden by default, shown by client script) */}
-          <div
-            data-account-search-no-results
-            class="text-center py-8 text-base-content/50 text-sm font-medium hidden"
-          >
-            No accounts match your search.
-          </div>
-        </>
-      ) : (
-        <div class="card bg-base-100 shadow border border-base-300 rounded-card">
-          <div class="card-body">
-            <EmptyState
-              title={
-                hasActiveAccountFilters
-                  ? 'No accounts match current filters'
-                  : 'No accounts tracked yet'
-              }
-              message={
-                hasActiveAccountFilters
-                  ? 'Try changing owner or filter criteria to view matching accounts.'
-                  : 'Add your first account to start tracking your net worth across different types and currencies.'
-              }
-            />
-            {hasActiveAccountFilters ? (
-              <div class="flex justify-center mt-4">
-                <a href={allAccountsHref} class="btn btn-outline gap-2 rounded-2xl">
-                  View all accounts
-                </a>
-              </div>
-            ) : (
-              <div class="flex justify-center mt-4">
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="gap-2"
-                  data-add-account-btn
-                  data-add-first-account-btn
-                  data-default-category-id={defaultCategoryId}
+              return (
+                <AccountGroupCard
+                  type={group.label}
+                  accountClass={group.groupKey}
+                  count={group.accounts.length}
+                  totals={groupTotals}
+                  groupId={group.groupKey}
+                  isDebt={group.groupKey === 'debt'}
+                  defaultExpanded={true}
                 >
-                  Add Your First Account
-                </Button>
-              </div>
-            )}
+                  {group.accounts.map((account) => (
+                    <AccountItemRow
+                      id={account.id}
+                      name={account.name}
+                      type={account.type}
+                      accountClass={account.account_class}
+                      categoryId={account.category_id}
+                      categoryName={account.category_name}
+                      currency={account.currency}
+                      balance={parseFloat(account.balance)}
+                      initialBalance={
+                        account.initial_balance ? parseFloat(account.initial_balance) : undefined
+                      }
+                      ownerUserId={account.created_by_user_id}
+                      ownerName={memberNamesById.get(account.created_by_user_id)}
+                      lastUpdated={account.last_updated}
+                      isHistoricalView={!isViewingCurrentMonth}
+                    />
+                  ))}
+                </AccountGroupCard>
+              );
+            })}
           </div>
         </div>
-      )
-    }
+
+        <div data-view="table">
+          <AccountTable
+            accounts={accountsWithDisplay}
+            primaryCurrency={
+              filters.currency ?? allocationCurrency ?? orderedWorkspaceCurrencies[0] ?? 'IDR'
+            }
+            currencyOrder={orderedWorkspaceCurrencies}
+            isHistoricalView={!isViewingCurrentMonth}
+          />
+        </div>
+
+        {/* No results message (hidden by default, shown by client script) */}
+        <div
+          data-account-search-no-results
+          class="text-center py-8 text-base-content/50 text-sm font-medium hidden"
+        >
+          No accounts match your search.
+        </div>
+      </>
+    ) : (
+      <div class="card bg-base-100 shadow border border-base-300 rounded-card">
+        <div class="card-body">
+          <EmptyState
+            title={
+              hasActiveAccountFilters
+                ? 'No accounts match current filters'
+                : 'No accounts tracked yet'
+            }
+            message={
+              hasActiveAccountFilters
+                ? 'Try changing owner or filter criteria to view matching accounts.'
+                : 'Add your first account to start tracking your net worth across different types and currencies.'
+            }
+          />
+          {hasActiveAccountFilters ? (
+            <div class="flex justify-center mt-4">
+              <a href={allAccountsHref} class="btn btn-outline gap-2 rounded-2xl">
+                View all accounts
+              </a>
+            </div>
+          ) : (
+            <div class="flex justify-center mt-4">
+              <Button
+                type="button"
+                variant="primary"
+                className="gap-2"
+                data-add-account-btn
+                data-add-first-account-btn
+                data-default-category-id={defaultCategoryId}
+              >
+                Add Your First Account
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
   </div>
 
   {/* Account Modals */}
@@ -586,9 +578,9 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
     mode="add"
     availableCurrencies={workspaceCurrencies}
     categories={categories}
-    members={isAdmin
-      ? workspaceMembers.map((member) => ({ id: member.id, name: member.name }))
-      : []}
+    members={
+      isAdmin ? workspaceMembers.map((member) => ({ id: member.id, name: member.name })) : []
+    }
     isAdmin={isAdmin}
   />
   <AccountCategoryModal id="account-category-modal" />
@@ -661,8 +653,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0
           id="bulk-accounts-error"
           class="hidden alert alert-error text-sm rounded-xl"
           role="alert"
-        >
-        </div>
+        ></div>
 
         {/* Actions */}
         <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">

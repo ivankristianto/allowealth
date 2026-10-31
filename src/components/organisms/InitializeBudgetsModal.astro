@@ -54,9 +54,7 @@ import Button from '@/components/atoms/Button.astro';
     <div class="space-y-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
           <Zap size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
@@ -64,8 +62,7 @@ import Button from '@/components/atoms/Button.astro';
             Initialize Budgets?
           </h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium">
-            Create budget entries for {monthName}{' '}
-            {year}.
+            Create budget entries for {monthName} {year}.
           </p>
         </div>
       </div>
@@ -76,22 +73,20 @@ import Button from '@/components/atoms/Button.astro';
         role="list"
         aria-label="Categories to initialize"
       >
-        {
-          categoriesWithColors.map((cat) => (
-            <div class="flex items-center gap-3 px-4 py-3" role="listitem">
-              {cat.validColor ? (
-                <span
-                  class="w-3 h-3 rounded-full shrink-0"
-                  style={`background-color: ${cat.validColor};`}
-                  aria-hidden="true"
-                />
-              ) : (
-                <span class="w-3 h-3 rounded-full shrink-0 bg-base-content/30" aria-hidden="true" />
-              )}
-              <span class="text-sm font-medium text-base-content">{cat.name}</span>
-            </div>
-          ))
-        }
+        {categoriesWithColors.map((cat) => (
+          <div class="flex items-center gap-3 px-4 py-3" role="listitem">
+            {cat.validColor ? (
+              <span
+                class="w-3 h-3 rounded-full shrink-0"
+                style={`background-color: ${cat.validColor};`}
+                aria-hidden="true"
+              />
+            ) : (
+              <span class="w-3 h-3 rounded-full shrink-0 bg-base-content/30" aria-hidden="true" />
+            )}
+            <span class="text-sm font-medium text-base-content">{cat.name}</span>
+          </div>
+        ))}
       </div>
 
       {/* Count badge */}
@@ -105,14 +100,17 @@ import Button from '@/components/atoms/Button.astro';
       {/* Helper text */}
       <div class="text-sm text-base-content/70 bg-info/5 border border-info/10 rounded-xl p-4">
         <p>
-          All budgets will be set to <span class="font-bold text-base-content">0 ({currency})</span
-          >. You can edit amounts afterwards.
+          All budgets will be set to <span class="font-bold text-base-content">0 ({currency})</span>
+          . You can edit amounts afterwards.
         </p>
       </div>
 
       {/* Error message container */}
-      <div id={`${id}-error`} class="hidden alert alert-error text-sm rounded-xl" role="alert">
-      </div>
+      <div
+        id={`${id}-error`}
+        class="hidden alert alert-error text-sm rounded-xl"
+        role="alert"
+      ></div>
 
       {/* ARIA live region for screen reader announcements */}
       <div id={`${id}-status`} class="sr-only" role="status" aria-live="polite"></div>

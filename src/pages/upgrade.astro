@@ -28,7 +28,9 @@ if (!Astro.locals.user || Astro.locals.user.role !== 'super_admin') {
           <div class="text-success text-5xl mb-3">&check;</div>
           <h2 class="font-semibold text-lg">Database is up to date</h2>
           <p class="text-sm text-base-content/60 mt-1">No migrations are pending.</p>
-          <a href="/admin" class="btn btn-primary mt-6 w-full">Go to Admin</a>
+          <a href="/admin" class="btn btn-primary mt-6 w-full">
+            Go to Admin
+          </a>
         </div>
 
         <!-- State: idle (pending) -->
@@ -55,7 +57,9 @@ if (!Astro.locals.user || Astro.locals.user.role !== 'super_admin') {
             are blocked from the application until this is complete.
           </p>
           <div class="text-xs text-base-content/40 mb-4" id="status-counts"></div>
-          <button id="btn-run" class="btn btn-primary w-full">Run Upgrade</button>
+          <button id="btn-run" class="btn btn-primary w-full">
+            Run Upgrade
+          </button>
         </div>
 
         <!-- State: running -->
@@ -72,7 +76,9 @@ if (!Astro.locals.user || Astro.locals.user.role !== 'super_admin') {
           <p class="text-sm text-base-content/60 mt-1">
             Redirecting in <span id="countdown">3</span>s&hellip;
           </p>
-          <a href="/admin" class="btn btn-primary mt-6 w-full">Go to Admin now</a>
+          <a href="/admin" class="btn btn-primary mt-6 w-full">
+            Go to Admin now
+          </a>
         </div>
 
         <!-- State: error -->
@@ -89,20 +95,24 @@ if (!Astro.locals.user || Astro.locals.user.role !== 'super_admin') {
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"></path>
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
             </svg>
             <span id="error-message">Migration failed</span>
           </div>
           <details class="mb-4">
-            <summary class="text-xs cursor-pointer text-base-content/50 hover:text-base-content/80"
-              >Show details</summary
-            >
+            <summary class="text-xs cursor-pointer text-base-content/50 hover:text-base-content/80">
+              Show details
+            </summary>
             <pre
               id="error-details"
-              class="text-xs mt-2 p-3 bg-base-300 rounded overflow-x-auto whitespace-pre-wrap break-words">
+              class="text-xs mt-2 p-3 bg-base-300 rounded overflow-x-auto whitespace-pre-wrap break-words"
+            >
             </pre>
           </details>
-          <button id="btn-retry" class="btn btn-outline w-full">Retry</button>
+          <button id="btn-retry" class="btn btn-outline w-full">
+            Retry
+          </button>
         </div>
       </div>
     </div>

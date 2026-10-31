@@ -140,15 +140,13 @@ const ssrData = {
       {/* Right-side controls: year toggle (monthly) or month range (trends) */}
       <div class="flex items-center">
         {/* Year Toggle (shown when monthly tab active) */}
-        {
-          availableYears.length > 1 && (
-            <YearToggle
-              years={availableYears}
-              selectedYear={selectedYear}
-              className={initialViewMode !== 'monthly' ? 'hidden' : ''}
-            />
-          )
-        }
+        {availableYears.length > 1 && (
+          <YearToggle
+            years={availableYears}
+            selectedYear={selectedYear}
+            className={initialViewMode !== 'monthly' ? 'hidden' : ''}
+          />
+        )}
 
         {/* Month Range Selector (shown when trends tab active) */}
         <div
@@ -158,81 +156,77 @@ const ssrData = {
           aria-label="Month range"
         >
           <div class="flex bg-base-200 p-1 rounded-xl shrink-0">
-            {
-              [3, 6, 12].map((range) => (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={[
-                    'min-h-11 rounded-lg border-0 px-3 py-2.5 text-xs font-bold transition-all',
-                    range === 6
-                      ? 'bg-base-100 text-primary shadow'
-                      : 'text-base-content/50 hover:text-base-content/70',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  data-month-range={range}
-                  aria-pressed={range === 6 ? 'true' : 'false'}
-                >
-                  {range}mo
-                </Button>
-              ))
-            }
+            {[3, 6, 12].map((range) => (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={[
+                  'min-h-11 rounded-lg border-0 px-3 py-2.5 text-xs font-bold transition-all',
+                  range === 6
+                    ? 'bg-base-100 text-primary shadow'
+                    : 'text-base-content/50 hover:text-base-content/70',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                data-month-range={range}
+                aria-pressed={range === 6 ? 'true' : 'false'}
+              >
+                {range}mo
+              </Button>
+            ))}
           </div>
         </div>
       </div>
     </div>
 
     {/* Error State */}
-    {
-      error ? (
-        <div class="alert alert-error" role="alert">
-          <CircleX size={24} class="shrink-0" aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      ) : (
-        /* Table Card */
-        <div class="@container bg-base-100 rounded-card border border-base-300 shadow-sm">
-          {/* Desktop Header Row (monthly view only) */}
-          <div data-monthly-header>
-            <div class="hidden @3xl:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_0.8fr_0.6fr] border-b border-base-200">
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest">
-                Month
-              </div>
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                Budget
-              </div>
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                Spent
-              </div>
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                Balance
-              </div>
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
-                Status
-              </div>
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                Change
-              </div>
-              <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
-                Actions
-              </div>
+    {error ? (
+      <div class="alert alert-error" role="alert">
+        <CircleX size={24} class="shrink-0" aria-hidden="true" />
+        <span>{error}</span>
+      </div>
+    ) : (
+      /* Table Card */
+      <div class="@container bg-base-100 rounded-card border border-base-300 shadow-sm">
+        {/* Desktop Header Row (monthly view only) */}
+        <div data-monthly-header>
+          <div class="hidden @3xl:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_0.8fr_0.6fr] border-b border-base-200">
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest">
+              Month
+            </div>
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+              Budget
+            </div>
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+              Spent
+            </div>
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+              Balance
+            </div>
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
+              Status
+            </div>
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+              Change
+            </div>
+            <div class="px-4 @4xl:px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
+              Actions
             </div>
           </div>
-
-          {/* Table Body (injectable) */}
-          <div id="budget-history-table-body" class="transition-opacity duration-200">
-            <BudgetHistoryTablePartial
-              history={historyData}
-              currency={selectedCurrency}
-              currentMonth={currentMonth}
-              currentYear={currentYear}
-            />
-          </div>
         </div>
-      )
-    }
+
+        {/* Table Body (injectable) */}
+        <div id="budget-history-table-body" class="transition-opacity duration-200">
+          <BudgetHistoryTablePartial
+            history={historyData}
+            currency={selectedCurrency}
+            currentMonth={currentMonth}
+            currentYear={currentYear}
+          />
+        </div>
+      </div>
+    )}
 
     {/* Visual Footnote */}
     <div class="flex justify-center py-12 opacity-30">
@@ -240,7 +234,8 @@ const ssrData = {
         <span
           data-loading-spinner
           class="loading loading-spinner loading-lg hidden"
-          aria-hidden="true"></span>
+          aria-hidden="true"
+        ></span>
         <HistoryIcon size={40} class="stroke-current" data-history-icon aria-hidden="true" />
         <p class="text-xs font-bold uppercase tracking-widest text-center">
           Historical data sync is managed automatically based on month close-out.
@@ -249,8 +244,12 @@ const ssrData = {
     </div>
 
     {/* Live region for screen reader announcements */}
-    <div id="budget-history-live-region" class="sr-only" aria-live="polite" aria-atomic="true">
-    </div>
+    <div
+      id="budget-history-live-region"
+      class="sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
   </div>
 </ProtectedLayout>
 

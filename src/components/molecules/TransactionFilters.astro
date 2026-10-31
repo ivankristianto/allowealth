@@ -73,8 +73,12 @@ const normalizedCurrencyOptions = (currencyOptions || AVAILABLE_CURRENCIES).filt
     <FormField label="Type" htmlFor="type">
       <select id="type" name="type" class="select select-bordered">
         <option value="">All Types</option>
-        <option value="expense" selected={values.type === 'expense'}>Expense</option>
-        <option value="income" selected={values.type === 'income'}>Income</option>
+        <option value="expense" selected={values.type === 'expense'}>
+          Expense
+        </option>
+        <option value="income" selected={values.type === 'income'}>
+          Income
+        </option>
       </select>
     </FormField>
 
@@ -82,13 +86,11 @@ const normalizedCurrencyOptions = (currencyOptions || AVAILABLE_CURRENCIES).filt
     <FormField label="Currency" htmlFor="currency">
       <select id="currency" name="currency" class="select select-bordered">
         <option value="">All Currencies</option>
-        {
-          normalizedCurrencyOptions.map((currencyCode) => (
-            <option value={currencyCode} selected={values.currency === currencyCode}>
-              {currencyCode}
-            </option>
-          ))
-        }
+        {normalizedCurrencyOptions.map((currencyCode) => (
+          <option value={currencyCode} selected={values.currency === currencyCode}>
+            {currencyCode}
+          </option>
+        ))}
       </select>
     </FormField>
 
@@ -125,8 +127,12 @@ const normalizedCurrencyOptions = (currencyOptions || AVAILABLE_CURRENCIES).filt
   <div class="flex items-center justify-between gap-4">
     <span class="text-sm text-base-content/60">{count} transactions found</span>
     <div class="flex gap-2">
-      <a href={action} class="btn btn-ghost rounded-xl">Clear Filters</a>
-      <Button type="submit" variant="accent">Apply Filters</Button>
+      <a href={action} class="btn btn-ghost rounded-xl">
+        Clear Filters
+      </a>
+      <Button type="submit" variant="accent">
+        Apply Filters
+      </Button>
     </div>
   </div>
 </form>

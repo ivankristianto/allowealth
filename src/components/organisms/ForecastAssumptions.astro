@@ -58,7 +58,9 @@ const errorId = `${assumptionsId}-error`;
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
       <div class="space-y-2">
         <label for={`${assumptionsId}-topup`} class="block">
-          <StatLabel size="sm" color="neutral">Monthly Top-Up ({currency})</StatLabel>
+          <StatLabel size="sm" color="neutral">
+            Monthly Top-Up ({currency})
+          </StatLabel>
         </label>
         <AmountInput
           id={`${assumptionsId}-topup`}
@@ -73,7 +75,9 @@ const errorId = `${assumptionsId}-error`;
 
       <div class="space-y-2">
         <label for={`${assumptionsId}-apy`} class="block">
-          <StatLabel size="sm" color="neutral">Expected APY (%)</StatLabel>
+          <StatLabel size="sm" color="neutral">
+            Expected APY (%)
+          </StatLabel>
         </label>
         <input
           type="number"
@@ -96,7 +100,6 @@ const errorId = `${assumptionsId}-error`;
       data-forecast-assumptions-error
       class="hidden text-sm font-medium text-error"
       role="alert"
-    >
-    </p>
+    ></p>
   </div>
 </Card>

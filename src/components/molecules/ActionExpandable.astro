@@ -40,62 +40,60 @@ const hasExpandable = Astro.slots.has('expandable');
 const expandId = `expandable-${crypto.randomUUID()}`;
 ---
 
-{
-  hasExpandable ? (
-    <div class={`action-expandable ${className}`} data-action-expandable aria-label={ariaLabel}>
-      {/* Always visible actions */}
-      {hasAlwaysVisible && (
-        <div class="action-expandable__visible">
-          <slot name="always-visible" />
-        </div>
-      )}
-
-      {/* Expandable section - animates horizontally */}
-      <div
-        id={expandId}
-        class="action-expandable__content"
-        data-expandable-content
-        aria-hidden="true"
-        inert
-      >
-        <div class="action-expandable__content-inner">
-          <slot name="expandable" />
-        </div>
+{hasExpandable ? (
+  <div class={`action-expandable ${className}`} data-action-expandable aria-label={ariaLabel}>
+    {/* Always visible actions */}
+    {hasAlwaysVisible && (
+      <div class="action-expandable__visible">
+        <slot name="always-visible" />
       </div>
+    )}
 
-      {/* Toggle button with animation */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="action-expandable__toggle md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl border-0"
-        data-expandable-toggle
-        data-expand-label={expandLabel}
-        data-collapse-label={collapseLabel}
-        aria-expanded="false"
-        aria-controls={expandId}
-      >
-        <span class="action-expandable__label" data-toggle-label>
-          {expandLabel}
-        </span>
-        <ChevronRight
-          size={16}
-          class="action-expandable__chevron action-expandable__chevron--right stroke-current"
-          data-toggle-chevron-right
-          aria-hidden="true"
-        />
-        <ChevronLeft
-          size={16}
-          class="action-expandable__chevron action-expandable__chevron--left stroke-current"
-          data-toggle-chevron-left
-          aria-hidden="true"
-        />
-      </Button>
+    {/* Expandable section - animates horizontally */}
+    <div
+      id={expandId}
+      class="action-expandable__content"
+      data-expandable-content
+      aria-hidden="true"
+      inert
+    >
+      <div class="action-expandable__content-inner">
+        <slot name="expandable" />
+      </div>
     </div>
-  ) : hasAlwaysVisible ? (
-    <slot name="always-visible" />
-  ) : null
-}
+
+    {/* Toggle button with animation */}
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="action-expandable__toggle md:btn-md min-h-[44px] min-w-[44px] gap-2 rounded-lg md:rounded-xl border-0"
+      data-expandable-toggle
+      data-expand-label={expandLabel}
+      data-collapse-label={collapseLabel}
+      aria-expanded="false"
+      aria-controls={expandId}
+    >
+      <span class="action-expandable__label" data-toggle-label>
+        {expandLabel}
+      </span>
+      <ChevronRight
+        size={16}
+        class="action-expandable__chevron action-expandable__chevron--right stroke-current"
+        data-toggle-chevron-right
+        aria-hidden="true"
+      />
+      <ChevronLeft
+        size={16}
+        class="action-expandable__chevron action-expandable__chevron--left stroke-current"
+        data-toggle-chevron-left
+        aria-hidden="true"
+      />
+    </Button>
+  </div>
+) : hasAlwaysVisible ? (
+  <slot name="always-visible" />
+) : null}
 
 <style>
   .action-expandable {

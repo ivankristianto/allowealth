@@ -53,31 +53,27 @@ const sanitizedSegments = segments.map((segment) => ({
 
 <div class="relative" data-allocation-bar data-tooltip-enabled={showTooltip ? 'true' : 'false'}>
   <div class={barClasses} role="img" aria-label={ariaLabel}>
-    {
-      sanitizedSegments.map((segment) => (
-        <div
-          class="h-full transition-all duration-500 relative group/segment cursor-pointer"
-          style={`width: ${segment.percentage}%; background-color: ${segment.color};`}
-          data-segment-label={segment.label}
-          data-segment-percentage={segment.percentage.toFixed(1)}
-        >
-          <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity" />
-        </div>
-      ))
-    }
+    {sanitizedSegments.map((segment) => (
+      <div
+        class="h-full transition-all duration-500 relative group/segment cursor-pointer"
+        style={`width: ${segment.percentage}%; background-color: ${segment.color};`}
+        data-segment-label={segment.label}
+        data-segment-percentage={segment.percentage.toFixed(1)}
+      >
+        <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity" />
+      </div>
+    ))}
   </div>
 
-  {
-    showTooltip && (
-      <div
-        class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-base-content/60-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
-        data-allocation-tooltip
-      >
-        <span data-tooltip-text />
-        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45" />
-      </div>
-    )
-  }
+  {showTooltip && (
+    <div
+      class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-base-content/60-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
+      data-allocation-tooltip
+    >
+      <span data-tooltip-text />
+      <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45" />
+    </div>
+  )}
 </div>
 
 <script>

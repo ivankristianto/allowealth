@@ -28,54 +28,52 @@ const { accounts } = Astro.props;
   <Key slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
   <div class="space-y-4">
-    {
-      accounts.map((account) => (
-        <div class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex items-center gap-4">
-            <div class="rounded-xl bg-base-100 p-3 text-base-content/60">
-              <Globe size={20} class="stroke-current" aria-hidden="true" />
-            </div>
-            <div>
-              <p class="text-sm font-semibold">{account.provider} SSO</p>
-              <p class="text-xs text-base-content/60">
-                {account.connected
-                  ? `Connected as ${account.email || 'primary account'}`
-                  : `Sign in using your ${account.provider} account`}
-              </p>
-            </div>
+    {accounts.map((account) => (
+      <div class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-4">
+          <div class="rounded-xl bg-base-100 p-3 text-base-content/60">
+            <Globe size={20} class="stroke-current" aria-hidden="true" />
           </div>
-          {account.connected ? (
-            account.canUnlink ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                data-provider-id={account.id}
-                data-account-id={account.accountId}
-                data-unlink-provider
-                data-testid="disconnect-google-btn"
-              >
-                Disconnect
-              </Button>
-            ) : (
-              <div class="text-right text-xs text-base-content/60">
-                Google is currently your only linked sign-in method.
-              </div>
-            )
-          ) : (
+          <div>
+            <p class="text-sm font-semibold">{account.provider} SSO</p>
+            <p class="text-xs text-base-content/60">
+              {account.connected
+                ? `Connected as ${account.email || 'primary account'}`
+                : `Sign in using your ${account.provider} account`}
+            </p>
+          </div>
+        </div>
+        {account.connected ? (
+          account.canUnlink ? (
             <Button
               type="button"
-              variant="primary"
+              variant="outline"
               size="sm"
-              data-link-provider={account.id}
-              data-testid="connect-google-btn"
+              data-provider-id={account.id}
+              data-account-id={account.accountId}
+              data-unlink-provider
+              data-testid="disconnect-google-btn"
             >
-              Connect Account
+              Disconnect
             </Button>
-          )}
-        </div>
-      ))
-    }
+          ) : (
+            <div class="text-right text-xs text-base-content/60">
+              Google is currently your only linked sign-in method.
+            </div>
+          )
+        ) : (
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            data-link-provider={account.id}
+            data-testid="connect-google-btn"
+          >
+            Connect Account
+          </Button>
+        )}
+      </div>
+    ))}
   </div>
 </SecurityCard>
 

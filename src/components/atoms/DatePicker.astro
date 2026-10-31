@@ -62,11 +62,9 @@ const {
     aria-required={required}
     data-testid={dataTestId}
   />
-  {
-    error && errorMessage && (
-      <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
-        {errorMessage}
-      </span>
-    )
-  }
+  {error && errorMessage && (
+    <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
+      {errorMessage}
+    </span>
+  )}
 </div>

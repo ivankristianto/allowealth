@@ -55,13 +55,11 @@ const installmentLabel =
       <div
         class={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${typeIconWrapClass}`}
       >
-        {
-          isExpense ? (
-            <CircleMinus size={14} class="text-error" aria-hidden="true" />
-          ) : (
-            <CirclePlus size={14} class="text-success" aria-hidden="true" />
-          )
-        }
+        {isExpense ? (
+          <CircleMinus size={14} class="text-error" aria-hidden="true" />
+        ) : (
+          <CirclePlus size={14} class="text-success" aria-hidden="true" />
+        )}
       </div>
 
       <div class="min-w-0 flex-1 space-y-1.5">
@@ -79,44 +77,40 @@ const installmentLabel =
         <div class="flex flex-wrap items-center gap-1.5">
           <span class={`text-sm font-bold ${amountClass}`}>{amountLabel}</span>
           <span class={`badge badge-sm font-semibold ${dueBadgeClass}`}>{dueBadgeLabel}</span>
-          {
-            installmentLabel && (
-              <span class="badge badge-outline badge-sm font-medium">{installmentLabel}</span>
-            )
-          }
+          {installmentLabel && (
+            <span class="badge badge-outline badge-sm font-medium">{installmentLabel}</span>
+          )}
         </div>
       </div>
     </div>
 
-    {
-      canAct ? (
-        <div class="grid grid-cols-1 gap-2 sm:ml-auto sm:max-w-sm sm:grid-cols-2">
-          <Button
-            type="button"
-            variant="primary"
-            className="h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
-            data-open-confirm-modal
-            data-occurrence={occurrencePayload}
-          >
-            <CircleCheckBig size={14} aria-hidden="true" />
-            Confirm
-          </Button>
-          <Button
-            type="button"
-            variant="warning"
-            className="btn-outline h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
-            data-open-skip-modal
-            data-occurrence={occurrencePayload}
-          >
-            <CircleMinus size={14} aria-hidden="true" />
-            Skip
-          </Button>
-        </div>
-      ) : (
-        <p class="text-xs text-base-content/70">
-          {isExpense ? 'Due' : 'Expected'} {dueDateLabel}
-        </p>
-      )
-    }
+    {canAct ? (
+      <div class="grid grid-cols-1 gap-2 sm:ml-auto sm:max-w-sm sm:grid-cols-2">
+        <Button
+          type="button"
+          variant="primary"
+          className="h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
+          data-open-confirm-modal
+          data-occurrence={occurrencePayload}
+        >
+          <CircleCheckBig size={14} aria-hidden="true" />
+          Confirm
+        </Button>
+        <Button
+          type="button"
+          variant="warning"
+          className="btn-outline h-11 min-h-11 w-full rounded-lg font-semibold sm:h-10 sm:min-h-10 sm:rounded-xl"
+          data-open-skip-modal
+          data-occurrence={occurrencePayload}
+        >
+          <CircleMinus size={14} aria-hidden="true" />
+          Skip
+        </Button>
+      </div>
+    ) : (
+      <p class="text-xs text-base-content/70">
+        {isExpense ? 'Due' : 'Expected'} {dueDateLabel}
+      </p>
+    )}
   </div>
 </article>

@@ -81,114 +81,45 @@ const sortedHistory = [...history].sort((a, b) => {
 ---
 
 <div class={`space-y-6 ${className}`} data-budget-history-comparison>
-  {
-    sortedHistory.length > 0 ? (
-      <div class="card bg-base-100 shadow border border-base-300 overflow-hidden">
-        <div class="card-body p-0">
-          {/* History Table - Desktop Header */}
-          <div class="hidden md:grid grid-cols-7 gap-4 px-6 py-4 bg-base-200/50 text-sm font-semibold text-base-content/60">
-            <div class="col-span-2">Month</div>
-            <div class="col-span-1 text-right">Budget</div>
-            <div class="col-span-1 text-right">Spent</div>
-            <div class="col-span-1 text-right">Balance</div>
-            <div class="col-span-1 text-center">Status</div>
-            <div class="col-span-1 text-center">Change</div>
-          </div>
+  {sortedHistory.length > 0 ? (
+    <div class="card bg-base-100 shadow border border-base-300 overflow-hidden">
+      <div class="card-body p-0">
+        {/* History Table - Desktop Header */}
+        <div class="hidden md:grid grid-cols-7 gap-4 px-6 py-4 bg-base-200/50 text-sm font-semibold text-base-content/60">
+          <div class="col-span-2">Month</div>
+          <div class="col-span-1 text-right">Budget</div>
+          <div class="col-span-1 text-right">Spent</div>
+          <div class="col-span-1 text-right">Balance</div>
+          <div class="col-span-1 text-center">Status</div>
+          <div class="col-span-1 text-center">Change</div>
+        </div>
 
-          {/* History Items */}
-          <div class="divide-y divide-base-200">
-            {sortedHistory.map((monthData, index) => {
-              const budgetAmount = parseFloat(monthData.total_budget);
-              const spentAmount = parseFloat(monthData.total_spent);
-              const balance = parseFloat(monthData.total_balance);
-              const percentageUsed = monthData.percentage_used;
+        {/* History Items */}
+        <div class="divide-y divide-base-200">
+          {sortedHistory.map((monthData, index) => {
+            const budgetAmount = parseFloat(monthData.total_budget);
+            const spentAmount = parseFloat(monthData.total_spent);
+            const balance = parseFloat(monthData.total_balance);
+            const percentageUsed = monthData.percentage_used;
 
-              // Get previous month for comparison
-              const previousMonth = sortedHistory[index + 1];
-              const previousSpent = previousMonth ? parseFloat(previousMonth.total_spent) : null;
-              const changeIndicator = getChangeIndicator(spentAmount, previousSpent);
+            // Get previous month for comparison
+            const previousMonth = sortedHistory[index + 1];
+            const previousSpent = previousMonth ? parseFloat(previousMonth.total_spent) : null;
+            const changeIndicator = getChangeIndicator(spentAmount, previousSpent);
 
-              // Check if this is current month
-              const isCurrentMonth =
-                monthData.month === currentMonth && monthData.year === currentYear;
+            // Check if this is current month
+            const isCurrentMonth =
+              monthData.month === currentMonth && monthData.year === currentYear;
 
-              return (
-                <div
-                  class={`grid grid-cols-1 md:grid-cols-7 gap-2 md:gap-4 py-4 px-6 hover:bg-base-100 transition-colors ${isCurrentMonth ? 'bg-primary/5' : ''}`}
-                >
-                  {/* Mobile View - Card Layout */}
-                  <div class="md:hidden col-span-full space-y-3">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-2">
-                        <span class="font-bold text-lg">{monthData.month_name}</span>
-                        <span class="text-base-content/60">{monthData.year}</span>
-                        {isCurrentMonth && (
-                          <Badge variant="primary" size="sm">
-                            Current
-                          </Badge>
-                        )}
-                      </div>
-                      <Badge variant={getStatusBadge(percentageUsed)} size="sm">
-                        {formatPercentage(percentageUsed)}
-                      </Badge>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <div class="text-base-content/60">Budget</div>
-                        <div class="font-medium">{formatCurrency(budgetAmount, currency)}</div>
-                      </div>
-                      <div>
-                        <div class="text-base-content/60">Spent</div>
-                        <div class="font-medium">{formatCurrency(spentAmount, currency)}</div>
-                      </div>
-                      <div>
-                        <div class="text-base-content/60">Balance</div>
-                        <div class={`font-medium ${balance >= 0 ? 'text-success' : 'text-error'}`}>
-                          {balance >= 0 ? '+' : '-'}
-                          {formatCurrency(Math.abs(balance), currency)}
-                        </div>
-                      </div>
-                      <div>
-                        <div class="text-base-content/60">vs Prev Month</div>
-                        <div class={`font-medium ${changeIndicator.class}`}>
-                          {changeIndicator.value}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div class="pt-1">
-                      <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-                        <div
-                          class={`h-full ${percentageUsed >= 100 ? 'bg-error' : percentageUsed >= 80 ? 'bg-warning' : 'bg-success'} transition-all duration-300`}
-                          style={`width: ${Math.min(percentageUsed, 100)}%`}
-                          role="progressbar"
-                          aria-valuenow={percentageUsed}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-label={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Alerts summary */}
-                    {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
-                      <div class="flex items-center gap-2 text-xs">
-                        {monthData.categories_exceeded > 0 && (
-                          <span class="text-error">{monthData.categories_exceeded} exceeded</span>
-                        )}
-                        {monthData.categories_warning > 0 && (
-                          <span class="text-warning">{monthData.categories_warning} warning</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Desktop View - Table Row */}
-                  <div class="hidden md:block col-span-2">
+            return (
+              <div
+                class={`grid grid-cols-1 md:grid-cols-7 gap-2 md:gap-4 py-4 px-6 hover:bg-base-100 transition-colors ${isCurrentMonth ? 'bg-primary/5' : ''}`}
+              >
+                {/* Mobile View - Card Layout */}
+                <div class="md:hidden col-span-full space-y-3">
+                  <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                      <span class="font-semibold">{monthData.month_name}</span>
+                      <span class="font-bold text-lg">{monthData.month_name}</span>
                       <span class="text-base-content/60">{monthData.year}</span>
                       {isCurrentMonth && (
                         <Badge variant="primary" size="sm">
@@ -196,64 +127,131 @@ const sortedHistory = [...history].sort((a, b) => {
                         </Badge>
                       )}
                     </div>
-                  </div>
-
-                  <div class="hidden md:block col-span-1 text-right">
-                    {formatCurrency(budgetAmount, currency)}
-                  </div>
-
-                  <div class="hidden md:block col-span-1 text-right">
-                    {formatCurrency(spentAmount, currency)}
-                  </div>
-
-                  <div
-                    class={`hidden md:block col-span-1 text-right font-medium ${balance >= 0 ? 'text-success' : 'text-error'}`}
-                  >
-                    {balance >= 0 ? '+' : '-'}
-                    {formatCurrency(Math.abs(balance), currency)}
-                  </div>
-
-                  <div class="hidden md:block col-span-1 text-center">
                     <Badge variant={getStatusBadge(percentageUsed)} size="sm">
                       {formatPercentage(percentageUsed)}
                     </Badge>
-                    {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
-                      <div class="text-xs text-base-content/60 mt-1">
-                        {monthData.categories_exceeded > 0 && (
-                          <span class="text-error">{monthData.categories_exceeded} exceeded</span>
-                        )}
-                        {monthData.categories_warning > 0 && (
-                          <span class="text-warning ml-1">
-                            {monthData.categories_warning} warning
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
 
-                  <div class="hidden md:block col-span-1 text-center">
-                    <span class={`font-medium ${changeIndicator.class}`}>
-                      {changeIndicator.value}
-                    </span>
+                  <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div class="text-base-content/60">Budget</div>
+                      <div class="font-medium">{formatCurrency(budgetAmount, currency)}</div>
+                    </div>
+                    <div>
+                      <div class="text-base-content/60">Spent</div>
+                      <div class="font-medium">{formatCurrency(spentAmount, currency)}</div>
+                    </div>
+                    <div>
+                      <div class="text-base-content/60">Balance</div>
+                      <div class={`font-medium ${balance >= 0 ? 'text-success' : 'text-error'}`}>
+                        {balance >= 0 ? '+' : '-'}
+                        {formatCurrency(Math.abs(balance), currency)}
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-base-content/60">vs Prev Month</div>
+                      <div class={`font-medium ${changeIndicator.class}`}>
+                        {changeIndicator.value}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div class="pt-1">
+                    <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
+                      <div
+                        class={`h-full ${percentageUsed >= 100 ? 'bg-error' : percentageUsed >= 80 ? 'bg-warning' : 'bg-success'} transition-all duration-300`}
+                        style={`width: ${Math.min(percentageUsed, 100)}%`}
+                        role="progressbar"
+                        aria-valuenow={percentageUsed}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alerts summary */}
+                  {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
+                    <div class="flex items-center gap-2 text-xs">
+                      {monthData.categories_exceeded > 0 && (
+                        <span class="text-error">{monthData.categories_exceeded} exceeded</span>
+                      )}
+                      {monthData.categories_warning > 0 && (
+                        <span class="text-warning">{monthData.categories_warning} warning</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop View - Table Row */}
+                <div class="hidden md:block col-span-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-semibold">{monthData.month_name}</span>
+                    <span class="text-base-content/60">{monthData.year}</span>
+                    {isCurrentMonth && (
+                      <Badge variant="primary" size="sm">
+                        Current
+                      </Badge>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                <div class="hidden md:block col-span-1 text-right">
+                  {formatCurrency(budgetAmount, currency)}
+                </div>
+
+                <div class="hidden md:block col-span-1 text-right">
+                  {formatCurrency(spentAmount, currency)}
+                </div>
+
+                <div
+                  class={`hidden md:block col-span-1 text-right font-medium ${balance >= 0 ? 'text-success' : 'text-error'}`}
+                >
+                  {balance >= 0 ? '+' : '-'}
+                  {formatCurrency(Math.abs(balance), currency)}
+                </div>
+
+                <div class="hidden md:block col-span-1 text-center">
+                  <Badge variant={getStatusBadge(percentageUsed)} size="sm">
+                    {formatPercentage(percentageUsed)}
+                  </Badge>
+                  {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
+                    <div class="text-xs text-base-content/60 mt-1">
+                      {monthData.categories_exceeded > 0 && (
+                        <span class="text-error">{monthData.categories_exceeded} exceeded</span>
+                      )}
+                      {monthData.categories_warning > 0 && (
+                        <span class="text-warning ml-1">
+                          {monthData.categories_warning} warning
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div class="hidden md:block col-span-1 text-center">
+                  <span class={`font-medium ${changeIndicator.class}`}>
+                    {changeIndicator.value}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    ) : (
-      // Empty state
-      <div class="card bg-base-100 shadow border border-base-300">
-        <div class="card-body">
-          <EmptyState
-            title="No budget history available"
-            message="Budget history will appear here as you track your spending over time."
-            actionLabel="Start Tracking"
-            actionHref="/transactions/add"
-          />
-        </div>
+    </div>
+  ) : (
+    // Empty state
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <EmptyState
+          title="No budget history available"
+          message="Budget history will appear here as you track your spending over time."
+          actionLabel="Start Tracking"
+          actionHref="/transactions/add"
+        />
       </div>
-    )
-  }
+    </div>
+  )}
 </div>

@@ -51,7 +51,7 @@ const {
   role="tablist"
   data-tab-toggle
   data-name={name}
-  {...clientFilter ? { 'data-client-filter': '' } : {}}
+  {...(clientFilter ? { 'data-client-filter': '' } : {})}
 >
   <button
     type="button"
@@ -64,7 +64,7 @@ const {
     role="tab"
     aria-selected={activeTab === option1Value ? 'true' : 'false'}
     tabindex={activeTab === option1Value ? 0 : -1}
-    {...option1Controls ? { 'aria-controls': option1Controls } : {}}
+    {...(option1Controls ? { 'aria-controls': option1Controls } : {})}
     data-active={activeTab === option1Value}
     data-testid={`type-filter-${option1Value}`}
   >
@@ -81,7 +81,7 @@ const {
     role="tab"
     aria-selected={activeTab === option2Value ? 'true' : 'false'}
     tabindex={activeTab === option2Value ? 0 : -1}
-    {...option2Controls ? { 'aria-controls': option2Controls } : {}}
+    {...(option2Controls ? { 'aria-controls': option2Controls } : {})}
     data-active={activeTab === option2Value}
     data-testid={`type-filter-${option2Value}`}
   >

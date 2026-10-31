@@ -44,86 +44,82 @@ function getInitials(name: string): string {
 ---
 
 <div data-member-list class="flex flex-col gap-4">
-  {
-    members.length === 0 ? (
-      <div class="text-center py-8 text-base-content/60">
-        <User size={48} class="stroke-current mx-auto mb-4 opacity-50" aria-hidden="true" />
-        <p class="text-sm font-medium">No members found</p>
-      </div>
-    ) : (
-      <ul class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100">
-        {members.map((member) => (
-          <li
-            class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-accent/5"
-            data-member-item
-            data-member-id={member.id}
-          >
-            <div class="flex items-center gap-4">
-              {/* Avatar */}
-              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-base-200 text-base-content font-semibold text-sm">
-                {getInitials(member.name)}
-              </div>
-
-              {/* Info */}
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="font-semibold text-base-content truncate">{member.name}</p>
-                  {member.id === currentUserId && (
-                    <span class="badge badge-ghost badge-sm">You</span>
-                  )}
-                </div>
-                <p class="text-xs text-base-content/60 truncate">{member.email}</p>
-              </div>
+  {members.length === 0 ? (
+    <div class="text-center py-8 text-base-content/60">
+      <User size={48} class="stroke-current mx-auto mb-4 opacity-50" aria-hidden="true" />
+      <p class="text-sm font-medium">No members found</p>
+    </div>
+  ) : (
+    <ul class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100">
+      {members.map((member) => (
+        <li
+          class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-accent/5"
+          data-member-item
+          data-member-id={member.id}
+        >
+          <div class="flex items-center gap-4">
+            {/* Avatar */}
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-base-200 text-base-content font-semibold text-sm">
+              {getInitials(member.name)}
             </div>
 
-            <div class="flex items-center gap-3">
-              {/* Role badge */}
-              {member.role === 'super_admin' ? (
-                <span class="badge badge-error gap-1">
-                  <Crown size={12} aria-hidden="true" />
-                  Super Admin
-                </span>
-              ) : member.role === 'admin' ? (
-                <span class="badge badge-accent gap-1">
-                  <Crown size={12} aria-hidden="true" />
-                  Admin
-                </span>
-              ) : (
-                <span class="badge badge-ghost gap-1">
-                  <User size={12} aria-hidden="true" />
-                  Member
-                </span>
-              )}
-
-              {/* MFA status badge */}
-              {member.mfaEnabled && (
-                <span class="tooltip tooltip-left" data-tip="MFA enabled">
-                  <ShieldCheck size={14} class="stroke-success" aria-label="MFA enabled" />
-                </span>
-              )}
-
-              {/* Remove button (admin only, not for self) */}
-              {isAdmin && member.id !== currentUserId && member.role !== 'super_admin' && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  shape="square"
-                  className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
-                  aria-label={`Remove ${member.name} from workspace`}
-                  data-remove-member
-                  data-member-id={member.id}
-                  data-member-name={member.name}
-                >
-                  <Trash size={16} class="stroke-current" aria-hidden="true" />
-                </Button>
-              )}
+            {/* Info */}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-semibold text-base-content truncate">{member.name}</p>
+                {member.id === currentUserId && <span class="badge badge-ghost badge-sm">You</span>}
+              </div>
+              <p class="text-xs text-base-content/60 truncate">{member.email}</p>
             </div>
-          </li>
-        ))}
-      </ul>
-    )
-  }
+          </div>
+
+          <div class="flex items-center gap-3">
+            {/* Role badge */}
+            {member.role === 'super_admin' ? (
+              <span class="badge badge-error gap-1">
+                <Crown size={12} aria-hidden="true" />
+                Super Admin
+              </span>
+            ) : member.role === 'admin' ? (
+              <span class="badge badge-accent gap-1">
+                <Crown size={12} aria-hidden="true" />
+                Admin
+              </span>
+            ) : (
+              <span class="badge badge-ghost gap-1">
+                <User size={12} aria-hidden="true" />
+                Member
+              </span>
+            )}
+
+            {/* MFA status badge */}
+            {member.mfaEnabled && (
+              <span class="tooltip tooltip-left" data-tip="MFA enabled">
+                <ShieldCheck size={14} class="stroke-success" aria-label="MFA enabled" />
+              </span>
+            )}
+
+            {/* Remove button (admin only, not for self) */}
+            {isAdmin && member.id !== currentUserId && member.role !== 'super_admin' && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                shape="square"
+                className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
+                aria-label={`Remove ${member.name} from workspace`}
+                data-remove-member
+                data-member-id={member.id}
+                data-member-name={member.name}
+              >
+                <Trash size={16} class="stroke-current" aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )}
 </div>
 
 {/* Remove Member Confirmation Modal */}
@@ -131,9 +127,7 @@ function getInitials(name: string): string {
   <div class="modal-box max-w-md rounded-card shadow-premium">
     <h3 class="font-bold text-lg text-error">Remove Member</h3>
     <p class="py-4 text-base-content/70">
-      Are you sure you want to remove <span class="font-semibold" data-member-name-display></span>{
-        ' '
-      }
+      Are you sure you want to remove <span class="font-semibold" data-member-name-display></span>{' '}
       from this workspace? They will lose access to all workspace data.
     </p>
     <div class="modal-action">

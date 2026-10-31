@@ -73,64 +73,52 @@ const iconClass = iconVariant ? iconVariantClasses[iconVariant] : 'text-base-con
   data-stat-card
   {...attrs}
 >
-  {
-    Astro.slots.has('icon') && (
-      <div
-        class={`absolute top-0 right-0 p-2 sm:p-4 opacity-5 group-hover:opacity-10 transition-opacity ${iconClass}`}
-      >
-        <slot name="icon" />
-      </div>
-    )
-  }
+  {Astro.slots.has('icon') && (
+    <div
+      class={`absolute top-0 right-0 p-2 sm:p-4 opacity-5 group-hover:opacity-10 transition-opacity ${iconClass}`}
+    >
+      <slot name="icon" />
+    </div>
+  )}
   <!-- Title -->
-  <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest">
-    {title}
-  </p>
+  <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest">{title}</p>
 
   <!-- Value -->
-  {
-    value && (
-      <h3
-        class={`text-xl md:text-2xl font-bold mt-3 tracking-tight truncate ${valueColor}`}
-        title={value}
-      >
-        {value}
-      </h3>
-    )
-  }
+  {value && (
+    <h3
+      class={`text-xl md:text-2xl font-bold mt-3 tracking-tight truncate ${valueColor}`}
+      title={value}
+    >
+      {value}
+    </h3>
+  )}
 
   <!-- Subtitle with optional icon -->
-  {
-    subtitle && (
-      <div class={`flex items-center gap-1 mt-2 ${subtitleColor} text-xs font-bold uppercase`}>
-        {IconComponent && <IconComponent size={14} class="stroke-current" aria-hidden="true" />}
-        <span>{subtitle}</span>
-      </div>
-    )
-  }
+  {subtitle && (
+    <div class={`flex items-center gap-1 mt-2 ${subtitleColor} text-xs font-bold uppercase`}>
+      {IconComponent && <IconComponent size={14} class="stroke-current" aria-hidden="true" />}
+      <span>{subtitle}</span>
+    </div>
+  )}
 
-  {
-    Astro.slots.has('details') && (
-      <div class="mt-3">
-        <slot name="details" />
-      </div>
-    )
-  }
+  {Astro.slots.has('details') && (
+    <div class="mt-3">
+      <slot name="details" />
+    </div>
+  )}
 
   <!-- Progress Bar (optional) -->
-  {
-    progress !== undefined && progress !== null && (
-      <div class="w-full bg-base-200 h-1.5 rounded-full mt-3 overflow-hidden">
-        <div
-          class={`h-full ${progressColor} transition-all duration-300`}
-          style={`width: ${Math.min(Math.max(progress, 0), 100)}%`}
-          role="progressbar"
-          aria-valuenow={progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`${Math.round(progress)}% progress`}
-        />
-      </div>
-    )
-  }
+  {progress !== undefined && progress !== null && (
+    <div class="w-full bg-base-200 h-1.5 rounded-full mt-3 overflow-hidden">
+      <div
+        class={`h-full ${progressColor} transition-all duration-300`}
+        style={`width: ${Math.min(Math.max(progress, 0), 100)}%`}
+        role="progressbar"
+        aria-valuenow={progress}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${Math.round(progress)}% progress`}
+      />
+    </div>
+  )}
 </div>

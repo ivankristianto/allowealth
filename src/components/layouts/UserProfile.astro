@@ -41,9 +41,7 @@ const getUserInitials = () => {
     aria-label="Open user menu"
   >
     <div class="avatar placeholder">
-      <div
-        class="bg-accent/20 text-accent rounded-full w-9 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform"
-      >
+      <div class="bg-accent/20 text-accent rounded-full w-9 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
         <span class="text-xs font-bold">{getUserInitials()}</span>
       </div>
     </div>
@@ -92,31 +90,29 @@ const getUserInitials = () => {
           Theme
         </p>
         <div class="grid grid-cols-2 gap-1.5">
-          {
-            (
-              [
-                // Row 1: System, Mono
-                { value: 'system', Icon: Monitor, label: 'System' },
-                { value: 'monochrome', Icon: Contrast, label: 'Mono' },
-                // Row 2: Light, Dark
-                { value: 'light', Icon: Sun, label: 'Light' },
-                { value: 'dark', Icon: Moon, label: 'Dark' },
-              ] as const
-            ).map(({ value, Icon, label }) => (
-              <button
-                type="button"
-                class="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-base-content/50 transition-all hover:bg-base-200 hover:text-base-content hover:scale-[1.02] active:scale-[0.98]"
-                data-theme-option={value}
-                aria-label={`Switch to ${label} theme`}
-                title={label}
-                role="menuitem"
-                tabindex="-1"
-              >
-                <Icon size={18} aria-hidden="true" />
-                <span class="text-sm font-medium">{label}</span>
-              </button>
-            ))
-          }
+          {(
+            [
+              // Row 1: System, Mono
+              { value: 'system', Icon: Monitor, label: 'System' },
+              { value: 'monochrome', Icon: Contrast, label: 'Mono' },
+              // Row 2: Light, Dark
+              { value: 'light', Icon: Sun, label: 'Light' },
+              { value: 'dark', Icon: Moon, label: 'Dark' },
+            ] as const
+          ).map(({ value, Icon, label }) => (
+            <button
+              type="button"
+              class="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-base-content/50 transition-all hover:bg-base-200 hover:text-base-content hover:scale-[1.02] active:scale-[0.98]"
+              data-theme-option={value}
+              aria-label={`Switch to ${label} theme`}
+              title={label}
+              role="menuitem"
+              tabindex="-1"
+            >
+              <Icon size={18} aria-hidden="true" />
+              <span class="text-sm font-medium">{label}</span>
+            </button>
+          ))}
         </div>
       </div>
       <div class="h-px bg-base-300 my-1 mx-2" role="separator"></div>

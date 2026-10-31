@@ -143,140 +143,138 @@ if (searchQuery) {
     <div class="bg-base-100 rounded-card border border-base-300 shadow-sm overflow-hidden">
       <div class="table-scroll-hint">
         <div class="overflow-x-auto">
-          {
-            filteredCategories.some((c) => c.type === typeFilter) ? (
-              <table
-                class="w-full text-left border-collapse"
-                role="table"
-                data-testid="categories-table"
-              >
-                <caption class="sr-only">Categories list</caption>
-                <thead>
-                  <tr class="border-b border-base-200 bg-base-200/50">
-                    <th
-                      scope="col"
-                      class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
-                    >
-                      Icon
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
-                    >
-                      Category Name
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
-                    >
-                      Description
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-base-200" data-category-tbody>
-                  {filteredCategories.map((category) => (
-                    <tr
-                      class={`group hover:bg-base-200/50 transition-colors ${category.type !== typeFilter ? 'hidden' : ''}`}
-                      data-testid="category-item"
-                      data-category-id={category.id}
-                      data-category-type={category.type}
-                    >
-                      <td class="px-8 py-5">
-                        <CategoryIcon
-                          icon={category.icon}
-                          color={category.color}
-                          size="md"
-                          className="group-hover:scale-110"
-                        />
-                      </td>
-                      <td class="px-8 py-5">
-                        <span
-                          class="text-base font-bold text-base-content tracking-tight leading-none"
-                          data-testid="category-name"
-                        >
-                          {category.name}
-                        </span>
-                        {category.type === 'income' && (
-                          <span class="badge badge-sm badge-ghost ml-2">
-                            {category.income_source_type}
-                          </span>
-                        )}
-                      </td>
-                      <td class="px-8 py-5 hidden md:table-cell">
-                        <span
-                          class="text-sm text-base-content/60 font-medium"
-                          data-testid="category-description"
-                        >
-                          {category.description || '—'}
-                        </span>
-                      </td>
-                      <td class="px-8 py-5 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            title="Edit category"
-                            className="min-h-11 min-w-11 border-0 rounded-xl p-2 text-base-content/30 hover:bg-primary/10 hover:text-primary focus:ring-primary"
-                            data-action="edit"
-                            data-category-id={category.id}
-                            aria-label={`Edit ${category.name} category`}
-                            data-testid="category-edit-btn"
-                          >
-                            <Pencil size={18} class="stroke-current" aria-hidden="true" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            title="Delete category"
-                            className="min-h-11 min-w-11 border-0 rounded-xl p-2 text-base-content/30 hover:bg-error/10 hover:text-error focus:ring-error"
-                            data-action="delete"
-                            data-category-id={category.id}
-                            data-category-name={category.name}
-                            data-category-icon={category.icon}
-                            data-category-color={category.color}
-                            aria-label={`Delete ${category.name} category`}
-                            data-testid="category-delete-btn"
-                          >
-                            <Trash size={18} class="stroke-current" aria-hidden="true" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div class="py-24 text-center">
-                <div class="w-20 h-20 bg-base-200/50 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="40"
-                    height="40"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+          {filteredCategories.some((c) => c.type === typeFilter) ? (
+            <table
+              class="w-full text-left border-collapse"
+              role="table"
+              data-testid="categories-table"
+            >
+              <caption class="sr-only">Categories list</caption>
+              <thead>
+                <tr class="border-b border-base-200 bg-base-200/50">
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
                   >
-                    <title>No categories</title>
-                    <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
-                    <path d="M7 7h.01" />
-                  </svg>
-                </div>
-                <h3 class="text-lg font-bold text-base-content mb-2">No categories found</h3>
-                <p class="text-neutral font-medium">Try adjusting your search terms.</p>
+                    Icon
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                  >
+                    Category Name
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
+                  >
+                    Description
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right"
+                  >
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-base-200" data-category-tbody>
+                {filteredCategories.map((category) => (
+                  <tr
+                    class={`group hover:bg-base-200/50 transition-colors ${category.type !== typeFilter ? 'hidden' : ''}`}
+                    data-testid="category-item"
+                    data-category-id={category.id}
+                    data-category-type={category.type}
+                  >
+                    <td class="px-8 py-5">
+                      <CategoryIcon
+                        icon={category.icon}
+                        color={category.color}
+                        size="md"
+                        className="group-hover:scale-110"
+                      />
+                    </td>
+                    <td class="px-8 py-5">
+                      <span
+                        class="text-base font-bold text-base-content tracking-tight leading-none"
+                        data-testid="category-name"
+                      >
+                        {category.name}
+                      </span>
+                      {category.type === 'income' && (
+                        <span class="badge badge-sm badge-ghost ml-2">
+                          {category.income_source_type}
+                        </span>
+                      )}
+                    </td>
+                    <td class="px-8 py-5 hidden md:table-cell">
+                      <span
+                        class="text-sm text-base-content/60 font-medium"
+                        data-testid="category-description"
+                      >
+                        {category.description || '—'}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                      <div class="flex items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          title="Edit category"
+                          className="min-h-11 min-w-11 border-0 rounded-xl p-2 text-base-content/30 hover:bg-primary/10 hover:text-primary focus:ring-primary"
+                          data-action="edit"
+                          data-category-id={category.id}
+                          aria-label={`Edit ${category.name} category`}
+                          data-testid="category-edit-btn"
+                        >
+                          <Pencil size={18} class="stroke-current" aria-hidden="true" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          title="Delete category"
+                          className="min-h-11 min-w-11 border-0 rounded-xl p-2 text-base-content/30 hover:bg-error/10 hover:text-error focus:ring-error"
+                          data-action="delete"
+                          data-category-id={category.id}
+                          data-category-name={category.name}
+                          data-category-icon={category.icon}
+                          data-category-color={category.color}
+                          aria-label={`Delete ${category.name} category`}
+                          data-testid="category-delete-btn"
+                        >
+                          <Trash size={18} class="stroke-current" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div class="py-24 text-center">
+              <div class="w-20 h-20 bg-base-200/50 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <title>No categories</title>
+                  <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+                  <path d="M7 7h.01" />
+                </svg>
               </div>
-            )
-          }
+              <h3 class="text-lg font-bold text-base-content mb-2">No categories found</h3>
+              <p class="text-neutral font-medium">Try adjusting your search terms.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -299,9 +297,8 @@ if (searchQuery) {
               Bulk Add Categories
             </h2>
             <p class="text-neutral text-sm mt-2 font-medium">
-              Type one category name per line. They will be created as <strong data-bulk-type-label
-                >{typeFilter}</strong
-              > categories.
+              Type one category name per line. They will be created as{' '}
+              <strong data-bulk-type-label>{typeFilter}</strong> categories.
             </p>
           </div>
         </div>
@@ -316,8 +313,11 @@ if (searchQuery) {
           <textarea
             id="bulk-categories-input"
             class="textarea textarea-bordered w-full h-40 text-sm bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 rounded-xl"
-            placeholder={'Food & Groceries\nTransportation\nUtilities\nEntertainment\nHealth & Fitness'}
-            data-testid="bulk-categories-textarea"></textarea>
+            placeholder={
+              'Food & Groceries\nTransportation\nUtilities\nEntertainment\nHealth & Fitness'
+            }
+            data-testid="bulk-categories-textarea"
+          ></textarea>
           <span class="text-base-content/40 text-xs mt-1">
             Default icon and color will be assigned. You can customize each category later.
           </span>

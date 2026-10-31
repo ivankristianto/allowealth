@@ -83,36 +83,32 @@ import Button from '@/components/atoms/Button.astro';
           All Accounts
         </a>
       </li>
-      {
-        currentUserId && (
+      {currentUserId && (
+        <li role="none">
+          <a
+            role="menuitem"
+            aria-current={isPersonalView ? 'page' : undefined}
+            href={buildFilterUrl({ user_id: currentUserId })}
+            class:list={['rounded-lg', isPersonalView && 'active']}
+          >
+            My Accounts
+          </a>
+        </li>
+      )}
+      {members
+        .filter((member) => member.id !== currentUserId)
+        .map((member) => (
           <li role="none">
             <a
               role="menuitem"
-              aria-current={isPersonalView ? 'page' : undefined}
-              href={buildFilterUrl({ user_id: currentUserId })}
-              class:list={['rounded-lg', isPersonalView && 'active']}
+              aria-current={userId === member.id ? 'page' : undefined}
+              href={buildFilterUrl({ user_id: member.id })}
+              class:list={['rounded-lg', userId === member.id && 'active']}
             >
-              My Accounts
+              {member.name}
             </a>
           </li>
-        )
-      }
-      {
-        members
-          .filter((member) => member.id !== currentUserId)
-          .map((member) => (
-            <li role="none">
-              <a
-                role="menuitem"
-                aria-current={userId === member.id ? 'page' : undefined}
-                href={buildFilterUrl({ user_id: member.id })}
-                class:list={['rounded-lg', userId === member.id && 'active']}
-              >
-                {member.name}
-              </a>
-            </li>
-          ))
-      }
+        ))}
     </ul>
   </div>
 
@@ -130,21 +126,19 @@ import Button from '@/components/atoms/Button.astro';
       class="input input-bordered w-full pl-10 pr-10 rounded-xl bg-base-100 text-sm focus:ring-2 focus:ring-accent focus:outline-none"
       aria-label="Search accounts by name"
     />
-    {
-      searchValue && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          shape="circle"
-          className="absolute right-3 top-1/2 h-11 min-h-11 w-11 min-w-11 -translate-y-1/2 rounded-lg border-0"
-          aria-label="Clear search"
-          data-clear-search
-        >
-          <X size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
-        </Button>
-      )
-    }
+    {searchValue && (
+      <Button
+        type="button"
+        variant="ghost"
+        size="xs"
+        shape="circle"
+        className="absolute right-3 top-1/2 h-11 min-h-11 w-11 min-w-11 -translate-y-1/2 rounded-lg border-0"
+        aria-label="Clear search"
+        data-clear-search
+      >
+        <X size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+      </Button>
+    )}
   </div>
 </div>
 

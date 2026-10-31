@@ -54,25 +54,21 @@ const hasHeaderAction = Astro.slots.has('header-action');
         <div>
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="text-lg font-bold">{title}</h3>
-            {
-              badge && (
-                <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap">
-                  {badge}
-                </span>
-              )
-            }
+            {badge && (
+              <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap">
+                {badge}
+              </span>
+            )}
             <slot name="title-extra" />
           </div>
           <p class="text-xs uppercase tracking-widest text-base-content/50">{subtitle}</p>
         </div>
       </div>
-      {
-        hasHeaderAction && (
-          <div>
-            <slot name="header-action" />
-          </div>
-        )
-      }
+      {hasHeaderAction && (
+        <div>
+          <slot name="header-action" />
+        </div>
+      )}
     </div>
     <slot />
   </div>

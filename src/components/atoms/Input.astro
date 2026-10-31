@@ -107,62 +107,56 @@ const selectOptions = type === 'select' ? options : [];
 
 <!-- Input wrapper for icon positioning -->
 <div class="relative">
-  {
-    hasIcon && (
-      <div
-        class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/50"
-        aria-hidden="true"
-      >
-        <slot name="icon" />
-      </div>
-    )
-  }
-  {
-    type === 'select' ? (
-      <select
-        id={id}
-        name={name}
-        class={inputClasses}
-        disabled={disabled}
-        required={required}
-        aria-invalid={error}
-        aria-describedby={ariaDescribeIds || undefined}
-        aria-required={required}
-        data-testid={dataTestId || undefined}
-      >
-        <option value="">{placeholder || 'Select...'}</option>
-        {selectOptions.map((opt) => (
-          <option value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    ) : (
-      <input
-        id={id}
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        disabled={disabled}
-        required={required}
-        class={inputClasses}
-        min={type === 'number' ? min : undefined}
-        max={type === 'number' ? max : undefined}
-        step={type === 'number' ? step : undefined}
-        pattern={pattern || undefined}
-        title={title || undefined}
-        aria-invalid={error}
-        aria-describedby={ariaDescribeIds || undefined}
-        aria-required={required}
-        data-testid={dataTestId || undefined}
-        data-current-email={dataCurrentEmail || undefined}
-      />
-    )
-  }
+  {hasIcon && (
+    <div
+      class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/50"
+      aria-hidden="true"
+    >
+      <slot name="icon" />
+    </div>
+  )}
+  {type === 'select' ? (
+    <select
+      id={id}
+      name={name}
+      class={inputClasses}
+      disabled={disabled}
+      required={required}
+      aria-invalid={error}
+      aria-describedby={ariaDescribeIds || undefined}
+      aria-required={required}
+      data-testid={dataTestId || undefined}
+    >
+      <option value="">{placeholder || 'Select...'}</option>
+      {selectOptions.map((opt) => (
+        <option value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  ) : (
+    <input
+      id={id}
+      name={name}
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      disabled={disabled}
+      required={required}
+      class={inputClasses}
+      min={type === 'number' ? min : undefined}
+      max={type === 'number' ? max : undefined}
+      step={type === 'number' ? step : undefined}
+      pattern={pattern || undefined}
+      title={title || undefined}
+      aria-invalid={error}
+      aria-describedby={ariaDescribeIds || undefined}
+      aria-required={required}
+      data-testid={dataTestId || undefined}
+      data-current-email={dataCurrentEmail || undefined}
+    />
+  )}
 </div>
-{
-  error && errorMessage && (
-    <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
-      {errorMessage}
-    </span>
-  )
-}
+{error && errorMessage && (
+  <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
+    {errorMessage}
+  </span>
+)}

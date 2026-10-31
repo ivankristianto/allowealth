@@ -79,114 +79,108 @@ const getMemberColor = (name: string) => {
         </tr>
       </thead>
       <tbody>
-        {
-          members.length === 0 ? (
-            <tr>
-              <td colspan="7" class="text-center py-12 text-base-content/50">
-                <div class="flex flex-col items-center gap-2">
-                  <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center">
-                    <Users class="w-6 h-6 opacity-40" />
-                  </div>
-                  <p class="font-medium">No transactions found</p>
-                  <p class="text-sm">Try selecting a different period</p>
+        {members.length === 0 ? (
+          <tr>
+            <td colspan="7" class="text-center py-12 text-base-content/50">
+              <div class="flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-base-200 flex items-center justify-center">
+                  <Users class="w-6 h-6 opacity-40" />
                 </div>
-              </td>
-            </tr>
-          ) : (
-            members.map((row) => {
-              const income = safeParseDecimal(row.totalIncome) || 0;
-              const expenses = safeParseDecimal(row.totalExpenses) || 0;
-              const net = safeParseDecimal(row.netSavings) || 0;
-              const expenseShare = totals.expenses > 0 ? (expenses / totals.expenses) * 100 : 0;
-              const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${period}`;
+                <p class="font-medium">No transactions found</p>
+                <p class="text-sm">Try selecting a different period</p>
+              </div>
+            </td>
+          </tr>
+        ) : (
+          members.map((row) => {
+            const income = safeParseDecimal(row.totalIncome) || 0;
+            const expenses = safeParseDecimal(row.totalExpenses) || 0;
+            const net = safeParseDecimal(row.netSavings) || 0;
+            const expenseShare = totals.expenses > 0 ? (expenses / totals.expenses) * 100 : 0;
+            const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${period}`;
 
-              return (
-                <tr
-                  class="group hover:bg-base-200/50 transition-colors cursor-pointer"
-                  data-href={drillUrl}
-                >
-                  <td>
-                    <a href={drillUrl} class="flex items-center gap-3 no-underline">
-                      <div
-                        class={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getMemberColor(row.userName)}`}
-                      >
-                        {getInitials(row.userName)}
-                      </div>
-                      <span class="font-semibold link-hover">{row.userName}</span>
-                    </a>
-                  </td>
-                  <td class="text-right text-success font-medium">
-                    {formatCurrency(income, currency)}
-                  </td>
-                  <td class="text-right text-error font-medium">
-                    {formatCurrency(expenses, currency)}
-                  </td>
-                  <td class="text-right hidden sm:table-cell">
-                    <div class="flex items-center justify-end gap-2">
-                      <div class="w-16 h-1.5 rounded-full bg-base-200 overflow-hidden">
-                        <div
-                          class="h-full bg-error/60 rounded-full"
-                          style={`width: ${expenseShare}%`}
-                        />
-                      </div>
-                      <span class="text-xs font-medium text-base-content/60 w-10 text-right">
-                        {expenseShare.toFixed(0)}%
-                      </span>
-                    </div>
-                  </td>
-                  <td
-                    class={`text-right font-semibold ${net >= 0 ? 'text-success' : 'text-error'}`}
-                  >
-                    {formatCurrency(net, currency)}
-                  </td>
-                  <td class="text-right hidden sm:table-cell">
-                    <span class="text-base-content/60">{row.transactionCount}</span>
-                  </td>
-                  <td class="text-right w-8">
-                    <a
-                      href={drillUrl}
-                      class="btn btn-ghost btn-xs rounded-xl"
-                      aria-label={`View ${row.userName} report`}
+            return (
+              <tr
+                class="group hover:bg-base-200/50 transition-colors cursor-pointer"
+                data-href={drillUrl}
+              >
+                <td>
+                  <a href={drillUrl} class="flex items-center gap-3 no-underline">
+                    <div
+                      class={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getMemberColor(row.userName)}`}
                     >
-                      <ChevronRight class="w-4 h-4 text-base-content/30 group-hover:text-base-content/60 transition-colors" />
-                    </a>
-                  </td>
-                </tr>
-              );
-            })
-          )
-        }
-      </tbody>
-      {
-        members.length > 0 && (
-          <tfoot>
-            <tr class="border-t-2 border-base-300">
-              <td class="font-bold">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-base-200 flex items-center justify-center text-xs font-bold text-base-content/40 shrink-0">
-                    ALL
+                      {getInitials(row.userName)}
+                    </div>
+                    <span class="font-semibold link-hover">{row.userName}</span>
+                  </a>
+                </td>
+                <td class="text-right text-success font-medium">
+                  {formatCurrency(income, currency)}
+                </td>
+                <td class="text-right text-error font-medium">
+                  {formatCurrency(expenses, currency)}
+                </td>
+                <td class="text-right hidden sm:table-cell">
+                  <div class="flex items-center justify-end gap-2">
+                    <div class="w-16 h-1.5 rounded-full bg-base-200 overflow-hidden">
+                      <div
+                        class="h-full bg-error/60 rounded-full"
+                        style={`width: ${expenseShare}%`}
+                      />
+                    </div>
+                    <span class="text-xs font-medium text-base-content/60 w-10 text-right">
+                      {expenseShare.toFixed(0)}%
+                    </span>
                   </div>
-                  <span>Total</span>
+                </td>
+                <td class={`text-right font-semibold ${net >= 0 ? 'text-success' : 'text-error'}`}>
+                  {formatCurrency(net, currency)}
+                </td>
+                <td class="text-right hidden sm:table-cell">
+                  <span class="text-base-content/60">{row.transactionCount}</span>
+                </td>
+                <td class="text-right w-8">
+                  <a
+                    href={drillUrl}
+                    class="btn btn-ghost btn-xs rounded-xl"
+                    aria-label={`View ${row.userName} report`}
+                  >
+                    <ChevronRight class="w-4 h-4 text-base-content/30 group-hover:text-base-content/60 transition-colors" />
+                  </a>
+                </td>
+              </tr>
+            );
+          })
+        )}
+      </tbody>
+      {members.length > 0 && (
+        <tfoot>
+          <tr class="border-t-2 border-base-300">
+            <td class="font-bold">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-base-200 flex items-center justify-center text-xs font-bold text-base-content/40 shrink-0">
+                  ALL
                 </div>
-              </td>
-              <td class="text-right text-success font-bold">
-                {formatCurrency(totals.income, currency)}
-              </td>
-              <td class="text-right text-error font-bold">
-                {formatCurrency(totals.expenses, currency)}
-              </td>
-              <td class="text-right hidden sm:table-cell">
-                <span class="text-xs font-medium text-base-content/40">100%</span>
-              </td>
-              <td class={`text-right font-bold ${totalNet >= 0 ? 'text-success' : 'text-error'}`}>
-                {formatCurrency(totalNet, currency)}
-              </td>
-              <td class="text-right hidden sm:table-cell font-bold">{totals.count}</td>
-              <td />
-            </tr>
-          </tfoot>
-        )
-      }
+                <span>Total</span>
+              </div>
+            </td>
+            <td class="text-right text-success font-bold">
+              {formatCurrency(totals.income, currency)}
+            </td>
+            <td class="text-right text-error font-bold">
+              {formatCurrency(totals.expenses, currency)}
+            </td>
+            <td class="text-right hidden sm:table-cell">
+              <span class="text-xs font-medium text-base-content/40">100%</span>
+            </td>
+            <td class={`text-right font-bold ${totalNet >= 0 ? 'text-success' : 'text-error'}`}>
+              {formatCurrency(totalNet, currency)}
+            </td>
+            <td class="text-right hidden sm:table-cell font-bold">{totals.count}</td>
+            <td />
+          </tr>
+        </tfoot>
+      )}
     </table>
   </div>
 </div>

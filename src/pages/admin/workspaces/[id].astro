@@ -35,8 +35,12 @@ try {
     <nav aria-label="Breadcrumb">
       <div class="breadcrumbs text-sm">
         <ul>
-          <li><a href="/admin">Admin</a></li>
-          <li><a href="/admin/workspaces">Workspaces</a></li>
+          <li>
+            <a href="/admin">Admin</a>
+          </li>
+          <li>
+            <a href="/admin/workspaces">Workspaces</a>
+          </li>
           <li>{workspace.name}</li>
         </ul>
       </div>
@@ -59,18 +63,16 @@ try {
           </div>
         </div>
         <div class="flex gap-2">
-          {
-            workspace.status === 'active' && (
-              <Button
-                variant="warning"
-                className="rounded-lg sm:rounded-xl min-h-11"
-                data-archive-btn
-                data-workspace-id={workspace.id}
-              >
-                Archive
-              </Button>
-            )
-          }
+          {workspace.status === 'active' && (
+            <Button
+              variant="warning"
+              className="rounded-lg sm:rounded-xl min-h-11"
+              data-archive-btn
+              data-workspace-id={workspace.id}
+            >
+              Archive
+            </Button>
+          )}
           <Button
             variant="danger"
             className="rounded-lg sm:rounded-xl min-h-11"
@@ -91,42 +93,38 @@ try {
     <AdminWorkspaceMemberList members={workspace.members} />
 
     <!-- Settings -->
-    {
-      Object.keys(workspace.settings).length > 0 && (
-        <section aria-label="Workspace settings">
-          <Card padding="md">
-            <h3 class="text-lg font-bold mb-4">Settings</h3>
-            <div class="overflow-x-auto">
-              <table class="table table-sm">
-                <thead>
+    {Object.keys(workspace.settings).length > 0 && (
+      <section aria-label="Workspace settings">
+        <Card padding="md">
+          <h3 class="text-lg font-bold mb-4">Settings</h3>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(workspace.settings).map(([key, value]) => (
                   <tr>
-                    <th>Key</th>
-                    <th>Value</th>
+                    <td class="font-mono text-sm">{key}</td>
+                    <td>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(workspace.settings).map(([key, value]) => (
-                    <tr>
-                      <td class="font-mono text-sm">{key}</td>
-                      <td>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </section>
-      )
-    }
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+    )}
   </div>
 
   <!-- Delete Confirmation Modal -->
   <dialog id="delete-workspace-modal" class="modal" data-delete-modal>
     <div class="modal-box max-w-md">
       <div class="flex items-start gap-4">
-        <div
-          class="flex-shrink-0 w-10 h-10 rounded-full bg-error/10 flex items-center justify-center"
-        >
+        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
           <TriangleAlert size={20} class="text-error" aria-hidden="true" />
         </div>
         <div class="flex-1">
@@ -139,7 +137,11 @@ try {
       </div>
       <div class="mt-4">
         <p class="font-semibold mb-2">
-          Type <span class="text-error" data-workspace-name-display>{workspace.name}</span> to confirm:
+          Type{' '}
+          <span class="text-error" data-workspace-name-display>
+            {workspace.name}
+          </span>{' '}
+          to confirm:
         </p>
         <label for="confirm-workspace-name" class="text-sm font-medium text-base-content/80">
           Type workspace name to confirm
@@ -156,7 +158,10 @@ try {
         <form method="dialog">
           <button class="btn btn-ghost rounded-2xl">Cancel</button>
         </form>
-        <Button variant="danger" data-confirm-delete disabled> Delete Workspace </Button>
+        <Button variant="danger" data-confirm-delete disabled>
+          {' '}
+          Delete Workspace{' '}
+        </Button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">

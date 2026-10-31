@@ -45,45 +45,39 @@ const {
       <h3 class="text-xl font-bold text-error mb-2">Could not load your data</h3>
       <p class="text-base-content/60 mb-4 max-w-md">{message}</p>
 
-      {
-        details && (
-          <div class="mb-4">
-            <details class="text-left">
-              <summary class="cursor-pointer text-sm text-base-content/60 hover:text-base-content">
-                Technical details
-              </summary>
-              <pre class="mt-2 p-3 bg-base-200 rounded text-xs overflow-auto max-w-md">
+      {details && (
+        <div class="mb-4">
+          <details class="text-left">
+            <summary class="cursor-pointer text-sm text-base-content/60 hover:text-base-content">
+              Technical details
+            </summary>
+            <pre class="mt-2 p-3 bg-base-200 rounded text-xs overflow-auto max-w-md">
                 <code>{details}</code>
               </pre>
-            </details>
-          </div>
-        )
-      }
+          </details>
+        </div>
+      )}
 
       <!-- Actions -->
       <div class="flex gap-3 flex-wrap justify-center">
-        {
-          showRetry && (
-            <Button
-              type="button"
-              variant="primary"
-              data-action="reload-page"
-              className="rounded-lg sm:rounded-xl"
-            >
-              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
-              Try Again
-            </Button>
-          )
-        }
+        {showRetry && (
+          <Button
+            type="button"
+            variant="primary"
+            data-action="reload-page"
+            className="rounded-lg sm:rounded-xl"
+          >
+            <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
+            Try Again
+          </Button>
+        )}
 
-        {
-          supportUrl && (
-            <Button variant="outline" href={supportUrl} className="flex items-center gap-2">
-              <Info size={16} class="stroke-current" aria-hidden="true" />
-              Get Help
-            </Button>
-          )
-        }
+        {supportUrl && (
+          <Button variant="outline" href={supportUrl} className="flex items-center gap-2">
+            <Info size={16} class="stroke-current" aria-hidden="true" />
+            Get Help
+          </Button>
+        )}
       </div>
 
       <!-- Suggestion -->

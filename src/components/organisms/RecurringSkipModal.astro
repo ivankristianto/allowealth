@@ -19,9 +19,7 @@ import Button from '@/components/atoms/Button.astro';
     novalidate
   >
     <div class="flex items-center gap-4">
-      <div
-        class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning"
-      >
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning">
         <CircleMinus size={24} class="stroke-current" aria-hidden="true" />
       </div>
       <div class="flex-1">
@@ -40,8 +38,7 @@ import Button from '@/components/atoms/Button.astro';
       role="alert"
       aria-live="polite"
       data-confirm-error
-    >
-    </div>
+    ></div>
 
     <div class="space-y-4">
       <div class="rounded-xl border border-base-300 bg-base-200/40 px-3 py-2.5">
@@ -52,14 +49,15 @@ import Button from '@/components/atoms/Button.astro';
       </div>
 
       <label class="form-control gap-1.5">
-        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-          >Reason (optional)</span
-        >
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Reason (optional)
+        </span>
         <textarea
           class="textarea textarea-bordered min-h-24 w-full rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-warning focus-visible:ring-2 focus-visible:ring-warning/30"
           maxlength="200"
           placeholder="Add a note for why this occurrence is skipped"
-          data-skip-reason></textarea>
+          data-skip-reason
+        ></textarea>
         <span class="text-right text-xs text-base-content/60" aria-live="polite" data-skip-counter>
           0 / 200 characters
         </span>

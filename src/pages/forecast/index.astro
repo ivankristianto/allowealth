@@ -57,53 +57,47 @@ const emptySummary: ForecastRealityCheckSummary = {
     />
 
     {/* Wealth Trajectory Section */}
-    {
-      forecastData ? (
-        <WealthTrajectory
-          timeline={forecastData.timeline}
-          chartWindow={forecastData.chartWindow}
-          summary={forecastData.summary}
-          currency={primaryCurrency}
-        />
-      ) : (
-        <WealthTrajectory
-          timeline={[]}
-          summary={emptySummary}
-          currency={primaryCurrency}
-          error={error || 'Failed to load forecast data'}
-        />
-      )
-    }
+    {forecastData ? (
+      <WealthTrajectory
+        timeline={forecastData.timeline}
+        chartWindow={forecastData.chartWindow}
+        summary={forecastData.summary}
+        currency={primaryCurrency}
+      />
+    ) : (
+      <WealthTrajectory
+        timeline={[]}
+        summary={emptySummary}
+        currency={primaryCurrency}
+        error={error || 'Failed to load forecast data'}
+      />
+    )}
 
     {/* Monthly Gains Section */}
-    {
-      forecastData ? (
-        <ForecastMonthlyGains
-          timeline={forecastData.timeline}
-          chartWindow={forecastData.chartWindow}
-          currency={primaryCurrency}
-        />
-      ) : (
-        <ForecastMonthlyGains
-          timeline={[]}
-          currency={primaryCurrency}
-          error={error || 'Failed to load monthly gains data'}
-        />
-      )
-    }
+    {forecastData ? (
+      <ForecastMonthlyGains
+        timeline={forecastData.timeline}
+        chartWindow={forecastData.chartWindow}
+        currency={primaryCurrency}
+      />
+    ) : (
+      <ForecastMonthlyGains
+        timeline={[]}
+        currency={primaryCurrency}
+        error={error || 'Failed to load monthly gains data'}
+      />
+    )}
 
     {/* Ledger Projections Section */}
-    {
-      forecastData ? (
-        <LedgerProjections data={forecastData.yearlyBreakdown} currency={primaryCurrency} />
-      ) : (
-        <LedgerProjections
-          data={[]}
-          currency={primaryCurrency}
-          error={error || 'Failed to load projection data'}
-        />
-      )
-    }
+    {forecastData ? (
+      <LedgerProjections data={forecastData.yearlyBreakdown} currency={primaryCurrency} />
+    ) : (
+      <LedgerProjections
+        data={[]}
+        currency={primaryCurrency}
+        error={error || 'Failed to load projection data'}
+      />
+    )}
   </div>
 </ProtectedLayout>
 

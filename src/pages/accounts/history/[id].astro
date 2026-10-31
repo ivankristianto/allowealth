@@ -80,87 +80,85 @@ const historyEntries: AccountHistoryOutput[] = history.map((entry) => ({
     </div>
 
     {/* History Table */}
-    {
-      historyEntries.length > 0 ? (
-        <div class="card bg-base-100 shadow border border-base-300">
-          <div class="card-body p-0">
-            <div class="px-6 py-4 bg-base-200 border-b border-base-300">
-              <h3 class="font-semibold flex items-center gap-2">
-                <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
-                Balance History ({historyEntries.length} entries)
-              </h3>
-            </div>
+    {historyEntries.length > 0 ? (
+      <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body p-0">
+          <div class="px-6 py-4 bg-base-200 border-b border-base-300">
+            <h3 class="font-semibold flex items-center gap-2">
+              <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
+              Balance History ({historyEntries.length} entries)
+            </h3>
+          </div>
 
-            {/* Mobile View - Card Layout */}
-            <div class="divide-y divide-base-200 lg:hidden">
-              {historyEntries.map((entry, index) => (
-                <div class="px-6 py-4 space-y-2">
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm text-base-content/60">
-                      Entry #{historyEntries.length - index}
-                    </span>
-                    <span
+          {/* Mobile View - Card Layout */}
+          <div class="divide-y divide-base-200 lg:hidden">
+            {historyEntries.map((entry, index) => (
+              <div class="px-6 py-4 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-base-content/60">
+                    Entry #{historyEntries.length - index}
+                  </span>
+                  <span
+                    class={`font-semibold ${account.currency === 'IDR' ? 'text-success' : 'text-info'}`}
+                  >
+                    {formatCurrency(entry.balance, account.currency)}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-base-content/70">Date</span>
+                  <span>{new Date(entry.recorded_at).toLocaleString()}</span>
+                </div>
+                {entry.notes && (
+                  <div class="text-sm">
+                    <span class="text-base-content/70">Notes:</span>{' '}
+                    <span class="ml-2">{entry.notes}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop View - Table Layout */}
+          <div class="hidden lg:table">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr class="bg-base-200">
+                  <th class="w-20">#</th>
+                  <th>Date & Time</th>
+                  <th>Balance</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyEntries.map((entry, index) => (
+                  <tr>
+                    <td class="text-base-content/60">{historyEntries.length - index}</td>
+                    <td>{new Date(entry.recorded_at).toLocaleString()}</td>
+                    <td
                       class={`font-semibold ${account.currency === 'IDR' ? 'text-success' : 'text-info'}`}
                     >
                       {formatCurrency(entry.balance, account.currency)}
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-base-content/70">Date</span>
-                    <span>{new Date(entry.recorded_at).toLocaleString()}</span>
-                  </div>
-                  {entry.notes && (
-                    <div class="text-sm">
-                      <span class="text-base-content/70">Notes:</span>{' '}
-                      <span class="ml-2">{entry.notes}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop View - Table Layout */}
-            <div class="hidden lg:table">
-              <table class="table table-zebra w-full">
-                <thead>
-                  <tr class="bg-base-200">
-                    <th class="w-20">#</th>
-                    <th>Date & Time</th>
-                    <th>Balance</th>
-                    <th>Notes</th>
+                    </td>
+                    <td class="text-base-content/70">{entry.notes || '-'}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {historyEntries.map((entry, index) => (
-                    <tr>
-                      <td class="text-base-content/60">{historyEntries.length - index}</td>
-                      <td>{new Date(entry.recorded_at).toLocaleString()}</td>
-                      <td
-                        class={`font-semibold ${account.currency === 'IDR' ? 'text-success' : 'text-info'}`}
-                      >
-                        {formatCurrency(entry.balance, account.currency)}
-                      </td>
-                      <td class="text-base-content/70">{entry.notes || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      ) : (
-        // Empty state
-        <div class="card bg-base-100 shadow border border-base-300">
-          <div class="card-body">
-            <EmptyState
-              title="No history available"
-              message="Balance updates will be tracked here. Update the account balance to start tracking history."
-              actionLabel="Back to Accounts"
-              actionHref="/accounts"
-            />
-          </div>
+      </div>
+    ) : (
+      // Empty state
+      <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body">
+          <EmptyState
+            title="No history available"
+            message="Balance updates will be tracked here. Update the account balance to start tracking history."
+            actionLabel="Back to Accounts"
+            actionHref="/accounts"
+          />
         </div>
-      )
-    }
+      </div>
+    )}
   </div>
 </ProtectedLayout>

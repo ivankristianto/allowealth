@@ -131,7 +131,9 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span data-summary-marker="runtime" class={summaryMarkerClass(runtimeSummaryVariant)}
+            <span
+              data-summary-marker="runtime"
+              class={summaryMarkerClass(runtimeSummaryVariant)}
             ></span>
             <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
               Runtime
@@ -167,7 +169,9 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span data-summary-marker="data-layer" class={summaryMarkerClass(connStatus.variant)}
+            <span
+              data-summary-marker="data-layer"
+              class={summaryMarkerClass(connStatus.variant)}
             ></span>
             <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
               Data Layer
@@ -194,16 +198,14 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
           <dd class={summaryReadoutValueClass}>Local SQLite</dd>
         </div>
 
-        {
-          data.database.queryMetrics && (
-            <div class={summaryReadoutRowClass}>
-              <dt class={summaryReadoutLabelClass}>Queries</dt>
-              <dd class={summaryReadoutValueClass}>
-                {data.database.queryMetrics.totalQueries} checked
-              </dd>
-            </div>
-          )
-        }
+        {data.database.queryMetrics && (
+          <div class={summaryReadoutRowClass}>
+            <dt class={summaryReadoutLabelClass}>Queries</dt>
+            <dd class={summaryReadoutValueClass}>
+              {data.database.queryMetrics.totalQueries} checked
+            </dd>
+          </div>
+        )}
       </dl>
     </div>
   </Card>
@@ -213,7 +215,9 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span data-summary-marker="caching" class={summaryMarkerClass(cacheStatus.variant)}
+            <span
+              data-summary-marker="caching"
+              class={summaryMarkerClass(cacheStatus.variant)}
             ></span>
             <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
               Caching
@@ -254,47 +258,41 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
       <span class={badgeClass(configurationStatus.variant)}>{configurationStatus.text}</span>
     </div>
 
-    {
-      data.configuration.missingRequired.length > 0 && (
-        <div class="alert alert-error" role="alert">
-          <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
-          <div>
-            <h3 class="font-semibold">Missing Required Configuration</h3>
-            <div class="mt-2 flex flex-wrap gap-2">
-              {data.configuration.missingRequired.map((varName) => (
-                <code class="rounded-md bg-base-300 px-2 py-1 text-xs font-medium">{varName}</code>
-              ))}
-            </div>
+    {data.configuration.missingRequired.length > 0 && (
+      <div class="alert alert-error" role="alert">
+        <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
+        <div>
+          <h3 class="font-semibold">Missing Required Configuration</h3>
+          <div class="mt-2 flex flex-wrap gap-2">
+            {data.configuration.missingRequired.map((varName) => (
+              <code class="rounded-md bg-base-300 px-2 py-1 text-xs font-medium">{varName}</code>
+            ))}
           </div>
         </div>
-      )
-    }
+      </div>
+    )}
 
-    {
-      data.configuration.warnings.length > 0 && (
-        <div class="alert alert-warning" role="alert">
-          <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
-          <div>
-            <h3 class="font-semibold">Configuration Warnings</h3>
-            <ul class="mt-1 space-y-1 text-sm text-base-content/80">
-              {data.configuration.warnings.map((warning) => (
-                <li>{warning}</li>
-              ))}
-            </ul>
-          </div>
+    {data.configuration.warnings.length > 0 && (
+      <div class="alert alert-warning" role="alert">
+        <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
+        <div>
+          <h3 class="font-semibold">Configuration Warnings</h3>
+          <ul class="mt-1 space-y-1 text-sm text-base-content/80">
+            {data.configuration.warnings.map((warning) => (
+              <li>{warning}</li>
+            ))}
+          </ul>
         </div>
-      )
-    }
+      </div>
+    )}
 
-    {
-      data.configuration.isValid &&
-        data.configuration.missingRequired.length === 0 &&
-        data.configuration.warnings.length === 0 && (
-          <div class="rounded-2xl border border-success/20 bg-success/5 px-4 py-3 text-sm text-base-content/70">
-            Required configuration is present and no warnings were reported.
-          </div>
-        )
-    }
+    {data.configuration.isValid &&
+      data.configuration.missingRequired.length === 0 &&
+      data.configuration.warnings.length === 0 && (
+        <div class="rounded-2xl border border-success/20 bg-success/5 px-4 py-3 text-sm text-base-content/70">
+          Required configuration is present and no warnings were reported.
+        </div>
+      )}
   </div>
 </Card>
 
@@ -302,9 +300,7 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
   <Card padding="lg">
     <div class="mb-6 flex items-start justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div
-          class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"
-        >
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Server size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
@@ -326,23 +322,19 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
         <dd class="mt-1 text-sm text-base-content">{data.runtime.runtime}</dd>
       </div>
 
-      {
-        data.runtime.nodeVersion && (
-          <div class="border-b border-base-300 py-2">
-            <dt class="text-sm font-medium text-base-content/70">Node Version</dt>
-            <dd class="mt-1 font-mono text-sm text-base-content">{data.runtime.nodeVersion}</dd>
-          </div>
-        )
-      }
+      {data.runtime.nodeVersion && (
+        <div class="border-b border-base-300 py-2">
+          <dt class="text-sm font-medium text-base-content/70">Node Version</dt>
+          <dd class="mt-1 font-mono text-sm text-base-content">{data.runtime.nodeVersion}</dd>
+        </div>
+      )}
 
-      {
-        data.runtime.bunVersion && (
-          <div class="border-b border-base-300 py-2">
-            <dt class="text-sm font-medium text-base-content/70">Bun Version</dt>
-            <dd class="mt-1 font-mono text-sm text-base-content">{data.runtime.bunVersion}</dd>
-          </div>
-        )
-      }
+      {data.runtime.bunVersion && (
+        <div class="border-b border-base-300 py-2">
+          <dt class="text-sm font-medium text-base-content/70">Bun Version</dt>
+          <dd class="mt-1 font-mono text-sm text-base-content">{data.runtime.bunVersion}</dd>
+        </div>
+      )}
 
       <div class="border-b border-base-300 py-2">
         <dt class="text-sm font-medium text-base-content/70">App Version</dt>
@@ -378,21 +370,17 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
     <dl class="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
       <div class="border-b border-base-300 py-2">
         <dt class="text-sm font-medium text-base-content/70">Dialect</dt>
-        <dd class="mt-1 text-sm text-base-content">
-          {data.database.dialect}
-        </dd>
+        <dd class="mt-1 text-sm text-base-content">{data.database.dialect}</dd>
       </div>
 
       <div class="border-b border-base-300 py-2">
         <dt class="text-sm font-medium text-base-content/70">Connection</dt>
         <dd class="mt-1 flex items-center gap-2 text-sm text-base-content">
-          {
-            connStatus.variant === 'success' ? (
-              <CircleCheck size={16} class="text-success" aria-hidden="true" />
-            ) : (
-              <CircleX size={16} class="text-error" aria-hidden="true" />
-            )
-          }
+          {connStatus.variant === 'success' ? (
+            <CircleCheck size={16} class="text-success" aria-hidden="true" />
+          ) : (
+            <CircleX size={16} class="text-error" aria-hidden="true" />
+          )}
           <span>{connStatus.text}</span>
         </dd>
       </div>
@@ -406,44 +394,40 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
         </dd>
       </div>
 
-      {
-        data.database.queryMetrics && (
-          <div class="rounded-2xl border border-base-300 bg-base-200/50 p-4 md:col-span-2">
-            <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
-              Query Metrics
-            </p>
-            <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div>
-                <dt class="text-sm text-base-content/60">Total Queries</dt>
-                <dd class="mt-1 text-base font-semibold text-base-content">
-                  {data.database.queryMetrics.totalQueries}
-                </dd>
-              </div>
-              <div>
-                <dt class="text-sm text-base-content/60">Average Latency</dt>
-                <dd class="mt-1 text-base font-semibold text-base-content">
-                  {data.database.queryMetrics.avgLatency}ms
-                </dd>
-              </div>
-              <div>
-                <dt class="text-sm text-base-content/60">Slow Queries</dt>
-                <dd class="mt-1 text-base font-semibold text-base-content">
-                  {data.database.queryMetrics.slowQueries}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        )
-      }
+      {data.database.queryMetrics && (
+        <div class="rounded-2xl border border-base-300 bg-base-200/50 p-4 md:col-span-2">
+          <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
+            Query Metrics
+          </p>
+          <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <dt class="text-sm text-base-content/60">Total Queries</dt>
+              <dd class="mt-1 text-base font-semibold text-base-content">
+                {data.database.queryMetrics.totalQueries}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm text-base-content/60">Average Latency</dt>
+              <dd class="mt-1 text-base font-semibold text-base-content">
+                {data.database.queryMetrics.avgLatency}ms
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm text-base-content/60">Slow Queries</dt>
+              <dd class="mt-1 text-base font-semibold text-base-content">
+                {data.database.queryMetrics.slowQueries}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
     </dl>
   </Card>
 
   <Card padding="lg">
     <div class="mb-6 flex items-start justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div
-          class="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent"
-        >
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
           <Activity size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
@@ -470,69 +454,59 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
         <dd class="mt-1 text-sm text-base-content">{data.cache.isEnabled ? 'Yes' : 'No'}</dd>
       </div>
 
-      {
-        data.cache.config.ttl && (
-          <div class="border-b border-base-300 py-2">
-            <dt class="text-sm font-medium text-base-content/70">Default TTL</dt>
-            <dd class="mt-1 text-sm text-base-content">{data.cache.config.ttl}s</dd>
-          </div>
-        )
-      }
+      {data.cache.config.ttl && (
+        <div class="border-b border-base-300 py-2">
+          <dt class="text-sm font-medium text-base-content/70">Default TTL</dt>
+          <dd class="mt-1 text-sm text-base-content">{data.cache.config.ttl}s</dd>
+        </div>
+      )}
 
-      {
-        data.cache.config.maxSize && (
-          <div class="border-b border-base-300 py-2">
-            <dt class="text-sm font-medium text-base-content/70">Max Size</dt>
-            <dd class="mt-1 text-sm text-base-content">{data.cache.config.maxSize} items</dd>
-          </div>
-        )
-      }
+      {data.cache.config.maxSize && (
+        <div class="border-b border-base-300 py-2">
+          <dt class="text-sm font-medium text-base-content/70">Max Size</dt>
+          <dd class="mt-1 text-sm text-base-content">{data.cache.config.maxSize} items</dd>
+        </div>
+      )}
 
-      {
-        data.cache.upstashConfig && (
-          <div class="rounded-2xl border border-base-300 bg-base-200/50 p-4 md:col-span-2">
-            <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
-              Upstash
-            </p>
-            <dl class="mt-3 grid grid-cols-1 gap-3">
-              <div>
-                <dt class="text-sm text-base-content/60">URL</dt>
-                <dd class="mt-1">
-                  <code class="block overflow-x-auto rounded-md bg-base-100 px-3 py-2 text-xs">
-                    {data.cache.upstashConfig.url}
-                  </code>
-                </dd>
-              </div>
-              <div>
-                <dt class="text-sm text-base-content/60">REST URL</dt>
-                <dd class="mt-1">
-                  <code class="block overflow-x-auto rounded-md bg-base-100 px-3 py-2 text-xs">
-                    {data.cache.upstashConfig.restUrl}
-                  </code>
-                </dd>
-              </div>
-            </dl>
-          </div>
-        )
-      }
+      {data.cache.upstashConfig && (
+        <div class="rounded-2xl border border-base-300 bg-base-200/50 p-4 md:col-span-2">
+          <p class="text-xs font-semibold uppercase tracking-widest text-base-content/45">
+            Upstash
+          </p>
+          <dl class="mt-3 grid grid-cols-1 gap-3">
+            <div>
+              <dt class="text-sm text-base-content/60">URL</dt>
+              <dd class="mt-1">
+                <code class="block overflow-x-auto rounded-md bg-base-100 px-3 py-2 text-xs">
+                  {data.cache.upstashConfig.url}
+                </code>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm text-base-content/60">REST URL</dt>
+              <dd class="mt-1">
+                <code class="block overflow-x-auto rounded-md bg-base-100 px-3 py-2 text-xs">
+                  {data.cache.upstashConfig.restUrl}
+                </code>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
 
-      {
-        data.cache.lastError && (
-          <div class="rounded-2xl border border-error/30 bg-error/5 p-4 md:col-span-2">
-            <dt class="text-sm font-medium text-error">Last Error</dt>
-            <dd class="mt-2 text-xs text-error">{data.cache.lastError}</dd>
-          </div>
-        )
-      }
+      {data.cache.lastError && (
+        <div class="rounded-2xl border border-error/30 bg-error/5 p-4 md:col-span-2">
+          <dt class="text-sm font-medium text-error">Last Error</dt>
+          <dd class="mt-2 text-xs text-error">{data.cache.lastError}</dd>
+        </div>
+      )}
     </dl>
   </Card>
 </div>
 
 <Card padding="lg" className="mt-6">
   <div class="mb-6 flex items-center gap-3">
-    <div
-      class="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary"
-    >
+    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
       <Settings size={24} class="stroke-current" aria-hidden="true" />
     </div>
     <div>
@@ -553,49 +527,48 @@ const runtimeSummaryVariant: StatusVariant = 'neutral';
         </tr>
       </thead>
       <tbody>
-        {
-          data.environment.map((envVar) => {
-            const status = getEnvVarStatus(envVar.isSet, envVar.isSensitive);
+        {data.environment.map((envVar) => {
+          const status = getEnvVarStatus(envVar.isSet, envVar.isSensitive);
 
-            return (
-              <tr>
-                <td>
-                  <code class="text-sm">{envVar.name}</code>
-                </td>
-                <td>
-                  <code
-                    class={`block max-w-xs overflow-x-auto rounded-md bg-base-300 px-3 py-1.5 text-sm ${envVar.isSensitive ? 'text-warning' : ''}`}
+          return (
+            <tr>
+              <td>
+                <code class="text-sm">{envVar.name}</code>
+              </td>
+              <td>
+                <code
+                  class={`block max-w-xs overflow-x-auto rounded-md bg-base-300 px-3 py-1.5 text-sm ${envVar.isSensitive ? 'text-warning' : ''}`}
+                >
+                  {envVar.value}
+                </code>
+              </td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <div
+                    class={`flex h-6 w-6 items-center justify-center rounded-lg ${toneClass(status.variant)}`}
                   >
-                    {envVar.value}
-                  </code>
-                </td>
-                <td>
-                  <div class="flex items-center gap-2">
-                    <div
-                      class={`flex h-6 w-6 items-center justify-center rounded-lg ${toneClass(status.variant)}`}
-                    >
-                      {status.variant === 'success' ? (
-                        <CircleCheck class={iconTextClass(status.variant)} aria-hidden="true" />
-                      ) : status.variant === 'error' ? (
-                        <CircleX class={iconTextClass(status.variant)} aria-hidden="true" />
-                      ) : (
-                        <Code class={iconTextClass(status.variant)} aria-hidden="true" />
-                      )}
-                    </div>
-                    <span class={badgeClass(status.variant)}>{status.text}</span>
+                    {status.variant === 'success' ? (
+                      <CircleCheck class={iconTextClass(status.variant)} aria-hidden="true" />
+                    ) : status.variant === 'error' ? (
+                      <CircleX class={iconTextClass(status.variant)} aria-hidden="true" />
+                    ) : (
+                      <Code class={iconTextClass(status.variant)} aria-hidden="true" />
+                    )}
                   </div>
-                </td>
-              </tr>
-            );
-          })
-        }
+                  <span class={badgeClass(status.variant)}>{status.text}</span>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   </div>
 </Card>
 
 <footer class="py-4 text-center text-sm text-base-content/50">
-  Last updated: <time datetime={data.timestamp} class="font-mono"
-    >{formatTimestamp(data.timestamp)}</time
-  >
+  Last updated:{' '}
+  <time datetime={data.timestamp} class="font-mono">
+    {formatTimestamp(data.timestamp)}
+  </time>
 </footer>

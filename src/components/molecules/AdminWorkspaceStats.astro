@@ -39,17 +39,15 @@ const variantToValueColor: Record<string, string> = {
 
 <section aria-label="Workspace statistics">
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-    {
-      stats.map(({ label, value, Icon, variant }) => (
-        <StatCard
-          title={label}
-          value={String(value)}
-          valueColor={variantToValueColor[variant]}
-          iconVariant={variant}
-        >
-          <Icon slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-        </StatCard>
-      ))
-    }
+    {stats.map(({ label, value, Icon, variant }) => (
+      <StatCard
+        title={label}
+        value={String(value)}
+        valueColor={variantToValueColor[variant]}
+        iconVariant={variant}
+      >
+        <Icon slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+      </StatCard>
+    ))}
   </div>
 </section>

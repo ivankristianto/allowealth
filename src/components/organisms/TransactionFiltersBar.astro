@@ -169,125 +169,114 @@ const mainSearchInputClass = [
       </Button>
     </div>
 
-    {
-      showCategoryFilter && categories.length > 0 && (
-        <MultiSelectDropdown
-          id="category"
-          label="All Categories"
-          inputName="category_ids"
-          selectedIds={categoryIds}
-          items={categories.map((c) => ({ id: c.id, name: c.name, filterType: c.type }))}
-          searchable={true}
-          searchPlaceholder="Search categories..."
-          filterEventType="category_ids"
+    {showCategoryFilter && categories.length > 0 && (
+      <MultiSelectDropdown
+        id="category"
+        label="All Categories"
+        inputName="category_ids"
+        selectedIds={categoryIds}
+        items={categories.map((c) => ({ id: c.id, name: c.name, filterType: c.type }))}
+        searchable={true}
+        searchPlaceholder="Search categories..."
+        filterEventType="category_ids"
+      >
+        <Tag size={16} class="stroke-current text-base-content/40" aria-hidden="true" slot="icon" />
+      </MultiSelectDropdown>
+    )}
+
+    {showAccountFilter && accounts.length > 0 && (
+      <MultiSelectDropdown
+        id="account"
+        label="All Accounts"
+        inputName="account_ids"
+        selectedIds={accountIds}
+        items={accounts
+          .map((a) => ({ id: a.id, name: a.name, group: a.type }))
+          .sort((a, b) => {
+            const normalizeGroup = (value: string) => value.toLowerCase().replace(/[\s-]+/g, '_');
+            const liquidGroups = new Set([
+              'cash',
+              'bank_account',
+              'bank_accounts',
+              'e_wallet',
+              'e_wallets',
+              'credit_card',
+              'credit_cards',
+            ]);
+            const aIsLiquid = liquidGroups.has(normalizeGroup(a.group));
+            const bIsLiquid = liquidGroups.has(normalizeGroup(b.group));
+
+            if (aIsLiquid && !bIsLiquid) return -1;
+            if (!aIsLiquid && bIsLiquid) return 1;
+            return a.name.localeCompare(b.name);
+          })}
+        searchable={true}
+        searchPlaceholder="Search accounts..."
+        filterEventType="account_ids"
+      >
+        <Wallet
+          size={16}
+          class="stroke-current text-base-content/40"
+          aria-hidden="true"
+          slot="icon"
+        />
+      </MultiSelectDropdown>
+    )}
+
+    {showMemberFilter && members.length > 0 && (
+      <div class="dropdown dropdown-end" id="member-dropdown">
+        <input type="hidden" name="user_id" id="member-filter" value={userId} />
+        <Button
+          type="button"
+          variant="ghost"
+          tabindex={0}
+          className="min-w-[160px] gap-2 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-xs font-bold text-base-content shadow-sm hover:border-base-content/30 hover:bg-base-100"
+          aria-label="Filter by member"
+          aria-haspopup="listbox"
+          data-member-trigger
         >
-          <Tag
-            size={16}
-            class="stroke-current text-base-content/40"
+          <Users size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <span class="flex-1 text-left truncate" data-member-label>
+            {userId
+              ? members.find((member) => member.id === userId)?.name || 'All Members'
+              : 'All Members'}
+          </span>
+          <ChevronDown
+            size={14}
+            class="stroke-current text-base-content/40 shrink-0"
             aria-hidden="true"
-            slot="icon"
           />
-        </MultiSelectDropdown>
-      )
-    }
-
-    {
-      showAccountFilter && accounts.length > 0 && (
-        <MultiSelectDropdown
-          id="account"
-          label="All Accounts"
-          inputName="account_ids"
-          selectedIds={accountIds}
-          items={accounts
-            .map((a) => ({ id: a.id, name: a.name, group: a.type }))
-            .sort((a, b) => {
-              const normalizeGroup = (value: string) => value.toLowerCase().replace(/[\s-]+/g, '_');
-              const liquidGroups = new Set([
-                'cash',
-                'bank_account',
-                'bank_accounts',
-                'e_wallet',
-                'e_wallets',
-                'credit_card',
-                'credit_cards',
-              ]);
-              const aIsLiquid = liquidGroups.has(normalizeGroup(a.group));
-              const bIsLiquid = liquidGroups.has(normalizeGroup(b.group));
-
-              if (aIsLiquid && !bIsLiquid) return -1;
-              if (!aIsLiquid && bIsLiquid) return 1;
-              return a.name.localeCompare(b.name);
-            })}
-          searchable={true}
-          searchPlaceholder="Search accounts..."
-          filterEventType="account_ids"
+        </Button>
+        <ul
+          tabindex={0}
+          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-56 border border-base-300 mt-2"
+          data-member-dropdown
         >
-          <Wallet
-            size={16}
-            class="stroke-current text-base-content/40"
-            aria-hidden="true"
-            slot="icon"
-          />
-        </MultiSelectDropdown>
-      )
-    }
-
-    {
-      showMemberFilter && members.length > 0 && (
-        <div class="dropdown dropdown-end" id="member-dropdown">
-          <input type="hidden" name="user_id" id="member-filter" value={userId} />
-          <Button
-            type="button"
-            variant="ghost"
-            tabindex={0}
-            className="min-w-[160px] gap-2 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-xs font-bold text-base-content shadow-sm hover:border-base-content/30 hover:bg-base-100"
-            aria-label="Filter by member"
-            aria-haspopup="listbox"
-            data-member-trigger
-          >
-            <Users size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
-            <span class="flex-1 text-left truncate" data-member-label>
-              {userId
-                ? members.find((member) => member.id === userId)?.name || 'All Members'
-                : 'All Members'}
-            </span>
-            <ChevronDown
-              size={14}
-              class="stroke-current text-base-content/40 shrink-0"
-              aria-hidden="true"
-            />
-          </Button>
-          <ul
-            tabindex={0}
-            class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-56 border border-base-300 mt-2"
-            data-member-dropdown
-          >
+          <li>
+            <a
+              href={buildFilterUrl({ user_id: '' })}
+              class={`${!userId ? 'active' : ''}`}
+              data-member-option
+              data-member-id=""
+            >
+              All Members
+            </a>
+          </li>
+          {members.map((member) => (
             <li>
               <a
-                href={buildFilterUrl({ user_id: '' })}
-                class={`${!userId ? 'active' : ''}`}
+                href={buildFilterUrl({ user_id: member.id })}
+                class={`${userId === member.id ? 'active' : ''}`}
                 data-member-option
-                data-member-id=""
+                data-member-id={member.id}
               >
-                All Members
+                {member.name}
               </a>
             </li>
-            {members.map((member) => (
-              <li>
-                <a
-                  href={buildFilterUrl({ user_id: member.id })}
-                  class={`${userId === member.id ? 'active' : ''}`}
-                  data-member-option
-                  data-member-id={member.id}
-                >
-                  {member.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )
-    }
+          ))}
+        </ul>
+      </div>
+    )}
   </div>
 </form>
 

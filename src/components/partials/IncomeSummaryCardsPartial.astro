@@ -67,23 +67,19 @@ const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-e
   <div class="bg-base-100 border border-base-300 rounded-2xl md:rounded-3xl shadow-sm p-5 lg:p-6">
     <!-- Header: label + growth badge -->
     <div class="flex justify-between items-start">
-      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-        >Total Income</span
-      >
-      {
-        growthNum !== 0 && (
-          <div class="flex flex-col items-end gap-1">
-            <span class={`text-xs font-bold px-2 py-1 rounded-lg ${growthColorClass}`}>
-              {growthIcon} {Math.abs(growthNum).toFixed(1)}%
-            </span>
-            {previousPeriodLabel && (
-              <span class="text-xs text-base-content/40 font-medium">
-                vs. {previousPeriodLabel}
-              </span>
-            )}
-          </div>
-        )
-      }
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+        Total Income
+      </span>
+      {growthNum !== 0 && (
+        <div class="flex flex-col items-end gap-1">
+          <span class={`text-xs font-bold px-2 py-1 rounded-lg ${growthColorClass}`}>
+            {growthIcon} {Math.abs(growthNum).toFixed(1)}%
+          </span>
+          {previousPeriodLabel && (
+            <span class="text-xs text-base-content/40 font-medium">vs. {previousPeriodLabel}</span>
+          )}
+        </div>
+      )}
     </div>
 
     <!-- Hero value -->
@@ -92,24 +88,22 @@ const growthColorClass = growthNum >= 0 ? 'text-success bg-success/10' : 'text-e
     </p>
 
     <!-- Allocation bar -->
-    {
-      segments.length > 0 && (
-        <div class="mt-5">
-          <AllocationBar segments={segments} height="md" ariaLabel="Income allocation breakdown" />
+    {segments.length > 0 && (
+      <div class="mt-5">
+        <AllocationBar segments={segments} height="md" ariaLabel="Income allocation breakdown" />
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-3">
-            {segments.map((s) => (
-              <div class="flex items-center gap-2">
-                <div class:list={['w-2.5 h-2.5 rounded-full shrink-0', s.bgClass]} />
-                <span class="text-xs text-base-content/60 font-medium">{s.label}</span>
-                <span class="text-xs font-bold text-base-content ml-auto">
-                  {s.percentage.toFixed(1)}%
-                </span>
-              </div>
-            ))}
-          </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-3">
+          {segments.map((s) => (
+            <div class="flex items-center gap-2">
+              <div class:list={['w-2.5 h-2.5 rounded-full shrink-0', s.bgClass]} />
+              <span class="text-xs text-base-content/60 font-medium">{s.label}</span>
+              <span class="text-xs font-bold text-base-content ml-auto">
+                {s.percentage.toFixed(1)}%
+              </span>
+            </div>
+          ))}
         </div>
-      )
-    }
+      </div>
+    )}
   </div>
 </div>

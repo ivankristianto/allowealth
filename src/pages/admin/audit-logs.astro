@@ -365,9 +365,7 @@ const pageNumbers = Array.from(
     <section aria-label="Audit filters">
       <Card compact padding="sm">
         <form method="GET" class="space-y-4">
-          <div
-            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60"
-          >
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
             <SlidersHorizontal size={14} aria-hidden="true" />
             Filters
           </div>
@@ -390,13 +388,11 @@ const pageNumbers = Array.from(
               aria-label="Filter by action"
             >
               <option value="">All Actions</option>
-              {
-                actions.map((item: { value: string }) => (
-                  <option value={item.value} selected={actionFilter === item.value}>
-                    {formatActionLabel(item.value)}
-                  </option>
-                ))
-              }
+              {actions.map((item: { value: string }) => (
+                <option value={item.value} selected={actionFilter === item.value}>
+                  {formatActionLabel(item.value)}
+                </option>
+              ))}
             </select>
 
             <select
@@ -405,13 +401,11 @@ const pageNumbers = Array.from(
               aria-label="Filter by entity type"
             >
               <option value="">All Entities</option>
-              {
-                entityTypes.map((item: { value: string }) => (
-                  <option value={item.value} selected={entityTypeFilter === item.value}>
-                    {formatEntityLabel(item.value)}
-                  </option>
-                ))
-              }
+              {entityTypes.map((item: { value: string }) => (
+                <option value={item.value} selected={entityTypeFilter === item.value}>
+                  {formatEntityLabel(item.value)}
+                </option>
+              ))}
             </select>
 
             <select
@@ -420,13 +414,11 @@ const pageNumbers = Array.from(
               aria-label="Filter by workspace"
             >
               <option value="">All Workspaces</option>
-              {
-                workspaceOptions.map((workspace: { id: string; name: string }) => (
-                  <option value={workspace.id} selected={workspaceIdFilter === workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))
-              }
+              {workspaceOptions.map((workspace: { id: string; name: string }) => (
+                <option value={workspace.id} selected={workspaceIdFilter === workspace.id}>
+                  {workspace.name}
+                </option>
+              ))}
             </select>
 
             <Button
@@ -438,23 +430,19 @@ const pageNumbers = Array.from(
             </Button>
           </div>
 
-          {
-            hasActiveFilters && (
-              <a href="/admin/audit-logs" class="btn btn-ghost rounded-lg min-h-11">
-                <X size={14} aria-hidden="true" />
-                Clear filters
-              </a>
-            )
-          }
+          {hasActiveFilters && (
+            <a href="/admin/audit-logs" class="btn btn-ghost rounded-lg min-h-11">
+              <X size={14} aria-hidden="true" />
+              Clear filters
+            </a>
+          )}
         </form>
       </Card>
     </section>
 
     <p class="text-sm text-base-content/60">
-      Showing {total === 0 ? 0 : offset + 1}-{Math.min(offset + displayLogs.length, total)} of {
-        total
-      }
-      {' '}events
+      Showing {total === 0 ? 0 : offset + 1}-{Math.min(offset + displayLogs.length, total)} of{' '}
+      {total} events
     </p>
 
     <section aria-label="Audit log entries">
@@ -472,132 +460,128 @@ const pageNumbers = Array.from(
               </tr>
             </thead>
             <tbody>
-              {
-                displayLogs.length === 0 ? (
-                  <tr>
-                    <td colspan="6" class="text-center py-10 text-base-content/60">
-                      <ClipboardList
-                        size={32}
-                        class="stroke-current mx-auto mb-2 opacity-50"
-                        aria-hidden="true"
-                      />
-                      No audit events matched your filters.
+              {displayLogs.length === 0 ? (
+                <tr>
+                  <td colspan="6" class="text-center py-10 text-base-content/60">
+                    <ClipboardList
+                      size={32}
+                      class="stroke-current mx-auto mb-2 opacity-50"
+                      aria-hidden="true"
+                    />
+                    No audit events matched your filters.
+                  </td>
+                </tr>
+              ) : (
+                displayLogs.map((log) => (
+                  <tr class="border-b border-base-200/80 last:border-b-0 align-top">
+                    <td class="whitespace-nowrap text-sm text-base-content/80">
+                      {formatDateTime(log.createdAt)}
+                    </td>
+                    <td>
+                      <div class="font-medium text-base-content">{log.actorPrimary}</div>
+                      {log.actorSecondary && (
+                        <div class="text-xs text-base-content/60">{log.actorSecondary}</div>
+                      )}
+                    </td>
+                    <td>
+                      <span class={`badge badge-sm ${actionBadgeClass(log.action)}`}>
+                        {log.actionLabel}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="font-medium text-base-content">{log.entityLabel}</div>
+                      <div
+                        class="text-xs font-mono text-base-content/60"
+                        title={log.entityId ?? '-'}
+                      >
+                        {truncateId(log.entityId)}
+                      </div>
+                    </td>
+                    <td>
+                      <div class="text-sm text-base-content">{log.workspaceLabel}</div>
+                      <div class="text-xs font-mono text-base-content/60" title={log.workspaceId}>
+                        {truncateId(log.workspaceId)}
+                      </div>
+                    </td>
+                    <td>
+                      <div class="text-sm text-base-content/80">{log.summary}</div>
+                      {log.changedFields.length > 0 && (
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                          {log.changedFields.map((field) => (
+                            <span class="badge badge-outline badge-xs">{field}</span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                   </tr>
-                ) : (
-                  displayLogs.map((log) => (
-                    <tr class="border-b border-base-200/80 last:border-b-0 align-top">
-                      <td class="whitespace-nowrap text-sm text-base-content/80">
-                        {formatDateTime(log.createdAt)}
-                      </td>
-                      <td>
-                        <div class="font-medium text-base-content">{log.actorPrimary}</div>
-                        {log.actorSecondary && (
-                          <div class="text-xs text-base-content/60">{log.actorSecondary}</div>
-                        )}
-                      </td>
-                      <td>
-                        <span class={`badge badge-sm ${actionBadgeClass(log.action)}`}>
-                          {log.actionLabel}
-                        </span>
-                      </td>
-                      <td>
-                        <div class="font-medium text-base-content">{log.entityLabel}</div>
-                        <div
-                          class="text-xs font-mono text-base-content/60"
-                          title={log.entityId ?? '-'}
-                        >
-                          {truncateId(log.entityId)}
-                        </div>
-                      </td>
-                      <td>
-                        <div class="text-sm text-base-content">{log.workspaceLabel}</div>
-                        <div class="text-xs font-mono text-base-content/60" title={log.workspaceId}>
-                          {truncateId(log.workspaceId)}
-                        </div>
-                      </td>
-                      <td>
-                        <div class="text-sm text-base-content/80">{log.summary}</div>
-                        {log.changedFields.length > 0 && (
-                          <div class="flex flex-wrap gap-1.5 mt-2">
-                            {log.changedFields.map((field) => (
-                              <span class="badge badge-outline badge-xs">{field}</span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )
-              }
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </Card>
     </section>
 
-    {
-      totalPages > 1 && (
-        <nav aria-label="Pagination">
-          <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
-            {isFirstPage ? (
-              <Button
-                variant="ghost"
-                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
-                type="button"
-                disabled
-              >
-                Previous
-              </Button>
-            ) : (
-              <a
-                href={buildQueryString(Math.max(1, page - 1))}
-                class="btn rounded-lg sm:rounded-xl min-h-11"
-              >
-                Previous
-              </a>
-            )}
+    {totalPages > 1 && (
+      <nav aria-label="Pagination">
+        <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
+          {isFirstPage ? (
+            <Button
+              variant="ghost"
+              className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+              type="button"
+              disabled
+            >
+              Previous
+            </Button>
+          ) : (
+            <a
+              href={buildQueryString(Math.max(1, page - 1))}
+              class="btn rounded-lg sm:rounded-xl min-h-11"
+            >
+              Previous
+            </a>
+          )}
 
-            <div class="hidden sm:flex items-center gap-2">
-              <div class="join">
-                {pageNumbers.map((pageNum) => (
-                  <a
-                    href={buildQueryString(pageNum)}
-                    class:list={[
-                      'join-item btn rounded-lg min-h-11',
-                      { 'btn-active': pageNum === page },
-                    ]}
-                    aria-current={pageNum === page ? 'page' : undefined}
-                  >
-                    {pageNum}
-                  </a>
-                ))}
-              </div>
+          <div class="hidden sm:flex items-center gap-2">
+            <div class="join">
+              {pageNumbers.map((pageNum) => (
+                <a
+                  href={buildQueryString(pageNum)}
+                  class:list={[
+                    'join-item btn rounded-lg min-h-11',
+                    { 'btn-active': pageNum === page },
+                  ]}
+                  aria-current={pageNum === page ? 'page' : undefined}
+                >
+                  {pageNum}
+                </a>
+              ))}
             </div>
-            <div class="sm:hidden text-sm text-base-content/70 px-2">
-              Page {page} of {totalPages}
-            </div>
-
-            {isLastPage ? (
-              <Button
-                variant="ghost"
-                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
-                type="button"
-                disabled
-              >
-                Next
-              </Button>
-            ) : (
-              <a
-                href={buildQueryString(Math.min(totalPages, page + 1))}
-                class="btn rounded-lg sm:rounded-xl min-h-11"
-              >
-                Next
-              </a>
-            )}
           </div>
-        </nav>
-      )
-    }
+          <div class="sm:hidden text-sm text-base-content/70 px-2">
+            Page {page} of {totalPages}
+          </div>
+
+          {isLastPage ? (
+            <Button
+              variant="ghost"
+              className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+              type="button"
+              disabled
+            >
+              Next
+            </Button>
+          ) : (
+            <a
+              href={buildQueryString(Math.min(totalPages, page + 1))}
+              class="btn rounded-lg sm:rounded-xl min-h-11"
+            >
+              Next
+            </a>
+          )}
+        </div>
+      </nav>
+    )}
   </div>
 </AdminLayout>

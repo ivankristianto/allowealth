@@ -77,41 +77,37 @@ const { actions = defaultActions, className = '' } = Astro.props;
   role="group"
   aria-label="Quick actions"
 >
-  {
-    actions.map((action) => {
-      // Fallback to Plus icon for unknown icon names (runtime safety)
-      const IconComponent = iconComponents[action.icon] || Plus;
-      // Fallback to accent for unknown variants
-      const badgeVariant = variantColors[action.variant] || 'accent';
+  {actions.map((action) => {
+    // Fallback to Plus icon for unknown icon names (runtime safety)
+    const IconComponent = iconComponents[action.icon] || Plus;
+    // Fallback to accent for unknown variants
+    const badgeVariant = variantColors[action.variant] || 'accent';
 
-      // Development warning for unknown icons
-      if (import.meta.env.DEV && !iconComponents[action.icon]) {
-        console.warn(`QuickActions: Unknown icon "${action.icon}", falling back to Plus`);
-      }
+    // Development warning for unknown icons
+    if (import.meta.env.DEV && !iconComponents[action.icon]) {
+      console.warn(`QuickActions: Unknown icon "${action.icon}", falling back to Plus`);
+    }
 
-      return (
-        <Button
-          type="button"
-          variant="ghost"
-          data-quick-action={action.variant}
-          data-testid={
-            action.variant === 'expense' ? 'quick-action-expense' : 'quick-action-income'
-          }
-          className="flex-1 justify-center gap-5 px-8 py-7 min-h-[44px] rounded-card-lg bg-base-100 border-base-300 text-base-content shadow-sm hover:bg-base-200 hover:shadow-md hover:scale-[1.02] group relative overflow-hidden text-left"
-          aria-label={action.ariaLabel}
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        data-quick-action={action.variant}
+        data-testid={action.variant === 'expense' ? 'quick-action-expense' : 'quick-action-income'}
+        className="flex-1 justify-center gap-5 px-8 py-7 min-h-[44px] rounded-card-lg bg-base-100 border-base-300 text-base-content shadow-sm hover:bg-base-200 hover:shadow-md hover:scale-[1.02] group relative overflow-hidden text-left"
+        aria-label={action.ariaLabel}
+      >
+        <IconBadge
+          variant={badgeVariant}
+          size="md"
+          className="group-hover:scale-110 transition-transform"
         >
-          <IconBadge
-            variant={badgeVariant}
-            size="md"
-            className="group-hover:scale-110 transition-transform"
-          >
-            <IconComponent size={24} class="stroke-current" aria-hidden="true" />
-          </IconBadge>
-          <span class="text-lg tracking-tight font-bold leading-none">{action.label}</span>
-        </Button>
-      );
-    })
-  }
+          <IconComponent size={24} class="stroke-current" aria-hidden="true" />
+        </IconBadge>
+        <span class="text-lg tracking-tight font-bold leading-none">{action.label}</span>
+      </Button>
+    );
+  })}
 </div>
 
 <!-- Transaction Modals are provided globally by ProtectedLayout -->

@@ -31,47 +31,45 @@ const { workspaces } = Astro.props;
         </tr>
       </thead>
       <tbody>
-        {
-          workspaces.length === 0 ? (
-            <tr>
-              <td colspan="6" class="text-center py-10 text-base-content/60">
-                <BuildingComplex
-                  size={28}
-                  class="stroke-current mx-auto mb-2 opacity-50"
-                  aria-hidden="true"
-                />
-                No workspaces matched your filters
+        {workspaces.length === 0 ? (
+          <tr>
+            <td colspan="6" class="text-center py-10 text-base-content/60">
+              <BuildingComplex
+                size={28}
+                class="stroke-current mx-auto mb-2 opacity-50"
+                aria-hidden="true"
+              />
+              No workspaces matched your filters
+            </td>
+          </tr>
+        ) : (
+          workspaces.map((ws) => (
+            <tr
+              class="hover:bg-base-200/50 cursor-pointer border-b border-base-200/80 last:border-b-0 transition-colors touch-manipulation"
+              data-href={`/admin/workspaces/${ws.id}`}
+            >
+              <td class="font-semibold text-base-content">
+                <a
+                  href={`/admin/workspaces/${ws.id}`}
+                  class="link link-hover link-primary text-base"
+                >
+                  {ws.name}
+                </a>
               </td>
+              <td>
+                <span
+                  class={`badge badge-sm ${ws.status === 'active' ? 'badge-success' : 'badge-warning'}`}
+                >
+                  {ws.status}
+                </span>
+              </td>
+              <td class="font-medium">{ws.memberCount}</td>
+              <td class="font-medium">{ws.transactionCount}</td>
+              <td class="font-medium">{ws.accountCount}</td>
+              <td class="text-base-content/70">{new Date(ws.createdAt).toLocaleDateString()}</td>
             </tr>
-          ) : (
-            workspaces.map((ws) => (
-              <tr
-                class="hover:bg-base-200/50 cursor-pointer border-b border-base-200/80 last:border-b-0 transition-colors touch-manipulation"
-                data-href={`/admin/workspaces/${ws.id}`}
-              >
-                <td class="font-semibold text-base-content">
-                  <a
-                    href={`/admin/workspaces/${ws.id}`}
-                    class="link link-hover link-primary text-base"
-                  >
-                    {ws.name}
-                  </a>
-                </td>
-                <td>
-                  <span
-                    class={`badge badge-sm ${ws.status === 'active' ? 'badge-success' : 'badge-warning'}`}
-                  >
-                    {ws.status}
-                  </span>
-                </td>
-                <td class="font-medium">{ws.memberCount}</td>
-                <td class="font-medium">{ws.transactionCount}</td>
-                <td class="font-medium">{ws.accountCount}</td>
-                <td class="text-base-content/70">{new Date(ws.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))
-          )
-        }
+          ))
+        )}
       </tbody>
     </table>
   </div>

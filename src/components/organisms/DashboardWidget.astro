@@ -54,17 +54,15 @@ const {
   aria-busy={loading ? 'true' : undefined}
   data-testid={testId}
 >
-  {
-    loading ? (
-      <slot name="loading" />
-    ) : error ? (
-      <slot name="error">
-        <p class="text-sm text-error">{error}</p>
-      </slot>
-    ) : isEmpty ? (
-      <slot name="empty" />
-    ) : (
-      <slot />
-    )
-  }
+  {loading ? (
+    <slot name="loading" />
+  ) : error ? (
+    <slot name="error">
+      <p class="text-sm text-error">{error}</p>
+    </slot>
+  ) : isEmpty ? (
+    <slot name="empty" />
+  ) : (
+    <slot />
+  )}
 </Card>
