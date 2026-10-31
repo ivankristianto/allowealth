@@ -7,7 +7,7 @@ export default {
     'e2e/playwright-report/**',
     'test-results/**',
   ],
-  extends: ['stylelint-config-standard', 'stylelint-config-recommended'],
+  extends: ['stylelint-config-standard'],
   rules: {
     // Allow Tailwind CSS imports
     'at-rule-no-unknown': [
