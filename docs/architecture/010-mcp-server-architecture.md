@@ -32,12 +32,12 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 
 ### 2. Authentication: OAuth 2.0
 
-- **OAuth Provider**: Allowealth uses the better-auth `mcp` plugin to expose an OAuth 2.0 provider for MCP clients.
+- **OAuth Provider**: Allowealth uses `@better-auth/oauth-provider` (Better Auth 1.7) to expose an OAuth 2.1 provider for MCP clients, with opaque access tokens (`disableJwtPlugin: true`). Endpoints live under `/api/auth/oauth2/*`.
 - **Pre-seeded Clients**: `bun run aw db seed-oauth-clients` creates the well-known clients used by Claude Desktop, ChatGPT, and generic MCP clients.
-- **Database Model**: OAuth state is stored in three tables: `oauthApplication`, `oauthAccessToken`, and `oauthConsent`.
+- **Database Model**: OAuth state is stored in `oauthClient`, `oauthAccessToken`, `oauthRefreshToken`, `oauthConsent`, `oauthResource`, `oauthClientResource` and `oauthClientAssertion`. Token values are stored as SHA-256 hashes (`src/lib/auth/oauth-token-hash.ts`), shared by the provider and `src/lib/mcp-auth.ts`.
 - **Consent + Token UX**: Users authorize clients on `/oauth/authorize`, then copy the one-time access token from `/oauth/display-token`.
 - **Optimization**: `src/lib/mcp-auth.ts` validates access tokens and caches successful lookups in the `CacheManager` for 5 minutes.
-- **Revocation**: Revoking a connected app deletes the token record and invalidates the cache tag for that token immediately.
+- **Revocation**: Revoking a connected app deletes the token record (and its refresh token) and invalidates the cache tag for that token immediately. Ending the browser session that authorized a client (sign-out or session revocation) marks its tokens `revoked`, and `/api/mcp` rejects them.
 
 ### 3. Tool Design Principles
 

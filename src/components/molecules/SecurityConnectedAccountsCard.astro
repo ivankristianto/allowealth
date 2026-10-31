@@ -140,10 +140,12 @@ const { accounts } = Astro.props;
               return;
             }
 
-            const result = await authClient.unlinkAccount({
-              providerId,
-              accountId: button.dataset.accountId || undefined,
-            });
+            const accountId = button.dataset.accountId;
+            if (!accountId) {
+              throw new Error('This account is missing its identifier. Reload and try again.');
+            }
+
+            const result = await authClient.unlinkAccount({ accountId });
 
             if (result.error) {
               throw result.error;

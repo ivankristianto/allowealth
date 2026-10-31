@@ -16,6 +16,15 @@ describe('NoopDriver', () => {
     await expect(driver.delete('key')).resolves.toBeUndefined();
   });
 
+  it('should start every counter fresh on increment', async () => {
+    expect(await driver.increment('counter', 60)).toBe(1);
+    expect(await driver.increment('counter', 60)).toBe(1);
+  });
+
+  it('should return null on getAndDelete', async () => {
+    expect(await driver.getAndDelete('key')).toBeNull();
+  });
+
   it('should not throw on invalidateByTags', async () => {
     await expect(driver.invalidateByTags(['tag1', 'tag2'])).resolves.toBeUndefined();
   });

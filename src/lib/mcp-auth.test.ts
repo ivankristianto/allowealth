@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import type { SQL } from 'drizzle-orm';
+import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { oauthAccessToken, users } from '@/db/schema/sqlite';
 
 const mockFindFirst = mock(async () => null);
@@ -22,6 +24,7 @@ const testDeps = {
   cache: { invalidateByTags: mockCacheInvalidate },
 };
 
+import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { invalidateMcpToken, validateMcpToken } from './mcp-auth';
 
 describe('validateMcpToken', () => {
@@ -49,11 +52,49 @@ describe('validateMcpToken', () => {
     const expiredAt = new Date(Date.now() - 1000);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
-      accessToken: 'valid-token',
-      accessTokenExpiresAt: expiredAt,
+      expiresAt: expiredAt,
+      revoked: null,
       userId: 'user-1',
     }));
     expect(await validateMcpToken('valid-token', testDeps)).toBeNull();
+  });
+
+  it('returns null for a token revoked by sign-out or session revocation', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
+      id: 'tok-1',
+      expiresAt: new Date(Date.now() + 3600_000),
+      revoked: new Date(),
+      userId: 'user-1',
+    }));
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('valid-token', testDeps)).toBeNull();
+  });
+
+  it('returns null when the token has no expiry', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
+      id: 'tok-1',
+      expiresAt: null,
+      revoked: null,
+      userId: 'user-1',
+    }));
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('valid-token', testDeps)).toBeNull();
+  });
+
+  it('looks the token up by its hash, never the raw value', async () => {
+    let capturedWhere: SQL | undefined;
+    mockDb.query.oauthAccessToken.findFirst = mock(async (config: { where: SQL }) => {
+      capturedWhere = config.where;
+      return null;
+    }) as typeof mockFindFirst;
+
+    await validateMcpToken('raw-bearer-token', testDeps);
+
+    const config = { where: capturedWhere! };
+    const { params } = new SQLiteSyncDialect().sqlToQuery(config.where);
+    expect(params).toEqual([await hashOAuthToken('raw-bearer-token')]);
   });
 
   it('returns McpAuthContext for valid token', async () => {
@@ -61,8 +102,8 @@ describe('validateMcpToken', () => {
     const expiresAt = new Date(Date.now() + 3600_000);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
-      accessToken: 'valid-token',
-      accessTokenExpiresAt: expiresAt,
+      expiresAt,
+      revoked: null,
       userId: 'user-1',
     }));
     mockDb.query.users.findFirst = mock(async () => ({
@@ -79,8 +120,8 @@ describe('validateMcpToken', () => {
     const expiresAt = new Date(Date.now() + 60_000);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
-      accessToken: 'short-lived-token',
-      accessTokenExpiresAt: expiresAt,
+      expiresAt,
+      revoked: null,
       userId: 'user-1',
     }));
     mockDb.query.users.findFirst = mock(async () => ({
@@ -104,8 +145,8 @@ describe('validateMcpToken', () => {
     const expiresAt = new Date(Date.now() + 3600_000);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
-      accessToken: 'valid-token',
-      accessTokenExpiresAt: expiresAt,
+      expiresAt,
+      revoked: null,
       userId: 'user-1',
     }));
     mockDb.query.users.findFirst = mock(async () => ({ workspace_id: null }));
@@ -117,8 +158,8 @@ describe('validateMcpToken', () => {
     const expiresAt = new Date(Date.now() + 3600_000);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
-      accessToken: 'valid-token',
-      accessTokenExpiresAt: expiresAt,
+      expiresAt,
+      revoked: null,
       userId: 'user-1',
     }));
     mockDb.query.users.findFirst = mock(async () => ({

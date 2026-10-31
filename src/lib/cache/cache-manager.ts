@@ -142,6 +142,16 @@ export class CacheManager {
     await this.waitForInitialization();
     return this.driver.invalidateByTags(tags);
   }
+
+  async increment(key: string, ttl: number): Promise<number> {
+    await this.waitForInitialization();
+    return this.driver.increment(key, ttl);
+  }
+
+  async getAndDelete<T>(key: string): Promise<T | null> {
+    await this.waitForInitialization();
+    return this.driver.getAndDelete<T>(key);
+  }
 }
 
 export function getCacheManagerState(): {

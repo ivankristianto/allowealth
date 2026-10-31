@@ -227,6 +227,9 @@ describe('better-auth server config', () => {
 
     expect(mod.auth.options.secondaryStorage).toBeDefined();
     expect(mod.auth.options.rateLimit?.storage).toBe('secondary-storage');
+    // The OAuth provider refuses to initialize with secondary storage otherwise.
+    expect(mod.auth.options.session?.storeSessionInDatabase).toBe(true);
+    await expect(mod.auth.$context).resolves.toBeDefined();
   });
 
   it('enables Better Auth secondary storage when Redis cache is configured', async () => {
@@ -245,6 +248,31 @@ describe('better-auth server config', () => {
 
     expect(mod.auth.options.secondaryStorage).toBeDefined();
     expect(mod.auth.options.rateLimit?.storage).toBe('secondary-storage');
+  });
+
+  it('configures the MCP OAuth provider with app-owned token hashing', async () => {
+    setTestEnv({
+      NODE_ENV: 'test',
+      BETTER_AUTH_SECRET: 'test-better-auth-secret',
+      GOOGLE_CLIENT_ID: 'test-google-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
+    });
+
+    const mod = await importFreshServer();
+    const { hashOAuthToken } = await import('./oauth-token-hash');
+    const provider = mod.auth.options.plugins?.find(
+      (plugin: { id: string }) => plugin.id === 'oauth-provider'
+    ) as { options: Record<string, unknown> } | undefined;
+
+    expect(provider?.options).toMatchObject({
+      loginPage: '/login',
+      consentPage: '/oauth/authorize',
+      disableJwtPlugin: true,
+      accessTokenExpiresIn: 86_400,
+      storeTokens: { hash: hashOAuthToken },
+    });
+    expect(mod.auth.options.session?.storeSessionInDatabase).toBeUndefined();
+    await expect(mod.auth.$context).resolves.toBeDefined();
   });
 
   it('does not throw from password reset delivery callback when email is unavailable', async () => {

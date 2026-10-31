@@ -11,6 +11,7 @@
 
 import { Redis } from '@upstash/redis';
 import type { CacheDriver, CacheSetOptions } from '../types';
+import { INCREMENT_WITH_TTL_SCRIPT } from './increment-script';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('cache:upstash');
@@ -58,6 +59,31 @@ export class UpstashDriver implements CacheDriver {
       await this.redis.del(key);
     } catch (error) {
       log.warn('Delete failed:', key, error);
+    }
+  }
+
+  async increment(key: string, ttl: number): Promise<number> {
+    try {
+      const value = await this.redis.eval<string[], number>(
+        INCREMENT_WITH_TTL_SCRIPT,
+        [key],
+        [String(ttl)]
+      );
+      return Number(value);
+    } catch (error) {
+      // Fail open like get/set: a cache outage must not lock users out.
+      log.warn('Increment failed:', key, error);
+      return 1;
+    }
+  }
+
+  async getAndDelete<T>(key: string): Promise<T | null> {
+    try {
+      const value = await this.redis.getdel<T>(key);
+      return value ?? null;
+    } catch (error) {
+      log.warn('GetAndDelete failed:', key, error);
+      return null;
     }
   }
 

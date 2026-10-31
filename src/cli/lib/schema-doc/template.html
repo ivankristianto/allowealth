@@ -705,10 +705,11 @@
       <div class="area">
         <h3>MCP OAuth provider</h3>
         <p>
-          <code>oauthApplication</code>, <code>oauthAccessToken</code> and
-          <code>oauthConsent</code> come from Better Auth's MCP plugin. They let AI clients connect
-          to the MCP server. Their <code>userId</code> and <code>clientId</code> columns have no
-          foreign-key constraint.
+          <code>oauthClient</code>, <code>oauthAccessToken</code>, <code>oauthRefreshToken</code>,
+          <code>oauthConsent</code> and the resource tables come from
+          <code>@better-auth/oauth-provider</code>. They let AI clients connect to the MCP server.
+          Token values are stored hashed. <code>sessionId</code> has no foreign-key constraint,
+          because sessions from before Better Auth 1.7 exist only in Redis.
         </p>
       </div>
       <div class="area">

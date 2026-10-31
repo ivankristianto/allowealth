@@ -159,8 +159,9 @@ The AI will call the appropriate tools automatically. Category and asset names a
 
 ## Security
 
-- OAuth 2.0 is provided by the better-auth `mcp` plugin
-- Tokens are stored in `oauthApplication`, `oauthAccessToken`, and `oauthConsent`
+- OAuth 2.1 is provided by `@better-auth/oauth-provider` (Better Auth 1.7)
+- Clients, tokens and consents are stored in `oauthClient`, `oauthAccessToken`, `oauthRefreshToken` and `oauthConsent`; token values are stored hashed
+- Signing out of Allowealth revokes the tokens issued under that browser session
 - Connected Apps only shows the access token once, on the token display page
 - Revoked or expired tokens are checked on every tool call (stdio) and on cache miss (HTTP)
 - HTTP auth results are cached for 5 minutes, and cache is invalidated immediately on revocation

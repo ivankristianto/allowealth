@@ -55,7 +55,8 @@ Astro.response.headers.set('Expires', '0');
           </div>
 
           <p class="text-base-content/50 text-xs text-center">
-            Token expires in 24 hours. Return here to get a new one.
+            Token expires in 24 hours, or when you sign out of Allowealth. Return here to get a new
+            one.
           </p>
         </div>
       </div>
@@ -125,7 +126,7 @@ Astro.response.headers.set('Expires', '0');
     const redirectUri = `${window.location.origin}/oauth/display-token`;
 
     try {
-      const response = await fetch('/api/auth/mcp/token', {
+      const response = await fetch('/api/auth/oauth2/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({

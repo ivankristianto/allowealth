@@ -63,6 +63,27 @@ export class MemoryDriver implements CacheDriver {
     }
   }
 
+  async increment(key: string, ttl: number): Promise<number> {
+    const current = await this.get<number>(key);
+    if (current === null) {
+      this.store.set(key, { value: 1, expiresAt: Date.now() + ttl * 1000 });
+      return 1;
+    }
+
+    const entry = this.store.get(key)!;
+    const next = current + 1;
+    entry.value = next;
+    return next;
+  }
+
+  async getAndDelete<T>(key: string): Promise<T | null> {
+    const value = await this.get<T>(key);
+    if (value !== null) {
+      await this.delete(key);
+    }
+    return value;
+  }
+
   clear(): void {
     this.store.clear();
     this.tags.clear();

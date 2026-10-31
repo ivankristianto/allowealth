@@ -164,6 +164,12 @@ describe('CacheManager', () => {
           redisStore.delete(key);
         },
         async invalidateByTags(_tags: string[]): Promise<void> {},
+        async increment(_key: string, _ttl: number): Promise<number> {
+          return 1;
+        },
+        async getAndDelete<T>(_key: string): Promise<T | null> {
+          return null;
+        },
       };
 
       let releaseInit = () => {};

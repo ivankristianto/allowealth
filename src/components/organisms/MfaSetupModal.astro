@@ -335,14 +335,17 @@ const { id = 'mfa-setup-modal' } = Astro.props;
             const result = await authClient.twoFactor.enable({
               password,
               issuer: 'Allowealth',
+              method: 'totp',
             });
 
             if (result.error) {
               throw result.error;
             }
 
-            const totpURI = result.data?.totpURI;
-            backupCodes = result.data?.backupCodes ?? [];
+            // Better Auth 1.7 returns TOTP details only for `method: 'totp'`.
+            const totpSetup = result.data?.method === 'totp' ? result.data : null;
+            const totpURI = totpSetup?.totpURI;
+            backupCodes = totpSetup?.backupCodes ?? [];
 
             if (!totpURI) {
               throw new Error('Authenticator setup details were not returned.');
