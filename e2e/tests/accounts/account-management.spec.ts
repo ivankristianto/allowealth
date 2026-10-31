@@ -1,6 +1,5 @@
 import { test, expect } from '../test.fixture';
 import { generateTestId, generateAccountData, formatIDR } from '../../helpers';
-import { getVerificationToken } from '../../helpers/email-verification';
 
 let freshWorkspaceEmailCounter = 0;
 
@@ -387,16 +386,12 @@ test.describe('Account Management - Fresh Workspace', () => {
     const email = uniqueFreshWorkspaceEmail();
     const password = 'TestPassword123!';
 
-    const signupResponse = await request.post('/api/auth/signup', {
-      data: { email, password, name: 'E2E Fresh Workspace' },
+    const captchaToken = process.env.E2E_TURNSTILE_TOKEN;
+    const signupResponse = await request.post('/api/auth/sign-up/email', {
+      headers: captchaToken ? { 'x-captcha-response': captchaToken } : {},
+      data: { email, password, name: 'E2E Fresh Workspace', callbackURL: '/dashboard' },
     });
-    expect(signupResponse.status()).toBe(201);
-
-    const verificationToken = getVerificationToken(email);
-    expect(verificationToken).toBeTruthy();
-
-    await page.goto(`/api/auth/verify-email?token=${verificationToken}`);
-    await page.waitForURL('**/login**');
+    expect(signupResponse.ok()).toBe(true);
 
     await page.goto('/login');
     await page.fill('[data-testid="email-input"]', email);

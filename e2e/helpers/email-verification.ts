@@ -26,39 +26,24 @@ function runDbQuery(queryType: string, email: string): string {
 }
 
 /**
- * Get the latest verification token for a user by email
- * @param email - User email address
- * @returns Verification token string or null
+ * Insert a verification token valid for 24 hours and return the raw token.
+ * Signup no longer issues tokens, so tests create one to exercise /api/auth/verify-email.
  */
-export function getVerificationToken(email: string): string | null {
-  const result = JSON.parse(runDbQuery('get-token', email));
-  return result.token ?? null;
+export function createVerificationToken(email: string): string | null {
+  return JSON.parse(runDbQuery('create-token', email)).token ?? null;
 }
 
 /**
- * Mark a verification token as expired (for testing expired token flow)
- * @param email - User email address
+ * Insert an already-expired verification token and return the raw token.
  */
-export function expireVerificationToken(email: string): void {
-  runDbQuery('expire-token', email);
+export function createExpiredVerificationToken(email: string): string | null {
+  return JSON.parse(runDbQuery('create-expired-token', email)).token ?? null;
 }
 
-/**
- * Check if a user is email-verified
- * @param email - User email address
- * @returns True if email is verified
- */
 export function isUserVerified(email: string): boolean {
-  const result = JSON.parse(runDbQuery('is-verified', email));
-  return result.verified;
+  return JSON.parse(runDbQuery('is-verified', email)).verified;
 }
 
-/**
- * Check workspace status for a user
- * @param email - User email address
- * @returns Workspace status or null
- */
 export function getWorkspaceStatus(email: string): string | null {
-  const result = JSON.parse(runDbQuery('workspace-status', email));
-  return result.status ?? null;
+  return JSON.parse(runDbQuery('workspace-status', email)).status ?? null;
 }

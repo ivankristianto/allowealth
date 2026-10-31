@@ -7,10 +7,10 @@
  * Usage: bun run e2e/helpers/db-query.ts <db-path> <query-type> <param>
  *
  * Query types:
- *   get-token <email>        - Get latest verification token for user
- *   expire-token <email>     - Mark verification tokens as expired
- *   is-verified <email>      - Check if user email is verified
- *   workspace-status <email> - Get workspace status for user
+ *   create-token <email>         - Insert a verification token valid for 24 hours, print the raw token
+ *   create-expired-token <email> - Insert an already-expired verification token, print the raw token
+ *   is-verified <email>          - Check if user email is verified
+ *   workspace-status <email>     - Get workspace status for user
  */
 /* eslint-disable no-console */
 import { Database } from 'bun:sqlite';
@@ -24,40 +24,36 @@ if (!dbPath || !queryType || !param) {
 
 const email = param.toLowerCase();
 
+/** Store the SHA-256 hash like the app does and return the raw token. */
+function insertVerificationToken(expiresInSeconds: number): string | null {
+  const db = new Database(dbPath);
+  try {
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as {
+      id: string;
+    } | null;
+    if (!user) return null;
+
+    const token = crypto.randomUUID();
+    const tokenHash = new Bun.CryptoHasher('sha256').update(token).digest('hex');
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    db.prepare(
+      `INSERT INTO email_verification_tokens (id, token, user_id, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run(crypto.randomUUID(), tokenHash, user.id, nowSeconds + expiresInSeconds, nowSeconds);
+    return token;
+  } finally {
+    db.close();
+  }
+}
+
 switch (queryType) {
-  case 'get-token': {
-    const db = new Database(dbPath, { readonly: true });
-    try {
-      const row = db
-        .prepare(
-          `SELECT evt.token
-           FROM email_verification_tokens evt
-           JOIN users u ON evt.user_id = u.id
-           WHERE u.email = ?
-           ORDER BY evt.created_at DESC
-           LIMIT 1`
-        )
-        .get(email) as { token: string } | null;
-      console.log(JSON.stringify({ token: row?.token ?? null }));
-    } finally {
-      db.close();
-    }
+  case 'create-token': {
+    console.log(JSON.stringify({ token: insertVerificationToken(24 * 60 * 60) }));
     break;
   }
 
-  case 'expire-token': {
-    const db = new Database(dbPath);
-    try {
-      const pastTime = Math.floor((Date.now() - 25 * 60 * 60 * 1000) / 1000);
-      db.prepare(
-        `UPDATE email_verification_tokens
-         SET expires_at = ?
-         WHERE user_id IN (SELECT id FROM users WHERE email = ?)`
-      ).run(pastTime, email);
-      console.log(JSON.stringify({ success: true }));
-    } finally {
-      db.close();
-    }
+  case 'create-expired-token': {
+    console.log(JSON.stringify({ token: insertVerificationToken(-60 * 60) }));
     break;
   }
 
