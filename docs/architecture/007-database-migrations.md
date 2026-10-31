@@ -54,7 +54,6 @@ drizzle/
 ```bash
 bun run db:generate
 bun run db:migrate
-bun run db:push
 ```
 
 For D1 deployment:
@@ -113,4 +112,4 @@ Important:
 
 - Local `drizzle-kit migrate` is for developer validation.
 - Production D1 rollout uses Wrangler D1 execution against the same SQLite SQL files.
-- `db:push` remains a local-development shortcut, not a production migration workflow.
+- There is no `db:push`. `drizzle-kit push` leaves `__drizzle_migrations` empty, and the startup migration guard refuses such databases. Use `db:generate` + `db:migrate`.

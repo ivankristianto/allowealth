@@ -31,7 +31,7 @@ bun run db:migrate
 ### Migration Rules
 
 - ✅ **Use `db:generate` + `db:migrate`** for tracked, incremental changes
-- ✅ **Use `db:push`** only for local SQLite rapid iteration (never for production)
+- ❌ **Use `drizzle-kit push`** - it leaves `__drizzle_migrations` empty, so the startup migration guard rejects the database; there is no `db:push` script
 - ❌ **Create parallel PostgreSQL migration flows** - the codebase no longer supports them
 - ❌ **Manually edit migration SQL files** - regenerate instead
 - ❌ **Check for double-prefix bugs** during mass replace (`this.schema.this.schema`)

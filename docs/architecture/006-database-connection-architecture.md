@@ -152,7 +152,6 @@ Database configuration is resolved in this order:
 ```bash
 bun run db:generate
 bun run db:migrate
-bun run db:push
 ```
 
 ### Cloudflare D1 deployment

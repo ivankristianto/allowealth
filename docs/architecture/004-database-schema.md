@@ -914,9 +914,6 @@ bun run db:generate
 
 # Apply migrations
 bun run db:migrate
-
-# Push schema directly (dev only)
-bun run db:push
 ```
 
 ### Best Practices

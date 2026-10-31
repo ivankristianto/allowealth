@@ -151,8 +151,8 @@ import { beforeAll, afterAll } from 'bun:test';
 
 beforeAll(
   async () => {
-    // Schema push can exceed default 5000ms
-    await exec('bun run db:push');
+    // Migrations can exceed the default 5000ms
+    await exec('bun run db:migrate');
   },
   30000 // 30 second timeout
 );
@@ -160,7 +160,7 @@ beforeAll(
 
 **Rules:**
 
-- ✅ **Increase `beforeAll` hook timeouts for `drizzle-kit push`** - schema push can exceed default 5000ms; use 30000ms
+- ✅ **Increase `beforeAll` hook timeouts for database setup** - `db:migrate` can exceed the default 5000ms; use 30000ms
 
 ## Test Data
 
