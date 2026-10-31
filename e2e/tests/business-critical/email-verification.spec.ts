@@ -1,19 +1,19 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import {
   createVerificationToken,
   createExpiredVerificationToken,
-  isUserVerified,
-  getWorkspaceStatus,
+  getEmailState,
 } from '../../helpers/email-verification';
 
 /**
  * Email Verification E2E Tests
  *
  * Covers the login page banners and the /api/auth/verify-email endpoint.
- * Since the Better Auth migration, signup no longer issues verification
- * tokens or blocks unverified logins, so these tests insert tokens directly.
+ * Signup no longer issues verification tokens, so the live token flow is an
+ * email change from the profile API. The app stores only the token hash and
+ * emails the raw value, so tests insert their own token for the user.
  *
- * These tests run WITHOUT authentication (unauthenticated browser context).
+ * These tests start WITHOUT authentication (unauthenticated browser context).
  */
 
 const E2E_BASE_URL = 'http://localhost:4320';
@@ -45,6 +45,23 @@ async function registerUser(
 
   expect(response.ok()).toBe(true);
   return { email, password };
+}
+
+async function loginViaForm(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/login');
+  await page.fill('[data-testid="email-input"]', email);
+  await page.fill('[data-testid="password-input"]', password);
+  await page.click('[data-testid="login-btn"]');
+  await expect
+    .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
+    .toMatch(/^\/(dashboard|onboarding)$/);
+}
+
+/** The middleware sets csrf_token on authenticated page loads, URL-encoded. */
+async function getCsrfTokenFromPage(page: Page): Promise<string> {
+  const cookie = (await page.context().cookies()).find(({ name }) => name === 'csrf_token');
+  expect(cookie?.value).toBeTruthy();
+  return decodeURIComponent(cookie!.value);
 }
 
 test.describe('Email Verification', () => {
@@ -92,26 +109,62 @@ test.describe('Email Verification', () => {
   });
 
   test.describe('Token Verification', () => {
-    test('register, verify via token, then login successfully', async ({ page, request }) => {
-      const { email, password } = await registerUser(request);
-      expect(isUserVerified(email)).toBe(false);
+    test('change email via profile, verify the token, then sign in with the new email', async ({
+      page,
+      request,
+      browser,
+    }) => {
+      const { email: oldEmail, password } = await registerUser(request);
+      const newEmail = uniqueEmail();
 
-      const token = createVerificationToken(email);
+      await loginViaForm(page, oldEmail, password);
+
+      const updateResponse = await page.request.put(`${E2E_BASE_URL}/api/user/profile`, {
+        headers: { 'X-CSRF-Token': await getCsrfTokenFromPage(page) },
+        data: { name: 'E2E Verify User', email: newEmail, phone: '' },
+      });
+      expect(updateResponse.ok()).toBe(true);
+      expect((await updateResponse.json()).data.pendingEmail).toBe(newEmail);
+
+      const before = getEmailState(oldEmail);
+      expect(before).toMatchObject({
+        email: oldEmail,
+        authEmail: oldEmail,
+        pendingEmail: newEmail,
+      });
+
+      const oldSession = await page.context().storageState();
+      const profileBefore = await page.request.get(`${E2E_BASE_URL}/api/user/profile`);
+      expect(profileBefore.status()).toBe(200);
+
+      // users.email stays on the old address until the token is verified
+      const token = createVerificationToken(oldEmail);
       expect(token).not.toBeNull();
 
       await page.goto(`${E2E_BASE_URL}/api/auth/verify-email?token=${token}`);
       await page.waitForURL('**/login**');
-      expect(page.url()).toContain('verified=true');
+      expect(new URL(page.url()).searchParams.get('email-changed')).toBe('true');
+      await expect(page.locator('.alert-success')).toContainText('Email changed successfully');
 
-      expect(isUserVerified(email)).toBe(true);
-      expect(getWorkspaceStatus(email)).toBe('active');
+      expect(getEmailState(oldEmail)).toBeNull();
+      expect(getEmailState(newEmail)).toEqual({
+        userId: before!.userId,
+        email: newEmail,
+        authEmail: newEmail,
+        pendingEmail: null,
+      });
 
-      await page.fill('[data-testid="email-input"]', email);
-      await page.fill('[data-testid="password-input"]', password);
-      await page.click('[data-testid="login-btn"]');
-      await expect
-        .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
-        .toMatch(/^\/(dashboard|onboarding)$/);
+      const oldSessionContext = await browser.newContext({ storageState: oldSession });
+      try {
+        const profileAfter = await oldSessionContext.request.get(
+          `${E2E_BASE_URL}/api/user/profile`
+        );
+        expect(profileAfter.status()).toBe(401);
+      } finally {
+        await oldSessionContext.close();
+      }
+
+      await loginViaForm(page, newEmail, password);
     });
 
     test('expired token redirects with expired_token error', async ({ page, request }) => {

@@ -9,8 +9,7 @@
  * Query types:
  *   create-token <email>         - Insert a verification token valid for 24 hours, print the raw token
  *   create-expired-token <email> - Insert an already-expired verification token, print the raw token
- *   is-verified <email>          - Check if user email is verified
- *   workspace-status <email>     - Get workspace status for user
+ *   email-state <email>          - Print the app and Better Auth emails and any pending email change
  */
 /* eslint-disable no-console */
 import { Database } from 'bun:sqlite';
@@ -57,31 +56,24 @@ switch (queryType) {
     break;
   }
 
-  case 'is-verified': {
-    const db = new Database(dbPath, { readonly: true });
-    try {
-      const row = db.prepare('SELECT email_verified_at FROM users WHERE email = ?').get(email) as {
-        email_verified_at: number | null;
-      } | null;
-      console.log(JSON.stringify({ verified: row?.email_verified_at != null }));
-    } finally {
-      db.close();
-    }
-    break;
-  }
-
-  case 'workspace-status': {
+  case 'email-state': {
     const db = new Database(dbPath, { readonly: true });
     try {
       const row = db
         .prepare(
-          `SELECT w.status
-           FROM workspaces w
-           JOIN users u ON u.workspace_id = w.id
+          `SELECT u.id AS userId, u.email AS email, a.email AS authEmail, m.meta_value AS pendingEmail
+           FROM users u
+           LEFT JOIN user a ON a.id = u.id
+           LEFT JOIN user_meta m ON m.user_id = u.id AND m.meta_key = 'pending_email'
            WHERE u.email = ?`
         )
-        .get(email) as { status: string } | null;
-      console.log(JSON.stringify({ status: row?.status ?? null }));
+        .get(email) as {
+        userId: string;
+        email: string;
+        authEmail: string | null;
+        pendingEmail: string | null;
+      } | null;
+      console.log(JSON.stringify(row));
     } finally {
       db.close();
     }

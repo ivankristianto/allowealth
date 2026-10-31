@@ -27,7 +27,7 @@ function runDbQuery(queryType: string, email: string): string {
 
 /**
  * Insert a verification token valid for 24 hours and return the raw token.
- * Signup no longer issues tokens, so tests create one to exercise /api/auth/verify-email.
+ * The app stores only the token hash and emails the raw value, so tests mint their own.
  */
 export function createVerificationToken(email: string): string | null {
   return JSON.parse(runDbQuery('create-token', email)).token ?? null;
@@ -40,10 +40,16 @@ export function createExpiredVerificationToken(email: string): string | null {
   return JSON.parse(runDbQuery('create-expired-token', email)).token ?? null;
 }
 
-export function isUserVerified(email: string): boolean {
-  return JSON.parse(runDbQuery('is-verified', email)).verified;
+export interface EmailState {
+  userId: string;
+  email: string;
+  authEmail: string | null;
+  pendingEmail: string | null;
 }
 
-export function getWorkspaceStatus(email: string): string | null {
-  return JSON.parse(runDbQuery('workspace-status', email)).status ?? null;
+/**
+ * Look up the user whose app email matches, or null when no user has it.
+ */
+export function getEmailState(email: string): EmailState | null {
+  return JSON.parse(runDbQuery('email-state', email));
 }
