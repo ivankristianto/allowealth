@@ -30,8 +30,10 @@ FROM oven/bun:1.3.11 AS prod-deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
+# drizzle-orm lists @libsql/client (the db:studio driver) as an optional peer, so --production still installs it
 RUN --mount=type=cache,target=/home/bun/.bun/install/cache \
-    bun install --frozen-lockfile --production --ignore-scripts
+    bun install --frozen-lockfile --production --ignore-scripts && \
+    rm -rf node_modules/@libsql node_modules/libsql
 
 # ─── Stage 4: Runtime ────────────────────────────────────────────────────────
 # TODO: pin to sha256 digest for reproducible builds
