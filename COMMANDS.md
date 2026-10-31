@@ -202,6 +202,7 @@ under "Landing Page Deployment" and "Docs Deployment".
 | `bun run stylelint`     | Check CSS with Stylelint (quiet + compact formatter)               |
 | `bun run stylelint:fix` | Auto-fix CSS issues (quiet + compact formatter)                    |
 | `bun run typecheck`     | Run `astro check` and show hints/warnings/errors (fails on errors) |
+| `bun run prepare`       | Install the husky git hooks (runs automatically on `bun install`)  |
 
 ```bash
 # Run all quality gates (required before committing)
