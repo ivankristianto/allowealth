@@ -2,7 +2,7 @@
  * Remove markup that legitimately varies between runs or between Astro
  * versions, so a snapshot diff surfaces whitespace and structure only.
  *
- * Deliberately does NOT collapse whitespace — whitespace is what we measure.
+ * Deliberately does NOT collapse whitespace: whitespace is what we measure.
  */
 export function normalizeHtml(html: string): string {
   return (
@@ -19,7 +19,7 @@ export function normalizeHtml(html: string): string {
       // Absolute timestamps and ISO dates
       .replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z?/g, 'TIMESTAMP')
       // Session/request ids Astro or Better Auth may embed.
-      // Capturing group — a non-capturing (?:...) would leave $1 undefined.
+      // Capturing group: a non-capturing (?:...) would leave $1 undefined.
       .replace(/"(sessionId|requestId)":"[^"]*"/g, '"$1":"ID"')
   );
 }

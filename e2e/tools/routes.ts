@@ -1,7 +1,7 @@
 /**
  * Routes captured by the HTML snapshot tool.
  *
- * Static routes only — dynamic `[id]` routes need seeded IDs and their
+ * Static routes only. Dynamic `[id]` routes need seeded IDs and their
  * layouts are already exercised by the corresponding index route.
  *
  * Deliberately excluded because each needs state the snapshot run cannot

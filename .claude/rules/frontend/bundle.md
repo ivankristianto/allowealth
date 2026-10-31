@@ -55,7 +55,7 @@ import { Chart } from 'chart.js/auto'; // +100KB
 ## Code Splitting
 
 Astro 7 builds on Vite 8, which uses Rolldown instead of Rollup. Rollup's
-`build.rollupOptions.output.manualChunks` no longer exists — setting it is
+`build.rollupOptions.output.manualChunks` no longer exists. Setting it is
 silently ignored, producing an unsplit bundle with no error. Use Rolldown's
 `codeSplitting.groups` instead, matching the shape in `astro.config.ts`:
 
