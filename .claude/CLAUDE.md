@@ -2,7 +2,7 @@
 
 Personal and family financial application for expense tracking, budgeting, account management, and financial forecasting.
 
-## Astro 6 Note
+## Astro 7 Note
 
 The main SSR app enables `security: { csp: true }`, but `src/middleware/security-headers.ts` still writes the runtime CSP header until the nonce path is removed.
 

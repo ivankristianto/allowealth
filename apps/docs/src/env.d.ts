@@ -1,2 +1,7 @@
 /// <reference types="astro/client" />
-/// <reference path="../node_modules/@astrojs/starlight/virtual.d.ts" />
+
+// Starlight 0.42 ships compiled JS and no longer publishes virtual.d.ts.
+declare module 'virtual:starlight/user-config' {
+  const config: import('@astrojs/starlight/types').StarlightConfig;
+  export default config;
+}

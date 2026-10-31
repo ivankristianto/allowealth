@@ -67,7 +67,7 @@ import Button from '@/components/atoms/Button.astro';
         <div class="text-center">
           <p class="text-base-content/60 text-xs font-medium uppercase tracking-wider mb-1">From</p>
           <p class="text-base-content font-bold text-lg">
-            {sourceMonthName}
+            {sourceMonthName}{' '}
             <span class="text-base-content/60">{sourceYear}</span>
           </p>
         </div>
@@ -75,7 +75,7 @@ import Button from '@/components/atoms/Button.astro';
         <div class="text-center">
           <p class="text-base-content/60 text-xs font-medium uppercase tracking-wider mb-1">To</p>
           <p class="text-base-content font-bold text-lg">
-            {targetMonthName}
+            {targetMonthName}{' '}
             <span class="text-base-content/60">{targetYear}</span>
           </p>
         </div>
@@ -84,8 +84,8 @@ import Button from '@/components/atoms/Button.astro';
       {/* Info message */}
       <div class="text-sm text-base-content/70 bg-info/5 border border-info/10 rounded-xl p-4">
         <p>
-          This will copy <span class="font-bold text-base-content">{budgetCount}</span>
-          {budgetCount === 1 ? 'budget' : 'budgets'} to {targetMonthName}
+          This will copy <span class="font-bold text-base-content">{budgetCount}</span>{' '}
+          {budgetCount === 1 ? 'budget' : 'budgets'} to {targetMonthName}{' '}
           {targetYear}.
         </p>
         <p class="mt-2 text-base-content/50">

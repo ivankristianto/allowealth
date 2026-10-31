@@ -10,7 +10,7 @@ Page navigations cause a white flash and full page reload, making the app feel l
 
 ### CSP Compatibility
 
-Astro 6 enables hash-based CSP in the main SSR app, but the existing nonce middleware still writes the live HTTP header. Analysis confirms compatibility:
+Astro `security.csp` enables hash-based CSP in the main SSR app, but the existing nonce middleware still writes the live HTTP header. Analysis confirms compatibility:
 
 1. All `is:inline` scripts are on auth pages which use `data-astro-reload` (hard reload = fresh CSP header)
 2. The theme script in BaseLayout runs once on initial hard load; `<html>` persists across soft navigations

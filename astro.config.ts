@@ -39,12 +39,13 @@ export default defineConfig({
       // Keep processed Astro scripts external so CSP does not require
       // per-request HTML nonce injection in middleware.
       assetsInlineLimit: 0,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes('node_modules/chart.js')) return 'chartjs';
-            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion'))
-              return 'motion';
+          codeSplitting: {
+            groups: [
+              { name: 'chartjs', test: /node_modules[\\/]chart\.js/ },
+              { name: 'motion', test: /node_modules[\\/](motion|framer-motion)/ },
+            ],
           },
         },
       },

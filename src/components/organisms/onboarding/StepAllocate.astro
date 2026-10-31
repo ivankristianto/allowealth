@@ -52,11 +52,11 @@ import Button from '@/components/atoms/Button.astro';
   <div class="rounded-xl border border-base-300 bg-base-200/50 p-4 sm:p-5">
     <div class="mb-2 flex items-center justify-between text-sm font-semibold text-base-content/65">
       <span>
-        Allocated:
+        Allocated:{' '}
         <span data-allocation-allocated class="text-base-content">0</span>
       </span>
       <span>
-        Remaining:
+        Remaining:{' '}
         <span data-allocation-remaining class="text-base-content"
           >{totalIncome.toLocaleString()}</span
         >
@@ -73,7 +73,7 @@ import Button from '@/components/atoms/Button.astro';
     </div>
 
     <p class="mt-2 text-xs text-base-content/55">
-      Total income: {CURRENCY_META[primaryCurrency].symbol}
+      Total income: {CURRENCY_META[primaryCurrency].symbol}{' '}
       {totalIncome.toLocaleString()}
     </p>
   </div>

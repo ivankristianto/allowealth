@@ -12,7 +12,7 @@
     "@astrojs/sitemap": "^3.7.4",
     "@lucide/astro": "^0.562.0",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "6.0.8",
+    "astro": "7.4.4",
     "daisyui": "^5.7.50",
     "tailwindcss": "^4.3.3",
     "wrangler": "^4.156.0"

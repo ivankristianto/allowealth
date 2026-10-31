@@ -78,9 +78,9 @@ function cloneHeaders(response: Response): Headers {
   return headers;
 }
 
-// TODO(ALL-62): Astro 6 security.csp is enabled in astro.config.ts (hash-based).
+// TODO(ALL-62): Astro security.csp is enabled in astro.config.ts (hash-based).
 // This middleware currently overwrites Astro's CSP header with a nonce-based one.
-// To fully migrate to Astro 6 native CSP: validate all inline scripts can be
+// To fully migrate to Astro native CSP: validate all inline scripts can be
 // statically hashed, then remove this middleware's CSP logic and the nonce
 // generation. See docs/superpowers/specs/2026-03-21-astro-6-upgrade-design.md.
 // ---------- Middleware ----------

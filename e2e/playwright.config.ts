@@ -32,7 +32,9 @@ export default defineConfig({
   },
 
   webServer: {
-    command: 'bun run dev',
+    // Astro 7 backgrounds `astro dev` when it detects an AI agent, and Playwright
+    // treats the exited launcher as a failed server. --ignore-lock keeps it in the foreground.
+    command: 'bun run dev --ignore-lock',
     url: E2E_BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
