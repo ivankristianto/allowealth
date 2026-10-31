@@ -200,12 +200,6 @@ export default defineCommand({
         exec('drizzle-kit', ['generate']);
       },
     }),
-    push: defineCommand({
-      meta: { name: 'push', description: 'Push schema directly to database (dev only)' },
-      run() {
-        exec('drizzle-kit', ['push']);
-      },
-    }),
     studio: defineCommand({
       meta: { name: 'studio', description: 'Open Drizzle Studio visual DB browser' },
       run() {

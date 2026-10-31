@@ -345,7 +345,6 @@ Aliases provide shorter commands that map to resource operations.
 | ---------------------------------------- | ------------------------------------------------------------------- |
 | `bun run aw db migrate`                  | Apply pending migrations (SQLite)                                   |
 | `bun run aw db generate`                 | Generate migration from schema changes                              |
-| `bun run aw db push`                     | Push schema directly (dev only)                                     |
 | `bun run aw db studio`                   | Open Drizzle Studio                                                 |
 | `bun run aw db docs`                     | Regenerate `docs/architecture/database-schema.html` schema diagrams |
 | `bun run aw db seed`                     | Seed with demo data (3 months default)                              |

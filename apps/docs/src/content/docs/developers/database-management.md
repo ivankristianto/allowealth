@@ -40,16 +40,6 @@ bun run aw db migrate
 
 ## Schema changes
 
-### Quick development workflow
-
-Push schema changes directly to SQLite:
-
-```bash
-bun run aw db push
-```
-
-Use this only in development. It bypasses migration tracking.
-
 ### Reset local SQLite
 
 Delete the local SQLite database, recreate the schema, and seed demo data:
