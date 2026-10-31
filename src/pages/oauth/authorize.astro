@@ -4,9 +4,20 @@ import Button from '@/components/atoms/Button.astro';
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
 import { db, getActiveSchema } from '@/db';
 import { auth } from '@/lib/auth/server';
+import { submitOAuthConsent } from '@/lib/auth/oauth-consent';
 import { eq } from 'drizzle-orm';
 
 const schema = getActiveSchema();
+
+// The form posts back to this page; Better Auth returns the URL to continue to.
+let consentError = '';
+if (Astro.request.method === 'POST') {
+  const result = await submitOAuthConsent(Astro.request);
+  if ('url' in result) {
+    return Astro.redirect(result.url);
+  }
+  consentError = result.error;
+}
 
 // The OAuth provider redirects here with a signed copy of the authorize query.
 // It is verified before rendering and posted back verbatim as `oauth_query`.
@@ -29,11 +40,7 @@ if (clientId) {
 <ProtectedLayout title="Authorize Access" currentPath="/oauth/authorize">
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="card bg-base-100 shadow-xl w-full max-w-sm">
-      <div
-        class="card-body gap-6"
-        data-oauth-consent
-        data-oauth-query={isValidRequest ? oauthQuery : ''}
-      >
+      <div class="card-body gap-6" data-oauth-consent>
         {
           isValidRequest ? (
             <>
@@ -54,25 +61,27 @@ if (clientId) {
                 </ul>
               </div>
 
-              <div class="alert alert-error hidden" data-consent-error role="alert" />
+              {consentError && (
+                <div class="alert alert-error" role="alert">
+                  <span>{consentError}</span>
+                </div>
+              )}
 
               <div class="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  data-consent-accept="false"
-                >
-                  Deny
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="flex-1"
-                  data-consent-accept="true"
-                >
-                  Authorize
-                </Button>
+                <form method="post" class="flex-1">
+                  <input type="hidden" name="accept" value="false" />
+                  <input type="hidden" name="oauth_query" value={oauthQuery} />
+                  <Button type="submit" variant="outline" className="w-full">
+                    Deny
+                  </Button>
+                </form>
+                <form method="post" class="flex-1">
+                  <input type="hidden" name="accept" value="true" />
+                  <input type="hidden" name="oauth_query" value={oauthQuery} />
+                  <Button type="submit" variant="primary" className="w-full">
+                    Authorize
+                  </Button>
+                </form>
               </div>
             </>
           ) : (
@@ -92,5 +101,3 @@ if (clientId) {
     </div>
   </div>
 </ProtectedLayout>
-
-<script src="./authorize.client.ts"></script>
