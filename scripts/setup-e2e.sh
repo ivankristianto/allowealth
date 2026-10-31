@@ -50,9 +50,9 @@ echo -e "${YELLOW}Removing old E2E database...${NC}"
 rm -f db/.e2e.db db/.e2e.db-wal db/.e2e.db-shm
 echo -e "${GREEN}Old database removed${NC}\n"
 
-# 4. Push schema and seed database using E2E database
-echo -e "${YELLOW}Pushing schema to E2E database...${NC}"
-DATABASE_URL=db/.e2e.db bun run db:push --force
+# 4. Migrate schema and seed database using E2E database
+echo -e "${YELLOW}Migrating schema on E2E database...${NC}"
+DATABASE_URL=db/.e2e.db bun run db:migrate
 echo -e "${YELLOW}Seeding E2E database...${NC}"
 DATABASE_URL=db/.e2e.db bun run db:seed
 echo -e "${GREEN}E2E database ready${NC}\n"
