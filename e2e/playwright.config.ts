@@ -45,6 +45,8 @@ export default defineConfig({
       SIGNUP_MODE: 'public',
       E2E_USER_EMAIL: 'demo@example.com',
       E2E_USER_PASSWORD: 'demo123456789',
+      // Tests that change a user's email trigger a send; never deliver real mail from E2E.
+      EMAIL_PROVIDER: 'console',
     },
   },
 
