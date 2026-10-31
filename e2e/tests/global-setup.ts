@@ -64,7 +64,7 @@ setup('reset database', async () => {
     }
   }
 
-  // db:push leaves __drizzle_migrations empty, so the installer's migration guard would 500 every request
+  // drizzle-kit push leaves __drizzle_migrations empty, so the installer's migration guard would 500 every request
   // eslint-disable-next-line no-console -- Informational output for test setup
   console.info('📦 Migrating database schema...');
   execSync('bun run db:migrate', {

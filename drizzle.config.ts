@@ -9,7 +9,7 @@ const url = process.env.DATABASE_URL || 'db/.dev.db';
  *
  * Usage:
  *   bun run db:generate
- *   bun run db:push
+ *   bun run db:studio
  */
 export default {
   schema: './src/db/schema/sqlite',
