@@ -86,7 +86,6 @@
     "@libsql/client": "^0.18.0",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/typography": "^0.5.20",
-    "@types/decimal.js": "^7.4.3",
     "@types/qrcode": "^1.5.6",
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
