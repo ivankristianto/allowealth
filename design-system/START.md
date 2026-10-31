@@ -63,7 +63,7 @@ import { formatCurrency, formatPercentage } from '@/lib/formatting';
 ### Import Icons
 
 ```typescript
-import { X, Plus, Edit, Trash2 } from '@lucide/astro';
+import { X, Plus, Pencil, Trash } from '@lucide/astro';
 ```
 
 ### Import Animations
@@ -253,7 +253,7 @@ design-system/
 
 ```astro
 ---
-import { X, Plus, Edit, Trash2, Check, TriangleAlert } from '@lucide/astro';
+import { X, Plus, Pencil, Trash, Check, TriangleAlert } from '@lucide/astro';
 ---
 
 <!-- Button with icon -->

@@ -42,7 +42,7 @@ Always verify component rendering in actual browser before declaring work comple
 ```typescript
 import { colors, fontSizes, spacing, tokenClasses } from '@/lib/tokens';
 import { formatCurrency, formatPercentage } from '@/lib/formatting';
-import { X, Plus, Edit, Trash2 } from '@lucide/astro';
+import { X, Plus, Pencil, Trash } from '@lucide/astro';
 import { animate } from 'motion/mini';
 ```
 

@@ -153,8 +153,8 @@ const classes = ['base-classes', variant === 'primary' && 'primary-classes', cla
 import {
   X,
   Plus,
-  Edit,
-  Trash2,
+  Pencil,
+  Trash,
   Check,
   TriangleAlert,
   Info,
@@ -211,7 +211,7 @@ import {
 **Common icons:**
 
 - `Plus`, `Minus`, `X` - Actions
-- `Edit` (or `Pencil`), `Trash2`, `Save` - CRUD operations
+- `Pencil`, `Trash`, `Save` - CRUD operations
 - `Search`, `Download`, `Upload` - Tools
 - `Check`, `CircleCheck` - Success/complete
 - `TriangleAlert`, `CircleX`, `Info` - Errors/warnings/info
@@ -436,7 +436,7 @@ xl: 'max-w-4xl'; // ~896px - Complex layouts, data tables
 ```astro
 ---
 import Modal from '@/components/molecules/Modal.astro';
-import { Trash2 } from '@lucide/astro';
+import { Trash } from '@lucide/astro';
 ---
 
 <Modal id="delete-modal" size="sm" closable={false}>
@@ -444,7 +444,7 @@ import { Trash2 } from '@lucide/astro';
     <!-- Header with icon -->
     <div class="flex items-center gap-4">
       <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
-        <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+        <Trash size={24} class="stroke-current text-error" aria-hidden="true" />
       </div>
       <div class="flex-1">
         <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">Delete Item</h2>
