@@ -99,23 +99,30 @@ const shapeClasses: Record<string, string> = {
   circle: 'btn-circle',
 };
 
-// Combined classes
-const buttonClasses = [
-  baseClasses,
-  variantClasses[variant] || variantClasses.primary,
-  sizeClasses[size] || sizeClasses.md,
-  shapeClasses[shape] || '',
-  isDisabled ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0' : 'cursor-pointer',
-  className,
-]
-  .filter(Boolean)
-  .join(' ');
+const joinClasses = (stateClasses: string) =>
+  [
+    baseClasses,
+    variantClasses[variant] || variantClasses.primary,
+    sizeClasses[size] || sizeClasses.md,
+    shapeClasses[shape] || '',
+    stateClasses,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+// Scripts toggle `.disabled` on buttons after render, so the disabled look must
+// follow the live attribute through `disabled:` variants, not classes baked in here.
+const buttonClasses = joinClasses('cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed');
+const anchorClasses = joinClasses(
+  isDisabled ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0' : 'cursor-pointer'
+);
 ---
 
 {
   href ? (
     <a
-      class={buttonClasses}
+      class={anchorClasses}
       id={id}
       href={href}
       aria-disabled={isDisabled}
@@ -133,7 +140,6 @@ const buttonClasses = [
       id={id}
       disabled={isDisabled}
       type={type}
-      aria-disabled={isDisabled}
       aria-busy={loading}
       data-testid={dataTestId || undefined}
       {...rest}

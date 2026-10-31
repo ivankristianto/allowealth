@@ -118,12 +118,6 @@ import Button from '@/components/atoms/Button.astro';
 
         let currentCodes: string[] = [];
 
-        // Button renders aria-disabled next to disabled, so both must change together
-        const setCloseEnabled = (enabled: boolean) => {
-          closeBtn.disabled = !enabled;
-          closeBtn.setAttribute('aria-disabled', String(!enabled));
-        };
-
         const renderCodes = (codes: string[]) => {
           codesList.innerHTML = '';
 
@@ -140,7 +134,7 @@ import Button from '@/components/atoms/Button.astro';
           currentCodes = Array.isArray(codes) ? codes : [];
           renderCodes(currentCodes);
           savedCheckbox.checked = false;
-          setCloseEnabled(false);
+          closeBtn.disabled = true;
           modal.showModal();
         };
 
@@ -155,7 +149,7 @@ import Button from '@/components/atoms/Button.astro';
         });
 
         savedCheckbox.addEventListener('change', () => {
-          setCloseEnabled(savedCheckbox.checked);
+          closeBtn.disabled = !savedCheckbox.checked;
         });
 
         copyBtn?.addEventListener('click', async () => {
