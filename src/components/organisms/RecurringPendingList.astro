@@ -82,192 +82,186 @@ import Button from '@/components/atoms/Button.astro';
     </Button>
   </div>
 
-  {
-    queueRows.length > 0 ? (
-      <>
-        <div class="space-y-2.5 md:hidden">
-          {occurrences.map((occurrence) => (
-            <RecurringPendingCard occurrence={occurrence} />
-          ))}
-        </div>
+  {queueRows.length > 0 ? (
+    <>
+      <div class="space-y-2.5 md:hidden">
+        {occurrences.map((occurrence) => (
+          <RecurringPendingCard occurrence={occurrence} />
+        ))}
+      </div>
 
-        <div
-          class="hidden max-h-96 overflow-x-auto overflow-y-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm md:block"
-          id="recurring-pending-queue"
-        >
-          <table class="table table-zebra table-md">
-            <caption class="sr-only">
-              Upcoming recurring transaction queue with type, due date, amount, and available
-              actions.
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Type
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Transaction
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Due
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Amount
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Details
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {queueRows.map((row) => {
-                const {
-                  occurrence,
-                  isExpense,
-                  isOverdue,
-                  canAct,
-                  dueLabel,
-                  cadenceLabel,
-                  installmentLabel,
-                } = row;
+      <div
+        class="hidden max-h-96 overflow-x-auto overflow-y-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm md:block"
+        id="recurring-pending-queue"
+      >
+        <table class="table table-zebra table-md">
+          <caption class="sr-only">
+            Upcoming recurring transaction queue with type, due date, amount, and available actions.
+          </caption>
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Type
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Transaction
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Due
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Amount
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Details
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {queueRows.map((row) => {
+              const {
+                occurrence,
+                isExpense,
+                isOverdue,
+                canAct,
+                dueLabel,
+                cadenceLabel,
+                installmentLabel,
+              } = row;
 
-                return (
-                  <tr
-                    data-testid="recurring-pending-card"
-                    data-occurrence-id={occurrence.id}
-                    data-occurrence-type={occurrence.templateType}
-                  >
-                    <td>
-                      <span
-                        class:list={[
-                          'badge badge-sm font-bold',
-                          isExpense ? 'badge-error' : 'badge-success',
-                        ]}
-                      >
-                        {isExpense ? 'Expense' : 'Income'}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="space-y-1">
-                        <p class="font-semibold text-base-content">{occurrence.templateName}</p>
-                        <p class="text-xs text-base-content/70">
-                          {occurrence.category.name} · {occurrence.account.name}
-                        </p>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="space-y-1">
-                        <p class="text-sm font-semibold">{dueLabel}</p>
-                        <p
-                          class:list={[
-                            'text-xs font-semibold',
-                            isOverdue
-                              ? 'text-error'
-                              : canAct
-                                ? 'text-warning'
-                                : 'text-base-content/70',
-                          ]}
-                        >
-                          {isOverdue ? 'Overdue' : canAct ? 'Ready to process' : 'Scheduled'}
-                        </p>
-                      </div>
-                    </td>
-                    <td>
+              return (
+                <tr
+                  data-testid="recurring-pending-card"
+                  data-occurrence-id={occurrence.id}
+                  data-occurrence-type={occurrence.templateType}
+                >
+                  <td>
+                    <span
+                      class:list={[
+                        'badge badge-sm font-bold',
+                        isExpense ? 'badge-error' : 'badge-success',
+                      ]}
+                    >
+                      {isExpense ? 'Expense' : 'Income'}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="space-y-1">
+                      <p class="font-semibold text-base-content">{occurrence.templateName}</p>
+                      <p class="text-xs text-base-content/70">
+                        {occurrence.category.name} · {occurrence.account.name}
+                      </p>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="space-y-1">
+                      <p class="text-sm font-semibold">{dueLabel}</p>
                       <p
                         class:list={[
-                          'text-sm font-bold',
-                          isExpense ? 'text-error' : 'text-success',
+                          'text-xs font-semibold',
+                          isOverdue
+                            ? 'text-error'
+                            : canAct
+                              ? 'text-warning'
+                              : 'text-base-content/70',
                         ]}
                       >
-                        {formatCurrency(occurrence.templateAmount, occurrence.currency)}
+                        {isOverdue ? 'Overdue' : canAct ? 'Ready to process' : 'Scheduled'}
                       </p>
-                    </td>
-                    <td>
-                      <div class="space-y-1 text-xs text-base-content/70">
-                        <p>Occurrence #{occurrence.occurrence_number}</p>
-                        <p>{installmentLabel ? `Installment ${installmentLabel}` : cadenceLabel}</p>
+                    </div>
+                  </td>
+                  <td>
+                    <p
+                      class:list={['text-sm font-bold', isExpense ? 'text-error' : 'text-success']}
+                    >
+                      {formatCurrency(occurrence.templateAmount, occurrence.currency)}
+                    </p>
+                  </td>
+                  <td>
+                    <div class="space-y-1 text-xs text-base-content/70">
+                      <p>Occurrence #{occurrence.occurrence_number}</p>
+                      <p>{installmentLabel ? `Installment ${installmentLabel}` : cadenceLabel}</p>
+                    </div>
+                  </td>
+                  <td>
+                    {canAct ? (
+                      <div class="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          className="h-11 min-h-11 rounded-lg sm:rounded-xl"
+                          data-open-confirm-modal
+                          data-occurrence={row.payload}
+                          aria-label={`Confirm ${occurrence.templateName}`}
+                        >
+                          <CircleCheckBig size={14} aria-hidden="true" />
+                          Confirm
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="warning"
+                          size="sm"
+                          className="btn-outline h-11 min-h-11 rounded-lg sm:rounded-xl"
+                          data-open-skip-modal
+                          data-occurrence={row.payload}
+                          aria-label={`Skip ${occurrence.templateName}`}
+                        >
+                          <CircleMinus size={14} aria-hidden="true" />
+                          Skip
+                        </Button>
                       </div>
-                    </td>
-                    <td>
-                      {canAct ? (
-                        <div class="flex flex-wrap items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            className="h-11 min-h-11 rounded-lg sm:rounded-xl"
-                            data-open-confirm-modal
-                            data-occurrence={row.payload}
-                            aria-label={`Confirm ${occurrence.templateName}`}
-                          >
-                            <CircleCheckBig size={14} aria-hidden="true" />
-                            Confirm
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="warning"
-                            size="sm"
-                            className="btn-outline h-11 min-h-11 rounded-lg sm:rounded-xl"
-                            data-open-skip-modal
-                            data-occurrence={row.payload}
-                            aria-label={`Skip ${occurrence.templateName}`}
-                          >
-                            <CircleMinus size={14} aria-hidden="true" />
-                            Skip
-                          </Button>
-                        </div>
-                      ) : (
-                        <div class="inline-flex items-center gap-1.5 text-xs text-base-content/70">
-                          <CircleAlert size={14} aria-hidden="true" />
-                          {isExpense ? 'Due' : 'Expected'} {dueLabel}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </>
-    ) : hasTemplates ? (
-      <p class="py-4 text-center text-sm text-base-content/70">
-        {monthLabel
-          ? `No pending recurring items for ${monthLabel}.`
-          : 'No pending recurring items for this period.'}
-      </p>
-    ) : (
-      <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-        <EmptyState
-          title="No recurring transactions yet"
-          message="Create recurring income or expenses to start your action queue."
-          iconName="receipt"
-          variant="centered"
-          actionAttributes={{ 'data-open-recurring-template': 'true' }}
-          actionLabel="+ New Recurring"
-        />
+                    ) : (
+                      <div class="inline-flex items-center gap-1.5 text-xs text-base-content/70">
+                        <CircleAlert size={14} aria-hidden="true" />
+                        {isExpense ? 'Due' : 'Expected'} {dueLabel}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    )
-  }
+    </>
+  ) : hasTemplates ? (
+    <p class="py-4 text-center text-sm text-base-content/70">
+      {monthLabel
+        ? `No pending recurring items for ${monthLabel}.`
+        : 'No pending recurring items for this period.'}
+    </p>
+  ) : (
+    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <EmptyState
+        title="No recurring transactions yet"
+        message="Create recurring income or expenses to start your action queue."
+        iconName="receipt"
+        variant="centered"
+        actionAttributes={{ 'data-open-recurring-template': 'true' }}
+        actionLabel="+ New Recurring"
+      />
+    </div>
+  )}
 </section>

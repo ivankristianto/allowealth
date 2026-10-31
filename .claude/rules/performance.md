@@ -408,9 +408,7 @@ input.addEventListener('keyup', () => {
 <img src="/hero.webp" width="800" height="600" alt="Hero" />
 
 <!-- ✅ Correct: Reserve space for dynamic content -->
-<div style="min-height: 200px">
-  {loading ? <Skeleton height="200px" /> : <Content />}
-</div>
+<div style="min-height: 200px">{loading ? <Skeleton height="200px" /> : <Content />}</div>
 
 <!-- ❌ Wrong: No dimensions, causes shift -->
 <img src="/hero.webp" alt="Hero" />

@@ -62,17 +62,11 @@ import Button from '@/components/atoms/Button.astro';
           class:list={['w-12 h-12 rounded-2xl flex items-center justify-center', iconBgClass]}
           data-modal-icon-container
         >
-          {
-            isEditMode ? (
-              <Pencil
-                size={24}
-                class:list={['stroke-current', iconColorClass]}
-                aria-hidden="true"
-              />
-            ) : (
-              <Plus size={24} class:list={['stroke-current', iconColorClass]} aria-hidden="true" />
-            )
-          }
+          {isEditMode ? (
+            <Pencil size={24} class:list={['stroke-current', iconColorClass]} aria-hidden="true" />
+          ) : (
+            <Plus size={24} class:list={['stroke-current', iconColorClass]} aria-hidden="true" />
+          )}
         </div>
 
         <!-- Title and subtitle -->
@@ -120,7 +114,10 @@ import Button from '@/components/atoms/Button.astro';
             className="md:col-span-2"
           >
             <div slot="label">
-              <Label htmlFor="category-description" helpText="Optional"> Description </Label>
+              <Label htmlFor="category-description" helpText="Optional">
+                {' '}
+                Description{' '}
+              </Label>
             </div>
             <input
               type="text"
@@ -151,7 +148,9 @@ import Button from '@/components/atoms/Button.astro';
               <option value="expense" selected={values.type === 'expense' || !values.type}>
                 Expense
               </option>
-              <option value="income" selected={values.type === 'income'}>Income</option>
+              <option value="income" selected={values.type === 'income'}>
+                Income
+              </option>
             </select>
           </FormField>
 
@@ -162,17 +161,18 @@ import Button from '@/components/atoms/Button.astro';
                 id="category-income-source"
                 class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
               >
-                <option value="active" selected={values.income_source_type === 'active'}
-                  >Active income</option
-                >
-                <option value="passive" selected={values.income_source_type === 'passive'}
-                  >Passive income</option
-                >
+                <option value="active" selected={values.income_source_type === 'active'}>
+                  Active income
+                </option>
+                <option value="passive" selected={values.income_source_type === 'passive'}>
+                  Passive income
+                </option>
                 <option
                   value="other"
                   selected={values.income_source_type === 'other' || !values.income_source_type}
-                  >Other income</option
                 >
+                  Other income
+                </option>
               </select>
             </FormField>
           </div>
@@ -202,31 +202,25 @@ import Button from '@/components/atoms/Button.astro';
                 data-icon-select
               >
                 <optgroup label="Expense Icons">
-                  {
-                    SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'expense').map((icon) => (
-                      <option value={icon.value} selected={values.icon === icon.value}>
-                        {icon.label}
-                      </option>
-                    ))
-                  }
+                  {SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'expense').map((icon) => (
+                    <option value={icon.value} selected={values.icon === icon.value}>
+                      {icon.label}
+                    </option>
+                  ))}
                 </optgroup>
                 <optgroup label="Income Icons">
-                  {
-                    SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'income').map((icon) => (
-                      <option value={icon.value} selected={values.icon === icon.value}>
-                        {icon.label}
-                      </option>
-                    ))
-                  }
+                  {SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'income').map((icon) => (
+                    <option value={icon.value} selected={values.icon === icon.value}>
+                      {icon.label}
+                    </option>
+                  ))}
                 </optgroup>
                 <optgroup label="General Icons">
-                  {
-                    SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'general').map((icon) => (
-                      <option value={icon.value} selected={values.icon === icon.value}>
-                        {icon.label}
-                      </option>
-                    ))
-                  }
+                  {SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'general').map((icon) => (
+                    <option value={icon.value} selected={values.icon === icon.value}>
+                      {icon.label}
+                    </option>
+                  ))}
                 </optgroup>
               </select>
             </div>
@@ -252,13 +246,24 @@ import Button from '@/components/atoms/Button.astro';
               <option value="bg-secondary" selected={values.color === 'bg-secondary'}>
                 Slate
               </option>
-              <option value="bg-accent" selected={values.color === 'bg-accent'}>Forest Green</option
-              >
-              <option value="bg-neutral" selected={values.color === 'bg-neutral'}>Gray</option>
-              <option value="bg-success" selected={values.color === 'bg-success'}>Emerald</option>
-              <option value="bg-warning" selected={values.color === 'bg-warning'}>Amber</option>
-              <option value="bg-error" selected={values.color === 'bg-error'}>Rose</option>
-              <option value="bg-info" selected={values.color === 'bg-info'}>Sky Blue</option>
+              <option value="bg-accent" selected={values.color === 'bg-accent'}>
+                Forest Green
+              </option>
+              <option value="bg-neutral" selected={values.color === 'bg-neutral'}>
+                Gray
+              </option>
+              <option value="bg-success" selected={values.color === 'bg-success'}>
+                Emerald
+              </option>
+              <option value="bg-warning" selected={values.color === 'bg-warning'}>
+                Amber
+              </option>
+              <option value="bg-error" selected={values.color === 'bg-error'}>
+                Rose
+              </option>
+              <option value="bg-info" selected={values.color === 'bg-info'}>
+                Sky Blue
+              </option>
             </select>
           </FormField>
         </div>

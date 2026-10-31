@@ -112,36 +112,34 @@ const currencyBadge = (c: Currency) =>
       />
     </div>
 
-    {
-      showWealthCards && (
-        <>
-          <StatCard title="TOTAL ACCOUNTS">
-            <Fragment slot="details">
-              <div class="space-y-1.5">
-                <div class="flex items-center gap-2">
-                  <span class={currencyBadge(currency)}>{currency}</span>
-                  <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-                    {formatCurrency(totalAccounts, currency)}
-                  </p>
-                </div>
+    {showWealthCards && (
+      <>
+        <StatCard title="TOTAL ACCOUNTS">
+          <Fragment slot="details">
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge(currency)}>{currency}</span>
+                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                  {formatCurrency(totalAccounts, currency)}
+                </p>
               </div>
-            </Fragment>
-          </StatCard>
+            </div>
+          </Fragment>
+        </StatCard>
 
-          <StatCard title="TOTAL DEBT">
-            <Fragment slot="details">
-              <div class="space-y-1.5">
-                <div class="flex items-center gap-2">
-                  <span class={currencyBadge(currency)}>{currency}</span>
-                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                    {formatCurrency(totalDebt, currency)}
-                  </p>
-                </div>
+        <StatCard title="TOTAL DEBT">
+          <Fragment slot="details">
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge(currency)}>{currency}</span>
+                <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                  {formatCurrency(totalDebt, currency)}
+                </p>
               </div>
-            </Fragment>
-          </StatCard>
-        </>
-      )
-    }
+            </div>
+          </Fragment>
+        </StatCard>
+      </>
+    )}
   </div>
 </div>

@@ -208,7 +208,9 @@ const classes = ['base-classes', variant === 'primary' && 'primary-classes', cla
   .join(' ');
 ---
 
-<element class={classes}><slot /></element>
+<element class={classes}>
+  <slot />
+</element>
 ```
 
 ## File Structure
@@ -343,7 +345,6 @@ import { animate } from 'motion/mini';
 
 ```astro
 import Skeleton from '@/components/atoms/Skeleton.astro';
-
 <Skeleton variant="rectangular" width="33%" height="16px" />
 ```
 

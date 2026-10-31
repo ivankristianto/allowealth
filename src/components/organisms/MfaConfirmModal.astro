@@ -24,17 +24,14 @@ import Button from '@/components/atoms/Button.astro';
   <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
     <div class="space-y-6">
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
           <ShieldCheck size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
           <h2
             class="text-xl font-bold tracking-tight text-base-content leading-none"
             data-confirm-title
-          >
-          </h2>
+          ></h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium" data-confirm-description></p>
         </div>
       </div>

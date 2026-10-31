@@ -27,21 +27,19 @@ const hasOtherSessions = sessions.some((s) => !s.isCurrent);
 >
   <Smartphone slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
-  {
-    hasOtherSessions && (
-      <span slot="header-action">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          data-revoke-all-sessions
-          className="text-error border-error/30 hover:bg-error/10"
-        >
-          Revoke All Others
-        </Button>
-      </span>
-    )
-  }
+  {hasOtherSessions && (
+    <span slot="header-action">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        data-revoke-all-sessions
+        className="text-error border-error/30 hover:bg-error/10"
+      >
+        Revoke All Others
+      </Button>
+    </span>
+  )}
 
   <div data-sessions-list>
     <SecuritySessionsListPartial sessions={sessions} />

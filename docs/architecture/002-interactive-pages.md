@@ -73,13 +73,11 @@ export interface Props {
 const { transactions, showActions = true } = Astro.props;
 ---
 
-{
-  transactions.length > 0 ? (
-    transactions.map((tx) => <TransactionCard transaction={tx} showActions={showActions} />)
-  ) : (
-    <div class="empty-state">No transactions found</div>
-  )
-}
+{transactions.length > 0 ? (
+  transactions.map((tx) => <TransactionCard transaction={tx} showActions={showActions} />)
+) : (
+  <div class="empty-state">No transactions found</div>
+)}
 ```
 
 ### 2. Add HTML Rendering to API Endpoint

@@ -67,20 +67,18 @@ const itemClasses = [
       <p class="text-base font-bold tracking-tight leading-tight text-base-content truncate">
         {name}
       </p>
-      {
-        dateTime ? (
-          <time
-            datetime={dateTime}
-            class="text-xs font-bold text-base-content/50 tracking-widest uppercase mt-1 block truncate"
-          >
-            {dateLabel}
-          </time>
-        ) : (
-          <span class="text-xs font-bold text-base-content/50 tracking-widest uppercase mt-1 block truncate">
-            {dateLabel}
-          </span>
-        )
-      }
+      {dateTime ? (
+        <time
+          datetime={dateTime}
+          class="text-xs font-bold text-base-content/50 tracking-widest uppercase mt-1 block truncate"
+        >
+          {dateLabel}
+        </time>
+      ) : (
+        <span class="text-xs font-bold text-base-content/50 tracking-widest uppercase mt-1 block truncate">
+          {dateLabel}
+        </span>
+      )}
     </div>
   </div>
   <div class="text-right leading-none shrink-0">

@@ -69,64 +69,62 @@ const serializedChartPayload = JSON.stringify({
           Monthly forecast interest earned versus actual net savings.
         </p>
       </div>
-      <StatLabel size="sm" color="neutral">Forecast Interest · Actual Net Savings</StatLabel>
+      <StatLabel size="sm" color="neutral">
+        Forecast Interest · Actual Net Savings
+      </StatLabel>
     </div>
 
-    {
-      loading ? (
-        <div class="py-6 min-h-[300px]">
-          <Skeleton variant="rectangular" width="100%" height="300px" className="rounded-card" />
-        </div>
-      ) : error ? (
-        <div class="p-12 text-center">
-          <p class="text-error font-medium" role="alert">
-            {error}
-          </p>
-        </div>
-      ) : visibleTimeline.length === 0 ? (
-        <div class="p-12 text-center">
-          <p class="text-base-content/60 font-medium">
-            Add account balance history to see your plan versus reality.
-          </p>
-        </div>
-      ) : (
-        <div
-          class="h-[300px] w-full min-h-[300px]"
-          data-chart-data={serializedChartPayload}
-          data-currency={currency}
-          id={`${chartId}-container`}
-        >
-          <canvas
-            id={chartId}
-            aria-label="Monthly gains chart showing Forecast Interest and Actual Net Savings"
-            role="img"
-          />
-        </div>
-      )
-    }
+    {loading ? (
+      <div class="py-6 min-h-[300px]">
+        <Skeleton variant="rectangular" width="100%" height="300px" className="rounded-card" />
+      </div>
+    ) : error ? (
+      <div class="p-12 text-center">
+        <p class="text-error font-medium" role="alert">
+          {error}
+        </p>
+      </div>
+    ) : visibleTimeline.length === 0 ? (
+      <div class="p-12 text-center">
+        <p class="text-base-content/60 font-medium">
+          Add account balance history to see your plan versus reality.
+        </p>
+      </div>
+    ) : (
+      <div
+        class="h-[300px] w-full min-h-[300px]"
+        data-chart-data={serializedChartPayload}
+        data-currency={currency}
+        id={`${chartId}-container`}
+      >
+        <canvas
+          id={chartId}
+          aria-label="Monthly gains chart showing Forecast Interest and Actual Net Savings"
+          role="img"
+        />
+      </div>
+    )}
 
-    {
-      !loading && !error && visibleTimeline.length > 0 && (
-        <table class="sr-only" aria-label="Monthly gains data table">
-          <thead>
+    {!loading && !error && visibleTimeline.length > 0 && (
+      <table class="sr-only" aria-label="Monthly gains data table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Forecast Interest</th>
+            <th>Actual Net Savings</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visibleTimeline.map((point) => (
             <tr>
-              <th>Period</th>
-              <th>Forecast Interest</th>
-              <th>Actual Net Savings</th>
+              <td>{point.dateLabel}</td>
+              <td>{point.forecastInterest ?? 0}</td>
+              <td>{point.actualNetSavings === null ? '—' : point.actualNetSavings}</td>
             </tr>
-          </thead>
-          <tbody>
-            {visibleTimeline.map((point) => (
-              <tr>
-                <td>{point.dateLabel}</td>
-                <td>{point.forecastInterest ?? 0}</td>
-                <td>{point.actualNetSavings === null ? '—' : point.actualNetSavings}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )
-    }
+          ))}
+        </tbody>
+      </table>
+    )}
   </div>
 </Card>
 

@@ -29,33 +29,29 @@ const siteKey = getEnv('PUBLIC_TURNSTILE_SITE_KEY');
 const cspNonce = Astro.locals.cspNonce || '';
 ---
 
-{
-  siteKey && (
-    <div class={`turnstile-container ${className}`.trim()}>
-      <div
-        class="cf-turnstile"
-        data-sitekey={siteKey}
-        data-theme={theme}
-        data-language="auto"
-        data-retry="auto"
-        data-retry-interval="2000"
-        data-response-field-name="cf-turnstile-response"
-      />
-    </div>
-  )
-}
-
-{
-  siteKey && (
-    <script
-      is:inline
-      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-      nonce={cspNonce}
-      async
-      defer
+{siteKey && (
+  <div class={`turnstile-container ${className}`.trim()}>
+    <div
+      class="cf-turnstile"
+      data-sitekey={siteKey}
+      data-theme={theme}
+      data-language="auto"
+      data-retry="auto"
+      data-retry-interval="2000"
+      data-response-field-name="cf-turnstile-response"
     />
-  )
-}
+  </div>
+)}
+
+{siteKey && (
+  <script
+    is:inline
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    nonce={cspNonce}
+    async
+    defer
+  />
+)}
 
 <style>
   .turnstile-container {

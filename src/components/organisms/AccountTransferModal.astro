@@ -35,9 +35,7 @@ import Button from '@/components/atoms/Button.astro';
     <div class="space-y-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
           <ArrowRightLeft size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
@@ -61,18 +59,18 @@ import Button from '@/components/atoms/Button.astro';
             class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
             data-from-select
           >
-            <option value="" disabled selected>Select source account</option>
-            {
-              accounts.map((account) => (
-                <option
-                  value={account.id}
-                  data-currency={account.currency}
-                  data-balance={account.balance}
-                >
-                  {account.name} ({account.currency} {parseFloat(account.balance).toLocaleString()})
-                </option>
-              ))
-            }
+            <option value="" disabled selected>
+              Select source account
+            </option>
+            {accounts.map((account) => (
+              <option
+                value={account.id}
+                data-currency={account.currency}
+                data-balance={account.balance}
+              >
+                {account.name} ({account.currency} {parseFloat(account.balance).toLocaleString()})
+              </option>
+            ))}
           </select>
         </FormField>
 
@@ -85,18 +83,18 @@ import Button from '@/components/atoms/Button.astro';
             class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
             data-to-select
           >
-            <option value="" disabled selected>Select destination account</option>
-            {
-              accounts.map((account) => (
-                <option
-                  value={account.id}
-                  data-currency={account.currency}
-                  data-balance={account.balance}
-                >
-                  {account.name} ({account.currency} {parseFloat(account.balance).toLocaleString()})
-                </option>
-              ))
-            }
+            <option value="" disabled selected>
+              Select destination account
+            </option>
+            {accounts.map((account) => (
+              <option
+                value={account.id}
+                data-currency={account.currency}
+                data-balance={account.balance}
+              >
+                {account.name} ({account.currency} {parseFloat(account.balance).toLocaleString()})
+              </option>
+            ))}
           </select>
           <p class="text-xs text-base-content/50 mt-1 ml-1" data-currency-rule>
             Both accounts must use the same currency.
@@ -134,8 +132,7 @@ import Button from '@/components/atoms/Button.astro';
           class="hidden alert alert-error text-sm rounded-xl"
           role="alert"
           aria-live="polite"
-        >
-        </div>
+        ></div>
 
         {/* Actions */}
         <div class="flex items-center gap-4 pt-4">

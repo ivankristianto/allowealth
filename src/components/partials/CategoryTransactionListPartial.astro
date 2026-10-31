@@ -21,18 +21,16 @@ const { transactions = [] } = Astro.props;
 const dateGroups = groupTransactionsByDate(transactions);
 ---
 
-{
-  transactions.length > 0 ? (
-    <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
-  ) : (
-    <div role="status" aria-live="polite">
-      <EmptyState
-        title="No transactions"
-        message="No transactions in this period."
-        iconName="info"
-        variant="centered"
-        className="py-0"
-      />
-    </div>
-  )
-}
+{transactions.length > 0 ? (
+  <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
+) : (
+  <div role="status" aria-live="polite">
+    <EmptyState
+      title="No transactions"
+      message="No transactions in this period."
+      iconName="info"
+      variant="centered"
+      className="py-0"
+    />
+  </div>
+)}

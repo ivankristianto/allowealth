@@ -53,7 +53,7 @@ describe('RecurringTemplateForm drawer UX structure', () => {
   it('uses a merged schedule control', () => {
     const source = readRecurringTemplateForm();
     expect(source).toContain('data-recurring-schedule-block');
-    expect(source).toContain('>Schedule<');
+    expect(source).toMatch(/>\s*Schedule\s*</);
     expect(source).not.toContain('>Frequency<');
     expect(source).not.toContain('>Cycle<');
     expect(source).not.toContain('>Repeat<');

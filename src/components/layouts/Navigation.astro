@@ -86,9 +86,7 @@ const isSuperAdmin = user?.role === 'super_admin';
   </Button>
 
   <!-- Brand Logo Section (desktop only - mobile has it in the header above) -->
-  <div
-    class="hidden lg:flex pt-8 px-8 pb-4 items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0"
-  >
+  <div class="hidden lg:flex pt-8 px-8 pb-4 items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0">
     <a
       href="/dashboard"
       class="flex items-center gap-3 group-data-[sidebar-collapsed=true]:gap-0"
@@ -100,9 +98,7 @@ const isSuperAdmin = user?.role === 'super_admin';
         class="w-8 h-8 transition-transform duration-200 group-hover:scale-105"
         aria-hidden="true"
       />
-      <span
-        class="text-xl font-bold tracking-tight text-base-content group-data-[sidebar-collapsed=true]:hidden"
-      >
+      <span class="text-xl font-bold tracking-tight text-base-content group-data-[sidebar-collapsed=true]:hidden">
         allowealth
       </span>
     </a>
@@ -116,9 +112,7 @@ const isSuperAdmin = user?.role === 'super_admin';
   </div>
 
   <!-- Navigation -->
-  <ul
-    class="menu w-full flex-1 px-4 space-y-1 overflow-y-auto flex flex-col flex-nowrap min-h-0 pb-24 lg:pb-4 group-data-[sidebar-collapsed=true]:px-2"
-  >
+  <ul class="menu w-full flex-1 px-4 space-y-1 overflow-y-auto flex flex-col flex-nowrap min-h-0 pb-24 lg:pb-4 group-data-[sidebar-collapsed=true]:px-2">
     {isSuperAdmin ? <AdminNav currentPath={currentPath} /> : <UserNav currentPath={currentPath} />}
 
     <!-- Mobile User Section - Integrated into nav flow -->

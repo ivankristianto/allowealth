@@ -77,106 +77,102 @@ const isActive = (href: string) => {
 };
 ---
 
-{
-  navGroups.map((group, groupIndex) => (
-    <>
-      {groupIndex > 0 && (
-        <li role="presentation" aria-hidden="true">
-          <hr class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1" />
-        </li>
-      )}
-      {group.label && (
-        <li role="presentation" aria-hidden="true">
-          <span class="pointer-events-none block select-none px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-widest text-base-content/60 group-data-[sidebar-collapsed=true]:hidden">
-            {group.label}
-          </span>
-        </li>
-      )}
-      {group.items.map((item) => {
-        const active = isActive(item.href);
-        return (
-          <li class="shrink-0">
-            <a
-              href={item.href}
-              data-nav-href={item.href}
-              rel={item.external ? 'noopener noreferrer' : undefined}
-              target={item.external ? '_blank' : undefined}
-              title={item.label}
-              aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
-              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
-                active
-                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
-                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
-              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
-              aria-current={!item.external && active ? 'page' : undefined}
-            >
-              <item.icon
-                size={22}
-                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-accent' : ''}`}
-                aria-hidden="true"
-              />
-              <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
-              <span
-                class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
-                data-nav-dot
-                aria-hidden="true"
-              />
-            </a>
-          </li>
-        );
-      })}
-    </>
-  ))
-}
-
-{/* Utility zone: Settings + Docs */}
-<li role="presentation" aria-hidden="true">
-  <hr class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1" />
-</li>
-{
-  utilityItems.map((item) => {
-    const active = isActive(item.href);
-    const isDocs = item.external;
-    return (
-      <li class="shrink-0">
-        <a
-          href={item.href}
-          data-nav-href={item.href}
-          rel={item.external ? 'noopener noreferrer' : undefined}
-          target={item.external ? '_blank' : undefined}
-          title={item.label}
-          aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
-          class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
-            isDocs
-              ? 'text-base-content/40 hover:text-base-content/80 font-medium border-transparent'
-              : active
+{navGroups.map((group, groupIndex) => (
+  <>
+    {groupIndex > 0 && (
+      <li role="presentation" aria-hidden="true">
+        <hr class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1" />
+      </li>
+    )}
+    {group.label && (
+      <li role="presentation" aria-hidden="true">
+        <span class="pointer-events-none block select-none px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-widest text-base-content/60 group-data-[sidebar-collapsed=true]:hidden">
+          {group.label}
+        </span>
+      </li>
+    )}
+    {group.items.map((item) => {
+      const active = isActive(item.href);
+      return (
+        <li class="shrink-0">
+          <a
+            href={item.href}
+            data-nav-href={item.href}
+            rel={item.external ? 'noopener noreferrer' : undefined}
+            target={item.external ? '_blank' : undefined}
+            title={item.label}
+            aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
+            class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+              active
                 ? 'bg-accent/10 text-accent font-bold border-accent/20'
                 : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
-          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
-          aria-current={!item.external && active ? 'page' : undefined}
-        >
-          <item.icon
-            size={22}
-            class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active && !isDocs ? 'text-accent' : ''}`}
-            aria-hidden="true"
-          />
-          <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
-          {isDocs && (
-            <ExternalLink
-              size={12}
-              class="ml-auto shrink-0 group-data-[sidebar-collapsed=true]:hidden"
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+            aria-current={!item.external && active ? 'page' : undefined}
+          >
+            <item.icon
+              size={22}
+              class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-accent' : ''}`}
               aria-hidden="true"
             />
-          )}
-          {!isDocs && (
+            <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
             <span
               class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
               data-nav-dot
               aria-hidden="true"
             />
-          )}
-        </a>
-      </li>
-    );
-  })
-}
+          </a>
+        </li>
+      );
+    })}
+  </>
+))}
+
+{/* Utility zone: Settings + Docs */}
+<li role="presentation" aria-hidden="true">
+  <hr class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1" />
+</li>
+{utilityItems.map((item) => {
+  const active = isActive(item.href);
+  const isDocs = item.external;
+  return (
+    <li class="shrink-0">
+      <a
+        href={item.href}
+        data-nav-href={item.href}
+        rel={item.external ? 'noopener noreferrer' : undefined}
+        target={item.external ? '_blank' : undefined}
+        title={item.label}
+        aria-label={item.external ? `${item.label} (opens in new tab)` : item.label}
+        class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+          isDocs
+            ? 'text-base-content/40 hover:text-base-content/80 font-medium border-transparent'
+            : active
+              ? 'bg-accent/10 text-accent font-bold border-accent/20'
+              : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+        aria-current={!item.external && active ? 'page' : undefined}
+      >
+        <item.icon
+          size={22}
+          class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active && !isDocs ? 'text-accent' : ''}`}
+          aria-hidden="true"
+        />
+        <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
+        {isDocs && (
+          <ExternalLink
+            size={12}
+            class="ml-auto shrink-0 group-data-[sidebar-collapsed=true]:hidden"
+            aria-hidden="true"
+          />
+        )}
+        {!isDocs && (
+          <span
+            class={`ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden ${active ? '' : 'hidden'}`}
+            data-nav-dot
+            aria-hidden="true"
+          />
+        )}
+      </a>
+    </li>
+  );
+})}

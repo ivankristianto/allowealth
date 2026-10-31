@@ -60,12 +60,10 @@ const Icon = greetingIcons[greeting] ?? Sun;
       <Sparkles size={20} class="stroke-current animate-pulse" aria-hidden="true" />
     </span>
   </div>
-  {
-    dateDisplay && (
-      <p class="text-base font-medium text-base-content/70 leading-tight flex items-center gap-1.5">
-        <Icon size={16} class="stroke-current" aria-hidden="true" />
-        {dateDisplay}
-      </p>
-    )
-  }
+  {dateDisplay && (
+    <p class="text-base font-medium text-base-content/70 leading-tight flex items-center gap-1.5">
+      <Icon size={16} class="stroke-current" aria-hidden="true" />
+      {dateDisplay}
+    </p>
+  )}
 </div>

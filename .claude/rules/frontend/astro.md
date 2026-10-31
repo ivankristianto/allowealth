@@ -290,9 +290,7 @@ export interface Props {
 const { title, variant = 'primary', className = '' } = Astro.props;
 ---
 
-<div class={`component ${variant} ${className}`}>
-  {title}
-</div>
+<div class={`component ${variant} ${className}`}>{title}</div>
 ```
 
 ## User Object

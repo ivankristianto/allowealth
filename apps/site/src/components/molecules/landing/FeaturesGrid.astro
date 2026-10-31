@@ -31,58 +31,56 @@ import SpotIllustrations from '@/components/atoms/SpotIllustrations.astro';
 
     <!-- Bento Grid -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
-      {
-        featureGridItems.map((item) => {
-          const isDark = item.variant === 'dark';
-          const isLarge = item.size === 'large';
+      {featureGridItems.map((item) => {
+        const isDark = item.variant === 'dark';
+        const isLarge = item.size === 'large';
 
-          return (
-            <article
-              class={`${item.colSpan} p-8 sm:p-12 rounded-2xl sm:rounded-3xl overflow-hidden group transition-transform motion-safe:hover:scale-[1.02] ${
-                isDark
-                  ? 'bg-primary text-primary-content relative'
-                  : 'bg-base-100 border border-base-300 shadow-sm'
-              }`}
-            >
-              {/* Glow effect for dark cards — radial gradient, no blur compositing */}
-              {isDark && (
-                <div
-                  class="absolute inset-0 pointer-events-none"
-                  style="background: radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 15%, transparent) 0%, transparent 60%);"
-                  aria-hidden="true"
-                />
-              )}
+        return (
+          <article
+            class={`${item.colSpan} p-8 sm:p-12 rounded-2xl sm:rounded-3xl overflow-hidden group transition-transform motion-safe:hover:scale-[1.02] ${
+              isDark
+                ? 'bg-primary text-primary-content relative'
+                : 'bg-base-100 border border-base-300 shadow-sm'
+            }`}
+          >
+            {/* Glow effect for dark cards — radial gradient, no blur compositing */}
+            {isDark && (
+              <div
+                class="absolute inset-0 pointer-events-none"
+                style="background: radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 15%, transparent) 0%, transparent 60%);"
+                aria-hidden="true"
+              />
+            )}
 
-              <div class="relative z-10">
-                {/* Icon */}
-                <div
-                  class={`w-12 h-12 sm:w-14 sm:h-14 ${item.iconBg} ${item.iconColor} rounded-2xl flex items-center justify-center mb-6 sm:mb-8 motion-safe:group-hover:scale-110 transition-transform`}
-                >
-                  <SpotIllustrations name={item.spotIllustration} class="w-7 h-7 sm:w-8 sm:h-8" />
-                </div>
-
-                {/* Title */}
-                <h3
-                  class={`font-bold tracking-tight mb-4 ${
-                    isLarge ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
-                  } ${isDark ? 'text-primary-content' : 'text-base-content'}`}
-                >
-                  {item.title}
-                </h3>
-
-                {/* Description */}
-                <p
-                  class={`leading-relaxed ${isLarge ? 'text-base sm:text-lg max-w-md' : 'text-sm'} ${
-                    isDark ? 'text-primary-content/80' : 'text-base-content/80'
-                  }`}
-                >
-                  {item.description}
-                </p>
+            <div class="relative z-10">
+              {/* Icon */}
+              <div
+                class={`w-12 h-12 sm:w-14 sm:h-14 ${item.iconBg} ${item.iconColor} rounded-2xl flex items-center justify-center mb-6 sm:mb-8 motion-safe:group-hover:scale-110 transition-transform`}
+              >
+                <SpotIllustrations name={item.spotIllustration} class="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
-            </article>
-          );
-        })
-      }
+
+              {/* Title */}
+              <h3
+                class={`font-bold tracking-tight mb-4 ${
+                  isLarge ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
+                } ${isDark ? 'text-primary-content' : 'text-base-content'}`}
+              >
+                {item.title}
+              </h3>
+
+              {/* Description */}
+              <p
+                class={`leading-relaxed ${isLarge ? 'text-base sm:text-lg max-w-md' : 'text-sm'} ${
+                  isDark ? 'text-primary-content/80' : 'text-base-content/80'
+                }`}
+              >
+                {item.description}
+              </p>
+            </div>
+          </article>
+        );
+      })}
     </div>
   </div>
 </section>

@@ -44,32 +44,30 @@ function getIcon(iconName: keyof typeof iconMap) {
   role="tablist"
   data-tabs
 >
-  {
-    tabs.map((tab) => {
-      const IconComponent = getIcon(tab.icon);
-      const isActive = activeTab === tab.id;
-      return (
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isActive ? 'true' : 'false'}
-          aria-controls={`${tab.id}-panel`}
-          id={`${tab.id}-tab`}
-          tabindex={isActive ? 0 : -1}
-          class={[
-            'tab flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl transition-all',
-            isActive
-              ? 'bg-base-100 shadow-md text-primary tab-active'
-              : 'text-base-content/60 hover:text-primary',
-          ].join(' ')}
-          data-tab-id={tab.id}
-        >
-          <IconComponent size={18} class="stroke-current shrink-0" aria-hidden="true" />
-          <span class="text-sm sm:text-xs">{tab.label}</span>
-        </button>
-      );
-    })
-  }
+  {tabs.map((tab) => {
+    const IconComponent = getIcon(tab.icon);
+    const isActive = activeTab === tab.id;
+    return (
+      <button
+        type="button"
+        role="tab"
+        aria-selected={isActive ? 'true' : 'false'}
+        aria-controls={`${tab.id}-panel`}
+        id={`${tab.id}-tab`}
+        tabindex={isActive ? 0 : -1}
+        class={[
+          'tab flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl transition-all',
+          isActive
+            ? 'bg-base-100 shadow-md text-primary tab-active'
+            : 'text-base-content/60 hover:text-primary',
+        ].join(' ')}
+        data-tab-id={tab.id}
+      >
+        <IconComponent size={18} class="stroke-current shrink-0" aria-hidden="true" />
+        <span class="text-sm sm:text-xs">{tab.label}</span>
+      </button>
+    );
+  })}
 </div>
 
 <script>

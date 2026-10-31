@@ -86,21 +86,19 @@ const badgeClasses = [
   .join(' ');
 ---
 
-{
-  safeCustomColor ? (
-    <div
-      class={badgeClasses}
-      style={`background-color: ${safeCustomColor}15; color: ${safeCustomColor};`}
-    >
-      <span class={iconSizeClasses[size] + ' block'}>
-        <slot />
-      </span>
-    </div>
-  ) : (
-    <div class={badgeClasses}>
-      <span class={iconSizeClasses[size] + ' block'}>
-        <slot />
-      </span>
-    </div>
-  )
-}
+{safeCustomColor ? (
+  <div
+    class={badgeClasses}
+    style={`background-color: ${safeCustomColor}15; color: ${safeCustomColor};`}
+  >
+    <span class={iconSizeClasses[size] + ' block'}>
+      <slot />
+    </span>
+  </div>
+) : (
+  <div class={badgeClasses}>
+    <span class={iconSizeClasses[size] + ' block'}>
+      <slot />
+    </span>
+  </div>
+)}

@@ -115,9 +115,7 @@ import Button from '@/components/atoms/Button.astro';
     <div class="flex items-center gap-4">
       <CategoryIcon icon={categoryIcon} color={categoryColor} size="lg" />
       <div>
-        <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
-          {categoryName}
-        </h2>
+        <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">{categoryName}</h2>
         <p class="text-base-content/60 text-sm mt-2 font-medium uppercase tracking-widest">
           {displayPeriod.toUpperCase()}
         </p>
@@ -132,11 +130,9 @@ import Button from '@/components/atoms/Button.astro';
         <Badge variant={badgeVariant} size="sm" className={badgeClassName}>
           {showAlertIcon && <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />}
           {showTrendingUpIcon && <TrendingUp size={12} class="stroke-current" aria-hidden="true" />}
-          {
-            showTrendingDownIcon && (
-              <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
-            )
-          }
+          {showTrendingDownIcon && (
+            <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
+          )}
           <span>{badgeText}</span>
         </Badge>
       </div>
@@ -187,28 +183,24 @@ import Button from '@/components/atoms/Button.astro';
       </h3>
     </div>
 
-    {
-      transactions.length === 0 ? (
-        <div role="status" aria-live="polite" class="px-6 pb-6">
-          <EmptyState
-            title="No transactions"
-            message="No transactions in this period."
-            iconName="info"
-            variant="centered"
-            className="py-0"
-          />
-        </div>
-      ) : (
-        <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
-      )
-    }
+    {transactions.length === 0 ? (
+      <div role="status" aria-live="polite" class="px-6 pb-6">
+        <EmptyState
+          title="No transactions"
+          message="No transactions in this period."
+          iconName="info"
+          variant="centered"
+          className="py-0"
+        />
+      </div>
+    ) : (
+      <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
+    )}
 
     <div class="flex items-center justify-between px-6 pb-2">
       <span class="text-xs font-bold uppercase tracking-widest text-base-content/50">
-        Showing {transactions.length === 0 ? 0 : offset + 1}-{
-          Math.min(offset + transactions.length, total)
-        }{' '}
-        of {total}
+        Showing {transactions.length === 0 ? 0 : offset + 1}-
+        {Math.min(offset + transactions.length, total)} of {total}
       </span>
       <div class="flex gap-2">
         <Button

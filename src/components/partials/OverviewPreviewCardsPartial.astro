@@ -86,75 +86,73 @@ const previewCards: PreviewCard[] = [
 
 <div class="@container" data-overview-previews>
   <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6">
-    {
-      previewCards.map((card) => {
-        const Icon = card.icon;
+    {previewCards.map((card) => {
+      const Icon = card.icon;
 
-        return (
-          <div class="card card-bordered bg-base-100" data-testid={card.testId}>
-            <div class="card-body flex flex-col gap-5 p-5 sm:p-6">
-              <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="space-y-2">
-                  <div class="flex items-center gap-2">
-                    <Icon size={18} class={card.iconClass} aria-hidden="true" />
-                    <h3 class="text-lg font-semibold text-primary">{card.title}</h3>
-                  </div>
-                  <p class="max-w-xl text-sm text-base-content/70">{card.description}</p>
+      return (
+        <div class="card card-bordered bg-base-100" data-testid={card.testId}>
+          <div class="card-body flex flex-col gap-5 p-5 sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <Icon size={18} class={card.iconClass} aria-hidden="true" />
+                  <h3 class="text-lg font-semibold text-primary">{card.title}</h3>
                 </div>
-                <div class="rounded-xl border border-base-300 bg-base-200 px-4 py-3 sm:min-w-44 sm:text-right">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-                    {card.totalLabel}
-                  </p>
-                  <p class="mt-1 text-base font-semibold text-base-content">
-                    {formatCurrency(card.total, currency)}
-                  </p>
-                </div>
+                <p class="max-w-xl text-sm text-base-content/70">{card.description}</p>
               </div>
-
-              <div class="flex-1">
-                {card.categories.length > 0 ? (
-                  <ol class="overflow-hidden rounded-xl border border-base-300 bg-base-100 divide-y divide-base-300">
-                    {card.categories.map((category, index) => (
-                      <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3 sm:items-center">
-                        <span
-                          class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-sm font-semibold text-base-content/70"
-                          aria-hidden="true"
-                        >
-                          {index + 1}
-                        </span>
-                        <div class="min-w-0">
-                          <p class="truncate font-medium text-base-content">{category.name}</p>
-                          <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
-                            {getShare(category.value, card.totalValue)}
-                          </p>
-                        </div>
-                        <p class="whitespace-nowrap text-right font-semibold text-base-content">
-                          {formatCurrency(category.value, currency)}
-                        </p>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p class="rounded-xl border border-base-300 bg-base-200 px-4 py-4 text-sm text-base-content/60">
-                    {card.emptyState}
-                  </p>
-                )}
-              </div>
-
-              <div class="flex justify-end">
-                <a
-                  href={card.href}
-                  class={accentGhostBtn}
-                  aria-label={`${card.cta} for ${card.title}`}
-                >
-                  <span>{card.cta}</span>
-                  <ArrowRight size={16} aria-hidden="true" />
-                </a>
+              <div class="rounded-xl border border-base-300 bg-base-200 px-4 py-3 sm:min-w-44 sm:text-right">
+                <p class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+                  {card.totalLabel}
+                </p>
+                <p class="mt-1 text-base font-semibold text-base-content">
+                  {formatCurrency(card.total, currency)}
+                </p>
               </div>
             </div>
+
+            <div class="flex-1">
+              {card.categories.length > 0 ? (
+                <ol class="overflow-hidden rounded-xl border border-base-300 bg-base-100 divide-y divide-base-300">
+                  {card.categories.map((category, index) => (
+                    <li class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3 sm:items-center">
+                      <span
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 bg-base-200 text-sm font-semibold text-base-content/70"
+                        aria-hidden="true"
+                      >
+                        {index + 1}
+                      </span>
+                      <div class="min-w-0">
+                        <p class="truncate font-medium text-base-content">{category.name}</p>
+                        <p class="mt-1 text-xs font-medium uppercase tracking-wide text-base-content/50">
+                          {getShare(category.value, card.totalValue)}
+                        </p>
+                      </div>
+                      <p class="whitespace-nowrap text-right font-semibold text-base-content">
+                        {formatCurrency(category.value, currency)}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p class="rounded-xl border border-base-300 bg-base-200 px-4 py-4 text-sm text-base-content/60">
+                  {card.emptyState}
+                </p>
+              )}
+            </div>
+
+            <div class="flex justify-end">
+              <a
+                href={card.href}
+                class={accentGhostBtn}
+                aria-label={`${card.cta} for ${card.title}`}
+              >
+                <span>{card.cta}</span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </a>
+            </div>
           </div>
-        );
-      })
-    }
+        </div>
+      );
+    })}
   </div>
 </div>

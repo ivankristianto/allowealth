@@ -20,57 +20,48 @@ const firstHeadline = typingHeadlines[0] ?? '';
     class="absolute inset-0 pointer-events-none"
     style="background: radial-gradient(ellipse 80% 80% at 0% 0%, color-mix(in srgb, var(--color-accent) 15%, transparent) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 100%, color-mix(in srgb, var(--color-accent) 8%, transparent) 0%, transparent 70%);"
     aria-hidden="true"
-  >
-  </div>
+  ></div>
 
   <div class="relative max-w-7xl mx-auto text-center">
     <!-- Label -->
-    <span
-      class="inline-block text-sm font-bold text-accent uppercase tracking-widest mb-8 sm:mb-12"
-    >
+    <span class="inline-block text-sm font-bold text-accent uppercase tracking-widest mb-8 sm:mb-12">
       {heroContent.badge}
     </span>
 
     <!-- Main Headline with Typing Animation -->
-    <h1
-      class="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.88] mb-6 sm:mb-10"
-    >
-      <span class="sr-only">{typingHeadlines.join(', ')} {heroContent.titleSuffix}</span>
+    <h1 class="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-base-content leading-[0.88] mb-6 sm:mb-10">
+      <span class="sr-only">
+        {typingHeadlines.join(', ')} {heroContent.titleSuffix}
+      </span>
       <span
         class="hero-typing-wrapper"
         data-headlines={JSON.stringify(typingHeadlines)}
         aria-hidden="true"
       >
-        {
-          /* Invisible copies of every headline share one grid cell, so the box always fits
+        {/* Invisible copies of every headline share one grid cell, so the box always fits
             the longest headline at the current width. The visible line renders every
             character up front and the script only toggles their visibility, so typing
-            never reflows text and never causes layout shift. */
-        }
-        {
-          typingHeadlines.map((headline) => (
-            <span class="hero-typing-sizer">
-              {[...headline].map((char) => (
-                <span>{char}</span>
-              ))}
-            </span>
-          ))
-        }
+            never reflows text and never causes layout shift. */}
+        {typingHeadlines.map((headline) => (
+          <span class="hero-typing-sizer">
+            {[...headline].map((char) => (
+              <span>{char}</span>
+            ))}
+          </span>
+        ))}
         <span class="hero-typing-line">
-          {
-            [...firstHeadline].map((char, index, chars) => (
-              <span data-caret={index === chars.length - 1 ? 'end' : undefined}>{char}</span>
-            ))
-          }
+          {[...firstHeadline].map((char, index, chars) => (
+            <span data-caret={index === chars.length - 1 ? 'end' : undefined}>{char}</span>
+          ))}
         </span>
       </span>
-      <span class="text-accent" aria-hidden="true">{heroContent.titleSuffix}</span>
+      <span class="text-accent" aria-hidden="true">
+        {heroContent.titleSuffix}
+      </span>
     </h1>
 
     <!-- Description -->
-    <p
-      class="text-base-content/70 text-base sm:text-lg md:text-2xl font-medium max-w-3xl mx-auto leading-relaxed mb-10 sm:mb-16"
-    >
+    <p class="text-base-content/70 text-base sm:text-lg md:text-2xl font-medium max-w-3xl mx-auto leading-relaxed mb-10 sm:mb-16">
       {heroContent.description}
     </p>
 

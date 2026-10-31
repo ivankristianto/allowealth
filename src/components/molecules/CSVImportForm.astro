@@ -68,9 +68,15 @@ const { action } = Astro.props;
 
 <!-- Hidden icon templates for client-side cloning -->
 <div class="hidden" aria-hidden="true">
-  <div id="icon-check-template"><Check size={24} class="stroke-current shrink-0" /></div>
-  <div id="icon-error-template"><CircleX size={24} class="stroke-current shrink-0" /></div>
-  <div id="icon-warning-template"><TriangleAlert size={24} class="stroke-current shrink-0" /></div>
+  <div id="icon-check-template">
+    <Check size={24} class="stroke-current shrink-0" />
+  </div>
+  <div id="icon-error-template">
+    <CircleX size={24} class="stroke-current shrink-0" />
+  </div>
+  <div id="icon-warning-template">
+    <TriangleAlert size={24} class="stroke-current shrink-0" />
+  </div>
 </div>
 
 <div class="csv-import-container space-y-6">
@@ -150,8 +156,7 @@ const { action } = Astro.props;
         aria-live="polite"
         aria-atomic="true"
         aria-label="Validation results"
-      >
-      </div>
+      ></div>
     </div>
 
     <!-- Actions -->
@@ -278,19 +283,25 @@ const { action } = Astro.props;
         <div id="result-stats" class="stats stats-vertical lg:stats-horizontal bg-base-200 w-full">
           <div class="stat">
             <div class="stat-title">Imported</div>
-            <div id="stat-imported" class="stat-value text-success">0</div>
+            <div id="stat-imported" class="stat-value text-success">
+              0
+            </div>
             <div class="stat-desc">Transactions created</div>
           </div>
 
           <div class="stat">
             <div class="stat-title">Skipped</div>
-            <div id="stat-skipped" class="stat-value text-warning">0</div>
+            <div id="stat-skipped" class="stat-value text-warning">
+              0
+            </div>
             <div class="stat-desc">Duplicates/Invalid</div>
           </div>
 
           <div class="stat">
             <div class="stat-title">Errors</div>
-            <div id="stat-errors" class="stat-value text-error">0</div>
+            <div id="stat-errors" class="stat-value text-error">
+              0
+            </div>
             <div class="stat-desc">Failed rows</div>
           </div>
         </div>

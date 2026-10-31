@@ -132,215 +132,209 @@ const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
 import Button from '@/components/atoms/Button.astro';
 ---
 
-{
-  loading ? (
-    <div class={wrapperClasses} aria-busy="true" aria-label="Loading portfolio summary">
-      {/* Metric Cards Skeleton */}
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {Array(3)
-          .fill(0)
-          .map(() => (
-            <div class={metricCard}>
-              <div class="space-y-3">
-                <Skeleton variant="text" width="100px" height="12px" />
-                <Skeleton variant="text" width="100%" height="24px" />
-                <Skeleton variant="text" width="80%" height="24px" />
-              </div>
+{loading ? (
+  <div class={wrapperClasses} aria-busy="true" aria-label="Loading portfolio summary">
+    {/* Metric Cards Skeleton */}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {Array(3)
+        .fill(0)
+        .map(() => (
+          <div class={metricCard}>
+            <div class="space-y-3">
+              <Skeleton variant="text" width="100px" height="12px" />
+              <Skeleton variant="text" width="100%" height="24px" />
+              <Skeleton variant="text" width="80%" height="24px" />
             </div>
-          ))}
-      </div>
-
-      {/* Allocation Card Skeleton */}
-      <div class={allocationCard}>
-        <div class="space-y-4">
-          <Skeleton variant="text" width="140px" height="16px" />
-          <Skeleton variant="rectangular" width="100%" height="20px" className="rounded-full" />
-          <div class="grid grid-cols-2 gap-2">
-            {Array(4)
-              .fill(0)
-              .map(() => (
-                <div class="flex items-center gap-2">
-                  <Skeleton variant="circular" width="10px" height="10px" />
-                  <Skeleton variant="text" width="80px" height="12px" />
-                </div>
-              ))}
           </div>
+        ))}
+    </div>
+
+    {/* Allocation Card Skeleton */}
+    <div class={allocationCard}>
+      <div class="space-y-4">
+        <Skeleton variant="text" width="140px" height="16px" />
+        <Skeleton variant="rectangular" width="100%" height="20px" className="rounded-full" />
+        <div class="grid grid-cols-2 gap-2">
+          {Array(4)
+            .fill(0)
+            .map(() => (
+              <div class="flex items-center gap-2">
+                <Skeleton variant="circular" width="10px" height="10px" />
+                <Skeleton variant="text" width="80px" height="12px" />
+              </div>
+            ))}
         </div>
       </div>
     </div>
-  ) : (
-    <div
-      class={wrapperClasses}
-      aria-label="Accounts overview summary"
-      data-testid="portfolio-total"
-    >
-      {/* Metric Cards Grid */}
-      <div class={`grid grid-cols-1 ${gridCols} gap-4`}>
-        {/* Total Accounts */}
-        <div
-          class={`${metricCard} border-l-3 border-l-success`}
-          data-testid="portfolio-total-accounts"
-        >
-          <div class="flex items-center gap-2 mb-3">
-            <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
-            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-              Total Accounts
-            </span>
-          </div>
-          <div class="space-y-1.5">
-            {visibleAccountTotals.map((row, index) => (
-              <div class="flex items-center gap-2">
-                <span
-                  class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
-                >
-                  {row.currency}
-                </span>
-                <p
-                  class={`text-lg font-bold tracking-tight leading-none truncate ${index === 0 ? 'text-success' : 'text-info'}`}
-                >
-                  {formatCurrency(row.amount, row.currency)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Total Debt */}
-        {hasDebt && (
-          <div class={`${metricCard} border-l-3 border-l-error`} data-testid="portfolio-total-debt">
-            <div class="flex items-center gap-2 mb-3">
-              <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
-              <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-                Total Debt
-              </span>
-            </div>
-            <div class="space-y-1.5">
-              {visibleDebtTotals.map((row, index) => (
-                <div class="flex items-center gap-2">
-                  <span
-                    class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
-                  >
-                    {row.currency}
-                  </span>
-                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
-                    {formatCurrency(row.amount, row.currency)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Net Worth */}
-        <div class={`${metricCard} border-l-3 border-l-accent`} data-testid="portfolio-net-worth">
-          <div class="flex items-center gap-2 mb-3">
-            <TrendingUp size={16} class="stroke-current text-accent" aria-hidden="true" />
-            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-              Net Worth
-            </span>
-            <div
-              class="tooltip tooltip-bottom"
-              data-tip="Total accounts minus total debt. Positive means accounts exceed liabilities."
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                shape="circle"
-                className="border-0 bg-transparent text-base-content/30 hover:bg-transparent hover:text-base-content/60"
-                aria-label="What is net worth? Total accounts minus total debt."
-              >
-                <Info size={14} class="stroke-current" aria-hidden="true" />
-              </Button>
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            {netWorthTotals.map((row, index) => (
-              <div class="flex items-center gap-2">
-                <span
-                  class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
-                >
-                  {row.currency}
-                </span>
-                <p
-                  class={`text-lg font-bold tracking-tight leading-none truncate ${row.amount >= 0 ? 'text-accent' : 'text-error'}`}
-                >
-                  {formatCurrency(row.amount, row.currency)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Latest Update — floating metadata between sections */}
-      {formattedLatestUpdate && (
-        <div class="flex items-center gap-2 text-xs text-base-content/40 font-medium px-1">
-          <Clock size={12} class="stroke-current shrink-0" aria-hidden="true" />
-          <span>
-            {isHistoricalView ? 'Latest update in this period' : 'Latest update'}:{' '}
-            {formattedLatestUpdate}
+  </div>
+) : (
+  <div class={wrapperClasses} aria-label="Accounts overview summary" data-testid="portfolio-total">
+    {/* Metric Cards Grid */}
+    <div class={`grid grid-cols-1 ${gridCols} gap-4`}>
+      {/* Total Accounts */}
+      <div
+        class={`${metricCard} border-l-3 border-l-success`}
+        data-testid="portfolio-total-accounts"
+      >
+        <div class="flex items-center gap-2 mb-3">
+          <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
+          <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+            Total Accounts
           </span>
         </div>
-      )}
+        <div class="space-y-1.5">
+          {visibleAccountTotals.map((row, index) => (
+            <div class="flex items-center gap-2">
+              <span
+                class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+              >
+                {row.currency}
+              </span>
+              <p
+                class={`text-lg font-bold tracking-tight leading-none truncate ${index === 0 ? 'text-success' : 'text-info'}`}
+              >
+                {formatCurrency(row.amount, row.currency)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
 
-      {/* Account Allocation Card */}
-      {displayDistribution.length > 0 && (
-        <div class={allocationCard}>
-          <h3 class="font-bold text-sm uppercase tracking-wider text-base-content mb-4">
-            Account Allocation
-          </h3>
-
-          {/* Allocation Bar */}
-          <AllocationBar
-            segments={displayDistribution.map((item) => ({
-              label: item.type,
-              percentage: item.percentage,
-              color: item.color,
-            }))}
-            height="md"
-            ariaLabel={`Account allocation: ${allocationDescription}`}
-          />
-
-          {/* Legend */}
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 mt-4">
-            {displayDistribution.map((item) => {
-              const safeColor = sanitizeColor(item.color);
-              return (
-                <div class="flex items-center gap-2 py-0.5">
-                  <div
-                    class="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={`background-color: ${safeColor};`}
-                    aria-hidden="true"
-                  />
-                  <span class="text-xs text-base-content/60 font-medium truncate">{item.type}</span>
-                  <span class="text-xs font-bold text-base-content ml-auto shrink-0">
-                    {item.percentage}%
-                  </span>
-                </div>
-              );
-            })}
+      {/* Total Debt */}
+      {hasDebt && (
+        <div class={`${metricCard} border-l-3 border-l-error`} data-testid="portfolio-total-debt">
+          <div class="flex items-center gap-2 mb-3">
+            <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
+            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+              Total Debt
+            </span>
           </div>
-
-          {/* Screen Reader Data Table */}
-          <table class="sr-only" aria-label="Account allocation data">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Percentage</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayDistribution.map((item) => (
-                <tr>
-                  <td>{item.type}</td>
-                  <td>{item.percentage}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div class="space-y-1.5">
+            {visibleDebtTotals.map((row, index) => (
+              <div class="flex items-center gap-2">
+                <span
+                  class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+                >
+                  {row.currency}
+                </span>
+                <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                  {formatCurrency(row.amount, row.currency)}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Net Worth */}
+      <div class={`${metricCard} border-l-3 border-l-accent`} data-testid="portfolio-net-worth">
+        <div class="flex items-center gap-2 mb-3">
+          <TrendingUp size={16} class="stroke-current text-accent" aria-hidden="true" />
+          <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+            Net Worth
+          </span>
+          <div
+            class="tooltip tooltip-bottom"
+            data-tip="Total accounts minus total debt. Positive means accounts exceed liabilities."
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              shape="circle"
+              className="border-0 bg-transparent text-base-content/30 hover:bg-transparent hover:text-base-content/60"
+              aria-label="What is net worth? Total accounts minus total debt."
+            >
+              <Info size={14} class="stroke-current" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          {netWorthTotals.map((row, index) => (
+            <div class="flex items-center gap-2">
+              <span
+                class={`${badge} ${index === 0 ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}
+              >
+                {row.currency}
+              </span>
+              <p
+                class={`text-lg font-bold tracking-tight leading-none truncate ${row.amount >= 0 ? 'text-accent' : 'text-error'}`}
+              >
+                {formatCurrency(row.amount, row.currency)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  )
-}
+
+    {/* Latest Update — floating metadata between sections */}
+    {formattedLatestUpdate && (
+      <div class="flex items-center gap-2 text-xs text-base-content/40 font-medium px-1">
+        <Clock size={12} class="stroke-current shrink-0" aria-hidden="true" />
+        <span>
+          {isHistoricalView ? 'Latest update in this period' : 'Latest update'}:{' '}
+          {formattedLatestUpdate}
+        </span>
+      </div>
+    )}
+
+    {/* Account Allocation Card */}
+    {displayDistribution.length > 0 && (
+      <div class={allocationCard}>
+        <h3 class="font-bold text-sm uppercase tracking-wider text-base-content mb-4">
+          Account Allocation
+        </h3>
+
+        {/* Allocation Bar */}
+        <AllocationBar
+          segments={displayDistribution.map((item) => ({
+            label: item.type,
+            percentage: item.percentage,
+            color: item.color,
+          }))}
+          height="md"
+          ariaLabel={`Account allocation: ${allocationDescription}`}
+        />
+
+        {/* Legend */}
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 mt-4">
+          {displayDistribution.map((item) => {
+            const safeColor = sanitizeColor(item.color);
+            return (
+              <div class="flex items-center gap-2 py-0.5">
+                <div
+                  class="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={`background-color: ${safeColor};`}
+                  aria-hidden="true"
+                />
+                <span class="text-xs text-base-content/60 font-medium truncate">{item.type}</span>
+                <span class="text-xs font-bold text-base-content ml-auto shrink-0">
+                  {item.percentage}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Screen Reader Data Table */}
+        <table class="sr-only" aria-label="Account allocation data">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayDistribution.map((item) => (
+              <tr>
+                <td>{item.type}</td>
+                <td>{item.percentage}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+)}

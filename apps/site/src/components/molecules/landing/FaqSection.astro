@@ -21,8 +21,7 @@ import { ArrowRight, Plus } from '@lucide/astro';
     class="absolute inset-0 pointer-events-none"
     style="background: radial-gradient(ellipse 60% 40% at 50% 0%, color-mix(in srgb, var(--color-accent) 5%, transparent) 0%, transparent 70%);"
     aria-hidden="true"
-  >
-  </div>
+  ></div>
 
   <div class="relative max-w-4xl mx-auto">
     <!-- Section Header -->
@@ -31,7 +30,8 @@ import { ArrowRight, Plus } from '@lucide/astro';
         id="faq-title"
         class="text-4xl sm:text-5xl md:text-7xl font-black text-base-content tracking-tighter mb-6 leading-[1.1]"
       >
-        Clear answers,<br />
+        Clear answers,
+        <br />
         <span class="text-accent italic">no confusion.</span>
       </h2>
       <p class="text-base-content/70 text-lg sm:text-xl font-medium max-w-xl">
@@ -41,41 +41,34 @@ import { ArrowRight, Plus } from '@lucide/astro';
 
     <!-- FAQ Accordion -->
     <div class="space-y-4 sm:space-y-6">
-      {
-        faqItems.map((item) => (
-          <details
-            name="faq"
-            class="faq-item faq-reveal group rounded-3xl bg-base-200/50 border border-base-300/50 hover:border-accent/30 hover:bg-base-200 transition-colors duration-300 overflow-hidden"
-          >
-            <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-8 p-6 sm:p-8 text-left rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
-              <h3 class="text-xl sm:text-2xl font-bold text-base-content tracking-tight">
-                {item.question}
-              </h3>
-              <span
-                class="faq-icon-wrapper shrink-0 w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-base-content/60 group-hover:text-accent group-hover:border-accent/30"
-                aria-hidden="true"
-              >
-                <Plus size={20} class="faq-icon" />
-              </span>
-            </summary>
-            <div class="p-6 sm:p-8 pt-0 text-base-content/70 sm:text-lg leading-relaxed border-t border-base-300/30">
-              <p>{item.answer}</p>
-            </div>
-          </details>
-        ))
-      }
+      {faqItems.map((item) => (
+        <details
+          name="faq"
+          class="faq-item faq-reveal group rounded-3xl bg-base-200/50 border border-base-300/50 hover:border-accent/30 hover:bg-base-200 transition-colors duration-300 overflow-hidden"
+        >
+          <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-8 p-6 sm:p-8 text-left rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+            <h3 class="text-xl sm:text-2xl font-bold text-base-content tracking-tight">
+              {item.question}
+            </h3>
+            <span
+              class="faq-icon-wrapper shrink-0 w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center text-base-content/60 group-hover:text-accent group-hover:border-accent/30"
+              aria-hidden="true"
+            >
+              <Plus size={20} class="faq-icon" />
+            </span>
+          </summary>
+          <div class="p-6 sm:p-8 pt-0 text-base-content/70 sm:text-lg leading-relaxed border-t border-base-300/30">
+            <p>{item.answer}</p>
+          </div>
+        </details>
+      ))}
     </div>
 
     <!-- Secondary CTA -->
     <div class="faq-reveal mt-20 text-center">
-      <div
-        class="inline-flex flex-col sm:flex-row items-center justify-center gap-4 p-8 rounded-3xl bg-base-200/80 border border-base-300/80 shadow-sm w-full relative overflow-hidden group"
-      >
+      <div class="inline-flex flex-col sm:flex-row items-center justify-center gap-4 p-8 rounded-3xl bg-base-200/80 border border-base-300/80 shadow-sm w-full relative overflow-hidden group">
         <!-- Glow effect -->
-        <div
-          class="absolute inset-0 bg-linear-to-r from-accent/0 via-accent/5 to-info/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-        >
-        </div>
+        <div class="absolute inset-0 bg-linear-to-r from-accent/0 via-accent/5 to-info/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
 
         <p class="text-base-content text-lg font-bold relative z-10">Still have questions?</p>
         <div class="hidden sm:block w-1 h-1 rounded-full bg-base-content/20 relative z-10"></div>

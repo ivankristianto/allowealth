@@ -79,60 +79,58 @@ const actionAccentGhostClassName = accentGhostBtn
         </div>
 
         {/* Copy Budget */}
-        {
-          showCopyAction && (
-            <div
-              class="tooltip tooltip-bottom"
-              data-tip={disableCopyAction ? copyActionTooltip : 'Copy budget'}
+        {showCopyAction && (
+          <div
+            class="tooltip tooltip-bottom"
+            data-tip={disableCopyAction ? copyActionTooltip : 'Copy budget'}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={actionGhostClassName}
+              disabled={disableCopyAction}
+              title={disableCopyAction ? copyActionTooltip : undefined}
+              data-action-id="copy-budget"
+              data-testid="copy-budget-btn"
+              aria-label="Copy budget"
             >
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={actionGhostClassName}
-                disabled={disableCopyAction}
-                title={disableCopyAction ? copyActionTooltip : undefined}
-                data-action-id="copy-budget"
-                data-testid="copy-budget-btn"
-                aria-label="Copy budget"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="stroke-current md:hidden"
+                aria-hidden="true"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="stroke-current md:hidden"
-                  aria-hidden="true"
-                >
-                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                </svg>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="stroke-current hidden md:block"
-                  aria-hidden="true"
-                >
-                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                </svg>
-                <span class="text-xs md:text-sm">Copy</span>
-              </Button>
-            </div>
-          )
-        }
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="stroke-current hidden md:block"
+                aria-hidden="true"
+              >
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+              </svg>
+              <span class="text-xs md:text-sm">Copy</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Expandable: Import, Export, Initialize All */}
@@ -172,56 +170,54 @@ const actionAccentGhostClassName = accentGhostBtn
         </div>
 
         {/* Initialize All */}
-        {
-          uninitializedCount > 0 && (
-            <div
-              class="tooltip tooltip-bottom"
-              data-tip="Initialize all categories with default budgets"
+        {uninitializedCount > 0 && (
+          <div
+            class="tooltip tooltip-bottom"
+            data-tip="Initialize all categories with default budgets"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={actionGhostClassName}
+              data-action-id="initialize-budgets"
+              data-testid="initialize-budgets-btn"
+              aria-label="Initialize all budgets"
             >
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={actionGhostClassName}
-                data-action-id="initialize-budgets"
-                data-testid="initialize-budgets-btn"
-                aria-label="Initialize all budgets"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="stroke-current md:hidden"
+                aria-hidden="true"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="stroke-current md:hidden"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="stroke-current hidden md:block"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span class="text-xs md:text-sm">Initialize All</span>
-              </Button>
-            </div>
-          )
-        }
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="stroke-current hidden md:block"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span class="text-xs md:text-sm">Initialize All</span>
+            </Button>
+          </div>
+        )}
       </div>
     </ActionExpandable>
   </div>

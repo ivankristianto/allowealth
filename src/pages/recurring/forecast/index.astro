@@ -131,9 +131,7 @@ const typeOptions = [
   <div class="mx-auto max-w-7xl space-y-5 px-1 pb-10 sm:space-y-6 sm:px-2 lg:px-6">
     <Breadcrumb items={[{ label: 'Recurring', href: '/recurring' }, { label: 'Forecast' }]} />
 
-    <section
-      class="sticky top-0 z-sticky rounded-box border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5"
-    >
+    <section class="sticky top-0 z-sticky rounded-box border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
       <form
         id="forecast-filters"
         method="get"
@@ -149,27 +147,25 @@ const typeOptions = [
             role="group"
             aria-label="Filter by type"
           >
-            {
-              typeOptions.map((opt) => (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={[
-                    'min-h-[44px] min-w-[44px] rounded-lg border-0 px-3 py-2 text-xs font-bold transition-all sm:rounded-xl sm:px-5 sm:py-2.5',
-                    typeFilter === opt.value
-                      ? 'bg-base-100 text-primary shadow'
-                      : 'text-base-content/50 hover:text-base-content/70',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  data-filter-type-btn={opt.value}
-                  aria-pressed={typeFilter === opt.value}
-                >
-                  {opt.label}
-                </Button>
-              ))
-            }
+            {typeOptions.map((opt) => (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={[
+                  'min-h-[44px] min-w-[44px] rounded-lg border-0 px-3 py-2 text-xs font-bold transition-all sm:rounded-xl sm:px-5 sm:py-2.5',
+                  typeFilter === opt.value
+                    ? 'bg-base-100 text-primary shadow'
+                    : 'text-base-content/50 hover:text-base-content/70',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                data-filter-type-btn={opt.value}
+                aria-pressed={typeFilter === opt.value}
+              >
+                {opt.label}
+              </Button>
+            ))}
           </div>
 
           {/* Account dropdown */}
@@ -197,24 +193,22 @@ const typeOptions = [
             role="group"
             aria-label="Forecast range"
           >
-            {
-              rangeOptions.map((opt) => (
-                <a
-                  href={buildFilterUrl({
-                    monthCount: opt.value === 12 ? undefined : String(opt.value),
-                  })}
-                  class:list={[
-                    'flex min-h-11 items-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
-                    monthCount === opt.value
-                      ? 'bg-base-100 text-primary shadow'
-                      : 'text-base-content/50 hover:text-base-content/70',
-                  ]}
-                  aria-current={monthCount === opt.value ? 'page' : undefined}
-                >
-                  {opt.label}
-                </a>
-              ))
-            }
+            {rangeOptions.map((opt) => (
+              <a
+                href={buildFilterUrl({
+                  monthCount: opt.value === 12 ? undefined : String(opt.value),
+                })}
+                class:list={[
+                  'flex min-h-11 items-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all',
+                  monthCount === opt.value
+                    ? 'bg-base-100 text-primary shadow'
+                    : 'text-base-content/50 hover:text-base-content/70',
+                ]}
+                aria-current={monthCount === opt.value ? 'page' : undefined}
+              >
+                {opt.label}
+              </a>
+            ))}
           </div>
 
           {/* Include Paused toggle */}
@@ -236,37 +230,31 @@ const typeOptions = [
           {/* Hidden inputs for form state */}
           <input type="hidden" name="type" value={typeFilter} id="forecast-type-hidden" />
           {monthCount !== 12 && <input type="hidden" name="monthCount" value={monthCount} />}
-          {
-            showPaused && (
-              <input type="hidden" name="status" value="all" id="forecast-status-hidden" />
-            )
-          }
+          {showPaused && (
+            <input type="hidden" name="status" value="all" id="forecast-status-hidden" />
+          )}
         </div>
       </form>
     </section>
 
-    {
-      activeTotals && (
-        <ForecastSummary
-          income={summaryIncome}
-          expense={summaryExpense}
-          net={summaryNet}
-          currency={activeCurrency}
-          monthCount={monthCount}
-        />
-      )
-    }
+    {activeTotals && (
+      <ForecastSummary
+        income={summaryIncome}
+        expense={summaryExpense}
+        net={summaryNet}
+        currency={activeCurrency}
+        monthCount={monthCount}
+      />
+    )}
 
-    {
-      forecast.rows.length > 0 && (
-        <ForecastCashflowChart
-          data={chartData}
-          currency={activeCurrency}
-          typeFilter={typeFilter}
-          showPaused={showPaused}
-        />
-      )
-    }
+    {forecast.rows.length > 0 && (
+      <ForecastCashflowChart
+        data={chartData}
+        currency={activeCurrency}
+        typeFilter={typeFilter}
+        showPaused={showPaused}
+      />
+    )}
 
     <ForecastTable rows={forecast.rows} totals={forecast.totals} monthKeys={forecast.monthKeys} />
   </div>

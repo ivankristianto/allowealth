@@ -212,130 +212,128 @@ import Button from '@/components/atoms/Button.astro';
       role="list"
       aria-label="Upcoming recurring bills"
     >
-      {
-        queueRows.map((row) => {
-          const isExpense = row.occurrence.templateType === 'expense';
-          const amountValue = Number.parseFloat(row.occurrence.templateAmount);
-          const resolvedAmount = Number.isFinite(amountValue) ? amountValue : 0;
+      {queueRows.map((row) => {
+        const isExpense = row.occurrence.templateType === 'expense';
+        const amountValue = Number.parseFloat(row.occurrence.templateAmount);
+        const resolvedAmount = Number.isFinite(amountValue) ? amountValue : 0;
 
-          return (
-            <li>
-              <article
-                class:list={[
-                  'border-l-4 border-l-transparent bg-base-100 px-4 py-2.5 transition-colors hover:bg-base-200/30 active:bg-base-200/30',
-                  isExpense
-                    ? 'hover:border-l-error/35 active:border-l-error/35'
-                    : 'hover:border-l-success/35 active:border-l-success/35',
-                ]}
-                data-occurrence-id={row.occurrence.id}
-              >
-                <div class="flex items-start gap-2.5">
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-start gap-2.5">
-                      <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-bold tracking-tight leading-tight text-base-content">
-                          {row.occurrence.templateName}
-                        </p>
-                      </div>
-
-                      <CurrencyDisplay
-                        amount={resolvedAmount}
-                        currency={row.occurrence.currency}
-                        showSign={false}
-                        variant={isExpense ? 'negative' : 'positive'}
-                        size="sm"
-                        className="font-bold tracking-tight shrink-0"
-                      />
-
-                      <div class="shrink-0 flex h-11 w-11 items-start justify-end">
-                        {row.canAct ? (
-                          <div class="dropdown dropdown-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="xs"
-                              shape="square"
-                              tabindex={0}
-                              className="h-11 w-11 rounded-lg border-0"
-                              aria-label={`Actions for ${row.occurrence.templateName}`}
-                              aria-haspopup="menu"
-                            >
-                              <EllipsisVertical size={14} aria-hidden="true" />
-                            </Button>
-                            <ul
-                              tabindex={0}
-                              class="dropdown-content z-40 menu w-36 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
-                              role="menu"
-                            >
-                              <li role="none">
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  class="rounded-xl"
-                                  data-open-confirm-modal
-                                  data-occurrence={row.payload}
-                                >
-                                  <CircleCheckBig size={14} aria-hidden="true" />
-                                  Confirm
-                                </button>
-                              </li>
-                              <li role="none">
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  class="rounded-xl"
-                                  data-open-skip-modal
-                                  data-occurrence={row.payload}
-                                >
-                                  <CircleMinus size={14} aria-hidden="true" />
-                                  Skip
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        ) : (
-                          <div
-                            class="tooltip tooltip-left"
-                            data-tip="Scheduled item. You can confirm or skip it on its due date."
-                          >
-                            <span
-                              class="inline-flex h-11 w-11 items-center justify-center text-base-content/45"
-                              role="img"
-                              aria-label="Scheduled item. Available for actions on its due date."
-                            >
-                              <CircleAlert size={14} aria-hidden="true" />
-                            </span>
-                          </div>
-                        )}
-                      </div>
+        return (
+          <li>
+            <article
+              class:list={[
+                'border-l-4 border-l-transparent bg-base-100 px-4 py-2.5 transition-colors hover:bg-base-200/30 active:bg-base-200/30',
+                isExpense
+                  ? 'hover:border-l-error/35 active:border-l-error/35'
+                  : 'hover:border-l-success/35 active:border-l-success/35',
+              ]}
+              data-occurrence-id={row.occurrence.id}
+            >
+              <div class="flex items-start gap-2.5">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-start gap-2.5">
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-bold tracking-tight leading-tight text-base-content">
+                        {row.occurrence.templateName}
+                      </p>
                     </div>
 
-                    <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/60">
-                      <span class="whitespace-nowrap font-medium text-base-content/85">
-                        {row.dueLabel}
-                      </span>
-                      <span aria-hidden="true">&middot;</span>
-                      <span class:list={['whitespace-nowrap font-semibold', row.dueStateClass]}>
-                        {row.dueStateLabel}
-                      </span>
-                      <span aria-hidden="true">&middot;</span>
-                      <span class="font-semibold text-base-content/80">
-                        {row.occurrence.category.name}
-                      </span>
-                      <span class="inline-flex min-w-0 items-center gap-1">
-                        <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
-                        <span class="whitespace-normal break-words text-base-content/80">
-                          {row.occurrence.account.name}
-                        </span>
-                      </span>
+                    <CurrencyDisplay
+                      amount={resolvedAmount}
+                      currency={row.occurrence.currency}
+                      showSign={false}
+                      variant={isExpense ? 'negative' : 'positive'}
+                      size="sm"
+                      className="font-bold tracking-tight shrink-0"
+                    />
+
+                    <div class="shrink-0 flex h-11 w-11 items-start justify-end">
+                      {row.canAct ? (
+                        <div class="dropdown dropdown-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            shape="square"
+                            tabindex={0}
+                            className="h-11 w-11 rounded-lg border-0"
+                            aria-label={`Actions for ${row.occurrence.templateName}`}
+                            aria-haspopup="menu"
+                          >
+                            <EllipsisVertical size={14} aria-hidden="true" />
+                          </Button>
+                          <ul
+                            tabindex={0}
+                            class="dropdown-content z-40 menu w-36 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+                            role="menu"
+                          >
+                            <li role="none">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                class="rounded-xl"
+                                data-open-confirm-modal
+                                data-occurrence={row.payload}
+                              >
+                                <CircleCheckBig size={14} aria-hidden="true" />
+                                Confirm
+                              </button>
+                            </li>
+                            <li role="none">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                class="rounded-xl"
+                                data-open-skip-modal
+                                data-occurrence={row.payload}
+                              >
+                                <CircleMinus size={14} aria-hidden="true" />
+                                Skip
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      ) : (
+                        <div
+                          class="tooltip tooltip-left"
+                          data-tip="Scheduled item. You can confirm or skip it on its due date."
+                        >
+                          <span
+                            class="inline-flex h-11 w-11 items-center justify-center text-base-content/45"
+                            role="img"
+                            aria-label="Scheduled item. Available for actions on its due date."
+                          >
+                            <CircleAlert size={14} aria-hidden="true" />
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/60">
+                    <span class="whitespace-nowrap font-medium text-base-content/85">
+                      {row.dueLabel}
+                    </span>
+                    <span aria-hidden="true">&middot;</span>
+                    <span class:list={['whitespace-nowrap font-semibold', row.dueStateClass]}>
+                      {row.dueStateLabel}
+                    </span>
+                    <span aria-hidden="true">&middot;</span>
+                    <span class="font-semibold text-base-content/80">
+                      {row.occurrence.category.name}
+                    </span>
+                    <span class="inline-flex min-w-0 items-center gap-1">
+                      <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
+                      <span class="whitespace-normal break-words text-base-content/80">
+                        {row.occurrence.account.name}
+                      </span>
+                    </span>
+                  </div>
                 </div>
-              </article>
-            </li>
-          );
-        })
-      }
+              </div>
+            </article>
+          </li>
+        );
+      })}
     </ul>
   </section>
 

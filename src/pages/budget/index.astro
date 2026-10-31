@@ -300,71 +300,69 @@ const copyDisabledTooltip =
     data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
   >
     {/* Error State */}
-    {
-      error ? (
-        <div class="alert alert-error" role="alert">
-          <CircleX size={24} class="stroke-current shrink-0" aria-hidden="true" />
-          <span>{error}</span>
+    {error ? (
+      <div class="alert alert-error" role="alert">
+        <CircleX size={24} class="stroke-current shrink-0" aria-hidden="true" />
+        <span>{error}</span>
+      </div>
+    ) : (
+      <>
+        {/* Budget Summary Overview - Container for HTML injection */}
+        <div id="budget-summary-container" data-testid="budget-summary-container">
+          {budgetData && (
+            <BudgetSummaryPartial
+              totalAllocated={Number(budgetData.total_budget || '0')}
+              totalSpent={Number(budgetData.total_spent || '0')}
+              distribution={allocationDistribution}
+              currency={selectedCurrency}
+              totalCategories={budgetData.categories.length}
+              overBudgetCount={
+                budgetData.categories.filter((cat) => cat.status === 'exceeded').length
+              }
+              criticalCount={
+                budgetData.categories.filter((cat) => cat.percentage_used >= 150).length
+              }
+            />
+          )}
         </div>
-      ) : (
-        <>
-          {/* Budget Summary Overview - Container for HTML injection */}
-          <div id="budget-summary-container" data-testid="budget-summary-container">
-            {budgetData && (
-              <BudgetSummaryPartial
-                totalAllocated={Number(budgetData.total_budget || '0')}
-                totalSpent={Number(budgetData.total_spent || '0')}
-                distribution={allocationDistribution}
-                currency={selectedCurrency}
-                totalCategories={budgetData.categories.length}
-                overBudgetCount={
-                  budgetData.categories.filter((cat) => cat.status === 'exceeded').length
-                }
-                criticalCount={
-                  budgetData.categories.filter((cat) => cat.percentage_used >= 150).length
-                }
-              />
-            )}
+
+        {/* Budget Actions Bar */}
+        <BudgetActions
+          uninitializedCount={uninitializedCategories.length}
+          showCopyAction={copyBudgetAvailability.isVisible}
+          disableCopyAction={copyBudgetAvailability.isDisabled}
+          copyActionTooltip={copyDisabledTooltip}
+        />
+
+        {/* Budget Filter and View Toggle */}
+        {budgetData && budgetData.categories.length > 0 && <BudgetFilterControls />}
+
+        {/* Budget Card Grid - Container for HTML injection */}
+        <div id="budget-cards-container">
+          <div data-view="card">
+            <BudgetCardGridPartial
+              budgets={budgetData?.categories || []}
+              currency={selectedCurrency}
+              month={selectedMonth}
+              year={selectedYear}
+            />
           </div>
-
-          {/* Budget Actions Bar */}
-          <BudgetActions
-            uninitializedCount={uninitializedCategories.length}
-            showCopyAction={copyBudgetAvailability.isVisible}
-            disableCopyAction={copyBudgetAvailability.isDisabled}
-            copyActionTooltip={copyDisabledTooltip}
-          />
-
-          {/* Budget Filter and View Toggle */}
-          {budgetData && budgetData.categories.length > 0 && <BudgetFilterControls />}
-
-          {/* Budget Card Grid - Container for HTML injection */}
-          <div id="budget-cards-container">
-            <div data-view="card">
-              <BudgetCardGridPartial
-                budgets={budgetData?.categories || []}
-                currency={selectedCurrency}
-                month={selectedMonth}
-                year={selectedYear}
-              />
-            </div>
-            <div data-view="table" class="hidden">
-              <BudgetTable
-                budgets={budgetData?.categories || []}
-                currency={selectedCurrency}
-                month={selectedMonth}
-                year={selectedYear}
-              />
-            </div>
+          <div data-view="table" class="hidden">
+            <BudgetTable
+              budgets={budgetData?.categories || []}
+              currency={selectedCurrency}
+              month={selectedMonth}
+              year={selectedYear}
+            />
           </div>
+        </div>
 
-          {/* AI Advice Banner - Container for HTML injection */}
-          <div id="budget-advice-container">
-            <BudgetAdviceBannerPartial adviceData={adviceData} />
-          </div>
-        </>
-      )
-    }
+        {/* AI Advice Banner - Container for HTML injection */}
+        <div id="budget-advice-container">
+          <BudgetAdviceBannerPartial adviceData={adviceData} />
+        </div>
+      </>
+    )}
   </div>
 
   {/* Set New Budget Modal */}
@@ -399,22 +397,20 @@ const copyDisabledTooltip =
   <CategoryDrillDownModal id="budget-category-drilldown-modal" />
 
   {/* Initialize Budgets Modal */}
-  {
-    uninitializedCategories.length > 0 && (
-      <InitializeBudgetsModal
-        id="initialize-budgets-modal"
-        categories={uninitializedCategories.map((cat) => ({
-          id: cat.id,
-          name: cat.name,
-          icon: cat.icon,
-          color: cat.color,
-        }))}
-        month={selectedMonth}
-        year={selectedYear}
-        currency={selectedCurrency}
-      />
-    )
-  }
+  {uninitializedCategories.length > 0 && (
+    <InitializeBudgetsModal
+      id="initialize-budgets-modal"
+      categories={uninitializedCategories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+      }))}
+      month={selectedMonth}
+      year={selectedYear}
+      currency={selectedCurrency}
+    />
+  )}
 </ProtectedLayout>
 
 <script>

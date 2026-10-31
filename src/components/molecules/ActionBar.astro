@@ -60,52 +60,42 @@ const containerClasses = [
     aria-label={ariaLabel}
     data-action-bar-scroll={edgeBleed || undefined}
   >
-    {
-      /* Primary Actions — first on mobile (order-first), pushed right on desktop (order-last + ml-auto) */
-    }
-    {
-      hasPrimary && (
-        <div class="order-first md:order-last md:ml-auto shrink-0 flex items-center gap-2 md:gap-3">
-          {hasSecondary && (
-            <div
-              class="hidden md:block border-l border-base-300 h-6 self-center"
-              aria-hidden="true"
-            />
-          )}
-          <slot name="primary" />
-        </div>
-      )
-    }
+    {/* Primary Actions — first on mobile (order-first), pushed right on desktop (order-last + ml-auto) */}
+    {hasPrimary && (
+      <div class="order-first md:order-last md:ml-auto shrink-0 flex items-center gap-2 md:gap-3">
+        {hasSecondary && (
+          <div
+            class="hidden md:block border-l border-base-300 h-6 self-center"
+            aria-hidden="true"
+          />
+        )}
+        <slot name="primary" />
+      </div>
+    )}
 
     {/* Secondary Actions */}
-    {
-      hasSecondaryVisible && (
-        <div class="flex items-center gap-1 md:gap-2 shrink-0">
-          {Astro.slots.has('secondary-visible') ? <slot name="secondary-visible" /> : <slot />}
-        </div>
-      )
-    }
+    {hasSecondaryVisible && (
+      <div class="flex items-center gap-1 md:gap-2 shrink-0">
+        {Astro.slots.has('secondary-visible') ? <slot name="secondary-visible" /> : <slot />}
+      </div>
+    )}
 
     {/* Overflow Menu */}
-    {
-      hasOverflow && (
-        <div class="shrink-0">
-          <slot name="overflow" />
-        </div>
-      )
-    }
+    {hasOverflow && (
+      <div class="shrink-0">
+        <slot name="overflow" />
+      </div>
+    )}
   </div>
 
   {/* Scroll fade indicator — visible on mobile when content overflows right */}
-  {
-    edgeBleed && (
-      <div
-        class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-base-100 pointer-events-none hidden md:!hidden"
-        data-action-bar-fade
-        aria-hidden="true"
-      />
-    )
-  }
+  {edgeBleed && (
+    <div
+      class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-base-100 pointer-events-none hidden md:!hidden"
+      data-action-bar-fade
+      aria-hidden="true"
+    />
+  )}
 </div>
 
 <script>

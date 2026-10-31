@@ -308,7 +308,9 @@ const classes = ['base-classes', variant === 'primary' && 'primary-classes', cla
   .join(' ');
 ---
 
-<element class={classes}><slot /></element>
+<element class={classes}>
+  <slot />
+</element>
 ```
 
 ## Reference

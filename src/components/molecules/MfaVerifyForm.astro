@@ -74,8 +74,7 @@ const { redirectTo = '' } = Astro.props;
         >
           <span data-button-text>Verify</span>
           <span data-loading-spinner class="hidden">
-            <span class="loading loading-spinner"></span>{' '}
-            Verifying...
+            <span class="loading loading-spinner"></span> Verifying...
           </span>
         </Button>
       </div>
@@ -100,8 +99,10 @@ const { redirectTo = '' } = Astro.props;
         href="/login"
         class="link link-primary font-semibold"
         data-testid="back-to-login"
-        data-astro-reload>Back to login</a
+        data-astro-reload
       >
+        Back to login
+      </a>
     </div>
   </div>
 </div>

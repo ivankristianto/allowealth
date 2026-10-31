@@ -112,89 +112,86 @@ function calculateChange(balance: number, prevBalance: number, isLastEntry: bool
 }
 ---
 
-{
-  entries.length === 0 ? (
-    <p class="px-4 py-2 text-xs text-base-content/50">No history entries yet.</p>
-  ) : (
-    <>
-      {showSparkline && (
-        <div class="px-6 pt-3 pb-1 md:px-8">
-          <svg
-            width="100%"
-            height="44"
-            viewBox="0 0 100 44"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path d={sparklineArea} fill="var(--color-accent)" fill-opacity="0.12" />
-            <polyline
-              points={sparklinePoints}
-              fill="none"
-              stroke="var(--color-accent)"
-              stroke-width="1.5"
-              stroke-linejoin="round"
-              stroke-linecap="round"
-            />
-            {(() => {
-              const lastPoint = sparklinePoints.split(' ').pop() ?? '100,22';
-              const [cx, cy] = lastPoint.split(',');
-              return <circle cx={cx} cy={cy} r="2" fill="var(--color-accent)" />;
-            })()}
-          </svg>
-          {showGrowthAnnotation && (
-            <div class="flex justify-between text-xs mt-0.5">
-              <span class="text-base-content/40">{oldestDateLabel}</span>
-              <span class={growthClass + ' font-semibold'}>
-                {growthFormatted} ({entries.length} entries)
-              </span>
-              <span class="text-base-content/40">Now</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      <table class="w-full border-collapse text-left">
-        <thead class="sr-only">
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Balance</th>
-            <th scope="col">Change</th>
-            <th scope="col">%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry, i) => {
-            const balance = parseFloat(entry.balance);
-            const prevBalance =
-              i < entries.length - 1 ? parseFloat(entries[i + 1].balance) : balance;
-            const isLastEntry = i === entries.length - 1;
-            const changeData = calculateChange(balance, prevBalance, isLastEntry);
-            const date = formatDate(entry.recorded_at);
-
-            return (
-              <tr class="border-b border-base-300/50 last:border-b-0">
-                <td class="py-1.5 pl-6 pr-2 text-xs text-base-content/50 md:pl-8">{date}</td>
-                <td class="py-1.5 px-2 text-xs font-semibold tabular-nums text-base-content text-right">
-                  {formatCurrency(balance, currency)}
-                </td>
-                <td
-                  class={`py-1.5 px-2 text-xs font-semibold tabular-nums text-right ${changeData.className}`}
-                >
-                  {changeData.display}
-                </td>
-                <td class="py-1.5 pl-2 pr-4 text-xs text-base-content/40 text-right md:pr-6">
-                  {changeData.percent}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <div class="py-1.5 pl-6 md:pl-8">
-        <a href={`/accounts/history/${accountId}`} class="text-xs text-accent hover:underline">
-          View all history &rarr;
-        </a>
+{entries.length === 0 ? (
+  <p class="px-4 py-2 text-xs text-base-content/50">No history entries yet.</p>
+) : (
+  <>
+    {showSparkline && (
+      <div class="px-6 pt-3 pb-1 md:px-8">
+        <svg
+          width="100%"
+          height="44"
+          viewBox="0 0 100 44"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path d={sparklineArea} fill="var(--color-accent)" fill-opacity="0.12" />
+          <polyline
+            points={sparklinePoints}
+            fill="none"
+            stroke="var(--color-accent)"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+          />
+          {(() => {
+            const lastPoint = sparklinePoints.split(' ').pop() ?? '100,22';
+            const [cx, cy] = lastPoint.split(',');
+            return <circle cx={cx} cy={cy} r="2" fill="var(--color-accent)" />;
+          })()}
+        </svg>
+        {showGrowthAnnotation && (
+          <div class="flex justify-between text-xs mt-0.5">
+            <span class="text-base-content/40">{oldestDateLabel}</span>
+            <span class={growthClass + ' font-semibold'}>
+              {growthFormatted} ({entries.length} entries)
+            </span>
+            <span class="text-base-content/40">Now</span>
+          </div>
+        )}
       </div>
-    </>
-  )
-}
+    )}
+
+    <table class="w-full border-collapse text-left">
+      <thead class="sr-only">
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Balance</th>
+          <th scope="col">Change</th>
+          <th scope="col">%</th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((entry, i) => {
+          const balance = parseFloat(entry.balance);
+          const prevBalance = i < entries.length - 1 ? parseFloat(entries[i + 1].balance) : balance;
+          const isLastEntry = i === entries.length - 1;
+          const changeData = calculateChange(balance, prevBalance, isLastEntry);
+          const date = formatDate(entry.recorded_at);
+
+          return (
+            <tr class="border-b border-base-300/50 last:border-b-0">
+              <td class="py-1.5 pl-6 pr-2 text-xs text-base-content/50 md:pl-8">{date}</td>
+              <td class="py-1.5 px-2 text-xs font-semibold tabular-nums text-base-content text-right">
+                {formatCurrency(balance, currency)}
+              </td>
+              <td
+                class={`py-1.5 px-2 text-xs font-semibold tabular-nums text-right ${changeData.className}`}
+              >
+                {changeData.display}
+              </td>
+              <td class="py-1.5 pl-2 pr-4 text-xs text-base-content/40 text-right md:pr-6">
+                {changeData.percent}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+    <div class="py-1.5 pl-6 md:pl-8">
+      <a href={`/accounts/history/${accountId}`} class="text-xs text-accent hover:underline">
+        View all history &rarr;
+      </a>
+    </div>
+  </>
+)}

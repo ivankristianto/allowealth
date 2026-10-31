@@ -90,27 +90,25 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
   </div>
 
   <!-- Period Selector: PeriodNavigator for monthly/yearly -->
-  {
-    selectedRange === 'monthly' && monthlyOptions.length > 0 ? (
-      <PeriodicSelector
-        options={monthlyOptions}
-        selected={selectedPeriod}
-        ariaLabel="Select month"
-        className="shrink-0"
-        compactMobile
-        newestFirst
-      />
-    ) : selectedRange === 'yearly' && yearlyOptions.length > 0 ? (
-      <PeriodicSelector
-        options={yearlyOptions}
-        selected={selectedPeriod}
-        ariaLabel="Select year"
-        className="shrink-0"
-        compactMobile
-        newestFirst
-      />
-    ) : null
-  }
+  {selectedRange === 'monthly' && monthlyOptions.length > 0 ? (
+    <PeriodicSelector
+      options={monthlyOptions}
+      selected={selectedPeriod}
+      ariaLabel="Select month"
+      className="shrink-0"
+      compactMobile
+      newestFirst
+    />
+  ) : selectedRange === 'yearly' && yearlyOptions.length > 0 ? (
+    <PeriodicSelector
+      options={yearlyOptions}
+      selected={selectedPeriod}
+      ariaLabel="Select year"
+      className="shrink-0"
+      compactMobile
+      newestFirst
+    />
+  ) : null}
 </div>
 
 <script>

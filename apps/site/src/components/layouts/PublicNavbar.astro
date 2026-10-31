@@ -18,18 +18,14 @@ const navLinks = [
 ---
 
 <nav class="fixed top-0 left-0 right-0 z-50 px-4 py-4 md:px-8" aria-label="Main navigation">
-  <div
-    class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 bg-base-100/95 border border-base-300/20 rounded-3xl shadow-premium"
-  >
+  <div class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 bg-base-100/95 border border-base-300/20 rounded-3xl shadow-premium">
     <!-- Logo and Brand -->
     <a
       href="/"
       class="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-lg group"
       aria-label={`${brandContent.name} - Go to homepage`}
     >
-      <div
-        class="w-9 h-9 flex items-center justify-center overflow-hidden rounded-xl bg-linear-to-br from-accent/10 to-accent/20 p-1.5 group-hover:from-accent/20 group-hover:to-accent/30 transition-all duration-300"
-      >
+      <div class="w-9 h-9 flex items-center justify-center overflow-hidden rounded-xl bg-linear-to-br from-accent/10 to-accent/20 p-1.5 group-hover:from-accent/20 group-hover:to-accent/30 transition-all duration-300">
         <img
           src="/favicon.svg"
           alt=""
@@ -39,28 +35,24 @@ const navLinks = [
           aria-hidden="true"
         />
       </div>
-      <span class="text-lg font-bold tracking-tight text-base-content">
-        {brandContent.name}
-      </span>
+      <span class="text-lg font-bold tracking-tight text-base-content">{brandContent.name}</span>
     </a>
 
     <!-- Desktop Navigation Links -->
     <ul class="hidden lg:flex items-center gap-10 list-none m-0 p-0">
-      {
-        navLinks.map((link) => (
-          <li>
-            <a
-              href={link.href}
-              target={link.external ? '_blank' : undefined}
-              rel={link.external ? 'noopener noreferrer' : undefined}
-              class="text-sm font-bold text-base-content/70 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded inline-flex items-center gap-1 py-2"
-            >
-              {link.label}
-              {link.external && <ExternalLink size={12} class="opacity-50" aria-hidden="true" />}
-            </a>
-          </li>
-        ))
-      }
+      {navLinks.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            target={link.external ? '_blank' : undefined}
+            rel={link.external ? 'noopener noreferrer' : undefined}
+            class="text-sm font-bold text-base-content/70 hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded inline-flex items-center gap-1 py-2"
+          >
+            {link.label}
+            {link.external && <ExternalLink size={12} class="opacity-50" aria-hidden="true" />}
+          </a>
+        </li>
+      ))}
     </ul>
 
     <!-- Mobile Menu Button — popovertarget wires up toggling and aria-expanded natively -->
@@ -77,29 +69,25 @@ const navLinks = [
 
   <!-- Mobile Menu. No display utilities here: the popover UA style must keep it hidden when closed. -->
   <div id="mobile-menu" popover class="mobile-menu">
-    <div
-      class="bg-base-100/98 backdrop-blur-xl border border-base-300/30 rounded-3xl shadow-premium-lg p-6"
-    >
+    <div class="bg-base-100/98 backdrop-blur-xl border border-base-300/30 rounded-3xl shadow-premium-lg p-6">
       <ul class="space-y-1">
-        {
-          navLinks.map((link) => (
-            <li>
-              <a
-                href={link.href}
-                target={link.external ? '_blank' : undefined}
-                rel={link.external ? 'noopener noreferrer' : undefined}
-                class="flex items-center justify-between px-4 py-4 text-base font-bold text-base-content hover:bg-base-200/50 rounded-2xl transition-colors"
-              >
-                <span>{link.label}</span>
-                {link.external ? (
-                  <ExternalLink size={18} class="text-base-content/40" aria-hidden="true" />
-                ) : (
-                  <ArrowRight size={18} class="text-base-content/40" aria-hidden="true" />
-                )}
-              </a>
-            </li>
-          ))
-        }
+        {navLinks.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              target={link.external ? '_blank' : undefined}
+              rel={link.external ? 'noopener noreferrer' : undefined}
+              class="flex items-center justify-between px-4 py-4 text-base font-bold text-base-content hover:bg-base-200/50 rounded-2xl transition-colors"
+            >
+              <span>{link.label}</span>
+              {link.external ? (
+                <ExternalLink size={18} class="text-base-content/40" aria-hidden="true" />
+              ) : (
+                <ArrowRight size={18} class="text-base-content/40" aria-hidden="true" />
+              )}
+            </a>
+          </li>
+        ))}
       </ul>
     </div>
   </div>

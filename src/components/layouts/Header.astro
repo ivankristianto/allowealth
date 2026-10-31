@@ -55,111 +55,95 @@ const hasHeaderSlot = Astro.slots.has('header');
 const showNewTransactionButton = user != null && user.role !== 'super_admin';
 ---
 
-<header
-  class="fixed top-0 left-0 right-0 lg:left-64 lg:group-data-[sidebar-collapsed=true]:left-20 z-40 bg-base-100/95 border-b border-base-300/50 transition-[left] duration-300 ease-out"
->
+<header class="fixed top-0 left-0 right-0 lg:left-64 lg:group-data-[sidebar-collapsed=true]:left-20 z-40 bg-base-100/95 border-b border-base-300/50 transition-[left] duration-300 ease-out">
   <!-- Main header bar -->
-  <div
-    class="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-5 min-h-16 sm:min-h-20"
-  >
+  <div class="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-5 min-h-16 sm:min-h-20">
     <!-- Left side: Menu toggle + Page title + Subtitle -->
     <div class="flex items-center gap-3">
-      {
-        showMenuToggle && (
-          <Button
-            variant="ghost"
-            shape="square"
-            className="rounded-lg min-h-11 min-w-11 lg:hidden border-0"
-            data-drawer-open
-            aria-label="Open menu"
-            aria-controls="drawer-toggle"
-            aria-expanded="false"
-          >
-            <Menu size={24} class="stroke-current" aria-hidden="true" />
-          </Button>
-        )
-      }
+      {showMenuToggle && (
+        <Button
+          variant="ghost"
+          shape="square"
+          className="rounded-lg min-h-11 min-w-11 lg:hidden border-0"
+          data-drawer-open
+          aria-label="Open menu"
+          aria-controls="drawer-toggle"
+          aria-expanded="false"
+        >
+          <Menu size={24} class="stroke-current" aria-hidden="true" />
+        </Button>
+      )}
       <div>
-        {
-          userName ? (
-            <>
-              <h1 class="sr-only">{title}</h1>
-              <GreetingHeader userName={userName} currentDate={currentDate} />
-            </>
-          ) : (
-            <>
-              <h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-primary leading-none">
-                {title}
-              </h1>
-              {subtitle && (
-                <p
-                  class="text-base font-medium text-base-content/70 mt-1 sm:mt-2 leading-tight"
-                  data-header-subtitle
-                >
-                  {subtitle}
-                </p>
-              )}
-            </>
-          )
-        }
+        {userName ? (
+          <>
+            <h1 class="sr-only">{title}</h1>
+            <GreetingHeader userName={userName} currentDate={currentDate} />
+          </>
+        ) : (
+          <>
+            <h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-primary leading-none">
+              {title}
+            </h1>
+            {subtitle && (
+              <p
+                class="text-base font-medium text-base-content/70 mt-1 sm:mt-2 leading-tight"
+                data-header-subtitle
+              >
+                {subtitle}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
 
     <!-- Right side: Header slot content (desktop) + New Entry button -->
     <div class="flex items-center gap-3 sm:gap-5">
       {/* Header slot content inline on desktop (e.g., PeriodNavigator) */}
-      {
-        hasHeaderSlot && (
-          <div class="hidden lg:block" data-header-slot-desktop>
-            <slot name="header" />
-          </div>
-        )
-      }
+      {hasHeaderSlot && (
+        <div class="hidden lg:block" data-header-slot-desktop>
+          <slot name="header" />
+        </div>
+      )}
 
       {/* Currency Switcher */}
-      {
-        primaryCurrency && (
-          <CurrencySwitcher
-            primaryCurrency={primaryCurrency}
-            secondaryCurrency={secondaryCurrency ?? null}
-          />
-        )
-      }
+      {primaryCurrency && (
+        <CurrencySwitcher
+          primaryCurrency={primaryCurrency}
+          secondaryCurrency={secondaryCurrency ?? null}
+        />
+      )}
 
       {/* TODO: Re-enable when notification system is implemented */}
       {/* <NotificationDropdown /> */}
 
-      {
-        showNewTransactionButton && (
-          <div class="hidden lg:block">
-            <Button
-              id="bulk-entry-button"
-              data-open-transaction-drawer
-              variant="accent"
-              size="md"
-              className="px-6 active:scale-95"
-              aria-label="New Transaction"
-            >
-              <Plus size={20} class="stroke-current" aria-hidden="true" />
-              <span class="text-sm">New Transaction</span>
-            </Button>
-          </div>
-        )
-      }
+      {showNewTransactionButton && (
+        <div class="hidden lg:block">
+          <Button
+            id="bulk-entry-button"
+            data-open-transaction-drawer
+            variant="accent"
+            size="md"
+            className="px-6 active:scale-95"
+            aria-label="New Transaction"
+          >
+            <Plus size={20} class="stroke-current" aria-hidden="true" />
+            <span class="text-sm">New Transaction</span>
+          </Button>
+        </div>
+      )}
     </div>
   </div>
 
   {/* Header slot content below main bar on mobile/tablet */}
-  {
-    hasHeaderSlot && (
-      <div
-        class="flex flex-wrap items-center justify-start gap-3 px-4 sm:px-6 pb-3 lg:hidden"
-        data-header-slot-mobile
-      >
-        <slot name="header" />
-      </div>
-    )
-  }
+  {hasHeaderSlot && (
+    <div
+      class="flex flex-wrap items-center justify-start gap-3 px-4 sm:px-6 pb-3 lg:hidden"
+      data-header-slot-mobile
+    >
+      <slot name="header" />
+    </div>
+  )}
 </header>
 
 <script>

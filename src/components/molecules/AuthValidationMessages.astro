@@ -76,19 +76,17 @@ const IconComponent = iconMap[type] || CircleCheck;
 <div role="alert" class:list={['alert', config.alertClass]}>
   <IconComponent size={24} class="shrink-0" aria-hidden="true" />
   <span>{displayMessage}</span>
-  {
-    dismissible && (
-      <Button
-        variant="ghost"
-        size="sm"
-        shape="circle"
-        className="border-0"
-        aria-label="Dismiss message"
-      >
-        <X size={16} class="stroke-current" aria-hidden="true" />
-      </Button>
-    )
-  }
+  {dismissible && (
+    <Button
+      variant="ghost"
+      size="sm"
+      shape="circle"
+      className="border-0"
+      aria-label="Dismiss message"
+    >
+      <X size={16} class="stroke-current" aria-hidden="true" />
+    </Button>
+  )}
 </div>
 
 <style>

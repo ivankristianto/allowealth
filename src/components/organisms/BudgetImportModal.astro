@@ -31,9 +31,7 @@ const { id, month, year, currency } = Astro.props;
     <div class="space-y-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent">
           <Upload size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div>
@@ -103,8 +101,7 @@ const { id, month, year, currency } = Astro.props;
         class="hidden alert alert-error text-sm rounded-xl"
         role="alert"
         aria-live="polite"
-      >
-      </div>
+      ></div>
 
       {/* Hidden form data */}
       <input type="hidden" data-import-month value={month} />

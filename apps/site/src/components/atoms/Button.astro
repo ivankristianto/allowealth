@@ -97,29 +97,27 @@ const buttonClasses = [
   .join(' ');
 ---
 
-{
-  href ? (
-    <a
-      class={buttonClasses}
-      id={id || undefined}
-      href={href}
-      aria-disabled={disabled || undefined}
-      data-testid={dataTestId || undefined}
-      data-astro-reload={dataAstroReload ? true : undefined}
-      {...rest}
-    >
-      <slot />
-    </a>
-  ) : (
-    <button
-      class={buttonClasses}
-      id={id || undefined}
-      disabled={disabled}
-      type={type}
-      data-testid={dataTestId || undefined}
-      {...rest}
-    >
-      <slot />
-    </button>
-  )
-}
+{href ? (
+  <a
+    class={buttonClasses}
+    id={id || undefined}
+    href={href}
+    aria-disabled={disabled || undefined}
+    data-testid={dataTestId || undefined}
+    data-astro-reload={dataAstroReload ? true : undefined}
+    {...rest}
+  >
+    <slot />
+  </a>
+) : (
+  <button
+    class={buttonClasses}
+    id={id || undefined}
+    disabled={disabled}
+    type={type}
+    data-testid={dataTestId || undefined}
+    {...rest}
+  >
+    <slot />
+  </button>
+)}

@@ -50,37 +50,197 @@ function daySuffix(day: number): string {
   {/* Filter bar */}
   <RecurringTemplateFilterBar type={type} search={search} />
 
-  {
-    templates.length === 0 ? (
-      <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-        <EmptyState
-          title="No recurring transactions found"
-          message={
-            search
-              ? `No results for "${search}".`
-              : 'Set up recurring bills or income to automate your tracking.'
-          }
-          iconName="receipt"
-          variant="centered"
-        />
-      </div>
-    ) : (
-      <>
-        <div class="space-y-2.5 md:hidden">
-          {templates.map((template) => {
-            const payload = JSON.stringify(template);
-            const isExpense = template.type === 'expense';
+  {templates.length === 0 ? (
+    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <EmptyState
+        title="No recurring transactions found"
+        message={
+          search
+            ? `No results for "${search}".`
+            : 'Set up recurring bills or income to automate your tracking.'
+        }
+        iconName="receipt"
+        variant="centered"
+      />
+    </div>
+  ) : (
+    <>
+      <div class="space-y-2.5 md:hidden">
+        {templates.map((template) => {
+          const payload = JSON.stringify(template);
+          const isExpense = template.type === 'expense';
 
-            return (
-              <article
-                class="rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm"
-                data-testid="recurring-template-row"
-                {...(template.status === 'paused'
-                  ? { 'aria-describedby': `desc-${template.id}` }
-                  : {})}
+          return (
+            <article
+              class="rounded-2xl border border-base-300 bg-base-100 px-3 py-3 shadow-sm"
+              data-testid="recurring-template-row"
+              {...(template.status === 'paused'
+                ? { 'aria-describedby': `desc-${template.id}` }
+                : {})}
+            >
+              <div class="flex items-start gap-2.5">
+                <div class="min-w-0 flex-1 space-y-2">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span
+                      class:list={[
+                        'badge badge-sm font-bold',
+                        isExpense ? 'badge-error' : 'badge-success',
+                      ]}
+                    >
+                      {isExpense ? 'Expense' : 'Income'}
+                    </span>
+                    <span class={`badge badge-sm font-bold ${statusClassMap[template.status]}`}>
+                      {template.status}
+                    </span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <p class="truncate text-sm font-semibold text-base-content">{template.name}</p>
+                    <p class="text-xs text-base-content/70">
+                      Category {template.category.name} · Account {template.account.name}
+                    </p>
+                  </div>
+
+                  <p class:list={['text-sm font-bold', isExpense ? 'text-error' : 'text-success']}>
+                    {formatCurrency(template.amount, template.currency)}
+                  </p>
+                  <p class="text-xs text-base-content/70">
+                    Every {daySuffix(template.day_of_month)} ·{' '}
+                    {template.nextDueDate
+                      ? `Next due ${template.nextDueDate}`
+                      : 'No upcoming due date'}
+                  </p>
+                </div>
+
+                <div class="dropdown dropdown-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    shape="square"
+                    tabindex={0}
+                    className="h-11 min-h-11 w-11 min-w-11 rounded-lg border-0"
+                    aria-label={`Actions for ${template.name}`}
+                  >
+                    <EllipsisVertical size={14} aria-hidden="true" />
+                  </Button>
+                  <ul
+                    tabindex={0}
+                    class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+                  >
+                    <li>
+                      <button
+                        type="button"
+                        class="rounded-xl"
+                        data-template-action="edit"
+                        data-template={payload}
+                      >
+                        <Pencil size={14} aria-hidden="true" />
+                        Edit
+                      </button>
+                    </li>
+                    {template.status === 'active' ? (
+                      <li>
+                        <button
+                          type="button"
+                          class="rounded-xl"
+                          data-template-action="pause"
+                          data-template-id={template.id}
+                        >
+                          <Pause size={14} aria-hidden="true" />
+                          Pause
+                        </button>
+                      </li>
+                    ) : template.status === 'paused' ? (
+                      <li>
+                        <span id={`desc-${template.id}`} class="sr-only">
+                          Excluded from totals while paused
+                        </span>
+                        <button
+                          type="button"
+                          class="rounded-xl"
+                          data-template-action="resume"
+                          data-template-id={template.id}
+                        >
+                          <Play size={14} aria-hidden="true" />
+                          Resume
+                        </button>
+                      </li>
+                    ) : null}
+                    {template.status !== 'cancelled' && template.status !== 'completed' && (
+                      <li>
+                        <button
+                          type="button"
+                          class="rounded-xl text-error"
+                          data-template-action="cancel"
+                          data-template-id={template.id}
+                          data-template-name={template.name}
+                        >
+                          <Ban size={14} aria-hidden="true" />
+                          Cancel
+                        </button>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <div class="hidden overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm md:block">
+        <table class="table table-md table-zebra">
+          <caption class="sr-only">
+            Recurring list with type, status, amount, schedule, and actions.
+          </caption>
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
               >
-                <div class="flex items-start gap-2.5">
-                  <div class="min-w-0 flex-1 space-y-2">
+                Type & Status
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Transaction
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Amount
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Schedule
+              </th>
+              <th
+                scope="col"
+                class="text-xs font-bold uppercase tracking-wider text-base-content/70"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {templates.map((template) => {
+              const payload = JSON.stringify(template);
+              const isExpense = template.type === 'expense';
+
+              return (
+                <tr
+                  data-testid="recurring-template-row"
+                  {...(template.status === 'paused'
+                    ? { 'aria-describedby': `status-${template.id}` }
+                    : {})}
+                >
+                  <td>
                     <div class="flex flex-wrap items-center gap-1.5">
                       <span
                         class:list={[
@@ -94,291 +254,122 @@ function daySuffix(day: number): string {
                         {template.status}
                       </span>
                     </div>
-
+                  </td>
+                  <td>
                     <div class="space-y-1">
-                      <p class="truncate text-sm font-semibold text-base-content">
-                        {template.name}
-                      </p>
-                      <p class="text-xs text-base-content/70">
+                      <p class="font-semibold text-base-content">{template.name}</p>
+                      <p class="text-xs text-base-content/60">
                         Category {template.category.name} · Account {template.account.name}
                       </p>
                     </div>
-
-                    <p
+                  </td>
+                  <td>
+                    <span
                       class:list={['text-sm font-bold', isExpense ? 'text-error' : 'text-success']}
                     >
                       {formatCurrency(template.amount, template.currency)}
-                    </p>
-                    <p class="text-xs text-base-content/70">
-                      Every {daySuffix(template.day_of_month)} ·{' '}
-                      {template.nextDueDate
-                        ? `Next due ${template.nextDueDate}`
-                        : 'No upcoming due date'}
-                    </p>
-                  </div>
-
-                  <div class="dropdown dropdown-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      shape="square"
-                      tabindex={0}
-                      className="h-11 min-h-11 w-11 min-w-11 rounded-lg border-0"
-                      aria-label={`Actions for ${template.name}`}
-                    >
-                      <EllipsisVertical size={14} aria-hidden="true" />
-                    </Button>
-                    <ul
-                      tabindex={0}
-                      class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
-                    >
-                      <li>
-                        <button
-                          type="button"
-                          class="rounded-xl"
-                          data-template-action="edit"
-                          data-template={payload}
-                        >
-                          <Pencil size={14} aria-hidden="true" />
-                          Edit
-                        </button>
-                      </li>
-                      {template.status === 'active' ? (
-                        <li>
-                          <button
-                            type="button"
-                            class="rounded-xl"
-                            data-template-action="pause"
-                            data-template-id={template.id}
-                          >
-                            <Pause size={14} aria-hidden="true" />
-                            Pause
-                          </button>
-                        </li>
-                      ) : template.status === 'paused' ? (
-                        <li>
-                          <span id={`desc-${template.id}`} class="sr-only">
-                            Excluded from totals while paused
-                          </span>
-                          <button
-                            type="button"
-                            class="rounded-xl"
-                            data-template-action="resume"
-                            data-template-id={template.id}
-                          >
-                            <Play size={14} aria-hidden="true" />
-                            Resume
-                          </button>
-                        </li>
-                      ) : null}
-                      {template.status !== 'cancelled' && template.status !== 'completed' && (
-                        <li>
-                          <button
-                            type="button"
-                            class="rounded-xl text-error"
-                            data-template-action="cancel"
-                            data-template-id={template.id}
-                            data-template-name={template.name}
-                          >
-                            <Ban size={14} aria-hidden="true" />
-                            Cancel
-                          </button>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
-        <div class="hidden overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm md:block">
-          <table class="table table-md table-zebra">
-            <caption class="sr-only">
-              Recurring list with type, status, amount, schedule, and actions.
-            </caption>
-            <thead>
-              <tr>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Type & Status
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Transaction
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Amount
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Schedule
-                </th>
-                <th
-                  scope="col"
-                  class="text-xs font-bold uppercase tracking-wider text-base-content/70"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map((template) => {
-                const payload = JSON.stringify(template);
-                const isExpense = template.type === 'expense';
-
-                return (
-                  <tr
-                    data-testid="recurring-template-row"
-                    {...(template.status === 'paused'
-                      ? { 'aria-describedby': `status-${template.id}` }
-                      : {})}
-                  >
-                    <td>
-                      <div class="flex flex-wrap items-center gap-1.5">
-                        <span
-                          class:list={[
-                            'badge badge-sm font-bold',
-                            isExpense ? 'badge-error' : 'badge-success',
-                          ]}
-                        >
-                          {isExpense ? 'Expense' : 'Income'}
-                        </span>
-                        <span class={`badge badge-sm font-bold ${statusClassMap[template.status]}`}>
-                          {template.status}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="space-y-1">
-                        <p class="font-semibold text-base-content">{template.name}</p>
-                        <p class="text-xs text-base-content/60">
-                          Category {template.category.name} · Account {template.account.name}
-                        </p>
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        class:list={[
-                          'text-sm font-bold',
-                          isExpense ? 'text-error' : 'text-success',
-                        ]}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="space-y-1 text-xs text-base-content/70">
+                      <p>Every {daySuffix(template.day_of_month)}</p>
+                      <p>
+                        {template.nextDueDate
+                          ? `Next due ${template.nextDueDate}`
+                          : 'No upcoming due date'}
+                      </p>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="dropdown dropdown-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        shape="square"
+                        tabindex={0}
+                        className="h-11 min-h-11 w-11 min-w-11 rounded-lg border-0"
+                        aria-label={`Actions for ${template.name}`}
                       >
-                        {formatCurrency(template.amount, template.currency)}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="space-y-1 text-xs text-base-content/70">
-                        <p>Every {daySuffix(template.day_of_month)}</p>
-                        <p>
-                          {template.nextDueDate
-                            ? `Next due ${template.nextDueDate}`
-                            : 'No upcoming due date'}
-                        </p>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="dropdown dropdown-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          shape="square"
-                          tabindex={0}
-                          className="h-11 min-h-11 w-11 min-w-11 rounded-lg border-0"
-                          aria-label={`Actions for ${template.name}`}
-                        >
-                          <EllipsisVertical size={14} aria-hidden="true" />
-                        </Button>
-                        <ul
-                          tabindex={0}
-                          class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
-                        >
+                        <EllipsisVertical size={14} aria-hidden="true" />
+                      </Button>
+                      <ul
+                        tabindex={0}
+                        class="dropdown-content z-40 menu w-40 rounded-xl border border-base-300 bg-base-100 p-2 shadow-lg"
+                      >
+                        <li>
+                          <button
+                            type="button"
+                            class="rounded-xl"
+                            data-template-action="edit"
+                            data-template={payload}
+                          >
+                            <Pencil size={14} aria-hidden="true" />
+                            Edit
+                          </button>
+                        </li>
+                        {template.status === 'active' ? (
                           <li>
                             <button
                               type="button"
                               class="rounded-xl"
-                              data-template-action="edit"
-                              data-template={payload}
+                              data-template-action="pause"
+                              data-template-id={template.id}
                             >
-                              <Pencil size={14} aria-hidden="true" />
-                              Edit
+                              <Pause size={14} aria-hidden="true" />
+                              Pause
                             </button>
                           </li>
-                          {template.status === 'active' ? (
-                            <li>
-                              <button
-                                type="button"
-                                class="rounded-xl"
-                                data-template-action="pause"
-                                data-template-id={template.id}
-                              >
-                                <Pause size={14} aria-hidden="true" />
-                                Pause
-                              </button>
-                            </li>
-                          ) : template.status === 'paused' ? (
-                            <li>
-                              <span id={`desc-${template.id}`} class="sr-only">
-                                Excluded from totals while paused
-                              </span>
-                              <button
-                                type="button"
-                                class="rounded-xl"
-                                data-template-action="resume"
-                                data-template-id={template.id}
-                              >
-                                <Play size={14} aria-hidden="true" />
-                                Resume
-                              </button>
-                            </li>
-                          ) : null}
-                          {template.status !== 'cancelled' && template.status !== 'completed' && (
-                            <li>
-                              <button
-                                type="button"
-                                class="rounded-xl text-error"
-                                data-template-action="cancel"
-                                data-template-id={template.id}
-                                data-template-name={template.name}
-                              >
-                                <Ban size={14} aria-hidden="true" />
-                                Cancel
-                              </button>
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        ) : template.status === 'paused' ? (
+                          <li>
+                            <span id={`desc-${template.id}`} class="sr-only">
+                              Excluded from totals while paused
+                            </span>
+                            <button
+                              type="button"
+                              class="rounded-xl"
+                              data-template-action="resume"
+                              data-template-id={template.id}
+                            >
+                              <Play size={14} aria-hidden="true" />
+                              Resume
+                            </button>
+                          </li>
+                        ) : null}
+                        {template.status !== 'cancelled' && template.status !== 'completed' && (
+                          <li>
+                            <button
+                              type="button"
+                              class="rounded-xl text-error"
+                              data-template-action="cancel"
+                              data-template-id={template.id}
+                              data-template-name={template.name}
+                            >
+                              <Ban size={14} aria-hidden="true" />
+                              Cancel
+                            </button>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-        {totalPages > 1 && (
-          <PaginationPartial
-            total={total}
-            limit={limit}
-            offset={(page - 1) * limit}
-            page={page}
-            totalPages={totalPages}
-            hideSummary
-          />
-        )}
-      </>
-    )
-  }
+      {totalPages > 1 && (
+        <PaginationPartial
+          total={total}
+          limit={limit}
+          offset={(page - 1) * limit}
+          page={page}
+          totalPages={totalPages}
+          hideSummary
+        />
+      )}
+    </>
+  )}
 </section>

@@ -13,8 +13,12 @@ Form controls, validation, and submission patterns.
   </FormField>
 
   <div class="card-actions justify-end gap-2 mt-6">
-    <a href="/cancel" class="btn btn-ghost">Cancel</a>
-    <Button type="submit" variant="primary">Submit</Button>
+    <a href="/cancel" class="btn btn-ghost">
+      Cancel
+    </a>
+    <Button type="submit" variant="primary">
+      Submit
+    </Button>
   </div>
 </form>
 ```
@@ -49,7 +53,9 @@ Form controls, validation, and submission patterns.
   class="select select-bordered w-full rounded-lg border border-base-300"
 >
   <option value="">Select...</option>
-  {categories.map((cat) => <option value={cat.id}>{cat.name}</option>)}
+  {categories.map((cat) => (
+    <option value={cat.id}>{cat.name}</option>
+  ))}
 </select>
 
 <!-- Textarea -->
@@ -57,7 +63,8 @@ Form controls, validation, and submission patterns.
   id="description"
   name="description"
   class="textarea textarea-bordered w-full rounded-lg border border-base-300"
-  rows="3"></textarea>
+  rows="3"
+></textarea>
 
 <!-- Checkbox -->
 <Checkbox id="recurring" name="is_recurring" checked={values.is_recurring} />
@@ -71,7 +78,9 @@ Form controls, validation, and submission patterns.
     id="type-expense"
     class="join-item btn btn-sm flex-1"
   />
-  <label for="type-expense" class="join-item btn btn-sm flex-1">Expense</label>
+  <label for="type-expense" class="join-item btn btn-sm flex-1">
+    Expense
+  </label>
   <input
     type="radio"
     name="type"
@@ -79,15 +88,21 @@ Form controls, validation, and submission patterns.
     id="type-income"
     class="join-item btn btn-sm flex-1"
   />
-  <label for="type-income" class="join-item btn btn-sm flex-1">Income</label>
+  <label for="type-income" class="join-item btn btn-sm flex-1">
+    Income
+  </label>
 </div>
 ```
 
 ## Labels
 
 ```astro
-<Label htmlFor="field" required>Field Name</Label>
-<Label htmlFor="field" helpText="Help text">Field Name</Label>
+<Label htmlFor="field" required>
+  Field Name
+</Label>
+<Label htmlFor="field" helpText="Help text">
+  Field Name
+</Label>
 ```
 
 ## Validation

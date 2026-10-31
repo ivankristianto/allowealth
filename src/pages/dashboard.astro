@@ -192,64 +192,60 @@ const spendingCategories =
     data-testid="dashboard-page"
   >
     <!-- Error State -->
-    {
-      error && (
-        <DashboardError
-          message="Unable to load dashboard data. Please try again."
-          details={import.meta.env.DEV ? error.message : undefined}
-        />
-      )
-    }
+    {error && (
+      <DashboardError
+        message="Unable to load dashboard data. Please try again."
+        details={import.meta.env.DEV ? error.message : undefined}
+      />
+    )}
 
     {/* MFA Encouragement Banner (shown when MFA not enabled and onboarding is complete) */}
     {isOnboardingComplete && !mfaEnabled && <MfaEnableBanner />}
 
     <!-- Dashboard Content (only shown when currency is set) -->
-    {
-      !error && primaryCurrency && (
-        <>
-          {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
-          <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
-            <SpendingCard
-              spent={safeParseFloat(dashboardData?.monthlySpent.total)}
-              budget={safeParseFloat(dashboardData?.monthlySpent.budget)}
-              income={safeParseFloat(dashboardData?.monthlyIncome.total)}
-              currency={selectedDetailCurrency || primaryCurrency}
-              remainingLabel={`Budget Remaining for ${currentMonthName}`}
+    {!error && primaryCurrency && (
+      <>
+        {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
+        <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
+          <SpendingCard
+            spent={safeParseFloat(dashboardData?.monthlySpent.total)}
+            budget={safeParseFloat(dashboardData?.monthlySpent.budget)}
+            income={safeParseFloat(dashboardData?.monthlyIncome.total)}
+            currency={selectedDetailCurrency || primaryCurrency}
+            remainingLabel={`Budget Remaining for ${currentMonthName}`}
+            loading={!dashboardData}
+          />
+          <SpendingChart
+            data={spendingCategories}
+            totalSpent={safeParseFloat(dashboardData?.monthlySpent.total)}
+            totalBudget={safeParseFloat(dashboardData?.monthlySpent.budget)}
+            loading={!dashboardData}
+          />
+        </div>
+
+        {/* Recent Transactions & Net Worth Widget (side by side) */}
+        <div class="grid grid-cols-1 @3xl:grid-cols-3 gap-6 @sm:gap-8">
+          <div class="@3xl:col-span-2">
+            <RecentTransactionsList
+              transactions={recentTransactions}
               loading={!dashboardData}
-            />
-            <SpendingChart
-              data={spendingCategories}
-              totalSpent={safeParseFloat(dashboardData?.monthlySpent.total)}
-              totalBudget={safeParseFloat(dashboardData?.monthlySpent.budget)}
-              loading={!dashboardData}
+              viewAllUrl="/transactions"
             />
           </div>
 
-          {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 @3xl:grid-cols-3 gap-6 @sm:gap-8">
-            <div class="@3xl:col-span-2">
-              <RecentTransactionsList
-                transactions={recentTransactions}
-                loading={!dashboardData}
-                viewAllUrl="/transactions"
-              />
-            </div>
-
-            <div class="space-y-6 @sm:space-y-8">
-              <AccountsWidget
-                accountTotals={accountTotalsByCurrency}
-                debtTotals={debtTotalsByCurrency}
-                primaryCurrency={primaryCurrency}
-                secondaryCurrency={secondaryCurrency}
-                loading={!dashboardData}
-              />
-              {dashboardData && <RecurringBillsWidget className="border border-base-300" />}
-            </div>
+          <div class="space-y-6 @sm:space-y-8">
+            <AccountsWidget
+              accountTotals={accountTotalsByCurrency}
+              debtTotals={debtTotalsByCurrency}
+              primaryCurrency={primaryCurrency}
+              secondaryCurrency={secondaryCurrency}
+              loading={!dashboardData}
+            />
+            {dashboardData && <RecurringBillsWidget className="border border-base-300" />}
           </div>
-        </>
-      )
-    }
+        </div>
+      </>
+    )}
   </div>
 </ProtectedLayout>
 

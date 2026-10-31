@@ -14,7 +14,9 @@ WCAG 2.1 AA compliance is **mandatory**.
 Always use the native `disabled` attribute on buttons and inputs. `aria-disabled` alone is not sufficient.
 
 ```astro
-<button type="button" disabled={isDisabled} aria-disabled={isDisabled}>Next</button>
+<button type="button" disabled={isDisabled} aria-disabled={isDisabled}>
+  Next
+</button>
 ```
 
 ## Semantic HTML
@@ -173,7 +175,9 @@ import { X } from '@lucide/astro';
 ### Form Field
 
 ```astro
-<label for="email">Email <span class="text-error">*</span></label>
+<label for="email">
+  Email <span class="text-error">*</span>
+</label>
 <input
   id="email"
   type="email"
@@ -182,7 +186,9 @@ import { X } from '@lucide/astro';
   aria-invalid={error}
   aria-describedby={error ? 'email-error' : undefined}
 />
-<span id="email-error" class="text-error" role="alert">{errorMessage}</span>
+<span id="email-error" class="text-error" role="alert">
+  {errorMessage}
+</span>
 ```
 
 ## Color Contrast
@@ -205,12 +211,10 @@ import { CircleAlert, Check } from '@lucide/astro';
   <CircleAlert size={16} aria-hidden="true" />
   <span>Error occurred</span>
 </div>
-
 <div class="flex items-center gap-2 text-success">
   <Check size={16} aria-hidden="true" />
   <span>Success</span>
 </div>
-
 ❌ Bad - Color only
 <span class="text-error">Error occurred</span>
 ```

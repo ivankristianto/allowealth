@@ -109,202 +109,200 @@ import Button from '@/components/atoms/Button.astro';
 ---
 
 <div class="@container">
-  {
-    loading ? (
-      <section class={cardClasses} aria-busy="true" aria-label="Loading budget summary">
-        <div class="grid grid-cols-1 @5xl:grid-cols-12 gap-8 @5xl:gap-10">
-          {/* Left: Key Metrics Skeleton */}
-          <div class="@5xl:col-span-4 flex flex-col justify-center gap-6 @5xl:gap-8">
-            <div class="flex flex-col gap-6">
-              <div>
-                <Skeleton variant="text" width="120px" height="12px" />
-                <Skeleton variant="text" width="180px" height="32px" className="mt-3" />
-              </div>
-              <div>
-                <Skeleton variant="text" width="140px" height="12px" />
-                <div class="flex items-baseline gap-2 mt-3">
-                  <Skeleton variant="text" width="160px" height="32px" />
-                  <Skeleton variant="text" width="50px" height="16px" />
-                </div>
+  {loading ? (
+    <section class={cardClasses} aria-busy="true" aria-label="Loading budget summary">
+      <div class="grid grid-cols-1 @5xl:grid-cols-12 gap-8 @5xl:gap-10">
+        {/* Left: Key Metrics Skeleton */}
+        <div class="@5xl:col-span-4 flex flex-col justify-center gap-6 @5xl:gap-8">
+          <div class="flex flex-col gap-6">
+            <div>
+              <Skeleton variant="text" width="120px" height="12px" />
+              <Skeleton variant="text" width="180px" height="32px" className="mt-3" />
+            </div>
+            <div>
+              <Skeleton variant="text" width="140px" height="12px" />
+              <div class="flex items-baseline gap-2 mt-3">
+                <Skeleton variant="text" width="160px" height="32px" />
+                <Skeleton variant="text" width="50px" height="16px" />
               </div>
             </div>
-            <Skeleton variant="rectangular" width="100%" height="56px" className="rounded-2xl" />
           </div>
+          <Skeleton variant="rectangular" width="100%" height="56px" className="rounded-2xl" />
+        </div>
 
-          {/* Right: Allocation Bar Skeleton */}
-          <div class="@5xl:col-span-8 flex flex-col justify-center gap-6 @5xl:gap-8">
-            <div class="flex justify-between items-end mb-2">
-              <Skeleton variant="text" width="120px" height="20px" />
-              <Skeleton variant="text" width="160px" height="12px" />
-            </div>
-            <Skeleton variant="rectangular" width="100%" height="24px" className="rounded-full" />
-            {/* Legend skeleton - up to 8 items (7 categories + Others) */}
-            <div class="grid grid-cols-2 @sm:grid-cols-3 @5xl:grid-cols-4 gap-3 @5xl:gap-4">
-              {Array(8)
-                .fill(0)
-                .map(() => (
-                  <div class="flex flex-col gap-1.5">
-                    <div class="flex items-center gap-2">
-                      <Skeleton variant="circular" width="8px" height="8px" />
-                      <Skeleton variant="text" width="60px" height="10px" />
-                    </div>
-                    <Skeleton variant="text" width="40px" height="12px" className="ml-4" />
+        {/* Right: Allocation Bar Skeleton */}
+        <div class="@5xl:col-span-8 flex flex-col justify-center gap-6 @5xl:gap-8">
+          <div class="flex justify-between items-end mb-2">
+            <Skeleton variant="text" width="120px" height="20px" />
+            <Skeleton variant="text" width="160px" height="12px" />
+          </div>
+          <Skeleton variant="rectangular" width="100%" height="24px" className="rounded-full" />
+          {/* Legend skeleton - up to 8 items (7 categories + Others) */}
+          <div class="grid grid-cols-2 @sm:grid-cols-3 @5xl:grid-cols-4 gap-3 @5xl:gap-4">
+            {Array(8)
+              .fill(0)
+              .map(() => (
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <Skeleton variant="circular" width="8px" height="8px" />
+                    <Skeleton variant="text" width="60px" height="10px" />
                   </div>
-                ))}
-            </div>
+                  <Skeleton variant="text" width="40px" height="12px" className="ml-4" />
+                </div>
+              ))}
           </div>
         </div>
-      </section>
-    ) : (
-      <section class={cardClasses} aria-label="Budget overview summary">
-        <div class="grid grid-cols-1 @5xl:grid-cols-12 gap-8 @5xl:gap-10 relative z-10">
-          {/* Left: Key Metrics */}
-          <div class="@5xl:col-span-4 flex flex-col justify-center gap-6 @5xl:gap-8">
-            <div class="flex flex-col gap-6">
-              {/* Total Monthly Pot */}
-              <div>
-                <StatLabel size="sm" className="uppercase tracking-widest">
-                  Allocated Budget
-                </StatLabel>
-                <p class="text-2xl @3xl:text-3xl font-bold mt-2 @3xl:mt-3 text-base-content tracking-tight leading-none">
-                  {formatCurrency(totalAllocated, currency)}
-                </p>
-              </div>
+      </div>
+    </section>
+  ) : (
+    <section class={cardClasses} aria-label="Budget overview summary">
+      <div class="grid grid-cols-1 @5xl:grid-cols-12 gap-8 @5xl:gap-10 relative z-10">
+        {/* Left: Key Metrics */}
+        <div class="@5xl:col-span-4 flex flex-col justify-center gap-6 @5xl:gap-8">
+          <div class="flex flex-col gap-6">
+            {/* Total Monthly Pot */}
+            <div>
+              <StatLabel size="sm" className="uppercase tracking-widest">
+                Allocated Budget
+              </StatLabel>
+              <p class="text-2xl @3xl:text-3xl font-bold mt-2 @3xl:mt-3 text-base-content tracking-tight leading-none">
+                {formatCurrency(totalAllocated, currency)}
+              </p>
+            </div>
 
-              {/* Aggregate Spending */}
-              <div>
-                <StatLabel size="sm" className="uppercase tracking-widest">
-                  Total Budget Spent
-                </StatLabel>
-                <div class="flex items-baseline gap-2 mt-2 @3xl:mt-3">
-                  <p
-                    class:list={[
-                      'text-2xl @3xl:text-3xl font-bold tracking-tight leading-none',
-                      spentAmountColorClass,
-                    ]}
-                  >
-                    {formatCurrency(totalSpent, currency)}
-                  </p>
-                  <span class="text-xs font-bold text-base-content/40">
-                    / {overallUsage.toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Remaining / Overbudget */}
-              <div>
-                <StatLabel size="sm" className="uppercase tracking-widest">
-                  {remainingMetric.label}
-                </StatLabel>
+            {/* Aggregate Spending */}
+            <div>
+              <StatLabel size="sm" className="uppercase tracking-widest">
+                Total Budget Spent
+              </StatLabel>
+              <div class="flex items-baseline gap-2 mt-2 @3xl:mt-3">
                 <p
                   class:list={[
-                    'text-2xl @3xl:text-3xl font-bold mt-2 @3xl:mt-3 tracking-tight leading-none',
-                    remainingMetric.tone === 'error' ? 'text-error' : 'text-success',
+                    'text-2xl @3xl:text-3xl font-bold tracking-tight leading-none',
+                    spentAmountColorClass,
                   ]}
                 >
-                  {formatCurrency(remainingMetric.value, currency)}
+                  {formatCurrency(totalSpent, currency)}
                 </p>
+                <span class="text-xs font-bold text-base-content/40">
+                  / {overallUsage.toFixed(1)}%
+                </span>
               </div>
             </div>
 
-            {/* Triage summary strip */}
-            {totalCategories > 0 && (
-              <div
+            {/* Remaining / Overbudget */}
+            <div>
+              <StatLabel size="sm" className="uppercase tracking-widest">
+                {remainingMetric.label}
+              </StatLabel>
+              <p
                 class:list={[
-                  'p-3 @3xl:p-4 rounded-xl @3xl:rounded-2xl border',
-                  overBudgetCount > 0
-                    ? 'bg-error/5 border-error/10'
-                    : 'bg-success/5 border-success/10',
+                  'text-2xl @3xl:text-3xl font-bold mt-2 @3xl:mt-3 tracking-tight leading-none',
+                  remainingMetric.tone === 'error' ? 'text-error' : 'text-success',
                 ]}
-                data-triage-strip
               >
-                {overBudgetCount > 0 ? (
-                  <div class="space-y-2">
-                    <p class="text-xs font-bold text-base-content leading-tight">
-                      <span class="text-error">{overBudgetCount}</span>
-                      <span class="text-base-content/60"> of {totalCategories} over budget</span>
-                      {criticalCount > 0 && (
-                        <span class="text-base-content/60">
-                          {' · '}
-                          <span class="text-error">{criticalCount}</span> critical
-                        </span>
-                      )}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      className="h-auto min-h-0 border-0 bg-transparent px-0 py-0 text-xs font-bold uppercase tracking-wider text-accent hover:bg-transparent hover:text-accent/80"
-                      data-overbudget-filter-toggle
-                      aria-pressed="false"
-                    >
-                      Show overbudget only
-                    </Button>
-                  </div>
-                ) : (
-                  <p class="text-xs font-bold text-success leading-tight">
-                    All categories within budget
-                  </p>
-                )}
-              </div>
-            )}
+                {formatCurrency(remainingMetric.value, currency)}
+              </p>
+            </div>
           </div>
 
-          {/* Right: Budget Allocations — collapsed on mobile/tablet, open on wide desktop */}
-          <details class="@5xl:col-span-8" data-budget-allocations>
-            <summary class="flex justify-between items-center cursor-pointer list-none @5xl:pointer-events-none select-none mb-6 @5xl:mb-8 [&::-webkit-details-marker]:hidden">
-              <h2 class="font-bold text-base-content tracking-tight text-base @5xl:text-lg leading-none">
-                Budget Allocations
-              </h2>
-              <span class="text-neutral text-xs font-bold uppercase tracking-widest @5xl:hidden">
-                Tap to expand
-              </span>
-              <StatLabel size="sm" className="uppercase tracking-widest hidden @5xl:block">
-                Total Share Distribution
-              </StatLabel>
-            </summary>
-
-            <div class="flex flex-col gap-6 @5xl:gap-8">
-              {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
-              {/* Uses displayDistribution to match legend (top 7 + Others) */}
-              <AllocationBar
-                segments={displayDistribution.map((item) => ({
-                  label: item.name,
-                  percentage: item.weight,
-                  color: item.color,
-                }))}
-                height="md"
-                ariaLabel={`Budget allocation: ${allocationDescription}`}
-              />
-
-              {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
-              <div class="grid grid-cols-2 @sm:grid-cols-3 @5xl:grid-cols-4 gap-3 @5xl:gap-4">
-                {displayDistribution.map((item) => {
-                  return (
-                    <div class="flex flex-col gap-1">
-                      <div class="flex items-center gap-2">
-                        <div
-                          class="w-2 h-2 rounded-full shrink-0"
-                          style={`background-color: ${sanitizeColor(item.color)};`}
-                          aria-hidden="true"
-                        />
-                        <span class="text-xs font-bold text-base-content/60 uppercase tracking-tight truncate">
-                          {item.name}
-                        </span>
-                      </div>
-                      <p class="text-xs font-bold text-base-content leading-none ml-4">
-                        {item.weight.toFixed(1)}%
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Triage summary strip */}
+          {totalCategories > 0 && (
+            <div
+              class:list={[
+                'p-3 @3xl:p-4 rounded-xl @3xl:rounded-2xl border',
+                overBudgetCount > 0
+                  ? 'bg-error/5 border-error/10'
+                  : 'bg-success/5 border-success/10',
+              ]}
+              data-triage-strip
+            >
+              {overBudgetCount > 0 ? (
+                <div class="space-y-2">
+                  <p class="text-xs font-bold text-base-content leading-tight">
+                    <span class="text-error">{overBudgetCount}</span>
+                    <span class="text-base-content/60"> of {totalCategories} over budget</span>
+                    {criticalCount > 0 && (
+                      <span class="text-base-content/60">
+                        {' · '}
+                        <span class="text-error">{criticalCount}</span> critical
+                      </span>
+                    )}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    className="h-auto min-h-0 border-0 bg-transparent px-0 py-0 text-xs font-bold uppercase tracking-wider text-accent hover:bg-transparent hover:text-accent/80"
+                    data-overbudget-filter-toggle
+                    aria-pressed="false"
+                  >
+                    Show overbudget only
+                  </Button>
+                </div>
+              ) : (
+                <p class="text-xs font-bold text-success leading-tight">
+                  All categories within budget
+                </p>
+              )}
             </div>
-          </details>
+          )}
         </div>
-      </section>
-    )
-  }
+
+        {/* Right: Budget Allocations — collapsed on mobile/tablet, open on wide desktop */}
+        <details class="@5xl:col-span-8" data-budget-allocations>
+          <summary class="flex justify-between items-center cursor-pointer list-none @5xl:pointer-events-none select-none mb-6 @5xl:mb-8 [&::-webkit-details-marker]:hidden">
+            <h2 class="font-bold text-base-content tracking-tight text-base @5xl:text-lg leading-none">
+              Budget Allocations
+            </h2>
+            <span class="text-neutral text-xs font-bold uppercase tracking-widest @5xl:hidden">
+              Tap to expand
+            </span>
+            <StatLabel size="sm" className="uppercase tracking-widest hidden @5xl:block">
+              Total Share Distribution
+            </StatLabel>
+          </summary>
+
+          <div class="flex flex-col gap-6 @5xl:gap-8">
+            {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
+            {/* Uses displayDistribution to match legend (top 7 + Others) */}
+            <AllocationBar
+              segments={displayDistribution.map((item) => ({
+                label: item.name,
+                percentage: item.weight,
+                color: item.color,
+              }))}
+              height="md"
+              ariaLabel={`Budget allocation: ${allocationDescription}`}
+            />
+
+            {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
+            <div class="grid grid-cols-2 @sm:grid-cols-3 @5xl:grid-cols-4 gap-3 @5xl:gap-4">
+              {displayDistribution.map((item) => {
+                return (
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-2 h-2 rounded-full shrink-0"
+                        style={`background-color: ${sanitizeColor(item.color)};`}
+                        aria-hidden="true"
+                      />
+                      <span class="text-xs font-bold text-base-content/60 uppercase tracking-tight truncate">
+                        {item.name}
+                      </span>
+                    </div>
+                    <p class="text-xs font-bold text-base-content leading-none ml-4">
+                      {item.weight.toFixed(1)}%
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  )}
 </div>
 
 <script>

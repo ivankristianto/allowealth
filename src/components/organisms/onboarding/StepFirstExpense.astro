@@ -70,8 +70,12 @@ import Button from '@/components/atoms/Button.astro';
           class="select select-bordered w-full rounded-lg border border-base-300"
           required
         >
-          <option value="" disabled selected>Pick a category</option>
-          {categories.map((cat) => <option value={cat.id}>{cat.name}</option>)}
+          <option value="" disabled selected>
+            Pick a category
+          </option>
+          {categories.map((cat) => (
+            <option value={cat.id}>{cat.name}</option>
+          ))}
         </select>
       </div>
 
@@ -85,13 +89,11 @@ import Button from '@/components/atoms/Button.astro';
           class="select select-bordered w-full rounded-lg border border-base-300"
           required
         >
-          {
-            accounts.map((acc) => (
-              <option value={acc.id} data-currency={acc.currency}>
-                {acc.name} ({acc.currency})
-              </option>
-            ))
-          }
+          {accounts.map((acc) => (
+            <option value={acc.id} data-currency={acc.currency}>
+              {acc.name} ({acc.currency})
+            </option>
+          ))}
         </select>
       </div>
     </div>
@@ -130,8 +132,7 @@ import Button from '@/components/atoms/Button.astro';
       id="expense-error"
       class="alert alert-error hidden rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error"
       role="alert"
-    >
-    </div>
+    ></div>
 
     <div class="flex justify-between gap-3 pt-2">
       <a

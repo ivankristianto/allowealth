@@ -42,28 +42,26 @@ const variantClasses: Record<string, string> = {
 const hasTitle = title && variant !== 'inline';
 ---
 
-{
-  variant === 'inline' ? (
-    <span id={id || undefined} class={variantClasses[variant] + ' ' + className} role="alert">
-      {message}
-    </span>
-  ) : (
-    <div id={id || undefined} class={variantClasses[variant] + ' ' + className} role="alert">
-      <CircleX size={24} class="shrink-0" aria-hidden="true" />
-      <div>
-        {hasTitle && <h3 class="font-bold">{title}</h3>}
-        <div class="text-xs">{message}</div>
-      </div>
-      {dismissible && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="border-0 bg-transparent hover:bg-transparent"
-          aria-label="Dismiss"
-        >
-          <X size={16} class="stroke-current" aria-hidden="true" />
-        </Button>
-      )}
+{variant === 'inline' ? (
+  <span id={id || undefined} class={variantClasses[variant] + ' ' + className} role="alert">
+    {message}
+  </span>
+) : (
+  <div id={id || undefined} class={variantClasses[variant] + ' ' + className} role="alert">
+    <CircleX size={24} class="shrink-0" aria-hidden="true" />
+    <div>
+      {hasTitle && <h3 class="font-bold">{title}</h3>}
+      <div class="text-xs">{message}</div>
     </div>
-  )
-}
+    {dismissible && (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="border-0 bg-transparent hover:bg-transparent"
+        aria-label="Dismiss"
+      >
+        <X size={16} class="stroke-current" aria-hidden="true" />
+      </Button>
+    )}
+  </div>
+)}

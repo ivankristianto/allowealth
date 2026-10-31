@@ -52,69 +52,65 @@ const isActive = (href: string) => {
   <div
     aria-hidden="true"
     class="mobile-nav-top-accent pointer-events-none absolute inset-x-0 top-0 h-px"
-  >
-  </div>
+  ></div>
   <div class="relative mx-auto grid max-w-md grid-cols-5 items-end gap-0.5">
     <div
       aria-hidden="true"
       class="mobile-nav-fab-halo pointer-events-none absolute left-1/2 top-0 h-14 w-32 -translate-x-1/2 -translate-y-5 rounded-full"
-    >
-    </div>
-    {
-      navSlots.map((item) => {
-        if (!item) {
-          return (
-            <div class="mobile-nav-fab-offset flex justify-center pointer-events-none">
-              <Button
-                variant="ghost"
-                shape="circle"
-                data-open-transaction-drawer
-                className="mobile-nav-fab-surface group pointer-events-auto size-16 border-4 border-base-100 bg-base-100 ring-1 ring-accent/30 hover:-translate-y-0.5 hover:scale-105"
-                aria-label="New Transaction"
-              >
-                <img
-                  src="/favicon.svg"
-                  alt=""
-                  class="size-9 transition-transform duration-200 group-hover:rotate-6 group-hover:scale-105"
-                  aria-hidden="true"
-                />
-              </Button>
-            </div>
-          );
-        }
-
-        const active = isActive(item.href);
+    ></div>
+    {navSlots.map((item) => {
+      if (!item) {
         return (
-          <a
-            href={item.href}
-            data-mobile-nav-href={item.href}
-            class={`group flex min-h-11 min-w-11 flex-col items-center justify-end gap-1 rounded-xl px-0.5 pt-1 text-base-content/80 no-underline transition-colors transition-transform duration-200 active:scale-95 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-              active ? 'text-accent' : ''
-            }`}
-            aria-current={active ? 'page' : undefined}
-            aria-label={item.label}
-          >
-            <span
-              class={`relative flex size-10 items-center justify-center rounded-full transition-colors duration-200 ${
-                active ? 'bg-accent/20' : 'bg-base-200 group-hover:bg-base-300'
-              }`}
+          <div class="mobile-nav-fab-offset flex justify-center pointer-events-none">
+            <Button
+              variant="ghost"
+              shape="circle"
+              data-open-transaction-drawer
+              className="mobile-nav-fab-surface group pointer-events-auto size-16 border-4 border-base-100 bg-base-100 ring-1 ring-accent/30 hover:-translate-y-0.5 hover:scale-105"
+              aria-label="New Transaction"
             >
-              <item.icon
-                size={22}
-                class={`stroke-current transition-transform duration-200 ${active ? 'scale-110' : ''}`}
+              <img
+                src="/favicon.svg"
+                alt=""
+                class="size-9 transition-transform duration-200 group-hover:rotate-6 group-hover:scale-105"
                 aria-hidden="true"
               />
-            </span>
-            <span
-              class={`mt-1 text-xs font-bold leading-none tracking-tight transition-colors duration-200 ${
-                active ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'
-              }`}
-            >
-              {item.label}
-            </span>
-          </a>
+            </Button>
+          </div>
         );
-      })
-    }
+      }
+
+      const active = isActive(item.href);
+      return (
+        <a
+          href={item.href}
+          data-mobile-nav-href={item.href}
+          class={`group flex min-h-11 min-w-11 flex-col items-center justify-end gap-1 rounded-xl px-0.5 pt-1 text-base-content/80 no-underline transition-colors transition-transform duration-200 active:scale-95 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+            active ? 'text-accent' : ''
+          }`}
+          aria-current={active ? 'page' : undefined}
+          aria-label={item.label}
+        >
+          <span
+            class={`relative flex size-10 items-center justify-center rounded-full transition-colors duration-200 ${
+              active ? 'bg-accent/20' : 'bg-base-200 group-hover:bg-base-300'
+            }`}
+          >
+            <item.icon
+              size={22}
+              class={`stroke-current transition-transform duration-200 ${active ? 'scale-110' : ''}`}
+              aria-hidden="true"
+            />
+          </span>
+          <span
+            class={`mt-1 text-xs font-bold leading-none tracking-tight transition-colors duration-200 ${
+              active ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'
+            }`}
+          >
+            {item.label}
+          </span>
+        </a>
+      );
+    })}
   </div>
 </nav>

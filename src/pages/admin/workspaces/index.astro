@@ -91,9 +91,7 @@ function buildQueryString(pageNum: number): string {
     <section aria-label="Search and filters">
       <Card compact padding="sm">
         <form method="GET" class="space-y-4">
-          <div
-            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60"
-          >
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-base-content/60">
             <SlidersHorizontal size={14} aria-hidden="true" />
             Filters
           </div>
@@ -115,8 +113,12 @@ function buildQueryString(pageNum: number): string {
               aria-label="Filter by workspace status"
             >
               <option value="">All Status</option>
-              <option value="active" selected={status === 'active'}>Active</option>
-              <option value="inactive" selected={status === 'inactive'}>Inactive</option>
+              <option value="active" selected={status === 'active'}>
+                Active
+              </option>
+              <option value="inactive" selected={status === 'inactive'}>
+                Inactive
+              </option>
             </select>
             <Button
               type="submit"
@@ -126,14 +128,12 @@ function buildQueryString(pageNum: number): string {
               Search
             </Button>
           </div>
-          {
-            hasActiveFilters && (
-              <a href="/admin/workspaces" class="btn btn-ghost rounded-lg min-h-11">
-                <X size={14} aria-hidden="true" />
-                Clear filters
-              </a>
-            )
-          }
+          {hasActiveFilters && (
+            <a href="/admin/workspaces" class="btn btn-ghost rounded-lg min-h-11">
+              <X size={14} aria-hidden="true" />
+              Clear filters
+            </a>
+          )}
         </form>
       </Card>
     </section>
@@ -150,63 +150,61 @@ function buildQueryString(pageNum: number): string {
     </section>
 
     <!-- Pagination -->
-    {
-      totalPages > 1 && (
-        <nav aria-label="Pagination">
-          <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
-            {isFirstPage ? (
-              <Button
-                variant="ghost"
-                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
-                type="button"
-                disabled
-              >
-                Previous
-              </Button>
-            ) : (
-              <a
-                href={buildQueryString(Math.max(1, page - 1))}
-                class="btn rounded-lg sm:rounded-xl min-h-11"
-              >
-                Previous
-              </a>
-            )}
-            <div class="hidden sm:flex items-center gap-2">
-              <div class="join">
-                {pageNumbers.map((p) => (
-                  <a
-                    href={buildQueryString(p)}
-                    class:list={['join-item btn rounded-lg min-h-11', { 'btn-active': p === page }]}
-                    aria-current={p === page ? 'page' : undefined}
-                  >
-                    {p}
-                  </a>
-                ))}
-              </div>
+    {totalPages > 1 && (
+      <nav aria-label="Pagination">
+        <div class="flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
+          {isFirstPage ? (
+            <Button
+              variant="ghost"
+              className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+              type="button"
+              disabled
+            >
+              Previous
+            </Button>
+          ) : (
+            <a
+              href={buildQueryString(Math.max(1, page - 1))}
+              class="btn rounded-lg sm:rounded-xl min-h-11"
+            >
+              Previous
+            </a>
+          )}
+          <div class="hidden sm:flex items-center gap-2">
+            <div class="join">
+              {pageNumbers.map((p) => (
+                <a
+                  href={buildQueryString(p)}
+                  class:list={['join-item btn rounded-lg min-h-11', { 'btn-active': p === page }]}
+                  aria-current={p === page ? 'page' : undefined}
+                >
+                  {p}
+                </a>
+              ))}
             </div>
-            <div class="sm:hidden text-sm text-base-content/70 px-2">
-              Page {page} of {totalPages}
-            </div>
-            {isLastPage ? (
-              <Button
-                variant="ghost"
-                className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
-                type="button"
-                disabled
-              >
-                Next
-              </Button>
-            ) : (
-              <a
-                href={buildQueryString(Math.min(totalPages, page + 1))}
-                class="btn rounded-lg sm:rounded-xl min-h-11"
-              >
-                Next
-              </a>
-            )}
           </div>
-        </nav>
-      )
-    }
+          <div class="sm:hidden text-sm text-base-content/70 px-2">
+            Page {page} of {totalPages}
+          </div>
+          {isLastPage ? (
+            <Button
+              variant="ghost"
+              className="rounded-lg sm:rounded-xl min-h-11 border-base-300 bg-base-100 text-base-content"
+              type="button"
+              disabled
+            >
+              Next
+            </Button>
+          ) : (
+            <a
+              href={buildQueryString(Math.min(totalPages, page + 1))}
+              class="btn rounded-lg sm:rounded-xl min-h-11"
+            >
+              Next
+            </a>
+          )}
+        </div>
+      </nav>
+    )}
   </div>
 </AdminLayout>

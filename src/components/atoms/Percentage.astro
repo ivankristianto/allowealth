@@ -78,9 +78,7 @@ const progressColor =
 
 <div class="flex flex-col gap-2">
   <span class={percentageClass}>{formattedValue}</span>
-  {
-    showBar && (
-      <progress class={`progress ${progressColor} w-full`} value={Math.min(value, 100)} max="100" />
-    )
-  }
+  {showBar && (
+    <progress class={`progress ${progressColor} w-full`} value={Math.min(value, 100)} max="100" />
+  )}
 </div>

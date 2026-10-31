@@ -139,7 +139,9 @@ const classes = ['base-classes', variant === 'primary' && 'primary-classes', cla
   .join(' ');
 ---
 
-<element class={classes}><slot /></element>
+<element class={classes}>
+  <slot />
+</element>
 ```
 
 ## Core Components
@@ -320,9 +322,15 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 - Keep `min-h-11 min-w-11` (44x44px) on ActionBar buttons to preserve tap-safe target size on mobile.
 
 ```astro
-<Button variant="primary" type="submit">Save</Button>
-<Button variant="outline" size="sm">Filter</Button>
-<Button variant="danger" onclick="confirmDelete()">Delete</Button>
+<Button variant="primary" type="submit">
+  Save
+</Button>
+<Button variant="outline" size="sm">
+  Filter
+</Button>
+<Button variant="danger" onclick="confirmDelete()">
+  Delete
+</Button>
 <Button loading={isSubmitting}>Submitting...</Button>
 ```
 
@@ -331,8 +339,12 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 import { ghostBtn, accentGhostBtn } from '@/lib/ui/action-button-classes';
 ---
 
-<button type="button" class={ghostBtn}>Secondary</button>
-<button type="button" class={accentGhostBtn}>Primary</button>
+<button type="button" class={ghostBtn}>
+  Secondary
+</button>
+<button type="button" class={accentGhostBtn}>
+  Primary
+</button>
 ```
 
 **Variants:** `primary` | `secondary` | `outline` | `ghost` | `danger` | `warning` | `success`
@@ -634,14 +646,16 @@ import { CirclePlus, Sparkles } from '@lucide/astro';
     </div>
 
     <!-- Step content (dynamically rendered) -->
-    <div id="step-content">
-      <!-- Step 1, 2, 3... -->
-    </div>
+    <div id="step-content"><!-- Step 1, 2, 3... --></div>
 
     <!-- Actions -->
     <div class="flex justify-between gap-4">
-      <button class="btn btn-ghost" data-prev>Back</button>
-      <button class="btn btn-accent" data-next>Next</button>
+      <button class="btn btn-ghost" data-prev>
+        Back
+      </button>
+      <button class="btn btn-accent" data-next>
+        Next
+      </button>
     </div>
   </div>
 </Modal>
@@ -798,7 +812,9 @@ form?.addEventListener('submit', async (e) => {
 ```astro
 <Badge variant="success">Paid</Badge>
 <Badge variant="warning">Pending</Badge>
-<Badge variant="primary" outline>New</Badge>
+<Badge variant="primary" outline>
+  New
+</Badge>
 ```
 
 ### Toast (`src/components/molecules/ToastContainer.astro`)

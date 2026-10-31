@@ -49,9 +49,7 @@ try {
     data-testid="diagnostics-page"
   >
     <section aria-label="Diagnostics summary">
-      <div
-        class="rounded-2xl border border-info/20 bg-gradient-to-r from-info/10 via-info/5 to-transparent px-4 py-4"
-      >
+      <div class="rounded-2xl border border-info/20 bg-gradient-to-r from-info/10 via-info/5 to-transparent px-4 py-4">
         <p class="text-xs font-bold uppercase tracking-wider text-info">Operations</p>
         <p class="text-sm text-base-content/70 mt-1">
           Use this page to validate runtime configuration, data layer connectivity, and cache
@@ -60,17 +58,15 @@ try {
       </div>
     </section>
 
-    {
-      error && (
-        <div class="alert alert-error rounded-xl" role="alert">
-          <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
-          <div>
-            <h3 class="font-bold">Error Loading Diagnostics</h3>
-            <p class="text-sm">{error}</p>
-          </div>
+    {error && (
+      <div class="alert alert-error rounded-xl" role="alert">
+        <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
+        <div>
+          <h3 class="font-bold">Error Loading Diagnostics</h3>
+          <p class="text-sm">{error}</p>
         </div>
-      )
-    }
+      </div>
+    )}
 
     {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
   </div>

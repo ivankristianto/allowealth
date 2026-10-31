@@ -202,17 +202,14 @@ const defaultDatePick =
         data-currency-badge
         aria-label={`Currency: ${defaultCurrency}`}
       >
-        {currencyMeta.symbol}{' '}
-        {defaultCurrency}
+        {currencyMeta.symbol} {defaultCurrency}
       </span>
     </div>
-    {
-      errors.amount && (
-        <span class="text-error text-sm mt-1" role="alert">
-          {errors.amount}
-        </span>
-      )
-    }
+    {errors.amount && (
+      <span class="text-error text-sm mt-1" role="alert">
+        {errors.amount}
+      </span>
+    )}
   </div>
 
   <!-- Title Input -->
@@ -237,88 +234,82 @@ const defaultDatePick =
       aria-required="true"
       data-testid="transaction-description-input"
     />
-    {
-      errors.title && (
-        <span class="text-error text-sm mt-1" role="alert">
-          {errors.title}
-        </span>
-      )
-    }
+    {errors.title && (
+      <span class="text-error text-sm mt-1" role="alert">
+        {errors.title}
+      </span>
+    )}
   </div>
 
   <!-- Category Chips -->
   <div class="form-control">
-    <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5"
-      >Category</span
-    >
+    <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5">
+      Category
+    </span>
     <div
       class="flex flex-wrap gap-1.5"
       role="radiogroup"
       aria-label="Category selection"
       data-category-chips
     >
-      {
-        visibleCategories.map((cat) => (
-          <button
-            type="button"
-            class:list={[
-              'px-3 py-1.5 rounded-full cursor-pointer transition-all',
-              'text-xs font-semibold',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
-              values.category_id === cat.id
-                ? 'bg-accent text-white'
-                : 'bg-base-200 text-base-content/70 hover:bg-accent/10 hover:text-accent',
-            ]}
-            data-category-chip={cat.id}
-            role="radio"
-            aria-checked={values.category_id === cat.id ? 'true' : 'false'}
-            aria-label={cat.name}
-          >
-            {cat.name}
-          </button>
-        ))
-      }
-      {
-        hasHiddenCategories && (
-          <>
-            {hiddenCategories.map((cat) => (
-              <button
-                type="button"
-                class:list={[
-                  'px-3 py-1.5 rounded-full cursor-pointer transition-all',
-                  'text-xs font-semibold',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
-                  values.category_id === cat.id
-                    ? 'bg-accent text-white'
-                    : 'bg-base-200 text-base-content/70 hover:bg-accent/10 hover:text-accent',
-                  selectedInHidden ? '' : 'hidden',
-                ]}
-                data-category-chip={cat.id}
-                data-category-overflow
-                role="radio"
-                aria-checked={values.category_id === cat.id ? 'true' : 'false'}
-                aria-label={cat.name}
-              >
-                {cat.name}
-              </button>
-            ))}
-            <Button
+      {visibleCategories.map((cat) => (
+        <button
+          type="button"
+          class:list={[
+            'px-3 py-1.5 rounded-full cursor-pointer transition-all',
+            'text-xs font-semibold',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
+            values.category_id === cat.id
+              ? 'bg-accent text-white'
+              : 'bg-base-200 text-base-content/70 hover:bg-accent/10 hover:text-accent',
+          ]}
+          data-category-chip={cat.id}
+          role="radio"
+          aria-checked={values.category_id === cat.id ? 'true' : 'false'}
+          aria-label={cat.name}
+        >
+          {cat.name}
+        </button>
+      ))}
+      {hasHiddenCategories && (
+        <>
+          {hiddenCategories.map((cat) => (
+            <button
               type="button"
-              variant="ghost"
-              className="rounded-full border-0 bg-base-300/60 px-3 py-1.5 text-xs font-semibold text-base-content/50 hover:bg-base-300 hover:text-base-content/70"
-              data-category-toggle
-              aria-expanded={selectedInHidden ? 'true' : 'false'}
-              aria-label={
-                selectedInHidden
-                  ? `Show less categories`
-                  : `Show ${hiddenCategories.length} more categories`
-              }
+              class:list={[
+                'px-3 py-1.5 rounded-full cursor-pointer transition-all',
+                'text-xs font-semibold',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
+                values.category_id === cat.id
+                  ? 'bg-accent text-white'
+                  : 'bg-base-200 text-base-content/70 hover:bg-accent/10 hover:text-accent',
+                selectedInHidden ? '' : 'hidden',
+              ]}
+              data-category-chip={cat.id}
+              data-category-overflow
+              role="radio"
+              aria-checked={values.category_id === cat.id ? 'true' : 'false'}
+              aria-label={cat.name}
             >
-              {selectedInHidden ? 'Less' : `+${hiddenCategories.length} more`}
-            </Button>
-          </>
-        )
-      }
+              {cat.name}
+            </button>
+          ))}
+          <Button
+            type="button"
+            variant="ghost"
+            className="rounded-full border-0 bg-base-300/60 px-3 py-1.5 text-xs font-semibold text-base-content/50 hover:bg-base-300 hover:text-base-content/70"
+            data-category-toggle
+            aria-expanded={selectedInHidden ? 'true' : 'false'}
+            aria-label={
+              selectedInHidden
+                ? `Show less categories`
+                : `Show ${hiddenCategories.length} more categories`
+            }
+          >
+            {selectedInHidden ? 'Less' : `+${hiddenCategories.length} more`}
+          </Button>
+        </>
+      )}
     </div>
     <!-- Hidden select for form submission -->
     <select
@@ -330,28 +321,24 @@ const defaultDatePick =
       data-testid="transaction-category-select"
     >
       <option value="">Select category...</option>
-      {
-        sortedCategories.map((cat) => (
-          <option value={cat.id} selected={cat.id === (values.category_id || '')}>
-            {cat.name}
-          </option>
-        ))
-      }
+      {sortedCategories.map((cat) => (
+        <option value={cat.id} selected={cat.id === (values.category_id || '')}>
+          {cat.name}
+        </option>
+      ))}
     </select>
-    {
-      errors.category_id && (
-        <span class="text-error text-sm mt-1" role="alert">
-          {errors.category_id}
-        </span>
-      )
-    }
+    {errors.category_id && (
+      <span class="text-error text-sm mt-1" role="alert">
+        {errors.category_id}
+      </span>
+    )}
   </div>
 
   <!-- Date Quick-Picks -->
   <div class="form-control">
-    <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5"
-      >Date</span
-    >
+    <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5">
+      Date
+    </span>
     <div class="grid grid-cols-3 gap-1" data-date-picks>
       <Button
         type="button"
@@ -393,14 +380,12 @@ const defaultDatePick =
       >
         <CalendarDays size={14} class="pointer-events-none stroke-current" aria-hidden="true" />
         <span class="pointer-events-none" data-date-label>
-          {
-            defaultDatePick === 'custom'
-              ? new Date(defaultDate + 'T00:00:00').toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                })
-              : 'Other'
-          }
+          {defaultDatePick === 'custom'
+            ? new Date(defaultDate + 'T00:00:00').toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+              })
+            : 'Other'}
         </span>
         <input
           type="date"
@@ -416,55 +401,51 @@ const defaultDatePick =
     </div>
     <!-- Hidden date input for form submission -->
     <input type="hidden" name="transaction_date" value={defaultDate} />
-    {
-      errors.transaction_date && (
-        <span class="text-error text-sm mt-1" role="alert">
-          {errors.transaction_date}
-        </span>
-      )
-    }
+    {errors.transaction_date && (
+      <span class="text-error text-sm mt-1" role="alert">
+        {errors.transaction_date}
+      </span>
+    )}
   </div>
 
   <!-- Account Select -->
-  {
-    filteredAccounts.length > 1 ? (
-      <div class="form-control">
-        <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5">
-          Account
+  {filteredAccounts.length > 1 ? (
+    <div class="form-control">
+      <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1.5">
+        Account
+      </span>
+      <select
+        id={`${formId}-account`}
+        name="account_id"
+        required
+        class:list={[
+          'select select-bordered w-full',
+          'h-10 rounded-lg border border-base-300 bg-base-100',
+          'text-sm font-medium',
+          'focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+          errors.account_id && 'select-error border-error',
+        ]}
+        aria-label="Account"
+        aria-invalid={!!errors.account_id}
+        aria-required="true"
+        data-testid="transaction-account-select"
+      >
+        {!selectedAccountId && <option value="">Select account...</option>}
+        {filteredAccounts.map((account) => (
+          <option value={account.id} selected={account.id === selectedAccountId}>
+            {account.name}
+          </option>
+        ))}
+      </select>
+      {errors.account_id && (
+        <span class="text-error text-sm mt-1" role="alert">
+          {errors.account_id}
         </span>
-        <select
-          id={`${formId}-account`}
-          name="account_id"
-          required
-          class:list={[
-            'select select-bordered w-full',
-            'h-10 rounded-lg border border-base-300 bg-base-100',
-            'text-sm font-medium',
-            'focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
-            errors.account_id && 'select-error border-error',
-          ]}
-          aria-label="Account"
-          aria-invalid={!!errors.account_id}
-          aria-required="true"
-          data-testid="transaction-account-select"
-        >
-          {!selectedAccountId && <option value="">Select account...</option>}
-          {filteredAccounts.map((account) => (
-            <option value={account.id} selected={account.id === selectedAccountId}>
-              {account.name}
-            </option>
-          ))}
-        </select>
-        {errors.account_id && (
-          <span class="text-error text-sm mt-1" role="alert">
-            {errors.account_id}
-          </span>
-        )}
-      </div>
-    ) : (
-      <input type="hidden" name="account_id" value={filteredAccounts[0]?.id || ''} />
-    )
-  }
+      )}
+    </div>
+  ) : (
+    <input type="hidden" name="account_id" value={filteredAccounts[0]?.id || ''} />
+  )}
 
   <!-- Save Button -->
   <Button

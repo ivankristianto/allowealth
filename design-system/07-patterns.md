@@ -31,7 +31,9 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
 <MainLayout title="Transactions">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-bold">Transactions</h1>
-    <Button variant="primary" href="/transactions/add">Add Transaction</Button>
+    <Button variant="primary" href="/transactions/add">
+      Add Transaction
+    </Button>
   </div>
 
   <Card className="mb-6">
@@ -95,20 +97,18 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
 
 ```astro
 <div class="space-y-3">
-  {
-    items.map(({ icon: Icon, title, subtitle, amount, currency }) => (
-      <div class="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg">
-        <div class="flex items-center gap-3">
-          <Icon size={16} class="stroke-current text-base-content/60" aria-hidden="true" />
-          <div>
-            <div class="font-medium">{title}</div>
-            <div class="text-sm text-neutral-500">{subtitle}</div>
-          </div>
+  {items.map(({ icon: Icon, title, subtitle, amount, currency }) => (
+    <div class="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg">
+      <div class="flex items-center gap-3">
+        <Icon size={16} class="stroke-current text-base-content/60" aria-hidden="true" />
+        <div>
+          <div class="font-medium">{title}</div>
+          <div class="text-sm text-neutral-500">{subtitle}</div>
         </div>
-        <Currency amount={amount} currency={currency} />
       </div>
-    ))
-  }
+      <Currency amount={amount} currency={currency} />
+    </div>
+  ))}
 </div>
 ```
 
@@ -166,8 +166,12 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
       <Input id="name" name="name" />
     </FormField>
     <div class="flex gap-2 justify-end">
-      <Button variant="secondary" onclick="close()">Cancel</Button>
-      <Button variant="primary" type="submit">Add</Button>
+      <Button variant="secondary" onclick="close()">
+        Cancel
+      </Button>
+      <Button variant="primary" type="submit">
+        Add
+      </Button>
     </div>
   </form>
 </Modal>
@@ -311,9 +315,7 @@ Toasts use CSS transitions for smooth enter/exit animations:
   }
 </script>
 
-<form onsubmit={handleSubmit}>
-  <!-- Form fields -->
-</form>
+<form onsubmit={handleSubmit}><!-- Form fields --></form>
 ```
 
 ## Loading
@@ -337,10 +339,16 @@ import Skeleton from '@/components/atoms/Skeleton.astro';
 
 ```astro
 <div class="flex items-center justify-between mt-6">
-  <div class="text-sm text-neutral-500">Showing {startItem} to {endItem} of {totalItems}</div>
+  <div class="text-sm text-neutral-500">
+    Showing {startItem} to {endItem} of {totalItems}
+  </div>
   <div class="flex gap-2">
-    <Button variant="outline" size="sm" disabled={page === 1}>Previous</Button>
-    <Button variant="outline" size="sm" disabled={page === totalPages}>Next</Button>
+    <Button variant="outline" size="sm" disabled={page === 1}>
+      Previous
+    </Button>
+    <Button variant="outline" size="sm" disabled={page === totalPages}>
+      Next
+    </Button>
   </div>
 </div>
 ```

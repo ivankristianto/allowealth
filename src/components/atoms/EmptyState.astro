@@ -82,28 +82,24 @@ const IconComponent = iconName ? iconMap[iconName] : null;
 ---
 
 <div class={containerClasses}>
-  {
-    IconComponent && (
-      <div class="mb-4" aria-hidden="true">
-        <IconComponent size={32} class="text-base-content/40" />
-      </div>
-    )
-  }
+  {IconComponent && (
+    <div class="mb-4" aria-hidden="true">
+      <IconComponent size={32} class="text-base-content/40" />
+    </div>
+  )}
   <h3 class="text-lg font-semibold mb-2 text-base-content">{title}</h3>
   <p class="text-base-content/60 mb-4 max-w-md">{message}</p>
-  {
-    actionLabel && (
-      <div>
-        <Button
-          variant="primary"
-          size="sm"
-          href={actionHref || undefined}
-          className={actionClassName}
-          {...actionAttributes}
-        >
-          {actionLabel}
-        </Button>
-      </div>
-    )
-  }
+  {actionLabel && (
+    <div>
+      <Button
+        variant="primary"
+        size="sm"
+        href={actionHref || undefined}
+        className={actionClassName}
+        {...actionAttributes}
+      >
+        {actionLabel}
+      </Button>
+    </div>
+  )}
 </div>

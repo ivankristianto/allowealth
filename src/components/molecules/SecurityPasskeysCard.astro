@@ -26,29 +26,27 @@ const { passkeys, demoMode = false } = Astro.props;
 <SecurityCard title="Passkeys" subtitle="Biometric & Hardware Keys" iconVariant="success">
   <Key slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
-  {
-    demoMode ? (
-      <span
-        slot="header-action"
-        class="text-xs text-base-content/50"
-        data-testid="passkey-demo-disabled"
-      >
-        Disabled in demo
-      </span>
-    ) : (
-      <Button
-        slot="header-action"
-        type="button"
-        variant="primary"
-        size="sm"
-        id="add-passkey-btn"
-        data-action="add-passkey"
-      >
-        <Plus size={16} class="stroke-current" aria-hidden="true" />
-        Add Passkey
-      </Button>
-    )
-  }
+  {demoMode ? (
+    <span
+      slot="header-action"
+      class="text-xs text-base-content/50"
+      data-testid="passkey-demo-disabled"
+    >
+      Disabled in demo
+    </span>
+  ) : (
+    <Button
+      slot="header-action"
+      type="button"
+      variant="primary"
+      size="sm"
+      id="add-passkey-btn"
+      data-action="add-passkey"
+    >
+      <Plus size={16} class="stroke-current" aria-hidden="true" />
+      Add Passkey
+    </Button>
+  )}
 
   <p class="text-sm text-base-content/70">
     Sign in faster and more securely with your biometric data or hardware security keys.
@@ -58,49 +56,45 @@ const { passkeys, demoMode = false } = Astro.props;
     id="passkeys-list"
     class="border border-base-300 rounded-2xl overflow-hidden divide-y divide-base-300 bg-base-100"
   >
-    {
-      passkeys.length === 0 ? (
-        <p id="passkeys-empty" class="p-4 text-sm text-base-content/50 text-center">
-          No passkeys registered yet.
-        </p>
-      ) : (
-        passkeys.map((passkey) => (
-          <div class="flex items-center justify-between gap-4 p-4" data-passkey-id={passkey.id}>
-            <div class="flex items-center gap-4">
-              <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
-                <KeyRound size={18} class="stroke-current" aria-hidden="true" />
-              </div>
-              <div>
-                <p class="text-sm font-semibold">
-                  {passkey.name || passkey.deviceType || 'Passkey'}
-                </p>
-                <p class="text-xs text-base-content/60">
-                  Added on{' '}
-                  {passkey.createdAt.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </p>
-              </div>
+    {passkeys.length === 0 ? (
+      <p id="passkeys-empty" class="p-4 text-sm text-base-content/50 text-center">
+        No passkeys registered yet.
+      </p>
+    ) : (
+      passkeys.map((passkey) => (
+        <div class="flex items-center justify-between gap-4 p-4" data-passkey-id={passkey.id}>
+          <div class="flex items-center gap-4">
+            <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
+              <KeyRound size={18} class="stroke-current" aria-hidden="true" />
             </div>
-            {!demoMode && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="border-0 text-error hover:text-error"
-                aria-label="Remove passkey"
-                data-action="delete-passkey"
-                data-passkey-id={passkey.id}
-              >
-                <Trash size={16} class="stroke-current" aria-hidden="true" />
-              </Button>
-            )}
+            <div>
+              <p class="text-sm font-semibold">{passkey.name || passkey.deviceType || 'Passkey'}</p>
+              <p class="text-xs text-base-content/60">
+                Added on{' '}
+                {passkey.createdAt.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </p>
+            </div>
           </div>
-        ))
-      )
-    }
+          {!demoMode && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="border-0 text-error hover:text-error"
+              aria-label="Remove passkey"
+              data-action="delete-passkey"
+              data-passkey-id={passkey.id}
+            >
+              <Trash size={16} class="stroke-current" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
+      ))
+    )}
   </div>
 
   <!-- Delete Confirmation Modal -->

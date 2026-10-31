@@ -27,17 +27,15 @@ export interface Props {
 const { adviceData } = Astro.props;
 ---
 
-{
-  adviceData && (
-    <BudgetAdviceBanner
-      categoryName={adviceData.categoryName}
-      status={adviceData.status}
-      amount={adviceData.amount}
-      percentageUsed={adviceData.percentageUsed}
-      ctaText="Review spending"
-      ctaUrl="/transactions"
-      show={true}
-      dismissible={true}
-    />
-  )
-}
+{adviceData && (
+  <BudgetAdviceBanner
+    categoryName={adviceData.categoryName}
+    status={adviceData.status}
+    amount={adviceData.amount}
+    percentageUsed={adviceData.percentageUsed}
+    ctaText="Review spending"
+    ctaUrl="/transactions"
+    show={true}
+    dismissible={true}
+  />
+)}

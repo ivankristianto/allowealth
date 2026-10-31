@@ -31,9 +31,7 @@ import Button from '@/components/atoms/Button.astro';
     <div slot="default" class="flex flex-col gap-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
-        <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning"
-        >
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning">
           <RefreshCw size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div class="flex-1">
@@ -46,7 +44,8 @@ import Button from '@/components/atoms/Button.astro';
             </h2>
             <span
               class="px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase bg-base-200 text-base-content/50 hidden"
-              data-modal-currency-badge></span>
+              data-modal-currency-badge
+            ></span>
           </div>
           <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
             Record a new balance for this account.
@@ -115,7 +114,8 @@ import Button from '@/components/atoms/Button.astro';
             rows="2"
             placeholder="e.g. Monthly statement update"
             class="textarea textarea-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
-            data-testid="update-value-notes-input"></textarea>
+            data-testid="update-value-notes-input"
+          ></textarea>
         </div>
 
         {/* Error message container */}
@@ -124,8 +124,7 @@ import Button from '@/components/atoms/Button.astro';
           class="hidden alert alert-error text-sm rounded-xl"
           role="alert"
           aria-live="polite"
-        >
-        </div>
+        ></div>
 
         {/* Actions */}
         <div class="flex gap-4 pt-2">

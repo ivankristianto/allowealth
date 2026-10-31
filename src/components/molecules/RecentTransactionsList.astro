@@ -42,58 +42,54 @@ const dateGroups = groupTransactionsByDate(displayTransactions);
     {/* Header inside card */}
     <div class="flex items-center justify-between px-4 pt-5 pb-3">
       <h2 class="text-lg font-bold tracking-tight leading-none">Recent Transactions</h2>
-      {
-        !loading && transactions.length > 0 && (
-          <a
-            href={viewAllUrl}
-            class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
-            aria-label="View all transactions"
-          >
-            View all
-          </a>
-        )
-      }
+      {!loading && transactions.length > 0 && (
+        <a
+          href={viewAllUrl}
+          class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
+          aria-label="View all transactions"
+        >
+          View all
+        </a>
+      )}
     </div>
 
-    {
-      loading ? (
-        // Loading skeleton
-        <div
-          class="divide-y divide-base-200"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading recent transactions"
-        >
-          {Array.from({ length: 10 }).map(() => (
-            <div class="flex items-center gap-5 p-5">
-              <Skeleton variant="rectangular" width="48px" height="48px" className="rounded-2xl" />
-              <div class="flex-1 space-y-2">
-                <Skeleton variant="rectangular" width="75%" height="16px" />
-                <Skeleton variant="rectangular" width="50%" height="12px" />
-              </div>
-              <div class="w-24 space-y-2">
-                <Skeleton variant="rectangular" width="100%" height="16px" />
-                <Skeleton variant="rectangular" width="100%" height="12px" />
-              </div>
+    {loading ? (
+      // Loading skeleton
+      <div
+        class="divide-y divide-base-200"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading recent transactions"
+      >
+        {Array.from({ length: 10 }).map(() => (
+          <div class="flex items-center gap-5 p-5">
+            <Skeleton variant="rectangular" width="48px" height="48px" className="rounded-2xl" />
+            <div class="flex-1 space-y-2">
+              <Skeleton variant="rectangular" width="75%" height="16px" />
+              <Skeleton variant="rectangular" width="50%" height="12px" />
             </div>
-          ))}
-        </div>
-      ) : displayTransactions.length === 0 ? (
-        // Empty state
-        <EmptyState
-          title="No transactions yet"
-          message="Track your first expense or income to get started."
-          iconName="plus"
-          actionLabel="Add Transaction"
-          actionHref="/transactions/add"
-          variant="compact"
-        />
-      ) : (
-        // Transactions list grouped by date
-        <div role="list" aria-label="Recent transactions">
-          <TransactionDateGroups groups={dateGroups} showActions={false} />
-        </div>
-      )
-    }
+            <div class="w-24 space-y-2">
+              <Skeleton variant="rectangular" width="100%" height="16px" />
+              <Skeleton variant="rectangular" width="100%" height="12px" />
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : displayTransactions.length === 0 ? (
+      // Empty state
+      <EmptyState
+        title="No transactions yet"
+        message="Track your first expense or income to get started."
+        iconName="plus"
+        actionLabel="Add Transaction"
+        actionHref="/transactions/add"
+        variant="compact"
+      />
+    ) : (
+      // Transactions list grouped by date
+      <div role="list" aria-label="Recent transactions">
+        <TransactionDateGroups groups={dateGroups} showActions={false} />
+      </div>
+    )}
   </Card>
 </div>

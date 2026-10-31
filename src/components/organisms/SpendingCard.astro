@@ -131,19 +131,20 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
             <Scale size={24} class="stroke-current" aria-hidden="true" />
           </IconBadge>
           <div class="min-w-0">
-            <StatLabel size="md" color="neutral">This Month</StatLabel>
+            <StatLabel size="md" color="neutral">
+              This Month
+            </StatLabel>
             <div
               id={uniqueId}
               class="flex items-baseline gap-1.5 flex-wrap mt-1.5"
               data-testid="dashboard-total-expenses"
             >
-              <span class="text-2xl @sm:text-3xl font-bold tracking-tight leading-none"
-                >{spentFormatted}</span
-              >
-              <span
-                class="text-sm @sm:text-base text-neutral font-medium tracking-normal whitespace-nowrap"
-                >/ {budgetFormatted}</span
-              >
+              <span class="text-2xl @sm:text-3xl font-bold tracking-tight leading-none">
+                {spentFormatted}
+              </span>
+              <span class="text-sm @sm:text-base text-neutral font-medium tracking-normal whitespace-nowrap">
+                / {budgetFormatted}
+              </span>
             </div>
           </div>
         </div>
@@ -163,21 +164,24 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
       </div>
 
       <p class="text-base font-medium text-neutral">
-        {remainingLabel}:{' '}
-        <span class="font-bold text-base-content">{remainingFormatted}</span>
+        {remainingLabel}: <span class="font-bold text-base-content">{remainingFormatted}</span>
       </p>
     </div>
 
     <div class="border-t border-base-300 pt-4 mt-4">
       <div class="grid grid-cols-1 @xs:grid-cols-2 gap-4">
         <div>
-          <StatLabel size="sm" color="neutral">Income</StatLabel>
+          <StatLabel size="sm" color="neutral">
+            Income
+          </StatLabel>
           <p class="text-lg font-bold text-success mt-1" data-testid="dashboard-total-income">
             {incomeFormatted}
           </p>
         </div>
         <div class="min-w-0">
-          <StatLabel size="sm" color="neutral">Net Savings</StatLabel>
+          <StatLabel size="sm" color="neutral">
+            Net Savings
+          </StatLabel>
           <p
             class:list={[
               'text-lg font-bold mt-1 truncate',

@@ -157,42 +157,34 @@ if (currentStep === 5) {
         />
 
         <div class="rounded-xl border border-base-300 bg-base-100 p-4 sm:p-6">
-          {
-            currentStep === 1 && (
-              <StepCurrency
-                currentCurrency={settings.currency}
-                currentSecondaryCurrency={settings.secondaryCurrency}
-              />
-            )
-          }
+          {currentStep === 1 && (
+            <StepCurrency
+              currentCurrency={settings.currency}
+              currentSecondaryCurrency={settings.secondaryCurrency}
+            />
+          )}
 
           {currentStep === 2 && <StepAccounts accounts={accounts} currencies={currencies} />}
 
-          {
-            currentStep === 3 && (
-              <StepIncome currencies={currencies} currentIncome={currentIncome} />
-            )
-          }
+          {currentStep === 3 && (
+            <StepIncome currencies={currencies} currentIncome={currentIncome} />
+          )}
 
-          {
-            currentStep === 4 && (
-              <StepAllocate
-                categories={expenseCategories}
-                income={monthlyIncome}
-                currencies={currencies}
-              />
-            )
-          }
+          {currentStep === 4 && (
+            <StepAllocate
+              categories={expenseCategories}
+              income={monthlyIncome}
+              currencies={currencies}
+            />
+          )}
 
-          {
-            currentStep === 5 && (
-              <StepFirstExpense
-                categories={step5Categories}
-                accounts={step5Accounts}
-                currencies={currencies}
-              />
-            )
-          }
+          {currentStep === 5 && (
+            <StepFirstExpense
+              categories={step5Categories}
+              accounts={step5Accounts}
+              currencies={currencies}
+            />
+          )}
         </div>
       </div>
     </section>

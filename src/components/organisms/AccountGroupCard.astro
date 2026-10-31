@@ -96,21 +96,17 @@ const cardClasses = [
         <h3 class="text-lg lg:text-xl font-bold text-base-content tracking-tight leading-none">
           {displayTitle}
         </h3>
-        {
-          classDescription && (
-            <div class="tooltip tooltip-right" data-tip={classDescription}>
-              <span
-                class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors cursor-help"
-                aria-label={`${displayTitle}: ${classDescription}`}
-              >
-                <Info size={14} class="stroke-current" aria-hidden="true" />
-              </span>
-            </div>
-          )
-        }
-        <span
-          class="px-2 py-0.5 bg-base-200 text-base-content/70 rounded-lg text-xs font-bold leading-none"
-        >
+        {classDescription && (
+          <div class="tooltip tooltip-right" data-tip={classDescription}>
+            <span
+              class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors cursor-help"
+              aria-label={`${displayTitle}: ${classDescription}`}
+            >
+              <Info size={14} class="stroke-current" aria-hidden="true" />
+            </span>
+          </div>
+        )}
+        <span class="px-2 py-0.5 bg-base-200 text-base-content/70 rounded-lg text-xs font-bold leading-none">
           {count}
         </span>
       </div>
@@ -120,19 +116,17 @@ const cardClasses = [
     <div class="flex items-center gap-6 lg:gap-8">
       {/* Totals - hidden on mobile */}
       <div class="text-right hidden sm:block">
-        {
-          visibleTotals.map((row, index) => (
-            <p
-              class:list={[
-                'text-sm font-bold leading-none',
-                isDebt ? 'text-error' : index === 0 ? 'text-success' : 'text-info',
-                index > 0 && 'mt-1.5',
-              ]}
-            >
-              {formatCurrency(isDebt ? -row.amount : row.amount, row.currency)}
-            </p>
-          ))
-        }
+        {visibleTotals.map((row, index) => (
+          <p
+            class:list={[
+              'text-sm font-bold leading-none',
+              isDebt ? 'text-error' : index === 0 ? 'text-success' : 'text-info',
+              index > 0 && 'mt-1.5',
+            ]}
+          >
+            {formatCurrency(isDebt ? -row.amount : row.amount, row.currency)}
+          </p>
+        ))}
       </div>
 
       {/* Expand/Collapse Icon */}

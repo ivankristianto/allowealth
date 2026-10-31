@@ -104,226 +104,222 @@ const sortableHeaderButtonClass =
 const sortableHeaderButtonRightAlignedClass = `${sortableHeaderButtonClass} justify-end text-right`;
 ---
 
-{
-  groups.length === 0 ? (
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-base-200">
-        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
-      </div>
-      <h2 class="mb-2 text-lg font-bold text-base-content">No accounts found</h2>
-      <p class="max-w-sm text-sm text-neutral">
-        Add your first account to start tracking your portfolio.
-      </p>
+{groups.length === 0 ? (
+  <div class="flex flex-col items-center justify-center py-16 text-center">
+    <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-base-200">
+      <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
     </div>
-  ) : (
-    <div class="rounded-card border border-base-300 bg-base-100 shadow-sm" data-account-table>
-      <div class="overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse text-left">
-            <thead>
-              <tr class="border-b border-base-300 bg-base-200/50">
-                <th
-                  scope="col"
-                  class="px-2 py-2.5 pl-3 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3 md:pl-5"
-                  data-sort-key="name"
-                  aria-sort="none"
-                >
-                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                    <span>Account</span>
-                    <span class="inline-flex text-base-content/20" data-sort-indicator="name">
-                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
-                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
-                      <ChevronDown
-                        size={14}
-                        data-sort-icon="desc"
-                        class="hidden"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
-                  data-sort-key="type"
-                  aria-sort="none"
-                >
-                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                    <span>Type</span>
-                    <span class="inline-flex text-base-content/20" data-sort-indicator="type">
-                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
-                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
-                      <ChevronDown
-                        size={14}
-                        data-sort-icon="desc"
-                        class="hidden"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
-                  data-sort-key="category"
-                  aria-sort="none"
-                >
-                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                    <span>Category</span>
-                    <span class="inline-flex text-base-content/20" data-sort-indicator="category">
-                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
-                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
-                      <ChevronDown
-                        size={14}
-                        data-sort-icon="desc"
-                        class="hidden"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
-                  data-sort-key="owner"
-                  aria-sort="none"
-                >
-                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                    <span>Owner</span>
-                    <span class="inline-flex text-base-content/20" data-sort-indicator="owner">
-                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
-                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
-                      <ChevronDown
-                        size={14}
-                        data-sort-icon="desc"
-                        class="hidden"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  class="px-2 py-2.5 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3"
-                  data-sort-key="balance"
-                  aria-sort="none"
-                >
-                  <button
-                    type="button"
-                    class={sortableHeaderButtonRightAlignedClass}
-                    data-sort-button
-                  >
-                    <span>Balance</span>
-                    <span class="inline-flex text-base-content/20" data-sort-indicator="balance">
-                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
-                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
-                      <ChevronDown
-                        size={14}
-                        data-sort-icon="desc"
-                        class="hidden"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
-                  data-sort-key="updated"
-                  aria-sort="none"
-                >
-                  <button type="button" class={sortableHeaderButtonClass} data-sort-button>
-                    <span>Updated</span>
-                    <span class="inline-flex text-base-content/20" data-sort-indicator="updated">
-                      <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
-                      <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
-                      <ChevronDown
-                        size={14}
-                        data-sort-icon="desc"
-                        class="hidden"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </button>
-                </th>
-                <th
-                  scope="col"
-                  class="px-2 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3"
-                >
-                  <span class="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {groups.map((group) => (
-                <>
-                  <tr
-                    class={`border-y border-base-300 ${group.colors.band}`}
-                    data-group-header={group.classKey}
-                  >
-                    <td colspan={7} class="px-2 py-2.5 md:px-3">
-                      <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex flex-wrap items-center gap-2.5">
-                          <span class={`h-7 w-1 rounded-full ${group.colors.rail}`} />
-                          <span
-                            class={`text-sm font-bold uppercase tracking-widest ${group.colors.label}`}
-                          >
-                            {group.label}
-                          </span>
-                          <span class={`text-xs ${group.colors.meta}`}>{group.subtitle}</span>
-                          <span
-                            class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badge}`}
-                          >
-                            {group.accounts.length}{' '}
-                            {group.accounts.length === 1 ? 'account' : 'accounts'}
-                          </span>
-                        </div>
-
-                        <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
-                          {group.totals.map((total, index) => (
-                            <span
-                              class={index === 0 ? 'text-base-content' : 'text-base-content/60'}
-                            >
-                              {formatGroupTotal(total.amount, total.currency, group.classKey)}
-                            </span>
-                          ))}
-                          {group.allocation.percentage > 0 && (
-                            <span
-                              class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${group.colors.badge}`}
-                            >
-                              {group.allocation.percentage}% of {primaryCurrency}
-                              {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-
-                  {group.accounts.map((account) => (
-                    <AccountTableRow
-                      id={account.id}
-                      name={account.name}
-                      type={account.type}
-                      accountClass={account.account_class}
-                      ownerUserId={account.created_by_user_id}
-                      ownerName={account.owner_name}
-                      categoryId={account.category_id}
-                      categoryName={account.category_name}
-                      currency={account.currency}
-                      balance={Number.parseFloat(account.balance || '0')}
-                      lastUpdated={new Date(account.last_updated)}
-                      isHistoricalView={isHistoricalView}
-                      isDimmed={account.currency !== primaryCurrency}
+    <h2 class="mb-2 text-lg font-bold text-base-content">No accounts found</h2>
+    <p class="max-w-sm text-sm text-neutral">
+      Add your first account to start tracking your portfolio.
+    </p>
+  </div>
+) : (
+  <div class="rounded-card border border-base-300 bg-base-100 shadow-sm" data-account-table>
+    <div class="overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-left">
+          <thead>
+            <tr class="border-b border-base-300 bg-base-200/50">
+              <th
+                scope="col"
+                class="px-2 py-2.5 pl-3 text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3 md:pl-5"
+                data-sort-key="name"
+                aria-sort="none"
+              >
+                <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                  <span>Account</span>
+                  <span class="inline-flex text-base-content/20" data-sort-indicator="name">
+                    <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                    <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                    <ChevronDown
+                      size={14}
+                      data-sort-icon="desc"
+                      class="hidden"
+                      aria-hidden="true"
                     />
-                  ))}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                data-sort-key="type"
+                aria-sort="none"
+              >
+                <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                  <span>Type</span>
+                  <span class="inline-flex text-base-content/20" data-sort-indicator="type">
+                    <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                    <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                    <ChevronDown
+                      size={14}
+                      data-sort-icon="desc"
+                      class="hidden"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                data-sort-key="category"
+                aria-sort="none"
+              >
+                <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                  <span>Category</span>
+                  <span class="inline-flex text-base-content/20" data-sort-indicator="category">
+                    <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                    <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                    <ChevronDown
+                      size={14}
+                      data-sort-icon="desc"
+                      class="hidden"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                data-sort-key="owner"
+                aria-sort="none"
+              >
+                <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                  <span>Owner</span>
+                  <span class="inline-flex text-base-content/20" data-sort-indicator="owner">
+                    <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                    <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                    <ChevronDown
+                      size={14}
+                      data-sort-icon="desc"
+                      class="hidden"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="px-2 py-2.5 text-right text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3"
+                data-sort-key="balance"
+                aria-sort="none"
+              >
+                <button
+                  type="button"
+                  class={sortableHeaderButtonRightAlignedClass}
+                  data-sort-button
+                >
+                  <span>Balance</span>
+                  <span class="inline-flex text-base-content/20" data-sort-indicator="balance">
+                    <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                    <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                    <ChevronDown
+                      size={14}
+                      data-sort-icon="desc"
+                      class="hidden"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="hidden px-2 py-2.5 text-xs font-bold uppercase tracking-widest text-base-content/40 md:table-cell md:px-3"
+                data-sort-key="updated"
+                aria-sort="none"
+              >
+                <button type="button" class={sortableHeaderButtonClass} data-sort-button>
+                  <span>Updated</span>
+                  <span class="inline-flex text-base-content/20" data-sort-indicator="updated">
+                    <ChevronsUpDown size={14} data-sort-icon="neutral" aria-hidden="true" />
+                    <ChevronUp size={14} data-sort-icon="asc" class="hidden" aria-hidden="true" />
+                    <ChevronDown
+                      size={14}
+                      data-sort-icon="desc"
+                      class="hidden"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+              </th>
+              <th
+                scope="col"
+                class="px-2 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-base-content/40 md:px-3"
+              >
+                <span class="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {groups.map((group) => (
+              <>
+                <tr
+                  class={`border-y border-base-300 ${group.colors.band}`}
+                  data-group-header={group.classKey}
+                >
+                  <td colspan={7} class="px-2 py-2.5 md:px-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div class="flex flex-wrap items-center gap-2.5">
+                        <span class={`h-7 w-1 rounded-full ${group.colors.rail}`} />
+                        <span
+                          class={`text-sm font-bold uppercase tracking-widest ${group.colors.label}`}
+                        >
+                          {group.label}
+                        </span>
+                        <span class={`text-xs ${group.colors.meta}`}>{group.subtitle}</span>
+                        <span
+                          class={`rounded-full px-2 py-0.5 text-xs font-semibold ${group.colors.badge}`}
+                        >
+                          {group.accounts.length}{' '}
+                          {group.accounts.length === 1 ? 'account' : 'accounts'}
+                        </span>
+                      </div>
+
+                      <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
+                        {group.totals.map((total, index) => (
+                          <span class={index === 0 ? 'text-base-content' : 'text-base-content/60'}>
+                            {formatGroupTotal(total.amount, total.currency, group.classKey)}
+                          </span>
+                        ))}
+                        {group.allocation.percentage > 0 && (
+                          <span
+                            class={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${group.colors.badge}`}
+                          >
+                            {group.allocation.percentage}% of {primaryCurrency}
+                            {group.allocation.onTarget && <span aria-hidden="true">&check;</span>}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                {group.accounts.map((account) => (
+                  <AccountTableRow
+                    id={account.id}
+                    name={account.name}
+                    type={account.type}
+                    accountClass={account.account_class}
+                    ownerUserId={account.created_by_user_id}
+                    ownerName={account.owner_name}
+                    categoryId={account.category_id}
+                    categoryName={account.category_name}
+                    currency={account.currency}
+                    balance={Number.parseFloat(account.balance || '0')}
+                    lastUpdated={new Date(account.last_updated)}
+                    isHistoricalView={isHistoricalView}
+                    isDimmed={account.currency !== primaryCurrency}
+                  />
+                ))}
+              </>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
-  )
-}
+  </div>
+)}

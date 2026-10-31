@@ -42,13 +42,11 @@ const {
   >
     <Search size={18} class="stroke-current" />
   </span>
-  {
-    id && (
-      <label for={id} class="sr-only">
-        {label}
-      </label>
-    )
-  }
+  {id && (
+    <label for={id} class="sr-only">
+      {label}
+    </label>
+  )}
   <input
     type="search"
     id={id}

@@ -68,13 +68,11 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
 ---
 
 <div class="form-control">
-  {
-    label && (
-      <Label htmlFor={inputId} required={required} helpText={helpText}>
-        {label}
-      </Label>
-    )
-  }
+  {label && (
+    <Label htmlFor={inputId} required={required} helpText={helpText}>
+      {label}
+    </Label>
+  )}
   <select
     id={inputId}
     name={name}
@@ -100,20 +98,16 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
     data-testid={dataTestId}
   >
     <option value="">Select account...</option>
-    {
-      accounts.map((account) => (
-        <option value={account.id} selected={account.id === value}>
-          {account.name}
-        </option>
-      ))
-    }
+    {accounts.map((account) => (
+      <option value={account.id} selected={account.id === value}>
+        {account.name}
+      </option>
+    ))}
   </select>
 
-  {
-    error && errorMessage && (
-      <span id={`${inputId}-error`} class="text-error text-sm mt-1" role="alert">
-        {errorMessage}
-      </span>
-    )
-  }
+  {error && errorMessage && (
+    <span id={`${inputId}-error`} class="text-error text-sm mt-1" role="alert">
+      {errorMessage}
+    </span>
+  )}
 </div>

@@ -41,8 +41,11 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       Set up an automatic bill or income.
     </p>
 
-    <div role="alert" class="alert alert-error hidden rounded-xl text-sm" data-template-form-error>
-    </div>
+    <div
+      role="alert"
+      class="alert alert-error hidden rounded-xl text-sm"
+      data-template-form-error
+    ></div>
 
     <label class="form-control gap-1.5">
       <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">Name</span>
@@ -81,9 +84,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
     </div>
 
     <div class="space-y-3" data-recurring-schedule-block>
-      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-        >Schedule</span
-      >
+      <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+        Schedule
+      </span>
       <div class="flex flex-wrap gap-1.5" data-frequency-presets>
         <Button
           type="button"
@@ -138,14 +141,16 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
             aria-label="Frequency"
             class="select select-bordered select-sm h-9 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
           >
-            <option value="monthly" selected>Monthly</option>
+            <option value="monthly" selected>
+              Monthly
+            </option>
             <option value="weekly">Weekly</option>
           </select>
         </div>
         <label class="form-control gap-1">
-          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40"
-            >Every</span
-          >
+          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+            Every
+          </span>
           <input
             type="number"
             name="interval_count"
@@ -157,17 +162,19 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         </label>
         <span
           class="flex h-9 items-center text-sm font-medium text-base-content/60"
-          data-frequency-unit-label>month(s)</span
+          data-frequency-unit-label
         >
+          month(s)
+        </span>
       </div>
     </div>
 
     <div class="rounded-lg border border-base-300 bg-base-100 p-3" data-recurring-amount-field>
       <div class="grid grid-cols-[1fr_auto] items-end gap-3">
         <label class="form-control gap-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-            >Amount</span
-          >
+          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+            Amount
+          </span>
           <AmountInput
             id="recurring-template-amount"
             name="amount"
@@ -179,15 +186,17 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         </label>
 
         <label class="form-control min-w-[7.5rem] gap-1.5">
-          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-            >Currency</span
-          >
+          <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+            Currency
+          </span>
           <select
             name="currency"
             class="select select-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
             required
           >
-            {currencies.map((currency) => <option value={currency}>{currency}</option>)}
+            {currencies.map((currency) => (
+              <option value={currency}>{currency}</option>
+            ))}
           </select>
         </label>
       </div>
@@ -207,13 +216,11 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         required
       >
         <option value="">Select category</option>
-        {
-          categories.map((category) => (
-            <option value={category.id} data-type={category.type}>
-              {category.name}
-            </option>
-          ))
-        }
+        {categories.map((category) => (
+          <option value={category.id} data-type={category.type}>
+            {category.name}
+          </option>
+        ))}
       </select>
     </div>
 
@@ -231,32 +238,32 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         required
       >
         <option value="">Select account</option>
-        {accounts.map((account) => <option value={account.id}>{account.name}</option>)}
+        {accounts.map((account) => (
+          <option value={account.id}>{account.name}</option>
+        ))}
       </select>
     </div>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label class="form-control gap-1.5" data-recurring-day-of-month-block>
-        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-          >Day of month</span
-        >
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Day of month
+        </span>
         <select
           name="day_of_month"
           class="select select-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
           required
         >
-          {
-            Array.from({ length: 31 }).map((_, index) => (
-              <option value={index + 1}>{index + 1}</option>
-            ))
-          }
+          {Array.from({ length: 31 }).map((_, index) => (
+            <option value={index + 1}>{index + 1}</option>
+          ))}
         </select>
       </label>
 
       <label class="form-control gap-1.5" data-recurring-start-month-block>
-        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-          >Start month</span
-        >
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Start month
+        </span>
         <div class="relative">
           <input
             type="month"
@@ -273,9 +280,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
       </label>
 
       <label class="form-control hidden gap-1.5" data-recurring-start-date-block>
-        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50"
-          >Start date</span
-        >
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Start date
+        </span>
         <div class="relative">
           <input
             type="date"
@@ -391,10 +398,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
 
         <div class="hidden space-y-3 pl-8 pt-1" data-installment-fields>
           <label class="form-control gap-1.5">
-            <span
-              class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/60"
-              >Starting occurrence number</span
-            >
+            <span class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/60">
+              Starting occurrence number
+            </span>
             <input
               type="number"
               min="1"
@@ -405,10 +411,9 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
           </label>
 
           <label class="form-control gap-1.5">
-            <span
-              class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/60"
-              >Installment label</span
-            >
+            <span class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/60">
+              Installment label
+            </span>
             <input
               name="installment_label"
               class="input input-bordered h-10 rounded-lg border border-base-300 bg-base-100 text-sm font-medium"
@@ -442,7 +447,8 @@ const defaultCurrency: Currency = isValidCurrency(currencies[0]) ? currencies[0]
         <textarea
           name="description"
           class="textarea textarea-bordered min-h-24 w-full rounded-lg border border-base-300 bg-base-100 text-sm"
-          maxlength="500"></textarea>
+          maxlength="500"
+        ></textarea>
       </div>
     </details>
 

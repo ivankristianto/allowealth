@@ -119,33 +119,31 @@ const anchorClasses = joinClasses(
 );
 ---
 
-{
-  href ? (
-    <a
-      class={anchorClasses}
-      id={id}
-      href={href}
-      aria-disabled={isDisabled}
-      aria-busy={loading}
-      data-testid={dataTestId || undefined}
-      data-astro-reload={dataAstroReload ? true : undefined}
-      {...rest}
-    >
-      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
-      <slot />
-    </a>
-  ) : (
-    <button
-      class={buttonClasses}
-      id={id}
-      disabled={isDisabled}
-      type={type}
-      aria-busy={loading}
-      data-testid={dataTestId || undefined}
-      {...rest}
-    >
-      {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
-      <slot />
-    </button>
-  )
-}
+{href ? (
+  <a
+    class={anchorClasses}
+    id={id}
+    href={href}
+    aria-disabled={isDisabled}
+    aria-busy={loading}
+    data-testid={dataTestId || undefined}
+    data-astro-reload={dataAstroReload ? true : undefined}
+    {...rest}
+  >
+    {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
+    <slot />
+  </a>
+) : (
+  <button
+    class={buttonClasses}
+    id={id}
+    disabled={isDisabled}
+    type={type}
+    aria-busy={loading}
+    data-testid={dataTestId || undefined}
+    {...rest}
+  >
+    {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
+    <slot />
+  </button>
+)}
