@@ -13,7 +13,11 @@ function trackReportRequests(page: import('@playwright/test').Page): string[] {
 }
 
 async function clickPreviousPeriod(page: import('@playwright/test').Page): Promise<void> {
-  await page.locator('[data-selector-container] [data-period-nav="prev"]').first().click();
+  // The header renders its slot twice (desktop and mobile); click the copy shown at this viewport
+  await page
+    .locator('[data-selector-container] [data-period-nav="prev"]')
+    .filter({ visible: true })
+    .click();
   await page.waitForLoadState('networkidle');
 }
 

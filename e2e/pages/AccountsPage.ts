@@ -22,6 +22,7 @@ export class AccountsPage extends BasePage {
   private readonly portfolioTotal = '[data-testid="portfolio-total"]';
   private readonly accountFormModal = '[data-testid="account-form-modal"]';
   private readonly accountDeleteModal = '[data-testid="account-delete-modal"]';
+  private readonly accountRow = '[data-account-table-row]';
 
   /**
    * Navigate to the accounts page.
@@ -31,33 +32,27 @@ export class AccountsPage extends BasePage {
   }
 
   /**
-   * Get an account item locator by account ID.
-   * @param accountId - The account ID
+   * Get an account table row by account ID.
+   * The accounts page renders the table view; the older card view stays in the DOM but hidden.
    */
   private getAccountItem(accountId: string) {
-    return this.page.locator(`[data-testid="account-item"][data-account-id="${accountId}"]`);
+    return this.page.locator(`${this.accountRow}[data-account-id="${accountId}"]`);
   }
 
   /**
-   * Get an account item locator by account name.
-   * Uses a heading element for more precise matching to avoid cross-test interference.
-   * @param name - The account name to search for
+   * Get an account table row by its exact account name.
    */
-  private getAccountItemByName(name: string) {
-    // Use heading with exact text for more precise matching
-    // This prevents finding accounts from parallel test runs with similar names
-    return this.page.locator('[data-testid="account-item"]').filter({
-      has: this.page.locator('h4', { hasText: name }),
+  getAccountItemByName(name: string): Locator {
+    return this.page.locator(this.accountRow).filter({
+      has: this.page.getByRole('link', { name, exact: true }),
     });
   }
 
   /**
-   * Get the account balance element within an account item.
-   * Uses .first() because AccountItemRow has dual mobile/desktop layouts.
-   * @param accountId - The account ID
+   * Get the account name link inside a row, which opens the account detail page.
    */
-  private getAccountBalance(accountId: string) {
-    return this.getAccountItem(accountId).locator('[data-testid="account-balance"]').first();
+  getAccountNameLink(name: string): Locator {
+    return this.getAccountItemByName(name).getByRole('link', { name, exact: true });
   }
 
   /**
@@ -295,64 +290,31 @@ export class AccountsPage extends BasePage {
 
   /**
    * Verify that an account has the expected balance.
-   * Uses .first() because AccountItemRow has dual mobile/desktop layouts
-   * with separate balance elements sharing the same data-testid.
-   *
-   * @param name - The account name
-   * @param expectedBalance - The expected balance string (formatted)
    */
   async expectAccountBalance(name: string, expectedBalance: string): Promise<void> {
     const accountItem = this.getAccountItemByName(name);
     await expect(accountItem).toBeVisible();
-
-    // Use .first() to avoid strict mode violation from dual mobile/desktop layouts
-    const balanceElement = accountItem.locator('[data-testid="account-balance"]').first();
-    await expect(balanceElement).toContainText(expectedBalance);
+    await expect(accountItem.locator('[data-testid="account-balance"]')).toContainText(
+      expectedBalance
+    );
   }
 
   /**
-   * Get the total portfolio value displayed on the page.
-   * Returns the IDR total value from the portfolio summary.
-   *
-   * @returns The portfolio total as a string
+   * Get the IDR row of the "Total Accounts" card, or '0' when the summary is not rendered.
    */
   async getPortfolioTotal(): Promise<string> {
-    // Wait for portfolio summary section to be visible
-    const portfolioSection = this.page
-      .locator('[aria-label*="Portfolio"]')
-      .or(this.page.locator('section:has-text("Total Value")'));
-
-    try {
-      await portfolioSection.first().waitFor({ state: 'visible', timeout: 5000 });
-    } catch {
-      // No portfolio section found
+    const portfolioSection = this.page.locator(this.portfolioTotal);
+    if ((await portfolioSection.count()) === 0) {
       return '0';
     }
 
-    // Look for IDR total value - it appears after "Total Value (IDR)" text
-    // Try multiple selectors for robustness
-    const idrValueLocators = [
-      // Direct data-testid
-      this.page.locator('[data-testid="portfolio-total-accounts"] p'),
-      // Text containing "Total Value (IDR)" followed by a paragraph
-      this.page.locator('text=Total Value (IDR) >> xpath=following-sibling::p'),
-      // Paragraph containing "Rp" currency format in portfolio section
-      portfolioSection.locator('p:has-text("Rp")').first(),
-    ];
-
-    for (const locator of idrValueLocators) {
-      const count = await locator.count();
-      if (count > 0) {
-        const text = await locator.first().textContent();
-        if (text && text.includes('Rp')) {
-          return text.trim();
-        }
-      }
+    const idrRow = this.page
+      .locator('[data-testid="portfolio-total-accounts"] div.flex')
+      .filter({ has: this.page.locator('span', { hasText: /^IDR$/ }) });
+    if ((await idrRow.count()) === 0) {
+      return '0';
     }
-
-    // Final fallback: Get the full portfolio section text
-    const portfolioText = await portfolioSection.first().textContent();
-    return portfolioText?.trim() ?? '0';
+    return ((await idrRow.locator('p').textContent()) ?? '0').trim();
   }
 
   /**

@@ -25,9 +25,11 @@ export class ReportsPage extends BasePage {
    * Select monthly report range.
    */
   async selectMonthlyRange(): Promise<void> {
+    // The header renders its slot twice (desktop and mobile), one hidden by CSS
     const monthlyBtn = this.page
       .locator(this.rangeMonthly)
-      .or(this.page.locator('[data-range="monthly"]'));
+      .or(this.page.locator('[data-range="monthly"]'))
+      .filter({ visible: true });
     await monthlyBtn.click();
 
     // Verify selection
@@ -39,9 +41,11 @@ export class ReportsPage extends BasePage {
    * Select yearly report range.
    */
   async selectYearlyRange(): Promise<void> {
+    // The header renders its slot twice (desktop and mobile), one hidden by CSS
     const yearlyBtn = this.page
       .locator(this.rangeYearly)
-      .or(this.page.locator('[data-range="yearly"]'));
+      .or(this.page.locator('[data-range="yearly"]'))
+      .filter({ visible: true });
     await yearlyBtn.click();
 
     // Verify selection
@@ -320,11 +324,15 @@ export class ReportsPage extends BasePage {
     await this.waitForPageLoad();
   }
 
-  /** Navigate to the Income section tab. */
+  /** Open the income report from the overview summary cards. */
   async openIncomeSection(): Promise<void> {
-    const tab = this.page.locator('[data-report-section="income"]');
-    await tab.click();
+    await this.incomeReportLink().click();
     await this.waitForPageLoad();
+  }
+
+  /** The "Income Report" action in the overview summary cards. */
+  incomeReportLink() {
+    return this.page.locator('[data-summary-cards] a', { hasText: 'Income Report' });
   }
 
   /** Click a source group row in the income source table to drill down. */
@@ -340,6 +348,11 @@ export class ReportsPage extends BasePage {
   async expectIncomeSummaryVisible(): Promise<void> {
     const summaryCards = this.page.locator('[data-summary-cards]').first();
     await expect(summaryCards).toBeVisible();
+  }
+
+  /** Verify the income source breakdown table is visible. */
+  async expectIncomeSourcesVisible(): Promise<void> {
+    await expect(this.page.locator('[data-sources-container]')).toBeVisible();
   }
 
   /** Verify income empty state is shown. */
