@@ -19,7 +19,7 @@ import {
   Shirt,
   ShoppingBasket,
   ShoppingCart,
-  Smile,
+  FaceSlightlySmiling,
   Tag,
   TrendingUp,
   Tv,
@@ -46,7 +46,7 @@ const CATEGORY_ICON_COMPONENTS: Record<string, CategoryIconComponent> = {
   plane: Plane,
   // Entertainment
   film: Film,
-  smile: Smile,
+  smile: FaceSlightlySmiling,
   tv: Tv,
   // Utilities
   zap: Zap,

@@ -6,7 +6,7 @@
  * Used for both SSR and HTML fragment responses (?_render=html).
  */
 
-import { Monitor, Trash2 } from '@lucide/astro';
+import { Monitor, Trash } from '@lucide/astro';
 import type { NormalizedSession } from '@/lib/auth/types';
 
 export interface Props {
@@ -73,7 +73,7 @@ import Button from '@/components/atoms/Button.astro';
               data-session-label={session.deviceLabel}
               aria-label={`Revoke ${session.deviceLabel}`}
             >
-              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+              <Trash size={16} class="stroke-current" aria-hidden="true" />
             </Button>
           )}
         </div>

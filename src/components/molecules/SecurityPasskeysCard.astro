@@ -6,7 +6,7 @@
  */
 import SecurityCard from '@/components/molecules/SecurityCard.astro';
 import Button from '@/components/atoms/Button.astro';
-import { Key, KeyRound, Plus, Trash2 } from '@lucide/astro';
+import { Key, KeyRound, Plus, Trash } from '@lucide/astro';
 
 interface Passkey {
   id: string;
@@ -94,7 +94,7 @@ const { passkeys, demoMode = false } = Astro.props;
                 data-action="delete-passkey"
                 data-passkey-id={passkey.id}
               >
-                <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                <Trash size={16} class="stroke-current" aria-hidden="true" />
               </Button>
             )}
           </div>

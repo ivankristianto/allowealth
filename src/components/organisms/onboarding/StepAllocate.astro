@@ -6,7 +6,7 @@
  * Pre-fills smart defaults based on income and category percentages.
  */
 
-import { ArrowLeft, ArrowRight, Pencil, Plus, Trash2 } from '@lucide/astro';
+import { ArrowLeft, ArrowRight, Pencil, Plus, Trash } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import Modal from '@/components/molecules/Modal.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
@@ -161,7 +161,7 @@ import Button from '@/components/atoms/Button.astro';
               aria-label={`Delete ${cat.name}`}
               title={`Delete ${cat.name}`}
             >
-              <Trash2 size={14} class="stroke-current" aria-hidden="true" />
+              <Trash size={14} class="stroke-current" aria-hidden="true" />
             </Button>
           </div>
         </div>

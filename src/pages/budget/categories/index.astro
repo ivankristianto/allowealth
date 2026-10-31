@@ -9,7 +9,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { categoryService } from '@/services';
 import ActionBar from '@components/molecules/ActionBar.astro';
-import { Plus, Search, Pencil, Trash2, ListPlus, ArrowLeft } from '@lucide/astro';
+import { Plus, Search, Pencil, Trash, ListPlus, ArrowLeft } from '@lucide/astro';
 import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
 import Button from '@/components/atoms/Button.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
@@ -245,7 +245,7 @@ if (searchQuery) {
                             aria-label={`Delete ${category.name} category`}
                             data-testid="category-delete-btn"
                           >
-                            <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+                            <Trash size={18} class="stroke-current" aria-hidden="true" />
                           </Button>
                         </div>
                       </td>

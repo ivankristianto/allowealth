@@ -197,7 +197,7 @@ import { X } from '@lucide/astro';
 
 ```astro
 ---
-import { CircleAlert, Check, CircleInfo } from '@lucide/astro';
+import { CircleAlert, Check } from '@lucide/astro';
 ---
 
 ✅ Good - Icon + text + color

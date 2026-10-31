@@ -19,7 +19,7 @@ import { isDemoMode } from '@/lib/demo-mode';
 import { accentGhostBtn } from '@/lib/ui/action-button-classes';
 import {
   Bell,
-  Building2,
+  BuildingComplex,
   CircleAlert,
   Clock,
   Database,
@@ -29,7 +29,7 @@ import {
   Save,
   Server,
   Settings,
-  Trash2,
+  Trash,
   UserPlus,
   Users,
   X,
@@ -343,7 +343,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                           <div class="form-control">
                             <Label>Workspace Name</Label>
                             <div class="flex h-14 items-center gap-3 rounded-lg border border-base-300 bg-base-100 py-4 px-6">
-                              <Building2
+                              <BuildingComplex
                                 size={20}
                                 class="stroke-current text-base-content/50"
                                 aria-hidden="true"
@@ -828,7 +828,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                           disabled={!isAdmin}
                           data-open-modal="clear-history-modal"
                         >
-                          <Trash2 size={14} class="stroke-current" aria-hidden="true" />
+                          <Trash size={14} class="stroke-current" aria-hidden="true" />
                           Clear History
                         </Button>
                       </div>

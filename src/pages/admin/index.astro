@@ -8,7 +8,7 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 import StatCard from '@/components/atoms/StatCard.astro';
 import Card from '@/components/atoms/Card.astro';
 import { superAdminService } from '@/services';
-import { ArrowUpRight, Building2, Users, Activity, ClipboardList } from '@lucide/astro';
+import { ArrowUpRight, BuildingComplex, Users, Activity, ClipboardList } from '@lucide/astro';
 
 const overview = await superAdminService.getPlatformOverview();
 ---
@@ -40,7 +40,7 @@ const overview = await superAdminService.getPlatformOverview();
           valueColor="text-accent"
           iconVariant="accent"
         >
-          <Building2 slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+          <BuildingComplex slot="icon" size={48} class="stroke-current" aria-hidden="true" />
         </StatCard>
 
         <StatCard
@@ -73,7 +73,7 @@ const overview = await superAdminService.getPlatformOverview();
             class="btn btn-outline rounded-lg sm:rounded-xl justify-between min-h-11"
           >
             <span class="inline-flex items-center gap-2">
-              <Building2 size={16} aria-hidden="true" />
+              <BuildingComplex size={16} aria-hidden="true" />
               Workspaces
             </span>
             <ArrowUpRight size={14} aria-hidden="true" />

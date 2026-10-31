@@ -75,7 +75,7 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
 <aside class="w-64 border-r">
   <nav class="p-4 space-y-2">
     <a href="/" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-neutral-100">
-      <Home size={16} class="stroke-current" aria-hidden="true" />
+      <House size={16} class="stroke-current" aria-hidden="true" />
       <span>Dashboard</span>
     </a>
     <a
@@ -119,10 +119,10 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
   <div>{item.title}</div>
   <div class="flex gap-2">
     <Button variant="ghost" size="sm" aria-label="Edit">
-      <Edit size={16} class="stroke-current" aria-hidden="true" />
+      <Pencil size={16} class="stroke-current" aria-hidden="true" />
     </Button>
     <Button variant="ghost" size="sm" aria-label="Delete">
-      <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+      <Trash size={16} class="stroke-current" aria-hidden="true" />
     </Button>
   </div>
 </div>
@@ -185,7 +185,7 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
 
 ```html
 <div class="alert alert-error mb-6" role="alert">
-  <AlertCircle size="{16}" class="stroke-current" aria-hidden="true" />
+  <CircleAlert size="{16}" class="stroke-current" aria-hidden="true" />
   <div>
     <div class="font-semibold">Error loading data</div>
     <div class="text-sm">Please try again</div>

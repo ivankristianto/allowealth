@@ -1,5 +1,5 @@
 ---
-import { History } from '@lucide/astro';
+import { RotateCcwClock } from '@lucide/astro';
 import { toneDotClasses, type SecurityEvent } from '@/services/audit-log.service';
 
 export interface Props {
@@ -12,7 +12,7 @@ const { events } = Astro.props;
 <section class="card bg-base-200/60 border border-base-300 shadow">
   <div class="card-body p-6 space-y-5">
     <div class="flex items-center gap-2 text-base-content/70">
-      <History size={18} class="stroke-current" aria-hidden="true" />
+      <RotateCcwClock size={18} class="stroke-current" aria-hidden="true" />
       <h3 class="text-sm font-semibold">Recent User Activities</h3>
     </div>
 
