@@ -1,6 +1,5 @@
-#!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
-
+# Checkouts still on core.hooksPath=.husky run this file without -e until bun install re-runs husky
+set -e
 echo "Running pre-commit quality gates..."
 
 # Run lint-staged on staged files only
