@@ -4,17 +4,19 @@ test.describe('Income Report Detail', () => {
   test('overview keeps filter context when opening income detail', async ({ reportsPage }) => {
     await reportsPage.goto();
     await reportsPage.selectYearlyRange();
+    // The summary cards re-render after the range change; open the link once it carries the range
+    await expect(reportsPage.incomeReportLink()).toHaveAttribute('href', /range=yearly/);
     await reportsPage.openIncomeSection();
 
     await expect(reportsPage.page).toHaveURL(/\/reports\/income\?.*range=yearly/);
     await reportsPage.expectIncomeSummaryVisible();
   });
 
-  test('income page shows summary cards and charts', async ({ reportsPage, page }) => {
+  test('income page shows summary cards and source breakdown', async ({ reportsPage, page }) => {
     await page.goto('/reports/income');
 
     await reportsPage.expectIncomeSummaryVisible();
-    await reportsPage.expectChartsVisible();
+    await reportsPage.expectIncomeSourcesVisible();
   });
 
   test('income empty state shown when no data', async ({ page, reportsPage }) => {
