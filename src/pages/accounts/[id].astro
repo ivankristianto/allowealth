@@ -360,7 +360,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
                           {tx.description || (isTransfer ? 'Transfer' : tx.type)}
                         </p>
                         <p class="mt-0.5 text-xs text-base-content/50">
-                          {formattedDate}
+                          {formattedDate}{' '}
                           {isTransfer && <span class="ml-1 text-info">(Transfer)</span>}
                         </p>
                       </div>
