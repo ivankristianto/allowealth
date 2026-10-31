@@ -675,22 +675,24 @@ test.describe('Swipe gestures on transactions page', () => {
     });
 
     test('swiping another row closes the first', async ({ page }) => {
-      const containers = page.locator('[data-swipe-container]');
-      const count = await containers.count();
-      if (count < 2) {
-        test.skip(true, 'Need at least 2 transaction rows');
-        return;
-      }
+      // Use this suite's own rows: the global first two rows depend on seed data, and the
+      // second one can sit below the fold, where elementFromPoint() finds nothing to swipe.
+      const rowContent = (index: number) =>
+        page
+          .locator('[data-swipe-container]')
+          .filter({ hasText: `Swipe E2E #${index} ${TEST_RUN_ID}` })
+          .locator('[data-swipe-content]');
+      const first = rowContent(1);
+      const second = rowContent(2);
+      await expect(first).toHaveCount(1);
+      await expect(second).toHaveCount(1);
 
-      // Swipe first row
-      const first = containers.nth(0).locator('[data-swipe-content]');
-      const box1 = await first.boundingBox();
-      if (!box1) throw new Error('First row not visible');
-
-      await page.evaluate(
-        ({ sx, sy }) => {
-          const el = document.elementFromPoint(sx, sy);
-          if (!el) return;
+      // Dispatch on the row itself so an off-screen row still receives the gesture
+      const swipeLeft = (content: typeof first) =>
+        content.evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          const sx = rect.left + rect.width / 2;
+          const sy = rect.top + rect.height / 2;
           el.dispatchEvent(
             new TouchEvent('touchstart', {
               bubbles: true,
@@ -711,42 +713,17 @@ test.describe('Swipe gestures on transactions page', () => {
               ],
             })
           );
-        },
-        { sx: box1.x + box1.width / 2, sy: box1.y + box1.height / 2 }
-      );
+        });
 
-      // Now swipe second row
-      const second = containers.nth(1).locator('[data-swipe-content]');
-      const box2 = await second.boundingBox();
-      if (!box2) throw new Error('Second row not visible');
+      await swipeLeft(first);
+      await expect
+        .poll(() => first.evaluate((el) => el.style.transform))
+        .toBe('translateX(-128px)');
 
-      await page.evaluate(
-        ({ sx, sy }) => {
-          const el = document.elementFromPoint(sx, sy);
-          if (!el) return;
-          el.dispatchEvent(
-            new TouchEvent('touchstart', {
-              bubbles: true,
-              touches: [new Touch({ identifier: 0, target: el, clientX: sx, clientY: sy })],
-            })
-          );
-          el.dispatchEvent(
-            new TouchEvent('touchmove', {
-              bubbles: true,
-              touches: [new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy })],
-            })
-          );
-          el.dispatchEvent(
-            new TouchEvent('touchend', {
-              bubbles: true,
-              changedTouches: [
-                new Touch({ identifier: 0, target: el, clientX: sx - 140, clientY: sy }),
-              ],
-            })
-          );
-        },
-        { sx: box2.x + box2.width / 2, sy: box2.y + box2.height / 2 }
-      );
+      await swipeLeft(second);
+      await expect
+        .poll(() => second.evaluate((el) => el.style.transform))
+        .toBe('translateX(-128px)');
 
       // First row should be back to original position (transform cleared or 0)
       const firstTransform = await first.evaluate((el) => el.style.transform);
