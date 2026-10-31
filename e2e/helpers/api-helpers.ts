@@ -332,6 +332,25 @@ export async function deleteCategoryViaAPI(
 }
 
 /**
+ * Set the signed-in user's theme preference via API.
+ */
+export async function setThemeViaAPI(
+  request: APIRequestContext,
+  theme: 'system' | 'light' | 'dark' | 'monochrome'
+): Promise<void> {
+  const response = await request.put(`${E2E_BASE_URL}/api/user/theme`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
+    data: { theme },
+  });
+
+  if (!response.ok()) {
+    throw new Error(`Failed to set theme: ${response.status()}`);
+  }
+}
+
+/**
  * Get all categories via API.
  * @param request - Playwright API request context
  * @param type - Optional filter by category type

@@ -1,4 +1,5 @@
 import { test, expect } from '../test.fixture';
+import { setThemeViaAPI } from '../../helpers';
 
 function isKnownAstroDevToolbarNoise(message: string): boolean {
   return (
@@ -18,6 +19,8 @@ test.describe('Profile theme preference', () => {
       }
     });
 
+    // Both projects share the demo user, and this test leaves it on the light theme
+    await setThemeViaAPI(page.request, 'system');
     await page.goto('/profile');
 
     const publicProfileHeading = page.getByRole('heading', { name: 'Public Profile' });
@@ -102,26 +105,32 @@ test.describe('Profile theme preference', () => {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(themeInput('system')).toBeChecked();
 
-    await page.getByLabel('Open user menu').click();
+    // The user menu quick-switch lives in the desktop sidebar (lg and up). Below lg the
+    // sidebar is replaced by the mobile command center, which has no theme switcher.
+    const hasDesktopSidebar = (page.viewportSize()?.width ?? 0) >= 1024;
+    if (hasDesktopSidebar) {
+      await page.getByLabel('Open user menu').click();
 
-    const themeSwitcher = page.locator('[data-theme-switcher]');
-    await expect(themeSwitcher).toBeVisible();
-    await expect(themeSwitcher.getByLabel('Switch to System theme')).toHaveClass(/text-accent/);
+      const themeSwitcher = page.locator('[data-theme-switcher]');
+      await expect(themeSwitcher).toBeVisible();
+      await expect(themeSwitcher.getByLabel('Switch to System theme')).toHaveClass(/text-accent/);
 
-    await Promise.all([
-      page.waitForResponse(
-        (response) =>
-          response.url().includes('/api/user/theme') &&
-          response.request().method() === 'PUT' &&
-          response.ok()
-      ),
-      themeSwitcher.getByLabel('Switch to Light theme').click(),
-    ]);
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes('/api/user/theme') &&
+            response.request().method() === 'PUT' &&
+            response.ok()
+        ),
+        themeSwitcher.getByLabel('Switch to Light theme').click(),
+      ]);
 
-    await expect(page.getByTestId('toast-success')).toContainText('Theme updated');
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await expect(themeInput('light')).toBeChecked();
-    await expect(themeSwitcher.getByLabel('Switch to Light theme')).toHaveClass(/text-accent/);
+      await expect(page.getByTestId('toast-success')).toContainText('Theme updated');
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+      await expect(themeInput('light')).toBeChecked();
+      await expect(themeSwitcher.getByLabel('Switch to Light theme')).toHaveClass(/text-accent/);
+    }
+
     expect(consoleErrors).toEqual([]);
   });
 });
