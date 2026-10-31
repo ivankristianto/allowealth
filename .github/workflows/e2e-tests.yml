@@ -54,7 +54,7 @@ jobs:
       - name: Setup E2E database
         run: |
           mkdir -p db
-          bun run db:push --force
+          bun run db:migrate
           bun run db:seed
 
       - name: Run E2E tests
@@ -121,7 +121,7 @@ jobs:
       - name: Setup E2E database
         run: |
           mkdir -p db
-          bun run db:push --force
+          bun run db:migrate
           bun run db:seed
 
       - name: Run critical path tests

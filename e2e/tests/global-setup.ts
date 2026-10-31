@@ -64,10 +64,10 @@ setup('reset database', async () => {
     }
   }
 
-  // Push schema to create fresh database
+  // db:push leaves __drizzle_migrations empty, so the installer's migration guard would 500 every request
   // eslint-disable-next-line no-console -- Informational output for test setup
-  console.info('📦 Pushing database schema...');
-  execSync('bun run db:push --force', {
+  console.info('📦 Migrating database schema...');
+  execSync('bun run db:migrate', {
     cwd: PROJECT_ROOT,
     env: { ...process.env, DATABASE_URL: 'db/.e2e.db' },
     stdio: 'inherit',
