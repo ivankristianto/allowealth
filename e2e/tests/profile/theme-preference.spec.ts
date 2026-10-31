@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../test.fixture';
 import { setThemeViaAPI } from '../../helpers';
 
@@ -8,19 +9,37 @@ function isKnownAstroDevToolbarNoise(message: string): boolean {
   );
 }
 
-test.describe('Profile theme preference', () => {
-  test('persists theme choices, keeps Danger Zone last, and syncs the dropdown quick-switch', async ({
-    page,
-  }) => {
-    const consoleErrors: string[] = [];
-    page.on('console', (message) => {
-      if (message.type() === 'error' && !isKnownAstroDevToolbarNoise(message.text())) {
-        consoleErrors.push(message.text());
-      }
-    });
+function collectConsoleErrors(page: Page): string[] {
+  const consoleErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !isKnownAstroDevToolbarNoise(message.text())) {
+      consoleErrors.push(message.text());
+    }
+  });
+  return consoleErrors;
+}
 
-    // Both projects share the demo user, and this test leaves it on the light theme
+function waitForThemeSave(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/user/theme') &&
+      response.request().method() === 'PUT' &&
+      response.ok()
+  );
+}
+
+test.describe('Profile theme preference', () => {
+  // Both projects share the demo user, so every test starts and ends on 'system'
+  test.beforeEach(async ({ page }) => {
     await setThemeViaAPI(page.request, 'system');
+  });
+
+  test.afterEach(async ({ page }) => {
+    await setThemeViaAPI(page.request, 'system');
+  });
+
+  test('persists theme choices and keeps Danger Zone last', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
     await page.goto('/profile');
 
     const publicProfileHeading = page.getByRole('heading', { name: 'Public Profile' });
@@ -50,12 +69,7 @@ test.describe('Profile theme preference', () => {
     await expect(themeInput('system')).toBeChecked();
 
     await Promise.all([
-      page.waitForResponse(
-        (response) =>
-          response.url().includes('/api/user/theme') &&
-          response.request().method() === 'PUT' &&
-          response.ok()
-      ),
+      waitForThemeSave(page),
       themeForm.locator('label', { hasText: 'Dark' }).click(),
     ]);
     await expect(page.getByTestId('toast-success')).toContainText('Theme updated');
@@ -69,12 +83,7 @@ test.describe('Profile theme preference', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     await Promise.all([
-      page.waitForResponse(
-        (response) =>
-          response.url().includes('/api/user/theme') &&
-          response.request().method() === 'PUT' &&
-          response.ok()
-      ),
+      waitForThemeSave(page),
       themeForm.locator('label', { hasText: 'Monochrome' }).click(),
     ]);
     await expect(themeInput('monochrome')).toBeChecked();
@@ -92,12 +101,7 @@ test.describe('Profile theme preference', () => {
     ).toBe('grayscale(100%)');
 
     await Promise.all([
-      page.waitForResponse(
-        (response) =>
-          response.url().includes('/api/user/theme') &&
-          response.request().method() === 'PUT' &&
-          response.ok()
-      ),
+      waitForThemeSave(page),
       themeForm.locator('label', { hasText: 'System' }).click(),
     ]);
     await expect(themeInput('system')).toBeChecked();
@@ -105,31 +109,35 @@ test.describe('Profile theme preference', () => {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(themeInput('system')).toBeChecked();
 
-    // The user menu quick-switch lives in the desktop sidebar (lg and up). Below lg the
-    // sidebar is replaced by the mobile command center, which has no theme switcher.
-    const hasDesktopSidebar = (page.viewportSize()?.width ?? 0) >= 1024;
-    if (hasDesktopSidebar) {
-      await page.getByLabel('Open user menu').click();
+    expect(consoleErrors).toEqual([]);
+  });
 
-      const themeSwitcher = page.locator('[data-theme-switcher]');
-      await expect(themeSwitcher).toBeVisible();
-      await expect(themeSwitcher.getByLabel('Switch to System theme')).toHaveClass(/text-accent/);
+  test('syncs the user menu quick-switch with the profile form', async ({ page, viewport }) => {
+    // Below lg the sidebar is replaced by the mobile command center, which has no theme switcher
+    test.skip((viewport?.width ?? 0) < 1024, 'quick-switch lives in the desktop sidebar');
 
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().includes('/api/user/theme') &&
-            response.request().method() === 'PUT' &&
-            response.ok()
-        ),
-        themeSwitcher.getByLabel('Switch to Light theme').click(),
-      ]);
+    const consoleErrors = collectConsoleErrors(page);
+    await page.goto('/profile');
 
-      await expect(page.getByTestId('toast-success')).toContainText('Theme updated');
-      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-      await expect(themeInput('light')).toBeChecked();
-      await expect(themeSwitcher.getByLabel('Switch to Light theme')).toHaveClass(/text-accent/);
-    }
+    const themeInput = (value: string) =>
+      page.locator('#appearances-form').locator(`input[value="${value}"]`);
+    await expect(themeInput('system')).toBeChecked();
+
+    await page.getByLabel('Open user menu').click();
+
+    const themeSwitcher = page.locator('[data-theme-switcher]');
+    await expect(themeSwitcher).toBeVisible();
+    await expect(themeSwitcher.getByLabel('Switch to System theme')).toHaveClass(/text-accent/);
+
+    await Promise.all([
+      waitForThemeSave(page),
+      themeSwitcher.getByLabel('Switch to Light theme').click(),
+    ]);
+
+    await expect(page.getByTestId('toast-success')).toContainText('Theme updated');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect(themeInput('light')).toBeChecked();
+    await expect(themeSwitcher.getByLabel('Switch to Light theme')).toHaveClass(/text-accent/);
 
     expect(consoleErrors).toEqual([]);
   });
