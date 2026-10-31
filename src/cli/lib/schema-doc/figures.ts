@@ -280,19 +280,19 @@ export function identityFigure(): string {
     ['emailVerified'],
     ['twoFactorEnabled'],
   ]);
-  const oauthApp = box(COL_B, y0 + 290, 'oauthApplication', [
+  const oauthApp = box(COL_B, y0 + 290, 'oauthClient', [
     ['clientId', '', 'unique'],
-    ['redirectUrls'],
-    ['userId', '', 'no FK'],
+    ['redirectUris'],
+    ['tokenEndpointAuthMethod'],
   ]);
   const oauthToken = box(COL_B, y0 + 393, 'oauthAccessToken', [
-    ['accessToken', '', 'unique'],
-    ['clientId'],
-    ['userId', '', 'no FK'],
+    ['token', '', 'hashed'],
+    ['clientId', 'fk'],
+    ['sessionId', '', 'no FK'],
   ]);
   const oauthConsent = box(COL_B, y0 + 496, 'oauthConsent', [
-    ['clientId'],
-    ['userId', '', 'no FK'],
+    ['clientId', 'fk'],
+    ['userId', 'fkn'],
     ['scopes'],
   ]);
   const users = box(COL_C, y0, 'users', [

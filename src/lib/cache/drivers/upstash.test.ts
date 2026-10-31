@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { INCREMENT_WITH_TTL_SCRIPT } from './increment-script';
 import { UpstashDriver } from './upstash';
 
 const mockRedis = {
   get: mock(() => Promise.resolve(null)),
   set: mock(() => Promise.resolve('OK')),
   del: mock(() => Promise.resolve(1)),
+  eval: mock((..._args: unknown[]) => Promise.resolve(1)),
+  getdel: mock((..._args: unknown[]) => Promise.resolve(null as unknown)),
   pipeline: mock(() => ({
     sadd: mock(() => ({})),
     expire: mock(() => ({})),
@@ -20,6 +23,8 @@ describe('UpstashDriver', () => {
     mockRedis.get.mockClear();
     mockRedis.set.mockClear();
     mockRedis.del.mockClear();
+    mockRedis.eval.mockClear();
+    mockRedis.getdel.mockClear();
     mockRedis.pipeline.mockClear();
 
     driver = new UpstashDriver('https://test.upstash.io', 'test-token');
@@ -97,6 +102,32 @@ describe('UpstashDriver', () => {
       mockRedis.pipeline.mockReturnValueOnce(mockPipeline as any);
 
       await expect(driver.invalidateByTags(['tag:a'])).resolves.toBeUndefined();
+    });
+  });
+
+  describe('increment', () => {
+    it('runs the atomic INCR + first-set EXPIRE script', async () => {
+      mockRedis.eval.mockResolvedValueOnce(3);
+      expect(await driver.increment('counter', 60)).toBe(3);
+      expect(mockRedis.eval).toHaveBeenCalledWith(INCREMENT_WITH_TTL_SCRIPT, ['counter'], ['60']);
+    });
+
+    it('fails open on error', async () => {
+      mockRedis.eval.mockRejectedValueOnce(new Error('Connection failed'));
+      expect(await driver.increment('counter', 60)).toBe(1);
+    });
+  });
+
+  describe('getAndDelete', () => {
+    it('returns the deleted value', async () => {
+      mockRedis.getdel.mockResolvedValueOnce({ foo: 'bar' });
+      expect(await driver.getAndDelete('key1')).toEqual({ foo: 'bar' });
+      expect(mockRedis.getdel).toHaveBeenCalledWith('key1');
+    });
+
+    it('returns null on error', async () => {
+      mockRedis.getdel.mockRejectedValueOnce(new Error('Connection failed'));
+      expect(await driver.getAndDelete('key1')).toBeNull();
     });
   });
 });

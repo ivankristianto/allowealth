@@ -1,58 +1,102 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import Button from '@/components/atoms/Button.astro';
+import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
 import { db, getActiveSchema } from '@/db';
+import { auth } from '@/lib/auth/server';
+import { submitOAuthConsent } from '@/lib/auth/oauth-consent';
 import { eq } from 'drizzle-orm';
 
 const schema = getActiveSchema();
 
-// Extract OAuth params passed by the mcp plugin
-const consentCode = Astro.url.searchParams.get('consent_code') ?? '';
-const clientId = Astro.url.searchParams.get('client_id') ?? '';
+// The form posts back to this page; Better Auth returns the URL to continue to.
+let consentError = '';
+if (Astro.request.method === 'POST') {
+  const result = await submitOAuthConsent(Astro.request);
+  if ('url' in result) {
+    return Astro.redirect(result.url);
+  }
+  consentError = result.error;
+}
+
+// The OAuth provider redirects here with a signed copy of the authorize query.
+// It is verified before rendering and posted back verbatim as `oauth_query`.
+const oauthQuery = Astro.url.search.slice(1);
+const { secret } = await auth.$context;
+const isValidRequest = oauthQuery !== '' && (await verifyOAuthQueryParams(oauthQuery, secret));
+const clientId = isValidRequest ? (Astro.url.searchParams.get('client_id') ?? '') : '';
 
 // Look up the client display name
 let clientName = clientId;
 if (clientId) {
-  const app = await db.query.oauthApplication.findFirst({
-    where: eq(schema.oauthApplication.clientId, clientId),
+  const client = await db.query.oauthClient.findFirst({
+    where: eq(schema.oauthClient.clientId, clientId),
     columns: { name: true },
   });
-  if (app) clientName = app.name;
+  if (client?.name) clientName = client.name;
 }
 ---
 
 <ProtectedLayout title="Authorize Access" currentPath="/oauth/authorize">
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="card bg-base-100 shadow-xl w-full max-w-sm">
-      <div class="card-body gap-6">
-        <div class="text-center">
-          <h1 class="text-xl font-bold">{clientName}</h1>
-          <p class="text-base-content/60 text-sm mt-1">wants access to your Allowealth account</p>
-        </div>
+      <div class="card-body gap-6" data-oauth-consent>
+        {
+          isValidRequest ? (
+            <>
+              <div class="text-center">
+                <h1 class="text-xl font-bold">{clientName}</h1>
+                <p class="text-base-content/60 text-sm mt-1">
+                  wants access to your Allowealth account
+                </p>
+              </div>
 
-        <div class="bg-base-200 rounded-box p-4">
-          <p class="text-sm font-medium mb-2">This will allow it to:</p>
-          <ul class="text-sm text-base-content/70 space-y-1">
-            <li>• Read your accounts and balances</li>
-            <li>• Read and create transactions</li>
-            <li>• Read budget summaries</li>
-            <li>• Read category and account lists</li>
-          </ul>
-        </div>
+              <div class="bg-base-200 rounded-box p-4">
+                <p class="text-sm font-medium mb-2">This will allow it to:</p>
+                <ul class="text-sm text-base-content/70 space-y-1">
+                  <li>• Read your accounts and balances</li>
+                  <li>• Read and create transactions</li>
+                  <li>• Read budget summaries</li>
+                  <li>• Read category and account lists</li>
+                </ul>
+              </div>
 
-        <div class="flex gap-3">
-          <form method="POST" action="/api/auth/oauth2/consent" class="flex-1">
-            <input type="hidden" name="accept" value="false" />
-            <input type="hidden" name="consent_code" value={consentCode} />
-            <Button type="submit" variant="outline" className="w-full">Deny</Button>
-          </form>
+              {consentError && (
+                <div class="alert alert-error" role="alert">
+                  <span>{consentError}</span>
+                </div>
+              )}
 
-          <form method="POST" action="/api/auth/oauth2/consent" class="flex-1">
-            <input type="hidden" name="accept" value="true" />
-            <input type="hidden" name="consent_code" value={consentCode} />
-            <Button type="submit" variant="primary" className="w-full">Authorize</Button>
-          </form>
-        </div>
+              <div class="flex gap-3">
+                <form method="post" class="flex-1">
+                  <input type="hidden" name="accept" value="false" />
+                  <input type="hidden" name="oauth_query" value={oauthQuery} />
+                  <Button type="submit" variant="outline" className="w-full">
+                    Deny
+                  </Button>
+                </form>
+                <form method="post" class="flex-1">
+                  <input type="hidden" name="accept" value="true" />
+                  <input type="hidden" name="oauth_query" value={oauthQuery} />
+                  <Button type="submit" variant="primary" className="w-full">
+                    Authorize
+                  </Button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div class="text-center space-y-2">
+              <h1 class="text-xl font-bold">Authorization Link Expired</h1>
+              <p class="text-base-content/60 text-sm">
+                This authorization request is invalid or has expired. Start again from Security →
+                Connected Apps.
+              </p>
+              <Button href="/security" variant="primary">
+                Go to Security
+              </Button>
+            </div>
+          )
+        }
       </div>
     </div>
   </div>

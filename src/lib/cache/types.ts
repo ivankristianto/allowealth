@@ -24,6 +24,16 @@ export interface CacheDriver {
 
   /** Delete all keys with any of the given tags */
   invalidateByTags(tags: string[]): Promise<void>;
+
+  /**
+   * Atomically increment the counter at `key` and return the new value.
+   * The TTL (seconds) is applied only when the key is created, so the counter
+   * expires a fixed window after its first increment.
+   */
+  increment(key: string, ttl: number): Promise<number>;
+
+  /** Atomically read and delete a key, returns null if missing */
+  getAndDelete<T>(key: string): Promise<T | null>;
 }
 
 export interface CacheConfig {

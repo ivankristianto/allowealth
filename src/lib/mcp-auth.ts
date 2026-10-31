@@ -1,4 +1,5 @@
 import { db, getActiveSchema } from '@/db';
+import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
 import { eq } from 'drizzle-orm';
 
@@ -31,17 +32,21 @@ function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
 async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthContext | null> {
   const schema = deps.getSchema();
 
+  // The OAuth provider stores only the hash of each access token.
   const tokenRecord = await deps.db.query.oauthAccessToken.findFirst({
-    where: eq(schema.oauthAccessToken.accessToken, token),
+    where: eq(schema.oauthAccessToken.token, await hashOAuthToken(token)),
     columns: {
       id: true,
-      accessTokenExpiresAt: true,
+      expiresAt: true,
+      revoked: true,
       userId: true,
     },
   });
 
   if (!tokenRecord) return null;
-  if (new Date(tokenRecord.accessTokenExpiresAt) < new Date()) return null;
+  // Set by the provider on sign-out, session revocation, or a replayed code.
+  if (tokenRecord.revoked) return null;
+  if (!tokenRecord.expiresAt || new Date(tokenRecord.expiresAt) < new Date()) return null;
 
   const userId = tokenRecord.userId;
   if (!userId) return null;

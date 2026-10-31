@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
+import { oauthAccessToken, oauthRefreshToken } from '@/db/schema/sqlite';
 import { CacheTags } from '@/lib/cache';
 import { createMockDatabase } from './test-helpers/mocks';
 
@@ -15,7 +16,7 @@ describe('mcp-token-revocation.service', () => {
     mockInvalidateByTags.mockReset();
   });
 
-  it('deletes user MCP tokens and invalidates token cache tags', async () => {
+  it('deletes user MCP access and refresh tokens and invalidates token cache tags', async () => {
     const db = createMockDatabase() as any;
 
     db.query.oauthAccessToken = {
@@ -26,7 +27,8 @@ describe('mcp-token-revocation.service', () => {
       invalidateByTags: mockInvalidateByTags,
     });
 
-    expect(db.delete).toHaveBeenCalled();
+    expect(db.delete).toHaveBeenCalledWith(oauthRefreshToken);
+    expect(db.delete).toHaveBeenCalledWith(oauthAccessToken);
     expect(mockInvalidateByTags).toHaveBeenCalledWith([
       'mcp-token:tok-1',
       'mcp-token:tok-2',

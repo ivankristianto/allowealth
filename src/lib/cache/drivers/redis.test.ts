@@ -187,6 +187,45 @@ describe('RedisDriver', () => {
     });
   });
 
+  describe('increment', () => {
+    it('creates the counter with a TTL and increments it', async () => {
+      if (!shouldRunTests) return;
+
+      expect(await driver.increment('counter', 60)).toBe(1);
+      expect(await driver.increment('counter', 60)).toBe(2);
+
+      const ttl = Number(await cleanupClient.send('TTL', ['counter']));
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThanOrEqual(60);
+    });
+
+    it('does not extend the TTL on later increments', async () => {
+      if (!shouldRunTests) return;
+
+      await driver.increment('counter', 60);
+      await cleanupClient.send('EXPIRE', ['counter', '5']);
+      await driver.increment('counter', 60);
+
+      expect(Number(await cleanupClient.send('TTL', ['counter']))).toBeLessThanOrEqual(5);
+    });
+  });
+
+  describe('getAndDelete', () => {
+    it('returns the value and deletes the key', async () => {
+      if (!shouldRunTests) return;
+
+      await driver.set('key1', { foo: 'bar' });
+      expect(await driver.getAndDelete('key1')).toEqual({ foo: 'bar' });
+      expect(await driver.get('key1')).toBeNull();
+    });
+
+    it('returns null for a missing key', async () => {
+      if (!shouldRunTests) return;
+
+      expect(await driver.getAndDelete('missing')).toBeNull();
+    });
+  });
+
   describe('fail-silent', () => {
     it('should return null on get error', async () => {
       const badDriver = new RedisDriver(REDIS_URL);

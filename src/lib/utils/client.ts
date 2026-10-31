@@ -17,7 +17,9 @@ import { authClient } from '@/lib/auth/client';
  */
 export async function performLogout(onBeforeRedirect?: () => void): Promise<void> {
   try {
-    const response = await authClient.signOut();
+    // Explicit empty body: with `strict: false`, Better Auth 1.7's client types
+    // mark the request argument required.
+    const response = await authClient.signOut({});
 
     if (!response.error) {
       onBeforeRedirect?.();

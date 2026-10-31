@@ -24,7 +24,7 @@ import { isDemoMode } from '@/lib/demo-mode';
 import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
 import { db, getActiveSchema } from '@/db';
 import { account as authAccount, twoFactor, passkey as passkeyTable } from '@/db/schema/sqlite';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import { logError } from '@/lib/utils';
 
 const currentPath = '/security';
@@ -47,23 +47,30 @@ if (user?.id) {
       id: schema.oauthAccessToken.id,
       clientId: schema.oauthAccessToken.clientId,
       createdAt: schema.oauthAccessToken.createdAt,
-      accessTokenExpiresAt: schema.oauthAccessToken.accessTokenExpiresAt,
+      expiresAt: schema.oauthAccessToken.expiresAt,
     })
     .from(schema.oauthAccessToken)
     .where(
       and(
         eq(schema.oauthAccessToken.userId, user.id),
-        gt(schema.oauthAccessToken.accessTokenExpiresAt, new Date())
+        isNull(schema.oauthAccessToken.revoked),
+        gt(schema.oauthAccessToken.expiresAt, new Date())
       )
     );
 
-  connectedApps = tokens.map((token) => ({
-    tokenId: token.id,
-    clientName: getMcpOAuthClientName(token.clientId),
-    clientId: token.clientId,
-    createdAt: token.createdAt,
-    accessTokenExpiresAt: token.accessTokenExpiresAt,
-  }));
+  connectedApps = tokens.flatMap((token) =>
+    token.expiresAt
+      ? [
+          {
+            tokenId: token.id,
+            clientName: getMcpOAuthClientName(token.clientId),
+            clientId: token.clientId,
+            createdAt: token.createdAt,
+            accessTokenExpiresAt: token.expiresAt,
+          },
+        ]
+      : []
+  );
 }
 
 let connectedAccounts: Array<{
@@ -108,7 +115,8 @@ if (user?.id) {
       id: 'google',
       provider: 'Google',
       email: user.email,
-      accountId: googleAccount?.accountId,
+      // Better Auth 1.7 account selectors take the local `account.id`, not the provider's ID.
+      accountId: googleAccount?.id,
       connected: !!googleAccount,
       canUnlink: canUnlinkGoogleAccount,
     },

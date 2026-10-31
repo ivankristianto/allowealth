@@ -13,26 +13,21 @@ describe('mcp-oauth helpers', () => {
     );
   });
 
-  it('returns seeded clients with the shared redirect URI', () => {
+  it('returns seeded public PKCE clients with the shared redirect URI', () => {
+    const redirectUri = 'https://app.allowealth.com/oauth/display-token';
+    const shared = {
+      redirectUris: [redirectUri],
+      tokenEndpointAuthMethod: 'none',
+      grantTypes: ['authorization_code'],
+      responseTypes: ['code'],
+      applicationType: 'web',
+      requirePKCE: true,
+    };
+
     expect(getSeededMcpOAuthClients('https://app.allowealth.com')).toEqual([
-      {
-        clientId: 'mcp-claude-desktop',
-        name: 'Claude Desktop',
-        type: 'public',
-        redirectUrls: 'https://app.allowealth.com/oauth/display-token',
-      },
-      {
-        clientId: 'mcp-openai',
-        name: 'ChatGPT',
-        type: 'public',
-        redirectUrls: 'https://app.allowealth.com/oauth/display-token',
-      },
-      {
-        clientId: 'mcp-generic',
-        name: 'Generic MCP Client',
-        type: 'public',
-        redirectUrls: 'https://app.allowealth.com/oauth/display-token',
-      },
+      { clientId: 'mcp-claude-desktop', name: 'Claude Desktop', ...shared },
+      { clientId: 'mcp-openai', name: 'ChatGPT', ...shared },
+      { clientId: 'mcp-generic', name: 'Generic MCP Client', ...shared },
     ]);
     expect(MCP_OAUTH_CLIENTS).toHaveLength(3);
   });

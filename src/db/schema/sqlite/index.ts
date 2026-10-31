@@ -21,9 +21,7 @@ export * from './account-snapshot-items';
 export * from './audit-logs';
 export * from './budgets';
 export * from './oauth-accounts';
-export * from './oauth-applications';
-export * from './oauth-access-tokens';
-export * from './oauth-consents';
+export * from './oauth-provider';
 
 // Export all relations (centralized to avoid circular imports)
 export * from './relations';

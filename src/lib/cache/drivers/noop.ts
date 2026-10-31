@@ -23,4 +23,13 @@ export class NoopDriver implements CacheDriver {
   async invalidateByTags(_tags: string[]): Promise<void> {
     // No-op
   }
+
+  async increment(_key: string, _ttl: number): Promise<number> {
+    // Nothing is stored, so every counter starts fresh.
+    return 1;
+  }
+
+  async getAndDelete<T>(_key: string): Promise<T | null> {
+    return null;
+  }
 }

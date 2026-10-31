@@ -5,6 +5,8 @@ type BetterAuthSecondaryStorage = {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, ttl: number): Promise<void>;
   delete(key: string): Promise<void>;
+  increment(key: string, ttl: number): Promise<number>;
+  getAndDelete(key: string): Promise<string | null>;
 };
 
 const AUTH_CACHE_KEY_PREFIX = 'better-auth';
@@ -42,6 +44,12 @@ export function createAuthSecondaryStorage(): BetterAuthSecondaryStorage | undef
     },
     async delete(key) {
       await cache.delete(getAuthCacheKey(key));
+    },
+    async increment(key, ttl) {
+      return cache.increment(getAuthCacheKey(key), ttl);
+    },
+    async getAndDelete(key) {
+      return cache.getAndDelete<string>(getAuthCacheKey(key));
     },
   };
 }

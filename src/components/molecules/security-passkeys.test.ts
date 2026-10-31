@@ -71,7 +71,7 @@ describe('security-passkeys.client.ts', () => {
 
   it('calls authClient.passkey.listUserPasskeys()', () => {
     const source = readPasskeysClient();
-    expect(source).toContain('authClient.passkey.listUserPasskeys()');
+    expect(source).toContain('authClient.passkey.listUserPasskeys(');
   });
 
   it('re-renders the list after add or delete', () => {

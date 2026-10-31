@@ -67,6 +67,41 @@ describe('MemoryDriver', () => {
     });
   });
 
+  describe('increment', () => {
+    it('creates the counter at 1 and increments it', async () => {
+      expect(await driver.increment('counter', 60)).toBe(1);
+      expect(await driver.increment('counter', 60)).toBe(2);
+      expect(await driver.get<number>('counter')).toBe(2);
+    });
+
+    it('keeps the TTL from the first increment', async () => {
+      const realNow = Date.now;
+      try {
+        let now = 1_000_000;
+        Date.now = () => now;
+        await driver.increment('counter', 10);
+        now += 9_000;
+        expect(await driver.increment('counter', 10)).toBe(2);
+        now += 2_000;
+        expect(await driver.increment('counter', 10)).toBe(1);
+      } finally {
+        Date.now = realNow;
+      }
+    });
+  });
+
+  describe('getAndDelete', () => {
+    it('returns the value and removes the key', async () => {
+      await driver.set('key1', 'value1');
+      expect(await driver.getAndDelete<string>('key1')).toBe('value1');
+      expect(await driver.get('key1')).toBeNull();
+    });
+
+    it('returns null for a missing key', async () => {
+      expect(await driver.getAndDelete('missing')).toBeNull();
+    });
+  });
+
   describe('clear', () => {
     it('should clear all entries', async () => {
       await driver.set('key1', 'value1');

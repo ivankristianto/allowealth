@@ -11,6 +11,7 @@
  */
 
 import type { CacheDriver, CacheSetOptions } from '../types';
+import { INCREMENT_WITH_TTL_SCRIPT } from './increment-script';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('cache:redis');
@@ -64,6 +65,36 @@ export class RedisDriver implements CacheDriver {
       await this.redis.del(key);
     } catch (error) {
       log.warn('Delete failed:', key, error);
+    }
+  }
+
+  async increment(key: string, ttl: number): Promise<number> {
+    try {
+      const value = await this.redis.send('EVAL', [
+        INCREMENT_WITH_TTL_SCRIPT,
+        '1',
+        key,
+        String(ttl),
+      ]);
+      return Number(value);
+    } catch (error) {
+      // Fail open like get/set: a cache outage must not lock users out.
+      log.warn('Increment failed:', key, error);
+      return 1;
+    }
+  }
+
+  async getAndDelete<T>(key: string): Promise<T | null> {
+    try {
+      const raw = (await this.redis.send('GETDEL', [key])) as string | null;
+      if (!raw) {
+        return null;
+      }
+
+      return JSON.parse(raw) as T;
+    } catch (error) {
+      log.warn('GetAndDelete failed:', key, error);
+      return null;
     }
   }
 

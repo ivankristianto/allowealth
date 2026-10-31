@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { getIp } from 'better-auth/api';
+import { getIP } from 'better-auth/api';
 import { setTestEnv } from '@/lib/env';
 import {
   INTERNAL_IP_HEADER,
@@ -14,7 +14,7 @@ afterEach(() => {
 
 /** Resolve the IP the way Better Auth's rate limiter does with our config. */
 function resolveIp(request: Request): string | null {
-  return getIp(request, { advanced: { ipAddress: { ipAddressHeaders: [INTERNAL_IP_HEADER] } } });
+  return getIP(request, { advanced: { ipAddress: { ipAddressHeaders: [INTERNAL_IP_HEADER] } } });
 }
 
 function signInRequest(headers: Record<string, string> = {}): Request {

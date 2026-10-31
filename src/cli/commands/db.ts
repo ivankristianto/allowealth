@@ -287,29 +287,23 @@ export default defineCommand({
 
         for (const client of clients) {
           const now = new Date();
+          // Better Auth stores string[] fields as JSON text on SQLite.
+          const row = {
+            name: client.name,
+            redirectUris: JSON.stringify(client.redirectUris),
+            tokenEndpointAuthMethod: client.tokenEndpointAuthMethod,
+            grantTypes: JSON.stringify(client.grantTypes),
+            responseTypes: JSON.stringify(client.responseTypes),
+            applicationType: client.applicationType,
+            requirePKCE: client.requirePKCE,
+            disabled: false,
+            updatedAt: now,
+          };
 
           await db
-            .insert(schema.oauthApplication)
-            .values({
-              id: nanoid(),
-              clientId: client.clientId,
-              name: client.name,
-              type: client.type,
-              redirectUrls: client.redirectUrls,
-              disabled: false,
-              createdAt: now,
-              updatedAt: now,
-            })
-            .onConflictDoUpdate({
-              target: schema.oauthApplication.clientId,
-              set: {
-                name: client.name,
-                type: client.type,
-                redirectUrls: client.redirectUrls,
-                disabled: false,
-                updatedAt: now,
-              },
-            });
+            .insert(schema.oauthClient)
+            .values({ id: nanoid(), clientId: client.clientId, createdAt: now, ...row })
+            .onConflictDoUpdate({ target: schema.oauthClient.clientId, set: row });
 
           console.log(`  ✓  Upserted: ${client.name}`);
         }

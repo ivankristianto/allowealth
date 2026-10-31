@@ -527,46 +527,156 @@ CREATE UNIQUE INDEX IF NOT EXISTS `recurring_occurrences_template_occurrence_uni
 -- ============================================
 -- OAUTH & AUDIT LOGS
 -- ============================================
-CREATE TABLE IF NOT EXISTS `oauthApplication` (
-  `id` TEXT PRIMARY KEY NOT NULL,
-  `clientId` TEXT NOT NULL,
-  `clientSecret` TEXT,
-  `name` TEXT NOT NULL,
-  `icon` TEXT,
-  `metadata` TEXT,
-  `type` TEXT NOT NULL DEFAULT 'web',
-  `disabled` INTEGER DEFAULT 0,
-  `redirectUrls` TEXT NOT NULL,
-  `userId` TEXT,
-  `createdAt` INTEGER NOT NULL,
-  `updatedAt` INTEGER NOT NULL
+-- Better Auth OAuth provider (@better-auth/oauth-provider) for MCP access tokens
+CREATE TABLE IF NOT EXISTS `oauthClient` (
+	`id` text PRIMARY KEY NOT NULL,
+	`clientId` text NOT NULL,
+	`clientSecret` text,
+	`clientDiscoveryId` text,
+	`disabled` integer DEFAULT false,
+	`skipConsent` integer,
+	`enableEndSession` integer,
+	`subjectType` text,
+	`scopes` text,
+	`clientCredentialsScopes` text,
+	`userId` text,
+	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`updatedAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`name` text,
+	`uri` text,
+	`icon` text,
+	`contacts` text,
+	`tos` text,
+	`policy` text,
+	`softwareId` text,
+	`softwareVersion` text,
+	`softwareStatement` text,
+	`redirectUris` text NOT NULL,
+	`postLogoutRedirectUris` text,
+	`backchannelLogoutUri` text,
+	`backchannelLogoutSessionRequired` integer,
+	`tokenEndpointAuthMethod` text,
+	`applicationType` text,
+	`jwks` text,
+	`jwksUri` text,
+	`grantTypes` text,
+	`responseTypes` text,
+	`requirePKCE` integer,
+	`dpopBoundAccessTokens` integer,
+	`referenceId` text,
+	`metadata` text,
+	FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
-CREATE UNIQUE INDEX IF NOT EXISTS `oauthApplication_clientId_idx` ON `oauthApplication` (`clientId`);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthClient_clientId_idx` ON `oauthClient` (`clientId`);
+CREATE INDEX IF NOT EXISTS `oauthClient_userId_idx` ON `oauthClient` (`userId`);
+
+CREATE TABLE IF NOT EXISTS `oauthResource` (
+	`id` text PRIMARY KEY NOT NULL,
+	`identifier` text NOT NULL,
+	`name` text NOT NULL,
+	`accessTokenTtl` integer,
+	`refreshTokenTtl` integer,
+	`signingAlgorithm` text,
+	`signingKeyId` text,
+	`allowedScopes` text,
+	`customClaims` text,
+	`dpopBoundAccessTokensRequired` integer,
+	`disabled` integer,
+	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`updatedAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`policyVersion` integer,
+	`metadata` text
+);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthResource_identifier_idx` ON `oauthResource` (`identifier`);
+
+CREATE TABLE IF NOT EXISTS `oauthClientResource` (
+	`id` text PRIMARY KEY NOT NULL,
+	`clientId` text NOT NULL,
+	`resourceId` text NOT NULL,
+	`metadata` text,
+	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`clientId`) REFERENCES `oauthClient`(`clientId`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`resourceId`) REFERENCES `oauthResource`(`identifier`) ON UPDATE no action ON DELETE cascade
+);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthClientResource_clientId_resourceId_idx` ON `oauthClientResource` (`clientId`,`resourceId`);
+CREATE INDEX IF NOT EXISTS `oauthClientResource_resourceId_idx` ON `oauthClientResource` (`resourceId`);
+
+CREATE TABLE IF NOT EXISTS `oauthRefreshToken` (
+	`id` text PRIMARY KEY NOT NULL,
+	`token` text NOT NULL,
+	`clientId` text NOT NULL,
+	`sessionId` text,
+	`userId` text NOT NULL,
+	`referenceId` text,
+	`authorizationCodeId` text,
+	`resources` text,
+	`requestedUserInfoClaims` text,
+	`expiresAt` integer,
+	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`revoked` integer,
+	`rotatedAt` integer,
+	`rotationReplayResponse` text,
+	`rotationReplayExpiresAt` integer,
+	`authTime` integer,
+	`confirmation` text,
+	`scopes` text NOT NULL,
+	FOREIGN KEY (`clientId`) REFERENCES `oauthClient`(`clientId`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthRefreshToken_token_idx` ON `oauthRefreshToken` (`token`);
+CREATE INDEX IF NOT EXISTS `oauthRefreshToken_clientId_idx` ON `oauthRefreshToken` (`clientId`);
+CREATE INDEX IF NOT EXISTS `oauthRefreshToken_sessionId_idx` ON `oauthRefreshToken` (`sessionId`);
+CREATE INDEX IF NOT EXISTS `oauthRefreshToken_userId_idx` ON `oauthRefreshToken` (`userId`);
+CREATE INDEX IF NOT EXISTS `oauthRefreshToken_authorizationCodeId_idx` ON `oauthRefreshToken` (`authorizationCodeId`);
 
 CREATE TABLE IF NOT EXISTS `oauthAccessToken` (
-  `id` TEXT PRIMARY KEY NOT NULL,
-  `accessToken` TEXT NOT NULL,
-  `refreshToken` TEXT NOT NULL,
-  `accessTokenExpiresAt` INTEGER NOT NULL,
-  `refreshTokenExpiresAt` INTEGER NOT NULL,
-  `clientId` TEXT NOT NULL,
-  `userId` TEXT,
-  `scopes` TEXT NOT NULL,
-  `createdAt` INTEGER NOT NULL,
-  `updatedAt` INTEGER NOT NULL
+	`id` text PRIMARY KEY NOT NULL,
+	`token` text,
+	`clientId` text NOT NULL,
+	`sessionId` text,
+	`userId` text,
+	`referenceId` text,
+	`authorizationCodeId` text,
+	`resources` text,
+	`requestedUserInfoClaims` text,
+	`refreshId` text,
+	`expiresAt` integer,
+	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`revoked` integer,
+	`confirmation` text,
+	`scopes` text NOT NULL,
+	FOREIGN KEY (`clientId`) REFERENCES `oauthClient`(`clientId`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`refreshId`) REFERENCES `oauthRefreshToken`(`id`) ON UPDATE no action ON DELETE cascade
 );
-CREATE UNIQUE INDEX IF NOT EXISTS `oauthAccessToken_accessToken_idx` ON `oauthAccessToken` (`accessToken`);
-CREATE UNIQUE INDEX IF NOT EXISTS `oauthAccessToken_refreshToken_idx` ON `oauthAccessToken` (`refreshToken`);
+CREATE UNIQUE INDEX IF NOT EXISTS `oauthAccessToken_token_idx` ON `oauthAccessToken` (`token`);
+CREATE INDEX IF NOT EXISTS `oauthAccessToken_clientId_idx` ON `oauthAccessToken` (`clientId`);
+CREATE INDEX IF NOT EXISTS `oauthAccessToken_sessionId_idx` ON `oauthAccessToken` (`sessionId`);
+CREATE INDEX IF NOT EXISTS `oauthAccessToken_userId_idx` ON `oauthAccessToken` (`userId`);
+CREATE INDEX IF NOT EXISTS `oauthAccessToken_authorizationCodeId_idx` ON `oauthAccessToken` (`authorizationCodeId`);
+CREATE INDEX IF NOT EXISTS `oauthAccessToken_refreshId_idx` ON `oauthAccessToken` (`refreshId`);
 
 CREATE TABLE IF NOT EXISTS `oauthConsent` (
-  `id` TEXT PRIMARY KEY NOT NULL,
-  `clientId` TEXT NOT NULL,
-  `userId` TEXT NOT NULL,
-  `scopes` TEXT NOT NULL,
-  `consentGiven` INTEGER NOT NULL,
-  `createdAt` INTEGER NOT NULL,
-  `updatedAt` INTEGER NOT NULL
+	`id` text PRIMARY KEY NOT NULL,
+	`clientId` text NOT NULL,
+	`userId` text,
+	`referenceId` text,
+	`resources` text,
+	`requestedUserInfoClaims` text,
+	`scopes` text NOT NULL,
+	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	`updatedAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
+	FOREIGN KEY (`clientId`) REFERENCES `oauthClient`(`clientId`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
+CREATE INDEX IF NOT EXISTS `oauthConsent_clientId_idx` ON `oauthConsent` (`clientId`);
+CREATE INDEX IF NOT EXISTS `oauthConsent_userId_idx` ON `oauthConsent` (`userId`);
+
+CREATE TABLE IF NOT EXISTS `oauthClientAssertion` (
+	`id` text PRIMARY KEY NOT NULL,
+	`expiresAt` integer NOT NULL
+);
+CREATE INDEX IF NOT EXISTS `oauthClientAssertion_expiresAt_idx` ON `oauthClientAssertion` (`expiresAt`);
 
 CREATE TABLE IF NOT EXISTS `audit_logs` (
   `id` text PRIMARY KEY NOT NULL,

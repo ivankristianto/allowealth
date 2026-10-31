@@ -18,13 +18,23 @@ export const POST: APIRoute = async (context) => {
   const schema = getActiveSchema();
   const tokenRow = await db.query.oauthAccessToken.findFirst({
     where: eq(schema.oauthAccessToken.id, tokenId),
-    columns: { id: true, userId: true },
+    columns: { id: true, userId: true, refreshId: true },
   });
 
   if (!tokenRow || tokenRow.userId !== user.id) {
     return new Response('Not found', { status: 404 });
   }
 
+  if (tokenRow.refreshId) {
+    await db
+      .delete(schema.oauthRefreshToken)
+      .where(
+        and(
+          eq(schema.oauthRefreshToken.id, tokenRow.refreshId),
+          eq(schema.oauthRefreshToken.userId, user.id)
+        )
+      );
+  }
   await db
     .delete(schema.oauthAccessToken)
     .where(

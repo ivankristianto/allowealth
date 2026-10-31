@@ -26,7 +26,7 @@ function getAuthorizeUrl(clientId: string): string {
     state: clientId,
   });
 
-  return `/api/auth/mcp/authorize?${params.toString()}`;
+  return `/api/auth/oauth2/authorize?${params.toString()}`;
 }
 ---
 
@@ -35,7 +35,8 @@ function getAuthorizeUrl(clientId: string): string {
     <div>
       <h2 class="card-title text-base">Connected Apps</h2>
       <p class="text-sm text-base-content/60">
-        AI assistants authorized to access your financial data.
+        AI assistants authorized to access your financial data. Signing out of Allowealth
+        disconnects them.
       </p>
     </div>
 

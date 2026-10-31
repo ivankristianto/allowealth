@@ -58,6 +58,10 @@ export async function revokeMcpTokensForUser(
     columns: { id: true },
   })) as TokenRow[];
 
+  // Refresh tokens first, so no client can mint a new access token afterwards.
+  await database
+    .delete(schema.oauthRefreshToken)
+    .where(eq(schema.oauthRefreshToken.userId, userId));
   await database.delete(schema.oauthAccessToken).where(eq(schema.oauthAccessToken.userId, userId));
 
   if (options.invalidateCache !== false) {

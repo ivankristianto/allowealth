@@ -1,7 +1,8 @@
 import { betterAuth } from 'better-auth';
 import type { BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { captcha, mcp, twoFactor } from 'better-auth/plugins';
+import { captcha, twoFactor } from 'better-auth/plugins';
+import { oauthProvider } from '@better-auth/oauth-provider';
 import { passkey } from '@better-auth/passkey';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
@@ -11,7 +12,9 @@ import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 import { securityActivityService } from '@/services/security-activity.service';
+import { MCP_ACCESS_TOKEN_TTL_SECONDS, MCP_OAUTH_SCOPES } from '@/lib/mcp-oauth';
 import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
+import { hashOAuthToken } from './oauth-token-hash';
 import { hashPassword, verifyPassword } from './password';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
@@ -98,7 +101,7 @@ function createAuthInstance() {
     | ReturnType<typeof twoFactor>
     | ReturnType<typeof captcha>
     | ReturnType<typeof passkey>
-    | ReturnType<typeof mcp>
+    | ReturnType<typeof oauthProvider>
   > = [
     twoFactor(),
     passkey({
@@ -106,15 +109,17 @@ function createAuthInstance() {
       rpName: getEnv('RP_NAME') ?? 'Allowealth',
       origin: getAuthBaseURL(),
     }),
-    mcp({
+    // OAuth authorization server for MCP clients. Clients are pre-seeded
+    // (`aw db seed-oauth-clients`) and `/api/mcp` validates tokens itself, so
+    // this uses opaque access tokens without the JWT plugin.
+    oauthProvider({
       loginPage: '/login',
-      oidcConfig: {
-        loginPage: '/login',
-        consentPage: '/oauth/authorize',
-        accessTokenExpiresIn: 86_400,
-        refreshTokenExpiresIn: 7_776_000,
-        scopes: ['openid', 'profile', 'email', 'offline_access', 'mcp'],
-      },
+      consentPage: '/oauth/authorize',
+      disableJwtPlugin: true,
+      scopes: [...MCP_OAUTH_SCOPES],
+      accessTokenExpiresIn: MCP_ACCESS_TOKEN_TTL_SECONDS,
+      refreshTokenExpiresIn: 7_776_000,
+      storeTokens: { hash: hashOAuthToken },
     }),
   ];
   const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);
@@ -206,6 +211,9 @@ function createAuthInstance() {
       },
     },
     secondaryStorage: authSecondaryStorage,
+    // The OAuth provider binds tokens to session rows and refuses to start
+    // with secondary storage unless sessions are also persisted to SQLite.
+    ...(authSecondaryStorage ? { session: { storeSessionInDatabase: true } } : {}),
     rateLimit: {
       enabled: isProduction,
       storage: authSecondaryStorage ? 'secondary-storage' : 'memory',

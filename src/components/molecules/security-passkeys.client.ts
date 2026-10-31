@@ -83,7 +83,9 @@ async function refreshPasskeyList(signal?: AbortSignal) {
   if (!list) return;
 
   try {
-    const result = await authClient.passkey.listUserPasskeys();
+    // Explicit empty query: with `strict: false`, Better Auth 1.7's client types
+    // mark the request argument required.
+    const result = await authClient.passkey.listUserPasskeys({ query: {} });
     if (result.error) {
       return;
     }
