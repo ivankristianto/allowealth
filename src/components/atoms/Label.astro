@@ -25,7 +25,7 @@ const { htmlFor = '', required = false, helpText = '', className = '', id = '' }
 <label id={id} for={htmlFor} class={['label py-1', className].filter(Boolean).join(' ')}>
   <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
     <slot />
-    {required && <span class="sr-only">(required)</span>}
+    {required && <span class="sr-only"> (required)</span>}
   </span>
   {helpText && <span class="label-text-alt text-neutral">{helpText}</span>}
 </label>
