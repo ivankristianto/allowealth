@@ -6,7 +6,7 @@
  * Adds personality and helps visitors see themselves in the product.
  */
 
-import { Heart, Users, Home, Wallet } from '@lucide/astro';
+import { Heart, Users, House, Wallet } from '@lucide/astro';
 
 interface UseCase {
   icon: string;
@@ -38,7 +38,7 @@ const useCases: UseCase[] = [
     avatar: 'friends',
   },
   {
-    icon: 'Home',
+    icon: 'House',
     title: 'The Young Family',
     scenario: 'New parents juggling daycare costs, medical bills, and a mortgage.',
     painPoint: 'Month-end panic: "Where did $800 go?" Spreadsheets are too much work.',
@@ -86,7 +86,7 @@ const useCases: UseCase[] = [
             <div class="w-12 h-12 sm:w-14 sm:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-6 motion-safe:group-hover:scale-110 transition-transform">
               {useCase.icon === 'Heart' && <Heart size={28} aria-hidden="true" />}
               {useCase.icon === 'Users' && <Users size={28} aria-hidden="true" />}
-              {useCase.icon === 'Home' && <Home size={28} aria-hidden="true" />}
+              {useCase.icon === 'House' && <House size={28} aria-hidden="true" />}
               {useCase.icon === 'Wallet' && <Wallet size={28} aria-hidden="true" />}
             </div>
 

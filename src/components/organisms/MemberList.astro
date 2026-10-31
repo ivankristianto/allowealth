@@ -11,7 +11,7 @@
  */
 
 import Button from '@/components/atoms/Button.astro';
-import { Trash2, User, Crown, ShieldCheck } from '@lucide/astro';
+import { Trash, User, Crown, ShieldCheck } from '@lucide/astro';
 
 export interface Member {
   id: string;
@@ -115,7 +115,7 @@ function getInitials(name: string): string {
                   data-member-id={member.id}
                   data-member-name={member.name}
                 >
-                  <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                  <Trash size={16} class="stroke-current" aria-hidden="true" />
                 </Button>
               )}
             </div>

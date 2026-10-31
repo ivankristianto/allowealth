@@ -16,7 +16,7 @@ import {
   Mail,
   Calendar,
   Shield,
-  Building2,
+  BuildingComplex,
   CircleCheck,
   CircleX,
 } from '@lucide/astro';
@@ -130,7 +130,7 @@ const isSuperAdmin = user.role === 'super_admin';
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <Building2 size={16} class="text-base-content/40" aria-hidden="true" />
+            <BuildingComplex size={16} class="text-base-content/40" aria-hidden="true" />
             <div>
               <p class="text-xs text-base-content/40 uppercase font-bold">Workspace</p>
               {

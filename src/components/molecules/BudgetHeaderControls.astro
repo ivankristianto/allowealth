@@ -1,5 +1,5 @@
 ---
-import { History } from '@lucide/astro';
+import { RotateCcwClock } from '@lucide/astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
 
 export interface Props {
@@ -19,7 +19,7 @@ const ghostButtonClass =
   data-budget-header-controls
 >
   <a href="/budget/history" class={ghostButtonClass} aria-label="History">
-    <History size={16} class="stroke-current" aria-hidden="true" />
+    <RotateCcwClock size={16} class="stroke-current" aria-hidden="true" />
     <span class="text-xs font-semibold">History</span>
   </a>
 

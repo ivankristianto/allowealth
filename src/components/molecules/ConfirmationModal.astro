@@ -7,7 +7,7 @@
  * @param {string} id - Modal ID
  * @param {string} title - Modal title
  * @param {string} description - Optional description text
- * @param {Component} icon - Lucide icon component (default: Trash2)
+ * @param {Component} icon - Lucide icon component (default: Trash)
  * @param {'error' | 'warning' | 'success' | 'info'} iconVariant - Icon background/text color
  * @param {string} confirmLabel - Confirm button label
  * @param {'error' | 'warning' | 'success'} confirmVariant - Confirm button color variant
@@ -18,13 +18,13 @@
 
 import Modal from './Modal.astro';
 import Button from '@/components/atoms/Button.astro';
-import { Trash2 } from '@lucide/astro';
+import { Trash } from '@lucide/astro';
 
 export interface Props {
   id: string;
   title: string;
   description?: string;
-  icon?: typeof Trash2;
+  icon?: typeof Trash;
   iconVariant?: 'error' | 'warning' | 'success' | 'info';
   confirmLabel?: string;
   confirmVariant?: 'error' | 'warning' | 'success';
@@ -37,7 +37,7 @@ const {
   id,
   title,
   description,
-  icon: Icon = Trash2,
+  icon: Icon = Trash,
   iconVariant = 'error',
   confirmLabel = 'Delete',
   confirmVariant = 'error',

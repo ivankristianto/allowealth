@@ -6,7 +6,7 @@
  */
 
 import PublicLayout from '@/layouts/PublicLayout.astro';
-import { ArrowLeft, Home, Search, Ghost } from '@lucide/astro';
+import { ArrowLeft, House, Ghost } from '@lucide/astro';
 
 // Fun money-related 404 messages
 const messages = [
@@ -114,7 +114,7 @@ const randomMessage = messages[Math.floor(Math.random() * messages.length)];
           href="/"
           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-accent text-accent-content font-bold rounded-full hover:bg-accent-hover transition-colors shadow-lg shadow-accent/25"
         >
-          <Home size={20} aria-hidden="true" />
+          <House size={20} aria-hidden="true" />
           Take me home
         </a>
 

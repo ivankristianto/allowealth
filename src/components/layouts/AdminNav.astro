@@ -1,5 +1,5 @@
 ---
-import { ShieldCheck, Building2, Users, ClipboardList, Activity } from '@lucide/astro';
+import { ShieldCheck, BuildingComplex, Users, ClipboardList, Activity } from '@lucide/astro';
 
 interface Props {
   currentPath?: string;
@@ -27,7 +27,7 @@ const adminNavItems: AdminNavItem[] = [
     href: '/admin/workspaces',
     label: 'Workspaces',
     ariaLabel: 'Workspaces',
-    icon: Building2,
+    icon: BuildingComplex,
     isActive: (path) => path.startsWith('/admin/workspaces'),
   },
   {

@@ -7,7 +7,7 @@
  */
 
 import Button from '@/components/atoms/Button.astro';
-import { X, FolderPen, CreditCard, Trash2 } from '@lucide/astro';
+import { X, FolderPen, CreditCard, Trash } from '@lucide/astro';
 
 export interface Props {
   categories: Array<{ id: string; name: string; type: string }>;
@@ -153,7 +153,7 @@ const incomeCategories = categories.filter((category) => category.type === 'inco
         data-bulk-action="delete"
         aria-label="Delete selected transactions"
       >
-        <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+        <Trash size={16} class="stroke-current" aria-hidden="true" />
         <span class="hidden sm:inline">Delete</span>
       </Button>
     </div>
