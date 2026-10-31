@@ -56,33 +56,24 @@ test.describe('Accounts Redesign Journey', () => {
   test('accounts are grouped by account class headings', async ({ accountsPage, page }) => {
     await accountsPage.goto();
 
-    // Get all account group cards
-    const groups = page.locator('[data-testid="account-group"]');
-    const groupCount = await groups.count();
+    // The table view groups rows under one header row per account class
+    const groupHeaders = page.locator('tr[data-group-header]');
+    const groupCount = await groupHeaders.count();
 
     // There should be at least one group if accounts exist
     expect(groupCount).toBeGreaterThanOrEqual(1);
 
-    // Collect all group labels that are rendered
-    const renderedLabels: string[] = [];
+    const validLabels: Record<string, string> = {
+      liquid: 'Liquid',
+      non_liquid: 'Non-Liquid',
+      debt: 'Debt',
+    };
     for (let i = 0; i < groupCount; i++) {
-      const groupEl = groups.nth(i);
-      const heading = groupEl.locator('h3').first();
-      const label = await heading.textContent();
-      if (label) renderedLabels.push(label.trim());
-    }
-
-    // Every rendered label must be one of the valid account class labels
-    const validLabels = ['Liquid Accounts', 'Non-Liquid Accounts', 'Debt Accounts'];
-    for (const label of renderedLabels) {
-      expect(validLabels).toContain(label);
-    }
-
-    // Verify groupId data attribute maps to expected class keys
-    const validGroupIds = ['liquid', 'non_liquid', 'debt'];
-    for (let i = 0; i < groupCount; i++) {
-      const groupId = await groups.nth(i).getAttribute('data-account-type');
-      expect(validGroupIds).toContain(groupId);
+      const header = groupHeaders.nth(i);
+      await expect(header).toBeVisible();
+      const groupId = await header.getAttribute('data-group-header');
+      expect(Object.keys(validLabels)).toContain(groupId);
+      await expect(header).toContainText(validLabels[groupId as string]);
     }
   });
 
@@ -99,22 +90,15 @@ test.describe('Accounts Redesign Journey', () => {
   }) => {
     await accountsPage.goto();
 
-    // Find the first account item and click its name link
-    const firstAccountItem = page.locator('[data-testid="account-item"]').first();
+    // Find the first account row and click its name link
+    const firstAccountItem = page.locator('[data-account-table-row]').first();
     await expect(firstAccountItem).toBeVisible();
 
     // Get the account ID for URL verification
     const accountId = await firstAccountItem.getAttribute('data-account-id');
     expect(accountId).toBeTruthy();
 
-    // Click the account name link (inside h4 > a)
-    // The component has dual mobile/desktop layouts, both contain h4 > a
-    // Pick the visible one based on viewport
-    const accountLinks = firstAccountItem.locator('h4 a');
-    const visibleLink = (await accountLinks.nth(0).isVisible())
-      ? accountLinks.nth(0)
-      : accountLinks.nth(1);
-    await visibleLink.click();
+    await firstAccountItem.getByRole('link').first().click();
 
     // Verify navigation to detail page
     await page.waitForURL(`**/accounts/${accountId}`);
@@ -178,13 +162,17 @@ test.describe('Accounts Redesign Journey', () => {
     // Verify the account appears in the list
     await accountsPage.expectAccountExists(creditCardData.name);
 
-    // Verify it is inside the "Debt" group card
-    const debtGroup = page.locator('[data-testid="account-group"][data-account-type="debt"]');
-    await expect(debtGroup).toBeVisible();
-    const debtAccountItem = debtGroup
-      .locator('[data-testid="account-item"]')
-      .filter({ has: page.locator('h4', { hasText: creditCardData.name }) });
+    // Verify the row sits under the "Debt" group header
+    const debtAccountItem = accountsPage.getAccountItemByName(creditCardData.name);
     await expect(debtAccountItem).toBeVisible();
+    const groupKey = await debtAccountItem.evaluate((row) => {
+      let sibling = row.previousElementSibling;
+      while (sibling && !sibling.hasAttribute('data-group-header')) {
+        sibling = sibling.previousElementSibling;
+      }
+      return sibling?.getAttribute('data-group-header') ?? null;
+    });
+    expect(groupKey).toBe('debt');
 
     // Verify Total Debt section now shows (since we created a debt account)
     const totalDebt = page.locator('[data-testid="portfolio-total-debt"]');
@@ -242,18 +230,7 @@ test.describe('Accounts Redesign Journey', () => {
     expect(accountId).toBeTruthy();
 
     // Click the account name link to navigate to detail page
-    const accountItem = page
-      .locator('[data-testid="account-item"]')
-      .filter({ has: page.locator('h4', { hasText: bankData.name }) });
-    // The component has dual mobile/desktop layouts, both containing h4 > a.
-    // Use viewport width to deterministically pick the correct link instead of
-    // a point-in-time isVisible() check that can flake during page transitions.
-    // nth(0) = mobile layout (sm:hidden, shown below 640px)
-    // nth(1) = desktop layout (hidden sm:flex, shown at 640px+)
-    const viewport = page.viewportSize();
-    const isMobile = !viewport || viewport.width < 640;
-    const nameLinks = accountItem.locator('h4 a');
-    const nameLink = isMobile ? nameLinks.nth(0) : nameLinks.nth(1);
+    const nameLink = accountsPage.getAccountNameLink(bankData.name);
     await expect(nameLink).toBeVisible({ timeout: 5000 });
     await nameLink.click();
 
