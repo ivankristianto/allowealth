@@ -27,18 +27,17 @@
     "noPropertyAccessFromIndexSignature": false,
 
     // Path mappings
-    "baseUrl": ".",
     "paths": {
-      "@": ["src"],
-      "@/*": ["src/*"],
-      "@lib/*": ["src/lib/*"],
-      "@components/*": ["src/components/*"],
-      "@db/*": ["src/db/*"],
-      "@layouts/*": ["src/layouts/*"],
-      "@services/*": ["src/services/*"],
-      "@styles/*": ["src/styles/*"],
-      "@src-types/*": ["src/types/*"],
-      "@mcp-server/*": ["apps/mcp/src/*"]
+      "@": ["./src"],
+      "@/*": ["./src/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@components/*": ["./src/components/*"],
+      "@db/*": ["./src/db/*"],
+      "@layouts/*": ["./src/layouts/*"],
+      "@services/*": ["./src/services/*"],
+      "@styles/*": ["./src/styles/*"],
+      "@src-types/*": ["./src/types/*"],
+      "@mcp-server/*": ["./apps/mcp/src/*"]
     },
     "plugins": [
       {
