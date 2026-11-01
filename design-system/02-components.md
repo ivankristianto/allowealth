@@ -63,7 +63,6 @@ Component patterns for atoms, molecules, and organisms.
 | PeriodNavigator               | `src/components/molecules/PeriodNavigator.astro`                | Period navigation        |
 | QuickActions                  | `src/components/molecules/QuickActions.astro`                   | Quick actions panel      |
 | RecentTransactionsList        | `src/components/molecules/RecentTransactionsList.astro`         | Recent transactions list |
-| RegistrationForm              | `src/components/molecules/RegistrationForm.astro`               | Signup form              |
 | ReportSelector                | `src/components/molecules/ReportSelector.astro`                 | Report period selector   |
 | SecurityConnectedAccountsCard | `src/components/molecules/SecurityConnectedAccountsCard.astro`  | Connected accounts card  |
 | SecurityMfaCard               | `src/components/molecules/SecurityMfaCard.astro`                | MFA card                 |

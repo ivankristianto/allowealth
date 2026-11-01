@@ -3,16 +3,11 @@
  */
 
 export { EmailService } from './email.service';
-export type {
-  SendPasswordResetOptions,
-  SendWorkspaceInvitationOptions,
-  SendEmailVerificationOptions,
-} from './email.service';
+export type { SendPasswordResetOptions, SendWorkspaceInvitationOptions } from './email.service';
 
 export { EmailTemplateService, emailTemplateService } from './email-template.service';
 export type {
   EmailTemplate,
-  EmailVerificationOptions,
   PasswordResetOptions,
   WorkspaceInvitationOptions,
 } from './email-template.service';

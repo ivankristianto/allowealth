@@ -101,20 +101,6 @@ describe('EmailService', () => {
     });
   });
 
-  describe('sendEmailVerification', () => {
-    it('should send verification email via console in dev mode', async () => {
-      const service = new EmailService();
-
-      const result = await service.sendEmailVerification({
-        to: 'user@example.com',
-        userName: 'Test User',
-        verificationUrl: 'https://example.com/verify?token=abc',
-      });
-
-      expect(result.success).toBe(true);
-    });
-  });
-
   describe('sendEmailChangeVerification', () => {
     it('should send email change verification email via console in dev mode', async () => {
       const service = new EmailService();
@@ -180,9 +166,10 @@ describe('EmailService', () => {
       const service = new EmailService();
 
       expect(
-        service.sendEmailVerification({
+        service.sendEmailChangeVerification({
           to: 'user@example.com',
           userName: 'Test User',
+          newEmail: 'new@example.com',
           verificationUrl: 'https://example.com/verify?token=abc',
         })
       ).rejects.toMatchObject({
