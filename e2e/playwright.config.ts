@@ -1,6 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // @TODO: P2 - Consider adding Firefox/WebKit projects for cross-browser testing
+// The app mixes UTC and local dates (#428). Pin the runner, the dev server it spawns and the
+// browser to one zone so a run near midnight or on the 1st can't land them on different days.
+process.env.TZ = 'UTC';
+
 const E2E_PORT = 4320;
 const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 
@@ -29,6 +33,7 @@ export default defineConfig({
     baseURL: E2E_BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    timezoneId: 'UTC',
   },
 
   webServer: {
@@ -67,6 +72,8 @@ export default defineConfig({
     {
       name: 'mobile-chrome',
       testMatch: /\.spec\.ts$/,
+      // Only the flows whose phone layout differs (sign-in, the add-transaction entry point).
+      grep: /@mobile/,
       use: {
         ...devices['Pixel 5'],
         storageState: 'e2e/.auth/user.json',

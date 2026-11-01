@@ -9,7 +9,7 @@ const E2E_CAPTCHA_TOKEN = process.env.E2E_TURNSTILE_TOKEN;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../../..');
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
 const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
 
 let testEmailCounter = 0;

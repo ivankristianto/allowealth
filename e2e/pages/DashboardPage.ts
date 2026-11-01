@@ -1,4 +1,3 @@
-import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -8,7 +7,6 @@ import { BasePage } from './BasePage';
 export class DashboardPage extends BasePage {
   // Locators
   private readonly totalExpenses = '[data-testid="dashboard-total-expenses"]';
-  private readonly totalIncome = '[data-testid="dashboard-total-income"]';
   /**
    * Navigate to the dashboard page.
    */
@@ -27,46 +25,5 @@ export class DashboardPage extends BasePage {
     // Split on "/" to get just the spent amount (before the budget)
     const spentText = (text || '0').split('/')[0];
     return this.parseCurrency(spentText);
-  }
-
-  /**
-   * Get the total income amount as a number.
-   * @returns Total income value parsed from the displayed text
-   */
-  async getTotalIncome(): Promise<number> {
-    const text = await this.page.locator(this.totalIncome).textContent();
-    return this.parseCurrency(text || '0');
-  }
-
-  /**
-   * Assert that total expenses matches the expected amount.
-   * @param amount - Expected total expenses value
-   */
-  async expectTotalExpenses(amount: number) {
-    const expenses = this.page.locator(this.totalExpenses);
-    await expect(expenses).toContainText(this.formatCurrency(amount));
-  }
-
-  /**
-   * Assert that total income matches the expected amount.
-   * @param amount - Expected total income value
-   */
-  async expectTotalIncome(amount: number) {
-    const income = this.page.locator(this.totalIncome);
-    await expect(income).toContainText(this.formatCurrency(amount));
-  }
-
-  /**
-   * Assert that the total expenses element is visible.
-   */
-  async expectTotalExpensesVisible() {
-    await expect(this.page.locator(this.totalExpenses)).toBeVisible();
-  }
-
-  /**
-   * Assert that the total income element is visible.
-   */
-  async expectTotalIncomeVisible() {
-    await expect(this.page.locator(this.totalIncome)).toBeVisible();
   }
 }

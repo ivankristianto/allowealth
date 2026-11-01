@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import type { Page, Locator } from '@playwright/test';
 
 /**
  * Base Page Object Model class.
@@ -40,18 +40,6 @@ export abstract class BasePage {
   }
 
   /**
-   * Get a locator by data attribute.
-   * @param attr - The data attribute name (without 'data-' prefix)
-   * @param value - Optional value for the attribute
-   */
-  getByDataAttr(attr: string, value?: string): Locator {
-    if (value !== undefined) {
-      return this.page.locator(`[data-${attr}="${value}"]`);
-    }
-    return this.page.locator(`[data-${attr}]`);
-  }
-
-  /**
    * Wait for an element to be visible.
    * @param locator - The element locator
    * @param timeout - Optional timeout in milliseconds
@@ -61,37 +49,11 @@ export abstract class BasePage {
   }
 
   /**
-   * Wait for an element to be hidden.
-   * @param locator - The element locator
-   * @param timeout - Optional timeout in milliseconds
-   */
-  async waitForHidden(locator: Locator, timeout?: number): Promise<void> {
-    await locator.waitFor({ state: 'hidden', timeout });
-  }
-
-  /**
    * Wait for navigation to a URL matching the pattern.
    * @param urlPattern - URL string or regex pattern
    */
   async waitForNavigation(urlPattern: string | RegExp): Promise<void> {
     await this.page.waitForURL(urlPattern);
-  }
-
-  /**
-   * Get the current page path (without origin).
-   */
-  getCurrentPath(): string {
-    return new URL(this.page.url()).pathname;
-  }
-
-  /**
-   * Assert that a toast notification appears with the expected message and type.
-   * @param message - Expected text content of the toast
-   * @param type - Toast type: 'success' or 'error'
-   */
-  async expectToastMessage(message: string, type: 'success' | 'error' = 'success'): Promise<void> {
-    const toast = this.page.locator(`[data-testid="toast-${type}"]`);
-    await expect(toast).toContainText(message);
   }
 
   /**

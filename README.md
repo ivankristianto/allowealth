@@ -424,9 +424,6 @@ bun run test:e2e:ui
 # Run tests in debug mode (step through)
 bun run test:e2e:debug
 
-# Run only critical business flow tests
-bun run test:e2e:critical
-
 # View HTML test report
 bun run test:e2e:report
 ```
@@ -437,15 +434,14 @@ bun run test:e2e:report
 e2e/
 ├── playwright.config.ts     # Playwright configuration
 ├── tests/
-│   ├── global-setup.ts      # Authentication setup
+│   ├── global-setup.ts      # Database reset and authentication
 │   ├── test.fixture.ts      # Custom test fixtures
-│   ├── business-flow.spec.ts # Critical path tests
-│   ├── add-expense.spec.ts  # Expense transaction tests
-│   ├── add-income.spec.ts   # Income transaction tests
-│   ├── assets/              # Asset management tests
-│   ├── budget/              # Budget management tests
-│   ├── categories/          # Category CRUD tests
-│   └── stats-verification/  # Cross-page data consistency
+│   ├── auth.spec.ts         # Login, logout, 2FA login, password reset
+│   ├── auth-security.spec.ts # TOTP and Google linking
+│   ├── email-change.spec.ts # Email change and verification links
+│   ├── money.spec.ts        # Expenses, income, edit/delete, budgets, totals
+│   ├── accounts.spec.ts     # Create and rename accounts
+│   └── recurring.spec.ts    # Confirm a recurring transaction
 ├── pages/                   # Page Object Models
 │   ├── BasePage.ts          # Base class with utilities
 │   ├── LoginPage.ts

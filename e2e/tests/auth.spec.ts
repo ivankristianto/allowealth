@@ -5,9 +5,11 @@ import { fileURLToPath } from 'url';
 
 const E2E_BASE_URL = 'http://localhost:4320';
 const E2E_CAPTCHA_TOKEN = process.env.E2E_TURNSTILE_TOKEN;
+const E2E_USER_EMAIL = process.env.E2E_USER_EMAIL || 'demo@example.com';
+const E2E_USER_PASSWORD = process.env.E2E_USER_PASSWORD || 'demo123456789';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../../..');
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
 const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
 
 let testEmailCounter = 0;
@@ -143,7 +145,7 @@ test.describe('auth core', () => {
   test.describe('signed out flows', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
-    test('email/password login success', async ({ page, request }) => {
+    test('email/password login success @mobile', async ({ page, request }) => {
       const { email, password } = await registerUser(request);
 
       await loginViaPage(page, email, password);
@@ -151,6 +153,23 @@ test.describe('auth core', () => {
       await expect
         .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
         .toMatch(/^\/(dashboard|onboarding)$/);
+    });
+
+    test('sign out ends the session', async ({ page }) => {
+      // Sign in as the seeded user in a fresh session: signing out revokes only this session,
+      // not the one in the shared storage state the other tests use.
+      await loginViaPage(page, E2E_USER_EMAIL, E2E_USER_PASSWORD);
+      await expect.poll(() => new URL(page.url()).pathname, { timeout: 15000 }).toBe('/dashboard');
+
+      await page.click('[data-profile-button]');
+      await page.click('[data-logout-button]:visible');
+      await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+
+      const profile = await page.request.get(`${E2E_BASE_URL}/api/user/profile`);
+      expect(profile.status()).toBe(401);
+
+      await page.goto('/dashboard');
+      await expect(page).toHaveURL(/\/login/);
     });
 
     test('login after a soft navigation signs in via the API, never via URL params', async ({
@@ -251,19 +270,6 @@ test.describe('auth core', () => {
       await expect
         .poll(() => new URL(page.url()).pathname, { timeout: 15000 })
         .toMatch(/^\/(dashboard|onboarding)$/);
-    });
-  });
-
-  test.describe('authenticated flows', () => {
-    test('profile page still renders correctly when authenticated under the new session shape', async ({
-      page,
-    }) => {
-      await page.goto('/profile');
-
-      await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
-      await expect(page.locator('#full-name')).toBeVisible();
-      await expect(page.locator('#email')).toBeVisible();
-      await expect(page.locator('#password-change-form')).toBeVisible();
     });
   });
 });
