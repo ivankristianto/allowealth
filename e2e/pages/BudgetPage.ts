@@ -109,28 +109,6 @@ export class BudgetPage extends BasePage {
   }
 
   /**
-   * Get the spent amount for a specific category.
-   * @param categoryId - The category ID to get spent amount for
-   * @returns The spent amount as a number
-   */
-  async getCategorySpent(categoryId: string): Promise<number> {
-    const text = await this.getSpentElement(categoryId).textContent();
-    return this.parseCurrency(text || '0');
-  }
-
-  /**
-   * Get the budget percentage for a specific category.
-   * @param categoryId - The category ID to get percentage for
-   * @returns The percentage as a number
-   */
-  async getCategoryPercentage(categoryId: string): Promise<number> {
-    const text = await this.getPercentageElement(categoryId).textContent();
-    // Extract percentage number (e.g., "75% Used" -> 75)
-    const match = text?.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  }
-
-  /**
    * Assert that the spent amount for a category matches expected value.
    * @param categoryId - The category ID to check
    * @param amount - Expected spent amount
@@ -158,13 +136,5 @@ export class BudgetPage extends BasePage {
   async expectBudgetSet(categoryId: string, amount: number): Promise<void> {
     const budgetAmount = this.getBudgetAmountElement(categoryId);
     await expect(budgetAmount).toContainText(this.formatCurrency(amount));
-  }
-
-  /**
-   * Assert that a budget card for a category is visible.
-   * @param categoryId - The category ID to check
-   */
-  async expectBudgetCardVisible(categoryId: string): Promise<void> {
-    await expect(this.getBudgetCard(categoryId)).toBeVisible();
   }
 }

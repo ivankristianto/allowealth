@@ -72,7 +72,7 @@ grep -r "bun:" src/ --exclude-dir=node_modules
 
 - **Unit tests**: Write first, fail first. Use `bun:test`.
 - **Integration tests**: Required for user-facing features. >80% coverage on critical paths.
-- **E2E tests**: Required for critical user flows. Tag `@critical` tests for CI smoke runs. Use Playwright with `workers=1` for shared database tests.
+- **E2E tests**: Business-critical user flows only; finer checks belong in `bun:test`. Use Playwright with `workers=1` for shared database tests.
 
 ## IV. Design System
 

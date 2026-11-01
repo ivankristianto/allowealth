@@ -514,21 +514,19 @@ bun run test:watch           # Watch mode
 
 ### E2E Tests (Playwright)
 
-| Command                     | Description                                                        |
-| --------------------------- | ------------------------------------------------------------------ |
-| `bun run test:e2e:setup`    | Install Playwright browsers                                        |
-| `bun run test:e2e`          | Run all E2E tests headless                                         |
-| `bun run test:e2e:ui`       | Open Playwright UI mode                                            |
-| `bun run test:e2e:headed`   | Run E2E tests in visible browser                                   |
-| `bun run test:e2e:debug`    | Run E2E tests in debug mode                                        |
-| `bun run test:e2e:report`   | Open HTML test report                                              |
-| `bun run test:e2e:critical` | Run only tests tagged `@critical`                                  |
-| `bun run snapshot:html`     | Capture normalized HTML per route into `.snapshots/$SNAPSHOT_DIR/` |
+| Command                   | Description                                                        |
+| ------------------------- | ------------------------------------------------------------------ |
+| `bun run test:e2e:setup`  | Install Playwright browsers                                        |
+| `bun run test:e2e`        | Run all E2E tests headless                                         |
+| `bun run test:e2e:ui`     | Open Playwright UI mode                                            |
+| `bun run test:e2e:headed` | Run E2E tests in visible browser                                   |
+| `bun run test:e2e:debug`  | Run E2E tests in debug mode                                        |
+| `bun run test:e2e:report` | Open HTML test report                                              |
+| `bun run snapshot:html`   | Capture normalized HTML per route into `.snapshots/$SNAPSHOT_DIR/` |
 
 ```bash
 bun run test:e2e:setup       # First time only
 bun run test:e2e             # Run all E2E tests
-bun run test:e2e:critical    # Smoke tests only
 SNAPSHOT_DIR=before bun run snapshot:html   # HTML snapshots for whitespace diffs (dev server on 4320, db/.e2e.db)
 ```
 

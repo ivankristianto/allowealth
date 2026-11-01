@@ -19,9 +19,6 @@ export interface AccountFormData {
 export class AccountsPage extends BasePage {
   // Locators for account page elements
   private readonly addAccountBtn = '[data-testid="add-account-btn"]';
-  private readonly portfolioTotal = '[data-testid="portfolio-total"]';
-  private readonly accountFormModal = '[data-testid="account-form-modal"]';
-  private readonly accountDeleteModal = '[data-testid="account-delete-modal"]';
   private readonly accountRow = '[data-account-table-row]';
 
   /**
@@ -46,13 +43,6 @@ export class AccountsPage extends BasePage {
     return this.page.locator(this.accountRow).filter({
       has: this.page.getByRole('link', { name, exact: true }),
     });
-  }
-
-  /**
-   * Get the account name link inside a row, which opens the account detail page.
-   */
-  getAccountNameLink(name: string): Locator {
-    return this.getAccountItemByName(name).getByRole('link', { name, exact: true });
   }
 
   /**
@@ -248,37 +238,6 @@ export class AccountsPage extends BasePage {
   }
 
   /**
-   * Delete an account with confirmation.
-   *
-   * @param accountId - The ID of the account to delete
-   */
-  async deleteAccount(accountId: string): Promise<void> {
-    // Find and click the delete button for this account
-    const accountItem = this.getAccountItem(accountId);
-    await this.waitForVisible(accountItem);
-
-    const deleteBtn = accountItem
-      .locator('[data-delete-account]')
-      .or(accountItem.locator('[data-testid="account-delete-btn"]'));
-    await deleteBtn.click();
-
-    // Wait for confirmation modal
-    const confirmModal = this.page
-      .locator(this.accountDeleteModal)
-      .or(this.page.locator('#account-delete-modal'));
-    await confirmModal.waitFor({ state: 'visible' });
-
-    // Click confirm delete button
-    const confirmBtn = this.getByTestId('confirm-delete-btn').or(
-      confirmModal.locator('button').filter({ hasText: /delete|confirm/i })
-    );
-    await confirmBtn.click();
-
-    // Wait for modal to close and account to be removed
-    await expect(accountItem).not.toBeVisible({ timeout: 5000 });
-  }
-
-  /**
    * Verify that an account with the given name exists in the list.
    *
    * @param name - The account name to find
@@ -286,73 +245,5 @@ export class AccountsPage extends BasePage {
   async expectAccountExists(name: string): Promise<void> {
     const accountItem = this.getAccountItemByName(name);
     await expect(accountItem).toBeVisible({ timeout: 10000 });
-  }
-
-  /**
-   * Verify that an account has the expected balance.
-   */
-  async expectAccountBalance(name: string, expectedBalance: string): Promise<void> {
-    const accountItem = this.getAccountItemByName(name);
-    await expect(accountItem).toBeVisible();
-    await expect(accountItem.locator('[data-testid="account-balance"]')).toContainText(
-      expectedBalance
-    );
-  }
-
-  /**
-   * Get the IDR row of the "Total Accounts" card, or '0' when the summary is not rendered.
-   */
-  async getPortfolioTotal(): Promise<string> {
-    const portfolioSection = this.page.locator(this.portfolioTotal);
-    if ((await portfolioSection.count()) === 0) {
-      return '0';
-    }
-
-    const idrRow = this.page
-      .locator('[data-testid="portfolio-total-accounts"] div.flex')
-      .filter({ has: this.page.locator('span', { hasText: /^IDR$/ }) });
-    if ((await idrRow.count()) === 0) {
-      return '0';
-    }
-    return ((await idrRow.locator('p').textContent()) ?? '0').trim();
-  }
-
-  /**
-   * Get the account ID by its name.
-   *
-   * @param name - The account name to search for
-   * @returns The account ID or null if not found
-   */
-  async getAccountIdByName(name: string): Promise<string | null> {
-    // Wait for at least one account item to exist
-    const accountItem = this.getAccountItemByName(name).first();
-
-    // Wait for the element to be visible (with a reasonable timeout)
-    try {
-      await accountItem.waitFor({ state: 'visible', timeout: 5000 });
-    } catch {
-      // Element not found or not visible
-      return null;
-    }
-
-    // Try to get from data-account-id attribute
-    const accountId = await accountItem.getAttribute('data-account-id');
-    if (accountId) {
-      return accountId;
-    }
-
-    // Fallback: try data-account-row attribute
-    const rowId = await accountItem.getAttribute('data-account-row');
-    return rowId;
-  }
-
-  /**
-   * Verify that the add account button is visible.
-   */
-  async expectAddAccountButtonVisible(): Promise<void> {
-    const addBtn = this.page
-      .locator(this.addAccountBtn)
-      .or(this.page.locator('[data-add-account-btn]'));
-    await expect(addBtn.first()).toBeVisible();
   }
 }

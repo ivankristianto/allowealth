@@ -11,7 +11,7 @@ paths:
 
 - **Unit tests**: Write first, fail first. Use `bun:test`. >80% coverage on critical paths.
 - **Integration tests**: Required for user-facing features.
-- **E2E tests**: Required for critical user flows. Tag `@critical` for CI smoke runs.
+- **E2E tests**: Business-critical user flows only (see E2E Scope below). Everything finer goes in `bun:test`.
 
 ## Test Organization
 
@@ -65,6 +65,16 @@ describe('BudgetService', () => {
 - ❌ **Skip tests** - all tests must pass before committing
 
 ## E2E Testing (Playwright)
+
+### E2E Scope
+
+E2E answers one question: can a user still sign in and manage their money? The CI job should finish in under 5 minutes (#433).
+
+- ✅ **Map every E2E test to a critical flow** - sign-in and auth security, email change, adding/editing/deleting transactions, accounts, budgets, recurring confirmation, totals across pages
+- ✅ **Create the test's own data** - categories, accounts and users via `e2e/helpers/api-helpers.ts`, found by a unique name
+- ✅ **Tag `@mobile` only when the phone layout takes a different path** - the `mobile-chrome` project runs `@mobile` tests only
+- ❌ **Depend on seed order, seeded names or the current date** - `playwright.config.ts` pins the timezone to UTC; don't pick "the first card"
+- ❌ **Add E2E tests for layout, copy, or per-field variants** - cover those with `bun:test` component or service tests
 
 ### Configuration
 
@@ -341,8 +351,8 @@ bun test src/services/budget.test.ts
 # Run E2E tests
 bun run test:e2e
 
-# Run critical tests only
-bun run test:e2e --grep @critical
+# Run only the tests that also run on the phone viewport
+bun run test:e2e --grep @mobile
 ```
 
 **Coverage goals:**

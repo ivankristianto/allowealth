@@ -3,12 +3,12 @@ import {
   createVerificationToken,
   createExpiredVerificationToken,
   getEmailState,
-} from '../../helpers/email-verification';
+} from '../helpers/email-verification';
 
 /**
  * Email Verification E2E Tests
  *
- * Covers the login page banners and the /api/auth/verify-email endpoint.
+ * Covers the email-change flow and the /api/auth/verify-email endpoint.
  * Signup no longer issues verification tokens, so the live token flow is an
  * email change from the profile API. The app stores only the token hash and
  * emails the raw value, so tests insert their own token for the user.
@@ -65,49 +65,6 @@ async function getCsrfTokenFromPage(page: Page): Promise<string> {
 }
 
 test.describe('Email Verification', () => {
-  test.describe('Login Page Banners', () => {
-    test('shows registration info banner when registered=true', async ({ page }) => {
-      await page.goto('/login?registered=true');
-      const banner = page.locator('.alert-info');
-      await expect(banner).toBeVisible();
-      await expect(banner).toContainText('Check your email to verify your account');
-    });
-
-    test('shows verification success banner when verified=true', async ({ page }) => {
-      await page.goto('/login?verified=true');
-      const banner = page.locator('.alert-success');
-      await expect(banner).toBeVisible();
-      await expect(banner).toContainText('Email verified');
-    });
-
-    test('shows invalid token error message', async ({ page }) => {
-      await page.goto('/login?error=invalid_token');
-      const errorArea = page.locator('[data-testid="login-error"]');
-      await expect(errorArea).toContainText('Invalid verification link');
-    });
-
-    test('shows expired token error message', async ({ page }) => {
-      await page.goto('/login?error=expired_token');
-      // expired_token shows as a banner (with resend button), not inline error
-      const banner = page.locator('.alert-error');
-      await expect(banner).toContainText('expired');
-    });
-  });
-
-  test.describe('Verify Email Endpoint', () => {
-    test('missing token redirects to login with invalid_token error', async ({ page }) => {
-      await page.goto(`${E2E_BASE_URL}/api/auth/verify-email`);
-      await page.waitForURL('**/login**');
-      expect(page.url()).toContain('error=invalid_token');
-    });
-
-    test('invalid token redirects to login with invalid_token error', async ({ page }) => {
-      await page.goto(`${E2E_BASE_URL}/api/auth/verify-email?token=nonexistent-token-xyz`);
-      await page.waitForURL('**/login**');
-      expect(page.url()).toContain('error=invalid_token');
-    });
-  });
-
   test.describe('Token Verification', () => {
     test('change email via profile, verify the token, then sign in with the new email', async ({
       page,
@@ -167,16 +124,26 @@ test.describe('Email Verification', () => {
       await loginViaForm(page, newEmail, password);
     });
 
-    test('expired token redirects with expired_token error', async ({ page, request }) => {
-      const { email } = await registerUser(request);
+    test('missing, unknown and expired tokens are rejected', async ({ page, request }) => {
+      const verifyUrl = `${E2E_BASE_URL}/api/auth/verify-email`;
 
+      await page.goto(verifyUrl);
+      await page.waitForURL('**/login**');
+      expect(new URL(page.url()).searchParams.get('error')).toBe('invalid_token');
+
+      await page.goto(`${verifyUrl}?token=nonexistent-token-xyz`);
+      await page.waitForURL('**/login**');
+      expect(new URL(page.url()).searchParams.get('error')).toBe('invalid_token');
+
+      const { email } = await registerUser(request);
       const token = createExpiredVerificationToken(email);
       expect(token).not.toBeNull();
 
-      await page.goto(`${E2E_BASE_URL}/api/auth/verify-email?token=${token}`);
+      await page.goto(`${verifyUrl}?token=${token}`);
       await page.waitForURL('**/login**');
-      expect(page.url()).toContain('error=expired_token');
-      expect(page.url()).toContain(`email=${encodeURIComponent(email)}`);
+      const expiredUrl = new URL(page.url());
+      expect(expiredUrl.searchParams.get('error')).toBe('expired_token');
+      expect(expiredUrl.searchParams.get('email')).toBe(email);
     });
   });
 });

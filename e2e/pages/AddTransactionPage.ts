@@ -44,10 +44,6 @@ export class AddTransactionPage extends BasePage {
     return this.getFormPanel().locator('[data-testid="transaction-amount-input"]');
   }
 
-  private get categorySelect(): Locator {
-    return this.getFormPanel().locator('[data-testid="transaction-category-select"]');
-  }
-
   private get accountSelect(): Locator {
     return this.getFormPanel().locator('[data-testid="transaction-account-select"]');
   }
@@ -196,78 +192,5 @@ export class AddTransactionPage extends BasePage {
   async fillAndSubmit(data: TransactionFormData): Promise<void> {
     await this.fillForm(data);
     await this.submit();
-  }
-
-  /**
-   * Verify successful submission and navigate to transactions page.
-   * The drawer form stays open after submission (bulk entry mode).
-   * We navigate to the transactions page to verify the transaction was created.
-   *
-   * @param type - Transaction type for filter (default: 'income')
-   */
-  async expectRedirectToTransactions(type: 'expense' | 'income' = 'income'): Promise<void> {
-    // Navigate to transactions page with appropriate type filter
-    // Use waitUntil: 'domcontentloaded' to avoid waiting for slow network resources on mobile
-    await this.page.goto(`/transactions?type=${type}`, { waitUntil: 'domcontentloaded' });
-
-    // Verify we're on the transactions page by checking for the active type filter button
-    // aria-pressed is set server-side so it's available once the HTML is parsed
-    const typeFilter: Locator = this.page.locator(
-      `[data-filter-type="${type}"][aria-pressed="true"]`
-    );
-    await expect(typeFilter).toBeVisible({ timeout: 10000 });
-  }
-
-  /**
-   * Verify that a validation error is displayed for a specific field.
-   *
-   * @param field - The field name (e.g., 'amount', 'category_id')
-   * @param message - The expected error message
-   */
-  async expectValidationError(field: string, message: string): Promise<void> {
-    // Find the field input element
-    const fieldInput: Locator = this.page.locator(`[name="${field}"]`);
-
-    // Find the form-control container (parent of the field)
-    const formControl: Locator = fieldInput.locator(
-      'xpath=ancestor::div[contains(@class, "form-control")]'
-    );
-
-    // Find error within that specific field's container
-    const errorLocator: Locator = formControl.locator('.field-error');
-
-    await expect(errorLocator).toBeVisible();
-    await expect(errorLocator).toHaveText(message);
-
-    // Verify aria-invalid is set for accessibility
-    await expect(fieldInput).toHaveAttribute('aria-invalid', 'true');
-  }
-
-  /**
-   * Get the current value of the amount input.
-   */
-  async getAmountValue(): Promise<string> {
-    return this.amountInput.inputValue();
-  }
-
-  /**
-   * Get the currently selected category.
-   */
-  async getSelectedCategory(): Promise<string> {
-    return this.categorySelect.inputValue();
-  }
-
-  /**
-   * Get the currently selected account.
-   */
-  async getSelectedAccount(): Promise<string> {
-    return this.accountSelect.inputValue();
-  }
-
-  /**
-   * Check if the submit button is enabled.
-   */
-  async isSubmitEnabled(): Promise<boolean> {
-    return this.submitBtn.isEnabled();
   }
 }
