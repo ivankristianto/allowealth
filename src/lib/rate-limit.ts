@@ -247,26 +247,6 @@ export const RATE_LIMIT_PRESETS = {
   } satisfies RateLimitConfig,
 
   /**
-   * Rate limit for resend verification email
-   * 3 requests per hour per IP
-   */
-  resendVerification: {
-    maxRequests: 3,
-    windowMs: 60 * 60 * 1000, // 1 hour
-    message: 'Too many verification email requests. Please try again later.',
-  } satisfies RateLimitConfig,
-
-  /**
-   * Per-email rate limit for resend verification
-   * 3 requests per hour per email address
-   */
-  resendVerificationPerEmail: {
-    maxRequests: 3,
-    windowMs: 60 * 60 * 1000, // 1 hour
-    message: 'Too many verification email requests for this address. Please try again later.',
-  } satisfies RateLimitConfig,
-
-  /**
    * Rate limit for resending email change verification
    * 3 requests per hour per user
    */

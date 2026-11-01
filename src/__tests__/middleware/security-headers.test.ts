@@ -89,14 +89,11 @@ describe('CSP directives for Turnstile', () => {
   });
 
   test('explicit inline scripts read the nonce from Astro locals', () => {
-    const registrationForm = readFileSync(
-      'src/components/molecules/RegistrationForm.astro',
-      'utf-8'
-    );
+    const signupPage = readFileSync('src/pages/signup.astro', 'utf-8');
     const turnstile = readFileSync('src/components/atoms/Turnstile.astro', 'utf-8');
 
-    expect(registrationForm).toContain("const cspNonce = Astro.locals.cspNonce || ''");
-    expect(registrationForm).toContain('nonce={cspNonce}');
+    expect(signupPage).toContain("const cspNonce = Astro.locals.cspNonce || ''");
+    expect(signupPage).toContain('nonce={cspNonce}');
     expect(turnstile).toContain("const cspNonce = Astro.locals.cspNonce || ''");
     expect(turnstile).toContain('nonce={cspNonce}');
   });

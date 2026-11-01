@@ -39,15 +39,6 @@ export interface SendWorkspaceInvitationOptions {
 }
 
 /**
- * Email verification options
- */
-export interface SendEmailVerificationOptions {
-  to: string;
-  userName: string;
-  verificationUrl: string;
-}
-
-/**
  * Email change verification options
  */
 export interface SendEmailChangeVerificationOptions {
@@ -130,20 +121,6 @@ export class EmailService {
       inviteUrl,
       expiresIn,
     });
-
-    return this.send({
-      to,
-      subject: template.subject,
-      html: template.html,
-    });
-  }
-
-  /**
-   * Send an email verification email
-   */
-  async sendEmailVerification(options: SendEmailVerificationOptions): Promise<SendEmailResult> {
-    const { to, userName, verificationUrl } = options;
-    const template = emailTemplateService.emailVerification({ verificationUrl, userName });
 
     return this.send({
       to,

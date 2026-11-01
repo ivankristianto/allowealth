@@ -1,7 +1,7 @@
 /**
  * Email Verification Service
  *
- * Manages email verification tokens for user registration.
+ * Manages the tokens that confirm a user's email change.
  * Tokens expire after 24 hours and are single-use.
  */
 
@@ -244,47 +244,6 @@ export class EmailVerificationService {
 
     log.info('Email change verification resent', { userId, pendingEmail });
     return { pendingEmail };
-  }
-
-  /**
-   * Send verification email to user
-   * @param userId - User ID
-   */
-  async sendVerificationEmail(userId: string, baseUrl?: string): Promise<void> {
-    // Validate user and email service before creating token
-    const user = await this.db.query.users.findFirst({
-      where: eq(this.schema.users.id, userId),
-    });
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    if (user.deleted_at) {
-      log.warn('Skipping verification email for soft-deleted user', { userId });
-      return;
-    }
-
-    if (!this.emailSvc) {
-      log.warn('No email service configured, skipping verification email');
-      return;
-    }
-
-    // Create token only after validating user and email service
-    const token = await this.createVerificationToken(userId);
-
-    // Build verification URL — PUBLIC_URL (trusted config) takes precedence over request origin
-    const resolvedBaseUrl = getEnv('PUBLIC_URL') || baseUrl || 'http://localhost:4321';
-    const verificationUrl = `${resolvedBaseUrl}/api/auth/verify-email?token=${token}`;
-
-    // Send email via workspace email service
-    await this.emailSvc.sendEmailVerification({
-      to: user.email,
-      userName: user.name,
-      verificationUrl,
-    });
-
-    log.info('Verification email sent', { userId });
   }
 
   /**
