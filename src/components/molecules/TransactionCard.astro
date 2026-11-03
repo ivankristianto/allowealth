@@ -582,6 +582,7 @@ const cardClasses = [
     observeExpandableContainers,
   } from './ExpandableText.client';
   import { initTransactionSwipe, cleanupTransactionSwipe } from './TransactionCard.client';
+  import { initTransactionCardMenuNav } from './TransactionCardMenu.client';
 
   initTransactionHistory();
   initExpandableText();
@@ -591,50 +592,5 @@ const cardClasses = [
 
   document.addEventListener('astro:before-swap', cleanupTransactionSwipe, { once: true });
 
-  // Keyboard navigation for transaction dropdown menus.
-  // Use one delegated listener so dynamically injected cards work without re-binding.
-  type TransactionCardWindow = Window & {
-    __transactionCardMenuNavInitialized?: boolean;
-  };
-
-  const transactionCardWindow = window as TransactionCardWindow;
-
-  if (!transactionCardWindow.__transactionCardMenuNavInitialized) {
-    transactionCardWindow.__transactionCardMenuNavInitialized = true;
-
-    document.addEventListener('keydown', (event) => {
-      if (!['ArrowDown', 'ArrowUp', 'Escape'].includes(event.key)) return;
-
-      const target = event.target as HTMLElement | null;
-      const menu = target?.closest('[role="menu"]') as HTMLElement | null;
-      if (!menu) return;
-
-      const items = Array.from(
-        menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])')
-      );
-      if (items.length === 0) return;
-
-      const currentIndex = items.indexOf(document.activeElement as HTMLElement);
-
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-        items[nextIndex]?.focus();
-        return;
-      }
-
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-        items[prevIndex]?.focus();
-        return;
-      }
-
-      event.preventDefault();
-      const dropdown = menu.closest('.dropdown') as HTMLElement | null;
-      const trigger = dropdown?.querySelector('button[aria-haspopup]') as HTMLElement | null;
-      trigger?.focus();
-      (document.activeElement as HTMLElement | null)?.blur();
-    });
-  }
+  initTransactionCardMenuNav();
 </script>
