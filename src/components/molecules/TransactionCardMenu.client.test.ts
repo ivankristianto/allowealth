@@ -1,14 +1,17 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { Window } from 'happy-dom';
 import { initTransactionCardMenuNav } from './TransactionCardMenu.client';
 
+// Mirrors TransactionCard.astro for a card without edit history (aria-disabled, not disabled).
 const CARD_HTML = `
-  <div class="dropdown" data-transaction-actions>
+  <div class="dropdown dropdown-end" data-transaction-actions>
     <button type="button" tabindex="0" aria-label="Transaction actions" aria-haspopup="menu">...</button>
     <ul tabindex="0" class="dropdown-content menu" role="menu">
-      <li role="none"><button type="button" role="menuitem" disabled>History</button></li>
-      <li role="none"><button type="button" role="menuitem">Edit</button></li>
-      <li role="none"><button type="button" role="menuitem">Duplicate</button></li>
+      <li role="none" class="disabled opacity-40">
+        <button type="button" role="menuitem" aria-label="No edit history available" aria-disabled="true">History</button>
+      </li>
+      <li role="none"><button type="button" role="menuitem" aria-disabled="false">Edit</button></li>
+      <li role="none"><button type="button" role="menuitem">Convert to recurring</button></li>
       <li role="none"><button type="button" role="menuitem">Delete</button></li>
     </ul>
   </div>
@@ -16,14 +19,16 @@ const CARD_HTML = `
 `;
 
 describe('transaction card actions menu keyboard handling', () => {
-  let window: Window;
-  let document: Document;
+  let originalWindow: typeof globalThis.window | undefined;
+  let originalDocument: typeof globalThis.document | undefined;
+  let testWindow: Window;
   let dropdown: HTMLElement;
   let trigger: HTMLButtonElement;
   let items: HTMLButtonElement[];
+  let outside: HTMLButtonElement;
 
   const press = (target: Element, key: string): KeyboardEvent => {
-    const event = new window.KeyboardEvent('keydown', {
+    const event = new testWindow.KeyboardEvent('keydown', {
       key,
       bubbles: true,
       cancelable: true,
@@ -33,14 +38,27 @@ describe('transaction card actions menu keyboard handling', () => {
   };
 
   beforeEach(() => {
-    window = new Window({ url: 'http://localhost/transactions' });
-    document = window.document as unknown as Document;
+    originalWindow = globalThis.window;
+    originalDocument = globalThis.document;
+
+    testWindow = new Window({ url: 'http://localhost/transactions' });
+    (globalThis as Record<string, unknown>).window = testWindow;
+    (globalThis as Record<string, unknown>).document = testWindow.document;
+
     document.body.innerHTML = CARD_HTML;
-    initTransactionCardMenuNav(document);
+    initTransactionCardMenuNav();
 
     dropdown = document.querySelector<HTMLElement>('[data-transaction-actions]')!;
     trigger = dropdown.querySelector<HTMLButtonElement>('button[aria-haspopup]')!;
     items = Array.from(dropdown.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
+    outside = document.querySelector<HTMLButtonElement>('[data-outside]')!;
+  });
+
+  afterEach(() => {
+    window.__transactionCardMenuController?.abort();
+    testWindow.close();
+    (globalThis as Record<string, unknown>).window = originalWindow;
+    (globalThis as Record<string, unknown>).document = originalDocument;
   });
 
   it('closes a just-opened menu when Escape is pressed on the trigger', () => {
@@ -80,16 +98,30 @@ describe('transaction card actions menu keyboard handling', () => {
     expect(dropdown.classList.contains('dropdown-close')).toBe(false);
   });
 
-  it('clears the closed state when focus leaves the dropdown', () => {
+  it('clears the closed state when focus moves outside the dropdown', () => {
     trigger.focus();
     press(trigger, 'Escape');
 
-    document.querySelector<HTMLButtonElement>('[data-outside]')!.focus();
+    outside.focus();
 
     expect(dropdown.classList.contains('dropdown-close')).toBe(false);
   });
 
-  it('cycles through enabled items with the arrow keys, skipping disabled ones', () => {
+  it('keeps the menu closed when the window loses focus', () => {
+    trigger.focus();
+    press(trigger, 'Escape');
+
+    trigger.dispatchEvent(
+      new testWindow.FocusEvent('focusout', {
+        bubbles: true,
+        relatedTarget: null,
+      }) as unknown as FocusEvent
+    );
+
+    expect(dropdown.classList.contains('dropdown-close')).toBe(true);
+  });
+
+  it('cycles through enabled items with the arrow keys, skipping aria-disabled ones', () => {
     items[1]!.focus();
 
     press(items[1]!, 'ArrowDown');
@@ -105,8 +137,16 @@ describe('transaction card actions menu keyboard handling', () => {
     expect(document.activeElement).toBe(items[3]);
   });
 
+  it('moves one item per key press after being initialized again', () => {
+    initTransactionCardMenuNav();
+    items[1]!.focus();
+
+    press(items[1]!, 'ArrowDown');
+
+    expect(document.activeElement).toBe(items[2]);
+  });
+
   it('ignores Escape outside a transaction menu', () => {
-    const outside = document.querySelector<HTMLButtonElement>('[data-outside]')!;
     outside.focus();
 
     const event = press(outside, 'Escape');

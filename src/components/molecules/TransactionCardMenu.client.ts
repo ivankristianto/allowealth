@@ -1,34 +1,37 @@
 const DROPDOWN_SELECTOR = '[data-transaction-actions]';
 const TRIGGER_SELECTOR = 'button[aria-haspopup]';
+const MENU_SELECTOR = '[role="menu"]';
+// The card marks a missing history entry with aria-disabled, not the disabled attribute.
+const ENABLED_ITEM_SELECTOR = '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])';
 // DaisyUI opens `.dropdown` on :focus-within, so closing it while focus stays on the trigger needs this override class.
 const CLOSED_CLASS = 'dropdown-close';
 
-const initializedDocuments = new WeakSet<Document>();
-
-function asElement(target: EventTarget | null): Element | null {
-  return target && 'closest' in target ? (target as Element) : null;
+declare global {
+  interface Window {
+    __transactionCardMenuController?: AbortController;
+  }
 }
 
-function findDropdown(target: EventTarget | null): HTMLElement | null {
-  return asElement(target)?.closest<HTMLElement>(DROPDOWN_SELECTOR) ?? null;
+function closestFromTarget(target: EventTarget | null, selector: string): HTMLElement | null {
+  if (!target || !('closest' in target)) return null;
+  return (target as Element).closest<HTMLElement>(selector);
 }
 
-function moveFocusWithinMenu(event: KeyboardEvent, menu: HTMLElement, doc: Document): void {
-  const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'));
+function nextItemIndex(key: string, currentIndex: number, itemCount: number): number {
+  const lastIndex = itemCount - 1;
+  if (key === 'ArrowDown') {
+    return currentIndex < lastIndex ? currentIndex + 1 : 0;
+  }
+  return currentIndex > 0 ? currentIndex - 1 : lastIndex;
+}
+
+function moveFocusWithinMenu(event: KeyboardEvent, menu: HTMLElement): void {
+  const items = Array.from(menu.querySelectorAll<HTMLElement>(ENABLED_ITEM_SELECTOR));
   if (items.length === 0) return;
 
   event.preventDefault();
-  const currentIndex = items.indexOf(doc.activeElement as HTMLElement);
-  const lastIndex = items.length - 1;
-  const nextIndex =
-    event.key === 'ArrowDown'
-      ? currentIndex < lastIndex
-        ? currentIndex + 1
-        : 0
-      : currentIndex > 0
-        ? currentIndex - 1
-        : lastIndex;
-  items[nextIndex]?.focus();
+  const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+  items[nextItemIndex(event.key, currentIndex, items.length)]?.focus();
 }
 
 function closeMenu(event: KeyboardEvent, dropdown: HTMLElement): void {
@@ -39,8 +42,8 @@ function closeMenu(event: KeyboardEvent, dropdown: HTMLElement): void {
   dropdown.querySelector<HTMLElement>(TRIGGER_SELECTOR)?.focus();
 }
 
-function handleKeydown(event: KeyboardEvent, doc: Document): void {
-  const dropdown = findDropdown(event.target);
+function handleKeydown(event: KeyboardEvent): void {
+  const dropdown = closestFromTarget(event.target, DROPDOWN_SELECTOR);
   if (!dropdown) return;
 
   if (event.key === 'Escape') {
@@ -50,27 +53,32 @@ function handleKeydown(event: KeyboardEvent, doc: Document): void {
 
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
 
-  const menu = asElement(event.target)?.closest<HTMLElement>('[role="menu"]');
-  if (menu) moveFocusWithinMenu(event, menu, doc);
+  const menu = closestFromTarget(event.target, MENU_SELECTOR);
+  if (menu) moveFocusWithinMenu(event, menu);
 }
 
 function handleTriggerClick(event: MouseEvent): void {
-  if (!asElement(event.target)?.closest(TRIGGER_SELECTOR)) return;
-  findDropdown(event.target)?.classList.remove(CLOSED_CLASS);
+  const trigger = closestFromTarget(event.target, TRIGGER_SELECTOR);
+  trigger?.closest(DROPDOWN_SELECTOR)?.classList.remove(CLOSED_CLASS);
 }
 
 function handleFocusOut(event: FocusEvent): void {
-  const dropdown = findDropdown(event.target);
-  if (!dropdown || dropdown.contains(event.relatedTarget as Node | null)) return;
+  // A null relatedTarget means the window lost focus; the browser refocuses the trigger on return, which must not reopen the menu.
+  if (!event.relatedTarget) return;
+
+  const dropdown = closestFromTarget(event.target, DROPDOWN_SELECTOR);
+  if (!dropdown || dropdown.contains(event.relatedTarget as Node)) return;
   dropdown.classList.remove(CLOSED_CLASS);
 }
 
 /** Delegated listeners so cards injected after load get keyboard support without re-binding. */
-export function initTransactionCardMenuNav(doc: Document = document): void {
-  if (initializedDocuments.has(doc)) return;
-  initializedDocuments.add(doc);
+export function initTransactionCardMenuNav(): void {
+  window.__transactionCardMenuController?.abort();
+  const controller = new AbortController();
+  window.__transactionCardMenuController = controller;
+  const { signal } = controller;
 
-  doc.addEventListener('keydown', (event) => handleKeydown(event, doc));
-  doc.addEventListener('click', handleTriggerClick);
-  doc.addEventListener('focusout', handleFocusOut);
+  document.addEventListener('keydown', handleKeydown, { signal });
+  document.addEventListener('click', handleTriggerClick, { signal });
+  document.addEventListener('focusout', handleFocusOut, { signal });
 }
