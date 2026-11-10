@@ -229,7 +229,11 @@ describe('Database Integration Tests', () => {
     await cleanupTestData();
 
     // Restore original environment
-    process.env.DATABASE_URL = originalEnv.DATABASE_URL;
+    if (originalEnv.DATABASE_URL === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = originalEnv.DATABASE_URL;
+    }
   });
 
   describe('Module Import', () => {

@@ -143,9 +143,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      # src/__tests__/setup.ts builds the schema here; unset, @/db opens db/.dev.db instead
-      DATABASE_URL: db/.test.db
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
