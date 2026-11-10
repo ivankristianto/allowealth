@@ -139,9 +139,11 @@ export function describeColumnType(column: SQLiteColumn): string {
 }
 
 function describeDefault(column: SQLiteColumn): string {
-  if (!column.hasDefault || column.default === undefined) return '';
+  if (!column.hasDefault) return '';
+  if (column.columnType === 'SQLiteTimestamp' && column.defaultFn) return 'now';
+  if (column.default === undefined) return '';
   const value: unknown = column.default;
-  // SQL expressions (sqliteTimestampNow) and Date defaults are both "now".
+  // SQL expressions (sqliteTimestampMsNow) and Date defaults are both "now".
   if (
     value instanceof Date ||
     (typeof value === 'object' && value !== null && 'queryChunks' in value)

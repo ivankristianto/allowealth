@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, unique, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
@@ -23,8 +22,12 @@ export const budgets = sqliteTable(
     currency: text('currency').notNull(),
     is_closed: integer('is_closed', { mode: 'boolean' }).default(false).notNull(), // For book closing
     notes: text('notes'), // Optional notes for this budget period
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     unique('budgets_unique').on(

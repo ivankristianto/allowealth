@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
@@ -40,8 +39,12 @@ export const recurringTemplates = sqliteTable(
     status: text('status', { enum: ['active', 'paused', 'completed', 'cancelled'] })
       .default('active')
       .notNull(),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('recurring_templates_workspace_id_idx').on(table.workspace_id),

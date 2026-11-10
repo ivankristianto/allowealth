@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { accounts } from './accounts';
 
 export const accountHistory = sqliteTable(
@@ -12,7 +11,7 @@ export const accountHistory = sqliteTable(
     balance: text('balance').notNull(), // Stored as string for decimal precision
     notes: text('notes'),
     recorded_at: integer('recorded_at', { mode: 'timestamp' })
-      .default(sqliteTimestampNow)
+      .$defaultFn(() => new Date())
       .notNull(),
   },
   (table) => [

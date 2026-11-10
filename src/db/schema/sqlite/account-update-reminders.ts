@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { accounts } from './accounts';
@@ -23,7 +22,9 @@ export const accountUpdateReminders = sqliteTable(
     last_updated: integer('last_updated', { mode: 'timestamp' }),
     next_reminder: integer('next_reminder', { mode: 'timestamp' }),
     is_dismissed: integer('is_dismissed', { mode: 'boolean' }).default(false).notNull(),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('account_update_reminders_workspace_id_idx').on(table.workspace_id),

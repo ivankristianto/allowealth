@@ -1,5 +1,4 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { user } from './better-auth';
 
 /**
@@ -29,8 +28,12 @@ export const oauthClient = sqliteTable(
     scopes: text('scopes'),
     clientCredentialsScopes: text('clientCredentialsScopes'),
     userId: text('userId').references(() => user.id, { onDelete: 'cascade' }),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
     name: text('name'),
     uri: text('uri'),
     icon: text('icon'),
@@ -77,8 +80,12 @@ export const oauthResource = sqliteTable(
     customClaims: text('customClaims'),
     dpopBoundAccessTokensRequired: integer('dpopBoundAccessTokensRequired', { mode: 'boolean' }),
     disabled: integer('disabled', { mode: 'boolean' }),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
     policyVersion: integer('policyVersion'),
     metadata: text('metadata'),
   },
@@ -96,7 +103,9 @@ export const oauthClientResource = sqliteTable(
       .notNull()
       .references(() => oauthResource.identifier, { onDelete: 'cascade' }),
     metadata: text('metadata'),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     uniqueIndex('oauthClientResource_clientId_resourceId_idx').on(table.clientId, table.resourceId),
@@ -121,7 +130,9 @@ export const oauthRefreshToken = sqliteTable(
     resources: text('resources'),
     requestedUserInfoClaims: text('requestedUserInfoClaims'),
     expiresAt: integer('expiresAt', { mode: 'timestamp' }),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
     revoked: integer('revoked', { mode: 'timestamp' }),
     rotatedAt: integer('rotatedAt', { mode: 'timestamp' }),
     rotationReplayResponse: text('rotationReplayResponse'),
@@ -155,7 +166,9 @@ export const oauthAccessToken = sqliteTable(
     requestedUserInfoClaims: text('requestedUserInfoClaims'),
     refreshId: text('refreshId').references(() => oauthRefreshToken.id, { onDelete: 'cascade' }),
     expiresAt: integer('expiresAt', { mode: 'timestamp' }),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
     revoked: integer('revoked', { mode: 'timestamp' }),
     confirmation: text('confirmation'),
     scopes: text('scopes').notNull(),
@@ -182,8 +195,12 @@ export const oauthConsent = sqliteTable(
     resources: text('resources'),
     requestedUserInfoClaims: text('requestedUserInfoClaims'),
     scopes: text('scopes').notNull(),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('oauthConsent_clientId_idx').on(table.clientId),

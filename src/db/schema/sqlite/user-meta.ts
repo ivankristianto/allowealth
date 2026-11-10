@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { users } from './users';
 
 /**
@@ -22,8 +21,12 @@ export const userMeta = sqliteTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     meta_key: text('meta_key').notNull(),
     meta_value: text('meta_value').notNull(),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     unique('user_meta_user_key_unique').on(table.user_id, table.meta_key),

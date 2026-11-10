@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
+import { sqliteTimestampMsNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 
@@ -19,7 +19,7 @@ export const auditLogs = sqliteTable(
     old_value: text('old_value'),
     new_value: text('new_value'),
     created_at: integer('created_at', { mode: 'timestamp_ms' })
-      .default(sqliteTimestampNow)
+      .default(sqliteTimestampMsNow)
       .notNull(),
   },
   (table) => [
