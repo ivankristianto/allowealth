@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realMcpAuth from '@/lib/mcp-auth';
+import * as realMcpContext from '@mcp-server/context';
+import * as realMcpTools from '@mcp-server/tools/index';
 
 import type { McpAuthContext } from '@/lib/mcp-auth';
 import { clearRateLimitStore } from '@/lib/rate-limit';
@@ -12,15 +16,15 @@ const createServicesMock = mock(() => ({ service: 'ok' }));
 const registerToolsMock = mock(() => []);
 const handleToolCallMock = mock(async () => ({ ok: true }));
 
-(mock as any).module?.('@/lib/mcp-auth', () => ({
+mockModuleForFile('@/lib/mcp-auth', realMcpAuth, () => ({
   validateMcpToken: validateMcpTokenMock,
 }));
 
-(mock as any).module?.('@mcp-server/context', () => ({
+mockModuleForFile('@mcp-server/context', realMcpContext, () => ({
   createServices: createServicesMock,
 }));
 
-(mock as any).module?.('@mcp-server/tools/index', () => ({
+mockModuleForFile('@mcp-server/tools/index', realMcpTools, () => ({
   registerTools: registerToolsMock,
   handleToolCall: handleToolCallMock,
 }));

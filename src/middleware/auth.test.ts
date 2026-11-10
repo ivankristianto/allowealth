@@ -1,11 +1,13 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realAuthServer from '@/lib/auth/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { users, workspaces } from '@/db/schema';
 
 const getSessionMock = mock(async () => null);
 
-(mock as any).module('@/lib/auth/server', () => ({
+mockModuleForFile('@/lib/auth/server', realAuthServer, () => ({
   auth: {
     api: {
       getSession: getSessionMock,

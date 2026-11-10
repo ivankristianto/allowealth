@@ -63,6 +63,7 @@ describe('BudgetService', () => {
 - ✅ **Write unit tests first** (fail first, then implement)
 - ✅ **Use `bun:test`** - not vitest
 - ❌ **Skip tests** - all tests must pass before committing
+- ✅ **Mock modules with `mockModuleForFile` (`@/lib/test-helpers/mock-module`)** - bare `mock.module` stays active for every later file and `mock.restore()` does not undo it; the helper spreads the real exports and puts them back in `afterAll`. Check with `bun test --randomize --seed=<n>`
 
 ## E2E Testing (Playwright)
 

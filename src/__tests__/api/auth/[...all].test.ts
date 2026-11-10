@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realAuthServer from '@/lib/auth/server';
 import { setTestEnv } from '@/lib/env';
 
 const authHandlerMock = mock(async (request: Request) =>
@@ -7,7 +9,7 @@ const authHandlerMock = mock(async (request: Request) =>
     pathname: new URL(request.url).pathname,
   })
 );
-(mock as any).module('@/lib/auth/server', () => ({
+mockModuleForFile('@/lib/auth/server', realAuthServer, () => ({
   auth: {
     handler: authHandlerMock,
   },

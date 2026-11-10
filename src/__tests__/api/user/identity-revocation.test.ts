@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realSecondaryStorage from '@/lib/auth/secondary-storage';
+import * as realAuthServer from '@/lib/auth/server';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db, getActiveSchema } from '@/db';
@@ -14,7 +17,7 @@ import { EmailVerificationService } from '@/services/email-verification.service'
 const fakeRedis = new Map<string, string>();
 let fakeRedisEnabled = true;
 
-(mock as any).module('@/lib/auth/secondary-storage', () => ({
+mockModuleForFile('@/lib/auth/secondary-storage', realSecondaryStorage, () => ({
   createAuthSecondaryStorage: () =>
     fakeRedisEnabled
       ? {
@@ -50,7 +53,7 @@ const TEST_ENV = {
 // Other test files replace '@/lib/auth/server' process-wide; the query string
 // loads the real module and the mock below hands it to the routes under test.
 const realAuthModule = await import(`@/lib/auth/server?identity=${Date.now()}`);
-(mock as any).module('@/lib/auth/server', () => realAuthModule);
+mockModuleForFile('@/lib/auth/server', realAuthServer, () => realAuthModule);
 const auth = realAuthModule.auth;
 
 const schema = getActiveSchema();

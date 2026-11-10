@@ -1,4 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realSecurityActivityService from '@/services/security-activity.service';
 import { setTestEnv } from '@/lib/env';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 
@@ -9,7 +11,7 @@ setTestEnv({
 });
 
 const logEventMock = mock(() => Promise.resolve());
-(mock as any).module('@/services/security-activity.service', () => ({
+mockModuleForFile('@/services/security-activity.service', realSecurityActivityService, () => ({
   securityActivityService: {
     logEvent: logEventMock,
   },
