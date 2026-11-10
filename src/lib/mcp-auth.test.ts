@@ -24,7 +24,21 @@ const testDeps = {
   cache: { invalidateByTags: mockCacheInvalidate },
 };
 
+const MCP_GRANT = { clientId: 'mcp-claude-desktop', scopes: JSON.stringify(['openid', 'mcp']) };
+
+function liveToken(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'tok-1',
+    expiresAt: new Date(Date.now() + 3600_000),
+    revoked: null,
+    userId: 'user-1',
+    ...MCP_GRANT,
+    ...overrides,
+  };
+}
+
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
+import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 import { invalidateMcpToken, validateMcpToken } from './mcp-auth';
 
 describe('validateMcpToken', () => {
@@ -55,6 +69,7 @@ describe('validateMcpToken', () => {
       expiresAt: expiredAt,
       revoked: null,
       userId: 'user-1',
+      ...MCP_GRANT,
     }));
     expect(await validateMcpToken('valid-token', testDeps)).toBeNull();
   });
@@ -77,6 +92,7 @@ describe('validateMcpToken', () => {
       expiresAt: null,
       revoked: null,
       userId: 'user-1',
+      ...MCP_GRANT,
     }));
     mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
 
@@ -97,6 +113,67 @@ describe('validateMcpToken', () => {
     expect(params).toEqual([await hashOAuthToken('raw-bearer-token')]);
   });
 
+  it('selects the scopes and client id so they can be checked', async () => {
+    let capturedColumns: Record<string, boolean> | undefined;
+    mockDb.query.oauthAccessToken.findFirst = mock(
+      async (config: { columns: Record<string, boolean> }) => {
+        capturedColumns = config.columns;
+        return null;
+      }
+    ) as typeof mockFindFirst;
+
+    await validateMcpToken('raw-bearer-token', testDeps);
+
+    expect(capturedColumns).toMatchObject({ scopes: true, clientId: true });
+  });
+
+  it('rejects a token granted without the mcp scope', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({ scopes: JSON.stringify(['openid']) })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('openid-only-token', testDeps)).toBeNull();
+  });
+
+  it('does not treat a scope that only starts with mcp as mcp', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({ scopes: JSON.stringify(['openid', 'mcpx']) })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('lookalike-scope-token', testDeps)).toBeNull();
+  });
+
+  it('rejects a token whose scopes column is not a JSON array', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => liveToken({ scopes: 'openid mcp' }));
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('malformed-scope-token', testDeps)).toBeNull();
+  });
+
+  it('rejects a token minted for a client that is not a seeded MCP client', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({ clientId: 'user-registered-client' })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('foreign-client-token', testDeps)).toBeNull();
+  });
+
+  it('accepts an mcp token from every seeded MCP client', async () => {
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    for (const { clientId } of MCP_OAUTH_CLIENTS) {
+      mockDb.query.oauthAccessToken.findFirst = mock(async () => liveToken({ clientId }));
+      expect(await validateMcpToken('valid-token', testDeps)).toEqual({
+        workspaceId: 'ws-1',
+        userId: 'user-1',
+        tokenId: 'tok-1',
+      });
+    }
+  });
+
   it('returns McpAuthContext for valid token', async () => {
     mockCacheGet.mockResolvedValue(null);
     const expiresAt = new Date(Date.now() + 3600_000);
@@ -105,6 +182,7 @@ describe('validateMcpToken', () => {
       expiresAt,
       revoked: null,
       userId: 'user-1',
+      ...MCP_GRANT,
     }));
     mockDb.query.users.findFirst = mock(async () => ({
       workspace_id: 'ws-1',
@@ -123,6 +201,7 @@ describe('validateMcpToken', () => {
       expiresAt,
       revoked: null,
       userId: 'user-1',
+      ...MCP_GRANT,
     }));
     mockDb.query.users.findFirst = mock(async () => ({
       workspace_id: 'ws-1',
@@ -148,6 +227,7 @@ describe('validateMcpToken', () => {
       expiresAt,
       revoked: null,
       userId: 'user-1',
+      ...MCP_GRANT,
     }));
     mockDb.query.users.findFirst = mock(async () => ({ workspace_id: null }));
 
@@ -161,6 +241,7 @@ describe('validateMcpToken', () => {
       expiresAt,
       revoked: null,
       userId: 'user-1',
+      ...MCP_GRANT,
     }));
     mockDb.query.users.findFirst = mock(async () => ({
       workspace_id: 'ws-1',
