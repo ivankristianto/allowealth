@@ -5,6 +5,7 @@ import { db, getActiveSchema } from '@/db';
 import { setTestEnv } from '@/lib/env';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import { AccountCategoryService } from '@/services/account-category.service';
 import { EmailService } from '@/services/email';
 import { EmailVerificationService } from '@/services/email-verification.service';
 
@@ -297,6 +298,44 @@ describe('identity flows revoke sessions through Better Auth', () => {
         .from(schema.session)
         .where(eq(schema.session.userId, signup.session.user.id));
       expect(remaining).toHaveLength(0);
+    });
+  });
+
+  describe('failed signup bootstrap', () => {
+    const originalSeed = AccountCategoryService.prototype.seedDefaultCategories;
+
+    afterAll(() => {
+      AccountCategoryService.prototype.seedDefaultCategories = originalSeed;
+    });
+
+    it('clears sessions through the Better Auth adapter of the signup request', async () => {
+      AccountCategoryService.prototype.seedDefaultCategories = mock(async () => {
+        throw new Error('category seeding failed');
+      });
+      const { internalAdapter } = await auth.$context;
+      const deleteUserSessions = internalAdapter.deleteUserSessions;
+      const deletedFor: string[] = [];
+      internalAdapter.deleteUserSessions = async (userId: string) => {
+        deletedFor.push(userId);
+        return deleteUserSessions(userId);
+      };
+
+      const email = `bootstrap-${nanoid(8).toLowerCase()}@example.com`;
+      try {
+        await expect(
+          auth.api.signUpEmail({ body: { email, password: PASSWORD, name: 'Bootstrap Test' } })
+        ).rejects.toThrow();
+      } finally {
+        internalAdapter.deleteUserSessions = deleteUserSessions;
+        AccountCategoryService.prototype.seedDefaultCategories = originalSeed;
+      }
+
+      expect(deletedFor).toHaveLength(1);
+      const leftover = await db
+        .select({ id: schema.user.id })
+        .from(schema.user)
+        .where(eq(schema.user.email, email));
+      expect(leftover).toHaveLength(0);
     });
   });
 

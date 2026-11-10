@@ -23,6 +23,9 @@ export const GOOGLE_ACCOUNT_NOT_LINKED_MESSAGE =
 type AuthHookContext = {
   body?: Record<string, unknown> | null;
   request?: Request;
+  context?: {
+    internalAdapter: { deleteUserSessions(userId: string): Promise<void> };
+  };
 } | null;
 
 type AuthProvider = 'credential' | 'google';
@@ -216,9 +219,20 @@ async function cleanupFailedDomainBootstrap(
   }
 }
 
-async function cleanupFailedAuthBootstrap(userId: string, database: IDatabase): Promise<void> {
+async function cleanupFailedAuthBootstrap(
+  userId: string,
+  context: AuthHookContext,
+  database: IDatabase
+): Promise<void> {
   await database.delete(schema.account).where(eq(schema.account.userId, userId));
-  await database.delete(schema.session).where(eq(schema.session.userId, userId));
+  // The hook's own auth context also clears the Redis copy. Importing `auth` here would form an
+  // import cycle with server.ts; a create.after hook runs after commit, so this nests no transaction.
+  const internalAdapter = context?.context?.internalAdapter;
+  if (internalAdapter) {
+    await internalAdapter.deleteUserSessions(userId);
+  } else {
+    await database.delete(schema.session).where(eq(schema.session.userId, userId));
+  }
   await database.delete(schema.user).where(eq(schema.user.id, userId));
 }
 
@@ -267,7 +281,7 @@ export async function bootstrapAuthUser(
       error,
     });
 
-    await cleanupFailedAuthBootstrap(authUser.id, database);
+    await cleanupFailedAuthBootstrap(authUser.id, context, database);
 
     throw error instanceof Error ? error : new Error('Failed to bootstrap auth user domain data');
   }
