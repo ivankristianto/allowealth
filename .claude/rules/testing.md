@@ -250,6 +250,7 @@ import.meta.env.DATABASE_URL = 'sqlite::memory:'; // Doesn't work in prod
 **Rules:**
 
 - ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match the production code path
+- ❌ **Point `bun test` at a database through `DATABASE_URL`** - Bun loads `.env` first, which can name the real `db/.dev.db`, so the preload (`src/__tests__/setup.ts`) overwrites it with `TEST_DATABASE_URL ?? 'db/.test.db'` and refuses any file name without `.test`
 
 ## Common Patterns
 
