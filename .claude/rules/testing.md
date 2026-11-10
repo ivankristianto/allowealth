@@ -64,6 +64,7 @@ describe('BudgetService', () => {
 - ✅ **Use `bun:test`** - not vitest
 - ❌ **Skip tests** - all tests must pass before committing
 - ✅ **Mock modules with `mockModuleForFile` (`@/lib/test-helpers/mock-module`)** - bare `mock.module` stays active for every later file and `mock.restore()` does not undo it; the helper spreads the real exports and puts them back in `afterAll`. Check with `bun test --randomize --seed=<n>`
+- ✅ **Leave shared state as you found it** - call `resetCacheManager()` after swapping methods on the cache singleton (and before tests that assume a fresh one), `setTestEnv(null)` after setting overrides, and restore a redefined global with its original property descriptor (`Object.defineProperty(globalThis, 'document', { value })` alone leaves a read-only property)
 
 ## E2E Testing (Playwright)
 

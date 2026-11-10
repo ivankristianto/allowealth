@@ -1,7 +1,10 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
 import * as realAuthServer from '@/lib/auth/server';
 import { setTestEnv } from '@/lib/env';
+
+// getEnv reads these overrides before process.env, so they must not reach later files.
+afterAll(() => setTestEnv(null));
 
 const authHandlerMock = mock(async (request: Request) =>
   Response.json({

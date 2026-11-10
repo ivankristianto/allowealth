@@ -1,8 +1,11 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { APIError } from 'better-auth/api';
 import { emailVerificationService, userMetaService, userService } from '@/services';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { setTestEnv } from '@/lib/env';
+
+// getEnv reads these overrides before process.env, so they must not reach later files.
+afterAll(() => setTestEnv(null));
 
 let GET: any;
 let PUT: any;

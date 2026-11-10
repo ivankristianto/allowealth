@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { CacheManager, resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 import { DiagnosticsService } from './diagnostics.service';
@@ -13,6 +13,11 @@ const mockDb = {
 } as any;
 
 describe('DiagnosticsService environment variables', () => {
+  // Earlier test files leave a singleton behind whenever a service touched the cache.
+  beforeEach(() => {
+    resetCacheManager();
+  });
+
   afterEach(() => {
     setTestEnv(null);
     resetCacheManager();
