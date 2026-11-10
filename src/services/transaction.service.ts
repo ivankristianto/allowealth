@@ -402,7 +402,10 @@ export class TransactionService {
     return conditions;
   }
 
-  private async fetchTransactionsFromDb(filters: TransactionFilters) {
+  private async fetchTransactionsFromDb(
+    filters: TransactionFilters,
+    { paginate = true }: { paginate?: boolean } = {}
+  ) {
     const conditions = this.buildFilterConditions(filters);
 
     // Drizzle relational query `extras` not typeable with dynamic composition
@@ -423,9 +426,12 @@ export class TransactionService {
         desc(this.schema.transactions.transaction_date),
         desc(this.schema.transactions.created_at),
       ],
-      limit: filters.limit || 50,
-      offset: filters.offset || 0,
     };
+
+    if (paginate) {
+      queryOptions.limit = filters.limit || 50;
+      queryOptions.offset = filters.offset || 0;
+    }
 
     const extras: Record<string, any> = {
       // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
@@ -1381,12 +1387,8 @@ export class TransactionService {
    * Export transactions to CSV format
    */
   async exportToCSV(filters: TransactionFilters): Promise<string> {
-    // Fetch all matching transactions (no limit for export)
-    const allTransactions = await this.findAll({
-      ...filters,
-      limit: undefined,
-      offset: undefined,
-    });
+    // Bypasses the findAll cache too: a full export should not sit in it for 30 minutes.
+    const allTransactions = await this.fetchTransactionsFromDb(filters, { paginate: false });
 
     // CSV header
     const headers = ['date', 'type', 'amount', 'currency', 'category', 'account', 'description'];
