@@ -18,7 +18,7 @@ export function createSetupSqlDatabase(path: string) {
   for (const statement of setupSql.split(';').map(removeComments).filter(Boolean)) {
     raw.prepare(statement).run();
   }
-  raw.exec('PRAGMA foreign_keys = ON;');
+  raw.run('PRAGMA foreign_keys = ON;');
 
   return {
     raw,

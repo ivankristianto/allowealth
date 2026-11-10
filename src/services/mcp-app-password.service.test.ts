@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
-import { eq } from 'drizzle-orm';
+import { DrizzleQueryError, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import * as schema from '@/db/schema/sqlite';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
@@ -229,5 +229,55 @@ describe('McpAppPasswordService.revoke and listForUser', () => {
       ['second', false],
       ['first', true],
     ]);
+  });
+});
+
+describe('McpAppPasswordService database errors', () => {
+  test('never include the token hash in the error message', async () => {
+    const brokenPath = join(import.meta.dir, `mcp-app-password-broken-${nanoid(8)}.sqlite`);
+    const broken = createSetupSqlDatabase(brokenPath);
+    try {
+      seedWorkspaceUser(broken.db, { workspaceId, userId });
+      broken.raw.run('DROP TABLE mcp_app_passwords');
+      const brokenService = new McpAppPasswordService(broken.db, () => clock);
+      const token = 'aw_pat_' + 'a'.repeat(43);
+
+      const verifyError = await brokenService.verify(token).catch((caught: Error) => caught);
+      expect(verifyError).toBeInstanceOf(Error);
+      expect((verifyError as Error).message).toContain('no such table');
+      expect((verifyError as Error).message).not.toContain(await hashOAuthToken(token));
+      expect((verifyError as Error).message).not.toContain('params');
+
+      const createError = await brokenService
+        .create({ userId, name: 'x', scope: 'read', expiry: '30' })
+        .catch((caught: Error) => caught);
+      expect(createError).toBeInstanceOf(Error);
+      expect((createError as Error).message).not.toContain('params');
+    } finally {
+      broken.cleanup();
+    }
+  });
+
+  test('strip bound params from Drizzle query errors', async () => {
+    const token = 'aw_pat_' + 'b'.repeat(43);
+    const tokenHash = await hashOAuthToken(token);
+    const failingQuery = {
+      limit: () =>
+        Promise.reject(
+          new DrizzleQueryError(
+            'select ... where token_hash = ?',
+            [tokenHash],
+            new Error('disk I/O error')
+          )
+        ),
+    };
+    const failingDb = {
+      select: () => ({ from: () => ({ innerJoin: () => ({ where: () => failingQuery }) }) }),
+    };
+    const failingService = new McpAppPasswordService(failingDb as never, () => clock);
+
+    const error = await failingService.verify(token).catch((caught: Error) => caught);
+    expect((error as Error).message).toBe('Checking the app password failed: disk I/O error');
+    expect((error as Error).message).not.toContain(tokenHash);
   });
 });

@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm';
+import { DrizzleQueryError, and, count, desc, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db as defaultDb, getActiveSchema, type Database } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
@@ -15,6 +15,18 @@ import type { McpAuthContext } from '@/lib/mcp-auth';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_USED_WRITE_INTERVAL_MS = 60_000;
+
+/** Drizzle errors embed bound params (the token hash) in their message; keep only the cause. */
+async function withoutQueryParams<T>(action: string, query: () => Promise<T>): Promise<T> {
+  try {
+    return await query();
+  } catch (error) {
+    const source = error instanceof DrizzleQueryError ? error.cause : error;
+    throw new Error(
+      `${action} failed: ${source instanceof Error ? source.message : 'database error'}`
+    );
+  }
+}
 
 export interface AppPasswordSummary {
   id: string;
@@ -97,7 +109,9 @@ export class McpAppPasswordService {
       created_at: createdAt,
     };
 
-    await this.database.insert(mcpAppPasswords).values(row);
+    await withoutQueryParams('Saving the app password', async () => {
+      await this.database.insert(mcpAppPasswords).values(row);
+    });
 
     return { token, appPassword: this.toSummary(row) };
   }
@@ -128,21 +142,24 @@ export class McpAppPasswordService {
     if (!isAppPasswordToken(token)) return null;
 
     const { mcpAppPasswords, users } = this.schema;
-    const [record] = await this.database
-      .select({
-        id: mcpAppPasswords.id,
-        userId: mcpAppPasswords.user_id,
-        workspaceId: mcpAppPasswords.workspace_id,
-        scope: mcpAppPasswords.scope,
-        expiresAt: mcpAppPasswords.expires_at,
-        lastUsedAt: mcpAppPasswords.last_used_at,
-        userWorkspaceId: users.workspace_id,
-        userDeletedAt: users.deleted_at,
-      })
-      .from(mcpAppPasswords)
-      .innerJoin(users, eq(users.id, mcpAppPasswords.user_id))
-      .where(eq(mcpAppPasswords.token_hash, await hashOAuthToken(token)))
-      .limit(1);
+    const tokenHash = await hashOAuthToken(token);
+    const [record] = await withoutQueryParams('Checking the app password', () =>
+      this.database
+        .select({
+          id: mcpAppPasswords.id,
+          userId: mcpAppPasswords.user_id,
+          workspaceId: mcpAppPasswords.workspace_id,
+          scope: mcpAppPasswords.scope,
+          expiresAt: mcpAppPasswords.expires_at,
+          lastUsedAt: mcpAppPasswords.last_used_at,
+          userWorkspaceId: users.workspace_id,
+          userDeletedAt: users.deleted_at,
+        })
+        .from(mcpAppPasswords)
+        .innerJoin(users, eq(users.id, mcpAppPasswords.user_id))
+        .where(eq(mcpAppPasswords.token_hash, tokenHash))
+        .limit(1)
+    );
 
     if (!record) return null;
 
