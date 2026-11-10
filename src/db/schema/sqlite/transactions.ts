@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
@@ -28,8 +27,12 @@ export const transactions = sqliteTable(
     updated_by_user_id: text('updated_by_user_id').references(() => users.id),
     deleted_by_user_id: text('deleted_by_user_id').references(() => users.id),
     deleted_at: integer('deleted_at', { mode: 'timestamp' }),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('transactions_workspace_id_idx').on(table.workspace_id),

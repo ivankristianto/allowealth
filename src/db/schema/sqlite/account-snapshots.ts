@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 
@@ -17,7 +16,9 @@ export const accountSnapshots = sqliteTable(
     month: integer('month').notNull(),
     year: integer('year').notNull(),
     notes: text('notes'),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('account_snapshots_workspace_id_idx').on(table.workspace_id),

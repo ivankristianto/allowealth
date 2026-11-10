@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { recurringTemplates } from './recurring-templates';
 import { workspaces } from './workspaces';
 import { transactions } from './transactions';
@@ -25,8 +24,12 @@ export const recurringOccurrences = sqliteTable(
     confirmed_amount: text('confirmed_amount'),
     skip_reason: text('skip_reason'),
     confirmed_at: integer('confirmed_at', { mode: 'timestamp' }),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     unique('recurring_occurrences_template_occurrence_unique').on(

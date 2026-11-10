@@ -10,7 +10,7 @@ For drawn diagrams and a generated column reference, open `database-schema.html`
 2. **User Attribution**: All records track the creator via `created_by_user_id` for audit purposes
 3. **Decimal Precision**: Money amounts stored as strings to prevent floating-point errors
 4. **Soft Deletes**: Transactional data uses `deleted_at` for audit trail
-5. **Timestamp Consistency**: All tables use Unix timestamps (milliseconds since epoch)
+5. **Timestamp Consistency**: Timestamps are Unix seconds (`mode: 'timestamp'`); only `audit_logs.created_at` uses milliseconds (`mode: 'timestamp_ms'`)
 6. **Type Safety**: Enums defined at schema level for consistent data validation
 
 ## Multi-Tenant Architecture
@@ -732,18 +732,24 @@ amount: real('amount').notNull(); // 123.44999999
 
 ### Timestamps
 
-**Unix timestamps in milliseconds (integer).**
+**Unix timestamps in seconds (integer), defaulted in the application.**
 
 ```typescript
-created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull();
+created_at: integer('created_at', { mode: 'timestamp' })
+  .$defaultFn(() => new Date())
+  .notNull();
 ```
 
-**Helper**: `sqliteTimestampNow` converts Julian date to Unix epoch:
+Drizzle fills `$defaultFn` on insert and stores the `Date` as seconds. Do not give a seconds column a SQL `.default()`: Drizzle inlines a SQL default into the INSERT ahead of `$defaultFn`.
+
+`audit_logs.created_at` is the one millisecond column. It uses `mode: 'timestamp_ms'` with the SQL default `sqliteTimestampMsNow`:
 
 ```typescript
 // (Julian Day - 2440587.5) * 86400000
-const sqliteTimestampNow = sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`;
+const sqliteTimestampMsNow = sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`;
 ```
+
+**Known drift**: the CREATE TABLE migrations gave every seconds column this millisecond SQL default, and the DDL still has it. The Drizzle snapshot from migration 0005 onward does not, so `drizzle-kit generate` stays clean. Only a raw SQL insert that omits the column can hit the old default. Migration `0005_repair_ms_timestamps` converts rows that were written that way. A future rebuild of a table brings its DDL in line.
 
 ### Enums
 
@@ -819,10 +825,10 @@ All tables include creation and update tracking:
 
 ```typescript
 created_at: integer('created_at', { mode: 'timestamp' })
-  .default(sqliteTimestampNow)
+  .$defaultFn(() => new Date())
   .notNull(),
 updated_at: integer('updated_at', { mode: 'timestamp' })
-  .default(sqliteTimestampNow)
+  .$defaultFn(() => new Date())
   .notNull()
 ```
 

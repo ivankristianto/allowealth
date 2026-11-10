@@ -1,5 +1,4 @@
 import { integer, index, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 
 export const user = sqliteTable(
   'user',
@@ -10,8 +9,12 @@ export const user = sqliteTable(
     emailVerified: integer('emailVerified', { mode: 'boolean' }).notNull().default(false),
     image: text('image'),
     twoFactorEnabled: integer('twoFactorEnabled', { mode: 'boolean' }).notNull().default(false),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [index('user_email_idx').on(table.email)]
 );
@@ -22,8 +25,12 @@ export const session = sqliteTable(
     id: text('id').primaryKey(),
     expiresAt: integer('expiresAt', { mode: 'timestamp' }).notNull(),
     token: text('token').notNull().unique(),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
     ipAddress: text('ipAddress'),
     userAgent: text('userAgent'),
     userId: text('userId')
@@ -53,8 +60,12 @@ export const account = sqliteTable(
     refreshTokenExpiresAt: integer('refreshTokenExpiresAt', { mode: 'timestamp' }),
     scope: text('scope'),
     password: text('password'),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('account_user_id_idx').on(table.userId),
@@ -70,8 +81,12 @@ export const verification = sqliteTable(
     identifier: text('identifier').notNull(),
     value: text('value').notNull(),
     expiresAt: integer('expiresAt', { mode: 'timestamp' }).notNull(),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)]
 );
@@ -111,8 +126,12 @@ export const passkey = sqliteTable(
     backedUp: integer('backedUp', { mode: 'boolean' }).notNull(),
     transports: text('transports'),
     aaguid: text('aaguid'),
-    createdAt: integer('createdAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updatedAt: integer('updatedAt', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('passkey_user_id_idx').on(table.userId),
