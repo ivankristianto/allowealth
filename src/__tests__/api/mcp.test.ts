@@ -1,18 +1,11 @@
-import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
-
-import type { McpAuthContext } from '@/lib/mcp-auth';
-import { clearRateLimitStore } from '@/lib/rate-limit';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
 import * as realMcpAuth from '@/lib/mcp-auth';
 import * as realMcpContext from '@mcp-server/context';
 import * as realMcpTools from '@mcp-server/tools/index';
 
-// mock.module stays active for later test files and patches live bindings, so keep
-// copies of the real exports (taken before mocking) to restore afterwards.
-const realModules = {
-  '@/lib/mcp-auth': { ...realMcpAuth },
-  '@mcp-server/context': { ...realMcpContext },
-  '@mcp-server/tools/index': { ...realMcpTools },
-};
+import type { McpAuthContext } from '@/lib/mcp-auth';
+import { clearRateLimitStore } from '@/lib/rate-limit';
 
 const validateMcpTokenMock = mock(async (): Promise<McpAuthContext | null> => ({
   workspaceId: 'ws-1',
@@ -23,24 +16,18 @@ const createServicesMock = mock(() => ({ service: 'ok' }));
 const registerToolsMock = mock(() => []);
 const handleToolCallMock = mock(async () => ({ ok: true }));
 
-(mock as any).module?.('@/lib/mcp-auth', () => ({
+mockModuleForFile('@/lib/mcp-auth', realMcpAuth, () => ({
   validateMcpToken: validateMcpTokenMock,
 }));
 
-(mock as any).module?.('@mcp-server/context', () => ({
+mockModuleForFile('@mcp-server/context', realMcpContext, () => ({
   createServices: createServicesMock,
 }));
 
-(mock as any).module?.('@mcp-server/tools/index', () => ({
+mockModuleForFile('@mcp-server/tools/index', realMcpTools, () => ({
   registerTools: registerToolsMock,
   handleToolCall: handleToolCallMock,
 }));
-
-afterAll(() => {
-  for (const [specifier, exports] of Object.entries(realModules)) {
-    (mock as any).module?.(specifier, () => exports);
-  }
-});
 
 function createApiContext(request: Request) {
   return {

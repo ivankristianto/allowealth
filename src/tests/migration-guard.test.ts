@@ -1,10 +1,10 @@
-import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realMigrationService from '@/services/migration.service';
 
-// Mock MigrationService before importing the guard
 let mockPending = false;
 
-// @ts-expect-error -- mock.module is a bun:test runtime API not yet in TS definitions
-mock.module('@/services/migration.service', () => ({
+mockModuleForFile('@/services/migration.service', realMigrationService, () => ({
   MigrationService: {
     isMigrationPending: async () => mockPending,
   },
@@ -12,10 +12,6 @@ mock.module('@/services/migration.service', () => ({
 
 // Import after mock is set up
 const { migrationGuard } = await import('@/middleware/migration-guard');
-
-afterAll(() => {
-  (mock as any).restore();
-});
 
 function makeContext(pathname: string, role?: string) {
   return {

@@ -1,10 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realServices from '@/services';
 
 const exportToCsvMock = mock(() =>
   Promise.resolve('Timestamp,Action,Entity Type,Entity ID,Details')
 );
 
-(mock as any).module('@/services', () => ({
+mockModuleForFile('@/services', realServices, () => ({
   auditLogService: {
     exportToCsv: exportToCsvMock,
   },

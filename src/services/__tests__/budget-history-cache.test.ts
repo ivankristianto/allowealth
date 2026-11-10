@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { afterAll, describe, it, expect, beforeEach, mock } from 'bun:test';
 import { BudgetService } from '../budget.service';
 import {
   createMockDatabase,
@@ -6,6 +6,9 @@ import {
   resetMockDatabase,
 } from '../test-helpers/mocks';
 import { resetCacheManager, getCacheManager } from '@/lib/cache';
+
+// The tests swap methods on the shared cache manager, so later files need a fresh one.
+afterAll(() => resetCacheManager());
 
 describe('BudgetService.getBudgetHistory caching', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;

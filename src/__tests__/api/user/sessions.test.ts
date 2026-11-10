@@ -1,6 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realSecurityActivityService from '@/services/security-activity.service';
 import { setTestEnv } from '@/lib/env';
 import { clearRateLimitStore } from '@/lib/rate-limit';
+
+// getEnv reads these overrides before process.env, so they must not reach later files.
+afterAll(() => setTestEnv(null));
 
 // Set env before auth module loads
 setTestEnv({
@@ -9,7 +14,7 @@ setTestEnv({
 });
 
 const logEventMock = mock(() => Promise.resolve());
-(mock as any).module('@/services/security-activity.service', () => ({
+mockModuleForFile('@/services/security-activity.service', realSecurityActivityService, () => ({
   securityActivityService: {
     logEvent: logEventMock,
   },

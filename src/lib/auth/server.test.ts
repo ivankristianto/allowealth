@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realSecurityActivityService from '@/services/security-activity.service';
 import { resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 
 let resetAuthInstance: (() => void) | null = null;
 const logEventMock = mock(() => Promise.resolve());
 
-(mock as any).module('@/services/security-activity.service', () => ({
+mockModuleForFile('@/services/security-activity.service', realSecurityActivityService, () => ({
   securityActivityService: {
     logEvent: logEventMock,
   },
