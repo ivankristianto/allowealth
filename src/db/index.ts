@@ -78,17 +78,22 @@ export interface IDatabase {
   transaction: <T>(callback: (tx: any) => Promise<T>) => Promise<T>;
 }
 
+export type DbTransaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
 /**
- * Run an async callback in a database transaction.
- *
- * Wraps Drizzle's native SQLite transaction support so services have a single
- * entry point for atomic multi-step writes.
+ * Run a synchronous callback in one SQLite transaction; a throw rolls back every statement.
+ * bun-sqlite commits at the first `await`, so a Promise-returning callback is a type error.
  */
-export async function runTransaction<T>(
-  db: IDatabase,
-  callback: (tx: IDatabase) => Promise<T>
-): Promise<T> {
-  return db.transaction((tx) => callback(tx as IDatabase));
+export function runTransaction<T>(
+  db: IDatabase | Database,
+  callback: (tx: DbTransaction) => T,
+  ..._guard: [T] extends [never]
+    ? []
+    : T extends PromiseLike<unknown>
+      ? [callbackMustBeSynchronous: never]
+      : []
+): T {
+  return (db as Database).transaction(callback);
 }
 
 /**

@@ -18,14 +18,16 @@ export function createTokenService(db: IDatabase, config: TokenConfig) {
       const tokenHash = await hashOpaqueToken(token);
       const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-      await runTransaction(db, async (tx) => {
-        await tx.delete(config.getTable()).where(eq(config.getUserIdCol(), userId));
-        await tx.insert(config.getTable()).values({
-          id: nanoid(),
-          [config.getUserIdCol().name]: userId,
-          [config.getTokenCol().name]: tokenHash,
-          [config.getExpiresAtCol().name]: expiresAt,
-        } as any);
+      runTransaction(db, (tx) => {
+        tx.delete(config.getTable()).where(eq(config.getUserIdCol(), userId)).run();
+        tx.insert(config.getTable())
+          .values({
+            id: nanoid(),
+            [config.getUserIdCol().name]: userId,
+            [config.getTokenCol().name]: tokenHash,
+            [config.getExpiresAtCol().name]: expiresAt,
+          } as any)
+          .run();
       });
 
       return token;

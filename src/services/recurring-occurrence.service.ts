@@ -266,91 +266,86 @@ export class RecurringOccurrenceService {
       user_id: input.userId,
     });
 
-    const result = await runTransaction(this.db, async (tx) => {
-      const occurrence = await tx.query.recurringOccurrences.findFirst({
-        where: and(
-          eq(this.schema.recurringOccurrences.id, id),
-          eq(this.schema.recurringOccurrences.workspace_id, workspaceId)
-        ),
-        with: {
-          template: {
-            with: {
-              category: true,
-              account: true,
-            },
+    const occurrence = await this.db.query.recurringOccurrences.findFirst({
+      where: and(
+        eq(this.schema.recurringOccurrences.id, id),
+        eq(this.schema.recurringOccurrences.workspace_id, workspaceId)
+      ),
+      with: {
+        template: {
+          with: {
+            category: true,
+            account: true,
           },
         },
-      });
+      },
+    });
 
-      if (!occurrence) {
-        throw new RecurringServiceError(
-          ServiceErrorCode.RECURRING_OCCURRENCE_NOT_FOUND,
-          'Recurring occurrence not found',
-          404
-        );
-      }
+    if (!occurrence) {
+      throw new RecurringServiceError(
+        ServiceErrorCode.RECURRING_OCCURRENCE_NOT_FOUND,
+        'Recurring occurrence not found',
+        404
+      );
+    }
 
-      if (occurrence.status === 'confirmed') {
-        throw new RecurringServiceError(
-          ServiceErrorCode.OCCURRENCE_ALREADY_CONFIRMED,
-          'Recurring occurrence has already been confirmed',
-          409
-        );
-      }
+    if (occurrence.status === 'confirmed') {
+      throw new RecurringServiceError(
+        ServiceErrorCode.OCCURRENCE_ALREADY_CONFIRMED,
+        'Recurring occurrence has already been confirmed',
+        409
+      );
+    }
 
-      if (occurrence.status === 'skipped') {
-        throw new RecurringServiceError(
-          ServiceErrorCode.OCCURRENCE_ALREADY_SKIPPED,
-          'Recurring occurrence has already been skipped',
-          409
-        );
-      }
+    if (occurrence.status === 'skipped') {
+      throw new RecurringServiceError(
+        ServiceErrorCode.OCCURRENCE_ALREADY_SKIPPED,
+        'Recurring occurrence has already been skipped',
+        409
+      );
+    }
 
-      if (occurrence.template.status !== 'active') {
-        throw new RecurringServiceError(
-          ServiceErrorCode.TEMPLATE_NOT_ACTIVE,
-          'Recurring template is not active',
-          409
-        );
-      }
+    if (occurrence.template.status !== 'active') {
+      throw new RecurringServiceError(
+        ServiceErrorCode.TEMPLATE_NOT_ACTIVE,
+        'Recurring template is not active',
+        409
+      );
+    }
 
-      this.ensureOccurrenceIsDue(occurrence.due_date);
+    this.ensureOccurrenceIsDue(occurrence.due_date);
 
-      const template = occurrence.template as RecurringTemplate;
-      const description =
-        template.is_installment && template.total_occurrences
-          ? generateInstallmentDescription(
-              template.name,
-              template.installment_label || 'Installment',
-              occurrence.occurrence_number,
-              template.total_occurrences
-            )
-          : template.description || template.name;
+    const template = occurrence.template as RecurringTemplate;
+    const description =
+      template.is_installment && template.total_occurrences
+        ? generateInstallmentDescription(
+            template.name,
+            template.installment_label || 'Installment',
+            occurrence.occurrence_number,
+            template.total_occurrences
+          )
+        : template.description || template.name;
 
-      let createdTransactionId: string | null = null;
+    // create() is async (validation, cache), so it cannot join the synchronous transaction below.
+    const createdTransaction = await this.transactionService.create(
+      {
+        workspace_id: workspaceId,
+        created_by_user_id: validated.user_id,
+        type: template.type,
+        amount: validated.amount,
+        currency: template.currency,
+        category_id: validated.category_id,
+        account_id: validated.account_id,
+        transaction_date: validated.transaction_date,
+        description,
+      },
+      { skipDateValidation: true }
+    );
+    const createdTransactionId = createdTransaction?.id ?? null;
 
-      try {
-        const transactionService =
-          tx === this.db ? this.transactionService : new TransactionService(tx as IDatabase);
-        const createdTransaction = await transactionService.create(
-          {
-            workspace_id: workspaceId,
-            created_by_user_id: validated.user_id,
-            type: template.type,
-            amount: validated.amount,
-            currency: template.currency,
-            category_id: validated.category_id,
-            account_id: validated.account_id,
-            transaction_date: validated.transaction_date,
-            description,
-          },
-          { skipDateValidation: true }
-        );
-
-        createdTransactionId = createdTransaction?.id ?? null;
-
-        await tx
-          .update(this.schema.recurringOccurrences)
+    try {
+      runTransaction(this.db, (tx) => {
+        tx.update(this.schema.recurringOccurrences)
           .set({
             status: 'confirmed',
             transaction_id: createdTransactionId,
@@ -364,15 +359,18 @@ export class RecurringOccurrenceService {
               eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
               eq(this.schema.recurringOccurrences.status, 'pending')
             )
-          );
+          )
+          .run();
 
-        const confirmed = await tx.query.recurringOccurrences.findFirst({
-          where: and(
-            eq(this.schema.recurringOccurrences.id, id),
-            eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
-            eq(this.schema.recurringOccurrences.status, 'confirmed')
-          ),
-        });
+        const confirmed = tx.query.recurringOccurrences
+          .findFirst({
+            where: and(
+              eq(this.schema.recurringOccurrences.id, id),
+              eq(this.schema.recurringOccurrences.workspace_id, workspaceId),
+              eq(this.schema.recurringOccurrences.status, 'confirmed')
+            ),
+          })
+          .sync();
 
         if (!confirmed || confirmed.transaction_id !== createdTransactionId) {
           throw new RecurringServiceError(
@@ -381,39 +379,37 @@ export class RecurringOccurrenceService {
             409
           );
         }
-
-        void logAuditEvent({
-          workspaceId,
-          userId: validated.user_id,
-          action: 'recurring_occurrence.confirm',
-          entityType: 'recurring_occurrence',
-          entityId: id,
-          newValue: {
-            transaction_id: createdTransactionId,
-            confirmed_amount: validated.amount,
-          },
-        });
-
-        return createdTransaction;
-      } catch (error) {
-        if (createdTransactionId) {
-          try {
-            await new TransactionService(tx as IDatabase).delete(
-              createdTransactionId,
-              workspaceId,
-              validated.user_id
-            );
-          } catch (compensationError) {
-            log.warn('failed to compensate orphaned transaction:', compensationError);
-          }
+      });
+    } catch (error) {
+      if (createdTransactionId) {
+        try {
+          await this.transactionService.delete(
+            createdTransactionId,
+            workspaceId,
+            validated.user_id
+          );
+        } catch (compensationError) {
+          log.warn('failed to compensate orphaned transaction:', compensationError);
         }
-
-        throw error;
       }
+
+      throw error;
+    }
+
+    void logAuditEvent({
+      workspaceId,
+      userId: validated.user_id,
+      action: 'recurring_occurrence.confirm',
+      entityType: 'recurring_occurrence',
+      entityId: id,
+      newValue: {
+        transaction_id: createdTransactionId,
+        confirmed_amount: validated.amount,
+      },
     });
 
     await this.invalidateWorkspaceCache(workspaceId);
-    return result;
+    return createdTransaction;
   }
 
   async skip(

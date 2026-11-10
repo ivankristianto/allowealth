@@ -1090,14 +1090,14 @@ export class TransactionService {
     if (validRows.length === 0) return { inserted: 0 };
 
     try {
-      await runTransaction(this.db, async (tx) => {
+      runTransaction(this.db, (tx) => {
         for (
           let offset = 0;
           offset < validRows.length;
           offset += TransactionService.BULK_INSERT_CHUNK_SIZE
         ) {
           const chunk = validRows.slice(offset, offset + TransactionService.BULK_INSERT_CHUNK_SIZE);
-          await tx.insert(this.schema.transactions).values(chunk);
+          tx.insert(this.schema.transactions).values(chunk).run();
         }
       });
       return { inserted: validRows.length };

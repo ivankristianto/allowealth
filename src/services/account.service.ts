@@ -9,6 +9,9 @@ import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('account');
 
 /** Inferred row type for an account record */
 export type AccountRow = typeof accountsTable.$inferSelect;
@@ -451,74 +454,50 @@ export class AccountService {
       ? decimalSubtract(toAccount.balance, amount)
       : decimalAdd(toAccount.balance, amount);
 
-    // Wrap both balance updates in a transaction to ensure atomicity
-    await runTransaction(this.db, async (tx) => {
-      await tx
-        .update(this.schema.accounts)
-        .set({ balance: newFromBalance, last_updated: now, updated_at: now })
-        .where(
-          and(
-            eq(this.schema.accounts.id, fromId),
-            eq(this.schema.accounts.workspace_id, workspaceId)
-          )
-        );
-
-      await tx
-        .update(this.schema.accounts)
-        .set({ balance: newToBalance, last_updated: now, updated_at: now })
-        .where(
-          and(eq(this.schema.accounts.id, toId), eq(this.schema.accounts.workspace_id, workspaceId))
-        );
-    });
-
-    // Record balance history for both accounts with compensating rollback on failure
     try {
-      await (this.db as any).insert(this.schema.accountHistory).values({
-        id: nanoid(),
-        account_id: fromId,
-        balance: newFromBalance,
-        notes: `Transfer to ${toAccount.name}`,
-        recorded_at: now,
-      });
-
-      await (this.db as any).insert(this.schema.accountHistory).values({
-        id: nanoid(),
-        account_id: toId,
-        balance: newToBalance,
-        notes: `Transfer from ${fromAccount.name}`,
-        recorded_at: now,
-      });
-    } catch {
-      // Compensating transaction: rollback both balance updates
-      await runTransaction(this.db, async (tx) => {
-        await tx
-          .update(this.schema.accounts)
-          .set({
-            balance: fromAccount.balance,
-            last_updated: fromAccount.last_updated,
-            updated_at: fromAccount.updated_at,
-          })
+      runTransaction(this.db, (tx) => {
+        tx.update(this.schema.accounts)
+          .set({ balance: newFromBalance, last_updated: now, updated_at: now })
           .where(
             and(
               eq(this.schema.accounts.id, fromId),
               eq(this.schema.accounts.workspace_id, workspaceId)
             )
-          );
+          )
+          .run();
 
-        await tx
-          .update(this.schema.accounts)
-          .set({
-            balance: toAccount.balance,
-            last_updated: toAccount.last_updated,
-            updated_at: toAccount.updated_at,
-          })
+        tx.update(this.schema.accounts)
+          .set({ balance: newToBalance, last_updated: now, updated_at: now })
           .where(
             and(
               eq(this.schema.accounts.id, toId),
               eq(this.schema.accounts.workspace_id, workspaceId)
             )
-          );
+          )
+          .run();
+
+        tx.insert(this.schema.accountHistory)
+          .values({
+            id: nanoid(),
+            account_id: fromId,
+            balance: newFromBalance,
+            notes: `Transfer to ${toAccount.name}`,
+            recorded_at: now,
+          })
+          .run();
+
+        tx.insert(this.schema.accountHistory)
+          .values({
+            id: nanoid(),
+            account_id: toId,
+            balance: newToBalance,
+            notes: `Transfer from ${fromAccount.name}`,
+            recorded_at: now,
+          })
+          .run();
       });
+    } catch (error) {
+      log.error('transfer failed and was rolled back:', error);
       throw new AccountServiceError(
         ServiceErrorCode.ACCOUNT_NOT_FOUND,
         'Failed to transfer: could not create history entries',

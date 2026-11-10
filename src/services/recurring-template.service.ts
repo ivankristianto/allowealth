@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, gte, inArray, like, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
+import type { recurringOccurrences } from '@/db/schema';
 import { logAuditEvent } from '@/lib/audit-log';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
@@ -190,38 +191,42 @@ export class RecurringTemplateService {
 
     const templateId = nanoid();
 
-    const createdTemplate = await runTransaction(this.db, async (tx) => {
-      await tx.insert(this.schema.recurringTemplates).values({
-        id: templateId,
-        workspace_id: validated.workspace_id,
-        created_by_user_id: validated.created_by_user_id,
-        name: validated.name,
-        type: validated.type,
-        amount: validated.amount,
-        currency: validated.currency,
-        category_id: validated.category_id,
-        account_id: validated.account_id,
-        day_of_month: validated.day_of_month ?? 0,
-        frequency: validated.frequency,
-        interval_count: validated.interval_count,
-        start_date: validated.start_date,
-        end_date: validated.end_date ?? null,
-        total_occurrences: validated.total_occurrences ?? null,
-        is_installment: validated.is_installment,
-        installment_label: validated.installment_label ?? null,
-        starting_occurrence_number: validated.starting_occurrence_number,
-        description: validated.description ?? null,
-        status: validated.status,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
+    const createdTemplate = runTransaction(this.db, (tx) => {
+      tx.insert(this.schema.recurringTemplates)
+        .values({
+          id: templateId,
+          workspace_id: validated.workspace_id,
+          created_by_user_id: validated.created_by_user_id,
+          name: validated.name,
+          type: validated.type,
+          amount: validated.amount,
+          currency: validated.currency,
+          category_id: validated.category_id,
+          account_id: validated.account_id,
+          day_of_month: validated.day_of_month ?? 0,
+          frequency: validated.frequency,
+          interval_count: validated.interval_count,
+          start_date: validated.start_date,
+          end_date: validated.end_date ?? null,
+          total_occurrences: validated.total_occurrences ?? null,
+          is_installment: validated.is_installment,
+          installment_label: validated.installment_label ?? null,
+          starting_occurrence_number: validated.starting_occurrence_number,
+          description: validated.description ?? null,
+          status: validated.status,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .run();
 
-      const template = await tx.query.recurringTemplates.findFirst({
-        where: and(
-          eq(this.schema.recurringTemplates.id, templateId),
-          eq(this.schema.recurringTemplates.workspace_id, validated.workspace_id)
-        ),
-      });
+      const template = tx.query.recurringTemplates
+        .findFirst({
+          where: and(
+            eq(this.schema.recurringTemplates.id, templateId),
+            eq(this.schema.recurringTemplates.workspace_id, validated.workspace_id)
+          ),
+        })
+        .sync();
 
       if (!template) {
         throw new RecurringServiceError(
@@ -231,7 +236,18 @@ export class RecurringTemplateService {
         );
       }
 
-      await this._generateForTemplate(template as RecurringTemplate, tx);
+      if (template.status === 'active') {
+        const plan = this.planOccurrences(template as RecurringTemplate, null);
+        if (plan.rows.length > 0) {
+          tx.insert(this.schema.recurringOccurrences).values(plan.rows).onConflictDoNothing().run();
+        }
+        if (plan.exhausted) {
+          tx.update(this.schema.recurringTemplates)
+            .set({ status: 'completed', updated_at: new Date() })
+            .where(eq(this.schema.recurringTemplates.id, template.id))
+            .run();
+        }
+      }
 
       return template as RecurringTemplate;
     });
@@ -807,29 +823,16 @@ export class RecurringTemplateService {
     return { created };
   }
 
-  private async _generateForTemplate(template: RecurringTemplate, dbHandle: IDatabase = this.db) {
-    if (template.status !== 'active') {
-      return { created: 0, completedTransition: false };
-    }
-
-    const latestOccurrence = await dbHandle.query.recurringOccurrences.findFirst({
-      where: and(
-        eq(this.schema.recurringOccurrences.template_id, template.id),
-        eq(this.schema.recurringOccurrences.workspace_id, template.workspace_id)
-      ),
-      orderBy: [desc(this.schema.recurringOccurrences.occurrence_number)],
-    });
-
+  private planOccurrences(template: RecurringTemplate, latestOccurrenceNumber: number | null) {
     const startOccurrence = template.starting_occurrence_number || 1;
-    let occurrenceNumber = latestOccurrence
-      ? latestOccurrence.occurrence_number + 1
-      : startOccurrence;
+    let occurrenceNumber =
+      latestOccurrenceNumber !== null ? latestOccurrenceNumber + 1 : startOccurrence;
 
     const today = new Date();
     const lookaheadEndDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 2, 0));
     const lookaheadEnd = toIsoDate(lookaheadEndDate);
 
-    const rows: Array<Record<string, unknown>> = [];
+    const rows: Array<typeof recurringOccurrences.$inferInsert> = [];
     let exhausted = false;
 
     for (let i = 0; i < 240; i++) {
@@ -864,13 +867,34 @@ export class RecurringTemplateService {
       occurrenceNumber += 1;
     }
 
+    return { rows, exhausted };
+  }
+
+  private async _generateForTemplate(template: RecurringTemplate) {
+    if (template.status !== 'active') {
+      return { created: 0, completedTransition: false };
+    }
+
+    const latestOccurrence = await this.db.query.recurringOccurrences.findFirst({
+      where: and(
+        eq(this.schema.recurringOccurrences.template_id, template.id),
+        eq(this.schema.recurringOccurrences.workspace_id, template.workspace_id)
+      ),
+      orderBy: [desc(this.schema.recurringOccurrences.occurrence_number)],
+    });
+
+    const { rows, exhausted } = this.planOccurrences(
+      template,
+      latestOccurrence ? latestOccurrence.occurrence_number : null
+    );
+
     if (rows.length > 0) {
-      await dbHandle.insert(this.schema.recurringOccurrences).values(rows).onConflictDoNothing();
+      await this.db.insert(this.schema.recurringOccurrences).values(rows).onConflictDoNothing();
     }
 
     let completedTransition = false;
     if (exhausted) {
-      await dbHandle
+      await this.db
         .update(this.schema.recurringTemplates)
         .set({ status: 'completed', updated_at: new Date() })
         .where(eq(this.schema.recurringTemplates.id, template.id));

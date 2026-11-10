@@ -526,9 +526,8 @@ export class WorkspaceMetaService {
     const schema = this.schema;
     const now = new Date();
 
-    await runTransaction(this.db, async (tx) => {
-      await tx
-        .insert(schema.workspaceMeta)
+    runTransaction(this.db, (tx) => {
+      tx.insert(schema.workspaceMeta)
         .values({
           id: nanoid(),
           workspace_id: workspaceId,
@@ -543,10 +542,10 @@ export class WorkspaceMetaService {
             meta_value: primary,
             updated_at: now,
           },
-        });
+        })
+        .run();
 
-      await tx
-        .insert(schema.workspaceMeta)
+      tx.insert(schema.workspaceMeta)
         .values({
           id: nanoid(),
           workspace_id: workspaceId,
@@ -561,7 +560,8 @@ export class WorkspaceMetaService {
             meta_value: secondary,
             updated_at: now,
           },
-        });
+        })
+        .run();
     });
   }
 

@@ -749,20 +749,20 @@ export class BudgetService {
     // Execute updates through the shared transaction helper
     let updated = 0;
     if (validUpdates.length > 0) {
-      await runTransaction(this.db, async (tx) => {
+      runTransaction(this.db, (tx) => {
         for (const update of validUpdates) {
-          await tx
-            .update(this.schema.budgets)
+          tx.update(this.schema.budgets)
             .set({ budget_amount: update.budget_amount })
             .where(
               and(
                 eq(this.schema.budgets.id, update.id),
                 eq(this.schema.budgets.workspace_id, workspaceId)
               )
-            );
+            )
+            .run();
         }
-        updated = validUpdates.length;
       });
+      updated = validUpdates.length;
     }
 
     // Invalidate budget cache
@@ -1040,15 +1040,17 @@ export class BudgetService {
     const validated = parse(initializeBudgetsSchema, input);
     await this.assertWorkspaceCurrencyAllowed(validated.workspace_id, validated.currency);
 
-    const result = await runTransaction(this.db, async (tx) => {
+    const result = runTransaction(this.db, (tx): InitializeBudgetsResult => {
       // Get all active expense categories for the workspace
-      const allCategoriesRaw = await tx.query.categories.findMany({
-        where: and(
-          eq(this.schema.categories.workspace_id, validated.workspace_id),
-          eq(this.schema.categories.is_active, true),
-          eq(this.schema.categories.type, 'expense')
-        ),
-      });
+      const allCategoriesRaw = tx.query.categories
+        .findMany({
+          where: and(
+            eq(this.schema.categories.workspace_id, validated.workspace_id),
+            eq(this.schema.categories.is_active, true),
+            eq(this.schema.categories.type, 'expense')
+          ),
+        })
+        .sync();
 
       // Defensive filter: ensure only active expense categories (query may not filter in all contexts)
       const allCategories = allCategoriesRaw.filter(
@@ -1061,14 +1063,16 @@ export class BudgetService {
       }
 
       // Get existing budgets for this month/year/currency
-      const existingBudgets = await tx.query.budgets.findMany({
-        where: and(
-          eq(this.schema.budgets.workspace_id, validated.workspace_id),
-          eq(this.schema.budgets.month, validated.month),
-          eq(this.schema.budgets.year, validated.year),
-          eq(this.schema.budgets.currency, validated.currency)
-        ),
-      });
+      const existingBudgets = tx.query.budgets
+        .findMany({
+          where: and(
+            eq(this.schema.budgets.workspace_id, validated.workspace_id),
+            eq(this.schema.budgets.month, validated.month),
+            eq(this.schema.budgets.year, validated.year),
+            eq(this.schema.budgets.currency, validated.currency)
+          ),
+        })
+        .sync();
 
       // Filter to categories without budgets (Set for O(1) lookup)
       const existingCategoryIds = new Set(
@@ -1103,21 +1107,23 @@ export class BudgetService {
         offset += BudgetService.BULK_INSERT_CHUNK_SIZE
       ) {
         const chunk = newBudgets.slice(offset, offset + BudgetService.BULK_INSERT_CHUNK_SIZE);
-        await tx.insert(this.schema.budgets).values(chunk).onConflictDoNothing();
+        tx.insert(this.schema.budgets).values(chunk).onConflictDoNothing().run();
       }
 
       // Re-query to return actual initialized categories after conflict resolution.
       const candidateCategoryIds = uninitializedCategories.map((cat: { id: string }) => cat.id);
-      const persistedBudgets = await tx.query.budgets.findMany({
-        where: and(
-          eq(this.schema.budgets.workspace_id, validated.workspace_id),
-          eq(this.schema.budgets.month, validated.month),
-          eq(this.schema.budgets.year, validated.year),
-          eq(this.schema.budgets.currency, validated.currency),
-          inArray(this.schema.budgets.category_id, candidateCategoryIds)
-        ),
-        columns: { category_id: true },
-      });
+      const persistedBudgets = tx.query.budgets
+        .findMany({
+          where: and(
+            eq(this.schema.budgets.workspace_id, validated.workspace_id),
+            eq(this.schema.budgets.month, validated.month),
+            eq(this.schema.budgets.year, validated.year),
+            eq(this.schema.budgets.currency, validated.currency),
+            inArray(this.schema.budgets.category_id, candidateCategoryIds)
+          ),
+          columns: { category_id: true },
+        })
+        .sync();
 
       const persistedCategoryIds = new Set(
         persistedBudgets.map((b: { category_id: string }) => b.category_id)
@@ -1209,14 +1215,14 @@ export class BudgetService {
       }));
 
       // Chunked insert sized for the former D1 target's 100 bound-parameter limit (bun:sqlite allows far more).
-      await runTransaction(this.db, async (tx) => {
+      runTransaction(this.db, (tx) => {
         for (
           let offset = 0;
           offset < newBudgets.length;
           offset += BudgetService.BULK_INSERT_CHUNK_SIZE
         ) {
           const chunk = newBudgets.slice(offset, offset + BudgetService.BULK_INSERT_CHUNK_SIZE);
-          await tx.insert(this.schema.budgets).values(chunk);
+          tx.insert(this.schema.budgets).values(chunk).run();
         }
       });
     }
