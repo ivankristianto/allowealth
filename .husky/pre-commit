@@ -10,4 +10,8 @@ bunx lint-staged
 echo "▸ Running astro check..."
 bun run typecheck
 
+# Pinned so a checkout's .env can never point the suite at a real database
+echo "▸ Running unit tests..."
+DATABASE_URL=db/.test.db bun test --dots
+
 echo "✅ Pre-commit checks passed"
