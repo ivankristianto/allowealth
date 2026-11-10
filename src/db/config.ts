@@ -21,6 +21,13 @@ function getDatabaseUrl(): string {
     return url;
   }
 
+  if (getEnv('NODE_ENV') === 'test') {
+    throw new Error(
+      'DATABASE_URL is not set in a test run. Refusing to fall back to db/.dev.db, ' +
+        'which may hold real data. src/__tests__/setup.ts sets it for bun test.'
+    );
+  }
+
   // Log warning if we're falling back to SQLite in a non-dev environment
   if (import.meta.env.PROD) {
     log.warn(

@@ -66,12 +66,23 @@ class BudgetService {
 
 ### SQLite
 
-SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` as the single entry point for transactions.
+SQLite with Drizzle uses `bun:sqlite`, whose `transaction()` is synchronous. Use `runTransaction()` from `@/db` as the single entry point, and keep the callback synchronous.
 
 ```typescript
-// ✅ Correct: Use runTransaction() for atomic multi-step writes
+// ✅ Correct: synchronous callback, sync terminals, async work outside
 import { runTransaction } from '@/db';
 
+const existing = await this.db.query.budgets.findMany({ ... }); // async reads before
+
+runTransaction(this.db, (tx) => {
+  tx.insert(budgets).values({ ... }).run();
+  tx.update(categories).set({ ... }).where(...).run();
+  const row = tx.query.budgets.findFirst({ ... }).sync();
+});
+
+await invalidateTags([...]); // cache, audit, email after commit
+
+// ❌ Wrong: async callback commits at the first await; later writes autocommit and never roll back
 await runTransaction(db, async (tx) => {
   await tx.insert(budgets).values({ ... });
   await tx.update(categories).set({ ... });
@@ -80,9 +91,13 @@ await runTransaction(db, async (tx) => {
 
 **Rules:**
 
-- ✅ **Use `runTransaction()` — never call `db.transaction()` directly** — single entry point for atomic multi-step writes
+- ✅ **Use `runTransaction()`, never `db.transaction()` directly** - single entry point for atomic multi-step writes
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
-- ❌ **Add PostgreSQL branches** — the codebase is SQLite-only
+- ✅ **End every statement in the callback with `.run()`, `.get()`, `.all()` or `.sync()`** - a Promise-returning callback is a type error
+- ✅ **Move async work outside the transaction** - reads that must happen first, cache invalidation, audit logging, emails
+- ✅ **Test rollback against a real database** - `createMemoryDb()` from `@/db/test-helpers/memory-db` plus a `RAISE(ABORT)` trigger; a mocked DB cannot prove a rollback
+- ❌ **Wrap a manual `BEGIN`/`COMMIT` around awaits** - the connection is shared, so other requests' writes join the transaction
+- ❌ **Add PostgreSQL branches** - the codebase is SQLite-only
 
 ## Query Patterns
 
@@ -144,6 +159,7 @@ const amount = parseFloat(input); // parseFloat("1,000") → 1, silently corrupt
 
 **Rules:**
 
+- ✅ **Validate money strings with `@/lib/validation/amount`** - one strict pattern (digits, up to 2 decimals, no sign) shared by API schemas, CSV imports and services
 - ✅ **Use `Number()` instead of `parseFloat()` for validation** - `parseFloat("1,000")` returns `1`, silently corrupts data
 - ❌ **Use `parseFloat()` for currency validation** - accepts malformed input like `"100abc"`
 - ❌ **Default empty amounts to `'0'`** - silently zeros out budgets, corrupts user data

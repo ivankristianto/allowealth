@@ -15,6 +15,7 @@ import {
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
 import { fuzzyMatch } from '../utils/fuzzy-match.js';
+import { isValidAmount, positiveAmountMessage } from '@/lib/validation/amount';
 
 const SUPPORTED_CURRENCIES = [
   'IDR',
@@ -57,7 +58,9 @@ export const listTransactionsSchema = pipe(
 export const addTransactionSchema = object({
   amount: pipe(
     number(),
-    check((value) => value > 0, 'Amount must be greater than 0')
+    check((value) => value > 0, 'Amount must be greater than 0'),
+    // String(0.1 + 0.2) is '0.30000000000000004'; the service would reject it with a raw error.
+    check((value) => isValidAmount(String(value)), positiveAmountMessage())
   ),
   currency: picklist(SUPPORTED_CURRENCIES),
   category_name: string(),
@@ -100,7 +103,10 @@ export const addExpenseTool: Tool = {
   inputSchema: {
     type: 'object',
     properties: {
-      amount: { type: 'number', description: 'Amount (positive number)' },
+      amount: {
+        type: 'number',
+        description: 'Amount (positive number, at most 2 decimal places)',
+      },
       currency: { type: 'string', enum: [...SUPPORTED_CURRENCIES], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
       account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
@@ -118,7 +124,10 @@ export const addIncomeTool: Tool = {
   inputSchema: {
     type: 'object',
     properties: {
-      amount: { type: 'number', description: 'Amount (positive number)' },
+      amount: {
+        type: 'number',
+        description: 'Amount (positive number, at most 2 decimal places)',
+      },
       currency: { type: 'string', enum: [...SUPPORTED_CURRENCIES], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
       account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },

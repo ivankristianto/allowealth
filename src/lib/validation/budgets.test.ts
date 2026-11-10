@@ -96,4 +96,20 @@ describe('budget validation', () => {
       'Budget amount must be zero or a positive number'
     );
   });
+
+  for (const budget_amount of ['1,000', '100abc', 'Infinity', '100.123', '']) {
+    it(`rejects malformed budget amount ${JSON.stringify(budget_amount)}`, () => {
+      expect(() => parse(createBudgetAPISchema, { ...apiBudget, budget_amount })).toThrow();
+      expect(() => parse(updateBudgetSchema, { budget_amount })).toThrow();
+    });
+  }
+
+  for (const budget_amount of ['500000', '500000.5', '0.25']) {
+    it(`accepts budget amount ${budget_amount}`, () => {
+      expect(parse(createBudgetAPISchema, { ...apiBudget, budget_amount }).budget_amount).toBe(
+        budget_amount
+      );
+      expect(parse(updateBudgetSchema, { budget_amount }).budget_amount).toBe(budget_amount);
+    });
+  }
 });

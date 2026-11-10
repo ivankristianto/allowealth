@@ -1,5 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { hashOpaqueToken } from '@/lib/crypto/token-hash';
+import { asSyncTransaction } from '../test-helpers/mocks';
 import { createTokenService } from './token.factory';
 
 const futureDate = new Date(Date.now() + 3_600_000);
@@ -36,11 +37,8 @@ function makeDb(tokenRow: any = mockToken) {
     },
     insert: mock(() => ({ values })),
     delete: mock(() => ({ where })),
-    transaction: mock(async (callback: (tx: any) => Promise<any>) =>
-      callback({
-        delete: txDelete,
-        insert: txInsert,
-      })
+    transaction: mock((callback: (tx: any) => unknown) =>
+      callback(asSyncTransaction({ delete: txDelete, insert: txInsert }))
     ),
     txDelete,
     txInsert,

@@ -4,6 +4,9 @@
  * Demo users and seeder flags
  */
 
+// Every seeded account uses this domain. The wipe guard treats any other address as real data.
+export const SEED_EMAIL_DOMAIN = 'example.com';
+
 export const DEMO_ADMIN = {
   email: 'demo@example.com',
   password: 'demo123456789', // Must be at least 12 chars
@@ -18,9 +21,9 @@ export const DEMO_MEMBER = {
   role: 'member' as const,
 };
 
+// No fixed password: the seeder generates one per run behind --with-super-admin.
 export const DEMO_SUPER_ADMIN = {
   email: 'superadmin@example.com',
-  password: 'demo123456789', // Must be at least 12 chars
   name: 'Super Admin',
   role: 'super_admin' as const,
 };

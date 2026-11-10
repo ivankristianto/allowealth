@@ -4,7 +4,7 @@ import Button from '@/components/atoms/Button.astro';
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
 import { db, getActiveSchema } from '@/db';
 import { auth } from '@/lib/auth/server';
-import { submitOAuthConsent } from '@/lib/auth/oauth-consent';
+import { getRedirectTarget, submitOAuthConsent } from '@/lib/auth/oauth-consent';
 import { eq } from 'drizzle-orm';
 
 const schema = getActiveSchema();
@@ -25,6 +25,9 @@ const oauthQuery = Astro.url.search.slice(1);
 const { secret } = await auth.$context;
 const isValidRequest = oauthQuery !== '' && (await verifyOAuthQueryParams(oauthQuery, secret));
 const clientId = isValidRequest ? (Astro.url.searchParams.get('client_id') ?? '') : '';
+const redirectTarget = isValidRequest
+  ? getRedirectTarget(Astro.url.searchParams.get('redirect_uri'))
+  : '';
 
 // Look up the client display name
 let clientName = clientId;
@@ -48,6 +51,12 @@ if (clientId) {
               <p class="text-base-content/60 text-sm mt-1">
                 wants access to your Allowealth account
               </p>
+              {redirectTarget && (
+                <p class="text-base-content/70 text-sm mt-2" data-testid="oauth-redirect-target">
+                  Approving sends access to{' '}
+                  <span class="font-mono font-medium break-all">{redirectTarget}</span>
+                </p>
+              )}
             </div>
 
             <div class="bg-base-200 rounded-box p-4">

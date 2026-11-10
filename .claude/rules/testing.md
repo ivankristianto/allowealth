@@ -63,6 +63,8 @@ describe('BudgetService', () => {
 - ✅ **Write unit tests first** (fail first, then implement)
 - ✅ **Use `bun:test`** - not vitest
 - ❌ **Skip tests** - all tests must pass before committing
+- ✅ **Mock modules with `mockModuleForFile` (`@/lib/test-helpers/mock-module`)** - bare `mock.module` stays active for every later file and `mock.restore()` does not undo it; the helper spreads the real exports and puts them back in `afterAll`. Check with `bun test --randomize --seed=<n>`
+- ✅ **Leave shared state as you found it** - call `resetCacheManager()` after swapping methods on the cache singleton (and before tests that assume a fresh one), `setTestEnv(null)` after setting overrides, and restore a redefined global with its original property descriptor (`Object.defineProperty(globalThis, 'document', { value })` alone leaves a read-only property)
 
 ## E2E Testing (Playwright)
 
@@ -250,6 +252,7 @@ import.meta.env.DATABASE_URL = 'sqlite::memory:'; // Doesn't work in prod
 **Rules:**
 
 - ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match the production code path
+- ❌ **Point `bun test` at a database through `DATABASE_URL`** - Bun loads `.env` first, which can name the real `db/.dev.db`, so the preload (`src/__tests__/setup.ts`) overwrites it with `TEST_DATABASE_URL ?? 'db/.test.db'` and refuses any file name without `.test`
 
 ## Common Patterns
 

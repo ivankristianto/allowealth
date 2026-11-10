@@ -7,7 +7,7 @@
  *
  * Usage:
  *   bun run src/db/setup.ts              # Setup SQLite database
- *   bun run db:reset                     # Full reset (delete + setup + seed)
+ *   bun run db:reset --yes               # Full reset (delete + migrate + seed)
  */
 
 import { Database } from 'bun:sqlite';

@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 
 let validateBudgetAmount: typeof import('./BudgetInlineEdit.client').validateBudgetAmount;
-const originalDocument = globalThis.document;
+const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
 
 beforeAll(async () => {
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
+    writable: true,
     value: {
       addEventListener() {},
       querySelector() {
@@ -17,17 +18,13 @@ beforeAll(async () => {
   ({ validateBudgetAmount } = await import('./BudgetInlineEdit.client'));
 });
 
+// A plain value redefinition is read-only, which breaks later files that assign globalThis.document.
 afterAll(() => {
-  if (typeof originalDocument === 'undefined') {
-    // Remove the test-only stub when the runtime did not provide a DOM.
+  if (originalDocument) {
+    Object.defineProperty(globalThis, 'document', originalDocument);
+  } else {
     delete (globalThis as { document?: Document }).document;
-    return;
   }
-
-  Object.defineProperty(globalThis, 'document', {
-    configurable: true,
-    value: originalDocument,
-  });
 });
 
 describe('validateBudgetAmount', () => {

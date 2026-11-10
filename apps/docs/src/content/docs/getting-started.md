@@ -80,10 +80,10 @@ After editing `.env`, run the command again to start the containers.
 ### Seed demo data
 
 ```bash
-bun run docker:seed
+bun run docker:seed -- --yes --force
 ```
 
-This seeds the database with 6 months of sample transactions.
+This wipes the app's Docker database and seeds 6 months of sample transactions. Without `--yes` it refuses. Without `--force` it refuses the live `allowealth-data` volume.
 
 ### Stop the Docker stack
 

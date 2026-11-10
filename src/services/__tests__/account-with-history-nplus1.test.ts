@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { afterAll, describe, it, expect, beforeEach, mock } from 'bun:test';
 import { AccountService } from '../account.service';
 import { createMockDatabase, createMockAccount, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager, getCacheManager } from '@/lib/cache';
+
+// The tests swap methods on the shared cache manager, so later files need a fresh one.
+afterAll(() => resetCacheManager());
 
 describe('AccountService.findAllWithHistory N+1 fix', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;

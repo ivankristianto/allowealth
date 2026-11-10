@@ -75,3 +75,14 @@ export async function submitOAuthConsent(
 
   return { url: data.url };
 }
+
+// Shown on the consent page so a look-alike client name cannot hide where the code goes.
+export function getRedirectTarget(redirectUri: string | null): string {
+  if (!redirectUri) return '';
+  try {
+    const url = new URL(redirectUri);
+    return url.host || redirectUri;
+  } catch {
+    return redirectUri;
+  }
+}

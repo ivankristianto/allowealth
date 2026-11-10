@@ -10,7 +10,7 @@ All available `bun run` commands for the project.
 | `bun run preview`      | Preview build locally (uses `.env`)                                               |
 | `bun run preview:prod` | Preview build with production env (uses `.env.production`)                        |
 | `bun run docker:start` | Start the Docker app stack from local build (first run creates `.env` then exits) |
-| `bun run docker:seed`  | Seed Docker demo database (`allowealth-data` volume)                              |
+| `bun run docker:seed`  | Seed a Docker demo database (needs `--yes`; see Docker Database Commands)         |
 | `bun run docker:stop`  | Stop the Docker app stack (Allowealth + Redis)                                    |
 
 Two compose files are shipped under `docker/`:
@@ -25,7 +25,7 @@ Two compose files are shipped under `docker/`:
 ```bash
 bun run dev              # http://localhost:4321
 bun run docker:start     # First run: creates .env + secrets then exits; rerun to build + start
-bun run docker:seed      # Seed demo data into Docker volume
+bun run docker:seed -- --yes --force  # Wipe the app volume and seed demo data
 bun run docker:stop      # Stop the Docker app stack
 ```
 
@@ -65,7 +65,7 @@ Once the Docker stack is running, you can run database operations inside the con
 | Command                                                | Description                                                    |
 | ------------------------------------------------------ | -------------------------------------------------------------- |
 | `docker exec allowealth-app bun run src/db/migrate.ts` | Apply pending SQLite migrations                                |
-| `bun run docker:seed`                                  | Seed demo data into Docker volume                              |
+| `bun run docker:seed -- --yes`                         | Seed demo data into a Docker volume (see guard below)          |
 | `docker compose -f docker/docker-compose.yml down -v`  | Reset database from scratch (removes `allowealth-data` volume) |
 
 ```bash
@@ -76,20 +76,26 @@ docker exec allowealth-app bun run src/db/migrate.ts
 docker compose -f docker/docker-compose.yml down -v
 bun run docker:start
 
-# Seed demo data (default: --months=6)
-bun run docker:seed
+# Seed demo data into the app volume (default: --months=6)
+bun run docker:seed -- --yes --force
+
+# Seed another volume that already has the schema (an app container has started on it once)
+SEED_VOLUME=allowealth-demo bun run docker:seed -- --yes
 
 # Seed with custom options
-bun run docker:seed -- --months=12
-bun run docker:seed -- --stress
+bun run docker:seed -- --yes --force --months=12
+bun run docker:seed -- --yes --force --stress
 ```
+
+`docker:seed` wipes `/data/allowealth.db` before seeding. It refuses without `--yes`, and refuses the live `allowealth-data` volume unless `--force` is also given. Inside the container the seeder runs the same wipe guard as `aw db seed`.
 
 Note: Migrations run automatically on every container start via the entrypoint script.
 Note: The runtime image ships pre-bundled maintenance scripts at `/app/dist/scripts/seed.js` and `/app/dist/scripts/empty.js`, built by `bun run build:scripts` during the image build. `bun run docker:seed` invokes the seed bundle directly — no source tree is bind-mounted. To seed manually against a running container:
 
 ```bash
-docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --months=6
-docker exec allowealth-app bun /app/dist/scripts/empty.js
+# Both wipe the live app database, so they need --yes, plus --force when it holds real users
+docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --yes --months=6
+docker exec allowealth-app bun /app/dist/scripts/empty.js --yes
 ```
 
 ## Docs Site (Starlight)
@@ -216,23 +222,25 @@ bun run lint:fix && bun run stylelint:fix && bun run format:fix && bun run typec
 | `bun run db:generate`    | Generate SQLite migration from schema changes     |
 | `bun run db:migrate`     | Apply pending SQLite migrations                   |
 | `bun run db:studio`      | Open Drizzle Studio (visual DB browser)           |
-| `bun run db:seed`        | Seed database with demo data (3 months default)   |
-| `bun run db:seed:stress` | Seed 5 years of realistic family stress-test data |
-| `bun run db:reset`       | Delete SQLite DB, apply migrations, and seed      |
-| `bun run db:empty`       | Truncate all data (preserve schema)               |
+| `bun run db:seed --yes`  | Wipe and seed demo data (3 months default)        |
+| `bun run db:seed:stress` | Seed 5 years of family stress-test data (`--yes`) |
+| `bun run db:reset --yes` | Same as `aw db reset --yes`                       |
+| `bun run db:empty --yes` | Truncate all data (preserve schema)               |
+
+Every command that wipes data refuses to run without `--yes`, and refuses a database that holds users outside `@example.com` unless `--force` is also given. See [Wipe guard](#wipe-guard).
 
 ```bash
 # Full dev reset
-bun run db:reset
+bun run db:reset --yes
 
 # After schema changes
 bun run db:generate          # Generate migration
 bun run db:migrate           # Apply migration
 
 # Seed with custom options
-bun run db:seed              # Default: 3 months of data
-bun run db:seed --months=6   # Seed 6 months of transactions
-bun run db:seed --months=12 --transactions=5000  # 12 months + 5k extra
+bun run db:seed --yes              # Default: 3 months of data
+bun run db:seed --yes --months=6   # Seed 6 months of transactions
+bun run db:seed --yes --months=12 --transactions=5000  # 12 months + 5k extra
 ```
 
 See `docs/architecture/007-database-migrations.md` for full migration workflow.
@@ -260,7 +268,8 @@ The `aw` CLI provides a unified interface for admin and operational commands.
 - `--target`, `-t`: Select backend target (`sqlite` is the only value).
 - `--json`: Return machine-readable JSON output instead of formatted text.
 - `--yes`, `-y`: Skip confirmation prompts for destructive CRUD and alias operations (`delete`, `rm`).
-  - Some destructive commands use command-specific confirmations instead. Examples: `workspace delete --force` or the typed confirmation in `aw db drop`.
+  - Some destructive commands use command-specific confirmations instead. Example: `workspace delete --force`.
+  - Commands that wipe a whole database (`db seed`, `db reset`, `db empty`, `db drop`, `db restore`, `demo reset`) take only the long `--yes` form and also check the data. See [Wipe guard](#wipe-guard).
 
 ### Workspace Management
 
@@ -341,51 +350,65 @@ Aliases provide shorter commands that map to resource operations.
 
 ### Database
 
-| Command                                  | Description                                                         |
-| ---------------------------------------- | ------------------------------------------------------------------- |
-| `bun run aw db migrate`                  | Apply pending migrations (SQLite)                                   |
-| `bun run aw db generate`                 | Generate migration from schema changes                              |
-| `bun run aw db studio`                   | Open Drizzle Studio                                                 |
-| `bun run aw db docs`                     | Regenerate `docs/architecture/database-schema.html` schema diagrams |
-| `bun run aw db seed`                     | Seed with demo data (3 months default)                              |
-| `bun run aw db seed --months=6`          | Seed with 6 months of transaction data                              |
-| `bun run aw db seed --transactions=5000` | Add 5,000 extra transactions                                        |
-| `bun run aw db seed --benchmark`         | Seed with ~10k transactions (12 months)                             |
-| `bun run aw db seed --stress`            | Seed with 5-year family stress-test dataset                         |
-| `bun run aw db seed-oauth-clients`       | Seed MCP OAuth clients for Connected Apps                           |
-| `bun run aw db reset`                    | Delete SQLite DB, apply migrations, and seed                        |
-| `bun run aw db empty`                    | Truncate all data (preserve schema)                                 |
-| `bun run aw db drop`                     | ⚠️ Delete all tables and reset DB                                   |
-| `bun run aw db backup`                   | Create backup file for the selected target                          |
-| `bun run aw db restore`                  | Safely restore from local/cloud backup                              |
-| `bun run aw db prune audit-logs`         | Delete audit log entries older than 30 days                         |
+| Command                                        | Description                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| `bun run aw db migrate`                        | Apply pending migrations (SQLite)                                   |
+| `bun run aw db generate`                       | Generate migration from schema changes                              |
+| `bun run aw db studio`                         | Open Drizzle Studio                                                 |
+| `bun run aw db docs`                           | Regenerate `docs/architecture/database-schema.html` schema diagrams |
+| `bun run aw db seed --yes`                     | Wipe and seed with demo data (3 months default)                     |
+| `bun run aw db seed --yes --months=6`          | Seed with 6 months of transaction data                              |
+| `bun run aw db seed --yes --transactions=5000` | Add 5,000 extra transactions                                        |
+| `bun run aw db seed --yes --benchmark`         | Seed with ~10k transactions (12 months)                             |
+| `bun run aw db seed --yes --stress`            | Seed with 5-year family stress-test dataset                         |
+| `bun run aw db seed --yes --with-super-admin`  | Also seed `superadmin@example.com` with a random password           |
+| `bun run aw db seed-oauth-clients`             | Seed MCP OAuth clients for Connected Apps                           |
+| `bun run aw db reset --yes`                    | Delete the `DATABASE_URL` file, apply migrations, and seed          |
+| `bun run aw db empty --yes`                    | Truncate all data (preserve schema)                                 |
+| `bun run aw db drop --yes`                     | ⚠️ Delete the `DATABASE_URL` SQLite file                            |
+| `bun run aw db backup`                         | Write a consistent copy of the `DATABASE_URL` database              |
+| `bun run aw db restore --yes`                  | Replace the `DATABASE_URL` database from a local/cloud backup       |
+| `bun run aw db prune audit-logs`               | Delete audit log entries older than 30 days                         |
+
+#### Wipe guard
+
+`aw db seed`, `aw db reset`, `aw db empty`, `aw db drop`, `aw db restore`, `aw demo reset` and the `db:seed`, `db:reset`, `db:empty` and `docker:seed` scripts all destroy the data in the database that `DATABASE_URL` points at. They share one guard (`src/db/wipe-guard.ts`):
+
+- It prints the resolved absolute database path in every prompt and refusal.
+- It refuses without `--yes`.
+- It refuses when the database holds users whose email is not `@example.com` (the seed domain), unless `--force` is also given.
+- It refuses when it cannot read the file, unless `--force` is given.
+
+A public demo where visitors sign up will hold non-demo users, so refreshing it needs `--yes --force`.
+
+The seeder no longer creates a super admin by default. Pass `--with-super-admin` to `aw db seed` or `aw db reset` to create `superadmin@example.com` with a random password, printed once. On a real install, promote an existing user with `aw admin create-super-admin` instead.
 
 #### Database Drop Command
 
-The `aw db drop` command drops all tables and clears migrations.
+The `aw db drop` command deletes the SQLite file `DATABASE_URL` points at, with its `-wal` and `-shm` files.
 
 ```bash
-# Drop local SQLite database
-bun run aw db drop
+bun run aw db drop --yes
 ```
 
-**What it does:**
-
-- Deletes the `.dev.db` file
-  After running, use `aw db migrate` to recreate the schema from the first migration.
+After running, use `aw db migrate` to recreate the schema from the first migration.
 
 #### Database Backup & Restore
 
 ```bash
-# SQLite backup
-bun run aw db backup --target sqlite
+# SQLite backup into backups/ (gitignored)
+bun run aw db backup
 
 # Validate the latest backup without restoring
 bun run aw db restore --dry-run
 
-# Restore SQLite from file
-bun run aw db restore --target sqlite --file backups/sqlite-2026-03-04T16-30-00.db --force --no-backup
+# Restore SQLite from file (stop the app server first)
+bun run aw db restore --file backups/sqlite-2026-03-04T16-30-00.db --yes --force
 ```
+
+- **Backup** reads the `DATABASE_URL` database and writes it with `VACUUM INTO`, so writes still in the WAL are included. The file is created with mode `0600`.
+- **Restore** checks the backup with `PRAGMA integrity_check` and builds a temp file next to the target. A `.sql` dump is loaded into a fresh database, never into the populated one. It then deletes the target's stale `-wal` and `-shm` and renames the temp file into place.
+- **Flags:** restore uses the wipe guard. `--yes` confirms. `--force` is needed when the target holds real users, which is the usual case. Unless `--no-backup` is given, it first writes a `pre-restore-*.db` backup.
 
 **Backup format by target:**
 
@@ -430,10 +453,10 @@ AUDIT_LOG_RETENTION_DAYS=60 bun run aw db prune audit-logs
 
 ### Demo
 
-| Command                  | Description                                    |
-| ------------------------ | ---------------------------------------------- |
-| `bun run aw demo --help` | Show demo environment commands                 |
-| `bun run aw demo reset`  | Empty and reseed the local SQLite demo dataset |
+| Command                       | Description                                    |
+| ----------------------------- | ---------------------------------------------- |
+| `bun run aw demo --help`      | Show demo environment commands                 |
+| `bun run aw demo reset --yes` | Empty and reseed the local SQLite demo dataset |
 
 `DEMO_MODE` controls the UI. `aw demo reset` refreshes the data.
 
@@ -442,7 +465,10 @@ AUDIT_LOG_RETENTION_DAYS=60 bun run aw db prune audit-logs
 echo 'DEMO_MODE=true' >> .env
 
 # Refresh demo data in the local SQLite database
-bun run aw demo reset
+bun run aw demo reset --yes
+
+# A public demo with visitor sign-ups holds non-demo users, so it also needs --force
+bun run aw demo reset --yes --force
 ```
 
 When `DEMO_MODE=true`, the app shows a warning banner on every page and disables member invitations, profile editing, password changes, MFA controls, and active session management.

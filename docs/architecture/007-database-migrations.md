@@ -25,7 +25,7 @@ This reset is destructive for environments that previously applied the old migra
 
 1. Backup the database file if needed.
 2. Remove existing DB files (`.db`, `-wal`, `-shm`) for the target environment.
-3. Apply the new baseline with `bun run db:migrate` or recreate locally with `bun run db:reset`.
+3. Apply the new baseline with `bun run db:migrate` or recreate locally with `bun run db:reset --yes`.
 4. Verify schema and seed state.
 
 ### D1 cutover

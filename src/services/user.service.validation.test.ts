@@ -1,27 +1,33 @@
 import { describe, expect, it } from 'bun:test';
-import type { IDatabase } from '@/db';
-import { UserService } from './user.service';
+import { safeParse } from 'valibot';
+import { updatePasswordSchema } from './user.service';
 
-const fakeDb = {} as unknown as IDatabase;
+describe('updatePasswordSchema', () => {
+  it('rejects a missing old password', () => {
+    const result = safeParse(updatePasswordSchema, {
+      oldPassword: '',
+      newPassword: 'ValidPassword123!',
+    });
 
-describe('UserService validation', () => {
-  const service = new UserService(fakeDb);
-
-  it('rejects a missing old password', async () => {
-    await expect(
-      service.updatePassword('user-1', {
-        oldPassword: '',
-        newPassword: 'ValidPassword123!',
-      })
-    ).rejects.toThrow('Old password is required');
+    expect(result.success).toBe(false);
+    expect(result.issues?.[0]?.message).toBe('Old password is required');
   });
 
-  it('rejects weak new passwords', async () => {
-    await expect(
-      service.updatePassword('user-1', {
-        oldPassword: 'CurrentPassword123!',
-        newPassword: 'abc',
-      })
-    ).rejects.toThrow();
+  it('rejects weak new passwords', () => {
+    const result = safeParse(updatePasswordSchema, {
+      oldPassword: 'CurrentPassword123!',
+      newPassword: 'abc',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts a 12 character password with letters and numbers', () => {
+    const result = safeParse(updatePasswordSchema, {
+      oldPassword: 'CurrentPassword123!',
+      newPassword: 'Password123!',
+    });
+
+    expect(result.success).toBe(true);
   });
 });

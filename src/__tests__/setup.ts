@@ -8,9 +8,11 @@
 import { Database } from 'bun:sqlite';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { resolveTestDatabaseUrl } from '@/lib/test-helpers/test-database-url';
 
-// Database path for tests (uses env var or default)
-const TEST_DB_PATH = process.env.DATABASE_URL || 'db/.test.db';
+// Must run before any test imports @/db, which opens DATABASE_URL on first use
+const TEST_DB_PATH = resolveTestDatabaseUrl(process.env);
+process.env.DATABASE_URL = TEST_DB_PATH;
 
 /**
  * Remove comments from SQL statement

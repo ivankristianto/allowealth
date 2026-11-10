@@ -220,6 +220,7 @@ paths:
                   description: Destination account ID (must differ from source)
                 amount:
                   type: string
+                  pattern: '^\d{1,15}(\.\d{1,2})?$'
                   description: Transfer amount (must be positive)
                 notes:
                   type: string

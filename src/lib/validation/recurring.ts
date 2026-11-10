@@ -29,6 +29,7 @@ import {
   recurringOccurrenceStatusEnum,
   categoryTypeEnum,
 } from '@/lib/enums';
+import { positiveAmountSchema } from './amount';
 
 const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
@@ -38,14 +39,7 @@ const dateStringValidation = pipe(
   check((value) => !Number.isNaN(new Date(value).getTime()), 'Invalid date')
 );
 
-const amountValidation = pipe(
-  string(),
-  minLength(1, 'Amount is required'),
-  check((value) => {
-    const parsedAmount = Number.parseFloat(value);
-    return Number.isFinite(parsedAmount) && parsedAmount > 0;
-  }, 'Amount must be greater than 0')
-);
+const amountValidation = positiveAmountSchema();
 
 const frequencyEnum = picklist(['weekly', 'monthly']);
 

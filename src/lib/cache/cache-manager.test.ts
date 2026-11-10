@@ -18,6 +18,11 @@ async function waitFor(condition: () => boolean, timeoutMs: number = 1_000): Pro
 }
 
 describe('CacheManager', () => {
+  // Earlier test files leave a singleton behind whenever a service touched the cache.
+  beforeEach(() => {
+    resetCacheManager();
+  });
+
   afterEach(() => {
     resetCacheManager();
     setTestEnv(null);

@@ -22,6 +22,7 @@ import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 import { isValidCurrency } from '@/lib/constants/currency';
+import { isValidAmount, normalizeAmount, positiveAmountMessage } from '@/lib/validation/amount';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -402,7 +403,10 @@ export class TransactionService {
     return conditions;
   }
 
-  private async fetchTransactionsFromDb(filters: TransactionFilters) {
+  private async fetchTransactionsFromDb(
+    filters: TransactionFilters,
+    { paginate = true }: { paginate?: boolean } = {}
+  ) {
     const conditions = this.buildFilterConditions(filters);
 
     // Drizzle relational query `extras` not typeable with dynamic composition
@@ -423,9 +427,12 @@ export class TransactionService {
         desc(this.schema.transactions.transaction_date),
         desc(this.schema.transactions.created_at),
       ],
-      limit: filters.limit || 50,
-      offset: filters.offset || 0,
     };
+
+    if (paginate) {
+      queryOptions.limit = filters.limit || 50;
+      queryOptions.offset = filters.offset || 0;
+    }
 
     const extras: Record<string, any> = {
       // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
@@ -1090,14 +1097,14 @@ export class TransactionService {
     if (validRows.length === 0) return { inserted: 0 };
 
     try {
-      await runTransaction(this.db, async (tx) => {
+      runTransaction(this.db, (tx) => {
         for (
           let offset = 0;
           offset < validRows.length;
           offset += TransactionService.BULK_INSERT_CHUNK_SIZE
         ) {
           const chunk = validRows.slice(offset, offset + TransactionService.BULK_INSERT_CHUNK_SIZE);
-          await tx.insert(this.schema.transactions).values(chunk);
+          tx.insert(this.schema.transactions).values(chunk).run();
         }
       });
       return { inserted: validRows.length };
@@ -1236,10 +1243,12 @@ export class TransactionService {
         continue;
       }
 
-      // Validate amount
-      const amount = Number(amountStr ?? '0');
-      if (isNaN(amount) || amount <= 0) {
-        result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
+      const trimmedAmount = (amountStr ?? '').trim();
+      if (!isValidAmount(trimmedAmount)) {
+        result.errors.push({
+          row: i + 1,
+          message: `Invalid amount "${trimmedAmount}": ${positiveAmountMessage()}`,
+        });
         continue;
       }
 
@@ -1287,6 +1296,13 @@ export class TransactionService {
         });
         continue;
       }
+      if (currencyStr !== account.currency) {
+        result.errors.push({
+          row: i + 1,
+          message: 'Transaction currency must match source account currency',
+        });
+        continue;
+      }
 
       // Validate destination account for transfers
       let toAccountId: string | null = null;
@@ -1313,11 +1329,18 @@ export class TransactionService {
           });
           continue;
         }
+        if (toAccount.currency !== account.currency) {
+          result.errors.push({
+            row: i + 1,
+            message: 'Transfer accounts must use the same currency',
+          });
+          continue;
+        }
         toAccountId = toAccount.id;
       }
 
       // Check for duplicates
-      const normalizedAmount = amount.toString();
+      const normalizedAmount = normalizeAmount(trimmedAmount);
       const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${normalizedAmount}-${categoryId ?? ''}-${account.id}`;
       if (existingKeys.has(duplicateKey)) {
         result.skipped++;
@@ -1381,12 +1404,8 @@ export class TransactionService {
    * Export transactions to CSV format
    */
   async exportToCSV(filters: TransactionFilters): Promise<string> {
-    // Fetch all matching transactions (no limit for export)
-    const allTransactions = await this.findAll({
-      ...filters,
-      limit: undefined,
-      offset: undefined,
-    });
+    // Bypasses the findAll cache too: a full export should not sit in it for 30 minutes.
+    const allTransactions = await this.fetchTransactionsFromDb(filters, { paginate: false });
 
     // CSV header
     const headers = ['date', 'type', 'amount', 'currency', 'category', 'account', 'description'];

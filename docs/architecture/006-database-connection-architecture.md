@@ -126,14 +126,14 @@ This keeps module load safe in Workers and ensures the correct per-request bindi
 
 ## Transactions
 
-`runTransaction()` now runs the callback directly for both SQLite and D1.
+`runTransaction()` wraps Drizzle's bun-sqlite `transaction()`, which is synchronous. The callback must be synchronous too: use `.run()`, `.get()`, `.all()` and `.sync()` on the query builders, with no `await`.
 
 Why:
 
-- SQLite local development is single-writer and file-based.
-- D1 does not support raw `BEGIN`/`COMMIT`/`ROLLBACK` SQL in the same way as PostgreSQL adapters.
-
-The helper preserves one API across both environments without dialect branching.
+- With an async callback, Drizzle commits when the callback reaches its first `await`. Every later statement autocommits on its own, so a throw rolls nothing back.
+- The signature makes a Promise-returning callback a type error.
+- Do reads that must come first, cache invalidation, audit logging and email outside the transaction, before or after it.
+- Do not wrap a manual `BEGIN`/`COMMIT` around awaits. The connection is shared, so other requests' writes would join the open transaction.
 
 ## Environment Resolution
 

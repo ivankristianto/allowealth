@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,27 +9,9 @@ import { verifyPassword } from '@/lib/auth/password';
 import { POST } from '@/pages/api/installer/setup';
 import { AccountCategoryService } from '@/services/account-category.service';
 
-// Re-mock installer detection with real implementation in case a prior test
-// (e.g. installer.middleware.test.ts) globally mocked this module via mock.module.
-const mockModule = (mock as any).module;
-mockModule('@/lib/installer/detection', () => ({
-  isMigrationApplied: () => true,
-  hasUsers: (database: any) => {
-    try {
-      const rows = database.all(sql`SELECT 1 as one FROM user LIMIT 1`) as { one: number }[];
-      return rows.length > 0;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('no such table')) {
-        return false;
-      }
-      throw error;
-    }
-  },
-}));
-
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalInstallerSecret = process.env.INSTALLER_SECRET;
-const originalSeedDefaultCategories = AccountCategoryService.prototype.seedDefaultCategories;
+const originalBuildDefaultCategoryRows = AccountCategoryService.buildDefaultCategoryRows;
 
 let testDbPath = '';
 
@@ -78,7 +60,7 @@ describe('POST /api/installer/setup', () => {
   });
 
   afterEach(async () => {
-    AccountCategoryService.prototype.seedDefaultCategories = originalSeedDefaultCategories;
+    AccountCategoryService.buildDefaultCategoryRows = originalBuildDefaultCategoryRows;
     await closeDatabase();
     resetDb();
 
@@ -178,9 +160,9 @@ describe('POST /api/installer/setup', () => {
   });
 
   it('rolls back installer records when category seeding fails', async () => {
-    AccountCategoryService.prototype.seedDefaultCategories = mock(async () => {
+    AccountCategoryService.buildDefaultCategoryRows = mock(() => {
       throw new Error('category seeding failed');
-    }) as any;
+    });
 
     const response = await POST(
       createApiContext({

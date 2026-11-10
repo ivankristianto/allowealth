@@ -1,9 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realMigrationService from '@/services/migration.service';
 
 const getStatusMock = mock(async () => ({ pending: false, applied: 2, expected: 2 }));
 const runMigrationsMock = mock(async () => ({ success: true as const }));
 
-(mock as any).module('@/services/migration.service', () => ({
+mockModuleForFile('@/services/migration.service', realMigrationService, () => ({
   MigrationService: {
     getStatus: getStatusMock,
     runMigrations: runMigrationsMock,
@@ -55,10 +57,6 @@ describe('admin upgrade API routes', () => {
   beforeAll(async () => {
     ({ GET } = await import('@/pages/api/admin/upgrade/status'));
     ({ POST } = await import('@/pages/api/admin/upgrade/run'));
-  });
-
-  afterAll(() => {
-    (mock as any).restore();
   });
 
   beforeEach(() => {

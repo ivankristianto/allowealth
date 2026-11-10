@@ -40,6 +40,15 @@ export interface EmailChangeVerificationOptions {
 }
 
 /**
+ * Email change notice options (sent to the address being replaced)
+ */
+export interface EmailChangeNoticeOptions {
+  userName: string;
+  newEmail: string;
+  securityUrl: string;
+}
+
+/**
  * Email Template Service
  */
 /** Escape HTML special characters to prevent injection */
@@ -145,6 +154,34 @@ ${this.button('Confirm Email Change', verificationUrl)}
 
     return {
       subject: sanitizeSubject('Confirm your new email address'),
+      html: this.wrap(content),
+    };
+  }
+
+  /**
+   * Generate the notice sent to the current address when an email change is requested
+   */
+  emailChangeNotice(options: EmailChangeNoticeOptions): EmailTemplate {
+    const { userName, newEmail, securityUrl } = options;
+
+    const content = `
+<h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600; color: #18181b;">
+  Email change requested
+</h1>
+<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+  Hi ${escapeHtml(userName)}, someone signed in to your account asked to move it to <strong>${escapeHtml(newEmail)}</strong>. Nothing changes until that address confirms the request.
+</p>
+<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+  If this wasn't you, change your password and sign out your other sessions now.
+</p>
+${this.button('Review Security Settings', securityUrl)}
+<p style="margin: 0; font-size: 13px; color: #71717a;">
+  If you made this request, you can ignore this email.
+</p>
+`.trim();
+
+    return {
+      subject: sanitizeSubject('An email change was requested for your account'),
       html: this.wrap(content),
     };
   }

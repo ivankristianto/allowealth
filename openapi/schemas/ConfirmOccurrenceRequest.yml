@@ -4,7 +4,7 @@ ConfirmOccurrenceRequest:
   properties:
     amount:
       type: string
-      pattern: '^\\d+(\\.\\d{1,2})?$'
+      pattern: '^\d{1,15}(\.\d{1,2})?$'
       description: Decimal amount as string
     transaction_date:
       type: string

@@ -9,25 +9,14 @@
 
 import type { APIRoute } from 'astro';
 import * as v from 'valibot';
-import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getActiveSchema, getDb, runTransaction, type Database } from '@/db';
 import { hashPassword } from '@/lib/auth/password';
 import { AccountCategoryService } from '@/services/account-category.service';
 import { getEnv } from '@/lib/env';
+import { CacheTags, invalidateTags } from '@/lib/cache';
 import { hasUsers } from '@/lib/installer/detection';
 import { logError } from '@/lib/utils';
-
-async function cleanupFailedInstallerSetup(userId: string, workspaceId: string): Promise<void> {
-  const schema = getActiveSchema();
-
-  const database = getDb();
-
-  await database.delete(schema.account).where(eq(schema.account.userId, userId));
-  await database.delete(schema.user).where(eq(schema.user.id, userId));
-  await database.delete(schema.users).where(eq(schema.users.id, userId));
-  await database.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceId));
-}
 
 class SetupAlreadyCompleteError extends Error {
   constructor() {
@@ -113,60 +102,68 @@ export const POST: APIRoute = async ({ request }) => {
     const passwordHash = await hashPassword(password);
     const now = new Date();
 
-    await runTransaction(database, async (tx) => {
+    runTransaction(database, (tx) => {
       if (hasUsers(tx as unknown as Database)) {
         throw new SetupAlreadyCompleteError();
       }
 
-      const categoryService = new AccountCategoryService(tx);
+      tx.insert(schema.user)
+        .values({
+          id: userId,
+          name: name.trim(),
+          email: email.toLowerCase(),
+          emailVerified: true,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
 
-      // 1. Better Auth user table
-      await tx.insert(schema.user).values({
-        id: userId,
-        name: name.trim(),
-        email: email.toLowerCase(),
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      });
+      tx.insert(schema.account)
+        .values({
+          id: accountId,
+          accountId: userId,
+          providerId: 'credential',
+          userId: userId,
+          password: passwordHash,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
 
-      // 2. Better Auth account table (credential provider)
-      await tx.insert(schema.account).values({
-        id: accountId,
-        accountId: userId,
-        providerId: 'credential',
-        userId: userId,
-        password: passwordHash,
-        createdAt: now,
-        updatedAt: now,
-      });
+      tx.insert(schema.workspaces)
+        .values({
+          id: workspaceId,
+          name: workspaceName.trim(),
+          status: 'active',
+          created_at: now,
+          updated_at: now,
+        })
+        .run();
 
-      // 3. Workspace
-      await tx.insert(schema.workspaces).values({
-        id: workspaceId,
-        name: workspaceName.trim(),
-        status: 'active',
-        created_at: now,
-        updated_at: now,
-      });
+      tx.insert(schema.users)
+        .values({
+          id: userId,
+          workspace_id: workspaceId,
+          email: email.toLowerCase(),
+          password_hash: passwordHash,
+          name: name.trim(),
+          role: 'admin',
+          email_verified_at: now,
+          deleted_at: null,
+          created_at: now,
+          updated_at: now,
+        })
+        .run();
 
-      // 4. Domain user
-      await tx.insert(schema.users).values({
-        id: userId,
-        workspace_id: workspaceId,
-        email: email.toLowerCase(),
-        password_hash: passwordHash,
-        name: name.trim(),
-        role: 'admin',
-        email_verified_at: now,
-        deleted_at: null,
-        created_at: now,
-        updated_at: now,
-      });
-
-      // 5. Seed default categories inside the same transaction
-      await categoryService.seedDefaultCategories(workspaceId, userId);
+      tx.insert(schema.accountCategories)
+        .values(AccountCategoryService.buildDefaultCategoryRows(workspaceId, userId, now))
+        .run();
     });
+
+    await invalidateTags(
+      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
+      'best-effort'
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       status: 201,
@@ -180,11 +177,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    try {
-      await cleanupFailedInstallerSetup(userId, workspaceId);
-    } catch (cleanupError) {
-      logError('Installer cleanup failed', cleanupError);
-    }
     logError('Installer setup failed', error);
     return new Response(JSON.stringify({ error: 'Setup failed. Check server logs for details.' }), {
       status: 500,

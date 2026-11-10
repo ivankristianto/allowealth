@@ -10,4 +10,7 @@ bunx lint-staged
 echo "▸ Running astro check..."
 bun run typecheck
 
+echo "▸ Running unit tests..."
+bun test --dots
+
 echo "✅ Pre-commit checks passed"

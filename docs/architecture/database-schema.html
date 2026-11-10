@@ -737,13 +737,14 @@
     <h2>Before you change it</h2>
     <ul class="gotchas">
       <li class="warn">
-        <strong>Timestamp defaults are in milliseconds, reads are in seconds</strong>
+        <strong>Seconds columns get "now" from Drizzle, not from SQL</strong>
         <p>
-          The SQL default <code>sqliteTimestampNow</code> writes milliseconds. Columns declared
-          <code>integer(…, { mode: 'timestamp' })</code> are read by Drizzle as seconds. A row that
-          relies on the default reads back as the year 58727. Services pass
-          <code>created_at</code> and <code>updated_at</code> explicitly, which hides this. Set them
-          explicitly in new code, or fix the default and its migration.
+          Columns declared <code>integer(…, { mode: 'timestamp' })</code> store seconds and default
+          through <code>$defaultFn(() =&gt; new Date())</code>. Their table DDL still carries the
+          old millisecond default, so a raw SQL insert that omits <code>created_at</code> writes a
+          value that reads back as the year 58727. Insert through Drizzle, or set the column
+          explicitly. <code>sqliteTimestampMsNow</code> is for <code>timestamp_ms</code> columns
+          only.
         </p>
       </li>
       <li>
@@ -798,7 +799,7 @@
   </section>
 
   <p class="footnote">
-    Generated 31 October 2026 by <code>bun run aw db docs</code>. See also
+    Generated 10 November 2026 by <code>bun run aw db docs</code>. See also
     <code>docs/architecture/004-database-schema.md</code>,
     <code>006-database-connection-architecture.md</code> and
     <code>007-database-migrations.md</code>.

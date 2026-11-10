@@ -1,4 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, mock } from 'bun:test';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
+import * as realAuditLog from '@/lib/audit-log';
 
 import { superAdminService } from '@/services';
 
@@ -8,7 +10,7 @@ const originalGetUserDetails = superAdminService.getUserDetails;
 const originalDeactivateUser = superAdminService.deactivateUser;
 const logAuditEventMock = mock(async () => {});
 
-(mock as any).module?.('@/lib/audit-log', () => ({
+mockModuleForFile('@/lib/audit-log', realAuditLog, () => ({
   logAuditEvent: logAuditEventMock,
 }));
 

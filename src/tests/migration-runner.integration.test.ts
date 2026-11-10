@@ -9,12 +9,23 @@ import { runSqliteMigrations } from '@/db/migrate';
 import { EXPECTED_MIGRATION_COUNT } from '@/db/migration-constants';
 
 let tmpDir: string;
-let dbPath: string;
+let dbCount = 0;
 
 beforeAll(async () => {
   tmpDir = await mkdtemp(join(tmpdir(), 'allowealth-upgrade-test-'));
-  dbPath = join(tmpDir, 'test.db');
 });
+
+// One file per test, so no test depends on another having migrated the database first.
+function freshDbPath(): string {
+  dbCount += 1;
+  return join(tmpDir, `test-${dbCount}.db`);
+}
+
+function migratedDbPath(): string {
+  const dbPath = freshDbPath();
+  runSqliteMigrations(dbPath);
+  return dbPath;
+}
 
 afterAll(async () => {
   await rm(tmpDir, { recursive: true, force: true });
@@ -22,7 +33,7 @@ afterAll(async () => {
 
 describe('migration runner integration', () => {
   it('fresh DB has no __drizzle_migrations table', () => {
-    const raw = new Database(dbPath);
+    const raw = new Database(freshDbPath());
     const db = drizzle(raw);
 
     // A fresh DB should not have the migrations table
@@ -37,7 +48,7 @@ describe('migration runner integration', () => {
   });
 
   it('runSqliteMigrations applies all migrations', () => {
-    runSqliteMigrations(dbPath);
+    const dbPath = migratedDbPath();
 
     const raw = new Database(dbPath);
     const result = raw.query('SELECT COUNT(*) as count FROM __drizzle_migrations').get() as {
@@ -49,7 +60,7 @@ describe('migration runner integration', () => {
   });
 
   it('after migrations, db.all() COUNT query returns expected count', () => {
-    const raw = new Database(dbPath);
+    const raw = new Database(migratedDbPath());
     const db = drizzle(raw);
     const rows = db.all<{ count: number }>(sql`SELECT COUNT(*) as count FROM __drizzle_migrations`);
     raw.close();
@@ -58,6 +69,7 @@ describe('migration runner integration', () => {
   });
 
   it('running migrations again is idempotent', () => {
+    const dbPath = migratedDbPath();
     // Should not throw or duplicate entries
     runSqliteMigrations(dbPath);
 

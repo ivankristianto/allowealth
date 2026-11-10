@@ -2,23 +2,26 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { csrfFetch, getCsrfHeaders } from './csrf-client';
 
 describe('csrf-client', () => {
-  const originalDocument = globalThis.document;
+  const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
+      writable: true,
       value: {
         cookie: 'csrf_token=test-token',
       },
     });
   });
 
+  // A plain value redefinition is read-only, which breaks later files that assign globalThis.document.
   afterEach(() => {
-    Object.defineProperty(globalThis, 'document', {
-      configurable: true,
-      value: originalDocument,
-    });
+    if (originalDocument) {
+      Object.defineProperty(globalThis, 'document', originalDocument);
+    } else {
+      delete (globalThis as { document?: Document }).document;
+    }
     globalThis.fetch = originalFetch;
   });
 

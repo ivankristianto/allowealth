@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 
 export const workspaceInvitations = sqliteTable(
@@ -15,7 +14,9 @@ export const workspaceInvitations = sqliteTable(
     role: text('role', { enum: ['admin', 'member'] }).notNull(),
     expires_at: integer('expires_at', { mode: 'timestamp' }).notNull(),
     accepted_at: integer('accepted_at', { mode: 'timestamp' }),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('workspace_invitations_workspace_id_idx').on(table.workspace_id),

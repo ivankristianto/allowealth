@@ -80,4 +80,15 @@ describe('transaction tool schemas', () => {
       })
     ).toThrow();
   });
+
+  it('rejects amounts the service would not store', () => {
+    const base = { currency: 'IDR', category_name: 'Food', account_name: 'Cash' };
+
+    for (const amount of [12.345, 0.1 + 0.2, 1e21, Infinity]) {
+      expect(() => parse(addTransactionSchema, { ...base, amount })).toThrow();
+    }
+    for (const amount of [1, 50000, 12.5, 12.34]) {
+      expect(parse(addTransactionSchema, { ...base, amount }).amount).toBe(amount);
+    }
+  });
 });

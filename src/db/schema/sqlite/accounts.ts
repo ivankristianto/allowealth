@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { accountCategories } from './account-categories';
@@ -50,11 +49,15 @@ export const accounts = sqliteTable(
       onDelete: 'set null',
     }),
     last_updated: integer('last_updated', { mode: 'timestamp' })
-      .default(sqliteTimestampNow)
+      .$defaultFn(() => new Date())
       .notNull(),
     deleted_at: integer('deleted_at', { mode: 'timestamp' }),
-    created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
-    updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
+    updated_at: integer('updated_at', { mode: 'timestamp' })
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => [
     index('accounts_workspace_id_idx').on(table.workspace_id),

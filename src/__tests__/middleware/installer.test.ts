@@ -1,23 +1,21 @@
-import { describe, expect, test, mock, beforeEach, afterAll } from 'bun:test';
+import { describe, expect, test, mock, beforeEach } from 'bun:test';
 import type { APIContext } from 'astro';
-
-// Bun's mock.module is a runtime API not reflected in @types/bun
-const mockModule = (mock as any).module;
+import * as realMigrate from '@/db/migrate';
+import * as realDetection from '@/lib/installer/detection';
+import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
 
 // Mock detection functions
 const mockIsMigrationApplied = mock(() => true as boolean);
 const mockHasUsers = mock(() => true as boolean);
 const mockRunSqliteMigrations = mock(() => {});
 
-// Mock only detection and migrate modules — NOT @/db.
-// Mocking @/db leaks across the process (bun mock.module is global)
-// and breaks other tests like seed.integration.test.ts that import `db`.
-mockModule('@/lib/installer/detection', () => ({
+// Mock only detection and migrate modules, not @/db, which every other file shares.
+mockModuleForFile('@/lib/installer/detection', realDetection, () => ({
   isMigrationApplied: mockIsMigrationApplied,
   hasUsers: mockHasUsers,
 }));
 
-mockModule('@/db/migrate', () => ({
+mockModuleForFile('@/db/migrate', realMigrate, () => ({
   runSqliteMigrations: mockRunSqliteMigrations,
 }));
 
@@ -37,10 +35,6 @@ function createMockContext(pathname: string): APIContext {
 const next = mock(() => Promise.resolve(new Response('OK')));
 
 describe('installer middleware', () => {
-  afterAll(() => {
-    (mock as any).restore();
-  });
-
   beforeEach(() => {
     mockIsMigrationApplied.mockReset();
     mockIsMigrationApplied.mockReturnValue(true);

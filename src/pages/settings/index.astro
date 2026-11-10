@@ -530,7 +530,7 @@ const inviteMemberButtonClassName = accentGhostBtn
                         variant="ghost"
                         size="sm"
                         className={`${inviteMemberButtonClassName} w-full sm:w-auto`}
-                        onclick="document.getElementById('invite-member-modal')?.showModal()"
+                        data-open-modal="invite-member-modal"
                       >
                         <UserPlus size={16} class="stroke-current" aria-hidden="true" />
                         Invite Member

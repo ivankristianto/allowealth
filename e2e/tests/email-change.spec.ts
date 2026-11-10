@@ -78,7 +78,7 @@ test.describe('Email Verification', () => {
 
       const updateResponse = await page.request.put(`${E2E_BASE_URL}/api/user/profile`, {
         headers: { 'X-CSRF-Token': await getCsrfTokenFromPage(page) },
-        data: { name: 'E2E Verify User', email: newEmail, phone: '' },
+        data: { name: 'E2E Verify User', email: newEmail, phone: '', currentPassword: password },
       });
       expect(updateResponse.ok()).toBe(true);
       expect((await updateResponse.json()).data.pendingEmail).toBe(newEmail);

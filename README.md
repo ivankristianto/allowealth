@@ -8,8 +8,8 @@ Personal and Family Financial Application
 # Install dependencies
 bun install
 
-# Set up database (migrate + seed with demo data)
-bun run db:reset
+# Set up database (migrate + seed with demo data). Refuses if the DB holds non-demo users.
+bun run db:reset --yes
 
 # Start development server
 bun run dev
@@ -43,8 +43,10 @@ Use the `aw demo reset` command to refresh demo data without changing schema:
 
 ```bash
 # Reset local SQLite demo data
-bun run aw demo reset
+bun run aw demo reset --yes
 ```
+
+On a public demo where visitors have signed up, add `--force` as well. The wipe guard otherwise refuses a database holding users outside `@example.com`.
 
 ## Local Development Setup
 
@@ -157,20 +159,20 @@ The seeder creates realistic sample data for testing:
 ### Seed Commands
 
 ```bash
-# Seed database with full demo data (keeps existing data)
-bun run db:seed
+# Wipe the database and seed full demo data
+bun run db:seed --yes
 
 # Seed database with dashboard test data (lightweight, focused on dashboard)
 bun run db:seed:dashboard
 
 # Reset database with full demo data
-bun run db:reset
+bun run db:reset --yes
 
 # Reset database with dashboard test data
 bun run db:reset:dashboard
 
 # Empty database (delete all data, preserve schema)
-bun run db:empty
+bun run db:empty --yes
 
 # Empty production database (with 5-second safety delay)
 bun run db:empty:prod
@@ -196,11 +198,11 @@ The dashboard seeder creates focused test data:
 
 **Issue:** "no such table" error when running `db:seed`
 
-**Solution:** The database tables haven't been created yet. Run `bun run db:reset` to set up the database from scratch.
+**Solution:** The database tables haven't been created yet. Run `bun run aw db migrate` to create them.
 
 **Issue:** Database becomes corrupted or has invalid data
 
-**Solution:** Run `bun run db:reset` to start fresh with a clean database.
+**Solution:** Restore a backup with `bun run aw db restore`. On a dev database with only demo data, `bun run db:reset --yes` starts fresh.
 
 ## Workspace Management
 

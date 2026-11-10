@@ -23,6 +23,7 @@ import {
   type InferOutput,
 } from 'valibot';
 import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
+import { positiveAmountSchema } from './amount';
 
 /**
  * Validation schemas for Transaction operations
@@ -33,14 +34,7 @@ export { currencyEnum, transactionTypeEnum };
 
 const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
-const positiveAmountValidation = pipe(
-  string(),
-  minLength(1, 'Amount is required'),
-  check((value) => {
-    const parsedAmount = Number.parseFloat(value);
-    return !Number.isNaN(parsedAmount) && parsedAmount > 0;
-  }, 'Amount must be greater than 0')
-);
+const positiveAmountValidation = positiveAmountSchema();
 
 const futureTransactionCheck = check(
   (value: Date) => value <= new Date(),

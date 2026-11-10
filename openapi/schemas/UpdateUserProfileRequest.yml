@@ -14,5 +14,14 @@ UpdateUserProfileRequest:
     email:
       type: string
       format: email
-      description: User email address (must be unique)
+      description: User email address. A new value starts the verify-first email change flow.
       example: john.doe@example.com
+    phone:
+      type: string
+      maxLength: 50
+      description: Phone number, including country code
+      example: '+62 812 3456 7890'
+    currentPassword:
+      type: string
+      format: password
+      description: Current password. Required when `email` differs from the current address.

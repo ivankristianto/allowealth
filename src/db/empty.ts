@@ -5,12 +5,13 @@
  * Empties all data from the database while preserving the schema.
  *
  * Usage:
- *   bun run db:empty                        # Uses default .env (SQLite)
+ *   bun run db:empty --yes          # refuses a DB with non-demo users unless --force is added
  */
 
 import { sql } from 'drizzle-orm';
 import { getDatabaseConfig } from './config';
 import { db, getActiveSchema } from './index';
+import { enforceWipeGuard, parseWipeFlags, resolveDatabasePath } from './wipe-guard';
 
 const schema = getActiveSchema();
 const config = getDatabaseConfig();
@@ -47,6 +48,12 @@ const tablesToEmpty = [
 ];
 
 async function emptyDatabase() {
+  enforceWipeGuard({
+    dbPath: resolveDatabasePath(config.url),
+    action: 'empty',
+    ...parseWipeFlags(process.argv.slice(2)),
+  });
+
   console.log(`\n🗑️  Emptying database (${config.dialect})...\n`);
 
   // `import.meta.env.MODE` is undefined under Bun, so use `process.env.NODE_ENV`,

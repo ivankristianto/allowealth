@@ -19,7 +19,7 @@ CreateBudgetRequest:
       description: Year (e.g., 2025, 2026)
     budget_amount:
       type: string
-      pattern: '^\d+(\.\d{1,2})?$'
+      pattern: '^\d{1,15}(\.\d{1,2})?$'
       description: Budget amount as a non-negative decimal string (0 is allowed)
     currency:
       type: string

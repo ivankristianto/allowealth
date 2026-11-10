@@ -54,7 +54,7 @@ echo -e "${GREEN}Old database removed${NC}\n"
 echo -e "${YELLOW}Migrating schema on E2E database...${NC}"
 DATABASE_URL=db/.e2e.db bun run db:migrate
 echo -e "${YELLOW}Seeding E2E database...${NC}"
-DATABASE_URL=db/.e2e.db bun run db:seed
+DATABASE_URL=db/.e2e.db bun run db:seed --yes
 echo -e "${GREEN}E2E database ready${NC}\n"
 
 echo -e "${GREEN}=== E2E Environment Ready ===${NC}"

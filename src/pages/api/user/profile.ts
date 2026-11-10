@@ -14,6 +14,9 @@ import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { and, eq } from 'drizzle-orm';
 import { email, maxLength, minLength, object, optional, pipe, string } from 'valibot';
 import { securityActivityService } from '@/services/security-activity.service';
+import { auth as betterAuth } from '@/lib/auth/server';
+import { isAPIError } from 'better-auth/api';
+import { checkRateLimitByKey, createRateLimitResponse, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
 
 /**
  * Schema for PUT request body - all profile fields in one request
@@ -26,7 +29,20 @@ const updateFullProfileSchema = object({
   ),
   email: pipe(string(), email('Invalid email format')),
   phone: optional(pipe(string(), maxLength(50, 'Phone must be at most 50 characters')), ''),
+  currentPassword: optional(string()),
 });
+
+async function isCurrentPassword(headers: Headers, password: string): Promise<boolean> {
+  try {
+    await betterAuth.api.verifyPassword({ headers, body: { password } });
+    return true;
+  } catch (error) {
+    if (isAPIError(error) && error.body?.code === 'INVALID_PASSWORD') {
+      return false;
+    }
+    throw error;
+  }
+}
 
 /**
  * GET /api/user/profile
@@ -65,20 +81,8 @@ export const GET: APIRoute = async (context) => {
 /**
  * PUT /api/user/profile
  *
- * Updates all profile fields in one request:
- * - name -> users table
- * - email -> verification flow (pending change + token)
- * - phone -> user_meta table
- *
- * @example
- * Request:
- * ```json
- * {
- *   "name": "John Doe",
- *   "email": "john@example.com",
- *   "phone": "+1234567890"
- * }
- * ```
+ * Updates name and phone, and starts an email change. Changing the email
+ * needs `currentPassword`, checked against the Better Auth credential account.
  */
 export const PUT: APIRoute = async (context) => {
   try {
@@ -90,7 +94,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, email, phone } = validation.data;
+    const { name, email, phone, currentPassword } = validation.data;
     const currentUser = await userService.getById(auth.userId);
 
     if (!currentUser) {
@@ -101,6 +105,26 @@ export const PUT: APIRoute = async (context) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (normalizedEmail !== currentUser.email.toLowerCase()) {
+      const rateLimitResult = checkRateLimitByKey(
+        `email-change:${auth.userId}`,
+        RATE_LIMIT_PRESETS.emailChange
+      );
+      if (!rateLimitResult.allowed) {
+        return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.emailChange.message);
+      }
+
+      if (!currentPassword) {
+        return errorResponse(
+          'Enter your current password to change your email',
+          400,
+          'CURRENT_PASSWORD_REQUIRED'
+        );
+      }
+
+      if (!(await isCurrentPassword(context.request.headers, currentPassword))) {
+        return errorResponse('Incorrect password', 400, 'INVALID_PASSWORD');
+      }
+
       await emailVerificationService.requestEmailChange(auth.userId, normalizedEmail);
       pendingEmail = normalizedEmail;
     } else {
@@ -182,7 +206,7 @@ export const PUT: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       ...(pendingEmail && { pendingEmail }),
-      ...(pendingEmail && { message: `Verification email sent to ${pendingEmail}` }),
+      ...(pendingEmail && { message: `Check ${pendingEmail} for a confirmation link` }),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

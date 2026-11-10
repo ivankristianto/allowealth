@@ -295,6 +295,22 @@ export class AccountCategoryService {
     return result?.count ?? 0;
   }
 
+  /** Rows for the default account categories, so callers inside a transaction can insert them synchronously. */
+  static buildDefaultCategoryRows(workspaceId: string, userId: string, now = new Date()) {
+    return DEFAULT_ACCOUNT_CATEGORIES.map((category) => ({
+      id: nanoid(),
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
+      name: category.name,
+      description: category.description,
+      is_liability: category.isLiability,
+      is_system: true,
+      sort_order: category.sortOrder,
+      created_at: now,
+      updated_at: now,
+    }));
+  }
+
   /**
    * Seed default account categories for a workspace
    * Called after email verification for workspace owner
@@ -309,24 +325,8 @@ export class AccountCategoryService {
       return;
     }
 
-    const now = new Date();
-
-    for (const category of DEFAULT_ACCOUNT_CATEGORIES) {
-      const id = nanoid();
-      await Promise.resolve(
-        this.db.insert(this.schema.accountCategories).values({
-          id,
-          workspace_id: workspaceId,
-          created_by_user_id: userId,
-          name: category.name,
-          description: category.description,
-          is_liability: category.isLiability,
-          is_system: true,
-          sort_order: category.sortOrder,
-          created_at: now,
-          updated_at: now,
-        })
-      );
+    for (const row of AccountCategoryService.buildDefaultCategoryRows(workspaceId, userId)) {
+      await Promise.resolve(this.db.insert(this.schema.accountCategories).values(row));
     }
 
     await invalidateTags(
