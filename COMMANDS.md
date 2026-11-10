@@ -79,7 +79,7 @@ bun run docker:start
 # Seed demo data into the app volume (default: --months=6)
 bun run docker:seed -- --yes --force
 
-# Seed a scratch volume instead of the app's
+# Seed another volume that already has the schema (an app container has started on it once)
 SEED_VOLUME=allowealth-demo bun run docker:seed -- --yes
 
 # Seed with custom options

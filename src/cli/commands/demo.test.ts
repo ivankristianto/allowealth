@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-import demoCommand from './demo';
+import demoCommand, { demoResetSteps } from './demo';
 
 describe('demo command', () => {
   it('exposes the reset subcommand', () => {
@@ -30,5 +30,16 @@ describe('demo command', () => {
 
     expect(command.subCommands.reset.args.yes?.type).toBe('boolean');
     expect(command.subCommands.reset.args.force?.type).toBe('boolean');
+  });
+
+  it('forwards --force to both the empty and the seed step', () => {
+    const steps = demoResetSteps({ yes: true, force: true });
+
+    expect(steps).toHaveLength(2);
+    for (const step of steps) {
+      expect(step).toContain('--yes');
+      expect(step).toContain('--force');
+    }
+    expect(demoResetSteps({ yes: true, force: false })[1]).not.toContain('--force');
   });
 });
