@@ -96,7 +96,8 @@ export class EmailVerificationService {
   }
 
   /**
-   * Request an email change flow for an existing user.
+   * Request an email change. The caller must have re-authenticated the user.
+   * Responds the same way when another account owns the address, but only mails a free one.
    */
   async requestEmailChange(userId: string, newEmail: string): Promise<void> {
     const normalizedEmail = newEmail.trim().toLowerCase();
@@ -114,56 +115,30 @@ export class EmailVerificationService {
       return;
     }
 
-    const existingUser = await this.db.query.users.findFirst({
-      where: eq(this.schema.users.email, normalizedEmail),
-    });
+    const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
 
-    if (existingUser && existingUser.id !== userId) {
-      throw new UserServiceError(
-        ServiceErrorCode.EMAIL_ALREADY_EXISTS,
-        'Email already exists',
-        409
-      );
+    if (this.emailSvc) {
+      await this.emailSvc.sendEmailChangeNotice({
+        to: user.email,
+        userName: user.name,
+        newEmail: normalizedEmail,
+        securityUrl: `${baseUrl}/security`,
+      });
     }
 
-    const existingAuthUser = await this.db.query.user.findFirst({
-      where: eq(this.schema.user.email, normalizedEmail),
-    });
+    await this.setPendingEmail(userId, normalizedEmail);
 
-    if (existingAuthUser && existingAuthUser.id !== userId) {
-      throw new UserServiceError(
-        ServiceErrorCode.EMAIL_ALREADY_EXISTS,
-        'Email already exists',
-        409
-      );
-    }
-
-    if (this.userMetaSvc) {
-      await this.userMetaSvc.setUserMeta(userId, USER_META_KEYS.PENDING_EMAIL, normalizedEmail);
-    } else {
+    if (await this.isEmailOwnedByAnotherUser(userId, normalizedEmail)) {
       await this.db
-        .insert(this.schema.userMeta)
-        .values({
-          meta_id: nanoid(),
-          user_id: userId,
-          meta_key: USER_META_KEYS.PENDING_EMAIL,
-          meta_value: normalizedEmail,
-          created_at: new Date(),
-          updated_at: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [this.schema.userMeta.user_id, this.schema.userMeta.meta_key],
-          set: {
-            meta_value: normalizedEmail,
-            updated_at: new Date(),
-          },
-        });
+        .delete(this.schema.emailVerificationTokens)
+        .where(eq(this.schema.emailVerificationTokens.user_id, userId));
+      log.warn('Email change requested for an address another account owns', { userId });
+      return;
     }
 
     const token = await this.createVerificationToken(userId);
 
     if (this.emailSvc) {
-      const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
       const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
       await this.emailSvc.sendEmailChangeVerification({
@@ -175,6 +150,43 @@ export class EmailVerificationService {
     }
 
     log.info('Email change requested', { userId, newEmail: normalizedEmail });
+  }
+
+  private async isEmailOwnedByAnotherUser(userId: string, email: string): Promise<boolean> {
+    const [domainOwner, authOwner] = await Promise.all([
+      this.db.query.users.findFirst({ where: eq(this.schema.users.email, email) }),
+      this.db.query.user.findFirst({ where: eq(this.schema.user.email, email) }),
+    ]);
+
+    return (
+      (domainOwner !== undefined && domainOwner.id !== userId) ||
+      (authOwner !== undefined && authOwner.id !== userId)
+    );
+  }
+
+  private async setPendingEmail(userId: string, email: string): Promise<void> {
+    if (this.userMetaSvc) {
+      await this.userMetaSvc.setUserMeta(userId, USER_META_KEYS.PENDING_EMAIL, email);
+      return;
+    }
+
+    await this.db
+      .insert(this.schema.userMeta)
+      .values({
+        meta_id: nanoid(),
+        user_id: userId,
+        meta_key: USER_META_KEYS.PENDING_EMAIL,
+        meta_value: email,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [this.schema.userMeta.user_id, this.schema.userMeta.meta_key],
+        set: {
+          meta_value: email,
+          updated_at: new Date(),
+        },
+      });
   }
 
   async clearPendingEmailAndTokens(userId: string): Promise<void> {
@@ -229,6 +241,11 @@ export class EmailVerificationService {
     await this.db
       .delete(this.schema.emailVerificationTokens)
       .where(eq(this.schema.emailVerificationTokens.user_id, userId));
+
+    if (await this.isEmailOwnedByAnotherUser(userId, pendingEmail)) {
+      log.warn('Skipped resend to an address another account owns', { userId });
+      return { pendingEmail };
+    }
 
     const token = await this.createVerificationToken(userId);
 

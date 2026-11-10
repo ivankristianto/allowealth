@@ -257,6 +257,26 @@ export const RATE_LIMIT_PRESETS = {
   } satisfies RateLimitConfig,
 
   /**
+   * Rate limit for changing the password from settings.
+   * 5 requests per 15 minutes per authenticated user.
+   */
+  passwordChange: {
+    maxRequests: 5,
+    windowMs: 15 * 60 * 1000,
+    message: 'Too many password change attempts. Please try again in 15 minutes.',
+  } satisfies RateLimitConfig,
+
+  /**
+   * Rate limit for requesting an email change.
+   * 5 requests per hour per authenticated user.
+   */
+  emailChange: {
+    maxRequests: 5,
+    windowMs: 60 * 60 * 1000,
+    message: 'Too many email change requests. Please try again later.',
+  } satisfies RateLimitConfig,
+
+  /**
    * Rate limit for session revocation actions.
    * 5 requests per minute per authenticated user.
    */

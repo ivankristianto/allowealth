@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { userService } from '@/services';
+import { isAPIError } from 'better-auth/api';
+import { auth } from '@/lib/auth/server';
 import {
   successResponse,
   errorResponse,
@@ -7,70 +8,36 @@ import {
   getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
+import { checkRateLimitByKey, createRateLimitResponse, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
 import { updatePasswordSchema } from '@/services/user.service';
 import { logError } from '@/lib/utils';
-import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
 import { securityActivityService } from '@/services/security-activity.service';
 
+const BETTER_AUTH_PASSWORD_ERRORS: Record<string, { message: string; code: string }> = {
+  INVALID_PASSWORD: { message: 'Invalid old password', code: 'INVALID_PASSWORD' },
+  CREDENTIAL_ACCOUNT_NOT_FOUND: {
+    message: 'This account has no password yet. Use "Forgot password" to set one.',
+    code: 'PASSWORD_NOT_SET',
+  },
+  PASSWORD_TOO_SHORT: { message: 'New password is too short', code: 'WEAK_PASSWORD' },
+  PASSWORD_TOO_LONG: { message: 'Password is too long', code: 'VALIDATION_ERROR' },
+};
+
 /**
- * PUT /api/user/password
- *
- * Updates the current authenticated user's password after verifying the old password.
- * Successful changes revoke all sessions and require the user to sign in again.
- *
- * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
- * @param {Object} requestBody - Request body containing password change data
- * @param {string} requestBody.oldPassword - Current password (required)
- * @param {string} requestBody.newPassword - New password (required, min 12 chars, must contain letter + number/special)
- *
- * @example
- * Request:
- * ```json
- * {
- *   "oldPassword": "CurrentPass123!",
- *   "newPassword": "NewSecurePass456@"
- * }
- * ```
- *
- * @example
- * Response (200):
- * ```json
- * {
- *   "success": true,
- *   "data": {
- *     "success": true,
- *     "reauthRequired": true
- *   }
- * }
- * ```
- *
- * @example
- * Response (400) - Invalid Old Password:
- * ```json
- * {
- *   "success": false,
- *   "error": {
- *     "message": "Invalid password",
- *     "code": "INVALID_PASSWORD"
- *   }
- * }
- * ```
- *
- * @example
- * Response (400) - Weak Password:
- * ```json
- * {
- *   "success": false,
- *   "error": {
- *     "message": "Password must be at least 12 characters long and contain at least one letter and one number or special character",
- *     "code": "WEAK_PASSWORD"
- *   }
- * }
- * ```
+ * PUT /api/user/password: change the credential account password and sign out
+ * every other session. The current device gets a fresh session cookie.
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const { userId } = getAuthenticatedUser(context);
+
+    const rateLimitResult = checkRateLimitByKey(
+      `password-change:${userId}`,
+      RATE_LIMIT_PRESETS.passwordChange
+    );
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.passwordChange.message);
+    }
 
     const validation = await validateBody(context.request, updatePasswordSchema);
 
@@ -78,28 +45,38 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const result = await userService.updatePassword(auth.userId, validation.data);
-    await securityActivityService.logEvent({
-      type: 'password_changed',
-      userId: auth.userId,
+    const { headers: authHeaders } = await auth.api.changePassword({
+      headers: context.request.headers,
+      body: {
+        currentPassword: validation.data.oldPassword,
+        newPassword: validation.data.newPassword,
+        revokeOtherSessions: true,
+      },
+      returnHeaders: true,
     });
 
-    return successResponse(result);
+    await securityActivityService.logEvent({
+      type: 'password_changed',
+      userId,
+    });
+
+    const response = successResponse({ success: true, reauthRequired: false });
+    for (const cookie of authHeaders.getSetCookie()) {
+      response.headers.append('set-cookie', cookie);
+    }
+    return response;
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
 
-    if (error instanceof UserServiceError) {
-      switch (error.code) {
-        case ServiceErrorCode.USER_NOT_FOUND:
-          return errorResponse(error.message, error.statusCode, error.code);
-        case ServiceErrorCode.INVALID_PASSWORD:
-          return errorResponse(error.message, error.statusCode, error.code);
-        case ServiceErrorCode.WEAK_PASSWORD:
-          return errorResponse(error.message, error.statusCode, error.code);
-        case ServiceErrorCode.VALIDATION_ERROR:
-          return errorResponse(error.message, error.statusCode, error.code);
+    if (isAPIError(error)) {
+      const mapped = BETTER_AUTH_PASSWORD_ERRORS[String(error.body?.code)];
+      if (mapped) {
+        return errorResponse(mapped.message, 400, mapped.code);
+      }
+      if (error.statusCode === 401) {
+        return errorResponse('Unauthorized', 401);
       }
     }
 

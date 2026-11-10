@@ -30,10 +30,15 @@ paths:
       description: |
         Update user profile fields.
         When the email is changed, the endpoint starts a verify-first flow:
-        it stores `data.pendingEmail` and sends a verification email instead of
-        applying the email immediately. Email change validation runs first, so
-        if the new email is already used the endpoint returns 409 and no other
-        profile updates are persisted.
+        it stores `data.pendingEmail`, mails a confirmation link to the new
+        address and a notice to the current one, and leaves the email unchanged
+        until the link is confirmed.
+
+        An email change requires `currentPassword`, checked against the Better
+        Auth credential account, and is limited to 5 requests per hour per user.
+        The response is the same whether or not another account already uses
+        the new address; in that case no link is sent. The password check runs
+        before any write, so a rejected request persists nothing.
       security:
         - sessionAuth: []
       requestBody:
@@ -50,26 +55,30 @@ paths:
               schema:
                 $ref: '../schemas/UserProfileUpdateResponse.yml#/UserProfileUpdateResponse'
         '400':
-          description: Validation error or invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '409':
-          description: Email already exists (`EMAIL_ALREADY_EXISTS`)
+          description: |
+            Validation error, missing current password (`CURRENT_PASSWORD_REQUIRED`)
+            or wrong current password (`INVALID_PASSWORD`)
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
               examples:
-                emailAlreadyExists:
+                currentPasswordRequired:
                   value:
                     success: false
                     error:
-                      message: Email already exists
-                      code: EMAIL_ALREADY_EXISTS
+                      message: Enter your current password to change your email
+                      code: CURRENT_PASSWORD_REQUIRED
+                invalidPassword:
+                  value:
+                    success: false
+                    error:
+                      message: Incorrect password
+                      code: INVALID_PASSWORD
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -162,7 +171,11 @@ paths:
     put:
       tags: [User]
       summary: Change user password
-      description: Update user password. Requires current password for verification.
+      description: |
+        Change the password on the Better Auth credential account. Requires the
+        current password. Every other session is signed out, and the response
+        sets a fresh session cookie for the current device, so `reauthRequired`
+        is `false`. Limited to 5 requests per 15 minutes per user.
       security:
         - sessionAuth: []
       requestBody:
@@ -173,22 +186,28 @@ paths:
               $ref: '../schemas/UpdatePasswordRequest.yml#/UpdatePasswordRequest'
       responses:
         '200':
-          description: Password updated successfully
+          description: Password updated; other sessions revoked
+          headers:
+            Set-Cookie:
+              description: New session cookie for the current device
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '../schemas/PasswordUpdateResponse.yml#/PasswordUpdateResponse'
         '400':
-          description: Validation error or weak password
+          description: |
+            Validation error (`VALIDATION_ERROR`, `WEAK_PASSWORD`), wrong current
+            password (`INVALID_PASSWORD`) or an account without a password,
+            such as a Google-only account (`PASSWORD_NOT_SET`)
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '401':
-          description: Invalid old password or unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+          $ref: '../responses/common.yml#/Unauthorized'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
