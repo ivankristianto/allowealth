@@ -29,6 +29,7 @@ const tablesToEmpty = [
   schema.categories,
   schema.accountCategories,
   schema.auditLogs,
+  schema.mcpAppPasswords,
   schema.oauthAccessToken,
   schema.oauthRefreshToken,
   schema.oauthConsent,

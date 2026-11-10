@@ -698,6 +698,24 @@ CREATE INDEX IF NOT EXISTS `audit_logs_created_at_idx` ON `audit_logs` (`created
 CREATE INDEX IF NOT EXISTS `audit_logs_workspace_created_idx` ON `audit_logs` (`workspace_id`,`created_at`);
 CREATE INDEX IF NOT EXISTS `audit_logs_ws_entity_action_idx` ON `audit_logs` (`workspace_id`,`entity_type`,`entity_id`,`action`);
 
+CREATE TABLE IF NOT EXISTS `mcp_app_passwords` (
+  `id` text PRIMARY KEY NOT NULL,
+  `user_id` text NOT NULL,
+  `workspace_id` text NOT NULL,
+  `name` text NOT NULL,
+  `token_hash` text NOT NULL,
+  `token_hint` text NOT NULL,
+  `scope` text NOT NULL,
+  `expires_at` integer,
+  `last_used_at` integer,
+  `created_at` integer NOT NULL,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+  FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS `mcp_app_passwords_token_hash_unique` ON `mcp_app_passwords` (`token_hash`);
+CREATE INDEX IF NOT EXISTS `mcp_app_passwords_user_id_idx` ON `mcp_app_passwords` (`user_id`);
+
 -- Performance pragmas for SQLite
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;

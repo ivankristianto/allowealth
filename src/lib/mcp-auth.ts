@@ -1,12 +1,16 @@
 import { db, getActiveSchema } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
+import { isAppPasswordToken, type AppPasswordScope } from '@/lib/mcp-app-password';
+import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { eq } from 'drizzle-orm';
 
 export interface McpAuthContext {
   workspaceId: string;
   userId: string;
   tokenId: string;
+  /** Set for app passwords only; OAuth tokens have full MCP access. */
+  scope?: AppPasswordScope;
 }
 
 interface McpAuthDeps {
@@ -18,6 +22,7 @@ interface McpAuthDeps {
   };
   getSchema: () => Pick<ReturnType<typeof getActiveSchema>, 'oauthAccessToken' | 'users'>;
   cache: Pick<ReturnType<typeof getCacheManager>, 'invalidateByTags'>;
+  appPasswords?: Pick<typeof mcpAppPasswordService, 'verify'>;
 }
 
 function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
@@ -70,6 +75,9 @@ export async function validateMcpToken(
   overrides: Partial<McpAuthDeps> = {}
 ): Promise<McpAuthContext | null> {
   if (!rawToken) return null;
+  if (isAppPasswordToken(rawToken)) {
+    return (overrides.appPasswords ?? mcpAppPasswordService).verify(rawToken);
+  }
 
   const deps = resolveDeps(overrides);
   return lookupToken(rawToken, deps);

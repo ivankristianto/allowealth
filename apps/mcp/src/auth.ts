@@ -1,15 +1,11 @@
-import { validateMcpToken } from '@/lib/mcp-auth';
+import { validateMcpToken, type McpAuthContext } from '@/lib/mcp-auth';
 
-export interface AuthContext {
-  workspaceId: string;
-  userId: string;
-  tokenId: string;
-}
+export type AuthContext = McpAuthContext;
 
 let cachedContext: AuthContext | null = null;
 
 /**
- * Authenticate the OAuth access token from environment and cache the result.
+ * Authenticate the access token (OAuth or `aw_pat_` app password) from environment and cache the result.
  * Called once on server startup.
  */
 export async function authenticate(): Promise<AuthContext> {
@@ -22,7 +18,7 @@ export async function authenticate(): Promise<AuthContext> {
 
   const result = await validateMcpToken(token);
   if (!result) {
-    throw new Error('Invalid or expired OAuth token. Check ALLOWEALTH_ACCESS_TOKEN.');
+    throw new Error('Invalid or expired access token. Check ALLOWEALTH_ACCESS_TOKEN.');
   }
 
   cachedContext = result;
@@ -42,7 +38,7 @@ export async function getAuthContext(): Promise<AuthContext> {
   const result = await validateMcpToken(token);
 
   if (!result) {
-    throw new Error('OAuth token is no longer valid.');
+    throw new Error('Access token is no longer valid.');
   }
 
   return result;

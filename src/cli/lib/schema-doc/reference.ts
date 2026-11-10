@@ -38,13 +38,14 @@ export const TABLE_GROUPS: TableGroup[] = [
   },
   {
     title: 'Workspaces & users',
-    note: 'The tenant boundary, its members, their preferences and the audit trail.',
+    note: 'The tenant boundary, its members, their preferences, MCP app passwords and the audit trail.',
     tables: [
       'workspaces',
       'workspace_meta',
       'workspace_invitations',
       'users',
       'user_meta',
+      'mcp_app_passwords',
       'audit_logs',
     ],
   },

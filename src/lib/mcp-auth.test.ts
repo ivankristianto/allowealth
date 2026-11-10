@@ -192,3 +192,56 @@ describe('invalidateMcpToken', () => {
     expect(mockCacheInvalidate).toHaveBeenCalledWith(['mcp-token:tok-1']);
   });
 });
+
+describe('validateMcpToken app password dispatch', () => {
+  const appPasswordContext = {
+    workspaceId: 'ws-1',
+    userId: 'user-1',
+    tokenId: 'pat_1',
+    scope: 'read' as const,
+  };
+
+  beforeEach(() => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => null);
+    mockDb.query.users.findFirst = mock(async () => null);
+  });
+
+  it('sends aw_pat_ tokens to the app password verifier and never to the OAuth table', async () => {
+    const verify = mock(async () => appPasswordContext);
+
+    const result = await validateMcpToken('aw_pat_abc', {
+      ...testDeps,
+      appPasswords: { verify },
+    });
+
+    expect(result).toEqual(appPasswordContext);
+    expect(verify).toHaveBeenCalledWith('aw_pat_abc');
+    expect(mockDb.query.oauthAccessToken.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back to the OAuth lookup when an app password is refused', async () => {
+    const verify = mock(async () => null);
+
+    expect(
+      await validateMcpToken('aw_pat_revoked', { ...testDeps, appPasswords: { verify } })
+    ).toBeNull();
+    expect(mockDb.query.oauthAccessToken.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('leaves OAuth tokens on the OAuth path with no scope restriction', async () => {
+    const verify = mock(async () => appPasswordContext);
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
+      id: 'tok-1',
+      expiresAt: new Date(Date.now() + 3600_000),
+      revoked: null,
+      userId: 'user-1',
+    }));
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1', deleted_at: null }));
+
+    const result = await validateMcpToken('oauth-token', { ...testDeps, appPasswords: { verify } });
+
+    expect(verify).not.toHaveBeenCalled();
+    expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
+    expect(result?.scope).toBeUndefined();
+  });
+});
