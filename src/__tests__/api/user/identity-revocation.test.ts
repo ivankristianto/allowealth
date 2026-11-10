@@ -5,6 +5,7 @@ import { db, getActiveSchema } from '@/db';
 import { setTestEnv } from '@/lib/env';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import { EmailService } from '@/services/email';
 import { EmailVerificationService } from '@/services/email-verification.service';
 
 // Stands in for Redis: with secondary storage on, Better Auth reads sessions
@@ -255,6 +256,47 @@ describe('identity flows revoke sessions through Better Auth', () => {
       expect(response.headers.get('location')).toBe('/login?email-changed=true');
       expect(fakeRedisHoldsSession(session.token)).toBe(false);
       expect(await getSessionFor(signup.cookie)).toBeNull();
+    });
+  });
+
+  describe('POST /api/auth/reset-password', () => {
+    const originalSendPasswordReset = EmailService.prototype.sendPasswordReset;
+
+    afterAll(() => {
+      EmailService.prototype.sendPasswordReset = originalSendPasswordReset;
+    });
+
+    it('revokes every session, including the cached copy', async () => {
+      const signup = await signUp(PASSWORD);
+      const otherDeviceCookie = await signIn(signup.email, PASSWORD);
+      const otherDevice = await getSessionFor(otherDeviceCookie);
+      expect(fakeRedisHoldsSession(signup.session.session.token)).toBe(true);
+      expect(fakeRedisHoldsSession(otherDevice!.session.token)).toBe(true);
+
+      let resetUrl = '';
+      EmailService.prototype.sendPasswordReset = mock(async (options: { resetUrl: string }) => {
+        resetUrl = options.resetUrl;
+        return { success: true };
+      }) as unknown as typeof originalSendPasswordReset;
+
+      await auth.api.requestPasswordReset({
+        body: { email: signup.email, redirectTo: '/reset-password' },
+      });
+      const token = new URL(resetUrl).pathname.split('/').pop();
+      expect(token).toBeTruthy();
+
+      await auth.api.resetPassword({ body: { token, newPassword: NEW_PASSWORD } });
+
+      expect(fakeRedisHoldsSession(signup.session.session.token)).toBe(false);
+      expect(fakeRedisHoldsSession(otherDevice!.session.token)).toBe(false);
+      expect(await getSessionFor(signup.cookie)).toBeNull();
+      expect(await getSessionFor(otherDeviceCookie)).toBeNull();
+
+      const remaining = await db
+        .select({ id: schema.session.id })
+        .from(schema.session)
+        .where(eq(schema.session.userId, signup.session.user.id));
+      expect(remaining).toHaveLength(0);
     });
   });
 

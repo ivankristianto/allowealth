@@ -170,6 +170,7 @@ function createAuthInstance() {
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 12,
+      revokeSessionsOnPasswordReset: true,
       password: {
         hash: hashPassword,
         verify: ({ password, hash }) => verifyPassword(password, hash),
