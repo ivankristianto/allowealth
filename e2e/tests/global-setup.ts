@@ -76,7 +76,7 @@ setup('reset database', async () => {
   // Seed the database with test data
   // eslint-disable-next-line no-console -- Informational output for test setup
   console.info('🌱 Seeding database...');
-  execSync('bun run db:seed', {
+  execSync('bun run db:seed --yes', {
     cwd: PROJECT_ROOT,
     env: { ...process.env, DATABASE_URL: 'db/.e2e.db' },
     stdio: 'inherit',

@@ -47,7 +47,8 @@ bun run aw workspace create --name "Ops" --email admin@example.com
 - Keep `--target` / `-t` available on leaf subcommands; `sqlite` is the only value.
 - Support `--json` on leaf subcommands for script/agent-friendly output.
 - Require `--yes` (or interactive confirmation) for destructive CRUD/alias operations like `delete` / `rm`.
-- Some destructive commands use command-specific confirmations instead (for example `workspace delete --force` or typed confirmation in `aw db drop`).
+- Some destructive commands use command-specific confirmations instead (for example `workspace delete --force`).
+- Commands that wipe a whole database (`db seed`, `db reset`, `db empty`, `db drop`, `db restore`, `demo reset`) need the long `--yes`, and `--force` as well when the database holds users outside `@example.com`.
 
 ## Resource commands
 

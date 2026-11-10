@@ -89,9 +89,9 @@ else
     exit 1
 fi
 
-# Run bun db:reset
+# Refuses on its own if the database already holds non-demo users
 echo -e "${YELLOW}Resetting database...${NC}"
-bun run db:reset
+bun run db:reset --yes
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Database reset successfully${NC}\n"
 else

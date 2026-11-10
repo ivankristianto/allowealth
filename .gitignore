@@ -106,3 +106,6 @@ docs/superpowers/plans/*backfill*
 
 # HTML snapshots for the compressHTML whitespace audit
 .snapshots/
+
+# Throwaway databases created by tests
+tmp-test/

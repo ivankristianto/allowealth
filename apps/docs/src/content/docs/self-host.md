@@ -245,20 +245,22 @@ The image ships pre-bundled maintenance scripts in `/app/dist/scripts/`. Seed wr
 
 ```bash
 # Default: 6 months of transactions
-docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js
+docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --yes
 
 # Custom options
-docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --months=12
-docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --stress
+docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --yes --months=12
+docker exec -e ALLOW_SEED=true allowealth-app bun /app/dist/scripts/seed.js --yes --stress
 ```
 
-Seeding overwrites existing demo data — do not run it against a database with real user transactions.
+Seeding deletes all existing data first. It refuses without `--yes`, and refuses a database holding users outside `@example.com` unless `--force` is also given. Add `--with-super-admin` to create `superadmin@example.com` with a random password, printed once.
 
 ### Empty the application tables
 
 ```bash
-docker exec allowealth-app bun /app/dist/scripts/empty.js
+docker exec allowealth-app bun /app/dist/scripts/empty.js --yes
 ```
+
+Like seeding, it needs `--yes`, plus `--force` when the database holds real users.
 
 This truncates the app's workspace/transaction/budget tables. It does **not** clear the Better Auth `user` and `session` tables, so existing admin accounts can still sign in; the installer flow at `/installer` does not reappear. Use the full reset below if you need a true factory state.
 

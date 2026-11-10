@@ -56,15 +56,19 @@ describe('passkey schema coverage', () => {
     db.close();
   });
 
-  test('db:reset uses db:migrate for migration-tracked schema creation', () => {
+  test('db:reset goes through aw db reset, which migrates before seeding', () => {
     const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
-    const resetScript = packageJson.scripts['db:reset'];
-    const migrateCommand = 'bun run db:migrate';
-    const seedCommand = 'bun run db:seed';
+    expect(packageJson.scripts['db:reset']).toBe('bun run aw db reset');
 
-    expect(resetScript).toContain(migrateCommand);
-    expect(resetScript).toContain(seedCommand);
-    expect(resetScript.indexOf(migrateCommand)).toBeLessThan(resetScript.indexOf(seedCommand));
-    expect(resetScript).not.toContain('bun run db:setup');
+    const source = readFileSync('src/cli/commands/db.ts', 'utf8');
+    const resetBlock = source.slice(
+      source.indexOf('reset: defineCommand'),
+      source.indexOf('empty: defineCommand')
+    );
+    const migrateIndex = resetBlock.indexOf("'src/db/migrate.ts'");
+
+    expect(migrateIndex).toBeGreaterThan(-1);
+    expect(migrateIndex).toBeLessThan(resetBlock.indexOf("'src/db/seed/index.ts'"));
+    expect(resetBlock).not.toContain('src/db/setup.ts');
   });
 });
