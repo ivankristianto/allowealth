@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test';
-import { isTrustedFormOrigin, submitOAuthConsent } from './oauth-consent';
+import { getRedirectTarget, isTrustedFormOrigin, submitOAuthConsent } from './oauth-consent';
 
 const APP_ORIGIN = 'http://localhost:4321';
 const trustedOrigins = () => [APP_ORIGIN, 'https://*.allowealth.com'];
@@ -107,5 +107,21 @@ describe('submitOAuthConsent', () => {
     );
 
     expect(result).toEqual({ error: 'invalid signature' });
+  });
+});
+
+describe('getRedirectTarget', () => {
+  it('shows only the host of a web redirect URI', () => {
+    expect(getRedirectTarget('https://attacker.example:8443/callback?x=1')).toBe(
+      'attacker.example:8443'
+    );
+  });
+
+  it('falls back to the full URI when it has no host', () => {
+    expect(getRedirectTarget('com.example.app:/oauth')).toBe('com.example.app:/oauth');
+  });
+
+  it('returns an empty string when the query has no redirect URI', () => {
+    expect(getRedirectTarget(null)).toBe('');
   });
 });

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
+import type { McpAuthContext } from '@/lib/mcp-auth';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 
-const validateMcpTokenMock = mock(async () => ({
+const validateMcpTokenMock = mock(async (): Promise<McpAuthContext | null> => ({
   workspaceId: 'ws-1',
   userId: 'user-1',
   tokenId: 'tok-1',
@@ -123,5 +124,26 @@ describe('POST /api/mcp', () => {
     expect(limitedResponse.headers.get('X-RateLimit-Remaining')).toBe('0');
     expect(limitedResponse.headers.get('X-RateLimit-Reset')).toBeTruthy();
     expect(limitedResponse.headers.get('Retry-After')).toBeTruthy();
+  });
+
+  it('returns 401 and runs no tool when the token is rejected', async () => {
+    validateMcpTokenMock.mockResolvedValue(null);
+    const { POST } = await import('@/pages/api/mcp');
+
+    const response = await POST(
+      createApiContext(
+        new Request('http://localhost/api/mcp', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer openid-only-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+        })
+      )
+    );
+
+    expect(response.status).toBe(401);
+    expect(handleToolCallMock).not.toHaveBeenCalled();
   });
 });

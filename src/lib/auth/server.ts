@@ -12,9 +12,8 @@ import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
 import { beforeAuthUserCreate, bootstrapAuthUser } from '@/services/auth.service';
 import { securityActivityService } from '@/services/security-activity.service';
-import { MCP_ACCESS_TOKEN_TTL_SECONDS, MCP_OAUTH_SCOPES } from '@/lib/mcp-oauth';
 import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
-import { hashOAuthToken } from './oauth-token-hash';
+import { getOAuthProviderOptions } from './oauth-provider-options';
 import { hashPassword, verifyPassword } from './password';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
@@ -109,18 +108,7 @@ function createAuthInstance() {
       rpName: getEnv('RP_NAME') ?? 'Allowealth',
       origin: getAuthBaseURL(),
     }),
-    // OAuth authorization server for MCP clients. Clients are pre-seeded
-    // (`aw db seed-oauth-clients`) and `/api/mcp` validates tokens itself, so
-    // this uses opaque access tokens without the JWT plugin.
-    oauthProvider({
-      loginPage: '/login',
-      consentPage: '/oauth/authorize',
-      disableJwtPlugin: true,
-      scopes: [...MCP_OAUTH_SCOPES],
-      accessTokenExpiresIn: MCP_ACCESS_TOKEN_TTL_SECONDS,
-      refreshTokenExpiresIn: 7_776_000,
-      storeTokens: { hash: hashOAuthToken },
-    }),
+    oauthProvider(getOAuthProviderOptions()),
   ];
   const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);
 

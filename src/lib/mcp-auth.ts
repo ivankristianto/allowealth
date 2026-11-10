@@ -1,6 +1,7 @@
 import { db, getActiveSchema } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
+import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 import { eq } from 'drizzle-orm';
 
 export interface McpAuthContext {
@@ -29,6 +30,19 @@ function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
   };
 }
 
+const MCP_CLIENT_IDS: ReadonlySet<string> = new Set(MCP_OAUTH_CLIENTS.map((c) => c.clientId));
+
+// The Better Auth adapter stores `string[]` columns as JSON text on SQLite.
+function grantsMcpScope(scopes: unknown): boolean {
+  if (typeof scopes !== 'string') return false;
+  try {
+    const parsed: unknown = JSON.parse(scopes);
+    return Array.isArray(parsed) && parsed.includes('mcp');
+  } catch {
+    return false;
+  }
+}
+
 async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthContext | null> {
   const schema = deps.getSchema();
 
@@ -40,6 +54,8 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
       expiresAt: true,
       revoked: true,
       userId: true,
+      clientId: true,
+      scopes: true,
     },
   });
 
@@ -47,6 +63,9 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
   // Set by the provider on sign-out, session revocation, or a replayed code.
   if (tokenRecord.revoked) return null;
   if (!tokenRecord.expiresAt || new Date(tokenRecord.expiresAt) < new Date()) return null;
+  // Rejects tokens minted for other scopes or for clients that are not the seeded MCP clients.
+  if (!grantsMcpScope(tokenRecord.scopes)) return null;
+  if (!MCP_CLIENT_IDS.has(tokenRecord.clientId)) return null;
 
   const userId = tokenRecord.userId;
   if (!userId) return null;
