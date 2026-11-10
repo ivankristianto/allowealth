@@ -1296,6 +1296,13 @@ export class TransactionService {
         });
         continue;
       }
+      if (currencyStr !== account.currency) {
+        result.errors.push({
+          row: i + 1,
+          message: 'Transaction currency must match source account currency',
+        });
+        continue;
+      }
 
       // Validate destination account for transfers
       let toAccountId: string | null = null;
@@ -1319,6 +1326,13 @@ export class TransactionService {
           result.errors.push({
             row: i + 1,
             message: `Destination account is deactivated: ${toAccountStr}`,
+          });
+          continue;
+        }
+        if (toAccount.currency !== account.currency) {
+          result.errors.push({
+            row: i + 1,
+            message: 'Transfer accounts must use the same currency',
           });
           continue;
         }

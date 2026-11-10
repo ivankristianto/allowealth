@@ -131,4 +131,39 @@ describe('TransactionService CSV', () => {
       expect(stored.map((r) => r.amount)).toEqual(['1000', '2500.5', '300']);
     });
   });
+
+  describe('importFromCSV currency checks', () => {
+    it('rejects a row whose currency differs from the source account', async () => {
+      const result = await service.importFromCSV(
+        WORKSPACE_ID,
+        USER_ID,
+        [expenseRow({ currency: 'USD' }), expenseRow({ amount: '2000' })],
+        {}
+      );
+
+      expect(result.imported).toBe(1);
+      expect(result.errors).toEqual([
+        { row: 1, message: 'Transaction currency must match source account currency' },
+      ]);
+      expect(countRows(memory.raw, 'transactions', `currency = 'USD'`)).toBe(0);
+    });
+
+    it('rejects a transfer whose destination account uses another currency', async () => {
+      const result = await service.importFromCSV(
+        WORKSPACE_ID,
+        USER_ID,
+        [
+          expenseRow({ type: 'transfer', category: '', to_account: 'Dollar Account' }),
+          expenseRow({ type: 'transfer', category: '', to_account: 'Savings', amount: '2000' }),
+        ],
+        { to_account: 'to_account' }
+      );
+
+      expect(result.imported).toBe(1);
+      expect(result.errors).toEqual([
+        { row: 1, message: 'Transfer accounts must use the same currency' },
+      ]);
+      expect(countRows(memory.raw, 'transactions', `to_account_id = 'acc-usd'`)).toBe(0);
+    });
+  });
 });
