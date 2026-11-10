@@ -22,6 +22,7 @@ export * from './audit-logs';
 export * from './budgets';
 export * from './oauth-accounts';
 export * from './oauth-provider';
+export * from './mcp-app-passwords';
 
 // Export all relations (centralized to avoid circular imports)
 export * from './relations';

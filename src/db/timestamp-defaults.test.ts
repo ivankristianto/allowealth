@@ -46,12 +46,25 @@ async function collectTimestampColumns(): Promise<TimestampColumn[]> {
   return [...columns.values()];
 }
 
-function readRepairMigration(): string {
+function repairMigrationFile(): string {
   const file = readdirSync(MIGRATIONS_DIR).find((name) =>
     name.endsWith('_repair_ms_timestamps.sql')
   );
   if (!file) throw new Error('repair_ms_timestamps migration not found');
-  return readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+  return file;
+}
+
+function readRepairMigration(): string {
+  return readFileSync(join(MIGRATIONS_DIR, repairMigrationFile()), 'utf8');
+}
+
+// Tables created by later migrations never held the ms default, and the repair runs before they exist.
+function tablesAtRepairMigration(): Set<string> {
+  const index = repairMigrationFile().split('_')[0];
+  const snapshot = JSON.parse(
+    readFileSync(join(MIGRATIONS_DIR, 'meta', `${index}_snapshot.json`), 'utf8')
+  ) as { tables: Record<string, unknown> };
+  return new Set(Object.keys(snapshot.tables));
 }
 
 function runStatements(db: Database, sql: string): void {
@@ -127,8 +140,9 @@ describe('timestamp defaults', () => {
 
   it('repairs exactly the seconds columns, and nothing else', async () => {
     const columns = await collectTimestampColumns();
+    const repairedTables = tablesAtRepairMigration();
     const expected = columns
-      .filter((column) => column.mode === 'timestamp')
+      .filter((column) => column.mode === 'timestamp' && repairedTables.has(column.table))
       .map((column) => `${column.table}.${column.column}`)
       .sort();
     const repaired = [

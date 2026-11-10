@@ -16,8 +16,22 @@ import {
   handleGetAccountSummary,
 } from './dashboard.js';
 
-export function registerTools(): Tool[] {
-  return [
+// An allowlist, so a tool added later stays off-limits to read-only tokens until listed here.
+export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  'list_categories',
+  'list_accounts',
+  'list_transactions',
+  'get_budget_summary',
+  'get_dashboard',
+  'get_account_summary',
+]);
+
+export function isToolAllowed(name: string, auth: Pick<ToolContext['auth'], 'scope'>): boolean {
+  return auth.scope !== 'read' || READ_ONLY_TOOLS.has(name);
+}
+
+export function registerTools(auth?: Pick<ToolContext['auth'], 'scope'>): Tool[] {
+  const tools = [
     ...accountTools,
     listTransactionsTool,
     addExpenseTool,
@@ -26,6 +40,7 @@ export function registerTools(): Tool[] {
     dashboardTool,
     accountSummaryTool,
   ];
+  return auth ? tools.filter((tool) => isToolAllowed(tool.name, auth)) : tools;
 }
 
 export async function handleToolCall(
@@ -33,6 +48,13 @@ export async function handleToolCall(
   args: Record<string, unknown>,
   ctx: ToolContext
 ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+  if (!isToolAllowed(name, ctx.auth)) {
+    return {
+      isError: true,
+      content: [{ type: 'text', text: `Tool ${name} needs a read-write token.` }],
+    };
+  }
+
   try {
     switch (name) {
       case 'list_categories':

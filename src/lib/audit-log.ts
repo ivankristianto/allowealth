@@ -63,6 +63,7 @@ export type AuditEntityType =
   | 'account'
   | 'budget'
   | 'mcp_token'
+  | 'app_password'
   | 'passkey'
   | 'recurring_template'
   | 'recurring_occurrence'

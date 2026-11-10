@@ -1,7 +1,18 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import type { McpAuthContext } from '@/lib/mcp-auth';
 import { clearRateLimitStore } from '@/lib/rate-limit';
+import * as realMcpAuth from '@/lib/mcp-auth';
+import * as realMcpContext from '@mcp-server/context';
+import * as realMcpTools from '@mcp-server/tools/index';
+
+// mock.module stays active for later test files and patches live bindings, so keep
+// copies of the real exports (taken before mocking) to restore afterwards.
+const realModules = {
+  '@/lib/mcp-auth': { ...realMcpAuth },
+  '@mcp-server/context': { ...realMcpContext },
+  '@mcp-server/tools/index': { ...realMcpTools },
+};
 
 const validateMcpTokenMock = mock(async (): Promise<McpAuthContext | null> => ({
   workspaceId: 'ws-1',
@@ -24,6 +35,12 @@ const handleToolCallMock = mock(async () => ({ ok: true }));
   registerTools: registerToolsMock,
   handleToolCall: handleToolCallMock,
 }));
+
+afterAll(() => {
+  for (const [specifier, exports] of Object.entries(realModules)) {
+    (mock as any).module?.(specifier, () => exports);
+  }
+});
 
 function createApiContext(request: Request) {
   return {
@@ -145,5 +162,26 @@ describe('POST /api/mcp', () => {
 
     expect(response.status).toBe(401);
     expect(handleToolCallMock).not.toHaveBeenCalled();
+  });
+
+  it('keys the rate limit on the token id, not the raw bearer value', async () => {
+    const { POST } = await import('@/pages/api/mcp');
+    const send = (token: string, id: number) =>
+      POST(
+        createApiContext(
+          new Request('http://localhost/api/mcp', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id, method: 'ping' }),
+          })
+        )
+      );
+
+    for (let i = 0; i < 60; i++) {
+      expect((await send('raw-token-a', i)).status).toBe(200);
+    }
+
+    // A different raw value that resolves to the same token row shares its bucket.
+    expect((await send('raw-token-b', 61)).status).toBe(429);
   });
 });

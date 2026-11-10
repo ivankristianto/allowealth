@@ -1,0 +1,87 @@
+# MCP endpoint paths
+paths:
+  /api/mcp:
+    post:
+      tags: [MCP]
+      summary: MCP JSON-RPC 2.0 endpoint
+      description: |
+        Model Context Protocol over HTTP. Supports `initialize`, `tools/list`,
+        `tools/call`, `ping` and `notifications/initialized` (204, no body).
+
+        Authenticate with `Authorization: Bearer <token>`, where the token is either
+        an OAuth access token from the Connected Apps flow (24 hours) or an app
+        password (`aw_pat_...`) from Security → App Passwords.
+
+        Read-only app passwords see only the read tools in `tools/list`
+        (`list_categories`, `list_accounts`, `list_transactions`,
+        `get_budget_summary`, `get_dashboard`, `get_account_summary`). Calling
+        `add_expense` or `add_income` with one returns a tool result with
+        `isError: true`.
+
+        Rate limited to 60 requests per minute per token. Bodies over 64 KB get 413.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jsonrpc, method]
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                id:
+                  type: [string, integer, 'null']
+                method:
+                  type: string
+                  example: tools/call
+                params:
+                  type: object
+                  example:
+                    name: list_transactions
+                    arguments:
+                      limit: 10
+      responses:
+        '200':
+          description: JSON-RPC response
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  id:
+                    type: [string, integer, 'null']
+                  result:
+                    type: object
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+        '204':
+          description: Notification accepted
+        '400':
+          description: Invalid JSON or missing `method`
+        '401':
+          description: Missing, invalid, expired or revoked access token
+        '413':
+          description: Request body over 64 KB
+        '429':
+          description: Rate limit exceeded

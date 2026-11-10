@@ -13,7 +13,7 @@ const server = new McpServer(
 );
 
 server.server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: registerTools() };
+  return { tools: registerTools(await getAuthContext()) };
 });
 
 async function main(): Promise<void> {

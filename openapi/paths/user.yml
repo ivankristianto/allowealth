@@ -167,6 +167,122 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/user/app-passwords:
+    get:
+      tags: [User]
+      summary: List app passwords
+      description: |
+        List the authenticated user's app passwords (MCP personal access tokens),
+        newest first. Raw tokens are never returned here. Supports `?_render=html`
+        for the server-rendered list partial.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: _render
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [html]
+          description: Return server-rendered HTML fragment instead of JSON
+      responses:
+        '200':
+          description: App passwords listed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AppPassword.yml#/AppPasswordListResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    post:
+      tags: [User]
+      summary: Create an app password
+      description: |
+        Create a long-lived `aw_pat_` token for `/api/mcp` and the stdio MCP server.
+        The raw token is in this response only (sent with `Cache-Control: no-store`).
+        Requires a session signed in within the last 15 minutes, otherwise 403
+        `REAUTH_REQUIRED`. At most 20 app passwords per user. Limited to 10
+        creations per user per 15 minutes. Disabled in demo mode.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/AppPassword.yml#/CreateAppPasswordRequest'
+      responses:
+        '201':
+          description: App password created
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AppPassword.yml#/CreateAppPasswordResponse'
+        '400':
+          description: Validation error, or the user has no workspace (`NO_WORKSPACE`)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Sign-in older than 15 minutes (`REAUTH_REQUIRED`), demo mode, or CSRF failure
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '409':
+          description: The user already has 20 app passwords (`LIMIT_REACHED`)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '429':
+          description: Too many app passwords created recently
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/user/app-passwords/{id}:
+    delete:
+      tags: [User]
+      summary: Revoke an app password
+      description: Delete one of the authenticated user's app passwords. It stops working immediately.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: 'pat_V1StGXR8Z5jdHi6B'
+      responses:
+        '200':
+          description: App password revoked
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AppPassword.yml#/RevokeAppPasswordResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: No app password with this id belongs to the user (`NOT_FOUND`)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/user/password:
     put:
       tags: [User]

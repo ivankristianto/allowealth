@@ -11,7 +11,7 @@ const MAX_BODY_BYTES = 65_536;
 
 /**
  * Extract bearer token from Authorization header.
- * Expected format: "Bearer <oauth-token>"
+ * Expected format: "Bearer <oauth-token or aw_pat_ app password>"
  */
 function extractBearerToken(request: Request): string | null {
   const header = request.headers.get('Authorization');
@@ -108,7 +108,7 @@ async function dispatchMcpMessage(
       return {
         jsonrpc: '2.0',
         id: message.id,
-        result: { tools: registerTools() },
+        result: { tools: registerTools(ctx.auth) },
       };
 
     case 'tools/call': {
@@ -144,13 +144,13 @@ async function dispatchMcpMessage(
 /**
  * POST /api/mcp - MCP JSON-RPC 2.0 endpoint
  *
- * Authenticates via Bearer token (OAuth token), builds a per-request ToolContext,
+ * Authenticates via Bearer token (OAuth access token or app password), builds a per-request ToolContext,
  * and dispatches JSON-RPC messages to the MCP tool handlers.
  */
 export const POST: APIRoute = async (context) => {
   const accessToken = extractBearerToken(context.request);
   if (!accessToken) {
-    return errorResponse(401, 'Missing Authorization header. Use: Bearer <oauth-token>');
+    return errorResponse(401, 'Missing Authorization header. Use: Bearer <access-token>');
   }
 
   const bodyText = await readValidatedBodyText(context.request);
@@ -160,10 +160,10 @@ export const POST: APIRoute = async (context) => {
 
   const auth = await validateMcpToken(accessToken);
   if (!auth) {
-    return errorResponse(401, 'Invalid or expired OAuth token');
+    return errorResponse(401, 'Invalid or expired access token');
   }
 
-  const rateLimit = await checkMcpRateLimit(accessToken);
+  const rateLimit = await checkMcpRateLimit(auth.tokenId);
   if (!rateLimit.allowed) {
     return createRateLimitResponse(rateLimit, 'Too many MCP requests. Please try again later.');
   }

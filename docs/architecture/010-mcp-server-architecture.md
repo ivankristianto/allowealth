@@ -36,8 +36,20 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 - **Pre-seeded Clients**: `bun run aw db seed-oauth-clients` creates the well-known clients used by Claude Desktop, ChatGPT, and generic MCP clients. These are the only clients: `clientPrivileges` denies create, update and delete to every session, and dynamic registration (`/oauth2/register`) stays off.
 - **Database Model**: OAuth state is stored in `oauthClient`, `oauthAccessToken`, `oauthRefreshToken`, `oauthConsent`, `oauthResource`, `oauthClientResource` and `oauthClientAssertion`. Token values are stored as SHA-256 hashes (`src/lib/auth/oauth-token-hash.ts`), shared by the provider and `src/lib/mcp-auth.ts`.
 - **Consent + Token UX**: Users authorize clients on `/oauth/authorize`, which shows the client name and the redirect URI host, then copy the one-time access token from `/oauth/display-token`.
-- **Token Checks**: `src/lib/mcp-auth.ts` looks each access token up in the database on every request. It accepts only live, unrevoked tokens that carry the `mcp` scope and were issued to a client in `MCP_OAUTH_CLIENTS`.
+- **Token Checks**: `src/lib/mcp-auth.ts` looks each access token up in the database on every request. It accepts only live, unrevoked tokens that carry the `mcp` scope and were issued to a client in `MCP_OAUTH_CLIENTS`. There is no auth cache; revoke paths still call `invalidateMcpToken(id)`, which clears the `mcp-token:<id>` tag, so a cache added later stays correct.
 - **Revocation**: Revoking a connected app deletes the token record (and its refresh token) and invalidates the cache tag for that token immediately. Ending the browser session that authorized a client (sign-out or session revocation) marks its tokens `revoked`, and `/api/mcp` rejects them.
+
+### 2a. Authentication: App Passwords (#438)
+
+OAuth needs a browser consent step and its access tokens last 24 hours, so cron jobs, CI and headless agents could not use MCP. App passwords fill that gap.
+
+- **Token**: `aw_pat_` + 32 random bytes (base64url). The prefix lets secret scanners detect leaks. Only the SHA-256 hash (`hashOAuthToken`) and a non-secret hint (`aw_pat_xxxx`) are stored, in `mcp_app_passwords`.
+- **Binding**: each row belongs to one user and the workspace they were in at creation. Verification rejects the token when the user is soft-deleted, has no workspace, or is now in a different workspace. Hard-deleting the user or workspace cascades.
+- **Scope**: `read` or `read-write`. `handleToolCall` enforces it for both transports with an allowlist (`READ_ONLY_TOOLS`), so a new tool stays blocked for read-only tokens until it is listed. `tools/list` hides tools the token cannot call.
+- **Expiry**: 30, 90 or 365 days, or none when explicitly chosen.
+- **Dispatch**: `validateMcpToken` sends `aw_pat_` tokens to `McpAppPasswordService.verify` before the OAuth lookup, and they never fall through to it.
+- **Lifecycle**: created and revoked on Security → App Passwords (`/api/user/app-passwords`). Creation needs a session created in the last 15 minutes. Create and revoke are written to the audit log. App passwords survive sign-out and password changes and must be revoked individually.
+- **Why not Better Auth's API key plugin**: in 1.7 it is a separate package (`@better-auth/api-key`), verification needs the Better Auth instance (the stdio server only has the database), its table hangs off Better Auth's `user` rather than `users`/workspaces, and its per-key limiter writes to the row on every request.
 
 ### 3. Tool Design Principles
 
@@ -55,7 +67,7 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 - `get_account_summary` / `get_dashboard`: Snapshot of total financial position.
 
 **HTTP Authentication Header:**
-`Authorization: Bearer <oauth_access_token>`
+`Authorization: Bearer <oauth_access_token | aw_pat_app_password>`
 
 ## Consequences
 
@@ -74,7 +86,6 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 ## Future Considerations
 
 - Refresh-token rotation and shorter-lived access tokens for remote clients.
-- Rate limiting per OAuth client or token.
 - Audit logs specifically for MCP-driven actions.
 
 ## References
