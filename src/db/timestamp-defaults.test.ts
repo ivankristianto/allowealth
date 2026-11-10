@@ -18,6 +18,7 @@ interface TimestampColumn {
   column: string;
   mode: 'timestamp' | 'timestamp_ms';
   sqlDefault: SQL | undefined;
+  hasDefaultFn: boolean;
 }
 
 // Reads every schema file, not just the barrel, because some tables are not re-exported from it.
@@ -39,6 +40,7 @@ async function collectTimestampColumns(): Promise<TimestampColumn[]> {
           column: column.name,
           mode,
           sqlDefault: is(column.default, SQL) ? column.default : undefined,
+          hasDefaultFn: typeof column.defaultFn === 'function',
         });
       }
     }
@@ -136,6 +138,19 @@ describe('timestamp defaults', () => {
     } finally {
       probe.close();
     }
+  });
+
+  it('gives every seconds created_at and updated_at column a $defaultFn', async () => {
+    const missing = (await collectTimestampColumns())
+      .filter(
+        (column) =>
+          column.mode === 'timestamp' &&
+          /^(created|updated)_?at$/i.test(column.column) &&
+          !column.hasDefaultFn
+      )
+      .map((column) => `${column.table}.${column.column}`);
+
+    expect(missing).toEqual([]);
   });
 
   it('repairs exactly the seconds columns, and nothing else', async () => {

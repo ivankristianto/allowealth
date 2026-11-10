@@ -19,7 +19,9 @@ export const mcpAppPasswords = sqliteTable(
     scope: text('scope', { enum: ['read', 'read-write'] }).notNull(),
     expires_at: integer('expires_at', { mode: 'timestamp' }),
     last_used_at: integer('last_used_at', { mode: 'timestamp' }),
-    created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+    created_at: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (table) => [index('mcp_app_passwords_user_id_idx').on(table.user_id)]
 );
