@@ -32,6 +32,7 @@ import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { sanitizeCellForCsv } from '@/lib/csv/sanitize-cell-for-csv';
+import { isValidAmount, nonNegativeAmountMessage, normalizeAmount } from '@/lib/validation/amount';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { createCrudService } from './base/crud.factory';
 import { WorkspaceMetaService } from './workspace-meta.service';
@@ -727,22 +728,17 @@ export class BudgetService {
       }
       seenIds.add(budgetId);
 
-      if (!/^\d+(\.\d+)?$/.test(budgetAmount)) {
+      if (!isValidAmount(budgetAmount, { allowZero: true })) {
         errors.push({
           row: i + 1,
-          message: `Invalid amount "${budgetAmount}" — must be a plain number (e.g. 100000 or 100000.50)`,
+          message: `Invalid amount "${budgetAmount}": ${nonNegativeAmountMessage('Budget amount')}`,
         });
-        continue;
-      }
-      const parsedAmount = Number(budgetAmount);
-      if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
-        errors.push({ row: i + 1, message: `Invalid amount "${budgetAmount}"` });
         continue;
       }
 
       validUpdates.push({
         id: budgetId,
-        budget_amount: parsedAmount.toString(),
+        budget_amount: normalizeAmount(budgetAmount),
       });
     }
 

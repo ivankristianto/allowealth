@@ -11,18 +11,13 @@ import { logError } from '@/lib/utils';
 import { ServiceErrorCode } from '@/services/service-errors';
 import { check, forward, maxLength, minLength, object, optional, pipe, string } from 'valibot';
 import { isValidCurrency } from '@/lib/constants/currency';
+import { positiveAmountSchema } from '@/lib/validation/amount';
 
 const transferSchema = pipe(
   object({
     fromAccountId: pipe(string(), minLength(1)),
     toAccountId: pipe(string(), minLength(1)),
-    amount: pipe(
-      string(),
-      check(
-        (value) => /^\d+(\.\d+)?$/.test(value.trim()) && Number.parseFloat(value) > 0,
-        'Amount must be a valid positive number'
-      )
-    ),
+    amount: positiveAmountSchema(),
     notes: optional(pipe(string(), maxLength(500))),
   }),
   forward(

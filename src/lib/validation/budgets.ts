@@ -18,6 +18,7 @@ import {
   type InferOutput,
 } from 'valibot';
 import { currencyEnum } from '@/lib/enums';
+import { nonNegativeAmountSchema } from './amount';
 
 /**
  * Validation schemas for Budget operations
@@ -73,29 +74,10 @@ const yearApiValidation = pipe(
   maxValue(2100, 'Year must be 2100 or earlier')
 );
 
-// Budget amount validation (required, non-negative decimal as string).
 // Zero is a real budget: a category deliberately given nothing this month.
-const budgetAmountValidation = pipe(
-  string(),
-  minLength(1, 'Budget amount is required'),
-  check((value) => {
-    const parsedAmount = Number.parseFloat(value);
-    return !Number.isNaN(parsedAmount) && parsedAmount >= 0;
-  }, 'Budget amount must be zero or a positive number')
-);
+const budgetAmountValidation = nonNegativeAmountSchema('Budget amount');
 
-// Budget amount for update (optional but must be non-negative if provided)
-const budgetAmountUpdateValidation = optional(
-  pipe(
-    string(),
-    check((value) => {
-      if (value === '') return true;
-
-      const parsedAmount = Number.parseFloat(value);
-      return !Number.isNaN(parsedAmount) && parsedAmount >= 0;
-    }, 'Budget amount must be zero or a positive number')
-  )
-);
+const budgetAmountUpdateValidation = optional(budgetAmountValidation);
 
 // Notes validation for create — defaults absent field to null
 const notesValidation = pipe(

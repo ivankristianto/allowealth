@@ -159,6 +159,7 @@ const amount = parseFloat(input); // parseFloat("1,000") → 1, silently corrupt
 
 **Rules:**
 
+- ✅ **Validate money strings with `@/lib/validation/amount`** - one strict pattern (digits, up to 2 decimals, no sign) shared by API schemas, CSV imports and services
 - ✅ **Use `Number()` instead of `parseFloat()` for validation** - `parseFloat("1,000")` returns `1`, silently corrupts data
 - ❌ **Use `parseFloat()` for currency validation** - accepts malformed input like `"100abc"`
 - ❌ **Default empty amounts to `'0'`** - silently zeros out budgets, corrupts user data

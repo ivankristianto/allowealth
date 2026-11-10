@@ -22,6 +22,7 @@ import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 import { isValidCurrency } from '@/lib/constants/currency';
+import { isValidAmount, normalizeAmount, positiveAmountMessage } from '@/lib/validation/amount';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -1242,10 +1243,12 @@ export class TransactionService {
         continue;
       }
 
-      // Validate amount
-      const amount = Number(amountStr ?? '0');
-      if (isNaN(amount) || amount <= 0) {
-        result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
+      const trimmedAmount = (amountStr ?? '').trim();
+      if (!isValidAmount(trimmedAmount)) {
+        result.errors.push({
+          row: i + 1,
+          message: `Invalid amount "${trimmedAmount}": ${positiveAmountMessage()}`,
+        });
         continue;
       }
 
@@ -1323,7 +1326,7 @@ export class TransactionService {
       }
 
       // Check for duplicates
-      const normalizedAmount = amount.toString();
+      const normalizedAmount = normalizeAmount(trimmedAmount);
       const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${normalizedAmount}-${categoryId ?? ''}-${account.id}`;
       if (existingKeys.has(duplicateKey)) {
         result.skipped++;
