@@ -53,6 +53,7 @@ const ENTITY_LABELS: Record<string, string> = {
   account: 'Account',
   budget: 'Budget',
   api_key: 'API Key',
+  app_password: 'App Password',
   passkey: 'Passkey',
   recurring_template: 'Recurring Transaction',
   recurring_occurrence: 'Recurring Occurrence',

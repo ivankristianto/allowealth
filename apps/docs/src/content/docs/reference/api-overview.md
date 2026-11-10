@@ -21,7 +21,8 @@ API endpoints live in `src/pages/api/` and follow file-based routing.
 - `/api/reports/*`: report and drilldown views
 - `/api/workspace/*`: workspace settings, members, invitations
 - `/api/admin/*`: operational diagnostics and admin dashboards
-- `/api/mcp`: MCP HTTP transport endpoint
+- `/api/mcp`: MCP HTTP transport endpoint. Accepts an OAuth access token or an app password (`aw_pat_...`) as a Bearer token
+- `/api/user/app-passwords`: list, create and revoke app passwords (session auth, creation needs a sign-in from the last 15 minutes)
 
 ## Implementation pattern
 

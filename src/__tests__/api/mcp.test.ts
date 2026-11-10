@@ -150,4 +150,25 @@ describe('POST /api/mcp', () => {
     expect(response.status).toBe(401);
     expect(handleToolCallMock).not.toHaveBeenCalled();
   });
+
+  it('keys the rate limit on the token id, not the raw bearer value', async () => {
+    const { POST } = await import('@/pages/api/mcp');
+    const send = (token: string, id: number) =>
+      POST(
+        createApiContext(
+          new Request('http://localhost/api/mcp', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id, method: 'ping' }),
+          })
+        )
+      );
+
+    for (let i = 0; i < 60; i++) {
+      expect((await send('raw-token-a', i)).status).toBe(200);
+    }
+
+    // A different raw value that resolves to the same token row shares its bucket.
+    expect((await send('raw-token-b', 61)).status).toBe(429);
+  });
 });
