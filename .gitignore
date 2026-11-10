@@ -46,11 +46,14 @@ docs/prompt.md
 # Finder (MacOS) folder config
 .DS_Store
 
-# SQLite databases
-db/*.db
-db/.*.db
+# SQLite databases and backups (the repo is public; never commit real data)
+*.db
+*.sqlite
+*.sqlite3
 *.db-shm
 *.db-wal
+backups/
+.backup/
 
 # Astro auto-generated types
 .astro/types.d.ts
