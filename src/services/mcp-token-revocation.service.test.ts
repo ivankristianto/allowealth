@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { oauthAccessToken, oauthRefreshToken } from '@/db/schema/sqlite';
 import { CacheTags } from '@/lib/cache';
 import { countRows, createMemoryDb, seedWorkspaceOwner } from '@/db/test-helpers/memory-db';
+import { McpAppPasswordService } from './mcp-app-password.service';
+import { SuperAdminService } from './super-admin.service';
 import { createMockDatabase } from './test-helpers/mocks';
 
 const mockInvalidateByTags = mock(async () => {});
@@ -115,5 +117,63 @@ describe('mcp-token-revocation.service', () => {
     expect(countRows(raw, 'oauthRefreshToken')).toBe(1);
     expect(countRows(raw, 'oauthAccessToken')).toBe(1);
     expect(mockInvalidateByTags).not.toHaveBeenCalled();
+  });
+
+  it('deletes app passwords with the user so reactivation does not bring them back', async () => {
+    const { db, raw } = createMemoryDb();
+    seedWorkspaceOwner(raw, 'ws-pat', 'user-pat');
+    const appPasswords = new McpAppPasswordService(db);
+    const { token } = await appPasswords.create({
+      userId: 'user-pat',
+      name: 'Nightly sync',
+      scope: 'read',
+      expiry: 'never',
+    });
+    expect(await appPasswords.verify(token)).not.toBeNull();
+
+    await softDeleteUserAndRevokeMcpTokens(db, 'user-pat', {
+      invalidateByTags: mockInvalidateByTags,
+    });
+
+    expect(countRows(raw, 'mcp_app_passwords')).toBe(0);
+
+    await new SuperAdminService(db).reactivateUser('user-pat');
+
+    expect(countRows(raw, 'users', `id = 'user-pat' AND deleted_at IS NULL`)).toBe(1);
+    expect(await appPasswords.verify(token)).toBeNull();
+  });
+
+  it('keeps app passwords when the soft delete rolls back', async () => {
+    const { db, raw } = createMemoryDb();
+    seedWorkspaceOwner(raw, 'ws-pat-rb', 'user-pat-rb');
+    const { token } = await new McpAppPasswordService(db).create({
+      userId: 'user-pat-rb',
+      name: 'CI',
+      scope: 'read-write',
+      expiry: '30',
+    });
+    raw.run(
+      `CREATE TRIGGER fail_access_token_delete BEFORE DELETE ON oauthAccessToken
+       BEGIN SELECT RAISE(ABORT, 'forced failure'); END;`
+    );
+    raw.run(
+      `INSERT INTO user (id, name, email) VALUES ('user-pat-rb', 'Owner', 'rb@example.test')`
+    );
+    raw.run(
+      `INSERT INTO oauthClient (id, clientId, redirectUris) VALUES ('client-rb', 'client-rb', '[]')`
+    );
+    raw.run(
+      `INSERT INTO oauthAccessToken (id, token, clientId, userId, scopes)
+       VALUES ('at-rb', 'at-rb-token', 'client-rb', 'user-pat-rb', 'mcp')`
+    );
+
+    await expect(
+      softDeleteUserAndRevokeMcpTokens(db, 'user-pat-rb', {
+        invalidateByTags: mockInvalidateByTags,
+      })
+    ).rejects.toThrow('forced failure');
+
+    expect(countRows(raw, 'mcp_app_passwords')).toBe(1);
+    expect(await new McpAppPasswordService(db).verify(token)).not.toBeNull();
   });
 });

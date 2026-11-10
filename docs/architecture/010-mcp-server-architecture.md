@@ -48,7 +48,7 @@ OAuth needs a browser consent step and its access tokens last 24 hours, so cron 
 - **Scope**: `read` or `read-write`. `handleToolCall` enforces it for both transports with an allowlist (`READ_ONLY_TOOLS`), so a new tool stays blocked for read-only tokens until it is listed. `tools/list` hides tools the token cannot call.
 - **Expiry**: 30, 90 or 365 days, or none when explicitly chosen.
 - **Dispatch**: `validateMcpToken` sends `aw_pat_` tokens to `McpAppPasswordService.verify` before the OAuth lookup, and they never fall through to it.
-- **Lifecycle**: created and revoked on Security → App Passwords (`/api/user/app-passwords`). Creation needs a session created in the last 15 minutes. Create and revoke are written to the audit log. App passwords survive sign-out and password changes and must be revoked individually.
+- **Lifecycle**: created and revoked on Security → App Passwords (`/api/user/app-passwords`). Creation needs a session created in the last 15 minutes. Create and revoke are written to the audit log. App passwords survive sign-out and password changes and must be revoked individually. Deactivating or deleting the user deletes them in the same transaction as the soft delete, so reactivation does not restore them.
 - **Why not Better Auth's API key plugin**: in 1.7 it is a separate package (`@better-auth/api-key`), verification needs the Better Auth instance (the stdio server only has the database), its table hangs off Better Auth's `user` rather than `users`/workspaces, and its per-key limiter writes to the row on every request.
 
 ### 3. Tool Design Principles

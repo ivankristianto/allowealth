@@ -58,6 +58,19 @@ function deleteMcpTokens(tx: DbTransaction, userId: string): TokenRow[] {
   return tokenRows;
 }
 
+function deleteAppPasswords(tx: DbTransaction, userId: string): TokenRow[] {
+  const { mcpAppPasswords } = getActiveSchema();
+
+  const appPasswordRows = tx
+    .select({ id: mcpAppPasswords.id })
+    .from(mcpAppPasswords)
+    .where(eq(mcpAppPasswords.user_id, userId))
+    .all();
+  tx.delete(mcpAppPasswords).where(eq(mcpAppPasswords.user_id, userId)).run();
+
+  return appPasswordRows;
+}
+
 export async function revokeMcpTokensForUser(
   db: IDatabase,
   userId: string,
@@ -84,7 +97,9 @@ export async function softDeleteUserAndRevokeMcpTokens(
       .where(eq(schema.users.id, userId))
       .run();
 
-    return deleteMcpTokens(tx, userId);
+    // Reactivating the user only clears deleted_at, so app passwords must not outlive the delete.
+    const appPasswordRows = deleteAppPasswords(tx, userId);
+    return [...appPasswordRows, ...deleteMcpTokens(tx, userId)];
   });
 
   if (options.invalidateByTags) {
