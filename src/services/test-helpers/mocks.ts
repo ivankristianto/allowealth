@@ -12,6 +12,47 @@ import type { Account } from '@/lib/types/account';
 import type { Budget, BudgetWithCategory } from '@/lib/types/budget';
 import type { RecurringTemplate, RecurringOccurrence } from '@/lib/types/recurring';
 
+const SYNC_TERMINALS = new Set<PropertyKey>(['run', 'all', 'get', 'sync']);
+
+function settleSync(value: unknown): unknown {
+  if (!(value instanceof Promise)) return value;
+  const status = Bun.peek.status(value);
+  if (status === 'pending') {
+    throw new Error(
+      'Mocked query is still pending; a sync transaction needs an already-settled mock'
+    );
+  }
+  const result = Bun.peek(value);
+  if (status === 'rejected') {
+    value.catch(() => {});
+    throw result;
+  }
+  return result;
+}
+
+/**
+ * Views a mock database as a synchronous Drizzle transaction: every builder gains
+ * `.run()`, `.all()`, `.get()` and `.sync()`, which settle the mocked promise in place.
+ */
+export function asSyncTransaction<T extends object>(target: T): T {
+  return new Proxy(target, {
+    get(obj, prop) {
+      if (SYNC_TERMINALS.has(prop) && !(prop in obj)) {
+        return () => settleSync(obj);
+      }
+      const value = Reflect.get(obj, prop, obj);
+      if (typeof value === 'function') {
+        return (...args: unknown[]) => wrapSyncResult(value.apply(obj, args));
+      }
+      return wrapSyncResult(value);
+    },
+  });
+}
+
+function wrapSyncResult(value: unknown): unknown {
+  return value !== null && typeof value === 'object' ? asSyncTransaction(value) : value;
+}
+
 /**
  * Creates a mock database object for testing services
  *
@@ -131,7 +172,7 @@ export function createMockDatabase(): IDatabase {
     })),
 
     // Pass db itself as tx so mocked queries work inside runTransaction
-    transaction: mock(<T>(callback: (tx: any) => Promise<T>) => callback(db)),
+    transaction: mock(<T>(callback: (tx: any) => T) => callback(asSyncTransaction(db))),
   };
   return db as IDatabase;
 }

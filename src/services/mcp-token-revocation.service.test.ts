@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { oauthAccessToken, oauthRefreshToken } from '@/db/schema/sqlite';
 import { CacheTags } from '@/lib/cache';
+import { countRows, createMemoryDb, seedWorkspaceOwner } from '@/db/test-helpers/memory-db';
 import { createMockDatabase } from './test-helpers/mocks';
 
 const mockInvalidateByTags = mock(async () => {});
@@ -82,5 +83,37 @@ describe('mcp-token-revocation.service', () => {
         },
       })
     ).resolves.toBeUndefined();
+  });
+
+  it('keeps the user active and tokens intact when revocation fails mid-transaction', async () => {
+    const { db, raw } = createMemoryDb();
+    seedWorkspaceOwner(raw, 'ws-revoke', 'user-revoke');
+    raw.run(`INSERT INTO user (id, name, email) VALUES ('user-revoke', 'Owner', 'o@example.test')`);
+    raw.run(
+      `INSERT INTO oauthClient (id, clientId, redirectUris) VALUES ('client-1', 'client-1', '[]')`
+    );
+    raw.run(
+      `INSERT INTO oauthRefreshToken (id, token, clientId, userId, scopes)
+       VALUES ('rt-1', 'rt-token', 'client-1', 'user-revoke', 'mcp')`
+    );
+    raw.run(
+      `INSERT INTO oauthAccessToken (id, token, clientId, userId, scopes)
+       VALUES ('at-1', 'at-token', 'client-1', 'user-revoke', 'mcp')`
+    );
+    raw.run(
+      `CREATE TRIGGER fail_access_token_delete BEFORE DELETE ON oauthAccessToken
+       BEGIN SELECT RAISE(ABORT, 'forced failure'); END;`
+    );
+
+    await expect(
+      softDeleteUserAndRevokeMcpTokens(db, 'user-revoke', {
+        invalidateByTags: mockInvalidateByTags,
+      })
+    ).rejects.toThrow('forced failure');
+
+    expect(countRows(raw, 'users', `id = 'user-revoke' AND deleted_at IS NULL`)).toBe(1);
+    expect(countRows(raw, 'oauthRefreshToken')).toBe(1);
+    expect(countRows(raw, 'oauthAccessToken')).toBe(1);
+    expect(mockInvalidateByTags).not.toHaveBeenCalled();
   });
 });

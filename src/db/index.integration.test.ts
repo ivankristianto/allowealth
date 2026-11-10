@@ -17,7 +17,7 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { db, getDb, resetDb } from '@/db';
+import { db, getDb, resetDb, runTransaction } from '@/db';
 import { workspaces, users, categories, accounts, transactions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { existsSync, unlinkSync } from 'node:fs';
@@ -342,9 +342,8 @@ describe('Database Integration Tests', () => {
       const { testUser, testCategory, testAccount } = await createTestDatabase();
 
       // Test transaction
-      const result = await db.transaction(async (tx: any) => {
-        // Insert a transaction with valid foreign keys
-        const newTx = await tx
+      const result = runTransaction(db, (tx) => {
+        const newTx = tx
           .insert(transactions)
           .values({
             id: 'test-tx-transaction-test',
@@ -360,7 +359,8 @@ describe('Database Integration Tests', () => {
             created_at: new Date(),
             updated_at: new Date(),
           })
-          .returning();
+          .returning()
+          .all();
 
         return newTx[0];
       });

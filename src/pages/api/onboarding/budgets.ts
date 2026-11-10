@@ -9,7 +9,6 @@ import {
   object,
   pipe,
   picklist,
-  regex,
   string,
 } from 'valibot';
 import { budgetService, BudgetServiceError, ServiceErrorCode } from '@/services';
@@ -22,12 +21,13 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
+import { isValidAmount, nonNegativeAmountSchema } from '@/lib/validation/amount';
 
 const batchBudgetSchema = object({
   budgets: array(
     object({
       categoryId: pipe(string(), minLength(1)),
-      amount: pipe(string(), regex(/^\d+(\.\d{1,2})?$/)),
+      amount: nonNegativeAmountSchema('Budget amount'),
       currency: picklist(AVAILABLE_CURRENCIES),
     })
   ),
@@ -54,7 +54,7 @@ export const POST: APIRoute = async (context) => {
     let updated = 0;
 
     for (const budget of budgets) {
-      if (parseFloat(budget.amount) > 0) {
+      if (isValidAmount(budget.amount)) {
         try {
           await budgetService.createBudget({
             workspace_id: auth.workspaceId,

@@ -29,7 +29,7 @@ mockModule('@/lib/installer/detection', () => ({
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalInstallerSecret = process.env.INSTALLER_SECRET;
-const originalSeedDefaultCategories = AccountCategoryService.prototype.seedDefaultCategories;
+const originalBuildDefaultCategoryRows = AccountCategoryService.buildDefaultCategoryRows;
 
 let testDbPath = '';
 
@@ -78,7 +78,7 @@ describe('POST /api/installer/setup', () => {
   });
 
   afterEach(async () => {
-    AccountCategoryService.prototype.seedDefaultCategories = originalSeedDefaultCategories;
+    AccountCategoryService.buildDefaultCategoryRows = originalBuildDefaultCategoryRows;
     await closeDatabase();
     resetDb();
 
@@ -178,9 +178,9 @@ describe('POST /api/installer/setup', () => {
   });
 
   it('rolls back installer records when category seeding fails', async () => {
-    AccountCategoryService.prototype.seedDefaultCategories = mock(async () => {
+    AccountCategoryService.buildDefaultCategoryRows = mock(() => {
       throw new Error('category seeding failed');
-    }) as any;
+    });
 
     const response = await POST(
       createApiContext({

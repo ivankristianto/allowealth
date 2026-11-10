@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type DbTransaction, type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
@@ -41,32 +41,30 @@ async function invalidateMcpTokenTagsBestEffort(
   }
 }
 
+function deleteMcpTokens(tx: DbTransaction, userId: string): TokenRow[] {
+  const schema = getActiveSchema();
+
+  const tokenRows = tx.query.oauthAccessToken
+    .findMany({
+      where: eq(schema.oauthAccessToken.userId, userId),
+      columns: { id: true },
+    })
+    .sync();
+
+  // Refresh tokens first, so no client can mint a new access token afterwards.
+  tx.delete(schema.oauthRefreshToken).where(eq(schema.oauthRefreshToken.userId, userId)).run();
+  tx.delete(schema.oauthAccessToken).where(eq(schema.oauthAccessToken.userId, userId)).run();
+
+  return tokenRows;
+}
+
 export async function revokeMcpTokensForUser(
   db: IDatabase,
   userId: string,
-  options: {
-    tx?: IDatabase;
-    invalidateCache?: boolean;
-    invalidateByTags?: (tags: string[]) => Promise<void>;
-  } = {}
+  options: { invalidateByTags?: (tags: string[]) => Promise<void> } = {}
 ): Promise<void> {
-  const database = options.tx ?? db;
-  const schema = getActiveSchema();
-
-  const tokenRows = (await database.query.oauthAccessToken.findMany({
-    where: eq(schema.oauthAccessToken.userId, userId),
-    columns: { id: true },
-  })) as TokenRow[];
-
-  // Refresh tokens first, so no client can mint a new access token afterwards.
-  await database
-    .delete(schema.oauthRefreshToken)
-    .where(eq(schema.oauthRefreshToken.userId, userId));
-  await database.delete(schema.oauthAccessToken).where(eq(schema.oauthAccessToken.userId, userId));
-
-  if (options.invalidateCache !== false) {
-    await invalidateMcpTokenTagsBestEffort(userId, tokenRows, options.invalidateByTags);
-  }
+  const tokenRows = runTransaction(db, (tx) => deleteMcpTokens(tx, userId));
+  await invalidateMcpTokenTagsBestEffort(userId, tokenRows, options.invalidateByTags);
 }
 
 export async function softDeleteUserAndRevokeMcpTokens(
@@ -76,23 +74,17 @@ export async function softDeleteUserAndRevokeMcpTokens(
 ): Promise<void> {
   const schema = getActiveSchema();
   const now = new Date();
-  let revokedTokenRows: TokenRow[] = [];
 
-  await db.transaction(async (tx) => {
-    revokedTokenRows = (await tx.query.oauthAccessToken.findMany({
-      where: eq(schema.oauthAccessToken.userId, userId),
-      columns: { id: true },
-    })) as TokenRow[];
-
-    await tx
-      .update(schema.users)
+  const revokedTokenRows = runTransaction(db, (tx) => {
+    tx.update(schema.users)
       .set({
         deleted_at: now,
         updated_at: now,
       })
-      .where(eq(schema.users.id, userId));
+      .where(eq(schema.users.id, userId))
+      .run();
 
-    await revokeMcpTokensForUser(db, userId, { tx, invalidateCache: false });
+    return deleteMcpTokens(tx, userId);
   });
 
   if (options.invalidateByTags) {

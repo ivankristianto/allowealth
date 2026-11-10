@@ -397,7 +397,7 @@ describe('AccountService.transfer()', () => {
     });
   });
 
-  it('should rollback both balances if history insert fails', async () => {
+  it('reports a failed history insert without issuing compensating balance writes', async () => {
     const fromAccount = createMockAccount({
       id: 'account-1',
       name: 'Savings',
@@ -433,7 +433,7 @@ describe('AccountService.transfer()', () => {
       accountService.transfer('account-1', 'account-2', '300', 'workspace-1')
     ).rejects.toThrow('Failed to transfer: could not create history entries');
 
-    // update() called 4 times: 2 for balance updates + 2 for rollback
-    expect(mockDb.update).toHaveBeenCalledTimes(4);
+    // Rollback is SQLite's job now; transaction-atomicity.test.ts checks it against a real database.
+    expect(mockDb.update).toHaveBeenCalledTimes(2);
   });
 });

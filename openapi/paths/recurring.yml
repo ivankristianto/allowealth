@@ -98,6 +98,7 @@ paths:
                   enum: [expense, income]
                 amount:
                   type: string
+                  pattern: '^\d{1,15}(\.\d{1,2})?$'
                 currency:
                   type: string
                   enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
@@ -210,6 +211,7 @@ paths:
                   enum: [expense, income]
                 amount:
                   type: string
+                  pattern: '^\d{1,15}(\.\d{1,2})?$'
                 currency:
                   type: string
                   enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]

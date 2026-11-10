@@ -8,7 +8,7 @@ CreateTransactionRequest:
       enum: [expense, income]
     amount:
       type: string
-      pattern: '^\d+(\.\d{1,2})?$'
+      pattern: '^\d{1,15}(\.\d{1,2})?$'
       description: Amount as string (decimal with up to 2 decimal places)
     currency:
       type: string

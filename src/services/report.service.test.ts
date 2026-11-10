@@ -435,9 +435,7 @@ function createMockDatabase(): IDatabase {
     delete: () => ({
       where: async () => undefined,
     }),
-    transaction: async (callback: any) => {
-      return await callback({});
-    },
+    transaction: (callback: any) => callback({}),
   } as unknown as IDatabase;
 }
 

@@ -100,28 +100,32 @@ async function createWorkspaceOwner(
       ? context.body.workspaceName.trim()
       : null;
   try {
-    await runTransaction(database, async (tx) => {
-      await tx.insert(schema.workspaces).values({
-        id: workspaceId,
-        name: customName ?? `${authUser.name.trim()}'s Workspace`,
-        status: 'active',
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
+    runTransaction(database, (tx) => {
+      tx.insert(schema.workspaces)
+        .values({
+          id: workspaceId,
+          name: customName ?? `${authUser.name.trim()}'s Workspace`,
+          status: 'active',
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .run();
 
-      await tx.insert(schema.users).values({
-        id: authUser.id,
-        workspace_id: workspaceId,
-        email: requireEmail(authUser),
-        password_hash: null,
-        name: authUser.name.trim(),
-        role: 'admin',
-        avatar_url: authUser.image ?? null,
-        email_verified_at: authUser.emailVerified === true ? new Date() : null,
-        deleted_at: null,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
+      tx.insert(schema.users)
+        .values({
+          id: authUser.id,
+          workspace_id: workspaceId,
+          email: requireEmail(authUser),
+          password_hash: null,
+          name: authUser.name.trim(),
+          role: 'admin',
+          avatar_url: authUser.image ?? null,
+          email_verified_at: authUser.emailVerified === true ? new Date() : null,
+          deleted_at: null,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .run();
     });
 
     const accountCategoryService = new AccountCategoryService(database);
