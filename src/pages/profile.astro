@@ -46,15 +46,25 @@ const demoMode = isDemoMode();
     const profileForm = document.getElementById('profile-form');
     const profileNameInput = document.getElementById('full-name');
     const profileEmailInput = document.getElementById('email');
+    const emailPasswordField = profileForm?.querySelector('[data-email-change-password]');
+    const emailPasswordInput = document.getElementById('email-change-password');
     const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
 
     if (
       profileForm instanceof HTMLFormElement &&
       profileNameInput instanceof HTMLInputElement &&
       profileEmailInput instanceof HTMLInputElement &&
+      emailPasswordField instanceof HTMLElement &&
+      emailPasswordInput instanceof HTMLInputElement &&
       profileSubmitButton instanceof HTMLButtonElement
     ) {
       const hadPendingEmailOnLoad = profileForm.dataset.hadPendingEmail === 'true';
+      const currentEmail = (profileEmailInput.dataset.currentEmail || '').toLowerCase();
+      const isEmailChanged = () => profileEmailInput.value.trim().toLowerCase() !== currentEmail;
+
+      profileEmailInput.addEventListener('input', () => {
+        emailPasswordField.classList.toggle('hidden', !isEmailChanged());
+      });
 
       profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -67,6 +77,11 @@ const demoMode = isDemoMode();
 
         if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
           errors.push('Please enter a valid email address');
+        }
+
+        const emailChanged = isEmailChanged();
+        if (emailChanged && !emailPasswordInput.value) {
+          errors.push('Enter your current password to change your email');
         }
 
         if (errors.length > 0) {
@@ -84,6 +99,7 @@ const demoMode = isDemoMode();
             name: formData.get('name'),
             email: formData.get('email'),
             phone: formData.get('phone') || '',
+            ...(emailChanged && { currentPassword: emailPasswordInput.value }),
           };
 
           const response = await fetch(API_PROFILE_URL, {
@@ -100,9 +116,11 @@ const demoMode = isDemoMode();
             return;
           }
 
+          emailPasswordInput.value = '';
+
           if (result.data?.pendingEmail) {
             addToast(
-              result.data.message || `Verification email sent to ${result.data.pendingEmail}`,
+              result.data.message || `Check ${result.data.pendingEmail} for a confirmation link`,
               'info'
             );
             window.location.reload();

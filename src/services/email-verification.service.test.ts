@@ -2,7 +2,7 @@
  * Unit tests for EmailVerificationService
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { EmailVerificationService } from './email-verification.service';
 import { db } from '@/db/index';
 import { users, workspaces, emailVerificationTokens, userMeta, oauthAccounts } from '@/db/schema';
@@ -12,6 +12,17 @@ import { hashPassword } from '@/lib/auth/password';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { hashOpaqueToken } from '@/lib/crypto/token-hash';
 import { account as authAccounts, user as authUsers } from '@/db/schema/sqlite/better-auth';
+import type { EmailService } from '@/services/email';
+
+function createEmailServiceStub() {
+  const sendEmailChangeVerification = mock(async () => ({ success: true }));
+  const sendEmailChangeNotice = mock(async () => ({ success: true }));
+  const emailSvc = {
+    sendEmailChangeVerification,
+    sendEmailChangeNotice,
+  } as unknown as EmailService;
+  return { emailSvc, sendEmailChangeVerification, sendEmailChangeNotice };
+}
 
 describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
@@ -124,24 +135,57 @@ describe('EmailVerificationService', () => {
       expect(token).toBeTruthy();
     });
 
-    it('should throw if new email is already taken', async () => {
-      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, testUserId));
+    it('mails the verification link to the new address and a notice to the old one', async () => {
+      const stub = createEmailServiceStub();
+      const mailingService = new EmailVerificationService(db, stub.emailSvc);
+      const user = await db.query.users.findFirst({ where: eq(users.id, testUserId) });
+
+      await mailingService.requestEmailChange(testUserId, 'fresh@example.com');
+
+      expect(stub.sendEmailChangeVerification).toHaveBeenCalledTimes(1);
+      expect((stub.sendEmailChangeVerification as any).mock.calls[0][0]).toMatchObject({
+        to: 'fresh@example.com',
+      });
+      expect(stub.sendEmailChangeNotice).toHaveBeenCalledTimes(1);
+      expect((stub.sendEmailChangeNotice as any).mock.calls[0][0]).toMatchObject({
+        to: user!.email,
+        newEmail: 'fresh@example.com',
+      });
+    });
+
+    it('treats an address another account owns like a free one without mailing it', async () => {
+      const stub = createEmailServiceStub();
+      const mailingService = new EmailVerificationService(db, stub.emailSvc);
 
       const otherUserId = nanoid();
       await db.insert(users).values({
         id: otherUserId,
         email: 'taken@example.com',
-        password_hash: await hashPassword('TestPassword123!'),
+        password_hash: null,
         name: 'Other User',
         workspace_id: testWorkspaceId,
         role: 'member',
       });
 
-      await expect(service.requestEmailChange(testUserId, 'taken@example.com')).rejects.toThrow(
-        'Email already exists'
-      );
+      try {
+        await mailingService.requestEmailChange(testUserId, 'taken@example.com');
 
-      await db.delete(users).where(eq(users.id, otherUserId));
+        expect(await mailingService.getPendingEmailChange(testUserId)).toBe('taken@example.com');
+        expect(stub.sendEmailChangeVerification).not.toHaveBeenCalled();
+        expect(stub.sendEmailChangeNotice).toHaveBeenCalledTimes(1);
+
+        const token = await db.query.emailVerificationTokens.findFirst({
+          where: eq(emailVerificationTokens.user_id, testUserId),
+        });
+        expect(token).toBeUndefined();
+
+        await expect(mailingService.resendEmailChangeVerification(testUserId)).resolves.toEqual({
+          pendingEmail: 'taken@example.com',
+        });
+        expect(stub.sendEmailChangeVerification).not.toHaveBeenCalled();
+      } finally {
+        await db.delete(users).where(eq(users.id, otherUserId));
+      }
     });
 
     it('should no-op when new email equals current email', async () => {

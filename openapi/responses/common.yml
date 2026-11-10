@@ -26,3 +26,10 @@ InternalServerError:
     application/json:
       schema:
         $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+TooManyRequests:
+  description: Rate limit exceeded (`RATE_LIMIT_EXCEEDED`). `error.retryAfter` gives seconds to wait.
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'

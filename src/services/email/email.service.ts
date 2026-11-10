@@ -49,6 +49,16 @@ export interface SendEmailChangeVerificationOptions {
 }
 
 /**
+ * Email change notice options (sent to the address being replaced)
+ */
+export interface SendEmailChangeNoticeOptions {
+  to: string;
+  userName: string;
+  newEmail: string;
+  securityUrl: string;
+}
+
+/**
  * Email configuration from environment variables
  */
 interface EmailConfig {
@@ -141,6 +151,20 @@ export class EmailService {
       userName,
       newEmail,
     });
+
+    return this.send({
+      to,
+      subject: template.subject,
+      html: template.html,
+    });
+  }
+
+  /**
+   * Tell the current address that someone asked to replace it
+   */
+  async sendEmailChangeNotice(options: SendEmailChangeNoticeOptions): Promise<SendEmailResult> {
+    const { to, userName, newEmail, securityUrl } = options;
+    const template = emailTemplateService.emailChangeNotice({ userName, newEmail, securityUrl });
 
     return this.send({
       to,

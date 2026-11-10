@@ -102,6 +102,31 @@ describe('EmailTemplateService', () => {
     });
   });
 
+  describe('emailChangeNotice', () => {
+    it('names the requested address and links to security settings', () => {
+      const result = templateService.emailChangeNotice({
+        userName: 'Test User',
+        newEmail: 'new@example.com',
+        securityUrl: 'https://example.com/security',
+      });
+
+      expect(result.subject).toBe('An email change was requested for your account');
+      expect(result.html).toContain('new@example.com');
+      expect(result.html).toContain('https://example.com/security');
+    });
+
+    it('escapes user-provided values in HTML', () => {
+      const result = templateService.emailChangeNotice({
+        userName: '<b>x</b>',
+        newEmail: 'new+<tag>@example.com',
+        securityUrl: 'https://example.com/security',
+      });
+
+      expect(result.html).toContain('&lt;b&gt;x&lt;/b&gt;');
+      expect(result.html).toContain('new+&lt;tag&gt;@example.com');
+    });
+  });
+
   describe('footer', () => {
     it('should include current year in footer', () => {
       const result = templateService.passwordReset({

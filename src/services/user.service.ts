@@ -2,21 +2,18 @@
  * User Service
  *
  * Provides high-level user profile operations.
- * Handles profile updates and password changes.
+ * Password changes go through Better Auth in /api/user/password.
  *
  * Note: User settings (currency, display preferences) are now handled by
  * UserMetaService via the user_meta table.
  *
  * Error codes:
  * - USER_NOT_FOUND: User doesn't exist
- * - INVALID_PASSWORD: Old password doesn't match
- * - WEAK_PASSWORD: New password doesn't meet requirements
  * - VALIDATION_ERROR: Input validation failed
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { and, eq } from 'drizzle-orm';
-import { verifyPassword, hashPassword } from '@/lib/auth/password';
+import { eq } from 'drizzle-orm';
 import { maxLength, minLength, object, parse, pipe, regex, string, type InferInput } from 'valibot';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
 import { softDeleteUserAndRevokeMcpTokens } from './mcp-token-revocation.service';
@@ -51,14 +48,6 @@ export const updatePasswordSchema = object({
  * Input type inferred from validation schema
  */
 export type UpdatePasswordInput = InferInput<typeof updatePasswordSchema>;
-
-/**
- * Constant-time delay function to prevent timing attacks
- * Always takes the same amount of time regardless of input
- */
-function constantTimeDelay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * User Service
@@ -124,73 +113,6 @@ export class UserService {
     });
 
     return updatedUser!;
-  }
-
-  /**
-   * Update user password
-   *
-   * @param userId - User ID to update
-   * @param input - Password update data
-   * @returns Promise resolving when password is updated
-   * @throws {UserServiceError} If user not found, old password invalid, or new password weak
-   */
-  async updatePassword(userId: string, input: UpdatePasswordInput) {
-    // Validate input using the service schema (includes password strength validation)
-    const validated = parse(updatePasswordSchema, input);
-
-    // Check if user exists
-    const user = await this.db.query.users.findFirst({
-      where: eq(this.schema.users.id, userId),
-    });
-
-    if (!user) {
-      throw new UserServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
-    }
-
-    // Verify old password
-    const isValidOldPassword = await verifyPassword(validated.oldPassword, user.password_hash);
-
-    // Add constant-time delay to prevent timing attacks
-    // This ensures the response time is the same regardless of whether the password is correct
-    await constantTimeDelay(100);
-
-    if (!isValidOldPassword) {
-      throw new UserServiceError(ServiceErrorCode.INVALID_PASSWORD, 'Invalid old password', 400);
-    }
-
-    // Hash new password for both legacy domain table and better-auth account table
-    const newPasswordHash = await hashPassword(validated.newPassword);
-
-    const now = new Date();
-
-    await this.db.transaction(async (tx) => {
-      const authSchema = getActiveSchema();
-
-      await tx
-        .update(authSchema.users)
-        .set({
-          password_hash: newPasswordHash,
-          updated_at: now,
-        })
-        .where(eq(authSchema.users.id, userId));
-
-      await tx
-        .update(authSchema.account)
-        .set({
-          password: newPasswordHash,
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(authSchema.account.userId, userId),
-            eq(authSchema.account.providerId, 'credential')
-          )
-        );
-
-      await tx.delete(authSchema.session).where(eq(authSchema.session.userId, userId));
-    });
-
-    return { success: true, reauthRequired: true };
   }
 
   /**
