@@ -1,7 +1,6 @@
 /* eslint-disable no-console -- CLI output is intentional */
 import {
   closeSync,
-  copyFileSync,
   existsSync,
   mkdirSync,
   openSync,
@@ -14,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { defineCommand } from 'citty';
 import { exec } from '../lib/exec';
 import { targetArg } from '../lib/target';
+import { toWipeFlags, wipeArgs, wipeFlagArgv } from '../lib/wipe-args';
 
 const DEFAULT_BACKUP_DIR = 'backups';
 const SCHEMA_DETECTION_BUFFER_SIZE = 256 * 1024;
@@ -136,36 +136,18 @@ function printBackupList(backups: Array<{ name: string; size: number; mtime: num
   }
 }
 
-async function requireRestoreConfirmation(force?: boolean): Promise<void> {
-  if (force) {
-    return;
-  }
-  const readline = await import('readline');
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const answer = await new Promise<string>((resolveAnswer) => {
-    rl.question('Type "yes" or "y" to confirm restore: ', (value) => {
-      rl.close();
-      resolveAnswer(value.trim().toLowerCase());
-    });
-  });
-  if (answer !== 'yes' && answer !== 'y') {
-    throw new Error('Restore aborted by user.');
-  }
-}
-
-function backupToPath(outputPath: string): void {
-  mkdirSync(dirname(outputPath), { recursive: true });
-
-  const dbPath = resolve('db/.dev.db');
-  if (!existsSync(dbPath)) {
-    throw new Error(`SQLite database not found at ${dbPath}.`);
-  }
-  copyFileSync(dbPath, outputPath);
+async function backupToPath(dbPath: string, outputPath: string): Promise<void> {
+  const { backupDatabase } = await import('../lib/db-backup');
+  console.log(`Backing up ${dbPath}`);
+  backupDatabase(dbPath, outputPath);
   console.log(`✅ SQLite backup created: ${outputPath}`);
 }
+
+const superAdminArg = {
+  type: 'boolean' as const,
+  description: 'Also seed superadmin@example.com with a random password, printed once',
+  default: false,
+};
 
 export default defineCommand({
   meta: { name: 'db', description: 'Database management commands' },
@@ -223,9 +205,11 @@ export default defineCommand({
       },
     }),
     seed: defineCommand({
-      meta: { name: 'seed', description: 'Seed database with demo data' },
+      meta: { name: 'seed', description: 'Wipe the database and seed demo data' },
       args: {
         target: targetArg,
+        ...wipeArgs,
+        'with-super-admin': superAdminArg,
         months: {
           type: 'string',
           description: 'Number of months to seed transactions for (default: 3)',
@@ -252,7 +236,13 @@ export default defineCommand({
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
 
-        const seedArgs = ['run', 'src/db/seed/index.ts'];
+        const { resolveDatabasePath } = await import('@/db/wipe-guard');
+        const dbPath = resolveDatabasePath();
+
+        const seedArgs = ['run', 'src/db/seed/index.ts', ...wipeFlagArgv(toWipeFlags(args))];
+        if (args['with-super-admin']) {
+          seedArgs.push('--with-super-admin');
+        }
         if (args.benchmark) {
           seedArgs.push('--benchmark');
         } else if (args.stress) {
@@ -263,7 +253,7 @@ export default defineCommand({
             seedArgs.push(`--transactions=${args.transactions}`);
           }
         }
-        exec('bun', seedArgs);
+        exec('bun', seedArgs, { DATABASE_URL: dbPath });
       },
     }),
     'seed-oauth-clients': defineCommand({
@@ -308,31 +298,46 @@ export default defineCommand({
     reset: defineCommand({
       meta: {
         name: 'reset',
-        description: 'Delete SQLite DB, apply migrations, and seed (dev only)',
+        description: 'Delete the DATABASE_URL SQLite file, apply migrations, and seed (dev only)',
       },
       args: {
         target: targetArg,
+        ...wipeArgs,
+        'with-super-admin': superAdminArg,
       },
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
+        const { enforceWipeGuard, resolveDatabasePath } = await import('@/db/wipe-guard');
+        const { deleteSqliteDatabase } = await import('../lib/db-backup');
 
-        console.log('Resetting database...');
-        exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
-        exec('mkdir', ['-p', 'db']);
-        exec('bun', ['run', 'src/db/migrate.ts']);
-        exec('bun', ['run', 'src/db/seed/index.ts']);
+        const dbPath = resolveDatabasePath();
+        enforceWipeGuard({ dbPath, action: 'delete and recreate', ...toWipeFlags(args) });
+
+        deleteSqliteDatabase(dbPath);
+        mkdirSync(dirname(dbPath), { recursive: true });
+        const env = { DATABASE_URL: dbPath };
+        exec('bun', ['run', 'src/db/migrate.ts'], env);
+        const seedArgs = ['run', 'src/db/seed/index.ts', '--yes'];
+        if (args['with-super-admin']) {
+          seedArgs.push('--with-super-admin');
+        }
+        exec('bun', seedArgs, env);
       },
     }),
     empty: defineCommand({
       meta: { name: 'empty', description: 'Truncate all data (preserve schema)' },
       args: {
         target: targetArg,
+        ...wipeArgs,
       },
       async run({ args }) {
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
-        exec('bun', ['run', 'src/db/empty.ts']);
+        const { resolveDatabasePath } = await import('@/db/wipe-guard');
+        exec('bun', ['run', 'src/db/empty.ts', ...wipeFlagArgv(toWipeFlags(args))], {
+          DATABASE_URL: resolveDatabasePath(),
+        });
       },
     }),
     drop: defineCommand({
@@ -342,42 +347,19 @@ export default defineCommand({
       },
       args: {
         target: targetArg,
+        ...wipeArgs,
       },
       async run({ args }) {
-        const { resolveTarget, getTarget } = await import('../lib/target');
+        const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
+        const { enforceWipeGuard, resolveDatabasePath } = await import('@/db/wipe-guard');
+        const { deleteSqliteDatabase } = await import('../lib/db-backup');
 
-        const target = getTarget();
+        const dbPath = resolveDatabasePath();
+        enforceWipeGuard({ dbPath, action: 'delete', ...toWipeFlags(args) });
 
-        // Show warning and require confirmation
-        console.error('\n⚠️  DANGER ZONE ⚠️');
-        console.error('This command will DELETE ALL TABLES and reset the database.');
-        console.error(`Target: ${target}`);
-        console.error('\nType "yes" to confirm:');
-
-        // Read confirmation from stdin
-        const readline = await import('readline');
-        const rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stderr,
-        });
-
-        const confirmation = await new Promise<string>((resolve) => {
-          rl.question('', (answer) => {
-            rl.close();
-            resolve(answer.trim());
-          });
-        });
-
-        if (confirmation !== 'yes') {
-          console.error('\nAborted.');
-          process.exit(1);
-        }
-
-        console.error('\nDropping all tables...\n');
-
-        exec('rm', ['-f', 'db/.dev.db', 'db/.dev.db-wal', 'db/.dev.db-shm']);
-        console.log('✅ SQLite database file deleted.');
+        deleteSqliteDatabase(dbPath);
+        console.log(`✅ SQLite database file deleted: ${dbPath}`);
 
         console.log('\n✅ Database dropped. Run "aw db migrate" to recreate schema.\n');
       },
@@ -395,12 +377,14 @@ export default defineCommand({
         const { resolveTarget } = await import('../lib/target');
         await resolveTarget(args);
 
-        const outputPath =
-          (args.output as string | undefined) ??
-          resolve(DEFAULT_BACKUP_DIR, `sqlite-${timestampForFile()}.db`);
+        const { resolveDatabasePath } = await import('@/db/wipe-guard');
 
-        backupToPath(outputPath);
-        console.log(`✅ Backup created: ${outputPath}`);
+        const outputPath = resolve(
+          (args.output as string | undefined) ??
+            resolve(DEFAULT_BACKUP_DIR, `sqlite-${timestampForFile()}.db`)
+        );
+
+        await backupToPath(resolveDatabasePath(), outputPath);
       },
     }),
     restore: defineCommand({
@@ -436,11 +420,7 @@ export default defineCommand({
           description: 'Skip automatic pre-restore backup',
           default: false,
         },
-        force: {
-          type: 'boolean',
-          description: 'Skip restore confirmation prompt',
-          default: false,
-        },
+        ...wipeArgs,
       },
       async run({ args }) {
         const { resolveTarget, getTarget } = await import('../lib/target');
@@ -500,26 +480,27 @@ export default defineCommand({
           return;
         }
 
-        await requireRestoreConfirmation(Boolean(args.force));
+        const { enforceWipeGuard, resolveDatabasePath } = await import('@/db/wipe-guard');
+        const { restoreDatabase } = await import('../lib/db-backup');
+        const dbPath = resolveDatabasePath();
 
-        if (!args['no-backup']) {
+        console.log(`- restore target: ${dbPath}`);
+        console.warn(
+          '⚠️  Stop the app server first. A running server keeps writing to the old file.'
+        );
+        enforceWipeGuard({ dbPath, action: 'overwrite', ...toWipeFlags(args) });
+
+        if (!args['no-backup'] && existsSync(dbPath)) {
           const preRestorePath = resolve(
             args['backups-dir'] as string,
             `pre-restore-${timestampForFile()}.db`
           );
-          backupToPath(preRestorePath);
-          console.log(`✅ Pre-restore backup created: ${preRestorePath}`);
+          await backupToPath(dbPath, preRestorePath);
         }
 
-        if (format === 'sqlite-db') {
-          copyFileSync(selectedFile, resolve('db/.dev.db'));
-        } else {
-          execFileSync('sqlite3', [resolve('db/.dev.db'), '.read', selectedFile], {
-            stdio: 'inherit',
-          });
-        }
+        restoreDatabase(selectedFile, format === 'sqlite-db' ? 'sqlite-db' : 'sql', dbPath);
 
-        console.log(`\n✅ Restore completed from ${basename(selectedFile)}.`);
+        console.log(`\n✅ Restore completed from ${basename(selectedFile)} into ${dbPath}.`);
       },
     }),
     prune: defineCommand({

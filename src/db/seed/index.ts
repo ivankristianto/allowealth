@@ -2,11 +2,15 @@
  * Database Seeder
  *
  * Seeds the database with realistic sample data for testing and development.
- * You can run this multiple times; it clears existing data before seeding.
+ * It clears existing data first, so it refuses to run without --yes, and refuses a
+ * database holding non-demo users unless --force is also given (see src/db/wipe-guard.ts).
  *
- * Usage: bun run src/db/seed/index.ts [options]
+ * Usage: bun run src/db/seed/index.ts --yes [options]
  *
  * Options:
+ *   --yes               Confirm wiping the target database (required)
+ *   --force             Also wipe a database that holds non-demo users
+ *   --with-super-admin  Seed a super admin with a random password, printed once
  *   --months=N          Seed transactions for this many months (default: 6)
  *   --transactions=N    Seed this many extra transactions (default: 0)
  *   --benchmark         Legacy: adds 10,000 transactions over 12 months
@@ -16,7 +20,9 @@
 
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
+import { randomBytes } from 'node:crypto';
 import { db } from '@/db';
+import { enforceWipeGuard, parseWipeFlags, resolveDatabasePath } from '@/db/wipe-guard';
 import { sql } from 'drizzle-orm';
 import {
   workspaces,
@@ -94,6 +100,7 @@ if (isProduction && !allowSeed) {
 // ============================================================================
 
 interface SeedOptions {
+  withSuperAdmin: boolean;
   months: number;
   transactions: number;
   recurringTemplates: number;
@@ -111,6 +118,7 @@ function parseArgs(): SeedOptions & {
   // Check for help
   if (args.includes('--help') || args.includes('-h')) {
     return {
+      withSuperAdmin: false,
       months: 6,
       transactions: 0,
       recurringTemplates: 0,
@@ -181,6 +189,7 @@ function parseArgs(): SeedOptions & {
   }
 
   return {
+    withSuperAdmin: args.includes('--with-super-admin'),
     months,
     transactions,
     recurringTemplates: isLegacyBenchmark ? 20 : 0,
@@ -196,9 +205,12 @@ function showHelp() {
   console.log(`
 Database Seeder
 
-Usage: bun run db:seed [options]
+Usage: bun run db:seed --yes [options]
 
 Options:
+  --yes                    Confirm wiping the target database (required)
+  --force                  Also wipe a database that holds non-demo users
+  --with-super-admin       Seed superadmin@example.com with a random password, printed once
   --months=N               Seed transactions for this many months (default: 6)
   --transactions=N         Seed this many extra transactions (default: 0)
   --primary-currency=CUR   Set primary currency (default: IDR)
@@ -208,12 +220,12 @@ Options:
   --help, -h               Show this help message
 
 Examples:
-  bun run db:seed                                   # Default: 6 months of base data
-  bun run db:seed --primary-currency=EUR --secondary-currency=GBP
-  bun run db:seed --months=6                        # 6 months of base data
-  bun run db:seed --months=12 --transactions=5000   # 12 months + 5000 extra transactions
-  bun run db:seed --benchmark                       # Legacy CI mode: 12 months + ~10k transactions
-  bun run db:seed --stress                          # 5 years of family history
+  bun run db:seed --yes                             # Default: 6 months of base data
+  bun run db:seed --yes --primary-currency=EUR --secondary-currency=GBP
+  bun run db:seed --yes --months=6                        # 6 months of base data
+  bun run db:seed --yes --months=12 --transactions=5000   # 12 months + 5000 extra transactions
+  bun run db:seed --yes --benchmark                       # Legacy CI mode: 12 months + ~10k transactions
+  bun run db:seed --yes --stress                          # 5 years of family history
 `);
   process.exit(0);
 }
@@ -270,7 +282,7 @@ async function clearAllTables() {
   } catch (error) {
     if (error instanceof Error && error.message.includes('no such table')) {
       console.error('❌ Database tables not found.');
-      console.error("💡 Run 'bun run db:reset' to create tables.");
+      console.error("💡 Run 'bun run aw db migrate' to create tables.");
       process.exit(1);
     }
     throw error;
@@ -290,6 +302,17 @@ async function seed() {
   if (options.showHelp) {
     showHelp();
   }
+
+  enforceWipeGuard({
+    dbPath: resolveDatabasePath(),
+    action: 'wipe and reseed',
+    ...parseWipeFlags(process.argv.slice(2)),
+  });
+
+  // Never a constant: a public default password would open /admin on any seeded deployment.
+  const superAdminPassword = options.withSuperAdmin
+    ? randomBytes(18).toString('base64url')
+    : undefined;
 
   setSeederConfig({
     PRIMARY_CURRENCY: options.primaryCurrency,
@@ -319,7 +342,9 @@ async function seed() {
 
     // Seed in dependency order
     const workspaceId = await seedWorkspace();
-    const { adminUserId, memberUserId }: SeededUsers = await seedUsers(workspaceId);
+    const { adminUserId, memberUserId }: SeededUsers = await seedUsers(workspaceId, {
+      superAdminPassword,
+    });
     await seedPasskeys(adminUserId, memberUserId);
     const categoryMap = await seedCategories(workspaceId, adminUserId);
     const accountCategoryMap = await seedAccountCategories(workspaceId, adminUserId);
@@ -416,9 +441,11 @@ async function seed() {
       console.log('   Email:    youngest@example.com');
       console.log('   Password: demo123456789');
     }
-    console.log('\n   Super Admin User:');
-    console.log(`   Email:    ${DEMO_SUPER_ADMIN.email}`);
-    console.log(`   Password: ${DEMO_SUPER_ADMIN.password}`);
+    if (superAdminPassword) {
+      console.log('\n   Super Admin User (password shown once, it is not stored anywhere else):');
+      console.log(`   Email:    ${DEMO_SUPER_ADMIN.email}`);
+      console.log(`   Password: ${superAdminPassword}`);
+    }
   } catch (error) {
     console.error('\n❌ Seeding failed:', error);
     process.exit(1);

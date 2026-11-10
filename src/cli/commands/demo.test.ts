@@ -22,4 +22,13 @@ describe('demo command', () => {
 
     expect(command.subCommands.reset.args.target).toBeDefined();
   });
+
+  it('reset requires the shared --yes and --force wipe flags', () => {
+    const command = demoCommand as unknown as {
+      subCommands: { reset: { args: Record<string, { type?: string }> } };
+    };
+
+    expect(command.subCommands.reset.args.yes?.type).toBe('boolean');
+    expect(command.subCommands.reset.args.force?.type).toBe('boolean');
+  });
 });

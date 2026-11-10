@@ -46,6 +46,27 @@ describe('db command', () => {
     expect(command.subCommands.restore.args['dry-run']).toBeDefined();
     expect(command.subCommands.restore.args['no-backup']).toBeDefined();
     expect(command.subCommands.restore.args.force).toBeDefined();
+    expect(command.subCommands.restore.args.yes).toBeDefined();
+  });
+
+  it('every wiping subcommand takes --yes and --force', () => {
+    const command = dbCommand as unknown as {
+      subCommands: Record<string, { args: Record<string, { type?: string }> }>;
+    };
+
+    for (const name of ['seed', 'reset', 'empty', 'drop', 'restore']) {
+      expect(command.subCommands[name]!.args.yes?.type).toBe('boolean');
+      expect(command.subCommands[name]!.args.force?.type).toBe('boolean');
+    }
+  });
+
+  it('seed and reset offer the super admin only as an explicit flag', () => {
+    const command = dbCommand as unknown as {
+      subCommands: Record<string, { args: Record<string, { default?: unknown }> }>;
+    };
+
+    expect(command.subCommands.seed!.args['with-super-admin']?.default).toBe(false);
+    expect(command.subCommands.reset!.args['with-super-admin']?.default).toBe(false);
   });
 
   it('exposes prune subcommand', () => {

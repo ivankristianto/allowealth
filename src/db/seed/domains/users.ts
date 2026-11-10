@@ -11,6 +11,11 @@ import { hashPassword } from '@/lib/auth/password';
 import { nanoid } from 'nanoid';
 import { DEMO_ADMIN, DEMO_MEMBER, DEMO_SUPER_ADMIN } from '../config';
 
+export interface SeedUsersOptions {
+  /** Seed the super admin only when a password is given. */
+  superAdminPassword?: string;
+}
+
 export interface SeededUsers {
   adminUserId: string;
   memberUserId: string;
@@ -64,7 +69,10 @@ async function createSeededCredentialIdentity(
 /**
  * Seed users and user settings
  */
-export async function seedUsers(workspaceId: string): Promise<SeededUsers> {
+export async function seedUsers(
+  workspaceId: string,
+  options: SeedUsersOptions = {}
+): Promise<SeededUsers> {
   console.log('👤 Seeding users...');
 
   const now = new Date();
@@ -133,20 +141,20 @@ export async function seedUsers(workspaceId: string): Promise<SeededUsers> {
     },
   ]);
 
-  // Create super admin user (no workspace)
-  const superAdminUserId = nanoid();
-  await createSeededCredentialIdentity(
-    superAdminUserId,
-    DEMO_SUPER_ADMIN.email,
-    DEMO_SUPER_ADMIN.name,
-    DEMO_SUPER_ADMIN.role,
-    null,
-    DEMO_SUPER_ADMIN.password,
-    now
-  );
-
   console.log(`✓ Created admin user: ${DEMO_ADMIN.email}`);
   console.log(`✓ Created member user: ${DEMO_MEMBER.email}`);
-  console.log(`✓ Created super admin user: ${DEMO_SUPER_ADMIN.email}`);
+
+  if (options.superAdminPassword) {
+    await createSeededCredentialIdentity(
+      nanoid(),
+      DEMO_SUPER_ADMIN.email,
+      DEMO_SUPER_ADMIN.name,
+      DEMO_SUPER_ADMIN.role,
+      null,
+      options.superAdminPassword,
+      now
+    );
+    console.log(`✓ Created super admin user: ${DEMO_SUPER_ADMIN.email}`);
+  }
   return { adminUserId, memberUserId };
 }

@@ -52,7 +52,7 @@ export function runSqliteMigrations(dbPath?: string): void {
       throw new Error(
         `Refusing to run migrations for "${targetPath}": ${DRIZZLE_MIGRATIONS_TABLE} is empty, but the database already has ${existingSchema.tableCount} table(s). ` +
           'This usually means the schema was initialized with "bun run db:setup". ' +
-          'For dev or fresh installs, use "bun run db:reset" to recreate the DB with migration tracking. ' +
+          'For dev or fresh installs, use "bun run db:reset --yes" to recreate the DB with migration tracking. ' +
           'For existing environments, back up data before recreating the database.'
       );
     }

@@ -11,7 +11,7 @@ import { seedUsers } from './domains/users';
 import { seedCategories, seedAccountCategories } from './domains/categories';
 import { seedAccounts, seedAccountHistory, seedAccountSnapshots } from './domains/accounts';
 import { seedIncomeTransactions } from './domains/transactions';
-import { DEMO_ADMIN, DEMO_MEMBER } from './config';
+import { DEMO_ADMIN, DEMO_MEMBER, DEMO_SUPER_ADMIN, SEED_EMAIL_DOMAIN } from './config';
 import { getTrailingMonths } from './lib/dates';
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
@@ -173,5 +173,40 @@ describe('seed integration', () => {
     expect(
       await verifyPassword(DEMO_MEMBER.password, memberCredentialAccount?.password ?? '')
     ).toBe(true);
+  });
+
+  it('seeds no super admin unless a password is passed in', async () => {
+    const workspaceId = await seedWorkspace();
+    await seedUsers(workspaceId);
+
+    const superAdmin = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.email, DEMO_SUPER_ADMIN.email),
+    });
+    expect(superAdmin).toBeUndefined();
+    expect('password' in DEMO_SUPER_ADMIN).toBe(false);
+  });
+
+  it('seeds the super admin with the password it is given', async () => {
+    const workspaceId = await seedWorkspace();
+    const superAdminPassword = `generated-${nanoid(16)}`;
+    await seedUsers(workspaceId, { superAdminPassword });
+
+    const superAdmin = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.email, DEMO_SUPER_ADMIN.email),
+    });
+    const credential = await db.query.account.findFirst({
+      where: (account, { and, eq }) =>
+        and(eq(account.userId, superAdmin?.id ?? ''), eq(account.providerId, 'credential')),
+    });
+
+    expect(superAdmin?.role).toBe('super_admin');
+    expect(await verifyPassword(superAdminPassword, credential?.password ?? '')).toBe(true);
+    expect(await verifyPassword('demo123456789', credential?.password ?? '')).toBe(false);
+  });
+
+  it('keeps every seeded demo email inside the domain the wipe guard trusts', () => {
+    for (const seeded of [DEMO_ADMIN, DEMO_MEMBER, DEMO_SUPER_ADMIN]) {
+      expect(seeded.email.endsWith(`@${SEED_EMAIL_DOMAIN}`)).toBe(true);
+    }
   });
 });

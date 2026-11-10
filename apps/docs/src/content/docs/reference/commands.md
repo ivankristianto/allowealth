@@ -40,10 +40,10 @@ bun run typecheck
 ```bash
 bun run db:generate                  # Generate migration
 bun run db:migrate                   # Apply migrations
-bun run db:seed                      # Seed demo data (3 months default)
-bun run db:seed --months=6           # Seed 6 months of data
-bun run db:seed --transactions=5000  # Add 5k extra transactions
-bun run db:reset                     # Reset and seed
+bun run db:seed --yes                      # Wipe and seed demo data (3 months default)
+bun run db:seed --yes --months=6           # Seed 6 months of data
+bun run db:seed --yes --transactions=5000  # Add 5k extra transactions
+bun run db:reset --yes                     # Reset and seed
 ```
 
 ## Testing
