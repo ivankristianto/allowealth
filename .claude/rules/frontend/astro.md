@@ -249,7 +249,7 @@ Use `.client.ts` files with `data-*` attributes to pass server values to client.
 
 **Rules:**
 
-- ❌ **Never use inline `onclick` handlers in Astro templates** - blocked by the current CSP policy; use `data-*` attributes and attach handlers in `<script>` blocks instead
+- ❌ **Never use inline `on*` handler attributes (`onclick`, `onchange`, `onsubmit`, ...) in Astro templates** - the production CSP allows scripts by nonce only, so browsers drop them; dev allows `'unsafe-inline'`, which hides the bug locally. Use `data-*` attributes (e.g. `data-open-modal="<id>"`) and attach handlers in `<script>` blocks. `src/__tests__/architecture/inline-event-handlers.test.ts` enforces this
 - ❌ **Never mix `define:vars`, `is:inline`, or `type="module"` with npm imports**
 - ✅ **Use `data-*` attributes** to pass server values to client scripts
 - ✅ **Extract `data-action` from DOM, don't use `define:vars`**
