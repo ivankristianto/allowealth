@@ -20,6 +20,7 @@ openapi/
 │   ├── budgets.yml                  # Budget CRUD endpoints
 │   ├── forecast.yml                 # Forecast endpoints
 │   ├── reports.yml                  # Reports endpoints
+│   ├── mcp.yml                      # MCP JSON-RPC endpoint (OAuth tokens and app passwords)
 │   └── admin-diagnostics.yml        # Admin diagnostics endpoint
 ├── schemas/                         # Reusable data model definitions
 │   ├── ApiErrorResponse.yml         # Base API response schema
@@ -31,6 +32,7 @@ openapi/
 │   ├── UserProfileResponse.yml      # Profile response
 │   ├── UpdatePasswordRequest.yml    # Password change request
 │   ├── PasswordUpdateResponse.yml   # Password update response
+│   ├── AppPassword.yml              # App password (MCP personal access token) schemas
 │   │
 │   │ # Workspace schemas
 │   ├── Workspace.yml                # Workspace object

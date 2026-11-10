@@ -1,6 +1,6 @@
 ---
 title: Profile and Security
-description: Manage your personal information, secure your account with MFA, and control access with API keys.
+description: Manage your personal information, secure your account with MFA, and control AI assistant access with connected apps and app passwords.
 draft: false
 head: []
 sidebar:
@@ -131,44 +131,68 @@ Passkeys provide passwordless login using biometric authentication (fingerprint,
 
 **Status:** Passkey management is coming soon. The interface shows planned functionality.
 
-### API Keys
+### Connected Apps
 
-Generate API keys to access Allowealth from external applications and scripts.
+Connected Apps lists AI assistants you authorized through OAuth, such as Claude Desktop or ChatGPT.
 
-#### Create an API Key
+1. Open **Security**
+2. In **Connected Apps**, click the assistant you want to connect
+3. Approve the consent screen
+4. Copy the one-time access token from the confirmation page
 
-1. Navigate to **Security**
-2. Find the **API Keys** section
-3. Click **Generate API Key**
-4. Enter a descriptive name (for example, "Personal Scripts")
-5. Optionally set an expiration date
-6. Click **Generate**
-7. **Copy the key immediately** - it displays only once
+These tokens last 24 hours. Signing out of Allowealth disconnects them. Click **Revoke** to disconnect one sooner.
 
-#### Store API Keys Securely
+### App Passwords
 
-- Use a password manager
-- Never commit keys to version control
-- Never share keys in email or chat
-- Treat keys like passwords
+App passwords are long-lived tokens for scripts, scheduled jobs and AI agents that cannot open a browser to sign in. They work with the MCP endpoint (`/api/mcp`) and the local MCP server. They do not work with the rest of the API.
 
-#### Revoke an API Key
+#### Create an App Password
 
-1. Find the key in the API Keys list
-2. Click **Revoke**
-3. Confirm the action
+Creating one needs a sign-in from the last 15 minutes. If your sign-in is older, the dialog offers **Sign in again**. Signing out also disconnects your connected apps.
 
-Revoked keys lose access immediately. Applications using the key will fail.
+1. Open **Security**
+2. In **App Passwords**, click **Create**
+3. Enter a name you will recognize later (for example, "Nightly import script")
+4. Choose the access:
+   - **Read only** lists accounts, categories, transactions, budgets and the dashboard
+   - **Read and write** can also add expenses and income
+5. Choose when it expires: 30 days, 90 days, 1 year, or no expiry
+6. Click **Create**
+7. **Copy the token now.** It starts with `aw_pat_` and is shown only once
 
-#### View Key Usage
+Use it as a Bearer token:
 
-The API Keys list shows:
+```bash
+curl -X POST https://your-allowealth-domain.com/api/mcp \
+  -H "Authorization: Bearer aw_pat_..." \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
 
-- **Name** - Description you provided
-- **Prefix** - First few characters of the key (for identification)
-- **Created** - When you generated it
-- **Last Used** - Most recent access
-- **Expires** - Expiration date (if set)
+For the local MCP server, set it as `ALLOWEALTH_ACCESS_TOKEN`.
+
+#### Store App Passwords Securely
+
+- Keep them in a password manager or your CI secret store
+- Never commit them to version control
+- Never paste them into email or chat
+- Prefer **Read only** and an expiry date unless the job needs more
+
+#### Revoke an App Password
+
+1. Find it in the **App Passwords** list
+2. Click **Revoke** and confirm
+
+Anything using it loses access on its next request. App passwords are **not** revoked when you sign out or change your password, so revoke them yourself when you stop using them. They also stop working when they expire, when your account is deleted, or when you leave the workspace.
+
+#### What the List Shows
+
+- **Name** you gave it
+- **Access**: read only, or read and write
+- **Hint**: the first characters of the token, so you can tell tokens apart
+- **Created**, **Last used** and **Expires** dates
+
+Creating and revoking app passwords appears in **Recent Activity**.
 
 ### Security Events
 
@@ -189,7 +213,7 @@ Review this log periodically for unauthorized activity.
 2. **Use a strong password** - Unique to Allowealth, 12+ characters
 3. **Save backup codes** - Store outside Allowealth
 4. **Review security events** - Check monthly for suspicious activity
-5. **Revoke unused API keys** - Minimize attack surface
+5. **Revoke unused app passwords** - Minimize attack surface
 
 ### Email Security
 
@@ -224,12 +248,13 @@ Review this log periodically for unauthorized activity.
 
 If you have no backup codes and no verified session, you may need help from your workspace administrator.
 
-### API Key Not Working
+### App Password Not Working
 
-1. Verify the key is copied completely (no extra spaces)
-2. Check if the key expired
-3. Confirm the key was not revoked
-4. Generate a new key if necessary
+1. Verify the token is copied completely, including the `aw_pat_` prefix, with no extra spaces
+2. Check whether it expired in the **App Passwords** list
+3. Confirm it was not revoked
+4. A read-only token cannot add expenses or income; create a read-and-write one if the job needs it
+5. Create a new app password if necessary
 
 ### Email Verification Not Arriving
 
@@ -243,4 +268,4 @@ If you have no backup codes and no verified session, you may need help from your
 
 - **Settings** - Manage workspace preferences and members
 - **Profile** - Update personal information
-- **API Documentation** - Technical reference for API key usage
+- **API Overview** - Technical reference for the MCP endpoint
