@@ -36,7 +36,7 @@ export function createMockCrypto() {
         if (originalRandomUUIDDescriptor) {
           Object.defineProperty(originalCrypto, 'randomUUID', originalRandomUUIDDescriptor);
         } else {
-          delete (originalCrypto as Crypto & { randomUUID?: unknown }).randomUUID;
+          Reflect.deleteProperty(originalCrypto, 'randomUUID');
         }
         originalCrypto = undefined;
         originalRandomUUIDDescriptor = undefined;

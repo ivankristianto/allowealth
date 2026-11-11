@@ -12,7 +12,6 @@ function makeTx(
     amount: '50000',
     currency: 'IDR',
     description: 'Test transaction',
-    transaction_date: overrides.transaction_date,
     updated_by_user_id: null,
     deleted_by_user_id: null,
     deleted_at: null,

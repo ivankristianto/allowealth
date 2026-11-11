@@ -16,6 +16,11 @@ const mockRedis = {
   })),
 };
 
+type MockPipeline = {
+  smembers: () => MockPipeline;
+  exec: () => Promise<unknown>;
+};
+
 describe('UpstashDriver', () => {
   let driver: UpstashDriver;
 
@@ -77,7 +82,7 @@ describe('UpstashDriver', () => {
 
   describe('invalidateByTags', () => {
     it('should delete keys associated with tags', async () => {
-      const mockPipeline = {
+      const mockPipeline: MockPipeline = {
         smembers: mock(() => mockPipeline),
         exec: mock(() => Promise.resolve([['key1', 'key2'], ['key3']])),
       };
@@ -95,7 +100,7 @@ describe('UpstashDriver', () => {
     });
 
     it('should not throw on error', async () => {
-      const mockPipeline = {
+      const mockPipeline: MockPipeline = {
         smembers: mock(() => mockPipeline),
         exec: mock(() => Promise.reject(new Error('Connection failed'))),
       };

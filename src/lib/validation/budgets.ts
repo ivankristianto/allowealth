@@ -15,6 +15,7 @@ import {
   string,
   transform,
   union,
+  type InferInput,
   type InferOutput,
 } from 'valibot';
 import { currencyEnum } from '@/lib/enums';
@@ -106,7 +107,7 @@ export const createBudgetSchema = object({
   notes: notesValidation,
 });
 
-export type CreateBudgetInput = InferOutput<typeof createBudgetSchema>;
+export type CreateBudgetInput = InferInput<typeof createBudgetSchema>;
 
 // Schema for updating a budget (for service layer)
 export const updateBudgetSchema = object({

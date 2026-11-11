@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { Window } from 'happy-dom';
 
-// We'll test SwipeGesture once it exists. For now, import will fail.
-// import { SwipeGesture } from './swipe';
+import { SwipeGesture } from './swipe';
 
 describe('SwipeGesture', () => {
   let element: HTMLElement;
@@ -53,7 +52,6 @@ describe('SwipeGesture', () => {
     it('calls onThreshold when distance threshold is met', () => {
       // Distance threshold = 0.25 * 800 = 200px
       // Swipe 220px down → should trigger
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -87,7 +85,6 @@ describe('SwipeGesture', () => {
     });
 
     it('snaps back and calls onCancel below threshold', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -123,7 +120,6 @@ describe('SwipeGesture', () => {
     });
 
     it('calls onMove with progress during drag', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -155,7 +151,6 @@ describe('SwipeGesture', () => {
 
   describe('direction: right', () => {
     it('calls onThreshold when swiped right past threshold', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'right',
         element,
@@ -192,7 +187,6 @@ describe('SwipeGesture', () => {
 
   describe('direction: left', () => {
     it('calls onThreshold when swiped left past pixel threshold', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'left',
         element,
@@ -227,7 +221,6 @@ describe('SwipeGesture', () => {
     });
 
     it('computes progress using absolute delta for left direction', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'left',
         element,
@@ -259,7 +252,6 @@ describe('SwipeGesture', () => {
 
   describe('direction lock', () => {
     it('aborts gesture when initial movement is perpendicular', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -295,7 +287,6 @@ describe('SwipeGesture', () => {
     });
 
     it('locks to swipe direction when initial movement is parallel', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'left',
         element,
@@ -325,7 +316,6 @@ describe('SwipeGesture', () => {
 
   describe('velocity threshold', () => {
     it('does not call onThreshold when velocity is guarded to zero on near-zero elapsed time', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -369,7 +359,6 @@ describe('SwipeGesture', () => {
 
   describe('zero elapsed time guard', () => {
     it('does not produce Infinity velocity', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -413,7 +402,6 @@ describe('SwipeGesture', () => {
       const input = document.createElement('input');
       element.appendChild(input);
 
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -454,7 +442,6 @@ describe('SwipeGesture', () => {
       custom.classList.add('no-swipe');
       element.appendChild(custom);
 
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -480,7 +467,6 @@ describe('SwipeGesture', () => {
 
   describe('destroy', () => {
     it('removes all event listeners', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -519,7 +505,6 @@ describe('SwipeGesture', () => {
 
   describe('reset', () => {
     it('clears inline transform and resets state', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -544,7 +529,6 @@ describe('SwipeGesture', () => {
 
   describe('touchcancel', () => {
     it('resets state and calls onCancel', () => {
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,
@@ -582,7 +566,6 @@ describe('SwipeGesture', () => {
         dispatchEvent: () => false,
       })) as typeof window.matchMedia;
 
-      const { SwipeGesture } = require('./swipe');
       const gesture = new SwipeGesture({
         direction: 'down',
         element,

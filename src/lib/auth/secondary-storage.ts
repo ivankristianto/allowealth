@@ -4,7 +4,7 @@ import { UpstashDriver } from '@/lib/cache/drivers/upstash';
 
 type BetterAuthSecondaryStorage = {
   get(key: string): Promise<string | null>;
-  set(key: string, value: string, ttl: number): Promise<void>;
+  set(key: string, value: string, ttl?: number): Promise<void>;
   delete(key: string): Promise<void>;
   increment(key: string, ttl: number): Promise<number>;
   getAndDelete(key: string): Promise<string | null>;
