@@ -8,6 +8,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import * as v from 'valibot';
 import { nanoid } from 'nanoid';
 import { getActiveSchema, getDb, runTransaction, type Database } from '@/db';
@@ -23,6 +24,19 @@ class SetupAlreadyCompleteError extends Error {
     super('Setup already complete');
     this.name = 'SetupAlreadyCompleteError';
   }
+}
+
+/** Only development and test may skip the secret; an unset NODE_ENV counts as production. */
+function isInstallerSecretRequired(): boolean {
+  const nodeEnv = getEnv('NODE_ENV');
+  return nodeEnv !== 'development' && nodeEnv !== 'test';
+}
+
+// Hashing first gives equal-length buffers, so the compare leaks neither content nor length.
+function secretsMatch(provided: string, expected: string): boolean {
+  const providedDigest = createHash('sha256').update(provided).digest();
+  const expectedDigest = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(providedDigest, expectedDigest);
 }
 
 export const installerSetupSchema = v.object({
@@ -85,8 +99,19 @@ export const POST: APIRoute = async ({ request }) => {
   const { workspaceName, name, email, password, installerSecret } = result.output;
   const configuredInstallerSecret = getEnv('INSTALLER_SECRET');
 
-  // Optional bootstrap secret for unattended fresh deployments.
-  if (configuredInstallerSecret && installerSecret !== configuredInstallerSecret) {
+  if (!configuredInstallerSecret && isInstallerSecretRequired()) {
+    return new Response(
+      JSON.stringify({
+        error: 'Setup is disabled until INSTALLER_SECRET is set on the server.',
+      }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (
+    configuredInstallerSecret &&
+    !secretsMatch(installerSecret ?? '', configuredInstallerSecret)
+  ) {
     return new Response(JSON.stringify({ error: 'Invalid installer secret' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },

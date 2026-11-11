@@ -165,9 +165,97 @@ describe('getSafeErrorMessage', () => {
   });
 });
 
+describe('production JSON logging of errors', () => {
+  const originalError = console.error;
+  let errorOutput: string[];
+
+  beforeEach(() => {
+    errorOutput = [];
+    console.error = (...args: unknown[]) => errorOutput.push(args.map(String).join(' '));
+  });
+
+  afterEach(() => {
+    console.error = originalError;
+  });
+
+  function lastEntry(): Record<string, any> {
+    return JSON.parse(errorOutput[errorOutput.length - 1]);
+  }
+
+  test('an Error keeps its name, message, stack, code and cause', async () => {
+    const { createLogger } = await import('./logger');
+    const cause = Object.assign(new Error('UNIQUE constraint failed: budgets.id'), {
+      code: 'SQLITE_CONSTRAINT_UNIQUE',
+    });
+    const error = new TypeError('Failed query: insert into "budgets"', { cause });
+
+    createLogger('database').error('query failed', error);
+
+    const entry = lastEntry();
+    expect(entry.message).toBe('query failed TypeError: Failed query: insert into "budgets"');
+    expect(entry.error.name).toBe('TypeError');
+    expect(entry.error.message).toBe('Failed query: insert into "budgets"');
+    expect(entry.error.stack).toContain('logger.test.ts');
+    expect(entry.error.cause.message).toBe('UNIQUE constraint failed: budgets.id');
+    expect(entry.error.cause.code).toBe('SQLITE_CONSTRAINT_UNIQUE');
+  });
+
+  test('an Error nested in a context object is serialized too', async () => {
+    const { createLogger } = await import('./logger');
+
+    createLogger('cache').error('invalidate failed', { error: new Error('redis down') });
+
+    expect(lastEntry().message).toContain('"message":"redis down"');
+  });
+});
+
 describe('logError', () => {
-  test('is exported as a function', async () => {
+  const originalError = console.error;
+  let errorOutput: string[];
+
+  beforeEach(() => {
+    errorOutput = [];
+    console.error = (...args: unknown[]) => errorOutput.push(args.map(String).join(' '));
+  });
+
+  afterEach(() => {
+    console.error = originalError;
+  });
+
+  test('logs SQL text and stack, tagged with the returned id, without bound values', async () => {
     const { logError } = await import('./logger');
-    expect(typeof logError).toBe('function');
+    // Same shape as drizzle-orm's DrizzleQueryError message
+    const error = new Error(
+      'Failed query: update "accounts" set "name" = ? where "id" = ?\nparams: Savings,acc_123'
+    );
+
+    const errorId = logError('Error updating account', error);
+
+    expect(errorId).toMatch(/^[0-9a-f]{8}$/);
+    const output = errorOutput.join('\n');
+    expect(output).toContain(`errorId=${errorId}`);
+    expect(output).toContain('update \\"accounts\\" set');
+    expect(output).toContain('params: [REDACTED]');
+    expect(output).not.toContain('acc_123');
+    expect(output).toContain('logger.test.ts');
+  });
+
+  test('redacts credentials, password hashes and tokens', async () => {
+    const { logError } = await import('./logger');
+    const argon = await Bun.password.hash('hunter2-hunter2', 'argon2id');
+    const pbkdf2 = '$pbkdf2-sha256$600000$c2FsdHNhbHQ=$aGFzaGhhc2hoYXNo';
+    const error = new Error(
+      `connect redis://default:s3cret@cache:6379 failed for ${argon} and ${pbkdf2}` +
+        ' with aw_pat_AbC-123_xyz and Authorization: Bearer eyJhbGciOi.payload.sig'
+    );
+
+    logError('Saving user failed', error);
+
+    const output = errorOutput.join('\n');
+    for (const secret of ['s3cret', argon, pbkdf2, 'AbC-123_xyz', 'eyJhbGciOi']) {
+      expect(output).not.toContain(secret);
+    }
+    expect(output).toContain('redis://[REDACTED]@cache:6379');
+    expect(output).toContain('Bearer [REDACTED]');
   });
 });

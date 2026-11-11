@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { budgetService, BudgetServiceError } from '@/services';
+import { budgetService, ServiceError } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -35,11 +35,10 @@ export const POST: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    if (error instanceof BudgetServiceError) {
+    if (error instanceof ServiceError) {
       return errorResponse(error.message, error.statusCode, error.code);
     }
-    logError('Error initializing budgets', error);
-    const message = error instanceof Error ? error.message : 'Failed to initialize budgets';
-    return errorResponse(message, 500);
+    const errorId = logError('Error initializing budgets', error);
+    return errorResponse('Failed to initialize budgets', 500, 'INTERNAL_ERROR', { errorId });
   }
 };
