@@ -4,6 +4,7 @@ import { getCacheManager } from '@/lib/cache';
 import { isAppPasswordToken, type AppPasswordScope } from '@/lib/mcp-app-password';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
+import { WorkspaceService } from '@/services/workspace.service';
 import { eq } from 'drizzle-orm';
 
 export interface McpAuthContext {
@@ -24,6 +25,7 @@ interface McpAuthDeps {
   getSchema: () => Pick<ReturnType<typeof getActiveSchema>, 'oauthAccessToken' | 'users'>;
   cache: Pick<ReturnType<typeof getCacheManager>, 'invalidateByTags'>;
   appPasswords?: Pick<typeof mcpAppPasswordService, 'verify'>;
+  workspaces: Pick<WorkspaceService, 'isWorkspaceActive'>;
 }
 
 function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
@@ -31,6 +33,7 @@ function resolveDeps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
     db,
     getSchema: getActiveSchema,
     cache: getCacheManager(),
+    workspaces: new WorkspaceService(db),
     ...overrides,
   };
 }
@@ -94,12 +97,15 @@ export async function validateMcpToken(
   overrides: Partial<McpAuthDeps> = {}
 ): Promise<McpAuthContext | null> {
   if (!rawToken) return null;
-  if (isAppPasswordToken(rawToken)) {
-    return (overrides.appPasswords ?? mcpAppPasswordService).verify(rawToken);
-  }
 
   const deps = resolveDeps(overrides);
-  return lookupToken(rawToken, deps);
+  const context = isAppPasswordToken(rawToken)
+    ? await (deps.appPasswords ?? mcpAppPasswordService).verify(rawToken)
+    : await lookupToken(rawToken, deps);
+
+  // An archived workspace locks out every MCP credential its members hold.
+  if (!context || !(await deps.workspaces.isWorkspaceActive(context.workspaceId))) return null;
+  return context;
 }
 
 export async function invalidateMcpToken(

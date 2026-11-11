@@ -3,7 +3,7 @@
  * Workspace Details Page
  *
  * Shows detailed workspace information including stats, members, and settings.
- * Provides archive and delete actions for super admins.
+ * Provides archive, reactivate and delete actions for super admins.
  */
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import Card from '@/components/atoms/Card.astro';
@@ -63,14 +63,23 @@ try {
           </div>
         </div>
         <div class="flex gap-2">
-          {workspace.status === 'active' && (
+          {workspace.status === 'active' ? (
             <Button
               variant="warning"
               className="rounded-lg sm:rounded-xl min-h-11"
-              data-archive-btn
+              data-status-btn="archive"
               data-workspace-id={workspace.id}
             >
               Archive
+            </Button>
+          ) : (
+            <Button
+              variant="success"
+              className="rounded-lg sm:rounded-xl min-h-11"
+              data-status-btn="reactivate"
+              data-workspace-id={workspace.id}
+            >
+              Reactivate
             </Button>
           )}
           <Button
@@ -181,33 +190,35 @@ try {
     controller?.abort();
     controller = new AbortController();
     const { signal } = controller;
-    // Archive button handler
-    const archiveBtn = document.querySelector('[data-archive-btn]') as HTMLButtonElement | null;
-    if (archiveBtn) {
-      archiveBtn.addEventListener(
+    // Archive or reactivate, depending on the current status
+    const statusBtn = document.querySelector('[data-status-btn]') as HTMLButtonElement | null;
+    if (statusBtn) {
+      statusBtn.addEventListener(
         'click',
         async () => {
-          const workspaceId = archiveBtn.dataset.workspaceId;
+          const workspaceId = statusBtn.dataset.workspaceId;
+          const action = statusBtn.dataset.statusBtn === 'reactivate' ? 'reactivate' : 'archive';
+          const pastTense = action === 'reactivate' ? 'reactivated' : 'archived';
           if (!workspaceId) return;
 
-          archiveBtn.classList.add('loading');
+          statusBtn.classList.add('loading');
           try {
-            const response = await fetch(`/api/admin/workspaces/${workspaceId}/archive`, {
+            const response = await fetch(`/api/admin/workspaces/${workspaceId}/${action}`, {
               method: 'POST',
               credentials: 'include',
               headers: getCsrfHeaders(),
             });
             const result = await response.json();
             if (!response.ok || !result.success) {
-              throw new Error(result.error?.message || 'Failed to archive workspace');
+              throw new Error(result.error?.message || `Failed to ${action} workspace`);
             }
-            addToast('Workspace archived successfully', 'success');
+            addToast(`Workspace ${pastTense} successfully`, 'success');
             window.location.reload();
           } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to archive workspace';
+            const message = err instanceof Error ? err.message : `Failed to ${action} workspace`;
             addToast(message, 'error');
           } finally {
-            archiveBtn.classList.remove('loading');
+            statusBtn.classList.remove('loading');
           }
         },
         { signal }

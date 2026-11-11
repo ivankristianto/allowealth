@@ -139,8 +139,10 @@ paths:
       tags: [Admin]
       summary: Archive a workspace
       description: |
-        Soft-deletes a workspace by setting deleted_at timestamp.
-        The workspace can be restored later. Super admin access required.
+        Sets the workspace status to `inactive`. Its members are locked out
+        until it is reactivated: web pages redirect to `/login?error=workspace_inactive`,
+        API calls return 403 with code `WORKSPACE_INACTIVE`, and MCP OAuth tokens
+        and app passwords are refused. Super admin access required.
       security:
         - sessionAuth: []
       parameters:
@@ -153,6 +155,32 @@ paths:
       responses:
         '200':
           description: Workspace archived successfully
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required
+        '404':
+          description: Workspace not found
+
+  /api/admin/workspaces/{id}/reactivate:
+    post:
+      tags: [Admin]
+      summary: Reactivate an archived workspace
+      description: |
+        Sets the workspace status back to `active`, which restores access for
+        its members. Logs a `restore` audit event. Super admin access required.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace ID to reactivate
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workspace reactivated successfully
         '401':
           description: Unauthorized - not authenticated
         '403':

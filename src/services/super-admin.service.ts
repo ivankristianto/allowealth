@@ -416,6 +416,28 @@ export class SuperAdminService {
       .where(eq(schema.workspaces.id, workspaceId));
   }
 
+  /** Restore an archived workspace, which gives its members access again. */
+  async reactivateWorkspace(workspaceId: string): Promise<void> {
+    const schema = this.schema;
+
+    const workspace = await this.db.query.workspaces.findFirst({
+      where: eq(schema.workspaces.id, workspaceId),
+    });
+
+    if (!workspace) {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+
+    await this.db
+      .update(schema.workspaces)
+      .set({ status: 'active', updated_at: new Date() })
+      .where(eq(schema.workspaces.id, workspaceId));
+  }
+
   /**
    * Hard delete a workspace and all associated data
    *
