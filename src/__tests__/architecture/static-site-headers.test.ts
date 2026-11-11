@@ -102,25 +102,27 @@ for (const app of STATIC_APPS) {
 // Needs a fresh build, so CI names the apps it just built: CHECK_STATIC_BUILD=apps/docs,apps/site
 const builtApps = (process.env.CHECK_STATIC_BUILD ?? '').split(',').filter(Boolean);
 
-describe.skipIf(builtApps.length === 0)('built static sites', () => {
-  it('CHECK_STATIC_BUILD names only known static apps', () => {
-    for (const app of builtApps) expect(STATIC_APPS as readonly string[]).toContain(app);
-  });
-
-  for (const app of STATIC_APPS.filter((name) => builtApps.includes(name))) {
-    it(`${app}: the CSP allows every inline script in dist`, () => {
-      const dist = join(app, 'dist');
-      expect(existsSync(join(dist, '_headers'))).toBe(true);
-
-      const allowed = new Set(cspDirective(readCatchAllCsp(app), 'script-src'));
-      const missing = new Set<string>();
-      for (const file of new Bun.Glob('**/*.html').scanSync(dist)) {
-        for (const hash of inlineScriptHashes(readFileSync(join(dist, file), 'utf8'))) {
-          if (!allowed.has(hash)) missing.add(`${file} ${hash}`);
-        }
-      }
-
-      expect([...missing]).toEqual([]);
+if (builtApps.length > 0) {
+  describe('built static sites', () => {
+    it('CHECK_STATIC_BUILD names only known static apps', () => {
+      for (const app of builtApps) expect(STATIC_APPS as readonly string[]).toContain(app);
     });
-  }
-});
+
+    for (const app of STATIC_APPS.filter((name) => builtApps.includes(name))) {
+      it(`${app}: the CSP allows every inline script in dist`, () => {
+        const dist = join(app, 'dist');
+        expect(existsSync(join(dist, '_headers'))).toBe(true);
+
+        const allowed = new Set(cspDirective(readCatchAllCsp(app), 'script-src'));
+        const missing = new Set<string>();
+        for (const file of new Bun.Glob('**/*.html').scanSync(dist)) {
+          for (const hash of inlineScriptHashes(readFileSync(join(dist, file), 'utf8'))) {
+            if (!allowed.has(hash)) missing.add(`${file} ${hash}`);
+          }
+        }
+
+        expect([...missing]).toEqual([]);
+      });
+    }
+  });
+}
