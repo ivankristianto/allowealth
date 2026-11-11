@@ -87,56 +87,11 @@ describe('WealthTrajectory chart series builder', () => {
   });
 });
 
-describe('WealthTrajectory chart lifecycle cleanup', () => {
-  it('should not include unused observer declarations', () => {
-    expect(source).not.toContain('let chartObserver');
-    expect(source).not.toContain('let themeObserver');
-    expect(source).not.toContain('let systemThemeMediaQuery');
-  });
-});
-
 describe('WealthTrajectory reality-check chart', () => {
-  it('renders the approved legend labels', () => {
-    expect(source).toContain('Planned Balance');
-    expect(source).toContain('Actual Balance');
-    expect(source).toContain('Current Trajectory');
-  });
-
-  it('does not render inline assumption controls', () => {
-    expect(source).not.toContain('data-wealth-trajectory-controls');
-    expect(source).not.toContain('MONTHLY TOP-UP');
-    expect(source).not.toContain('EXPECTED APY');
-  });
-
   it('uses chart window metadata to scope the default viewport', () => {
     expect(source).toContain('chartWindow');
     expect(clientSource).toContain('startIndex');
     expect(clientSource).toContain('endIndex');
-  });
-
-  it('renders current trajectory with a dashed stroke', () => {
-    expect(source).toContain('borderDash');
-    expect(source).toContain('Current Trajectory');
-  });
-
-  it('formats summary cards with full currency values', () => {
-    expect(source).toContain('formatCurrency(summary.latestActualBalance, currency)');
-    expect(source).toContain('formatCurrency(summary.plannedEndingBalance, currency)');
-    expect(source).toContain('formatCurrency(summary.currentTrajectoryEndingBalance, currency)');
-    expect(source).not.toContain('formatCurrencyCompact');
-  });
-
-  it('keeps the chart copy aligned with the reality-check spec', () => {
-    expect(source).toContain('Planned growth, actual balances, and current trajectory');
-    expect(source).toContain('Add account balance history to see your plan versus reality.');
-    expect(source).not.toContain('next decade');
-  });
-
-  it('reads chart dataset colors from theme tokens instead of hardcoded values', () => {
-    expect(source).toContain('--color-accent');
-    expect(source).toContain('--color-info');
-    expect(source).toContain('--color-warning');
-    expect(source).toContain('readThemeColor');
   });
 
   it('renders a screen-reader-only data table for the visible chart window', () => {

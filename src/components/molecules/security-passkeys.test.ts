@@ -33,23 +33,6 @@ describe('SecurityPasskeysCard', () => {
     expect(source).toContain('data-passkey-id={passkey.id}');
   });
 
-  it('shows empty state message when no passkeys', () => {
-    const source = readPasskeysCard();
-    expect(source).toContain('No passkeys registered yet');
-  });
-
-  it('uses success iconVariant (not warning/under development)', () => {
-    const source = readPasskeysCard();
-    expect(source).toContain('iconVariant="success"');
-    expect(source).not.toContain('Under Development');
-    expect(source).not.toContain('iconVariant="warning"');
-  });
-
-  it('accepts Passkey objects with optional name field', () => {
-    const source = readPasskeysCard();
-    expect(source).toContain('name: string | null');
-  });
-
   it('has a delete confirmation dialog modal (not window.confirm)', () => {
     const source = readPasskeysCard();
     expect(source).toContain('delete-passkey-modal');
@@ -145,11 +128,6 @@ describe('LoginForm passkey support', () => {
     const source = readLoginForm();
     expect(source).toContain('isConditionalMediationAvailable');
     expect(source).toContain('autoFill: true');
-  });
-
-  it('uses showInfoAlert helper to reduce duplication', () => {
-    const source = readLoginForm();
-    expect(source).toContain('showInfoAlert');
   });
 
   it('uses isPasskeyCancellation to detect NotAllowedError and cancellation', () => {

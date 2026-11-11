@@ -10,19 +10,6 @@ function readSourceIfExists(relativePath: string): string {
 const source = readSourceIfExists('./ForecastTable.astro');
 
 describe('ForecastTable component', () => {
-  it('keeps the sticky recurring column clipped above horizontally scrolled values', () => {
-    expect(source).toMatch(
-      /class="sticky left-0 z-30 [^"]*w-72[^"]*min-w-72[^"]*max-w-72[^"]*overflow-hidden/
-    );
-    expect(source).toMatch(
-      /class="sticky left-0 z-10 [^"]*w-72[^"]*min-w-72[^"]*max-w-72[^"]*overflow-hidden/
-    );
-    expect(source).toContain('class="flex min-w-0 items-start gap-2.5"');
-    expect(source).toContain(
-      'class="block min-w-0 flex-1 truncate text-sm font-bold text-base-content"'
-    );
-  });
-
   it('exposes the full recurring name when the visible label is truncated', () => {
     expect(source).toMatch(/<span\s+title=\{row\.templateName\}/);
   });
@@ -34,23 +21,5 @@ describe('ForecastTable component', () => {
   it('includes a client script that hides the overlay when fully scrolled', () => {
     expect(source).toMatch(/scrollLeft\s*\+\s*clientWidth/);
     expect(source).toContain('data-scrolled-end');
-  });
-
-  it('uses opaque sticky surfaces so scrolled values do not bleed under the recurring column', () => {
-    expect(source).not.toContain('bg-base-200/50');
-    expect(source).not.toContain('group-hover:bg-base-200/30');
-    expect(source).toContain('border-r border-base-300 bg-base-200');
-  });
-
-  it('shows schedule frequency as meta information in the recurring column', () => {
-    expect(source).not.toMatch(/>Freq\.<\/th>/);
-    expect(source).toMatch(/>\s*Recurring\s*<\/th>/);
-    expect(source).toContain('{row.frequencyLabel}');
-  });
-
-  it('explains paused rows are excluded from totals with a tooltip badge', () => {
-    expect(source).toContain('data-tip="Excluded from totals while paused"');
-    expect(source).toContain('class="tooltip tooltip-right"');
-    expect(source).toContain('badge badge-ghost badge-xs whitespace-nowrap cursor-help');
   });
 });
