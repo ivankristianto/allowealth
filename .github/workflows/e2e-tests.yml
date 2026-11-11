@@ -60,7 +60,8 @@ jobs:
           bun run db:migrate
           bun run db:seed --yes
 
-      - name: Run E2E tests
+      # The config builds the app and serves dist/ with bun --bun, as the Docker image does
+      - name: Run E2E tests against the production build
         run: npx playwright test --config=e2e/playwright.config.ts
         env:
           CI: true

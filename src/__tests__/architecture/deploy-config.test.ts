@@ -126,6 +126,39 @@ describe('unit test discovery', () => {
   });
 });
 
+// The config sets process.env.TZ on import, so read it in a child process to keep this one clean
+function playwrightWebServer(env: Record<string, string> = {}) {
+  const script =
+    "const c = (await import('./e2e/playwright.config.ts')).default;" +
+    'console.log(JSON.stringify(c.webServer));';
+  const { E2E_SERVER: _ignored, ...baseEnv } = process.env;
+  const result = Bun.spawnSync(['bun', '-e', script], { cwd: ROOT, env: { ...baseEnv, ...env } });
+  expect(result.exitCode).toBe(0);
+  return JSON.parse(result.stdout.toString()) as {
+    command: string;
+    cwd?: string;
+    env: Record<string, string>;
+  };
+}
+
+// E2E ran against astro dev, so build-time CSP and adapter regressions were never tested (audit 7.7)
+describe('e2e server', () => {
+  it('serves the production build by default', () => {
+    const server = playwrightWebServer();
+
+    expect(server.command).toBe('bun run build && bun --bun ./dist/server/entry.mjs');
+    expect(server.cwd?.replace(/\/$/, '')).toBe(ROOT);
+    expect(server.env.DATABASE_URL).toBe('db/.e2e.db');
+  });
+
+  it('switches to astro dev with E2E_SERVER=dev', () => {
+    const server = playwrightWebServer({ E2E_SERVER: 'dev' });
+
+    expect(server.command).toStartWith('bun run dev');
+    expect(server.env.DATABASE_URL).toBe('db/.e2e.db');
+  });
+});
+
 interface ComposeFile {
   services: Record<string, { ports?: string[] }>;
 }
