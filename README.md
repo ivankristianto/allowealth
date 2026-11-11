@@ -171,7 +171,7 @@ bun run db:reset --yes
 # Reset database with dashboard test data
 bun run db:reset:dashboard
 
-# Empty database (delete all data, preserve schema)
+# Empty database (delete every row; keep the schema and migration history)
 bun run db:empty --yes
 
 # Empty production database (with 5-second safety delay)

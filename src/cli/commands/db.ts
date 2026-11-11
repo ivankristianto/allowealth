@@ -314,7 +314,10 @@ export default defineCommand({
       },
     }),
     empty: defineCommand({
-      meta: { name: 'empty', description: 'Truncate all data (preserve schema)' },
+      meta: {
+        name: 'empty',
+        description: 'Delete all rows; keep the schema and migration history',
+      },
       args: {
         target: targetArg,
         ...wipeArgs,

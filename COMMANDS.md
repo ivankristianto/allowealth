@@ -225,7 +225,7 @@ bun run lint:fix && bun run stylelint:fix && bun run format:fix && bun run typec
 | `bun run db:seed --yes`  | Wipe and seed demo data (3 months default)        |
 | `bun run db:seed:stress` | Seed 5 years of family stress-test data (`--yes`) |
 | `bun run db:reset --yes` | Same as `aw db reset --yes`                       |
-| `bun run db:empty --yes` | Truncate all data (preserve schema)               |
+| `bun run db:empty --yes` | Delete all rows; keep schema and migrations       |
 
 Every command that wipes data refuses to run without `--yes`, and refuses a database that holds users outside `@example.com` unless `--force` is also given. See [Wipe guard](#wipe-guard).
 
@@ -364,7 +364,7 @@ Aliases provide shorter commands that map to resource operations.
 | `bun run aw db seed --yes --with-super-admin`  | Also seed `superadmin@example.com` with a random password           |
 | `bun run aw db seed-oauth-clients`             | Seed MCP OAuth clients for Connected Apps                           |
 | `bun run aw db reset --yes`                    | Delete the `DATABASE_URL` file, apply migrations, and seed          |
-| `bun run aw db empty --yes`                    | Truncate all data (preserve schema)                                 |
+| `bun run aw db empty --yes`                    | Delete all rows; keep the schema and migration history              |
 | `bun run aw db drop --yes`                     | ⚠️ Delete the `DATABASE_URL` SQLite file                            |
 | `bun run aw db backup`                         | Write a consistent copy of the `DATABASE_URL` database              |
 | `bun run aw db restore --yes`                  | Replace the `DATABASE_URL` database from a local/cloud backup       |
