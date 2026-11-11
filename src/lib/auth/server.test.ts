@@ -158,7 +158,7 @@ describe('better-auth server config', () => {
     const mod = await importFreshServer();
     // Access auth.options to trigger lazy initialization
     expect(() => mod.auth.options).toThrow(
-      'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production'
+      'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set outside development and test'
     );
   });
 
@@ -175,8 +175,83 @@ describe('better-auth server config', () => {
     const mod = await importFreshServer();
     // Access auth.options to trigger lazy initialization
     expect(() => mod.auth.options).toThrow(
-      'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production'
+      'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set outside development and test'
     );
+  });
+
+  describe('protections are on unless NODE_ENV is development or test', () => {
+    const PROTECTED_BASE = {
+      BETTER_AUTH_SECRET: 'prod-better-auth-secret-1234567890',
+      GOOGLE_CLIENT_ID: 'prod-google-client-id',
+      GOOGLE_CLIENT_SECRET: 'prod-google-client-secret',
+      PUBLIC_TURNSTILE_SITE_KEY: 'turnstile-site-key',
+      TURNSTILE_SECRET_KEY: 'turnstile-secret',
+    };
+
+    for (const nodeEnv of [undefined, '', 'staging', 'Production', 'preview']) {
+      it(`turns rate limits on for NODE_ENV=${JSON.stringify(nodeEnv)}`, async () => {
+        setTestEnv({ ...PROTECTED_BASE, NODE_ENV: nodeEnv });
+
+        const mod = await importFreshServer();
+
+        expect(mod.authProtectionsEnabled()).toBe(true);
+        expect(mod.auth.options.rateLimit?.enabled).toBe(true);
+      });
+    }
+
+    it('requires real Google credentials when NODE_ENV is missing', async () => {
+      setTestEnv({
+        ...PROTECTED_BASE,
+        NODE_ENV: undefined,
+        GOOGLE_CLIENT_ID: undefined,
+        GOOGLE_CLIENT_SECRET: undefined,
+      });
+
+      const mod = await importFreshServer();
+
+      expect(() => mod.auth.options).toThrow('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
+    });
+
+    it('requires Turnstile when NODE_ENV is an unknown value', async () => {
+      setTestEnv({ ...PROTECTED_BASE, NODE_ENV: 'staging', TURNSTILE_SECRET_KEY: undefined });
+
+      const mod = await importFreshServer();
+
+      expect(() => mod.auth.options).toThrow('PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY');
+    });
+
+    it('does not trust DEV_HOST when NODE_ENV is missing', async () => {
+      setTestEnv({
+        ...PROTECTED_BASE,
+        NODE_ENV: undefined,
+        PUBLIC_URL: 'https://app.example.com',
+        DEV_HOST: 'evil.example.net',
+      });
+
+      const mod = await importFreshServer();
+
+      expect(mod.getTrustedOrigins().some((o: string) => o.includes('evil.example.net'))).toBe(
+        false
+      );
+    });
+
+    for (const nodeEnv of ['development', 'test']) {
+      it(`relaxes protections only for NODE_ENV=${nodeEnv}`, async () => {
+        setTestEnv({
+          NODE_ENV: nodeEnv,
+          BETTER_AUTH_SECRET: 'test-better-auth-secret',
+          GOOGLE_CLIENT_ID: undefined,
+          GOOGLE_CLIENT_SECRET: undefined,
+          PUBLIC_TURNSTILE_SITE_KEY: undefined,
+          TURNSTILE_SECRET_KEY: undefined,
+        });
+
+        const mod = await importFreshServer();
+
+        expect(mod.authProtectionsEnabled()).toBe(false);
+        expect(mod.auth.options.rateLimit?.enabled).toBe(false);
+      });
+    }
   });
 
   it('configures explicit Better Auth rate limits and IP headers', async () => {

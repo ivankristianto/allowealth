@@ -44,6 +44,8 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {
+      // Auth rate limits and Turnstile are on unless NODE_ENV opts out.
+      NODE_ENV: 'development',
       DATABASE_URL: 'db/.e2e.db',
       PORT: String(E2E_PORT),
       DEV_HOST: 'localhost', // Override to ensure server binds to localhost for E2E
