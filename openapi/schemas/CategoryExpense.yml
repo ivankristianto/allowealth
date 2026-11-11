@@ -10,6 +10,10 @@ CategoryExpense:
       type: string
       description: Total spent in this category (decimal string for precision)
       example: "1850000"
+    sourceType:
+      type: string
+      enum: [active, passive, other]
+      description: Income source classification (income categories only)
   required:
     - name
     - value

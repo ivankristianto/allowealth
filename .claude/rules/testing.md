@@ -98,6 +98,7 @@ export default defineConfig({
 **Rules:**
 
 - ✅ **Set Playwright workers=1 for shared database tests** - prevents race conditions
+- ✅ **Run E2E against the production build** - the default `webServer` runs `bun run build` then `bun --bun ./dist/server/entry.mjs`, as Docker does; `E2E_SERVER=dev` switches to `astro dev` for a faster local loop
 - ❌ **Rely on Playwright's `webServer.env`** when `reuseExistingServer: true` - env block is not applied to already-running server
 
 ### Waiting Patterns

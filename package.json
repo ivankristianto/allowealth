@@ -1,6 +1,7 @@
 {
   "name": "allowealth",
   "version": "0.33.0",
+  "packageManager": "bun@1.4.4",
   "type": "module",
   "private": true,
   "scripts": {

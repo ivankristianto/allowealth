@@ -1,8 +1,11 @@
 # syntax=docker/dockerfile:1
 
+# Keep in step with .bun-version; a guard test fails when they drift
+ARG BUN_VERSION=1.4.4
+
 # ─── Stage 1: Install ALL dependencies (needed for build) ───────────────────
 # TODO: pin to sha256 digest for reproducible builds
-FROM oven/bun:1.3.11 AS deps
+FROM oven/bun:${BUN_VERSION} AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
@@ -11,7 +14,7 @@ RUN --mount=type=cache,target=/home/bun/.bun/install/cache \
 
 # ─── Stage 2: Build ──────────────────────────────────────────────────────────
 # TODO: pin to sha256 digest for reproducible builds
-FROM oven/bun:1.3.11 AS build
+FROM oven/bun:${BUN_VERSION} AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -26,7 +29,7 @@ RUN bun run build:scripts
 
 # ─── Stage 3: Production dependencies only ──────────────────────────────────
 # TODO: pin to sha256 digest for reproducible builds
-FROM oven/bun:1.3.11 AS prod-deps
+FROM oven/bun:${BUN_VERSION} AS prod-deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
@@ -37,7 +40,7 @@ RUN --mount=type=cache,target=/home/bun/.bun/install/cache \
 
 # ─── Stage 4: Runtime ────────────────────────────────────────────────────────
 # TODO: pin to sha256 digest for reproducible builds
-FROM oven/bun:1.3.11-slim AS runtime
+FROM oven/bun:${BUN_VERSION}-slim AS runtime
 
 LABEL org.opencontainers.image.title="Allowealth"
 LABEL org.opencontainers.image.description="Personal and family financial application"

@@ -543,7 +543,7 @@ bun run test:watch           # Watch mode
 | Command                   | Description                                                        |
 | ------------------------- | ------------------------------------------------------------------ |
 | `bun run test:e2e:setup`  | Install Playwright browsers                                        |
-| `bun run test:e2e`        | Run all E2E tests headless                                         |
+| `bun run test:e2e`        | Build the app, serve the build on 4320, run all E2E tests headless |
 | `bun run test:e2e:ui`     | Open Playwright UI mode                                            |
 | `bun run test:e2e:headed` | Run E2E tests in visible browser                                   |
 | `bun run test:e2e:debug`  | Run E2E tests in debug mode                                        |
@@ -552,7 +552,8 @@ bun run test:watch           # Watch mode
 
 ```bash
 bun run test:e2e:setup       # First time only
-bun run test:e2e             # Run all E2E tests
+bun run test:e2e             # Run all E2E tests against the production build
+E2E_SERVER=dev bun run test:e2e   # Against astro dev instead: faster, but skips build-time CSP and adapter checks
 SNAPSHOT_DIR=before bun run snapshot:html   # HTML snapshots for whitespace diffs (dev server on 4320, db/.e2e.db)
 ```
 

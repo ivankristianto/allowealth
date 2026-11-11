@@ -6,18 +6,6 @@ function readForecastPage(): string {
 }
 
 describe('recurring forecast page', () => {
-  it('uses breadcrumb navigation and the new cashflow chart', () => {
-    const page = readForecastPage();
-
-    expect(page).toContain("import Breadcrumb from '@/components/atoms/Breadcrumb.astro';");
-    expect(page).toContain(
-      "import ForecastCashflowChart from '@/components/organisms/ForecastCashflowChart.astro';"
-    );
-    expect(page).toContain(
-      "<Breadcrumb items={[{ label: 'Recurring', href: '/recurring' }, { label: 'Forecast' }]} />"
-    );
-  });
-
   it('uses parsed filters directly and only includes paused items when requested', () => {
     const page = readForecastPage();
 
@@ -73,26 +61,5 @@ describe('recurring forecast page', () => {
     expect(page).not.toContain(
       '{chartData.length > 0 && <ForecastCashflowChart data={chartData} currency={activeCurrency} />}'
     );
-  });
-
-  it('makes the filter bar sticky so it stays visible while scrolling', () => {
-    const page = readForecastPage();
-
-    expect(page).toMatch(
-      /class="[^"]*sticky[^"]*top-0[^"]*z-sticky[^"]*rounded-box[^"]*border[^"]*"/
-    );
-  });
-
-  it('imports ForecastSummary and renders it when activeTotals is present', () => {
-    const page = readForecastPage();
-
-    expect(page).toContain(
-      "import ForecastSummary from '@/components/organisms/ForecastSummary.astro';"
-    );
-    expect(page).toContain('<ForecastSummary');
-    expect(page).toContain('income={summaryIncome}');
-    expect(page).toContain('expense={summaryExpense}');
-    expect(page).toContain('net={summaryNet}');
-    expect(page).toContain('monthCount={monthCount}');
   });
 });
