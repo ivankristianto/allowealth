@@ -24,6 +24,9 @@ import {
 
 const log = createLogger('recurring-template');
 
+// 8 columns per row keeps a chunk well under SQLite's bound-parameter limit.
+const OCCURRENCE_INSERT_CHUNK = 500;
+
 export interface RecurringTemplateFilters {
   status?: 'active' | 'paused' | 'completed' | 'cancelled' | 'all';
   type?: 'expense' | 'income';
@@ -806,21 +809,61 @@ export class RecurringTemplateService {
       })
     );
 
-    let created = 0;
-    let completedTransitions = 0;
-    for (const template of templates) {
-      const result = await this._generateForTemplate(template as RecurringTemplate);
-      created += result.created;
-      if (result.completedTransition) {
-        completedTransitions += 1;
-      }
+    if (templates.length === 0) {
+      return { created: 0 };
     }
 
-    if (created > 0 || completedTransitions > 0) {
+    const occurrences = this.schema.recurringOccurrences;
+    const templateTable = this.schema.recurringTemplates;
+    const latestRows: Array<{ template_id: string; latest: number }> = await (this.db as any)
+      .select({
+        template_id: occurrences.template_id,
+        latest: sql<number>`MAX(${occurrences.occurrence_number})`,
+      })
+      .from(occurrences)
+      .where(
+        and(
+          eq(occurrences.workspace_id, workspaceId),
+          inArray(
+            occurrences.template_id,
+            templates.map((t) => t.id)
+          )
+        )
+      )
+      .groupBy(occurrences.template_id);
+    const latestByTemplate = new Map(latestRows.map((row) => [row.template_id, row.latest]));
+
+    const plans = templates.map((template) =>
+      this.planOccurrences(template as RecurringTemplate, latestByTemplate.get(template.id) ?? null)
+    );
+    const rows = plans.flatMap((plan) => plan.rows);
+    const exhaustedIds = templates.filter((_, i) => plans[i]!.exhausted).map((t) => t.id);
+
+    if (rows.length > 0 || exhaustedIds.length > 0) {
+      const now = new Date();
+      runTransaction(this.db, (tx) => {
+        for (let i = 0; i < rows.length; i += OCCURRENCE_INSERT_CHUNK) {
+          tx.insert(occurrences)
+            .values(rows.slice(i, i + OCCURRENCE_INSERT_CHUNK))
+            .onConflictDoNothing()
+            .run();
+        }
+        if (exhaustedIds.length > 0) {
+          tx.update(templateTable)
+            .set({ status: 'completed', updated_at: now })
+            .where(
+              and(
+                inArray(templateTable.id, exhaustedIds),
+                eq(templateTable.workspace_id, workspaceId)
+              )
+            )
+            .run();
+        }
+      });
       await this.invalidateWorkspaceCache(workspaceId);
     }
 
-    return { created };
+    return { created: rows.length };
   }
 
   private planOccurrences(template: RecurringTemplate, latestOccurrenceNumber: number | null) {

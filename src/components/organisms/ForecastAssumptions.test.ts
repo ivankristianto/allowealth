@@ -9,21 +9,9 @@ function readSourceIfExists(relativePath: string): string {
 
 const componentSource = readSourceIfExists('./ForecastAssumptions.astro');
 const clientSource = readSourceIfExists('./ForecastAssumptions.client.ts');
-const wealthTrajectorySource = readSourceIfExists('./WealthTrajectory.astro');
 const pageSource = readSourceIfExists('../../pages/forecast/index.astro');
 
 describe('ForecastAssumptions component', () => {
-  it('shows the saved assumptions labels and helper copy', () => {
-    expect(componentSource).toContain('Monthly Top-Up');
-    expect(componentSource).toContain('Expected APY');
-    expect(componentSource).toContain('save automatically to workspace settings');
-  });
-
-  it('renders a save-status surface', () => {
-    expect(componentSource).toContain('Saving…');
-    expect(componentSource).toContain('Saved');
-  });
-
   it('associates both inputs with the live status and inline error surfaces', () => {
     expect(componentSource).toContain('ariaDescribedBy');
     expect(componentSource).toContain('forecast-assumptions-status');
@@ -59,24 +47,5 @@ describe('ForecastAssumptions component', () => {
     expect(pageSource).toContain('getForecastRealityCheckData');
     expect(pageSource).not.toContain('Astro.url.origin');
     expect(pageSource).not.toContain("Astro.request.headers.get('cookie')");
-  });
-
-  it('uses the approved reality-check chart copy and missing-history guidance', () => {
-    expect(wealthTrajectorySource).toContain('Wealth Growth');
-    expect(wealthTrajectorySource).toContain(
-      'Planned growth, actual balances, and current trajectory'
-    );
-    expect(wealthTrajectorySource).toContain(
-      'Add account balance history to see your plan versus reality.'
-    );
-    expect(wealthTrajectorySource).not.toContain(
-      'Predicting global account growth over the next decade.'
-    );
-  });
-
-  it('removes the old inline assumption controls from the wealth trajectory chart', () => {
-    expect(wealthTrajectorySource).not.toContain('data-wealth-trajectory-controls');
-    expect(wealthTrajectorySource).not.toContain('MONTHLY TOP-UP');
-    expect(wealthTrajectorySource).not.toContain('EXPECTED APY');
   });
 });

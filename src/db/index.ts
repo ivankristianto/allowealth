@@ -5,6 +5,7 @@
  *
  * @see https://bun.sh/docs/api/sqlite
  */
+import type { Database as SqliteClient } from 'bun:sqlite';
 import { createRequire } from 'node:module';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { getDatabaseConfig } from './config';
@@ -34,7 +35,7 @@ export type { DatabaseConfig, DatabaseDialect } from './config';
 /**
  * Database type for type inference
  */
-export type Database = BunSQLiteDatabase<typeof sqliteSchema>;
+export type Database = BunSQLiteDatabase<typeof sqliteSchema> & { $client: SqliteClient };
 
 /**
  * Database interface for dependency injection
@@ -100,6 +101,8 @@ export function runTransaction<T>(
  * Performance optimizations for SQLite
  */
 const PRAGMA_STATEMENTS = [
+  // First, so the WAL switch and every later write wait out a lock held by the CLI or another process
+  'PRAGMA busy_timeout = 5000;',
   'PRAGMA journal_mode = WAL;',
   'PRAGMA synchronous = NORMAL;',
   'PRAGMA cache_size = -64000;',
@@ -139,50 +142,26 @@ function createDatabase(): Database {
   }
 }
 
+// One connection for the life of the process: it keeps the page cache warm and
+// stops concurrent requests from swapping handles under each other.
 let dbInstance: Database | null = null;
-let isClosing = false;
 
 export function getDb(): Database {
-  if (isClosing) {
-    throw new Error('Database is being closed. Cannot acquire new connection.');
-  }
-
   if (!dbInstance) {
     dbInstance = createDatabase();
   }
   return dbInstance;
 }
 
+/** Close the connection so the next getDb() reopens DATABASE_URL. Tests use it to switch files. */
 export function resetDb(): void {
+  const current = dbInstance;
   dbInstance = null;
+  current?.$client.close();
 }
 
-/**
- * Prepare database for a new request
- *
- * Discards stale connection references from previous requests. The request
- * middleware calls it before any database work.
- */
-export function prepareForRequest(): void {
-  dbInstance = null;
-  isClosing = false;
-}
-
-/**
- * Close database connections
- *
- * For SQLite, this resets the singleton. No connection pool to close.
- */
-export async function closeDatabase(): Promise<void> {
-  if (isClosing) return;
-  isClosing = true;
-  try {
-    dbInstance = null;
-  } finally {
-    isClosing = false;
-  }
-}
-
+// A Proxy rather than a plain export: modules bind `db` at import time, and the handle
+// must open lazily and follow resetDb().
 export const db = new Proxy({} as Database, {
   get(_target, prop) {
     return getDb()[prop as keyof Database];

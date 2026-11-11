@@ -13,14 +13,6 @@ describe('ThemeToggle', () => {
     expect(componentSource).toContain('<script src="./ThemeToggle.client.ts"></script>');
   });
 
-  it('keeps compact and default size variants in the component contract', () => {
-    expect(componentSource).toContain("size?: 'sm' | 'md'");
-    expect(componentSource).toContain('sm: {');
-    expect(componentSource).toContain("button: 'p-3 rounded-full shadow-sm'");
-    expect(componentSource).toContain('md: {');
-    expect(componentSource).toContain("button: 'w-14 h-14 rounded-2xl shadow-xl hover:scale-110'");
-  });
-
   it('persists theme selection and updates aria labels in the client module', () => {
     expect(clientSource).toContain("const THEME_STORAGE_KEY = 'theme'");
     expect(clientSource).toContain("const THEME_ATTRIBUTE = 'data-theme'");

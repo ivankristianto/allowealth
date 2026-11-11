@@ -152,18 +152,6 @@ const superAdminArg = {
 export default defineCommand({
   meta: { name: 'db', description: 'Database management commands' },
   subCommands: {
-    setup: defineCommand({
-      meta: { name: 'setup', description: 'Create database tables from schema (no migrations)' },
-      args: {
-        target: targetArg,
-      },
-      async run({ args }) {
-        const { resolveTarget } = await import('../lib/target');
-        await resolveTarget(args);
-
-        exec('bun', ['run', 'src/db/setup.ts']);
-      },
-    }),
     migrate: defineCommand({
       meta: { name: 'migrate', description: 'Apply pending database migrations' },
       args: {
@@ -326,7 +314,10 @@ export default defineCommand({
       },
     }),
     empty: defineCommand({
-      meta: { name: 'empty', description: 'Truncate all data (preserve schema)' },
+      meta: {
+        name: 'empty',
+        description: 'Delete all rows; keep the schema and migration history',
+      },
       args: {
         target: targetArg,
         ...wipeArgs,

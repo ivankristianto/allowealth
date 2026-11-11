@@ -1,18 +1,9 @@
 ---
 /**
- * Calculator Result Card Component
- *
- * Displays calculator summary results with color-coded variants.
- * Used for Total Interest (success/green) and Final Balance (primary/blue).
- *
- * @param {string} label - Card label (e.g., "Total Interest", "Final Balance")
- * @param {number|string} value - The value to display
- * @param {'success'|'primary'|'warning'|'error'} variant - Color variant
- * @param {string} currency - Currency code for formatting (IDR or USD)
- * @param {string} className - Additional CSS classes
+ * Calculator summary figure, such as Total Interest (success) or Final Balance (primary).
  */
 
-import Currency from '@/components/atoms/Currency.astro';
+import { formatCurrency } from '@/lib/formatting/currency-core';
 
 export interface Props {
   label: string;
@@ -39,19 +30,10 @@ const variantStyles: Record<string, string> = {
   error: 'bg-error/10 border-error/20 text-error',
 };
 
-const cardClass = [variantStyles[variant], className].filter(Boolean).join(' ');
-
 const numericValue = typeof value === 'string' ? parseFloat(value) : value;
 ---
 
-<div id={id} class={['p-6 rounded-card border', cardClass].join(' ')}>
+<div id={id} class:list={['p-6 rounded-3xl border', variantStyles[variant], className]}>
   <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80">{label}</p>
-  <h2 class="text-2xl font-bold">
-    <Currency
-      amount={numericValue}
-      currency={currency}
-      size="xl"
-      variant={variant === 'success' ? 'positive' : 'default'}
-    />
-  </h2>
+  <h4 class="text-2xl font-bold">{formatCurrency(numericValue, currency)}</h4>
 </div>

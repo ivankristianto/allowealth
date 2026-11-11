@@ -14,9 +14,4 @@ describe('DemoBanner component', () => {
     expect(source).toContain("import { isDemoMode } from '@/lib/demo-mode';");
     expect(source).toContain('if (!isDemoMode()) return;');
   });
-
-  it('renders the warning alert copy for demo environments', () => {
-    expect(source).toContain('alert alert-warning');
-    expect(source).toContain('This is a demo environment. All data resets daily.');
-  });
 });

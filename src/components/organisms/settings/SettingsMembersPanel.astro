@@ -1,0 +1,186 @@
+---
+import Button from '@/components/atoms/Button.astro';
+import MemberList from '@/components/organisms/MemberList.astro';
+import { Clock, Mail, UserPlus, X } from '@lucide/astro';
+import { accentGhostBtn } from '@/lib/ui/action-button-classes';
+import { groupedSectionClass, sectionEyebrowClass, sectionTitleClass } from './settings-classes';
+
+export interface SettingsMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member' | 'super_admin';
+  createdAt: string;
+  mfaEnabled: boolean;
+}
+
+export interface SettingsInvitation {
+  id: string;
+  email: string;
+  role: 'admin' | 'member';
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface Props {
+  members: SettingsMember[];
+  invitations: SettingsInvitation[];
+  currentUserId: string;
+  isAdmin: boolean;
+  demoMode: boolean;
+}
+
+const { members, invitations, currentUserId, isAdmin, demoMode } = Astro.props;
+
+const inviteMemberButtonClassName = accentGhostBtn
+  .split(' ')
+  .filter((className) => !['btn', 'btn-ghost', 'btn-sm', 'md:btn-md'].includes(className))
+  .concat('border-0')
+  .join(' ');
+---
+
+<section
+  id="settings-panel-members"
+  data-settings-panel
+  data-tab="members"
+  role="tabpanel"
+  aria-labelledby="settings-tab-members"
+  class="hidden"
+>
+  <div class="flex flex-col gap-6">
+    <header class="space-y-2">
+      <p class={sectionEyebrowClass}>Members</p>
+      <h2 class="text-xl font-semibold text-base-content">Workspace Members</h2>
+      <p class="text-sm text-base-content/60">Manage who has access to this workspace.</p>
+      <p class="text-xs text-base-content/50">
+        Linked sign-in methods and two-factor setup are managed from{' '}
+        <a href="/security" class="link link-hover ml-1">
+          Security
+        </a>
+        .
+      </p>
+    </header>
+    <div class="divider my-0"></div>
+
+    <div class={groupedSectionClass}>
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="space-y-1">
+          <p class={sectionEyebrowClass}>Team Access</p>
+          <h3 class={sectionTitleClass}>Active members and invitations</h3>
+          <p class="text-sm text-base-content/60">
+            Keep your workspace roster current and invite collaborators when you are ready.
+          </p>
+        </div>
+        {isAdmin && !demoMode && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`${inviteMemberButtonClassName} w-full sm:w-auto`}
+            data-open-modal="invite-member-modal"
+          >
+            <UserPlus size={16} class="stroke-current" aria-hidden="true" />
+            Invite Member
+          </Button>
+        )}
+      </div>
+    </div>
+
+    <section class={groupedSectionClass} aria-labelledby="settings-members-active">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="space-y-1">
+          <p class={sectionEyebrowClass}>Active Members</p>
+          <h3 id="settings-members-active" class={sectionTitleClass}>
+            Current workspace roster
+          </h3>
+        </div>
+        <span class="badge badge-neutral badge-lg">
+          {members.length} Active Member{members.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <MemberList members={members} currentUserId={currentUserId} isAdmin={isAdmin} />
+    </section>
+
+    {/* Pending Invitations (Admin only) */}
+    {!demoMode && isAdmin && invitations.length > 0 && (
+      <section class={groupedSectionClass} aria-labelledby="settings-members-pending">
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="space-y-1">
+            <p class={sectionEyebrowClass}>Pending Invitations</p>
+            <h3 id="settings-members-pending" class={sectionTitleClass}>
+              Waiting for a response
+            </h3>
+          </div>
+          <span class="badge badge-warning badge-lg">{invitations.length} Pending</span>
+        </div>
+
+        <ul
+          class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100"
+          data-invitations-list
+        >
+          {invitations.map((invitation) => (
+            <li
+              class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+              data-invitation-item
+              data-invitation-id={invitation.id}
+            >
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning">
+                  <Mail size={20} class="stroke-current" aria-hidden="true" />
+                </div>
+                <div>
+                  <p class="font-semibold text-base-content">{invitation.email}</p>
+                  <div class="flex items-center gap-2 text-xs text-base-content/60">
+                    <Clock size={12} aria-hidden="true" />
+                    <span>
+                      Expires{' '}
+                      {new Date(invitation.expiresAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="badge badge-warning badge-outline">{invitation.role}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  shape="square"
+                  className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
+                  aria-label={`Cancel invitation to ${invitation.email}`}
+                  data-cancel-invitation
+                  data-invitation-id={invitation.id}
+                  data-invitation-email={invitation.email}
+                >
+                  <X size={16} class="stroke-current" aria-hidden="true" />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {!demoMode && isAdmin && invitations.length === 0 && (
+      <section class={groupedSectionClass}>
+        <p class={sectionEyebrowClass}>Pending Invitations</p>
+        <p class="mt-2 text-sm text-base-content/60">
+          No pending invitations. Use the "Invite Member" button to add new members.
+        </p>
+      </section>
+    )}
+
+    {isAdmin && demoMode && (
+      <section class={groupedSectionClass}>
+        <p class={sectionEyebrowClass}>Demo Mode</p>
+        <p class="mt-2 text-sm text-base-content/60">
+          Member invitations are disabled in demo mode.
+        </p>
+      </section>
+    )}
+  </div>
+</section>

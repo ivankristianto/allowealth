@@ -43,15 +43,12 @@ describe('deployment topology', () => {
     expect(pages).not.toContain('login.astro');
     expect(pages).not.toContain('dashboard.astro');
 
-    for (const route of ['/', '/privacy', '/terms']) {
-      const routeBlock = getHeadersBlock(headersFile, route);
-
-      expect(routeBlock).not.toBe('');
-      expect(routeBlock).toContain('Content-Security-Policy:');
-      expect(routeBlock).toContain("script-src 'self'");
-      expect(routeBlock).toContain("frame-ancestors 'none'");
-      expect(routeBlock).toContain('X-Frame-Options: DENY');
-    }
+    // One catch-all block, so 404.html and any new page get the headers too (audit 7.6)
+    const catchAll = getHeadersBlock(headersFile, '/*');
+    expect(catchAll).toContain('Content-Security-Policy:');
+    expect(catchAll).toContain("script-src 'self'");
+    expect(catchAll).toContain("frame-ancestors 'none'");
+    expect(catchAll).toContain('X-Frame-Options: DENY');
 
     expect(existsSync('public/_headers')).toBe(false);
   });

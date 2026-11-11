@@ -1,27 +1,7 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-
-function removeSqlComments(sql: string): string {
-  return sql
-    .replace(/--[^\n]*/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .trim();
-}
-
-function executeStatements(db: Database, sql: string) {
-  const statements = sql
-    .replaceAll('--> statement-breakpoint', ';')
-    .split(';')
-    .map((statement) => removeSqlComments(statement))
-    .filter(Boolean);
-
-  for (const statement of statements) {
-    db.prepare(statement).run();
-  }
-}
+import { readFileSync } from 'node:fs';
+import { applyMigrations } from './test-helpers/migrations';
 
 function getPasskeyColumns(db: Database): string[] {
   const rows = db.prepare("SELECT name FROM pragma_table_info('passkey')").all() as Array<{
@@ -30,30 +10,15 @@ function getPasskeyColumns(db: Database): string[] {
   return rows.map((row) => row.name);
 }
 
-const tempDirs: string[] = [];
-
-afterEach(() => {
-  while (tempDirs.length > 0) {
-    const dir = tempDirs.pop();
-    if (dir) {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }
-});
-
 describe('passkey schema coverage', () => {
-  test('setup.sql creates the passkey table with updatedAt', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'allowealth-passkey-setup-'));
-    tempDirs.push(tempDir);
-
-    const db = new Database(join(tempDir, 'setup.db'));
-    const setupSql = readFileSync('src/db/setup.sql', 'utf8');
-
-    executeStatements(db, setupSql);
-
-    expect(getPasskeyColumns(db)).toContain('updatedAt');
-
-    db.close();
+  test('the migrations create the passkey table with updatedAt', () => {
+    const db = new Database(':memory:');
+    try {
+      applyMigrations(db);
+      expect(getPasskeyColumns(db)).toContain('updatedAt');
+    } finally {
+      db.close();
+    }
   });
 
   test('db:reset goes through aw db reset, which migrates before seeding', () => {
@@ -69,6 +34,5 @@ describe('passkey schema coverage', () => {
 
     expect(migrateIndex).toBeGreaterThan(-1);
     expect(migrateIndex).toBeLessThan(resetBlock.indexOf("'src/db/seed/index.ts'"));
-    expect(resetBlock).not.toContain('src/db/setup.ts');
   });
 });

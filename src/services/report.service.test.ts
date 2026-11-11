@@ -1,7 +1,8 @@
 /**
  * ReportService Unit Tests
  *
- * Tests the report aggregation service with mock database.
+ * Tests the report aggregation service with mock database. Report totals and
+ * error propagation run against a real database in report.service.db.test.ts.
  * Focuses on data aggregation logic, decimal precision, and error handling.
  *
  * P2: TODO - Improve mock database to support full Drizzle query chains
@@ -750,151 +751,6 @@ describe('ReportService', () => {
     service = new ReportService(mockDb);
   });
 
-  describe('getMonthlyReport', () => {
-    test('should return monthly report with correct structure', async () => {
-      const userId = 'test-user-123';
-      const period = '2024-02';
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, period, currency);
-
-      expect(report).toBeDefined();
-      expect(report.totalIncome).toBeDefined();
-      expect(report.totalExpenses).toBeDefined();
-      expect(report.netSavings).toBeDefined();
-      expect(report.budgetHealth).toBeGreaterThanOrEqual(0);
-      expect(report.expenseCategories).toBeGreaterThanOrEqual(0);
-      expect(Array.isArray(report.expenseByCategory)).toBe(true);
-      expect(Array.isArray(report.trendData)).toBe(true);
-      expect(Array.isArray(report.categoryIntelligence)).toBe(true);
-    });
-
-    test('should reject invalid period format', async () => {
-      const userId = 'test-user-123';
-      const invalidPeriod = '2024/02'; // Wrong format
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, invalidPeriod, currency);
-
-      // Should return empty report on error
-      expect(report.totalIncome).toBe('0');
-      expect(report.totalExpenses).toBe('0');
-      expect(report.netSavings).toBe('0');
-    });
-
-    test('should reject invalid month', async () => {
-      const userId = 'test-user-123';
-      const invalidPeriod = '2024-13'; // Month 13 doesn't exist
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, invalidPeriod, currency);
-
-      // Should return empty report on error
-      expect(report.totalIncome).toBe('0');
-    });
-
-    test('should reject invalid year', async () => {
-      const userId = 'test-user-123';
-      const invalidPeriod = '1999-02'; // Year < 2000
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, invalidPeriod, currency);
-
-      // Should return empty report on error
-      expect(report.totalIncome).toBe('0');
-    });
-
-    test('should handle empty period (no transactions)', async () => {
-      const userId = 'test-user-123';
-      const period = '2025-12'; // Future period with no data
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, period, currency);
-
-      // Should return zeroed values
-      expect(report).toBeDefined();
-      expect(report.expenseCategories).toBeGreaterThanOrEqual(0);
-    });
-
-    test('should use decimal precision for calculations', async () => {
-      const userId = 'test-user-123';
-      const period = '2024-02';
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, period, currency);
-
-      // All currency values should be strings (not floats)
-      expect(typeof report.totalIncome).toBe('string');
-      expect(typeof report.totalExpenses).toBe('string');
-      expect(typeof report.netSavings).toBe('string');
-
-      if (report.expenseByCategory.length > 0) {
-        expect(typeof report.expenseByCategory[0].value).toBe('string');
-      }
-    });
-  });
-
-  describe('getMonthlyReport with userId filter', () => {
-    test('should accept optional userId parameter', async () => {
-      const report = await service.getMonthlyReport('workspace-1', '2024-02', 'IDR', 'user-123');
-      expect(report).toBeDefined();
-      expect(report.totalIncome).toBeDefined();
-      expect(report.totalExpenses).toBeDefined();
-    });
-  });
-
-  describe('getYearlyReport', () => {
-    test('should return yearly report with correct structure', async () => {
-      const userId = 'test-user-123';
-      const year = 2024;
-      const currency = 'IDR';
-
-      const report = await service.getYearlyReport(userId, year, currency);
-
-      expect(report).toBeDefined();
-      expect(report.totalIncome).toBeDefined();
-      expect(report.totalExpenses).toBeDefined();
-      expect(report.netSavings).toBeDefined();
-      expect(report.budgetHealth).toBeGreaterThanOrEqual(0);
-      expect(Array.isArray(report.trendData)).toBe(true);
-    });
-
-    test('should reject invalid year', async () => {
-      const userId = 'test-user-123';
-      const invalidYear = 1999; // < 2000
-      const currency = 'IDR';
-
-      const report = await service.getYearlyReport(userId, invalidYear, currency);
-
-      // Should return empty report on error
-      expect(report.totalIncome).toBe('0');
-    });
-
-    test('should have 12 months in trend data', async () => {
-      const userId = 'test-user-123';
-      const year = 2024;
-      const currency = 'IDR';
-
-      const report = await service.getYearlyReport(userId, year, currency);
-
-      // Yearly trend should have 12 data points
-      expect(report.trendData.length).toBeGreaterThanOrEqual(0);
-    });
-
-    test('should use decimal precision for calculations', async () => {
-      const userId = 'test-user-123';
-      const year = 2024;
-      const currency = 'IDR';
-
-      const report = await service.getYearlyReport(userId, year, currency);
-
-      // All currency values should be strings
-      expect(typeof report.totalIncome).toBe('string');
-      expect(typeof report.totalExpenses).toBe('string');
-      expect(typeof report.netSavings).toBe('string');
-    });
-  });
-
   describe('getMemberSummary', () => {
     test('should return sorted member totals with stable row shape', async () => {
       const memberSummaryService = new ReportService(createMemberSummaryMockDatabase());
@@ -1114,47 +970,7 @@ describe('ReportService', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    test('should handle database errors gracefully', async () => {
-      // Create a mock db that throws errors
-      const errorDb = {
-        query: null, // Missing query object
-      } as unknown as IDatabase;
-
-      const errorService = new ReportService(errorDb);
-      const report = await errorService.getMonthlyReport('user-123', '2024-02', 'IDR');
-
-      // Should return empty report instead of throwing
-      expect(report.totalIncome).toBe('0');
-      expect(report.totalExpenses).toBe('0');
-    });
-
-    test('should handle missing data gracefully', async () => {
-      const userId = 'non-existent-user';
-      const period = '2024-02';
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, period, currency);
-
-      // Should return empty/zeroed report
-      expect(report).toBeDefined();
-      expect(report.totalIncome).toBeDefined();
-    });
-  });
-
   describe('Security', () => {
-    test('should always filter by userId', async () => {
-      const userId = 'test-user-123';
-      const period = '2024-02';
-      const currency = 'IDR';
-
-      const report = await service.getMonthlyReport(userId, period, currency);
-
-      // Report should not contain data from other users
-      // This is tested indirectly through the mock database filtering
-      expect(report).toBeDefined();
-    });
-
     test('should enforce category access control in getCategoryTransactions', async () => {
       const userId = 'test-user-123';
       const categoryId = 'cat-utilities'; // User's category

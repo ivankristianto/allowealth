@@ -1,0 +1,213 @@
+---
+import Label from '@/components/atoms/Label.astro';
+import Button from '@/components/atoms/Button.astro';
+import { BuildingComplex, Info, Save } from '@lucide/astro';
+import { CURRENCY_META, CURRENCY_OPTIONS } from '@/lib/constants/currency';
+import { groupedSectionClass, sectionEyebrowClass, sectionTitleClass } from './settings-classes';
+
+export interface Props {
+  isAdmin: boolean;
+  workspaceName: string;
+  settings: { currency: string; secondaryCurrency: string; weekStart: string };
+  canChangeCurrency: boolean;
+}
+
+const { isAdmin, workspaceName, settings, canChangeCurrency } = Astro.props;
+
+const currencyOptions = CURRENCY_OPTIONS.map((opt) => ({
+  value: opt.value,
+  label: `${CURRENCY_META[opt.value].flagEmoji} ${opt.value} — ${CURRENCY_META[opt.value].name}`,
+}));
+
+const weekStartOptions = [
+  { value: 'monday', label: 'Monday' },
+  { value: 'sunday', label: 'Sunday' },
+];
+---
+
+<section
+  id="settings-panel-general"
+  data-settings-panel
+  data-tab="general"
+  role="tabpanel"
+  aria-labelledby="settings-tab-general"
+>
+  <div class="flex flex-col gap-6">
+    <header class="space-y-2">
+      <p class={sectionEyebrowClass}>General</p>
+      <h2 class="text-xl font-semibold text-base-content">Workspace Settings</h2>
+      <p class="text-sm text-base-content/60">Manage your workspace name and preferences.</p>
+    </header>
+    <div class="divider my-0"></div>
+
+    <form method="post" id="workspace-settings-form" class="flex flex-col gap-5">
+      <div class="grid gap-5 xl:grid-cols-2">
+        <section class={groupedSectionClass} aria-labelledby="settings-general-identity">
+          <div class="mb-5 space-y-1">
+            <p class={sectionEyebrowClass}>Workspace Identity</p>
+            <h3 id="settings-general-identity" class={sectionTitleClass}>
+              How your workspace appears
+            </h3>
+            <p class="text-sm text-base-content/60">
+              Name the space your members see in navigation, onboarding, and shared settings.
+            </p>
+          </div>
+
+          {isAdmin && (
+            <div class="form-control">
+              <Label htmlFor="workspace-name">Workspace Name</Label>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  id="workspace-name"
+                  name="workspaceName"
+                  value={workspaceName}
+                  class="input input-bordered flex-1 h-14 rounded-lg border border-base-300 bg-base-100 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  placeholder="My Workspace"
+                />
+              </div>
+              <p class="mt-2 ml-4 text-xs text-base-content/50">
+                This name is visible to all workspace members.
+              </p>
+            </div>
+          )}
+
+          {!isAdmin && (
+            <div class="form-control">
+              <Label>Workspace Name</Label>
+              <div class="flex h-14 items-center gap-3 rounded-lg border border-base-300 bg-base-100 py-4 px-6">
+                <BuildingComplex
+                  size={20}
+                  class="stroke-current text-base-content/50"
+                  aria-hidden="true"
+                />
+                <span class="text-base font-bold">{workspaceName}</span>
+              </div>
+              <p class="mt-2 ml-4 text-xs text-base-content/50">
+                Only admins can change the workspace name.
+              </p>
+            </div>
+          )}
+        </section>
+
+        <section class={groupedSectionClass} aria-labelledby="settings-general-preferences">
+          <div class="mb-5 space-y-1">
+            <p class={sectionEyebrowClass}>Preferences</p>
+            <h3 id="settings-general-preferences" class={sectionTitleClass}>
+              Regional and reporting defaults
+            </h3>
+            <p class="text-sm text-base-content/60">
+              Set the currencies and calendar rules used across your workspace.
+            </p>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="form-control">
+              <Label htmlFor="primary-currency">Primary Currency</Label>
+              <select
+                id="primary-currency"
+                name="currency"
+                class:list={[
+                  'select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+                  !canChangeCurrency &&
+                    'appearance-none cursor-not-allowed bg-none pr-6 opacity-70',
+                ]}
+                disabled={!canChangeCurrency}
+              >
+                {currencyOptions.map((currency) => (
+                  <option value={currency.value} selected={settings.currency === currency.value}>
+                    {currency.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-control">
+              <Label htmlFor="secondary-currency">Secondary Currency</Label>
+              <select
+                id="secondary-currency"
+                name="secondaryCurrency"
+                class:list={[
+                  'select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+                  !canChangeCurrency &&
+                    'appearance-none cursor-not-allowed bg-none pr-6 opacity-70',
+                ]}
+                disabled={!canChangeCurrency}
+              >
+                <option value="" selected={!settings.secondaryCurrency}>
+                  None
+                </option>
+                {currencyOptions
+                  .filter((currency) => currency.value !== settings.currency)
+                  .map((currency) => (
+                    <option
+                      value={currency.value}
+                      selected={settings.secondaryCurrency === currency.value}
+                    >
+                      {currency.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            {!canChangeCurrency && (
+              <div class="alert alert-info text-sm">
+                <Info class="size-5 shrink-0" />
+                <span>
+                  Currency settings are locked after creating accounts, budgets, or transactions.
+                </span>
+              </div>
+            )}
+            {canChangeCurrency && (
+              <div class="alert alert-warning text-sm">
+                <Info class="size-5 shrink-0" />
+                <span>
+                  Choose carefully. Currency settings cannot be changed after you add accounts or
+                  transactions.
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div class="mt-4 form-control">
+            <Label htmlFor="week-starts">Week Starts On</Label>
+            <select
+              id="week-starts"
+              name="weekStart"
+              class="select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              {weekStartOptions.map((option) => (
+                <option value={option.value} selected={settings.weekStart === option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+      </div>
+    </form>
+
+    <div class="rounded-3xl border border-base-300 bg-base-100 px-5 py-4 sm:px-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="space-y-1">
+          <p class={sectionEyebrowClass}>Save</p>
+          <p class="text-sm text-base-content/60">
+            Review your changes, then save them explicitly for this tab.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          className="w-full gap-2 font-bold shadow-sm sm:w-auto"
+          id="save-settings-btn"
+        >
+          <Save size={18} class="stroke-current" aria-hidden="true" />
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  </div>
+</section>

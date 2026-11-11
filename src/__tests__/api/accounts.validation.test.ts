@@ -1,5 +1,8 @@
 import { afterEach, beforeAll, describe, expect, it, mock } from 'bun:test';
 import { accountCategoryService, accountService, transactionService } from '@/services';
+import { createMemoryDb, seedWorkspaceOwner } from '@/db/test-helpers/memory-db';
+import { AccountService } from '@/services/account.service';
+import { resetCacheManager } from '@/lib/cache';
 
 let POST_ACCOUNTS: any;
 let PUT_ACCOUNT: any;
@@ -179,11 +182,12 @@ describe('account route validation', () => {
   });
 
   it('still accepts valid transfer payloads', async () => {
-    accountService.transfer = mock(async () => ({
+    const transfer = mock(async () => ({
       fromAccount: { id: 'account-1', currency: 'IDR' },
       toAccount: { id: 'account-2', currency: 'IDR' },
-    })) as any;
-    transactionService.create = mock(async () => ({ id: 'txn-1' })) as any;
+      transactionId: 'txn-1',
+    }));
+    accountService.transfer = transfer as any;
 
     const response = await POST_TRANSFER(
       createApiContext('http://localhost/api/accounts/transfer', 'POST', {
@@ -198,5 +202,91 @@ describe('account route validation', () => {
     expect(response.status).toBe(201);
     expect(payload.success).toBe(true);
     expect(payload.data.transactionId).toBe('txn-1');
+    expect(transfer).toHaveBeenCalledWith('account-1', 'account-2', '1000', 'workspace-1', {
+      createdByUserId: 'user-1',
+      description: 'Top up',
+    });
+  });
+
+  describe('transfer status codes from the real service', () => {
+    function useMemoryTransferService(
+      accounts: Array<{ id: string; currency: string; balance: string }>
+    ) {
+      resetCacheManager();
+      const { db, raw } = createMemoryDb();
+      seedWorkspaceOwner(raw, 'workspace-1', 'user-1');
+      for (const account of accounts) {
+        raw.run(
+          `INSERT INTO accounts (id, workspace_id, created_by_user_id, name, type, balance, currency)
+           VALUES (?, 'workspace-1', 'user-1', ?, 'bank', ?, ?)`,
+          [account.id, account.id, account.balance, account.currency]
+        );
+      }
+      const service = new AccountService(db);
+      accountService.transfer = service.transfer.bind(service);
+      return raw;
+    }
+
+    const post = (body: unknown) =>
+      POST_TRANSFER(createApiContext('http://localhost/api/accounts/transfer', 'POST', body));
+
+    it('returns 400 for a currency mismatch', async () => {
+      useMemoryTransferService([
+        { id: 'idr', currency: 'IDR', balance: '1000000' },
+        { id: 'usd', currency: 'USD', balance: '100' },
+      ]);
+
+      const response = await post({ fromAccountId: 'idr', toAccountId: 'usd', amount: '10' });
+      const payload = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('VALIDATION_ERROR');
+      expect(payload.error.message).toBe('Cannot transfer between different currencies');
+    });
+
+    it('returns 400 for an invalid amount', async () => {
+      useMemoryTransferService([
+        { id: 'a', currency: 'USD', balance: '100' },
+        { id: 'b', currency: 'USD', balance: '100' },
+      ]);
+
+      const response = await post({ fromAccountId: 'a', toAccountId: 'b', amount: '0' });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('returns 201 with the transfer transaction id', async () => {
+      const raw = useMemoryTransferService([
+        { id: 'a', currency: 'USD', balance: '100' },
+        { id: 'b', currency: 'USD', balance: '100' },
+      ]);
+
+      const response = await post({ fromAccountId: 'a', toAccountId: 'b', amount: '25.50' });
+      const payload = await response.json();
+
+      expect(response.status).toBe(201);
+      const record = raw
+        .query('SELECT amount, type FROM transactions WHERE id = ?')
+        .get(payload.data.transactionId);
+      expect(record).toEqual({ amount: '25.50', type: 'transfer' });
+    });
+
+    it('returns 500, not 404, when the database write fails', async () => {
+      const raw = useMemoryTransferService([
+        { id: 'a', currency: 'USD', balance: '100' },
+        { id: 'b', currency: 'USD', balance: '100' },
+      ]);
+      raw.run(
+        `CREATE TRIGGER fail_tx BEFORE INSERT ON transactions BEGIN SELECT RAISE(ABORT, 'boom'); END;`
+      );
+
+      const response = await post({ fromAccountId: 'a', toAccountId: 'b', amount: '10' });
+
+      expect(response.status).toBe(500);
+      expect(raw.query('SELECT balance FROM accounts ORDER BY id').all()).toEqual([
+        { balance: '100' },
+        { balance: '100' },
+      ]);
+    });
   });
 });

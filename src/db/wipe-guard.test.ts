@@ -147,7 +147,7 @@ describe('wipe entry points keep a database that holds real users', () => {
 
   beforeAll(() => {
     dbPath = join(tmpDir, 'entry-points.db');
-    const setup = spawnSync('bun', ['run', 'src/db/setup.ts'], {
+    const setup = spawnSync('bun', ['run', 'src/db/migrate.ts'], {
       cwd: REPO_ROOT,
       env: { ...process.env, DATABASE_URL: dbPath },
       encoding: 'utf8',

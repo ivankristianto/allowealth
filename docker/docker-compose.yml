@@ -19,7 +19,9 @@ services:
     depends_on:
       - redis
     ports:
-      - '${PORT:-3000}:${PORT:-3000}'
+      # Loopback only: a direct hit on the app port could spoof CLIENT_IP_HEADER.
+      # Run the reverse proxy on the host, or use a Cloudflare Tunnel.
+      - '127.0.0.1:${PORT:-3000}:${PORT:-3000}'
     volumes:
       - allowealth-data:/data
     env_file: ../.env

@@ -1,180 +1,101 @@
 /**
- * Dashboard Service Tests
- * =======================
- * Unit tests for dashboard service
- *
- * Tests cover:
- * - getDashboardData() - Parallel execution, data aggregation, error handling
- * - Error-path defaults for each dashboard section
- * - processTopCategories() - Category grouping, percentage calc, "Other" bucket
+ * DashboardService against an in-memory SQLite database. Section failures
+ * must reject the whole call and never land in the cache as zeros.
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
+import { CacheKeys, getCacheManager, resetCacheManager } from '@/lib/cache';
+import { createMemoryDb, seedWorkspaceOwner } from '@/db/test-helpers/memory-db';
+import type { MemoryDb } from '@/db/test-helpers/memory-db';
+import {
+  FIXTURE_USER,
+  FIXTURE_WORKSPACE,
+  midMonth,
+  seedAccount,
+  seedBudget,
+  seedCategory,
+  seedTransaction,
+} from './test-helpers/money-fixtures';
 import { DashboardService } from './dashboard.service';
 
 describe('DashboardService', () => {
   let dashboardService: DashboardService;
+  let memory: MemoryDb;
+  const date = midMonth();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  const cacheKey = CacheKeys.dashboard(FIXTURE_WORKSPACE, year, month, 'USD');
 
   beforeEach(() => {
-    dashboardService = new DashboardService({} as any);
+    resetCacheManager();
+    memory = createMemoryDb();
+    seedWorkspaceOwner(memory.raw, FIXTURE_WORKSPACE, FIXTURE_USER);
+    seedAccount(memory.raw, 'acc', { balance: '1000.50' });
+    seedCategory(memory.raw, 'food');
+    seedBudget(memory.raw, 'b-food', 'food', date, '100');
+    seedTransaction(memory.raw, 'tx-1', {
+      amount: '90',
+      accountId: 'acc',
+      date,
+      categoryId: 'food',
+    });
+    dashboardService = new DashboardService(memory.db);
   });
 
   describe('getDashboardData', () => {
-    it('should return complete dashboard data', async () => {
-      const result = await dashboardService.getDashboardData('user-123');
+    it('returns every section from the database', async () => {
+      const result = await dashboardService.getDashboardData(FIXTURE_WORKSPACE, month, year, 'USD');
 
-      expect(result).toHaveProperty('totalAccounts');
-      expect(result).toHaveProperty('monthlySpent');
-      expect(result).toHaveProperty('monthlyIncome');
-      expect(result).toHaveProperty('topCategoryExpenses');
-      expect(result).toHaveProperty('budgetHealth');
-      expect(result).toHaveProperty('accountReminders');
-      expect(result).toHaveProperty('recentTransactions');
+      expect(result.totalAccounts.byCurrency).toEqual([{ currency: 'USD', amount: '1000.5' }]);
+      expect(result.monthlySpent.total).toBe('90');
+      expect(result.monthlySpent.budget).toBe('100');
+      expect(result.monthlySpent.remaining).toBe('10');
+      expect(result.monthlySpent.percentage).toBe(90);
+      expect(result.budgetHealth.status).toBe('warning');
+      expect(result.recentTransactions.map((tx) => tx.id)).toEqual(['tx-1']);
     });
 
-    it('should use current month and year by default', async () => {
-      const result = await dashboardService.getDashboardData('user-123');
+    it('returns string amounts in every section', async () => {
+      const result = await dashboardService.getDashboardData(FIXTURE_WORKSPACE, month, year, 'USD');
 
-      expect(result.monthlySpent).toBeDefined();
-      expect(result.budgetHealth).toBeDefined();
-    });
-
-    it('should accept custom month and year', async () => {
-      const result = await dashboardService.getDashboardData('user-123', 6, 2025);
-
-      expect(result).toBeDefined();
-      expect(result.monthlySpent).toBeDefined();
-      expect(result.budgetHealth).toBeDefined();
-    });
-
-    it('should accept custom currency IDR', async () => {
-      const result = await dashboardService.getDashboardData(
-        'user-123',
-        undefined,
-        undefined,
-        'IDR'
-      );
-      expect(result.totalAccounts.byCurrency).toBeDefined();
-    });
-
-    it('should accept custom currency USD', async () => {
-      const result = await dashboardService.getDashboardData(
-        'user-123',
-        undefined,
-        undefined,
-        'USD'
-      );
-      expect(result.totalAccounts.byCurrency).toBeDefined();
-    });
-
-    it('should fetch all data in parallel', async () => {
-      const startTime = Date.now();
-      await dashboardService.getDashboardData('user-123');
-      const duration = Date.now() - startTime;
-
-      // Should complete in reasonable time (parallel execution)
-      expect(duration).toBeLessThan(5000);
-    });
-
-    it('should have consistent data types across all sections', async () => {
-      const result = await dashboardService.getDashboardData('user-123');
-
-      // totalAccounts amounts are strings
-      expect(Array.isArray(result.totalAccounts.byCurrency)).toBe(true);
-      result.totalAccounts.byCurrency.forEach((row) => {
-        expect(typeof row.amount).toBe('string');
-      });
-
-      // monthlySpent amounts are strings
+      result.totalAccounts.byCurrency.forEach((row) => expect(typeof row.amount).toBe('string'));
       expect(typeof result.monthlySpent.total).toBe('string');
       expect(typeof result.monthlySpent.budget).toBe('string');
       expect(typeof result.monthlySpent.remaining).toBe('string');
-
-      // monthlyIncome amount is string
       expect(typeof result.monthlyIncome.total).toBe('string');
-
-      // budgetHealth alerts have string amounts
+      result.topCategoryExpenses.forEach((cat) => expect(typeof cat.amount).toBe('string'));
       result.budgetHealth.alerts.forEach((alert) => {
         expect(typeof alert.budget).toBe('string');
         expect(typeof alert.spent).toBe('string');
       });
+      result.recentTransactions.forEach((tx) => expect(typeof tx.amount).toBe('string'));
+    });
 
-      // accountReminders have string balances
-      result.accountReminders.forEach((reminder) => {
-        expect(typeof reminder.currentBalance).toBe('string');
-      });
+    it('caches a successful result', async () => {
+      await dashboardService.getDashboardData(FIXTURE_WORKSPACE, month, year, 'USD');
 
-      // recentTransactions have string amounts
-      result.recentTransactions.forEach((tx) => {
-        expect(typeof tx.amount).toBe('string');
-      });
+      expect(await getCacheManager().get(cacheKey)).not.toBeNull();
     });
   });
 
-  describe('error-path defaults', () => {
-    it('should return zeroed totalAccounts when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user');
+  describe('section failures', () => {
+    for (const table of ['budgets', 'accounts', 'transactions']) {
+      it(`rejects and caches nothing when the ${table} query fails`, async () => {
+        memory.raw.run('PRAGMA foreign_keys = OFF;');
+        memory.raw.run(`DROP TABLE ${table}`);
 
-      expect(result.totalAccounts.byCurrency).toEqual([]);
-    });
+        await expect(
+          dashboardService.getDashboardData(FIXTURE_WORKSPACE, month, year, 'USD')
+        ).rejects.toThrow('no such table');
 
-    it('should return zeroed monthlySpent when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
+        expect(await getCacheManager().get(cacheKey)).toBeNull();
+      });
+    }
 
-      expect(result.monthlySpent.total).toBe('0');
-      expect(result.monthlySpent.budget).toBe('0');
-      expect(result.monthlySpent.percentage).toBe(0);
-      expect(result.monthlySpent.remaining).toBe('0');
-    });
-
-    it('should return zeroed monthlyIncome when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
-
-      expect(result.monthlyIncome.total).toBe('0');
-    });
-
-    it('should return empty topCategoryExpenses when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
-
-      expect(result.topCategoryExpenses).toEqual([]);
-    });
-
-    it('should return healthy budgetHealth with no alerts when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
-
-      expect(result.budgetHealth.alertCount).toBe(0);
-      expect(result.budgetHealth.status).toBe('healthy');
-      expect(result.budgetHealth.alerts).toHaveLength(0);
-    });
-
-    it('should return empty accountReminders when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user');
-
-      expect(result.accountReminders).toEqual([]);
-    });
-
-    it('should return empty recentTransactions when db is unavailable', async () => {
-      const result = await dashboardService.getDashboardData('error-user');
-
-      expect(result.recentTransactions).toEqual([]);
-    });
-
-    it('should support requested currency even on error', async () => {
-      const resultIDR = await dashboardService.getDashboardData(
-        'error-user',
-        undefined,
-        undefined,
-        'IDR'
-      );
-      expect(resultIDR.monthlySpent).toBeDefined();
-
-      const resultUSD = await dashboardService.getDashboardData(
-        'error-user',
-        undefined,
-        undefined,
-        'USD'
-      );
-      expect(resultUSD.monthlySpent).toBeDefined();
+    it('rejects an invalid month instead of reporting a healthy budget', async () => {
+      await expect(
+        dashboardService.getDashboardData(FIXTURE_WORKSPACE, 13, year, 'USD')
+      ).rejects.toThrow('Invalid month');
     });
   });
 

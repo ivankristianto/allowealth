@@ -4,7 +4,8 @@ import { createLogger } from '@/lib/logger';
 import { sanitizeCellForCsv } from '@/lib/csv/sanitize-cell-for-csv';
 
 const log = createLogger('transaction');
-import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, asc, sql, like, inArray, isNull } from 'drizzle-orm';
+import { moneyCents, sumMoney } from './base/money-sql';
 import { nanoid } from 'nanoid';
 import { parse } from 'valibot';
 import { CategoryService } from './category.service';
@@ -30,6 +31,16 @@ export interface CSVImportResult {
   imported: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
+}
+
+/** The fields of a bulk-edit target that the per-row checks and audit diff read. */
+interface BulkTarget {
+  type: string;
+  currency: string;
+  category_id: string | null;
+  account_id: string;
+  account: { currency: string } | null;
+  toAccount: { currency: string } | null;
 }
 
 export interface BulkOperationResult {
@@ -472,8 +483,12 @@ export class TransactionService {
     const rows = await trackQuery('TransactionService.getMonthSummary', perf, () =>
       (this.db as any)
         .select({
-          income: sql<string>`COALESCE(SUM(CASE WHEN ${tx.type} = 'income' THEN CAST(${tx.amount} AS NUMERIC) ELSE 0 END), 0)`,
-          expenses: sql<string>`COALESCE(SUM(CASE WHEN ${tx.type} = 'expense' THEN ABS(CAST(${tx.amount} AS NUMERIC)) ELSE 0 END), 0)`,
+          income: sumMoney(
+            sql`CASE WHEN ${tx.type} = 'income' THEN ${moneyCents(tx.amount)} ELSE 0 END`
+          ),
+          expenses: sumMoney(
+            sql`CASE WHEN ${tx.type} = 'expense' THEN ABS(${moneyCents(tx.amount)}) ELSE 0 END`
+          ),
           expense_count: sql<number>`COALESCE(SUM(CASE WHEN ${tx.type} = 'expense' THEN 1 ELSE 0 END), 0)`,
         })
         .from(tx)
@@ -584,16 +599,6 @@ export class TransactionService {
     workspaceId: string,
     input: UpdateTransactionInput,
     userId?: string
-  ): ReturnType<typeof this.findById> {
-    return this.updateInternal(id, workspaceId, input, userId);
-  }
-
-  private async updateInternal(
-    id: string,
-    workspaceId: string,
-    input: UpdateTransactionInput,
-    userId?: string,
-    options: { skipInvalidate?: boolean } = {}
   ): ReturnType<typeof this.findById> {
     // Validate input using the transaction schema
     const validated = parse(updateTransactionSchema, input);
@@ -788,9 +793,7 @@ export class TransactionService {
       });
     }
 
-    if (!options.skipInvalidate) {
-      await this.invalidateWorkspaceCaches(workspaceId);
-    }
+    await this.invalidateWorkspaceCaches(workspaceId);
 
     return this.findById(id, workspaceId);
   }
@@ -799,15 +802,6 @@ export class TransactionService {
    * Soft delete transaction
    */
   async delete(id: string, workspaceId: string, userId?: string): Promise<{ success: true }> {
-    return this.deleteInternal(id, workspaceId, userId);
-  }
-
-  private async deleteInternal(
-    id: string,
-    workspaceId: string,
-    userId?: string,
-    options: { skipInvalidate?: boolean } = {}
-  ): Promise<{ success: true }> {
     // Check if transaction exists
     const transaction = await this.findById(id, workspaceId);
     if (!transaction) {
@@ -861,23 +855,12 @@ export class TransactionService {
       });
     }
 
-    if (!options.skipInvalidate) {
-      await this.invalidateWorkspaceCaches(workspaceId);
-    }
+    await this.invalidateWorkspaceCaches(workspaceId);
 
     return { success: true };
   }
 
-  /**
-   * Bulk update category for multiple transactions.
-   * Validates category once, then loops through IDs and uses update() for audit consistency.
-   */
-  async bulkUpdateCategory(
-    ids: string[],
-    categoryId: string,
-    workspaceId: string,
-    userId: string
-  ): Promise<BulkOperationResult> {
+  private assertBulkLimit(ids: string[]): void {
     if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
       throw new TransactionServiceError(
         ServiceErrorCode.BULK_LIMIT_EXCEEDED,
@@ -885,6 +868,115 @@ export class TransactionService {
         400
       );
     }
+  }
+
+  /** Live transactions among `ids`, keyed by id, with both accounts loaded. */
+  private async loadBulkTargets(ids: string[], workspaceId: string) {
+    const tx = this.schema.transactions;
+    const rows = await this.db.query.transactions.findMany({
+      where: and(
+        inArray(tx.id, [...new Set(ids)]),
+        eq(tx.workspace_id, workspaceId),
+        isNull(tx.deleted_at)
+      ),
+      with: { account: true, toAccount: true },
+    });
+    return new Map(rows.map((row) => [row.id, row]));
+  }
+
+  /**
+   * The checks update() runs on a transaction whose source account becomes
+   * `source`. Returns the error message for a row that fails, or null.
+   */
+  private bulkUpdateRowError(
+    row: { currency: string; type: string },
+    source: { currency: string } | null | undefined,
+    destination: { currency: string } | null | undefined
+  ): string | null {
+    if (!source) return 'Source account not found';
+    if (row.currency !== source.currency) {
+      return 'Transaction currency must match source account currency';
+    }
+    if (row.type === 'transfer') {
+      if (!destination) return 'Transfer requires destination account';
+      if (destination.currency !== source.currency) {
+        return 'Transfer accounts must use the same currency';
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Set one field on many transactions with one UPDATE and one batched audit insert, in one
+   * SQLite transaction. Rows that fail a check are reported per id and left untouched.
+   */
+  private async bulkSetField(
+    ids: string[],
+    workspaceId: string,
+    userId: string,
+    field: 'category_id' | 'account_id',
+    value: string,
+    rowError: (row: BulkTarget) => string | null
+  ): Promise<BulkOperationResult> {
+    const targets = await this.loadBulkTargets(ids, workspaceId);
+    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+    const updateIds = new Set<string>();
+    const auditRows: Array<typeof this.schema.auditLogs.$inferInsert> = [];
+
+    for (const id of ids) {
+      const row = targets.get(id);
+      const error = row ? rowError(row) : 'Transaction not found';
+      if (!row || error) {
+        result.failed++;
+        result.errors.push({ id, error: error ?? 'Transaction not found' });
+        continue;
+      }
+
+      result.updated++;
+      updateIds.add(id);
+      if (String(row[field] ?? '') !== value) {
+        auditRows.push({
+          id: nanoid(),
+          workspace_id: workspaceId,
+          user_id: userId,
+          action: 'update',
+          entity_type: 'transaction',
+          entity_id: id,
+          old_value: JSON.stringify({ [field]: row[field] ?? null }),
+          new_value: JSON.stringify({ [field]: value }),
+        });
+        // A repeated id sees the new value, as it did when each id was updated in turn.
+        row[field] = value;
+      }
+    }
+
+    if (updateIds.size > 0) {
+      const tx = this.schema.transactions;
+      runTransaction(this.db, (dbTx) => {
+        dbTx
+          .update(tx)
+          .set({ [field]: value, updated_at: new Date(), updated_by_user_id: userId })
+          .where(and(inArray(tx.id, [...updateIds]), eq(tx.workspace_id, workspaceId)))
+          .run();
+        if (auditRows.length > 0) dbTx.insert(this.schema.auditLogs).values(auditRows).run();
+      });
+      await this.invalidateWorkspaceCaches(workspaceId);
+    }
+
+    return result;
+  }
+
+  /**
+   * Bulk update category for multiple transactions.
+   * Validates the category once, then updates every valid row in one statement.
+   */
+  async bulkUpdateCategory(
+    ids: string[],
+    categoryId: string,
+    workspaceId: string,
+    userId: string
+  ): Promise<BulkOperationResult> {
+    this.assertBulkLimit(ids);
 
     const category = await this.categoryService.findById(categoryId, workspaceId);
     if (!category) {
@@ -902,33 +994,14 @@ export class TransactionService {
       );
     }
 
-    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
-
-    for (const id of ids) {
-      try {
-        await this.updateInternal(id, workspaceId, { category_id: categoryId }, userId, {
-          skipInvalidate: true,
-        });
-        result.updated++;
-      } catch (error) {
-        result.failed++;
-        result.errors.push({
-          id,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    if (result.updated > 0) {
-      await this.invalidateWorkspaceCaches(workspaceId);
-    }
-
-    return result;
+    return this.bulkSetField(ids, workspaceId, userId, 'category_id', categoryId, (row) =>
+      this.bulkUpdateRowError(row, row.account, row.toAccount)
+    );
   }
 
   /**
    * Bulk update account for multiple transactions.
-   * Validates account once, then loops through IDs and uses update() for audit consistency.
+   * Validates the account once, then updates every valid row in one statement.
    */
   async bulkUpdateAccount(
     ids: string[],
@@ -936,13 +1009,7 @@ export class TransactionService {
     workspaceId: string,
     userId: string
   ): Promise<BulkOperationResult> {
-    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
-      throw new TransactionServiceError(
-        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
-        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
-        400
-      );
-    }
+    this.assertBulkLimit(ids);
 
     const account = await this.accountService.findByIdIncludingClosed(accountId, workspaceId);
     if (!account) {
@@ -960,65 +1027,75 @@ export class TransactionService {
       );
     }
 
-    const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
-
-    for (const id of ids) {
-      try {
-        await this.updateInternal(id, workspaceId, { account_id: accountId }, userId, {
-          skipInvalidate: true,
-        });
-        result.updated++;
-      } catch (error) {
-        result.failed++;
-        result.errors.push({
-          id,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    if (result.updated > 0) {
-      await this.invalidateWorkspaceCaches(workspaceId);
-    }
-
-    return result;
+    return this.bulkSetField(ids, workspaceId, userId, 'account_id', accountId, (row) =>
+      this.bulkUpdateRowError(row, account, row.toAccount)
+    );
   }
 
   /**
-   * Bulk soft-delete multiple transactions.
-   * Loops through IDs and uses delete() for per-transaction audit consistency.
+   * Bulk soft-delete multiple transactions with one UPDATE and one batched audit insert.
    */
   async bulkDelete(
     ids: string[],
     workspaceId: string,
     userId: string
   ): Promise<BulkOperationResult> {
-    if (ids.length > TransactionService.BULK_OPERATION_LIMIT) {
-      throw new TransactionServiceError(
-        ServiceErrorCode.BULK_LIMIT_EXCEEDED,
-        `Bulk operations limited to ${TransactionService.BULK_OPERATION_LIMIT} items`,
-        400
-      );
-    }
+    this.assertBulkLimit(ids);
 
+    const targets = await this.loadBulkTargets(ids, workspaceId);
     const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
+    const auditRows: Array<typeof this.schema.auditLogs.$inferInsert> = [];
 
     for (const id of ids) {
-      try {
-        await this.deleteInternal(id, workspaceId, userId, {
-          skipInvalidate: true,
-        });
-        result.updated++;
-      } catch (error) {
+      const row = targets.get(id);
+      if (!row) {
         result.failed++;
-        result.errors.push({
-          id,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
+        result.errors.push({ id, error: 'Transaction not found' });
+        continue;
       }
+      // A repeated id is already deleted by the time it comes round again.
+      targets.delete(id);
+      result.updated++;
+      auditRows.push({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        user_id: userId,
+        action: 'delete',
+        entity_type: 'transaction',
+        entity_id: id,
+        old_value: JSON.stringify({
+          type: row.type,
+          amount: row.amount,
+          currency: row.currency,
+          category_id: row.category_id,
+          account_id: row.account_id,
+          to_account_id: row.to_account_id,
+          description: row.description,
+          transaction_date: this.toIsoString(row.transaction_date),
+        }),
+        new_value: null,
+      });
     }
 
-    if (result.updated > 0) {
+    if (auditRows.length > 0) {
+      const tx = this.schema.transactions;
+      const now = new Date();
+      runTransaction(this.db, (dbTx) => {
+        dbTx
+          .update(tx)
+          .set({ deleted_at: now, updated_at: now, deleted_by_user_id: userId })
+          .where(
+            and(
+              inArray(
+                tx.id,
+                auditRows.map((row) => row.entity_id!)
+              ),
+              eq(tx.workspace_id, workspaceId)
+            )
+          )
+          .run();
+        dbTx.insert(this.schema.auditLogs).values(auditRows).run();
+      });
       await this.invalidateWorkspaceCaches(workspaceId);
     }
 

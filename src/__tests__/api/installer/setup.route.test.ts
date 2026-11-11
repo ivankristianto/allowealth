@@ -3,9 +3,10 @@ import { eq } from 'drizzle-orm';
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { closeDatabase, db, resetDb } from '@/db';
+import { db, resetDb } from '@/db';
 import { account, user as authUsers, users, workspaces } from '@/db/schema';
 import { verifyPassword } from '@/lib/auth/password';
+import { setTestEnv } from '@/lib/env';
 import { POST } from '@/pages/api/installer/setup';
 import { AccountCategoryService } from '@/services/account-category.service';
 
@@ -25,7 +26,7 @@ function deleteSqliteArtifacts(dbPath: string) {
 }
 
 function setupTestDatabase(dbPath: string) {
-  execFileSync('bun', ['run', 'db:setup'], {
+  execFileSync('bun', ['run', 'db:migrate'], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -55,13 +56,12 @@ describe('POST /api/installer/setup', () => {
     delete process.env.INSTALLER_SECRET;
 
     setupTestDatabase(testDbPath);
-    await closeDatabase();
     resetDb();
   });
 
   afterEach(async () => {
+    setTestEnv(null);
     AccountCategoryService.buildDefaultCategoryRows = originalBuildDefaultCategoryRows;
-    await closeDatabase();
     resetDb();
 
     if (originalDatabaseUrl === undefined) {
@@ -142,6 +142,73 @@ describe('POST /api/installer/setup', () => {
     );
 
     expect(response.status).toBe(201);
+  });
+
+  describe('in production', () => {
+    const payload = {
+      workspaceName: 'Installer Workspace',
+      name: 'Installer Admin',
+      email: 'installer@example.com',
+      password: 'InstallerPassword123!',
+    };
+
+    async function adminExists() {
+      return (
+        (await db.query.user.findFirst({
+          where: eq(authUsers.email, 'installer@example.com'),
+        })) !== undefined
+      );
+    }
+
+    it('refuses setup when INSTALLER_SECRET is not configured', async () => {
+      setTestEnv({ NODE_ENV: 'production', INSTALLER_SECRET: undefined });
+
+      const response = await POST(createApiContext({ ...payload, installerSecret: 'anything' }));
+
+      expect(response.status).toBe(403);
+      expect((await response.json()).error).toContain('INSTALLER_SECRET');
+      expect(await adminExists()).toBe(false);
+    });
+
+    it('refuses setup when NODE_ENV is unset and no secret is configured', async () => {
+      setTestEnv({ NODE_ENV: undefined, INSTALLER_SECRET: undefined });
+
+      const response = await POST(createApiContext(payload));
+
+      expect(response.status).toBe(403);
+      expect(await adminExists()).toBe(false);
+    });
+
+    it('refuses a wrong installer secret', async () => {
+      setTestEnv({ NODE_ENV: 'production', INSTALLER_SECRET: 'bootstrap-secret' });
+
+      const response = await POST(
+        createApiContext({ ...payload, installerSecret: 'bootstrap-secreT' })
+      );
+
+      expect(response.status).toBe(401);
+      expect(await adminExists()).toBe(false);
+    });
+
+    it('refuses a secret that only shares a prefix with the configured one', async () => {
+      setTestEnv({ NODE_ENV: 'production', INSTALLER_SECRET: 'bootstrap-secret' });
+
+      const response = await POST(createApiContext({ ...payload, installerSecret: 'bootstrap' }));
+
+      expect(response.status).toBe(401);
+      expect(await adminExists()).toBe(false);
+    });
+
+    it('allows setup with the right installer secret', async () => {
+      setTestEnv({ NODE_ENV: 'production', INSTALLER_SECRET: 'bootstrap-secret' });
+
+      const response = await POST(
+        createApiContext({ ...payload, installerSecret: 'bootstrap-secret' })
+      );
+
+      expect(response.status).toBe(201);
+      expect(await adminExists()).toBe(true);
+    });
   });
 
   it('returns 409 when setup has already completed', async () => {

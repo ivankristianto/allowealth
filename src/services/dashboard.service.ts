@@ -9,18 +9,14 @@
  * - Account update reminders (getAccountsOptimized)
  * - Recent transactions (getRecentTransactionsOptimized)
  *
- * Error Handling:
- * Methods catch errors and return safe default values (empty arrays, zeroed values).
- * This ensures the service gracefully handles missing database connections or
- * invalid input parameters without throwing exceptions.
+ * Errors propagate: a failed section fails the whole call, so a transient
+ * database error is never cached as a zero balance.
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
-import { createLogger } from '@/lib/logger';
+import { moneyCents, sumCents, sumMoney, sumAmount } from './base/money-sql';
 import type { Currency } from '@/lib/constants/currency';
-
-const log = createLogger('dashboard');
 import { calculateBudgetAlert } from '@/lib/budget/alerts';
 import { calculateAccountPriority } from '@/lib/accounts/priority';
 import {
@@ -270,90 +266,77 @@ export class DashboardService {
     totalDebt: TotalDebt;
     accountReminders: AccountReminder[];
   }> {
-    try {
-      if (!this.db?.query?.accounts) {
-        throw new Error('Database query not available');
+    // Single query to get all accounts
+    const workspaceAccounts = await trackQuery('DashboardService.getAccounts', perf, async () =>
+      this.db.query.accounts.findMany({
+        where: and(
+          eq(this.schema.accounts.workspace_id, workspaceId),
+          sql`${this.schema.accounts.deleted_at} IS NULL`
+        ),
+      })
+    );
+
+    // Group totals by currency dynamically (supports any configured currency code)
+    const accountBalancesByCurrency = new Map<Currency, string[]>();
+    const debtBalancesByCurrency = new Map<Currency, string[]>();
+
+    for (const account of workspaceAccounts) {
+      if (account.account_class === 'debt') {
+        const balances = debtBalancesByCurrency.get(account.currency as Currency) || [];
+        balances.push(account.balance.replace(/^-/, ''));
+        debtBalancesByCurrency.set(account.currency as Currency, balances);
+      } else {
+        const balances = accountBalancesByCurrency.get(account.currency as Currency) || [];
+        balances.push(account.balance);
+        accountBalancesByCurrency.set(account.currency as Currency, balances);
       }
-
-      // Single query to get all accounts
-      const workspaceAccounts = await trackQuery('DashboardService.getAccounts', perf, async () =>
-        this.db.query.accounts.findMany({
-          where: and(
-            eq(this.schema.accounts.workspace_id, workspaceId),
-            sql`${this.schema.accounts.deleted_at} IS NULL`
-          ),
-        })
-      );
-
-      // Group totals by currency dynamically (supports any configured currency code)
-      const accountBalancesByCurrency = new Map<Currency, string[]>();
-      const debtBalancesByCurrency = new Map<Currency, string[]>();
-
-      for (const account of workspaceAccounts) {
-        if (account.account_class === 'debt') {
-          const balances = debtBalancesByCurrency.get(account.currency as Currency) || [];
-          balances.push(account.balance.replace(/^-/, ''));
-          debtBalancesByCurrency.set(account.currency as Currency, balances);
-        } else {
-          const balances = accountBalancesByCurrency.get(account.currency as Currency) || [];
-          balances.push(account.balance);
-          accountBalancesByCurrency.set(account.currency as Currency, balances);
-        }
-      }
-
-      const totalAccountsByCurrency: CurrencyAmount[] = Array.from(accountBalancesByCurrency).map(
-        ([currency, balances]) => ({
-          currency,
-          amount: decimalSum(balances),
-        })
-      );
-
-      const totalDebtByCurrency: CurrencyAmount[] = Array.from(debtBalancesByCurrency).map(
-        ([currency, balances]) => ({
-          currency,
-          amount: decimalSum(balances),
-        })
-      );
-
-      // Calculate account reminders from the same data
-      const reminders: AccountReminder[] = [];
-      for (const account of workspaceAccounts) {
-        const priorityResult = calculateAccountPriority(account.last_updated);
-        if (priorityResult.needsUpdate) {
-          reminders.push({
-            accountId: account.id,
-            accountName: account.name,
-            accountType: account.type,
-            lastUpdated: account.last_updated,
-            daysSinceUpdate: priorityResult.daysSinceUpdate,
-            priority: priorityResult.priority as 'high' | 'medium' | 'low',
-            currentBalance: account.balance,
-            currency: account.currency,
-          });
-        }
-      }
-
-      // Sort reminders by priority
-      const priorityValue = { high: 3, medium: 2, low: 1 };
-      reminders.sort((a, b) => {
-        const priorityDiff = priorityValue[b.priority] - priorityValue[a.priority];
-        if (priorityDiff !== 0) return priorityDiff;
-        return b.daysSinceUpdate - a.daysSinceUpdate;
-      });
-
-      return {
-        totalAccounts: { byCurrency: totalAccountsByCurrency },
-        totalDebt: { byCurrency: totalDebtByCurrency },
-        accountReminders: reminders,
-      };
-    } catch (error) {
-      log.error('error getting optimized accounts:', error);
-      return {
-        totalAccounts: { byCurrency: [] },
-        totalDebt: { byCurrency: [] },
-        accountReminders: [],
-      };
     }
+
+    const totalAccountsByCurrency: CurrencyAmount[] = Array.from(accountBalancesByCurrency).map(
+      ([currency, balances]) => ({
+        currency,
+        amount: decimalSum(balances),
+      })
+    );
+
+    const totalDebtByCurrency: CurrencyAmount[] = Array.from(debtBalancesByCurrency).map(
+      ([currency, balances]) => ({
+        currency,
+        amount: decimalSum(balances),
+      })
+    );
+
+    // Calculate account reminders from the same data
+    const reminders: AccountReminder[] = [];
+    for (const account of workspaceAccounts) {
+      const priorityResult = calculateAccountPriority(account.last_updated);
+      if (priorityResult.needsUpdate) {
+        reminders.push({
+          accountId: account.id,
+          accountName: account.name,
+          accountType: account.type,
+          lastUpdated: account.last_updated,
+          daysSinceUpdate: priorityResult.daysSinceUpdate,
+          priority: priorityResult.priority as 'high' | 'medium' | 'low',
+          currentBalance: account.balance,
+          currency: account.currency,
+        });
+      }
+    }
+
+    // Sort reminders by priority
+    const priorityValue = { high: 3, medium: 2, low: 1 };
+    reminders.sort((a, b) => {
+      const priorityDiff = priorityValue[b.priority] - priorityValue[a.priority];
+      if (priorityDiff !== 0) return priorityDiff;
+      return b.daysSinceUpdate - a.daysSinceUpdate;
+    });
+
+    return {
+      totalAccounts: { byCurrency: totalAccountsByCurrency },
+      totalDebt: { byCurrency: totalDebtByCurrency },
+      accountReminders: reminders,
+    };
   }
 
   /**
@@ -373,121 +356,113 @@ export class DashboardService {
     monthlyIncome: MonthlyIncome;
     topCategoryExpenses: TopCategoryExpense[];
   }> {
-    try {
-      if (typeof (this.db as any).select !== 'function') {
-        throw new Error('Database select not available');
-      }
-
-      // Run all transaction queries in parallel (they are independent)
-      const [budgetResult, aggregateResult, categoryExpenses] = await Promise.all([
-        // Budget total
-        trackQuery('DashboardService.getBudgetTotal', perf, async () =>
-          (this.db as any)
-            .select({
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
-            })
-            .from(this.schema.budgets)
-            .innerJoin(
-              this.schema.categories,
-              eq(this.schema.budgets.category_id, this.schema.categories.id)
+    // Run all transaction queries in parallel (they are independent)
+    const [budgetResult, aggregateResult, categoryExpenses] = await Promise.all([
+      // Budget total
+      trackQuery('DashboardService.getBudgetTotal', perf, async () =>
+        (this.db as any)
+          .select({
+            total: sumAmount(this.schema.budgets.budget_amount),
+          })
+          .from(this.schema.budgets)
+          .innerJoin(
+            this.schema.categories,
+            eq(this.schema.budgets.category_id, this.schema.categories.id)
+          )
+          .where(
+            and(
+              eq(this.schema.budgets.workspace_id, workspaceId),
+              eq(this.schema.budgets.month, month),
+              eq(this.schema.budgets.year, year),
+              eq(this.schema.budgets.currency, currency),
+              eq(this.schema.categories.type, 'expense'),
+              eq(this.schema.categories.is_active, true)
             )
-            .where(
-              and(
-                eq(this.schema.budgets.workspace_id, workspaceId),
-                eq(this.schema.budgets.month, month),
-                eq(this.schema.budgets.year, year),
-                eq(this.schema.budgets.currency, currency),
-                eq(this.schema.categories.type, 'expense'),
-                eq(this.schema.categories.is_active, true)
-              )
+          )
+      ),
+
+      // Combined spent + income query (single query with CASE statements)
+      trackQuery('DashboardService.getSpentIncome', perf, async () =>
+        (this.db as any)
+          .select({
+            spent: sumMoney(
+              sql`CASE WHEN ${this.schema.transactions.type} = 'expense' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+            ),
+            income: sumMoney(
+              sql`CASE WHEN ${this.schema.transactions.type} = 'income' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+            ),
+          })
+          .from(this.schema.transactions)
+          .where(
+            and(
+              eq(this.schema.transactions.workspace_id, workspaceId),
+              eq(this.schema.transactions.currency, currency),
+              gte(this.schema.transactions.transaction_date, startDate),
+              lte(this.schema.transactions.transaction_date, endDate),
+              sql`${this.schema.transactions.deleted_at} IS NULL`
             )
-        ),
+          )
+      ),
 
-        // Combined spent + income query (single query with CASE statements)
-        trackQuery('DashboardService.getSpentIncome', perf, async () =>
-          (this.db as any)
-            .select({
-              spent: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
-              income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
-            })
-            .from(this.schema.transactions)
-            .where(
-              and(
-                eq(this.schema.transactions.workspace_id, workspaceId),
-                eq(this.schema.transactions.currency, currency),
-                gte(this.schema.transactions.transaction_date, startDate),
-                lte(this.schema.transactions.transaction_date, endDate),
-                sql`${this.schema.transactions.deleted_at} IS NULL`
-              )
+      // Top categories
+      trackQuery('DashboardService.getTopCategories', perf, async () =>
+        (this.db as any)
+          .select({
+            category_id: this.schema.transactions.category_id,
+            category_name: this.schema.categories.name,
+            category_color: this.schema.categories.color,
+            total: sumAmount(this.schema.transactions.amount),
+          })
+          .from(this.schema.transactions)
+          .innerJoin(
+            this.schema.categories,
+            eq(this.schema.transactions.category_id, this.schema.categories.id)
+          )
+          .where(
+            and(
+              eq(this.schema.transactions.workspace_id, workspaceId),
+              eq(this.schema.transactions.type, 'expense'),
+              eq(this.schema.transactions.currency, currency),
+              gte(this.schema.transactions.transaction_date, startDate),
+              lte(this.schema.transactions.transaction_date, endDate),
+              sql`${this.schema.transactions.deleted_at} IS NULL`
             )
-        ),
+          )
+          .groupBy(
+            this.schema.transactions.category_id,
+            this.schema.categories.name,
+            this.schema.categories.color
+          )
+          .orderBy(sql`${sumCents(moneyCents(this.schema.transactions.amount))} DESC`)
+      ),
+    ]);
 
-        // Top categories
-        trackQuery('DashboardService.getTopCategories', perf, async () =>
-          (this.db as any)
-            .select({
-              category_id: this.schema.transactions.category_id,
-              category_name: this.schema.categories.name,
-              category_color: this.schema.categories.color,
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
-            })
-            .from(this.schema.transactions)
-            .innerJoin(
-              this.schema.categories,
-              eq(this.schema.transactions.category_id, this.schema.categories.id)
-            )
-            .where(
-              and(
-                eq(this.schema.transactions.workspace_id, workspaceId),
-                eq(this.schema.transactions.type, 'expense'),
-                eq(this.schema.transactions.currency, currency),
-                gte(this.schema.transactions.transaction_date, startDate),
-                lte(this.schema.transactions.transaction_date, endDate),
-                sql`${this.schema.transactions.deleted_at} IS NULL`
-              )
-            )
-            .groupBy(
-              this.schema.transactions.category_id,
-              this.schema.categories.name,
-              this.schema.categories.color
-            )
-            .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`)
-        ),
-      ]);
+    // SQLite returns the sums as numbers despite the sql<string> annotation.
+    const totalBudget = String(budgetResult[0]?.total ?? 0);
+    const totalSpent = String(aggregateResult[0]?.spent ?? 0);
+    const totalIncome = String(aggregateResult[0]?.income ?? 0);
 
-      const totalBudget = budgetResult[0]?.total || '0';
-      const totalSpent = aggregateResult[0]?.spent || '0';
-      const totalIncome = aggregateResult[0]?.income || '0';
+    // Calculate percentage and remaining
+    const percentage = !decimalIsZero(totalBudget)
+      ? parseFloat(decimalDivide(decimalMultiply(totalSpent, 100), totalBudget))
+      : 0;
+    const remaining = decimalSubtract(totalBudget, totalSpent);
 
-      // Calculate percentage and remaining
-      const percentage = !decimalIsZero(totalBudget)
-        ? parseFloat(decimalDivide(decimalMultiply(totalSpent, 100), totalBudget))
-        : 0;
-      const remaining = decimalSubtract(totalBudget, totalSpent);
+    // Process top categories
+    const topCategoryExpenses = this.processTopCategories(categoryExpenses);
 
-      // Process top categories
-      const topCategoryExpenses = this.processTopCategories(categoryExpenses);
-
-      return {
-        monthlySpent: {
-          total: totalSpent,
-          budget: totalBudget,
-          percentage: Math.round(percentage * 10) / 10,
-          remaining,
-        },
-        monthlyIncome: {
-          total: totalIncome,
-        },
-        topCategoryExpenses,
-      };
-    } catch (error) {
-      log.error('error getting optimized transaction aggregates:', error);
-      return {
-        monthlySpent: { total: '0', budget: '0', percentage: 0, remaining: '0' },
-        monthlyIncome: { total: '0' },
-        topCategoryExpenses: [],
-      };
-    }
+    return {
+      monthlySpent: {
+        total: totalSpent,
+        budget: totalBudget,
+        percentage: Math.round(percentage * 10) / 10,
+        remaining,
+      },
+      monthlyIncome: {
+        total: totalIncome,
+      },
+      topCategoryExpenses,
+    };
   }
 
   /**
@@ -500,107 +475,92 @@ export class DashboardService {
     currency: Currency,
     perf?: PerfCollector
   ): Promise<BudgetHealth> {
-    try {
-      // Validate inputs
-      if (month < 1 || month > 12) {
-        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
-      }
-      if (year < 2000 || year > 2100) {
-        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
-      }
-
-      // Check if db methods exist (for unit tests with mock db)
-      if (!this.db?.query?.budgets || typeof (this.db as any).select !== 'function') {
-        throw new Error('Database query not available');
-      }
-
-      // Calculate date range for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      // Get all budgets for the month and total spent per category in parallel
-      const [monthBudgets, categorySpending] = await Promise.all([
-        trackQuery('DashboardService.getBudgets', perf, async () =>
-          this.db.query.budgets.findMany({
-            where: and(
-              eq(this.schema.budgets.workspace_id, workspaceId),
-              eq(this.schema.budgets.month, month),
-              eq(this.schema.budgets.year, year),
-              eq(this.schema.budgets.currency, currency)
-            ),
-            with: {
-              category: true,
-            },
-          })
-        ),
-        trackQuery('DashboardService.getCategorySpending', perf, async () =>
-          (this.db as any)
-            .select({
-              category_id: this.schema.transactions.category_id,
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
-            })
-            .from(this.schema.transactions)
-            .where(
-              and(
-                eq(this.schema.transactions.workspace_id, workspaceId),
-                eq(this.schema.transactions.type, 'expense'),
-                eq(this.schema.transactions.currency, currency),
-                gte(this.schema.transactions.transaction_date, startDate),
-                lte(this.schema.transactions.transaction_date, endDate),
-                sql`${this.schema.transactions.deleted_at} IS NULL`
-              )
-            )
-            .groupBy(this.schema.transactions.category_id)
-        ),
-      ]);
-
-      // Filter to only active expense categories
-      const expenseBudgets = monthBudgets.filter(
-        (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
-      );
-
-      // Create map of spending by category
-      const spendingByCategory = new Map<string, string>();
-      for (const spending of categorySpending) {
-        spendingByCategory.set(spending.category_id, spending.total);
-      }
-
-      // Calculate alerts for each budget
-      const alerts: BudgetAlert[] = [];
-
-      for (const budget of expenseBudgets) {
-        const budgetAmount = budget.budget_amount;
-        const spent = spendingByCategory.get(budget.category_id) || '0';
-        const categoryName = budget.category?.name || 'Unknown';
-
-        const alert = calculateBudgetAlert(categoryName, budgetAmount, spent);
-        if (alert) {
-          alerts.push(alert);
-        }
-      }
-
-      // Determine overall status
-      let status: 'healthy' | 'warning' | 'exceeded' = 'healthy';
-      if (alerts.some((a) => a.status === 'exceeded')) {
-        status = 'exceeded';
-      } else if (alerts.some((a) => a.status === 'warning')) {
-        status = 'warning';
-      }
-
-      return {
-        alertCount: alerts.length,
-        status,
-        alerts,
-      };
-    } catch (error) {
-      log.error('error getting budget health:', error);
-      // Return empty result on error
-      return {
-        alertCount: 0,
-        status: 'healthy',
-        alerts: [],
-      };
+    // Validate inputs
+    if (month < 1 || month > 12) {
+      throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
     }
+    if (year < 2000 || year > 2100) {
+      throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
+    }
+
+    // Calculate date range for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Get all budgets for the month and total spent per category in parallel
+    const [monthBudgets, categorySpending] = await Promise.all([
+      trackQuery('DashboardService.getBudgets', perf, async () =>
+        this.db.query.budgets.findMany({
+          where: and(
+            eq(this.schema.budgets.workspace_id, workspaceId),
+            eq(this.schema.budgets.month, month),
+            eq(this.schema.budgets.year, year),
+            eq(this.schema.budgets.currency, currency)
+          ),
+          with: {
+            category: true,
+          },
+        })
+      ),
+      trackQuery('DashboardService.getCategorySpending', perf, async () =>
+        (this.db as any)
+          .select({
+            category_id: this.schema.transactions.category_id,
+            total: sumAmount(this.schema.transactions.amount),
+          })
+          .from(this.schema.transactions)
+          .where(
+            and(
+              eq(this.schema.transactions.workspace_id, workspaceId),
+              eq(this.schema.transactions.type, 'expense'),
+              eq(this.schema.transactions.currency, currency),
+              gte(this.schema.transactions.transaction_date, startDate),
+              lte(this.schema.transactions.transaction_date, endDate),
+              sql`${this.schema.transactions.deleted_at} IS NULL`
+            )
+          )
+          .groupBy(this.schema.transactions.category_id)
+      ),
+    ]);
+
+    // Filter to only active expense categories
+    const expenseBudgets = monthBudgets.filter(
+      (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
+    );
+
+    // Create map of spending by category
+    const spendingByCategory = new Map<string, string>();
+    for (const spending of categorySpending) {
+      spendingByCategory.set(spending.category_id, String(spending.total));
+    }
+
+    // Calculate alerts for each budget
+    const alerts: BudgetAlert[] = [];
+
+    for (const budget of expenseBudgets) {
+      const budgetAmount = budget.budget_amount;
+      const spent = spendingByCategory.get(budget.category_id) || '0';
+      const categoryName = budget.category?.name || 'Unknown';
+
+      const alert = calculateBudgetAlert(categoryName, budgetAmount, spent);
+      if (alert) {
+        alerts.push(alert);
+      }
+    }
+
+    // Determine overall status
+    let status: 'healthy' | 'warning' | 'exceeded' = 'healthy';
+    if (alerts.some((a) => a.status === 'exceeded')) {
+      status = 'exceeded';
+    } else if (alerts.some((a) => a.status === 'warning')) {
+      status = 'warning';
+    }
+
+    return {
+      alertCount: alerts.length,
+      status,
+      alerts,
+    };
   }
 
   /**
@@ -612,36 +572,30 @@ export class DashboardService {
     limit: number,
     perf?: PerfCollector
   ): Promise<DashboardData['recentTransactions']> {
-    try {
-      // Validate limit
-      if (limit < 1 || limit > 100) {
-        throw new Error(`Invalid limit: ${limit}. Must be between 1 and 100.`);
-      }
+    // Validate limit
+    if (limit < 1 || limit > 100) {
+      throw new Error(`Invalid limit: ${limit}. Must be between 1 and 100.`);
+    }
 
-      // Check if db.query exists (for unit tests with mock db)
-      if (!this.db?.query?.transactions) {
-        throw new Error('Database query not available');
-      }
-
-      // Get recent transactions
-      const recentTransactions = await trackQuery(
-        'DashboardService.getRecentTransactions',
-        perf,
-        async () =>
-          this.db.query.transactions.findMany({
-            where: and(
-              eq(this.schema.transactions.workspace_id, workspaceId),
-              eq(this.schema.transactions.currency, currency),
-              sql`${this.schema.transactions.deleted_at} IS NULL`
-            ),
-            with: {
-              category: true,
-              account: true,
-              createdBy: { columns: { id: true, name: true } },
-            },
-            // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
-            extras: {
-              has_history: sql<number>`EXISTS (
+    // Get recent transactions
+    const recentTransactions = await trackQuery(
+      'DashboardService.getRecentTransactions',
+      perf,
+      async () =>
+        this.db.query.transactions.findMany({
+          where: and(
+            eq(this.schema.transactions.workspace_id, workspaceId),
+            eq(this.schema.transactions.currency, currency),
+            sql`${this.schema.transactions.deleted_at} IS NULL`
+          ),
+          with: {
+            category: true,
+            account: true,
+            createdBy: { columns: { id: true, name: true } },
+          },
+          // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
+          extras: {
+            has_history: sql<number>`EXISTS (
                 SELECT 1 FROM audit_logs
                 WHERE audit_logs.entity_type = 'transaction'
                 AND audit_logs.entity_id = transactions.id
@@ -649,45 +603,40 @@ export class DashboardService {
                 AND audit_logs.action IN ('update', 'delete')
                 LIMIT 1
               )`.as('has_history'),
-            },
-            orderBy: [
-              desc(this.schema.transactions.transaction_date),
-              desc(this.schema.transactions.created_at),
-            ],
-            limit,
-          })
-      );
+          },
+          orderBy: [
+            desc(this.schema.transactions.transaction_date),
+            desc(this.schema.transactions.created_at),
+          ],
+          limit,
+        })
+    );
 
-      // Map transaction_date to transactionDate for the return type
-      return recentTransactions.map((tx) => ({
-        id: tx.id,
-        type: tx.type,
-        amount: tx.amount,
-        currency: tx.currency as Currency,
-        description: tx.description,
-        transactionDate: tx.transaction_date,
-        category: tx.category
-          ? {
-              id: tx.category.id,
-              name: tx.category.name,
-              type: tx.category.type,
-              icon: tx.category.icon,
-              color: tx.category.color,
-            }
-          : null,
-        account: {
-          id: tx.account.id,
-          name: tx.account.name,
-          type: tx.account.type,
-        },
-        createdByName: tx.createdBy?.name,
-        hasHistory: !!(tx as any).has_history,
-      }));
-    } catch (error) {
-      log.error('error getting recent transactions:', error);
-      // Return empty array on error
-      return [];
-    }
+    // Map transaction_date to transactionDate for the return type
+    return recentTransactions.map((tx) => ({
+      id: tx.id,
+      type: tx.type,
+      amount: tx.amount,
+      currency: tx.currency as Currency,
+      description: tx.description,
+      transactionDate: tx.transaction_date,
+      category: tx.category
+        ? {
+            id: tx.category.id,
+            name: tx.category.name,
+            type: tx.category.type,
+            icon: tx.category.icon,
+            color: tx.category.color,
+          }
+        : null,
+      account: {
+        id: tx.account.id,
+        name: tx.account.name,
+        type: tx.account.type,
+      },
+      createdByName: tx.createdBy?.name,
+      hasHistory: !!(tx as any).has_history,
+    }));
   }
 
   /**
@@ -714,22 +663,19 @@ export class DashboardService {
       category: cat.category_name,
       percentage: Math.round((parseFloat(cat.total) / totalSpent) * 100),
       color: toHexColor(cat.category_color, defaultColors[index % defaultColors.length]),
-      amount: cat.total,
+      amount: String(cat.total),
     }));
 
     if (categoryExpenses.length > 4) {
       const otherCategories = categoryExpenses.slice(4);
-      const otherTotal = otherCategories.reduce(
-        (sum: number, cat: any) => sum + parseFloat(cat.total || '0'),
-        0
-      );
-      const otherPercentage = Math.round((otherTotal / totalSpent) * 100);
+      const otherTotal = decimalSum(otherCategories.map((cat: any) => String(cat.total ?? 0)));
+      const otherPercentage = Math.round((Number(otherTotal) / totalSpent) * 100);
 
       result.push({
         category: 'Other',
         percentage: otherPercentage,
         color: '#6b7280',
-        amount: otherTotal.toString(),
+        amount: otherTotal,
         otherCategoryNames: otherCategories.map((cat: any) => cat.category_name),
       });
     }

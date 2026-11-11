@@ -37,7 +37,9 @@ bun run db:migrate
 - ❌ **Check for double-prefix bugs** during mass replace (`this.schema.this.schema`)
 - ✅ **Always add `.default()` when adding NOT NULL columns** - `ALTER TABLE ADD COLUMN ... NOT NULL` without `DEFAULT` fails on non-empty tables in SQLite
 - ✅ **Squash broken migrations before committing** - if iterating on schema locally, delete intermediate migrations and regenerate a clean one
-- ❌ **Use `parseFloat` chains for financial calculations** - use SQL conditional aggregation (`CASE WHEN ... THEN CAST(amount AS NUMERIC)`) for precision; JS floats lose precision with large IDR values
+- ❌ **Use `parseFloat` chains for financial calculations** - JS floats lose precision; use decimal.js (`@/lib/utils/decimal`) in JS
+- ✅ **Sum money in SQL with `sumAmount()` / `sumMoney(moneyCents(...))` from `@/services/base/money-sql`** - they sum integer cents and divide once; put conditions inside: `sumMoney(sql\`CASE WHEN ... THEN ${moneyCents(amount)} ELSE 0 END\`)`
+- ❌ **`SUM(CAST(amount AS NUMERIC))`** - SQLite turns `'10.10'` into REAL, so `'10.10' + '20.20'` sums to `30.299999999999997`
 
 ## Service Pattern
 
@@ -281,16 +283,17 @@ export class BudgetService {
 ### Error Messages
 
 ```typescript
-// ✅ Correct: Surface actual error messages
-throw new Error(`Failed to save budget: ${error.message}`);
+// ✅ Correct: A user-facing failure is a ServiceError with a clear message
+throw new BudgetServiceError(ServiceErrorCode.VALIDATION_ERROR, 'Budget amount must be positive');
 
-// ❌ Wrong: Generic message
-throw new Error('Failed to save budget');
+// ✅ Correct: Let unexpected errors (Drizzle, SQLite) propagate; the route logs them
+// ❌ Wrong: Fold a database error's message into one the client will see
+throw new BudgetServiceError(ServiceErrorCode.VALIDATION_ERROR, `Failed: ${error.message}`);
 ```
 
 **Rules:**
 
-- ✅ **Surface actual error messages in API responses** - not generic "Failed to X"
+- ✅ **Surface `ServiceError` messages; log everything else** - Drizzle messages include SQL and bound params
 
 ## Drizzle Relational Query Null Safety
 

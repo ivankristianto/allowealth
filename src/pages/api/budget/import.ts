@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { budgetService, workspaceMetaService } from '@/services';
+import { budgetService, workspaceMetaService, ServiceError } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -103,9 +103,11 @@ export const POST: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    logError('Error importing budget', error);
-    const message = error instanceof Error ? error.message : 'Failed to import budget';
-    return errorResponse(message, 500);
+    if (error instanceof ServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
+    }
+    const errorId = logError('Error importing budget', error);
+    return errorResponse('Failed to import budget', 500, 'INTERNAL_ERROR', { errorId });
   }
 };
 

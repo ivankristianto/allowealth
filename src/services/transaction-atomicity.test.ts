@@ -39,8 +39,10 @@ describe('multi-statement writes roll back on failure', () => {
     failInsertsWhere(raw, 'account_history', `NEW.account_id = 'acc-to'`);
 
     await expect(
-      new AccountService(db).transfer('acc-from', 'acc-to', '300', WORKSPACE_ID)
-    ).rejects.toThrow('Failed to transfer: could not create history entries');
+      new AccountService(db).transfer('acc-from', 'acc-to', '300', WORKSPACE_ID, {
+        createdByUserId: USER_ID,
+      })
+    ).rejects.toThrow('Failed to transfer: the transfer was rolled back');
 
     const balances = raw.query('SELECT id, balance FROM accounts ORDER BY id').all();
     expect(balances).toEqual([
@@ -48,6 +50,7 @@ describe('multi-statement writes roll back on failure', () => {
       { id: 'acc-to', balance: '500' },
     ]);
     expect(countRows(raw, 'account_history')).toBe(0);
+    expect(countRows(raw, 'transactions')).toBe(0);
   });
 
   it('commits balances and history together when a transfer succeeds', async () => {
@@ -55,7 +58,9 @@ describe('multi-statement writes roll back on failure', () => {
     seedAccount(raw, 'acc-from', 'Savings', '1000');
     seedAccount(raw, 'acc-to', 'Checking', '500');
 
-    await new AccountService(db).transfer('acc-from', 'acc-to', '300', WORKSPACE_ID);
+    await new AccountService(db).transfer('acc-from', 'acc-to', '300', WORKSPACE_ID, {
+      createdByUserId: USER_ID,
+    });
 
     const balances = raw.query('SELECT id, balance FROM accounts ORDER BY id').all();
     expect(balances).toEqual([
@@ -63,6 +68,7 @@ describe('multi-statement writes roll back on failure', () => {
       { id: 'acc-to', balance: '800' },
     ]);
     expect(countRows(raw, 'account_history')).toBe(2);
+    expect(countRows(raw, 'transactions', "type = 'transfer'")).toBe(1);
   });
 
   it('imports no rows when a later CSV chunk fails', async () => {

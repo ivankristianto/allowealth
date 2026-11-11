@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { resolve } from 'node:path';
 
-const MIGRATIONS_DIR = resolve(process.cwd(), 'drizzle/sqlite');
+export const MIGRATIONS_DIR = resolve(process.cwd(), 'drizzle/sqlite');
 const DEFAULT_DB_PATH = 'db/.dev.db';
 const DRIZZLE_MIGRATIONS_TABLE = '__drizzle_migrations';
 
@@ -51,7 +51,7 @@ export function runSqliteMigrations(dbPath?: string): void {
     if (existingSchema) {
       throw new Error(
         `Refusing to run migrations for "${targetPath}": ${DRIZZLE_MIGRATIONS_TABLE} is empty, but the database already has ${existingSchema.tableCount} table(s). ` +
-          'This usually means the schema was initialized with "bun run db:setup". ' +
+          'This usually means the schema was created without the migrator (for example by "drizzle-kit push"). ' +
           'For dev or fresh installs, use "bun run db:reset --yes" to recreate the DB with migration tracking. ' +
           'For existing environments, back up data before recreating the database.'
       );

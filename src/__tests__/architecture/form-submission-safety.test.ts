@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Glob } from 'bun';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 const SRC_DIR = join(import.meta.dir, '..', '..');
 
@@ -47,8 +47,22 @@ describe('form submission safety', () => {
     const submitListener = /addEventListener\(\s*['"]submit['"]|^\s*['"]submit['"],\s*$/m;
     const reinitialized = /onPageReady\(|addEventListener\(\s*['"]astro:page-load['"]/;
 
-    const bindOnlyOnce = readSources('**/*.{astro,ts}')
+    const sources = readSources('**/*.{astro,ts}');
+    // A shared binder (e.g. bindOccurrenceActions) is safe when every importer re-runs it.
+    const importersOf = (file: string) => {
+      const name = basename(file, '.ts').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const importsIt = new RegExp(`from ['"][^'"]*/${name}(\\.ts)?['"]`);
+      return sources.filter((other) => other.file !== file && importsIt.test(other.source));
+    };
+
+    const bindOnlyOnce = sources
       .filter(({ source }) => submitListener.test(source) && !reinitialized.test(source))
+      .filter(({ file }) => {
+        const importers = importersOf(file);
+        return (
+          importers.length === 0 || importers.some(({ source }) => !reinitialized.test(source))
+        );
+      })
       .map(({ file }) => file);
 
     expect(bindOnlyOnce).toEqual([]);

@@ -37,6 +37,41 @@ ReportData:
       description: Category spending intelligence with budget limits
       items:
         $ref: "./CategoryIntelligence.yml#/CategoryIntelligence"
+    recurringBreakdown:
+      type: object
+      nullable: true
+      description: Recurring versus one-time spending, null when it cannot be computed
+      properties:
+        recurringTotal:
+          type: string
+          description: Spending from recurring templates (decimal string)
+        oneTimeTotal:
+          type: string
+          description: All other spending (decimal string)
+        recurringByCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              category_id:
+                type: string
+              category_name:
+                type: string
+              amount:
+                type: string
+            required:
+              - category_id
+              - category_name
+              - amount
+      required:
+        - recurringTotal
+        - oneTimeTotal
+        - recurringByCategory
+    memberSummary:
+      type: array
+      description: Per-member totals for the selected period
+      items:
+        $ref: "./MemberSummaryRow.yml#/MemberSummaryRow"
   required:
     - totalIncome
     - totalExpenses
@@ -46,3 +81,5 @@ ReportData:
     - expenseByCategory
     - trendData
     - categoryIntelligence
+    - recurringBreakdown
+    - memberSummary

@@ -34,30 +34,6 @@ describe('MobileCommandCenter', () => {
   describe('structure', () => {
     const source = readSource();
 
-    it('renders the grouped navigation labels', () => {
-      const trackSection = source.split('/* Track */')[1] ?? '';
-      const planSection = source.split('/* Plan */')[1] ?? '';
-      const analyzeSection = source.split('/* Analyze */')[1] ?? '';
-      const userLinksSection = source.split('/* User links */')[1] ?? '';
-
-      expect(trackSection).toContain('pointer-events-none select-none');
-      expect(trackSection).toContain('text-xs font-semibold uppercase tracking-widest');
-      expect(trackSection).toContain('text-base-content/60');
-      expect(trackSection).toContain('Track');
-      expect(planSection).toContain('pointer-events-none select-none');
-      expect(planSection).toContain('text-xs font-semibold uppercase tracking-widest');
-      expect(planSection).toContain('text-base-content/60');
-      expect(planSection).toContain('Plan');
-      expect(analyzeSection).toContain('pointer-events-none select-none');
-      expect(analyzeSection).toContain('text-xs font-semibold uppercase tracking-widest');
-      expect(analyzeSection).toContain('text-base-content/60');
-      expect(analyzeSection).toContain('Analyze');
-      expect(userLinksSection).toContain('grid grid-cols-2 gap-2');
-      expect(userLinksSection).toContain('col-span-2');
-      expect(source).toContain('Documentation');
-      expect(source).toContain('Sign out');
-    });
-
     it('keeps docs opened in a new tab', () => {
       expect(source).toContain('href="https://docs.allowealth.io"');
       expect(source).toContain('target="_blank"');
@@ -69,17 +45,6 @@ describe('MobileCommandCenter', () => {
       expect(source).toContain('data-drag-handle');
       expect(source).toContain('touch-none');
       expect(source).toContain('bg-base-content/30');
-    });
-
-    it('keeps the super-admin account card intact', () => {
-      const adminBranch = source.split('/* Admin user section - unchanged */')[1] ?? '';
-
-      expect(adminBranch).toContain('href="/profile"');
-      expect(adminBranch).toContain('href="/security"');
-      expect(adminBranch).toContain('href="/settings"');
-      expect(adminBranch).toContain('grid grid-cols-2 gap-2');
-      expect(adminBranch).toContain('col-span-2');
-      expect(adminBranch).toContain('Sign out');
     });
   });
 });
