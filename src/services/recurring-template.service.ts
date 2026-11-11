@@ -133,7 +133,7 @@ export class RecurringTemplateService {
     }
   }
 
-  private getEmptyOccurrenceStats() {
+  private getEmptyOccurrenceStats(): RecurringOccurrenceStats {
     return {
       pendingCount: 0,
       confirmedCount: 0,
@@ -144,7 +144,7 @@ export class RecurringTemplateService {
 
   private async getOccurrenceStatsByTemplateIds(workspaceId: string, templateIds: string[]) {
     if (templateIds.length === 0) {
-      return new Map<string, ReturnType<typeof this.getEmptyOccurrenceStats>>();
+      return new Map<string, RecurringOccurrenceStats>();
     }
 
     const rows = await (this.db as any)
@@ -166,7 +166,7 @@ export class RecurringTemplateService {
       )
       .groupBy(this.schema.recurringOccurrences.template_id);
 
-    const map = new Map<string, ReturnType<typeof this.getEmptyOccurrenceStats>>();
+    const map = new Map<string, RecurringOccurrenceStats>();
     for (const row of rows as Array<{
       template_id: string;
       pending_count: number;

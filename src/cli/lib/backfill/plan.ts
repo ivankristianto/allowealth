@@ -113,7 +113,7 @@ function isSuppressed(
 }
 
 /** Blank is never zero: it means the export dropped a figure we must not invent. */
-function requireLocalAmount(row: RawRow, side: string): number | null {
+function requireLocalAmount(row: RawRow, side: string): number {
   if (row.amount.kind === 'value') return row.amount.value;
   if (row.amount.kind === 'invalid') {
     throw new DetectionError(`${side} row "${row.description}" has an unreadable amount.`);

@@ -229,7 +229,7 @@ export class EmailService {
     let provider: EmailProvider;
     try {
       provider = getEmailProvider(config.provider);
-    } catch (error) {
+    } catch {
       log.error('invalid provider:', config.provider);
       throw new EmailServiceError(
         EmailErrorCode.INVALID_PROVIDER,

@@ -67,11 +67,11 @@ describe('AuthService', () => {
       where: eq(users.id, EMAIL_SIGNUP_USER.id),
     });
 
-    expect(domainUser).toBeDefined();
-    expect(domainUser?.workspace_id).toBeDefined();
+    const workspaceId = domainUser?.workspace_id;
+    if (!workspaceId) throw new Error('Signup did not assign a workspace');
 
     const seededCategories = await db.query.accountCategories.findMany({
-      where: eq(accountCategories.workspace_id, domainUser!.workspace_id),
+      where: eq(accountCategories.workspace_id, workspaceId),
     });
 
     expect(seededCategories.length).toBeGreaterThan(0);

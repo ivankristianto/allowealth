@@ -41,7 +41,7 @@ export interface MockBudgetHealth extends BudgetHealth {
 /**
  * Mock account reminder data
  */
-export interface MockAccountReminder extends AccountReminder {}
+export type MockAccountReminder = AccountReminder;
 
 /**
  * Mock transaction data

@@ -22,7 +22,7 @@ function createDeps(
       userId?: string
     ) => Promise<unknown>;
     delete?: (id: string, workspaceId: string, userId?: string) => Promise<{ success: true }>;
-    confirm?: (opts: { yes?: unknown; prompt?: string; expected?: string }) => Promise<void>;
+    confirm?: (opts?: { yes?: unknown; prompt?: string; expected?: string }) => Promise<void>;
     write?: (value: unknown, message: string | ((value: unknown) => string)) => void;
   } = {}
 ): TransactionsDeps {
@@ -246,7 +246,7 @@ describe('transactions command mapping', () => {
     let confirmYes: unknown;
     const deps = createDeps({
       confirm: async (opts) => {
-        confirmYes = opts.yes;
+        confirmYes = opts?.yes;
       },
     });
 

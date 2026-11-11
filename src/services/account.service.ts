@@ -197,7 +197,7 @@ export class AccountService {
         balance: input.balance,
         recorded_at: openedAt,
       });
-    } catch (historyError) {
+    } catch {
       // Compensating transaction: delete the orphaned account to maintain data integrity
       await this.db.delete(this.schema.accounts).where(eq(this.schema.accounts.id, id));
       throw new AccountServiceError(
@@ -412,7 +412,7 @@ export class AccountService {
         notes: input.notes,
         recorded_at: input.recorded_at || now,
       });
-    } catch (historyError) {
+    } catch {
       // Compensating transaction: rollback the balance update
       await this.db
         .update(this.schema.accounts)
