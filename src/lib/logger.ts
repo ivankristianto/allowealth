@@ -77,14 +77,19 @@ function errorReplacer(_key: string, value: unknown): unknown {
   return value instanceof Error ? serializeError(value) : value;
 }
 
-// Logs keep SQL and stack traces for debugging, but never credentials or password hashes.
+// Logs keep SQL text and stacks, but never bound values (Drizzle appends them after "params: "),
+// credentials or password hashes. The params pattern stops at a JSON-escaped newline so stacks survive.
 const SECRET_PATTERNS: Array<[RegExp, string]> = [
+  [/params: (?:[^"\\\n]|\\(?!n)[\s\S])*/g, 'params: [REDACTED]'],
   [
     /\b(postgres(?:ql)?|mysql|rediss?|sqlite|libsql|https?):\/\/[^\s:@/]*:[^\s@/]+@/gi,
     '$1://[REDACTED]@',
   ],
   [/\$argon2(?:id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+/g, '[REDACTED]'],
+  [/\$pbkdf2-sha256\$\d+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+/g, '[REDACTED]'],
   [/\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}/g, '[REDACTED]'],
+  [/\baw_pat_[A-Za-z0-9_-]+/g, 'aw_pat_[REDACTED]'],
+  [/\b(Bearer)\s+[A-Za-z0-9._~+/=-]+/gi, '$1 [REDACTED]'],
 ];
 
 export function redactSecrets(input: string): string {

@@ -222,10 +222,11 @@ describe('logError', () => {
     console.error = originalError;
   });
 
-  test('logs SQL, params and stack unredacted, tagged with the returned id', async () => {
+  test('logs SQL text and stack, tagged with the returned id, without bound values', async () => {
     const { logError } = await import('./logger');
+    // Same shape as drizzle-orm's DrizzleQueryError message
     const error = new Error(
-      'Failed query: update "accounts" set "name" = ? where "id" = ? params: Savings,acc_123'
+      'Failed query: update "accounts" set "name" = ? where "id" = ?\nparams: Savings,acc_123'
     );
 
     const errorId = logError('Error updating account', error);
@@ -234,23 +235,27 @@ describe('logError', () => {
     const output = errorOutput.join('\n');
     expect(output).toContain(`errorId=${errorId}`);
     expect(output).toContain('update \\"accounts\\" set');
-    expect(output).toContain('params: Savings,acc_123');
+    expect(output).toContain('params: [REDACTED]');
+    expect(output).not.toContain('acc_123');
     expect(output).toContain('logger.test.ts');
   });
 
-  test('still redacts credentials and password hashes', async () => {
+  test('redacts credentials, password hashes and tokens', async () => {
     const { logError } = await import('./logger');
-    const hash = await Bun.password.hash('hunter2-hunter2', 'argon2id');
+    const argon = await Bun.password.hash('hunter2-hunter2', 'argon2id');
+    const pbkdf2 = '$pbkdf2-sha256$600000$c2FsdHNhbHQ=$aGFzaGhhc2hoYXNo';
     const error = new Error(
-      `connect redis://default:s3cret@cache:6379 failed; params: ${hash},user@example.com`
+      `connect redis://default:s3cret@cache:6379 failed for ${argon} and ${pbkdf2}` +
+        ' with aw_pat_AbC-123_xyz and Authorization: Bearer eyJhbGciOi.payload.sig'
     );
 
     logError('Saving user failed', error);
 
     const output = errorOutput.join('\n');
-    expect(output).not.toContain('s3cret');
-    expect(output).not.toContain(hash);
+    for (const secret of ['s3cret', argon, pbkdf2, 'AbC-123_xyz', 'eyJhbGciOi']) {
+      expect(output).not.toContain(secret);
+    }
     expect(output).toContain('redis://[REDACTED]@cache:6379');
-    expect(output).toContain('user@example.com');
+    expect(output).toContain('Bearer [REDACTED]');
   });
 });
