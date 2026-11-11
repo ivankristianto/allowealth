@@ -17,6 +17,7 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { moneyCents, sumCents, sumMoney, sumAmount } from './base/money-sql';
 import { createLogger } from '@/lib/logger';
 import type { Currency } from '@/lib/constants/currency';
 
@@ -384,7 +385,7 @@ export class DashboardService {
         trackQuery('DashboardService.getBudgetTotal', perf, async () =>
           (this.db as any)
             .select({
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
+              total: sumAmount(this.schema.budgets.budget_amount),
             })
             .from(this.schema.budgets)
             .innerJoin(
@@ -407,8 +408,12 @@ export class DashboardService {
         trackQuery('DashboardService.getSpentIncome', perf, async () =>
           (this.db as any)
             .select({
-              spent: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
-              income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+              spent: sumMoney(
+                sql`CASE WHEN ${this.schema.transactions.type} = 'expense' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+              ),
+              income: sumMoney(
+                sql`CASE WHEN ${this.schema.transactions.type} = 'income' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+              ),
             })
             .from(this.schema.transactions)
             .where(
@@ -429,7 +434,7 @@ export class DashboardService {
               category_id: this.schema.transactions.category_id,
               category_name: this.schema.categories.name,
               category_color: this.schema.categories.color,
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+              total: sumAmount(this.schema.transactions.amount),
             })
             .from(this.schema.transactions)
             .innerJoin(
@@ -451,7 +456,7 @@ export class DashboardService {
               this.schema.categories.name,
               this.schema.categories.color
             )
-            .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`)
+            .orderBy(sql`${sumCents(moneyCents(this.schema.transactions.amount))} DESC`)
         ),
       ]);
 
@@ -537,7 +542,7 @@ export class DashboardService {
           (this.db as any)
             .select({
               category_id: this.schema.transactions.category_id,
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+              total: sumAmount(this.schema.transactions.amount),
             })
             .from(this.schema.transactions)
             .where(
@@ -719,17 +724,14 @@ export class DashboardService {
 
     if (categoryExpenses.length > 4) {
       const otherCategories = categoryExpenses.slice(4);
-      const otherTotal = otherCategories.reduce(
-        (sum: number, cat: any) => sum + parseFloat(cat.total || '0'),
-        0
-      );
-      const otherPercentage = Math.round((otherTotal / totalSpent) * 100);
+      const otherTotal = decimalSum(otherCategories.map((cat: any) => String(cat.total ?? 0)));
+      const otherPercentage = Math.round((Number(otherTotal) / totalSpent) * 100);
 
       result.push({
         category: 'Other',
         percentage: otherPercentage,
         color: '#6b7280',
-        amount: otherTotal.toString(),
+        amount: otherTotal,
         otherCategoryNames: otherCategories.map((cat: any) => cat.category_name),
       });
     }

@@ -5,6 +5,7 @@ import { sanitizeCellForCsv } from '@/lib/csv/sanitize-cell-for-csv';
 
 const log = createLogger('transaction');
 import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
+import { moneyCents, sumMoney } from './base/money-sql';
 import { nanoid } from 'nanoid';
 import { parse } from 'valibot';
 import { CategoryService } from './category.service';
@@ -472,8 +473,12 @@ export class TransactionService {
     const rows = await trackQuery('TransactionService.getMonthSummary', perf, () =>
       (this.db as any)
         .select({
-          income: sql<string>`COALESCE(SUM(CASE WHEN ${tx.type} = 'income' THEN CAST(${tx.amount} AS NUMERIC) ELSE 0 END), 0)`,
-          expenses: sql<string>`COALESCE(SUM(CASE WHEN ${tx.type} = 'expense' THEN ABS(CAST(${tx.amount} AS NUMERIC)) ELSE 0 END), 0)`,
+          income: sumMoney(
+            sql`CASE WHEN ${tx.type} = 'income' THEN ${moneyCents(tx.amount)} ELSE 0 END`
+          ),
+          expenses: sumMoney(
+            sql`CASE WHEN ${tx.type} = 'expense' THEN ABS(${moneyCents(tx.amount)}) ELSE 0 END`
+          ),
           expense_count: sql<number>`COALESCE(SUM(CASE WHEN ${tx.type} = 'expense' THEN 1 ELSE 0 END), 0)`,
         })
         .from(tx)

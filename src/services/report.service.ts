@@ -25,6 +25,7 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, sql, inArray } from 'drizzle-orm';
+import { moneyCents, sumCents, sumMoney, sumAmount } from './base/money-sql';
 import { createLogger } from '@/lib/logger';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
@@ -415,18 +416,18 @@ export class ReportService {
 
     const [totals] = await (this.db as any)
       .select({
-        recurring_total: sql<string>`COALESCE(SUM(CASE WHEN EXISTS (
+        recurring_total: sumMoney(sql`CASE WHEN EXISTS (
           SELECT 1 FROM ${ro}
           WHERE ${ro.workspace_id} = ${tx.workspace_id}
             AND ${ro.status} = 'confirmed'
             AND ${ro.transaction_id} = ${tx.id}
-        ) THEN CAST(${tx.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        one_time_total: sql<string>`COALESCE(SUM(CASE WHEN EXISTS (
+        ) THEN ${moneyCents(tx.amount)} ELSE 0 END`),
+        one_time_total: sumMoney(sql`CASE WHEN EXISTS (
           SELECT 1 FROM ${ro}
           WHERE ${ro.workspace_id} = ${tx.workspace_id}
             AND ${ro.status} = 'confirmed'
             AND ${ro.transaction_id} = ${tx.id}
-        ) THEN 0 ELSE CAST(${tx.amount} AS NUMERIC) END), 0)`,
+        ) THEN 0 ELSE ${moneyCents(tx.amount)} END`),
       })
       .from(tx)
       .where(
@@ -444,7 +445,7 @@ export class ReportService {
       .select({
         category_id: tx.category_id,
         category_name: categories.name,
-        amount: sql<string>`COALESCE(SUM(CAST(${tx.amount} AS NUMERIC)), 0)`,
+        amount: sumAmount(tx.amount),
       })
       .from(tx)
       .innerJoin(categories, eq(tx.category_id, categories.id))
@@ -653,7 +654,7 @@ export class ReportService {
     const incomeByUser = await (this.db as any)
       .select({
         user_id: this.schema.transactions.created_by_user_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
         count: sql<number>`COUNT(*)`,
       })
       .from(this.schema.transactions)
@@ -672,7 +673,7 @@ export class ReportService {
     const expensesByUser = await (this.db as any)
       .select({
         user_id: this.schema.transactions.created_by_user_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
         count: sql<number>`COUNT(*)`,
       })
       .from(this.schema.transactions)
@@ -1024,7 +1025,7 @@ export class ReportService {
   ): Promise<string> {
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
@@ -1056,7 +1057,7 @@ export class ReportService {
   ): Promise<string> {
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
@@ -1089,7 +1090,7 @@ export class ReportService {
     // Get total budget for the month
     const [budgetResult] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.budgets.budget_amount),
       })
       .from(this.schema.budgets)
       .innerJoin(
@@ -1144,7 +1145,7 @@ export class ReportService {
     // Get total budget for all months in the year
     const [budgetResult] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.budgets.budget_amount),
       })
       .from(this.schema.budgets)
       .innerJoin(
@@ -1199,7 +1200,7 @@ export class ReportService {
     const categoryExpenses = await (this.db as any)
       .select({
         category_name: this.schema.categories.name,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .innerJoin(
@@ -1218,7 +1219,7 @@ export class ReportService {
         )
       )
       .groupBy(this.schema.categories.name)
-      .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`);
+      .orderBy(sql`${sumCents(moneyCents(this.schema.transactions.amount))} DESC`);
 
     if (categoryExpenses.length === 0) {
       return [];
@@ -1266,7 +1267,7 @@ export class ReportService {
     const categorySpending = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
@@ -1318,7 +1319,7 @@ export class ReportService {
     const yearlyBudgets = await (this.db as any)
       .select({
         category_id: this.schema.budgets.category_id,
-        total_budget: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
+        total_budget: sumAmount(this.schema.budgets.budget_amount),
       })
       .from(this.schema.budgets)
       .where(
@@ -1357,7 +1358,7 @@ export class ReportService {
     const categorySpending = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
@@ -1414,8 +1415,12 @@ export class ReportService {
     const rows = await (this.db as any)
       .select({
         month_bucket: monthBucketExpr.as('month_bucket'),
-        income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        expenses: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        income: sumMoney(
+          sql`CASE WHEN ${this.schema.transactions.type} = 'income' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+        ),
+        expenses: sumMoney(
+          sql`CASE WHEN ${this.schema.transactions.type} = 'expense' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+        ),
       })
       .from(this.schema.transactions)
       .where(
@@ -1561,7 +1566,7 @@ export class ReportService {
     const rows = await (this.db as any)
       .select({
         source_type: sql<string>`COALESCE(${this.schema.categories.income_source_type}, 'other')`,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .innerJoin(
@@ -1602,7 +1607,7 @@ export class ReportService {
       .select({
         category_name: this.schema.categories.name,
         source_type: sql<string>`COALESCE(${this.schema.categories.income_source_type}, 'other')`,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .innerJoin(
@@ -1621,7 +1626,7 @@ export class ReportService {
         )
       )
       .groupBy(this.schema.categories.name, this.schema.categories.income_source_type)
-      .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`);
+      .orderBy(sql`${sumCents(moneyCents(this.schema.transactions.amount))} DESC`);
 
     if (categoryIncome.length === 0) {
       return [];
@@ -1648,9 +1653,15 @@ export class ReportService {
     const rows = await (this.db as any)
       .select({
         month_bucket: monthBucketExpr.as('month_bucket'),
-        active: sql<string>`COALESCE(SUM(CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'active' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        passive: sql<string>`COALESCE(SUM(CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'passive' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        other: sql<string>`COALESCE(SUM(CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'other' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        active: sumMoney(
+          sql`CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'active' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+        ),
+        passive: sumMoney(
+          sql`CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'passive' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+        ),
+        other: sumMoney(
+          sql`CASE WHEN COALESCE(${this.schema.categories.income_source_type}, 'other') = 'other' THEN ${moneyCents(this.schema.transactions.amount)} ELSE 0 END`
+        ),
       })
       .from(this.schema.transactions)
       .innerJoin(
@@ -1813,7 +1824,7 @@ export class ReportService {
     const incomeByUser = await (this.db as any)
       .select({
         user_id: this.schema.transactions.created_by_user_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
         count: sql<number>`COUNT(*)`,
       })
       .from(this.schema.transactions)

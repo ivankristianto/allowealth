@@ -1,5 +1,6 @@
 import { type IDatabase, getActiveSchema, runTransaction, accounts as accountsTable } from '@/db';
 import { eq, and, sql, inArray, lt, lte } from 'drizzle-orm';
+import { sumAmount } from './base/money-sql';
 import { nanoid } from 'nanoid';
 import { AccountServiceError, ServiceErrorCode } from './service-errors';
 import type { AccountType, Currency } from '@/lib/types/account';
@@ -769,7 +770,7 @@ export class AccountService {
       const result = await (this.db as any)
         .select({
           currency: this.schema.accounts.currency,
-          total: sql<string>`sum(CAST(${this.schema.accounts.balance} AS NUMERIC))`,
+          total: sumAmount(this.schema.accounts.balance),
         })
         .from(this.schema.accounts)
         .where(
@@ -794,7 +795,7 @@ export class AccountService {
         .select({
           type: this.schema.accounts.type,
           currency: this.schema.accounts.currency,
-          total: sql<string>`sum(CAST(${this.schema.accounts.balance} AS NUMERIC))`,
+          total: sumAmount(this.schema.accounts.balance),
           count: sql<number>`count(*)`,
         })
         .from(this.schema.accounts)
@@ -824,7 +825,7 @@ export class AccountService {
         .select({
           account_class: this.schema.accounts.account_class,
           currency: this.schema.accounts.currency,
-          total: sql<string>`sum(CAST(${this.schema.accounts.balance} AS NUMERIC))`,
+          total: sumAmount(this.schema.accounts.balance),
           count: sql<number>`count(*)`,
         })
         .from(this.schema.accounts)

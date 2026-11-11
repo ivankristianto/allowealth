@@ -1,5 +1,6 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq, and, gte, lte, sql, inArray, or, isNull } from 'drizzle-orm';
+import { sumAmount } from './base/money-sql';
 import { nanoid } from 'nanoid';
 import { parse } from 'valibot';
 import {
@@ -213,7 +214,7 @@ export class BudgetService {
     const monthTransactions = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS NUMERIC))`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
@@ -558,7 +559,7 @@ export class BudgetService {
 
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(sum(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
