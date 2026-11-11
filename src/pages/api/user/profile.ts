@@ -15,6 +15,7 @@ import { and, eq } from 'drizzle-orm';
 import { email, maxLength, minLength, object, optional, pipe, string } from 'valibot';
 import { securityActivityService } from '@/services/security-activity.service';
 import { auth as betterAuth } from '@/lib/auth/server';
+import { isDemoMode } from '@/lib/demo-mode';
 import { isAPIError } from 'better-auth/api';
 import { checkRateLimitByKey, createRateLimitResponse, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
 
@@ -105,6 +106,10 @@ export const PUT: APIRoute = async (context) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (normalizedEmail !== currentUser.email.toLowerCase()) {
+      if (isDemoMode()) {
+        return errorResponse('Email changes are disabled in demo mode', 403, 'DEMO_MODE');
+      }
+
       const rateLimitResult = checkRateLimitByKey(
         `email-change:${auth.userId}`,
         RATE_LIMIT_PRESETS.emailChange

@@ -4,9 +4,11 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { captcha, twoFactor } from 'better-auth/plugins';
 import { oauthProvider } from '@better-auth/oauth-provider';
 import { passkey } from '@better-auth/passkey';
+import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
 import { INTERNAL_IP_HEADER } from '@/lib/auth/client-ip';
+import { isDemoMode } from '@/lib/demo-mode';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
@@ -15,6 +17,7 @@ import { securityActivityService } from '@/services/security-activity.service';
 import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
 import { getOAuthProviderOptions } from './oauth-provider-options';
 import { hashPassword, verifyPassword } from './password';
+import { createAuthRequestGuard, type AuthAccountState } from './request-guard';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
@@ -75,6 +78,27 @@ function getGoogleClientSecret(): string | undefined {
     getEnv('GOOGLE_CLIENT_SECRET') ??
     (authProtectionsEnabled() ? undefined : 'test-google-client-secret')
   );
+}
+
+async function loadAccountState(userId: string): Promise<AuthAccountState | null> {
+  const [row] = await db
+    .select({
+      role: schema.users.role,
+      deletedAt: schema.users.deleted_at,
+      workspaceId: schema.users.workspace_id,
+      workspaceStatus: schema.workspaces.status,
+    })
+    .from(schema.users)
+    .leftJoin(schema.workspaces, eq(schema.workspaces.id, schema.users.workspace_id))
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+
+  if (!row) return null;
+  return {
+    role: row.role,
+    deletedAt: row.deletedAt,
+    workspaceInactive: row.workspaceId != null && row.workspaceStatus !== 'active',
+  };
 }
 
 function createAuthInstance() {
@@ -216,6 +240,9 @@ function createAuthInstance() {
       enabled: protectionsEnabled,
       storage: authSecondaryStorage ? 'secondary-storage' : 'memory',
       customRules: AUTH_RATE_LIMIT_RULES,
+    },
+    hooks: {
+      before: createAuthRequestGuard({ isDemoMode, loadAccountState }),
     },
     advanced: {
       cookiePrefix: 'allowealth',
