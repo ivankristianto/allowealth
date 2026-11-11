@@ -1,13 +1,6 @@
 import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
 import { csrfFetch, getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
-import {
-  attachAmountFormatter,
-  stripAmountFormatting,
-  formatAmountForDisplay,
-} from '@/lib/formatting/amount-input';
-import { formatCurrency } from '@/lib/formatting/currency-client';
-import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import {
   clearConfirmError,
@@ -19,20 +12,9 @@ import {
   getActionInboxTitle,
   getOccurrenceActionWarning,
   getOccurrenceDateLabel,
-  type RecurringOccurrenceType,
 } from '@/components/organisms/recurring-ui';
 import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
-
-interface RecurringOccurrenceLike {
-  id: string;
-  due_date: string;
-  templateName: string;
-  templateType: RecurringOccurrenceType;
-  templateAmount: string;
-  currency: string;
-  category: { id: string; name: string };
-  account: { id: string; name: string };
-}
+import { bindOccurrenceActions, parseApiError } from './recurring-occurrence-actions.client';
 
 interface RecurringTemplatePrefill {
   name: string;
@@ -46,42 +28,19 @@ interface RecurringTemplatePrefill {
   description?: string;
 }
 
-function currentDateIso(): string {
-  return getCurrentDateISO();
-}
-
-function isOccurrenceActionable(occurrence: RecurringOccurrenceLike): boolean {
-  return occurrence.due_date <= currentDateIso();
-}
-
 let controller: AbortController | null = null;
 let currentView: 'list' | 'calendar' = 'list';
 let currentMonth = '';
 let loadedCalendarMonth: string | null = null;
-let lastFocusedElement: HTMLElement | null = null;
 let pendingTypeFilter: 'all' | 'income' | 'expense' = 'all';
 
-let pendingSkipOccurrence: RecurringOccurrenceLike | null = null;
 let pendingCancelTemplateId: string | null = null;
-let confirmAmountFormatter: ReturnType<typeof attachAmountFormatter> | null = null;
-let confirmAmountInput: HTMLInputElement | null = null;
-let confirmAmountInputHandler: ((event: Event) => void) | null = null;
-let confirmCurrency: Currency = DEFAULT_CURRENCY;
 
 let templateType: string = 'all';
 let templateSearch: string = '';
 let templatePage: number = 1;
 const TEMPLATE_LIMIT = 10;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-const parseApiError = async (response: Response): Promise<string> => {
-  try {
-    const data = await response.json();
-    return data?.error?.message || data?.message || `Request failed (${response.status})`;
-  } catch {
-    return `Request failed (${response.status})`;
-  }
-};
 
 function parseMonthToYearMonth(period: string): string {
   // Converts MM-YYYY to YYYY-MM
@@ -168,7 +127,7 @@ async function refreshPendingList(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-pending-list-container');
   if (!container) return;
 
-  const month = currentMonth || currentDateIso().slice(0, 7);
+  const month = currentMonth || getCurrentDateISO().slice(0, 7);
   const html = await fetchHtml(
     `/api/recurring/occurrences?month=${encodeURIComponent(month)}&status=pending&_render=html`,
     signal
@@ -182,7 +141,7 @@ async function refreshStats(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-stats-container');
   if (!container) return;
 
-  const month = currentMonth || currentDateIso().slice(0, 7);
+  const month = currentMonth || getCurrentDateISO().slice(0, 7);
   const html = await fetchHtml(
     `/api/recurring/stats?month=${encodeURIComponent(month)}&_render=html`,
     signal
@@ -364,115 +323,6 @@ function showDialog(dialog: HTMLDialogElement | null): void {
   if (!dialog.open) dialog.showModal();
 }
 
-function formatDueDateLabel(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00`);
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-}
-
-function openConfirmModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLElement | null): void {
-  const modal = document.getElementById('recurring-confirm-modal') as HTMLDialogElement | null;
-  const form = document.getElementById('recurring-confirm-form') as HTMLFormElement | null;
-  if (!modal || !form) return;
-
-  lastFocusedElement = trigger ?? (document.activeElement as HTMLElement | null);
-
-  const title = form.querySelector('[data-modal-title]') as HTMLElement | null;
-  const subtitle = form.querySelector('[data-modal-subtitle]') as HTMLElement | null;
-  const idInput = form.querySelector('input[name="occurrence_id"]') as HTMLInputElement | null;
-  const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
-  const dateInput = form.querySelector('input[name="transaction_date"]') as HTMLInputElement | null;
-  const categorySelect = form.querySelector(
-    'select[name="category_id"]'
-  ) as HTMLSelectElement | null;
-  const accountSelect = form.querySelector('select[name="account_id"]') as HTMLSelectElement | null;
-  const originalAmount = form.querySelector('[data-original-amount]') as HTMLElement | null;
-
-  if (title) title.textContent = `Confirm ${occurrence.templateName}`;
-  if (subtitle) {
-    subtitle.textContent = getOccurrenceDateLabel(
-      occurrence.templateType,
-      formatDueDateLabel(occurrence.due_date)
-    );
-  }
-  if (idInput) idInput.value = occurrence.id;
-  if (dateInput) dateInput.value = occurrence.due_date;
-  if (dateInput) dateInput.max = currentDateIso();
-  if (categorySelect) categorySelect.value = occurrence.category.id;
-  if (accountSelect) accountSelect.value = occurrence.account.id;
-
-  // Set up amount formatter with currency-aware thousand separators
-  confirmCurrency = isValidCurrency(occurrence.currency) ? occurrence.currency : DEFAULT_CURRENCY;
-  if (amountInput) {
-    // Destroy previous formatter if any
-    confirmAmountFormatter?.cleanup();
-    confirmAmountFormatter = attachAmountFormatter(amountInput, confirmCurrency);
-    // Set value and format it for display
-    amountInput.value = formatAmountForDisplay(occurrence.templateAmount, confirmCurrency);
-    // Update the currency data attribute for AmountInput
-    amountInput.setAttribute('data-amount-currency', confirmCurrency);
-  }
-
-  if (originalAmount) {
-    originalAmount.textContent = `Original: ${formatCurrency(parseFloat(occurrence.templateAmount) || 0, confirmCurrency)}`;
-    originalAmount.classList.add('hidden');
-  }
-
-  clearConfirmError(form.querySelector('[data-confirm-error]') as HTMLElement | null);
-  setConfirmLoading(form.querySelector('[data-confirm-submit]') as HTMLButtonElement | null, false);
-
-  showDialog(modal);
-  amountInput?.focus();
-
-  if (confirmAmountInput && confirmAmountInputHandler) {
-    confirmAmountInput.removeEventListener('input', confirmAmountInputHandler);
-  }
-
-  if (amountInput) {
-    confirmAmountInput = amountInput;
-    confirmAmountInputHandler = () => {
-      if (!originalAmount) return;
-      const currentRaw = stripAmountFormatting(amountInput.value, confirmCurrency);
-      const originalRaw = stripAmountFormatting(occurrence.templateAmount, confirmCurrency);
-      const changed = currentRaw !== originalRaw;
-      originalAmount.classList.toggle('hidden', !changed);
-    };
-    amountInput.addEventListener('input', confirmAmountInputHandler);
-  }
-}
-
-function openSkipModal(occurrence: RecurringOccurrenceLike, trigger?: HTMLElement | null): void {
-  const modal = document.getElementById('recurring-skip-modal') as HTMLDialogElement | null;
-  if (!modal) return;
-
-  lastFocusedElement = trigger ?? (document.activeElement as HTMLElement | null);
-  pendingSkipOccurrence = occurrence;
-
-  const nameEl = modal.querySelector('[data-skip-template-name]') as HTMLElement | null;
-  const reasonInput = modal.querySelector('[data-skip-reason]') as HTMLTextAreaElement | null;
-  const counter = modal.querySelector('[data-skip-counter]') as HTMLElement | null;
-
-  if (nameEl) {
-    nameEl.textContent = `Skip ${occurrence.templateName}?`;
-  }
-
-  if (reasonInput) {
-    reasonInput.value = '';
-    reasonInput.focus();
-  }
-
-  if (counter) {
-    counter.textContent = '0 / 200 characters';
-  }
-
-  clearConfirmError(modal.querySelector('[data-confirm-error]') as HTMLElement | null);
-  setConfirmLoading(
-    modal.querySelector('[data-confirm-action]') as HTMLButtonElement | null,
-    false
-  );
-
-  showDialog(modal);
-}
-
 function openCancelModal(templateId: string, templateName: string): void {
   const modal = document.getElementById('recurring-cancel-modal') as HTMLDialogElement | null;
   if (!modal) return;
@@ -525,16 +375,22 @@ function initRecurringPage(): void {
     pageRoot.dataset.initialMonthLabel || formatMonthLabelFromPeriod(currentMonth)
   );
 
-  const confirmModal = document.getElementById(
-    'recurring-confirm-modal'
-  ) as HTMLDialogElement | null;
-  const confirmForm = document.getElementById('recurring-confirm-form') as HTMLFormElement | null;
-  const skipModal = document.getElementById('recurring-skip-modal') as HTMLDialogElement | null;
   const cancelModal = document.getElementById('recurring-cancel-modal') as HTMLDialogElement | null;
 
   setView(currentView, signal);
   bindPendingFilterButtons(signal);
   applyPendingQueueFilter();
+  bindOccurrenceActions({
+    signal,
+    onMutated: async (successMessage) => {
+      await refreshAfterMutation(signal);
+      addToast(successMessage, 'success');
+    },
+    dateLabel: (occurrence, formattedDate) =>
+      getOccurrenceDateLabel(occurrence.templateType ?? 'expense', formattedDate),
+    notDueWarning: (action, occurrence) =>
+      getOccurrenceActionWarning(action, occurrence.templateType ?? 'expense'),
+  });
 
   const templatePrefill = parseTemplatePrefill(pageRoot);
   if (templatePrefill) {
@@ -618,42 +474,6 @@ function initRecurringPage(): void {
     (event) => {
       const target = event.target as HTMLElement;
 
-      const confirmTrigger = target.closest('[data-open-confirm-modal]') as HTMLElement | null;
-      if (confirmTrigger) {
-        const raw = confirmTrigger.getAttribute('data-occurrence');
-        if (!raw) return;
-
-        try {
-          const occurrence = JSON.parse(raw) as RecurringOccurrenceLike;
-          if (!isOccurrenceActionable(occurrence)) {
-            addToast(getOccurrenceActionWarning('confirm', occurrence.templateType), 'warning');
-            return;
-          }
-          openConfirmModal(occurrence, confirmTrigger);
-        } catch {
-          addToast('Invalid occurrence data', 'error');
-        }
-        return;
-      }
-
-      const skipTrigger = target.closest('[data-open-skip-modal]') as HTMLElement | null;
-      if (skipTrigger) {
-        const raw = skipTrigger.getAttribute('data-occurrence');
-        if (!raw) return;
-
-        try {
-          const occurrence = JSON.parse(raw) as RecurringOccurrenceLike;
-          if (!isOccurrenceActionable(occurrence)) {
-            addToast(getOccurrenceActionWarning('skip', occurrence.templateType), 'warning');
-            return;
-          }
-          openSkipModal(occurrence, skipTrigger);
-        } catch {
-          addToast('Invalid occurrence data', 'error');
-        }
-        return;
-      }
-
       const templateActionButton = target.closest('[data-template-action]') as HTMLElement | null;
       if (templateActionButton) {
         const action = templateActionButton.getAttribute('data-template-action');
@@ -689,163 +509,6 @@ function initRecurringPage(): void {
             templateActionButton.getAttribute('data-template-name') || 'this template';
           openCancelModal(templateId, templateName);
         }
-      }
-    },
-    { signal }
-  );
-
-  confirmForm?.addEventListener(
-    'submit',
-    async (event) => {
-      event.preventDefault();
-      const form = event.currentTarget as HTMLFormElement;
-
-      const id = (form.querySelector('input[name="occurrence_id"]') as HTMLInputElement | null)
-        ?.value;
-      const rawAmount = (form.querySelector('input[name="amount"]') as HTMLInputElement | null)
-        ?.value;
-      const amount = rawAmount ? stripAmountFormatting(rawAmount, confirmCurrency) : '';
-      const transactionDate = (
-        form.querySelector('input[name="transaction_date"]') as HTMLInputElement | null
-      )?.value;
-      const categoryId = (
-        form.querySelector('select[name="category_id"]') as HTMLSelectElement | null
-      )?.value;
-      const accountId = (
-        form.querySelector('select[name="account_id"]') as HTMLSelectElement | null
-      )?.value;
-
-      const errorElement = form.querySelector('[data-confirm-error]') as HTMLElement | null;
-      const submitButton = form.querySelector('[data-confirm-submit]') as HTMLButtonElement | null;
-
-      clearConfirmError(errorElement);
-
-      if (!id || !amount || !transactionDate || !categoryId || !accountId) {
-        showConfirmError(errorElement, 'Please complete all fields.');
-        return;
-      }
-
-      setConfirmLoading(submitButton, true);
-
-      try {
-        const response = await fetch(`/api/recurring/occurrences/${id}/confirm`, {
-          method: 'POST',
-          headers: getCsrfHeaders({
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          }),
-          body: JSON.stringify({
-            amount,
-            transaction_date: transactionDate,
-            category_id: categoryId,
-            account_id: accountId,
-          }),
-          signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(await parseApiError(response));
-        }
-
-        closeConfirmationModal(confirmModal);
-        await refreshAfterMutation(signal);
-        addToast('Occurrence confirmed', 'success');
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return;
-        showConfirmError(
-          errorElement,
-          error instanceof Error ? error.message : 'Failed to confirm occurrence'
-        );
-        addToast(error instanceof Error ? error.message : 'Failed to confirm occurrence', 'error');
-      } finally {
-        setConfirmLoading(submitButton, false);
-      }
-    },
-    { signal }
-  );
-
-  const confirmCancelButton = confirmForm?.querySelector(
-    '[data-confirm-cancel]'
-  ) as HTMLButtonElement | null;
-  confirmCancelButton?.addEventListener(
-    'click',
-    () => {
-      closeConfirmationModal(confirmModal);
-    },
-    { signal }
-  );
-
-  const skipReasonInput = skipModal?.querySelector(
-    '[data-skip-reason]'
-  ) as HTMLTextAreaElement | null;
-  const skipCounter = skipModal?.querySelector('[data-skip-counter]') as HTMLElement | null;
-
-  skipReasonInput?.addEventListener(
-    'input',
-    () => {
-      if (!skipCounter) return;
-      skipCounter.textContent = `${skipReasonInput.value.length} / 200 characters`;
-    },
-    { signal }
-  );
-
-  const skipCancelButton = skipModal?.querySelector(
-    '[data-confirm-cancel]'
-  ) as HTMLButtonElement | null;
-  skipCancelButton?.addEventListener(
-    'click',
-    () => {
-      closeConfirmationModal(skipModal);
-    },
-    { signal }
-  );
-
-  const skipConfirmButton = skipModal?.querySelector(
-    '[data-confirm-action]'
-  ) as HTMLButtonElement | null;
-  const skipError = skipModal?.querySelector('[data-confirm-error]') as HTMLElement | null;
-
-  skipConfirmButton?.addEventListener(
-    'click',
-    async () => {
-      if (!pendingSkipOccurrence) return;
-
-      setConfirmLoading(skipConfirmButton, true);
-      clearConfirmError(skipError);
-
-      try {
-        const response = await fetch(
-          `/api/recurring/occurrences/${pendingSkipOccurrence.id}/skip`,
-          {
-            method: 'POST',
-            headers: getCsrfHeaders({
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            }),
-            body: JSON.stringify({
-              skip_reason: skipReasonInput?.value.trim() || undefined,
-            }),
-            signal,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(await parseApiError(response));
-        }
-
-        closeConfirmationModal(skipModal);
-        pendingSkipOccurrence = null;
-        await refreshAfterMutation(signal);
-        addToast('Occurrence skipped', 'success');
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return;
-        showConfirmError(
-          skipError,
-          error instanceof Error ? error.message : 'Failed to skip occurrence'
-        );
-        addToast(error instanceof Error ? error.message : 'Failed to skip occurrence', 'error');
-      } finally {
-        setConfirmLoading(skipConfirmButton, false);
       }
     },
     { signal }
@@ -903,26 +566,6 @@ function initRecurringPage(): void {
         );
       } finally {
         setConfirmLoading(cancelModalConfirmButton, false);
-      }
-    },
-    { signal }
-  );
-
-  confirmModal?.addEventListener(
-    'close',
-    () => {
-      if (lastFocusedElement && document.contains(lastFocusedElement)) {
-        lastFocusedElement.focus();
-      }
-    },
-    { signal }
-  );
-
-  skipModal?.addEventListener(
-    'close',
-    () => {
-      if (lastFocusedElement && document.contains(lastFocusedElement)) {
-        lastFocusedElement.focus();
       }
     },
     { signal }
