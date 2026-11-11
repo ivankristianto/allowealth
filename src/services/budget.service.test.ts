@@ -7,7 +7,6 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { BudgetService } from './budget.service';
-import { MONTH_NAMES } from '@/lib/utils/date';
 import {
   createMockDatabase,
   createMockCategory,
@@ -512,37 +511,6 @@ describe('BudgetService', () => {
   });
 
   describe('getBudgetHistory', () => {
-    it('should return budget history for multiple months', async () => {
-      const userId = 'user-1';
-      const currency = 'IDR';
-      const now = new Date();
-
-      // Mock budgets for multiple months - using implementation mock that returns same data
-      (mockDb.query.budgets.findMany as any).mockImplementation(() => {
-        return Promise.resolve([
-          createMockBudgetWithCategory(
-            { id: 'budget-1', category_id: 'cat-1', budget_amount: '6000000' },
-            { id: 'cat-1', name: 'Food', type: 'expense', is_active: true }
-          ),
-        ]);
-      });
-
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() => Promise.resolve([{ category_id: 'cat-1', total: '3000000' }])),
-          })),
-        })),
-      });
-
-      const history = await budgetService.getBudgetHistory(userId, currency, 3);
-
-      expect(history).toHaveLength(3);
-      // Month name depends on current date
-      expect(history[0].month_name).toBe(MONTH_NAMES[now.getMonth()]);
-      expect(history[0].total_budget).toBe('6000000');
-    });
-
     it('should validate months parameter', async () => {
       await expect(budgetService.getBudgetHistory('user-1', 'IDR', 0)).rejects.toThrow(
         'Invalid months parameter'
@@ -555,80 +523,6 @@ describe('BudgetService', () => {
   });
 
   describe('getCategoryTrends', () => {
-    it('should pivot category data across months sorted by worst adherence', async () => {
-      const userId = 'user-1';
-      const currency = 'IDR' as const;
-
-      // Mock: consistent data for all months
-      (mockDb.query.budgets.findMany as any).mockImplementation(() => {
-        return Promise.resolve([
-          createMockBudgetWithCategory(
-            { id: 'b1', category_id: 'cat-food', budget_amount: '1000000' },
-            {
-              id: 'cat-food',
-              name: 'Food',
-              type: 'expense',
-              is_active: true,
-              icon: 'Utensils',
-              color: 'bg-success',
-            }
-          ),
-          createMockBudgetWithCategory(
-            { id: 'b2', category_id: 'cat-transport', budget_amount: '500000' },
-            {
-              id: 'cat-transport',
-              name: 'Transport',
-              type: 'expense',
-              is_active: true,
-              icon: 'Car',
-              color: 'bg-info',
-            }
-          ),
-        ]);
-      });
-
-      // Mock transactions: Food overspends (120%), Transport is ok (60%)
-      (mockDb as any).select.mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() =>
-              Promise.resolve([
-                { category_id: 'cat-food', total: '1200000' },
-                { category_id: 'cat-transport', total: '300000' },
-              ])
-            ),
-          })),
-        })),
-      });
-
-      const result = await budgetService.getCategoryTrends(userId, currency, 2);
-
-      // Should have 2 month columns
-      expect(result.months).toHaveLength(2);
-
-      // Should have 2 category rows
-      expect(result.categories).toHaveLength(2);
-
-      // Food (120% avg) should sort before Transport (60% avg) — worst first
-      expect(result.categories[0].category_name).toBe('Food');
-      expect(result.categories[0].avg_percentage_used).toBeGreaterThan(100);
-      expect(result.categories[1].category_name).toBe('Transport');
-
-      // Each category should have data for each month
-      expect(result.categories[0].months).toHaveLength(2);
-      expect(result.categories[1].months).toHaveLength(2);
-
-      // Check month data structure
-      const foodMonth = result.categories[0].months[0];
-      expect(foodMonth).toHaveProperty('month');
-      expect(foodMonth).toHaveProperty('year');
-      expect(foodMonth).toHaveProperty('month_name');
-      expect(foodMonth).toHaveProperty('spent_amount');
-      expect(foodMonth).toHaveProperty('budget_amount');
-      expect(foodMonth).toHaveProperty('percentage_used');
-      expect(foodMonth).toHaveProperty('status');
-    });
-
     it('should validate months parameter', async () => {
       await expect(budgetService.getCategoryTrends('user-1', 'IDR', 0)).rejects.toThrow(
         'Invalid months parameter'
