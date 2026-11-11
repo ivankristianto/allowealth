@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { closeDatabase, db, resetDb } from '@/db';
+import { db, resetDb } from '@/db';
 import { account, user as authUsers, users, workspaces } from '@/db/schema';
 import { verifyPassword } from '@/lib/auth/password';
 import { setTestEnv } from '@/lib/env';
@@ -26,7 +26,7 @@ function deleteSqliteArtifacts(dbPath: string) {
 }
 
 function setupTestDatabase(dbPath: string) {
-  execFileSync('bun', ['run', 'db:setup'], {
+  execFileSync('bun', ['run', 'db:migrate'], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -56,14 +56,12 @@ describe('POST /api/installer/setup', () => {
     delete process.env.INSTALLER_SECRET;
 
     setupTestDatabase(testDbPath);
-    await closeDatabase();
     resetDb();
   });
 
   afterEach(async () => {
     setTestEnv(null);
     AccountCategoryService.buildDefaultCategoryRows = originalBuildDefaultCategoryRows;
-    await closeDatabase();
     resetDb();
 
     if (originalDatabaseUrl === undefined) {

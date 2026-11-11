@@ -1,54 +1,43 @@
 /* eslint-disable no-console -- CLI script requires console output */
 /**
- * Database Empty Script
- *
- * Empties all data from the database while preserving the schema.
- *
- * Usage:
- *   bun run db:empty --yes          # refuses a DB with non-demo users unless --force is added
+ * Deletes every row from every table while keeping the schema and the migration history.
+ * Usage: bun run db:empty --yes   (refuses a DB with non-demo users unless --force is added)
  */
 
 import { sql } from 'drizzle-orm';
 import { getDatabaseConfig } from './config';
-import { db, getActiveSchema } from './index';
+import { db, runTransaction, type Database } from './index';
 import { enforceWipeGuard, parseWipeFlags, resolveDatabasePath } from './wipe-guard';
 
-const schema = getActiveSchema();
-const config = getDatabaseConfig();
+/** Kept so the emptied database still passes the startup migration guard. */
+const KEPT_TABLE = '__drizzle_migrations';
 
-// Tables in reverse dependency order (children first, parents last)
-// This ensures foreign key constraints are satisfied during deletion
-const tablesToEmpty = [
-  // Dependent tables first
-  schema.accountSnapshotItems,
-  schema.accountSnapshots,
-  schema.accountUpdateReminders,
-  schema.accountHistory,
-  schema.transactions,
-  schema.budgets,
-  schema.accounts,
-  schema.categories,
-  schema.accountCategories,
-  schema.auditLogs,
-  schema.mcpAppPasswords,
-  schema.oauthAccessToken,
-  schema.oauthRefreshToken,
-  schema.oauthConsent,
-  schema.oauthClientResource,
-  schema.oauthClientAssertion,
-  schema.oauthResource,
-  schema.oauthClient,
-  schema.passwordResetTokens,
-  schema.sessions,
-  schema.userMeta,
-  schema.workspaceInvitations,
-  schema.workspaceMeta,
-  schema.users,
-  // Parent tables last
-  schema.workspaces,
-];
+// Read from the database itself: the schema index leaves out the deprecated MFA tables,
+// and a hand-kept list is how the Better Auth, recurring and token tables were missed.
+const LIST_TABLES = sql`
+  SELECT name FROM sqlite_master
+  WHERE type = 'table'
+    AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\'
+    AND name != ${KEPT_TABLE}
+  ORDER BY name`;
+
+/** Empty every table in one transaction; any failure rolls the whole wipe back and throws. */
+function emptyAllTables(database: Database): string[] {
+  return runTransaction(database, (tx) => {
+    // Checks run at COMMIT instead of per DELETE, so table order does not matter.
+    // foreign_keys itself cannot be switched off inside a transaction.
+    tx.run(sql`PRAGMA defer_foreign_keys = ON`);
+
+    const tables = tx.all<{ name: string }>(LIST_TABLES).map((row) => row.name);
+    for (const table of tables) {
+      tx.run(sql`DELETE FROM ${sql.identifier(table)}`);
+    }
+    return tables;
+  });
+}
 
 async function emptyDatabase() {
+  const config = getDatabaseConfig();
   enforceWipeGuard({
     dbPath: resolveDatabasePath(config.url),
     action: 'empty',
@@ -68,33 +57,14 @@ async function emptyDatabase() {
     await new Promise((resolve) => setTimeout(resolve, 5000));
   }
 
-  try {
-    // Delete from each table individually
-    console.log('Using DELETE for SQLite...\n');
-
-    // Disable foreign key checks temporarily
-    await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
-
-    for (const table of tablesToEmpty) {
-      try {
-        await db.delete(table);
-        const tableName = (table as any)[Symbol.for('drizzle:Name')] || (table as any)._.name;
-        console.log(`  ✓ Emptied: ${tableName}`);
-      } catch (error: any) {
-        const tableName = (table as any)[Symbol.for('drizzle:Name')] || (table as any)._.name;
-        console.log(`  ⊘ Skipped: ${tableName} - ${error.message}`);
-      }
-    }
-
-    // Re-enable foreign key checks
-    await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
-
-    console.log('\n✅ Database emptied successfully!\n');
-  } catch (error) {
-    console.error('\n❌ Failed to empty database:', error);
-    process.exit(1);
+  const tables = emptyAllTables(db);
+  for (const table of tables) {
+    console.log(`  ✓ Emptied: ${table}`);
   }
+  console.log(`\n✅ Emptied ${tables.length} tables (kept ${KEPT_TABLE}).\n`);
 }
 
-// Run the script
-emptyDatabase();
+emptyDatabase().catch((error: unknown) => {
+  console.error('\n❌ Failed to empty database:', error);
+  process.exit(1);
+});

@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { nanoid } from 'nanoid';
 import type { IDatabase } from '@/db';
 import * as schema from '@/db/schema/sqlite';
+import { applyMigrations } from '@/db/test-helpers/migrations';
 import * as auditLogModule from './audit-log.service';
 
 const { AuditLogService } = auditLogModule;
@@ -24,29 +25,6 @@ const USER_ID = `usr-${nanoid(8)}`;
 let rawDb: Database;
 let db: ReturnType<typeof drizzle>;
 let auditLogService: InstanceType<typeof AuditLogService>;
-
-function removeComments(sql: string): string {
-  let result = sql.replace(/--[^\n]*/g, '');
-  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
-  return result.trim();
-}
-
-function execSetupSql(db: Database, sql: string) {
-  const statements = sql
-    .split(';')
-    .map((statement) => removeComments(statement).trim())
-    .filter((statement) => statement.length > 0);
-
-  for (const statement of statements) {
-    try {
-      db.prepare(statement).run();
-    } catch (error: any) {
-      if (!error.message?.includes('already exists')) {
-        throw error;
-      }
-    }
-  }
-}
 
 function seedWorkspaceAndUser() {
   const now = new Date();
@@ -104,9 +82,7 @@ beforeAll(async () => {
   rawDb.prepare('PRAGMA journal_mode = WAL').run();
   rawDb.prepare('PRAGMA foreign_keys = ON').run();
 
-  const setupSqlPath = join(process.cwd(), 'src', 'db', 'setup.sql');
-  const setupSql = await Bun.file(setupSqlPath).text();
-  execSetupSql(rawDb, setupSql);
+  applyMigrations(rawDb);
 
   db = drizzle(rawDb, { schema });
   seedWorkspaceAndUser();

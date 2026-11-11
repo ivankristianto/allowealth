@@ -1,6 +1,5 @@
 import { test as setup, expect, type Page } from '@playwright/test';
 import { execSync } from 'child_process';
-import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -16,7 +15,6 @@ function getCaptchaHeaders(): Record<string, string> {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
-const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
 
 async function waitForAuthenticatedLanding(page: Page) {
   await expect
@@ -56,18 +54,18 @@ setup('reset database', async () => {
   // eslint-disable-next-line no-console -- Informational output for test setup
   console.info('🗑️  Resetting E2E database...');
 
-  // Delete old database files
-  const dbFiles = [E2E_DB_PATH, `${E2E_DB_PATH}-wal`, `${E2E_DB_PATH}-shm`];
-  for (const file of dbFiles) {
-    if (fs.existsSync(file)) {
-      fs.unlinkSync(file);
-    }
-  }
-
   // drizzle-kit push leaves __drizzle_migrations empty, so the installer's migration guard would 500 every request
   // eslint-disable-next-line no-console -- Informational output for test setup
   console.info('📦 Migrating database schema...');
   execSync('bun run db:migrate', {
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, DATABASE_URL: 'db/.e2e.db' },
+    stdio: 'inherit',
+  });
+
+  // Wipe in place: the web server already holds one long-lived connection to this file,
+  // and would keep using a deleted file. --force because tests leave @test.com users behind.
+  execSync('bun run db:empty --yes --force', {
     cwd: PROJECT_ROOT,
     env: { ...process.env, DATABASE_URL: 'db/.e2e.db' },
     stdio: 'inherit',
