@@ -181,11 +181,11 @@ Expected: `HTTP/2 200` (or `301`/`302` redirect followed by `200`).
 
 The SSR app builds with the `@astrojs/node` adapter (`mode: 'standalone'`).
 
-| Command                 | Description                                          |
-| ----------------------- | ---------------------------------------------------- |
-| `bun run build`         | Build the app                                        |
-| `bun run build:analyze` | Build and generate bundle stats at `dist/stats.html` |
-| `bun run bundle:report` | Build and run bundle size analysis                   |
+| Command                 | Description                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| `bun run build`         | Build the app                                                     |
+| `bun run build:analyze` | Build and generate bundle stats at `dist/stats.html`              |
+| `bun run bundle:report` | Build, print gzipped JS per page, exit 1 if a page is over 250 kB |
 
 ```bash
 bun run build
