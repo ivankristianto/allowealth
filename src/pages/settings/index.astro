@@ -35,7 +35,7 @@ import {
   X,
 } from '@lucide/astro';
 import { DiagnosticsService } from '@/services/diagnostics.service';
-import type { DiagnosticsData } from '@/types/diagnostics';
+import { loadSettingsDiagnostics } from '@/lib/settings/settings-diagnostics';
 import { workspaceService, workspaceMetaService, workspaceInvitationService } from '@/services';
 import { CURRENCY_META, CURRENCY_OPTIONS } from '@/lib/constants/currency';
 
@@ -138,18 +138,9 @@ try {
   console.error('Failed to fetch workspace data:', error);
 }
 
-let diagnosticsData: DiagnosticsData | null = null;
-let diagnosticsError: string | null = null;
-
-if (isAdmin) {
-  try {
-    const diagnosticsService = new DiagnosticsService(db);
-    diagnosticsData = await diagnosticsService.getDiagnostics();
-  } catch (err) {
-    console.error('Failed to fetch diagnostics:', err);
-    diagnosticsError = err instanceof Error ? err.message : 'Unknown error';
-  }
-}
+const diagnostics = await loadSettingsDiagnostics(user.role, () =>
+  new DiagnosticsService(db).getDiagnostics()
+);
 
 const navItems: Array<{ id: string; label: string; icon: typeof Settings }> = [
   { id: 'general', label: 'General', icon: Settings },
@@ -158,7 +149,7 @@ const navItems: Array<{ id: string; label: string; icon: typeof Settings }> = [
   { id: 'data', label: 'Data', icon: Database },
 ];
 
-if (isAdmin) {
+if (diagnostics.canView) {
   navItems.push({ id: 'server-stats', label: 'Server Stats', icon: Server });
 }
 
@@ -226,7 +217,7 @@ const inviteMemberButtonClassName = accentGhostBtn
           <div class="px-3 pb-2 pt-3">
             <p class={sectionEyebrowClass}>Workspace Settings</p>
             <p class="mt-1 text-sm text-base-content/60">
-              Switch between workspace preferences, members, and diagnostics.
+              Switch between workspace preferences, members, notifications, and data.
             </p>
           </div>
           <ul class="flex flex-col gap-1.5" role="tablist" aria-orientation="vertical">
@@ -831,7 +822,7 @@ const inviteMemberButtonClassName = accentGhostBtn
               </div>
             </section>
 
-            {isAdmin && (
+            {diagnostics.canView && (
               <section
                 id="settings-panel-server-stats"
                 data-settings-panel
@@ -849,17 +840,17 @@ const inviteMemberButtonClassName = accentGhostBtn
                   </header>
                   <div class="divider my-0" />
 
-                  {diagnosticsError && (
+                  {diagnostics.error && (
                     <div class="alert alert-error rounded-xl" role="alert">
                       <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
                       <div>
                         <h3 class="font-bold">Error Loading Stats</h3>
-                        <p class="text-sm">{diagnosticsError}</p>
+                        <p class="text-sm">{diagnostics.error}</p>
                       </div>
                     </div>
                   )}
 
-                  {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
+                  {diagnostics.data && <DiagnosticsDisplay data={diagnostics.data} />}
                 </div>
               </section>
             )}
