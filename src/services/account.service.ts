@@ -1,5 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction, accounts as accountsTable } from '@/db';
-import { eq, and, sql, inArray, lt, lte } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNull, lt, lte, or } from 'drizzle-orm';
 import { sumAmount } from './base/money-sql';
 import { nanoid } from 'nanoid';
 import { AccountServiceError, ServiceErrorCode } from './service-errors';
@@ -279,17 +279,29 @@ export class AccountService {
       );
     }
 
-    // Currency lock: prevent changing currency if account has history beyond the initial entry
-    // Every account starts with 1 history record (initial balance), so threshold is > 1
+    // Currency lock: amounts already recorded in the old currency would be misread. Every
+    // account starts with 1 history record (initial balance), so history counts above 1.
+    // Deleted transactions can't be restored, so only live ones lock the currency.
     if (input.currency !== undefined && input.currency !== currentAccount.currency) {
       await this.assertWorkspaceCurrencyAllowed(workspaceId, input.currency);
 
-      const historyCount = await (this.db as any)
-        .select({ count: sql<number>`count(*)` })
-        .from(this.schema.accountHistory)
-        .where(eq(this.schema.accountHistory.account_id, id));
+      const tx = this.schema.transactions;
+      const [historyCount, liveTransaction] = await Promise.all([
+        (this.db as any)
+          .select({ count: sql<number>`count(*)` })
+          .from(this.schema.accountHistory)
+          .where(eq(this.schema.accountHistory.account_id, id)),
+        this.db.query.transactions.findFirst({
+          columns: { id: true },
+          where: and(
+            eq(tx.workspace_id, workspaceId),
+            or(eq(tx.account_id, id), eq(tx.to_account_id, id)),
+            isNull(tx.deleted_at)
+          ),
+        }),
+      ]);
 
-      if (historyCount[0]?.count > 1) {
+      if (historyCount[0]?.count > 1 || liveTransaction) {
         throw new AccountServiceError(
           ServiceErrorCode.CURRENCY_LOCKED,
           'Cannot change currency — account has transaction history',
