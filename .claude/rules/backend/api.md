@@ -97,28 +97,30 @@ See `docs/architecture/003-api-authentication.md` for full details.
 ## Error Handling
 
 ```typescript
-// ✅ Correct: Surface actual error messages
+import { ServiceError } from '@/services';
+import { errorResponse } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
+
+// ✅ Correct: ServiceError messages pass through; everything else is logged and given an id
 try {
   const budget = await budgetService.create(data);
-  return new Response(JSON.stringify({ budget }), { status: 201 });
+  return successResponse(budget, 201);
 } catch (error) {
-  return new Response(
-    JSON.stringify({
-      error: error instanceof Error ? error.message : 'Failed to create budget',
-    }),
-    { status: 500 }
-  );
+  if (error instanceof ServiceError) {
+    return errorResponse(error.message, error.statusCode, error.code);
+  }
+  const errorId = logError('Error creating budget', error);
+  return errorResponse('Failed to create budget', 500, 'INTERNAL_ERROR', { errorId });
 }
 
-// ❌ Wrong: Generic error
-return new Response(JSON.stringify({ error: 'Failed to create budget' }), {
-  status: 500,
-});
+// ❌ Wrong: Raw message in the response. Drizzle errors carry the SQL and its params
+return errorResponse(error instanceof Error ? error.message : 'Failed', 500);
 ```
 
 **Rules:**
 
-- ✅ **Surface actual error messages in API responses** - not generic "Failed to X"
+- ✅ **Surface `ServiceError` messages; log everything else** - return a generic message plus the `errorId` from `logError`
+- ❌ **Put a non-`ServiceError` message in a response** - not even for super admins
 
 ## Request Validation
 
