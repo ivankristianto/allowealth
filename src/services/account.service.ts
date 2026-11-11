@@ -1,8 +1,18 @@
-import { type IDatabase, getActiveSchema, runTransaction, accounts as accountsTable } from '@/db';
+import {
+  type DbTransaction,
+  type IDatabase,
+  getActiveSchema,
+  runTransaction,
+  accounts as accountsTable,
+} from '@/db';
 import { eq, and, sql, inArray, isNull, lt, lte, or } from 'drizzle-orm';
 import { sumAmount } from './base/money-sql';
 import { nanoid } from 'nanoid';
-import { AccountServiceError, ServiceErrorCode } from './service-errors';
+import { AccountServiceError, ServiceError, ServiceErrorCode } from './service-errors';
+import { safeParse } from 'valibot';
+import { logAuditEvent } from '@/lib/audit-log';
+import { isValidAmount, positiveAmountMessage } from '@/lib/validation/amount';
+import { createTransactionSchema } from '@/lib/validation/transactions';
 import type { AccountType, Currency } from '@/lib/types/account';
 import { deriveAccountClass } from '@/lib/types/account';
 import { WorkspaceMetaService } from './workspace-meta.service';
@@ -16,6 +26,18 @@ const log = createLogger('account');
 
 /** Inferred row type for an account record */
 export type AccountRow = typeof accountsTable.$inferSelect;
+
+export interface TransferRecordInput {
+  createdByUserId: string;
+  description?: string;
+  transactionDate?: Date;
+}
+
+export interface TransferResult {
+  fromAccount: AccountRow;
+  toAccount: AccountRow;
+  transactionId: string;
+}
 
 export interface CreateAccountInput {
   workspace_id: string;
@@ -415,114 +437,196 @@ export class AccountService {
   }
 
   /**
-   * Transfer balance between two accounts of the same currency.
-   * Validates, mutates both balances, and returns the accounts for transaction creation.
+   * Move money between two same-currency accounts and record the transfer transaction.
+   * Balances are read, checked and written in one synchronous SQLite transaction.
    */
   async transfer(
     fromId: string,
     toId: string,
     amount: string,
-    workspaceId: string
-  ): Promise<{ fromAccount: AccountRow | undefined; toAccount: AccountRow | undefined }> {
+    workspaceId: string,
+    record: TransferRecordInput
+  ): Promise<TransferResult> {
     if (fromId === toId) {
-      throw new Error(
-        `Cannot transfer an account to itself (accountId: ${fromId}, workspaceId: ${workspaceId})`
-      );
-    }
-
-    const fromAccount = await this.findByIdIncludingClosed(fromId, workspaceId);
-    const toAccount = await this.findByIdIncludingClosed(toId, workspaceId);
-
-    if (!fromAccount || !toAccount) {
-      throw new AccountServiceError(ServiceErrorCode.ACCOUNT_NOT_FOUND, 'Account not found', 404);
-    }
-
-    if (fromAccount.status === 'closed' || toAccount.status === 'closed') {
       throw new AccountServiceError(
-        ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot transfer — one or both accounts are deactivated',
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Cannot transfer an account to itself',
         400
       );
     }
 
-    if (fromAccount.currency !== toAccount.currency) {
-      throw new Error('Cannot transfer between different currencies');
-    }
-
-    if (decimalCompare(amount, '0') <= 0) {
-      throw new Error('Transfer amount must be positive');
-    }
-
-    const now = new Date();
-    const fromIsDebt = fromAccount.account_class === 'debt';
-    const toIsDebt = toAccount.account_class === 'debt';
-
-    // Debt balances are stored as positive numbers representing amount owed.
-    // Transferring FROM a debt account (e.g. cash advance) increases debt → add amount.
-    // Transferring TO a debt account (e.g. paying off credit card) reduces debt → subtract amount.
-    const newFromBalance = fromIsDebt
-      ? decimalAdd(fromAccount.balance, amount)
-      : decimalSubtract(fromAccount.balance, amount);
-    const newToBalance = toIsDebt
-      ? decimalSubtract(toAccount.balance, amount)
-      : decimalAdd(toAccount.balance, amount);
-
-    try {
-      runTransaction(this.db, (tx) => {
-        tx.update(this.schema.accounts)
-          .set({ balance: newFromBalance, last_updated: now, updated_at: now })
-          .where(
-            and(
-              eq(this.schema.accounts.id, fromId),
-              eq(this.schema.accounts.workspace_id, workspaceId)
-            )
-          )
-          .run();
-
-        tx.update(this.schema.accounts)
-          .set({ balance: newToBalance, last_updated: now, updated_at: now })
-          .where(
-            and(
-              eq(this.schema.accounts.id, toId),
-              eq(this.schema.accounts.workspace_id, workspaceId)
-            )
-          )
-          .run();
-
-        tx.insert(this.schema.accountHistory)
-          .values({
-            id: nanoid(),
-            account_id: fromId,
-            balance: newFromBalance,
-            notes: `Transfer to ${toAccount.name}`,
-            recorded_at: now,
-          })
-          .run();
-
-        tx.insert(this.schema.accountHistory)
-          .values({
-            id: nanoid(),
-            account_id: toId,
-            balance: newToBalance,
-            notes: `Transfer from ${fromAccount.name}`,
-            recorded_at: now,
-          })
-          .run();
-      });
-    } catch (error) {
-      log.error('transfer failed and was rolled back:', error);
+    if (!isValidAmount(amount)) {
       throw new AccountServiceError(
-        ServiceErrorCode.ACCOUNT_NOT_FOUND,
-        'Failed to transfer: could not create history entries',
-        500
+        ServiceErrorCode.VALIDATION_ERROR,
+        positiveAmountMessage('Transfer amount'),
+        400
       );
     }
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    const now = new Date();
+    const accounts = this.schema.accounts;
+    const findAccount = (tx: DbTransaction, id: string) =>
+      tx
+        .select()
+        .from(accounts)
+        .where(and(eq(accounts.id, id), eq(accounts.workspace_id, workspaceId)))
+        .get();
+
+    let result: TransferResult & { auditValue: Record<string, unknown> };
+    try {
+      result = runTransaction(this.db, (tx) => {
+        const fromAccount = findAccount(tx, fromId);
+        const toAccount = findAccount(tx, toId);
+
+        if (!fromAccount || !toAccount) {
+          throw new AccountServiceError(
+            ServiceErrorCode.ACCOUNT_NOT_FOUND,
+            'Account not found',
+            404
+          );
+        }
+        if (fromAccount.status === 'closed' || toAccount.status === 'closed') {
+          throw new AccountServiceError(
+            ServiceErrorCode.ACCOUNT_CLOSED,
+            'Cannot transfer — one or both accounts are deactivated',
+            400
+          );
+        }
+        if (fromAccount.currency !== toAccount.currency) {
+          throw new AccountServiceError(
+            ServiceErrorCode.VALIDATION_ERROR,
+            'Cannot transfer between different currencies',
+            400
+          );
+        }
+
+        const parsed = safeParse(createTransactionSchema, {
+          workspace_id: workspaceId,
+          created_by_user_id: record.createdByUserId,
+          type: 'transfer',
+          amount,
+          currency: fromAccount.currency,
+          account_id: fromId,
+          to_account_id: toId,
+          transaction_date: record.transactionDate ?? now,
+          description: record.description,
+        });
+        if (!parsed.success) {
+          throw new AccountServiceError(
+            ServiceErrorCode.VALIDATION_ERROR,
+            parsed.issues[0]?.message ?? 'Invalid transfer',
+            400
+          );
+        }
+        const transfer = parsed.output;
+
+        // Debt balances are stored as positive amounts owed: moving money out of a debt
+        // account (a cash advance) adds to it, and paying one off subtracts.
+        const newFromBalance =
+          fromAccount.account_class === 'debt'
+            ? decimalAdd(fromAccount.balance, transfer.amount)
+            : decimalSubtract(fromAccount.balance, transfer.amount);
+        const newToBalance =
+          toAccount.account_class === 'debt'
+            ? decimalSubtract(toAccount.balance, transfer.amount)
+            : decimalAdd(toAccount.balance, transfer.amount);
+
+        for (const [id, balance] of [
+          [fromId, newFromBalance],
+          [toId, newToBalance],
+        ] as const) {
+          tx.update(accounts)
+            .set({ balance, last_updated: now, updated_at: now })
+            .where(and(eq(accounts.id, id), eq(accounts.workspace_id, workspaceId)))
+            .run();
+        }
+
+        tx.insert(this.schema.accountHistory)
+          .values([
+            {
+              id: nanoid(),
+              account_id: fromId,
+              balance: newFromBalance,
+              notes: `Transfer to ${toAccount.name}`,
+              recorded_at: now,
+            },
+            {
+              id: nanoid(),
+              account_id: toId,
+              balance: newToBalance,
+              notes: `Transfer from ${fromAccount.name}`,
+              recorded_at: now,
+            },
+          ])
+          .run();
+
+        const transactionId = nanoid();
+        tx.insert(this.schema.transactions)
+          .values({
+            id: transactionId,
+            workspace_id: workspaceId,
+            created_by_user_id: transfer.created_by_user_id,
+            type: 'transfer',
+            amount: transfer.amount,
+            currency: transfer.currency,
+            category_id: null,
+            account_id: fromId,
+            to_account_id: toId,
+            transaction_date: transfer.transaction_date,
+            description: transfer.description,
+            created_at: now,
+            updated_at: now,
+          })
+          .run();
+
+        return {
+          fromAccount: {
+            ...fromAccount,
+            balance: newFromBalance,
+            last_updated: now,
+            updated_at: now,
+          },
+          toAccount: { ...toAccount, balance: newToBalance, last_updated: now, updated_at: now },
+          transactionId,
+          auditValue: {
+            type: 'transfer',
+            amount: transfer.amount,
+            currency: transfer.currency,
+            category_id: null,
+            account_id: fromId,
+            to_account_id: toId,
+            description: transfer.description || null,
+            transaction_date: transfer.transaction_date.toISOString(),
+          },
+        };
+      });
+    } catch (error) {
+      if (error instanceof ServiceError) throw error;
+      log.error('transfer failed and was rolled back:', error);
+      throw new Error('Failed to transfer: the transfer was rolled back', { cause: error });
+    }
+
+    void logAuditEvent({
+      workspaceId,
+      userId: record.createdByUserId,
+      action: 'create',
+      entityType: 'transaction',
+      entityId: result.transactionId,
+      newValue: result.auditValue,
+    });
+
+    await invalidateTags([
+      CacheTags.workspace(workspaceId),
+      CacheTags.ACCOUNTS,
+      CacheTags.TRANSACTIONS,
+      CacheTags.DASHBOARD,
+      CacheTags.BUDGET,
+    ]);
 
     return {
-      fromAccount: { ...fromAccount, balance: newFromBalance },
-      toAccount: { ...toAccount, balance: newToBalance },
+      fromAccount: result.fromAccount,
+      toAccount: result.toAccount,
+      transactionId: result.transactionId,
     };
   }
 

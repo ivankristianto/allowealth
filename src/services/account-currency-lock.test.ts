@@ -45,7 +45,7 @@ describe('AccountService.update() currency lock on a real database', () => {
       currency: 'IDR',
     });
 
-    await expect(changeToUsd()).rejects.toMatchObject({
+    expect(await changeToUsd().catch((e: unknown) => e)).toMatchObject({
       code: ServiceErrorCode.CURRENCY_LOCKED,
       statusCode: 400,
     });
@@ -61,7 +61,9 @@ describe('AccountService.update() currency lock on a real database', () => {
       currency: 'IDR',
     });
 
-    await expect(changeToUsd()).rejects.toMatchObject({ code: ServiceErrorCode.CURRENCY_LOCKED });
+    expect(await changeToUsd().catch((e: unknown) => e)).toMatchObject({
+      code: ServiceErrorCode.CURRENCY_LOCKED,
+    });
   });
 
   it('ignores deleted transactions, which cannot be restored', async () => {
