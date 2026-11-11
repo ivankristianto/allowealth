@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -28,7 +28,7 @@ const createInvitationSchema = object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     // Get pending invitations
     const invitations = await workspaceInvitationService.findPendingByWorkspace(auth.workspaceId);
@@ -66,7 +66,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     // Check admin role
     if (auth.role !== 'admin') {
@@ -129,7 +129,7 @@ export const POST: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { url } = context;
 
     // Check admin role

@@ -17,8 +17,6 @@
     "noEmit": true,
 
     // Type checking - relax strictness for inline scripts and Astro
-    "noImplicitAny": false,
-    "strict": false,
     "skipLibCheck": true,
 
     // Some stricter flags (disabled by default)

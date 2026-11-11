@@ -17,7 +17,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -55,7 +55,7 @@ const createAccountSchema = pipe(
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
     const { url } = context;
 
@@ -103,7 +103,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     const validation = await validateBody(context.request, createAccountSchema);
 

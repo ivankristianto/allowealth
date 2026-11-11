@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService, budgetService, workspaceMetaService, workspaceService } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
@@ -32,7 +32,7 @@ export const GET: APIRoute = async (context) => {
   }
 
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;
     const period = url.searchParams.get('period');

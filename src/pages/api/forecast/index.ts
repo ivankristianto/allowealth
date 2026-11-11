@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getForecastRealityCheckData } from '@/lib/forecast/server';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
 /**
@@ -9,7 +9,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const result = await getForecastRealityCheckData(auth.workspaceId);
     return successResponse(result);
   } catch (error) {

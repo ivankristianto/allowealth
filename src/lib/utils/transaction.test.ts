@@ -49,9 +49,9 @@ describe('transaction utilities', () => {
     test('transforms category correctly', () => {
       const result = transformTransaction(mockDrizzleTransaction);
 
-      expect(result.category.id).toBe('cat-1');
-      expect(result.category.name).toBe('Groceries');
-      expect(result.category.type).toBe('expense');
+      expect(result.category?.id).toBe('cat-1');
+      expect(result.category?.name).toBe('Groceries');
+      expect(result.category?.type).toBe('expense');
     });
 
     test('transforms account correctly', () => {
@@ -101,7 +101,7 @@ describe('transaction utilities', () => {
 
       const result = transformTransaction(incomeTransaction);
       expect(result.type).toBe('income');
-      expect(result.category.type).toBe('income');
+      expect(result.category?.type).toBe('income');
     });
 
     test('handles USD currency', () => {

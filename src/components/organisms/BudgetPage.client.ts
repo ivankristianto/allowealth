@@ -29,6 +29,36 @@ import {
 import { navigate } from 'astro:transitions/client';
 import { isValidCurrency } from '@/lib/constants/currency';
 
+interface BudgetUpdatedDetail {
+  categoryId: string;
+  budgetAmount: string;
+  currency: string;
+}
+
+interface BudgetsCopiedDetail {
+  sourceMonth: number;
+  sourceYear: number;
+  targetMonth: number;
+  targetYear: number;
+  copiedCount: number;
+  skippedCount: number;
+}
+
+interface BudgetsInitializedDetail {
+  month: number;
+  year: number;
+  currency: Currency;
+  initializedCount: number;
+}
+
+declare global {
+  interface DocumentEventMap {
+    'budget-updated': CustomEvent<BudgetUpdatedDetail>;
+    'budgets-copied': CustomEvent<BudgetsCopiedDetail>;
+    'budgets-initialized': CustomEvent<BudgetsInitializedDetail>;
+  }
+}
+
 // =============================================================================
 // STATE MANAGEMENT
 // =============================================================================
@@ -159,9 +189,7 @@ export async function refreshPartial(partial: 'summary' | 'cards' | 'advice'): P
  * Fired when a budget is created via modal or updated via inline editing.
  * Refreshes the entire budget view to ensure consistency.
  */
-async function handleBudgetUpdated(
-  _event: CustomEvent<{ categoryId: string; budgetAmount: string; currency: string }>
-): Promise<void> {
+async function handleBudgetUpdated(_event: CustomEvent<BudgetUpdatedDetail>): Promise<void> {
   // Refresh all data to ensure consistency
   await refreshBudgetData();
 }
@@ -172,16 +200,7 @@ async function handleBudgetUpdated(
  * Fired when budgets are copied from current month to another month.
  * Navigates to the target month if budgets were actually copied.
  */
-function handleBudgetsCopied(
-  event: CustomEvent<{
-    sourceMonth: number;
-    sourceYear: number;
-    targetMonth: number;
-    targetYear: number;
-    copiedCount: number;
-    skippedCount: number;
-  }>
-): void {
+function handleBudgetsCopied(event: CustomEvent<BudgetsCopiedDetail>): void {
   const { targetMonth, targetYear, copiedCount } = event.detail;
 
   // Only navigate if budgets were actually copied
@@ -200,14 +219,7 @@ function handleBudgetsCopied(
  * Fired when all uninitialized budgets are created with amount=0.
  * Reloads the page to refresh button state, modal, and data attributes.
  */
-function handleBudgetsInitialized(
-  _event: CustomEvent<{
-    month: number;
-    year: number;
-    currency: Currency;
-    initializedCount: number;
-  }>
-): void {
+function handleBudgetsInitialized(_event: CustomEvent<BudgetsInitializedDetail>): void {
   // Always reload on successful initialize — another session may have
   // initialized first, leaving initialized_count=0 but stale UI.
   window.location.reload();
@@ -615,13 +627,13 @@ export function initBudgetPage(): void {
   setupOverbudgetFilterToggle();
 
   // Listen for budget updates
-  document.addEventListener('budget-updated', handleBudgetUpdated as EventListener);
+  document.addEventListener('budget-updated', handleBudgetUpdated);
 
   // Listen for budgets copied
-  document.addEventListener('budgets-copied', handleBudgetsCopied as EventListener);
+  document.addEventListener('budgets-copied', handleBudgetsCopied);
 
   // Listen for budgets initialized
-  document.addEventListener('budgets-initialized', handleBudgetsInitialized as EventListener);
+  document.addEventListener('budgets-initialized', handleBudgetsInitialized);
   // Listen for content updates (for re-initializing handlers)
   document.addEventListener('budget-content-updated', handleContentUpdated);
 }
@@ -649,10 +661,10 @@ export function cleanup(): void {
   savedSortKey = '';
   overbudgetFilterActive = false;
 
-  document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
-  document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);
+  document.removeEventListener('budget-updated', handleBudgetUpdated);
+  document.removeEventListener('budgets-copied', handleBudgetsCopied);
   document.removeEventListener('budget-content-updated', handleContentUpdated);
-  document.removeEventListener('budgets-initialized', handleBudgetsInitialized as EventListener);
+  document.removeEventListener('budgets-initialized', handleBudgetsInitialized);
   state = null;
 }
 

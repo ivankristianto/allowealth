@@ -88,7 +88,7 @@ export async function seedAccounts(
       currency: account.currency,
       is_cash_account: account.is_cash_account,
       credit_limit:
-        'credit_limit' in account
+        account.credit_limit !== undefined
           ? amt(account.credit_limit, account.currency, (account as any).baseScale || 'primary')
           : null,
       last_updated: now,

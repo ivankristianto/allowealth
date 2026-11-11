@@ -17,7 +17,7 @@ function createDeps(
     findAll?: (workspaceId: string, filters?: AccountCategoryListFilters) => Promise<unknown>;
     update?: (id: string, workspaceId: string, updateInput: unknown) => Promise<unknown>;
     deleteCategory?: (id: string, workspaceId: string) => Promise<{ success: boolean }>;
-    confirm?: (opts: { yes?: unknown; prompt?: string; expected?: string }) => Promise<void>;
+    confirm?: (opts?: { yes?: unknown; prompt?: string; expected?: string }) => Promise<void>;
     write?: (value: unknown, message: string | ((value: unknown) => string)) => void;
   } = {}
 ): AccountCategoriesDeps {
@@ -219,7 +219,7 @@ describe('account-categories command mapping', () => {
     let confirmYes: unknown;
     const deps = createDeps({
       confirm: async (opts) => {
-        confirmYes = opts.yes;
+        confirmYes = opts?.yes;
       },
     });
 

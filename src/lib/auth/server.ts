@@ -143,9 +143,7 @@ function createAuthInstance() {
     }),
     oauthProvider(getOAuthProviderOptions()),
   ];
-  const hasTurnstileConfig = Boolean(turnstileSiteKey && turnstileSecretKey);
-
-  if (hasTurnstileConfig) {
+  if (turnstileSiteKey && turnstileSecretKey) {
     authPlugins.unshift(
       captcha({
         provider: 'cloudflare-turnstile',

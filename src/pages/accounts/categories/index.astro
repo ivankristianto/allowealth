@@ -6,6 +6,7 @@
  * Uses the interactive architecture with server-rendered HTML fragments.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
 import Button from '@/components/atoms/Button.astro';
@@ -18,7 +19,8 @@ import { accountCategoryService, accountService } from '@/services';
 import { accentGhostBtn, ghostBtn } from '@/lib/ui/action-button-classes';
 
 const currentPath = '/accounts/categories';
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 
 const url = new URL(Astro.url);
 const typeFilter = (url.searchParams.get('type') as 'account' | 'liability') || 'account';

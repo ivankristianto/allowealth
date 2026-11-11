@@ -10,6 +10,7 @@ import {
   pipe,
   string,
   transform,
+  type InferInput,
   type InferOutput,
 } from 'valibot';
 import { categoryTypeEnum } from '@/lib/enums';
@@ -82,7 +83,7 @@ export const createCategorySchema = object({
   color: colorValidation,
 });
 
-export type CreateCategoryInput = InferOutput<typeof createCategorySchema>;
+export type CreateCategoryInput = InferInput<typeof createCategorySchema>;
 
 // Schema for updating a category (for service layer)
 export const updateCategorySchema = object({

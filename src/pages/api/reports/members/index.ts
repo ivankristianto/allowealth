@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { reportService, workspaceMetaService } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -16,7 +16,7 @@ import { isValidCurrency } from '@/lib/constants/currency';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { url } = context;
 
     const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;

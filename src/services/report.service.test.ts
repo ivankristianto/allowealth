@@ -263,7 +263,7 @@ function createMockDatabase(): IDatabase {
                     };
                     findParams(sql.queryChunks);
                   }
-                } catch (e) {
+                } catch {
                   // Safely handle errors
                 }
                 return values;
@@ -323,7 +323,7 @@ function createMockDatabase(): IDatabase {
                   };
                   findParams(sql.queryChunks);
                 }
-              } catch (e) {
+              } catch {
                 // Safely handle errors
               }
               return values;

@@ -214,16 +214,16 @@ const demoMode = isDemoMode();
           const MAX_REAPPLY = 3;
           let reapplyCount = 0;
 
-          function applyScroll() {
+          const applyScroll = () => {
             const c = getScrollContainer();
             if (c) c.scrollTop = pendingScroll;
-          }
+          };
 
-          function stopWatching() {
+          const stopWatching = () => {
             container.removeEventListener('scroll', onScroll);
-          }
+          };
 
-          function onScroll() {
+          const onScroll = () => {
             const c = getScrollContainer();
             // If scroll was reset to near-top by client re-render, re-apply
             if (c && c.scrollTop < 10 && reapplyCount < MAX_REAPPLY) {
@@ -232,7 +232,7 @@ const demoMode = isDemoMode();
             } else {
               stopWatching();
             }
-          }
+          };
 
           // Apply immediately
           applyScroll();

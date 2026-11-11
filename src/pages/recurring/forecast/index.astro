@@ -1,4 +1,5 @@
 ---
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import Button from '@/components/atoms/Button.astro';
 import ForecastCashflowChart from '@/components/organisms/ForecastCashflowChart.astro';
@@ -15,7 +16,7 @@ import { accountService, recurringForecastService, workspaceMetaService } from '
 import { Wallet } from '@lucide/astro';
 
 const user = Astro.locals.user;
-if (!user?.id) {
+if (!hasWorkspace(user)) {
   return Astro.redirect('/login');
 }
 

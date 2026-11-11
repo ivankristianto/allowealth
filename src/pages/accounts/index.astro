@@ -7,6 +7,7 @@
  * Includes modals for add, edit, delete, and history actions.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountPortfolioSummary from '@components/organisms/AccountPortfolioSummary.astro';
 import AccountReconciliationCard from '@components/organisms/AccountReconciliationCard.astro';
@@ -40,7 +41,8 @@ import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import { calculateGroupTotalsByCurrency } from '@/lib/utils/account';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 const currentPath = '/accounts';
 
 // Valid account types for filtering
@@ -162,6 +164,8 @@ const closedCount = await accountService.countClosed(user.workspaceId, ownerUser
 const categories = await accountCategoryService.findAll(user.workspaceId);
 const isAdmin = user.role === 'admin';
 const memberNamesById = new Map(workspaceMembers.map((m) => [m.id, m.name]));
+const ownerNameFor = (ownerId: string | undefined) =>
+  ownerId ? memberNamesById.get(ownerId) : undefined;
 const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(user.workspaceId);
 const workspaceCurrencies = [
   workspaceCurrencyConfig.primary,
@@ -205,7 +209,7 @@ const {
 const accountsWithDisplay = accounts.map((account) => ({
   ...account,
   category_name: account.category_id ? account.category_name : null,
-  owner_name: memberNamesById.get(account.created_by_user_id),
+  owner_name: ownerNameFor(account.created_by_user_id),
 }));
 ---
 
@@ -332,7 +336,7 @@ const accountsWithDisplay = accounts.map((account) => ({
                         account.initial_balance ? parseFloat(account.initial_balance) : undefined
                       }
                       ownerUserId={account.created_by_user_id}
-                      ownerName={memberNamesById.get(account.created_by_user_id)}
+                      ownerName={ownerNameFor(account.created_by_user_id)}
                       lastUpdated={account.last_updated}
                       isHistoricalView={!isViewingCurrentMonth}
                     />

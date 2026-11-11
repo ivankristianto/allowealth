@@ -12,7 +12,9 @@ export function parseForecastType(value: string | null | undefined): ForecastFil
   return undefined;
 }
 
-export function parseForecastStatus(value: string | null | undefined): ForecastFilters['status'] {
+type ForecastStatus = NonNullable<ForecastFilters['status']>;
+
+export function parseForecastStatus(value: string | null | undefined): ForecastStatus {
   if (value === 'active' || value === 'paused' || value === 'all') return value;
   return 'active';
 }
@@ -67,14 +69,16 @@ export function buildForecastFilters(
   };
 }
 
-export function normalizeForecastFilters(filters: ForecastFilters = {}): ForecastFilters {
+export function normalizeForecastFilters(
+  filters: ForecastFilters = {}
+): ForecastFilters & { status: ForecastStatus } {
   const type = parseForecastType(filters.type ?? null);
   const status = parseForecastStatus(filters.status ?? null);
   const accountIds = normalizeForecastAccountIds(filters.accountIds);
 
   return {
     ...(type && { type }),
-    ...(status && { status }),
+    status,
     ...(accountIds && { accountIds }),
   };
 }

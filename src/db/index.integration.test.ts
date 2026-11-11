@@ -485,7 +485,7 @@ describe('Database Integration Tests', () => {
           created_at: new Date(),
           updated_at: new Date(),
         });
-      } catch (error) {
+      } catch {
         // Expected error due to unique constraint
         errorOccurred = true;
       }

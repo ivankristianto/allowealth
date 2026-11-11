@@ -480,7 +480,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
 
   function initAccountRowButtons() {
     // Initialize Timeline buttons
-    document.querySelectorAll('[data-history-account]').forEach((button) => {
+    document.querySelectorAll<HTMLElement>('[data-history-account]').forEach((button) => {
       if (initializedTimelineButtons.has(button)) return;
       initializedTimelineButtons.add(button);
 
@@ -515,7 +515,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
     });
 
     // Initialize Update Value buttons
-    document.querySelectorAll('[data-update-value-account]').forEach((button) => {
+    document.querySelectorAll<HTMLElement>('[data-update-value-account]').forEach((button) => {
       if (initializedUpdateValueButtons.has(button)) return;
       initializedUpdateValueButtons.add(button);
 
@@ -547,7 +547,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
     });
 
     // Initialize Edit buttons
-    document.querySelectorAll('[data-edit-account]').forEach((button) => {
+    document.querySelectorAll<HTMLElement>('[data-edit-account]').forEach((button) => {
       if (initializedEditButtons.has(button)) return;
       initializedEditButtons.add(button);
 
@@ -588,7 +588,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
     });
 
     // Initialize Deactivate buttons
-    document.querySelectorAll('[data-close-account]').forEach((button) => {
+    document.querySelectorAll<HTMLElement>('[data-close-account]').forEach((button) => {
       if (initializedCloseButtons.has(button)) return;
       initializedCloseButtons.add(button);
 

@@ -18,8 +18,8 @@ export interface McpAuthContext {
 interface McpAuthDeps {
   db: {
     query: {
-      oauthAccessToken: { findFirst: (config: unknown) => Promise<any> };
-      users: { findFirst: (config: unknown) => Promise<any> };
+      oauthAccessToken: { findFirst(config: unknown): Promise<any> };
+      users: { findFirst(config: unknown): Promise<any> };
     };
   };
   getSchema: () => Pick<ReturnType<typeof getActiveSchema>, 'oauthAccessToken' | 'users'>;

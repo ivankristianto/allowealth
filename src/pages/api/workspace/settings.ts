@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -61,7 +61,7 @@ const updateWorkspaceSettingsSchema = object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     // Get workspace details
     const workspace = await workspaceService.findById(auth.workspaceId);
@@ -106,7 +106,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     const validation = await validateBody(context.request, updateWorkspaceSettingsSchema);
 

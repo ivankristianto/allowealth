@@ -16,9 +16,11 @@
  * - Net worth widget
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { dashboardService, workspaceMetaService, workspaceService } from '@/services';
 import { auth } from '@/lib/auth/server';
+import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import type { DashboardData } from '@/services/dashboard.service';
 import type { OnboardingStatus } from '@/services/workspace.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
@@ -53,7 +55,7 @@ let error: Error | null = null;
 let mfaEnabled = false;
 
 try {
-  if (!user) {
+  if (!hasWorkspace(user)) {
     throw new Error('User not authenticated. Please log in again.');
   }
 
@@ -111,7 +113,7 @@ try {
     ]);
 
     dashboardData = dashResult;
-    mfaEnabled = Boolean(authSession?.user?.twoFactorEnabled);
+    mfaEnabled = isTwoFactorEnabled(authSession?.user);
   }
 } catch (err) {
   console.error('Error loading dashboard data:', err);

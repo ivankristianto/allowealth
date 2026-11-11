@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -25,7 +25,7 @@ const updateBalanceSchema = object({
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { id } = context.params;
 
     if (!id) {

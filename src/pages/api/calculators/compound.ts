@@ -9,7 +9,7 @@ import { integer, maxValue, minValue, object, pipe, number } from 'valibot';
 import {
   successResponse,
   errorResponse,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
   validateBody,
 } from '@/lib/api-utils';
@@ -54,7 +54,7 @@ export const POST: APIRoute = async (context) => {
 
   try {
     // Auth check - user must be logged in
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const currency = await workspaceMetaService.getCurrency(auth.workspaceId);
 
     const validation = await validateBody(context.request, compoundInputSchema);

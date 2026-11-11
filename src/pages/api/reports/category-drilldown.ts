@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService, workspaceMetaService } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { BudgetServiceError } from '@/services/service-errors';
 import { validatePeriod } from '@/lib/utils/period-validation';
@@ -46,7 +46,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     // 1. Authenticate user
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     // 2. Extract and validate query parameters
     const categoryId = url.searchParams.get('categoryId');

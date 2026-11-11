@@ -30,6 +30,7 @@
  * @param subtitle - Optional page subtitle displayed below title in header
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import MainLayout from './MainLayout.astro';
 import TransactionDrawer from '@/components/organisms/TransactionDrawer.astro';
 import {
@@ -69,8 +70,9 @@ const {
   currentDate,
 } = Astro.props;
 
-// User is authenticated (enforced by middleware)
-const user = Astro.locals.user!;
+// routeGuard sends signed-out users and super admins elsewhere before this layout renders.
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) throw new Error('ProtectedLayout requires a workspace user');
 
 // Fetch categories, accounts, and user settings for global transaction drawer
 // Use cache to reduce database round-trips (saves ~400ms per page load)

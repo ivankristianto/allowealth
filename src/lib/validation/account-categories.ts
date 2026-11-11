@@ -12,6 +12,7 @@ import {
   string,
   transform,
   trim,
+  type InferInput,
   type InferOutput,
 } from 'valibot';
 
@@ -57,7 +58,7 @@ export const createAccountCategorySchema = object({
   sort_order: optional(sortOrderValidation, 0),
 });
 
-export type CreateAccountCategoryInput = InferOutput<typeof createAccountCategorySchema>;
+export type CreateAccountCategoryInput = InferInput<typeof createAccountCategorySchema>;
 
 export const updateAccountCategorySchema = object({
   name: optional(nameValidation),

@@ -1,7 +1,16 @@
 import eslintConfigPrettier from 'eslint-config-prettier';
 import tsParser from '@typescript-eslint/parser';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
 import astroPlugin from 'eslint-plugin-astro';
 import globals from 'globals';
+
+const TS_FILES = ['**/*.{ts,tsx,mts,cts}', '**/*.astro'];
+
+// Recommended rules only. The type-checked presets need a full program per file and are too slow here.
+const tsRecommended = tsPlugin.configs['flat/recommended'].map((config) => ({
+  ...config,
+  files: config.files ?? TS_FILES,
+}));
 
 export default [
   {
@@ -14,6 +23,23 @@ export default [
       'e2e/playwright-report',
       'test-results',
     ],
+  },
+  ...tsRecommended,
+  {
+    files: TS_FILES,
+    rules: {
+      // 1,127 hits when enabled; tracked as a follow-up rather than fixed in one pass.
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
   },
   ...astroPlugin.configs.recommended,
   eslintConfigPrettier,

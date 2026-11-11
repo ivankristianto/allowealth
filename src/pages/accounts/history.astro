@@ -5,12 +5,14 @@
  * This page shows all accounts with links to their specific history pages.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { accountService } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import type { AccountOutput } from '@/lib/types/account';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 const currentPath = '/accounts/history';
 
 // Fetch all accounts from database

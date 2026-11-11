@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro';
 import { recurringForecastService, RecurringServiceError, ServiceError } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { buildForecastFilters } from '@/lib/utils/recurring-forecast-filters';
 
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
 
     const { monthCount, ...filters } = buildForecastFilters(context.url.searchParams);

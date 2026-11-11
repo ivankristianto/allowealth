@@ -18,8 +18,6 @@ import {
   string,
   transform,
   union,
-  type BaseIssue,
-  type BaseSchema,
   type InferInput,
   type InferOutput,
 } from 'valibot';
@@ -95,38 +93,29 @@ const coercedBoolean = optional(
   ])
 );
 
-function refineRecurringTemplate<TSchema extends BaseSchema<unknown, unknown, BaseIssue<unknown>>>(
-  schema: TSchema
-) {
-  return pipe(
-    schema,
-    forward(
-      check(
-        (data: { frequency?: 'weekly' | 'monthly'; day_of_month?: number | null }) =>
-          data.frequency === 'weekly' || data.day_of_month !== undefined,
-        'Day of month is required for monthly frequency'
-      ),
-      ['day_of_month'] as const
-    ),
-    forward(
-      check(
-        (data: { is_installment?: boolean; total_occurrences?: number | null }) =>
-          !data.is_installment || Boolean(data.total_occurrences),
-        'Installments require total occurrences'
-      ),
-      ['total_occurrences'] as const
-    ),
-    forward(
-      check(
-        (data: { total_occurrences?: number | null; starting_occurrence_number?: number }) =>
-          data.total_occurrences === undefined ||
-          data.total_occurrences === null ||
-          (data.starting_occurrence_number ?? 1) <= data.total_occurrences,
-        'Starting occurrence number must be less than or equal to total occurrences'
-      ),
-      ['starting_occurrence_number'] as const
-    )
-  ) as unknown as TSchema;
+type RecurringTemplateRefineFields = {
+  frequency?: 'weekly' | 'monthly';
+  day_of_month?: number | null;
+  is_installment?: boolean;
+  total_occurrences?: number | null;
+  starting_occurrence_number?: number;
+};
+
+// Generic so check() infers each schema's own output type; valibot pipe items are invariant.
+function hasDayOfMonthWhenMonthly<T extends RecurringTemplateRefineFields>(data: T): boolean {
+  return data.frequency === 'weekly' || data.day_of_month !== undefined;
+}
+
+function hasTotalWhenInstallment<T extends RecurringTemplateRefineFields>(data: T): boolean {
+  return !data.is_installment || Boolean(data.total_occurrences);
+}
+
+function startsWithinTotal<T extends RecurringTemplateRefineFields>(data: T): boolean {
+  return (
+    data.total_occurrences === undefined ||
+    data.total_occurrences === null ||
+    (data.starting_occurrence_number ?? 1) <= data.total_occurrences
+  );
 }
 
 const recurringTemplateBaseEntries = {
@@ -158,12 +147,25 @@ const recurringTemplateBaseEntries = {
 } as const;
 
 // Service layer schemas
-export const createRecurringTemplateSchema = refineRecurringTemplate(
+export const createRecurringTemplateSchema = pipe(
   strictObject({
     workspace_id: requiredId('Workspace ID is required'),
     created_by_user_id: requiredId('Created by user ID is required'),
     ...recurringTemplateBaseEntries,
-  })
+  }),
+  forward(check(hasDayOfMonthWhenMonthly, 'Day of month is required for monthly frequency'), [
+    'day_of_month',
+  ]),
+  forward(check(hasTotalWhenInstallment, 'Installments require total occurrences'), [
+    'total_occurrences',
+  ]),
+  forward(
+    check(
+      startsWithinTotal,
+      'Starting occurrence number must be less than or equal to total occurrences'
+    ),
+    ['starting_occurrence_number']
+  )
 );
 
 export const updateRecurringTemplateSchema = strictObject({
@@ -202,7 +204,7 @@ export const skipOccurrenceSchema = strictObject({
 });
 
 // API layer schemas
-export const createRecurringTemplateAPISchema = refineRecurringTemplate(
+export const createRecurringTemplateAPISchema = pipe(
   strictObject({
     name: pipe(
       string(),
@@ -238,7 +240,20 @@ export const createRecurringTemplateAPISchema = refineRecurringTemplate(
       pipe(string(), maxLength(500, 'Description must not exceed 500 characters'))
     ),
     status: optional(recurringTemplateStatusEnum, 'active'),
-  })
+  }),
+  forward(check(hasDayOfMonthWhenMonthly, 'Day of month is required for monthly frequency'), [
+    'day_of_month',
+  ]),
+  forward(check(hasTotalWhenInstallment, 'Installments require total occurrences'), [
+    'total_occurrences',
+  ]),
+  forward(
+    check(
+      startsWithinTotal,
+      'Starting occurrence number must be less than or equal to total occurrences'
+    ),
+    ['starting_occurrence_number']
+  )
 );
 
 export const updateRecurringTemplateAPISchema = strictObject({

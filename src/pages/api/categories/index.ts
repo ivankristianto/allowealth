@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { createCategoryAPISchema } from '@/lib/validation';
@@ -17,7 +17,7 @@ import { getCacheManager, CacheTags } from '@/lib/cache';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
 
     const type = context.url.searchParams.get('type');
@@ -49,7 +49,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
 
     const validation = await validateBody(context.request, createCategoryAPISchema);

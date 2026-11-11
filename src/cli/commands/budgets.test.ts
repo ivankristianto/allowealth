@@ -21,7 +21,7 @@ function createDeps(
     ) => Promise<unknown>;
     updateBudget?: (id: string, workspaceId: string, updateInput: unknown) => Promise<unknown>;
     deleteBudget?: (id: string, workspaceId: string) => Promise<{ success: boolean }>;
-    confirm?: (opts: { yes?: unknown; prompt?: string; expected?: string }) => Promise<void>;
+    confirm?: (opts?: { yes?: unknown; prompt?: string; expected?: string }) => Promise<void>;
     write?: (value: unknown, message: string | ((value: unknown) => string)) => void;
   } = {}
 ): BudgetsDeps {
@@ -344,7 +344,7 @@ describe('budgets command mapping', () => {
     let confirmYes: unknown;
     const deps = createDeps({
       confirm: async (opts) => {
-        confirmYes = opts.yes;
+        confirmYes = opts?.yes;
       },
     });
 

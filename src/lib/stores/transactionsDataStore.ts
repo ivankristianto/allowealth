@@ -303,8 +303,9 @@ export function filterCachedTransactions(
   }
 
   // Filter by category IDs
-  if (filters.category_ids && filters.category_ids.length > 0) {
-    filtered = filtered.filter((t) => filters.category_ids!.includes(t.category.id));
+  const categoryIds = filters.category_ids;
+  if (categoryIds && categoryIds.length > 0) {
+    filtered = filtered.filter((t) => t.category !== null && categoryIds.includes(t.category.id));
   }
 
   // Filter by search term (searches description and category name)
@@ -313,7 +314,7 @@ export function filterCachedTransactions(
     filtered = filtered.filter(
       (t) =>
         (t.description && t.description.toLowerCase().includes(searchLower)) ||
-        t.category.name.toLowerCase().includes(searchLower)
+        t.category?.name.toLowerCase().includes(searchLower)
     );
   }
 

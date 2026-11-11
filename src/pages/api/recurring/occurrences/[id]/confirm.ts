@@ -4,14 +4,14 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { confirmOccurrenceAPISchema } from '@/lib/validation/recurring';
 
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const id = context.params.id;
 
     if (!id) {

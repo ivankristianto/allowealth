@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -45,7 +45,7 @@ const updateAccountSchema = object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -74,7 +74,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -155,7 +155,7 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { id } = context.params;
 
     if (!id) {

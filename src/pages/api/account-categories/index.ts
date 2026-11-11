@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { createAccountCategoryAPISchema } from '@/lib/validation';
@@ -39,7 +39,7 @@ const toAccountCategoryResponse = (category: any, accountCount = 0) => ({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { url } = context;
     const render = createRenderHelper(url, context.request);
     if (isRejectedHtmlRenderRequest(url, context.request)) {
@@ -130,7 +130,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const render = createRenderHelper(context.url, context.request);
 
     if (isRejectedHtmlRenderRequest(context.url, context.request)) {

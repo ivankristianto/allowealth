@@ -9,6 +9,7 @@
  * Redesigned as part of Task 15 & 16 (Budget Page - Card Grid & Header).
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
 import BudgetFilterControls from '@components/molecules/BudgetFilterControls.astro';
@@ -43,7 +44,7 @@ const currentPath = '/budget';
 
 // Early guard clause - redirect to login if user is not authenticated
 // This should never happen due to ProtectedLayout, but provides type safety
-if (!user) {
+if (!hasWorkspace(user)) {
   return Astro.redirect('/login');
 }
 

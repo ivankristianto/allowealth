@@ -8,7 +8,12 @@
 import { describe, test, expect } from 'bun:test';
 import type { APIContext } from 'astro';
 import { minLength, object, pipe, string } from 'valibot';
-import { getAuthenticatedUser, isValidationError, validateBody } from './api-utils';
+import {
+  getAuthenticatedUser,
+  getWorkspaceUser,
+  isValidationError,
+  validateBody,
+} from './api-utils';
 
 /**
  * Create a mock APIContext for testing
@@ -162,6 +167,37 @@ describe('getAuthenticatedUser', () => {
 
       expect(caught).toBe(true);
     });
+  });
+});
+
+describe('getWorkspaceUser', () => {
+  test('returns a non-null workspaceId for a workspace member', () => {
+    const context = createMockContext({
+      id: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      workspaceId: 'workspace-123',
+      role: 'member',
+    });
+
+    expect(getWorkspaceUser(context)).toEqual({
+      userId: 'user-123',
+      workspaceId: 'workspace-123',
+      role: 'member',
+    });
+  });
+
+  test('throws Unauthorized for a super admin, who has no workspace', () => {
+    const context = {
+      locals: { user: { id: 'root', workspaceId: null, role: 'super_admin' } },
+    } as unknown as APIContext;
+
+    expect(getAuthenticatedUser(context).workspaceId).toBeNull();
+    expect(() => getWorkspaceUser(context)).toThrow('Unauthorized');
+  });
+
+  test('throws Unauthorized when not signed in', () => {
+    expect(() => getWorkspaceUser(createMockContext(null))).toThrow('Unauthorized');
   });
 });
 

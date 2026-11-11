@@ -173,50 +173,49 @@ export function getCacheManager(): CacheManager {
     return instance;
   }
 
-  if (!initPromise) {
-    const driver = (getEnv('CACHE_DRIVER') as CacheConfig['driver']) || 'memory';
-    const url = getEnv('UPSTASH_REDIS_REST_URL') || '';
-    const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || '';
-    configuredDriver = driver;
-    initializationError = null;
+  const driver = (getEnv('CACHE_DRIVER') as CacheConfig['driver']) || 'memory';
+  const url = getEnv('UPSTASH_REDIS_REST_URL') || '';
+  const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || '';
+  configuredDriver = driver;
+  initializationError = null;
 
-    if (driver === 'redis') {
-      const manager = new CacheManager();
-      instance = manager;
+  if (driver === 'redis') {
+    const manager = new CacheManager();
+    instance = manager;
 
-      const pendingInit = CacheManager.create(
-        {
-          driver,
-          redis: { url: getEnv('REDIS_URL') || '' },
-          defaultTtl: 3600,
-        },
-        manager
-      )
-        .catch((error) => {
-          initializationError = error instanceof Error ? error.message : String(error);
-          log.warn('Redis initialization failed, continuing with memory driver', error);
-          return manager;
-        })
-        .finally(() => {
-          manager.setInitializationPromise(null);
-
-          if (initPromise === pendingInit) {
-            initPromise = null;
-          }
-        });
-
-      manager.setInitializationPromise(pendingInit.then(() => undefined));
-      initPromise = pendingInit;
-    } else {
-      instance = new CacheManager({
+    const pendingInit = CacheManager.create(
+      {
         driver,
-        upstash: { url, token },
+        redis: { url: getEnv('REDIS_URL') || '' },
         defaultTtl: 3600,
+      },
+      manager
+    )
+      .catch((error) => {
+        initializationError = error instanceof Error ? error.message : String(error);
+        log.warn('Redis initialization failed, continuing with memory driver', error);
+        return manager;
+      })
+      .finally(() => {
+        manager.setInitializationPromise(null);
+
+        if (initPromise === pendingInit) {
+          initPromise = null;
+        }
       });
-    }
+
+    manager.setInitializationPromise(pendingInit.then(() => undefined));
+    initPromise = pendingInit;
+    return manager;
   }
 
-  return instance;
+  const manager = new CacheManager({
+    driver,
+    upstash: { url, token },
+    defaultTtl: 3600,
+  });
+  instance = manager;
+  return manager;
 }
 
 export function resetCacheManager(): void {

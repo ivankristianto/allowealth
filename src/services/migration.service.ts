@@ -25,7 +25,7 @@ export interface MigrationResult {
 }
 
 type MigrationCountDb = {
-  all: <T = { count: number }>(query: unknown) => Promise<T[]> | T[];
+  all<T = { count: number }>(query: unknown): Promise<T[]> | T[];
 };
 
 export class MigrationService {

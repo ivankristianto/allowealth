@@ -346,7 +346,9 @@ import Button from '@/components/atoms/Button.astro';
     };
 
     // Add legend item event listeners
-    const legendItems = legendContainer.querySelectorAll('.spending-chart-legend-item');
+    const legendItems = legendContainer.querySelectorAll<HTMLElement>(
+      '.spending-chart-legend-item'
+    );
     legendItems.forEach((item, index) => {
       // Mouse enter
       item.addEventListener('mouseenter', () => {
@@ -527,7 +529,7 @@ import Button from '@/components/atoms/Button.astro';
       Object.values(charts).forEach(({ chart }) => {
         try {
           chart.destroy();
-        } catch (e) {
+        } catch {
           // Chart may already be destroyed
         }
       });
