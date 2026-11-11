@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { closeDatabase, db, resetDb } from '@/db';
+import { db, resetDb } from '@/db';
 import { account, user as authUsers, users, workspaces } from '@/db/schema';
 import { verifyPassword } from '@/lib/auth/password';
 import { POST } from '@/pages/api/installer/setup';
@@ -55,13 +55,11 @@ describe('POST /api/installer/setup', () => {
     delete process.env.INSTALLER_SECRET;
 
     setupTestDatabase(testDbPath);
-    await closeDatabase();
     resetDb();
   });
 
   afterEach(async () => {
     AccountCategoryService.buildDefaultCategoryRows = originalBuildDefaultCategoryRows;
-    await closeDatabase();
     resetDb();
 
     if (originalDatabaseUrl === undefined) {

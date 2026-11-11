@@ -12,7 +12,7 @@
 
 import type { MiddlewareHandler } from 'astro';
 import { isMigrationApplied, hasUsers } from '@/lib/installer/detection';
-import { getDb, resetDb } from '@/db';
+import { getDb } from '@/db';
 
 /** Escape HTML special characters to prevent XSS in error pages */
 function escapeHtml(text: string): string {
@@ -81,7 +81,6 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
         try {
           const { runSqliteMigrations } = await import('@/db/migrate');
           runSqliteMigrations();
-          resetDb();
         } finally {
           migrationInFlight = null;
         }
@@ -95,9 +94,8 @@ export const installerGuard: MiddlewareHandler = async (context, next) => {
     }
   }
 
-  // Step 2: Check users (re-acquire db after potential migration + reset)
-  const currentDb = getDb();
-  if (!hasUsers(currentDb)) {
+  // Step 2: Check users. The open connection sees the tables the migrator just created.
+  if (!hasUsers(db)) {
     // Allow installer routes through
     if (INSTALLER_PATHS.some((p) => pathname === p || pathname.startsWith(p))) {
       return next();

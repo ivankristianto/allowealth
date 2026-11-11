@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { existsSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-import { closeDatabase, db, resetDb } from '@/db';
+import { db, resetDb } from '@/db';
 import { seedWorkspace } from './domains/workspace';
 import { seedUsers } from './domains/users';
 import { seedCategories, seedAccountCategories } from './domains/categories';
@@ -46,12 +46,10 @@ describe('seed integration', () => {
     process.env.DATABASE_URL = testDbPath;
 
     setupTestDatabase(testDbPath);
-    await closeDatabase();
     resetDb();
   });
 
   afterEach(async () => {
-    await closeDatabase();
     resetDb();
 
     if (originalDatabaseUrl === undefined) {
