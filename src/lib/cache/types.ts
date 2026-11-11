@@ -36,6 +36,11 @@ export interface CacheDriver {
   getAndDelete<T>(key: string): Promise<T | null>;
 }
 
+export interface CacheDriverOptions {
+  /** Throw on backend errors instead of failing open. Off for the app cache. */
+  strict?: boolean;
+}
+
 export interface CacheConfig {
   /** Cache driver to use */
   driver: 'upstash' | 'redis' | 'memory' | 'none';
