@@ -496,7 +496,7 @@ const isActive = (href: string) => {
     const menuClose = commandCenter.querySelector('[data-menu-close]');
     const sheet = commandCenter.querySelector('[data-command-sheet]');
     const backdrop = commandCenter.querySelector('[data-command-backdrop]');
-    const logoutBtn = commandCenter.querySelector('[data-logout-button]');
+    const logoutBtn = commandCenter.querySelector<HTMLElement>('[data-logout-button]');
     const dragHandle = commandCenter.querySelector('[data-drag-handle]');
 
     if (!(sheet instanceof HTMLElement)) return;

@@ -21,6 +21,7 @@ import { auditLogService } from '@/services';
 import type { SecurityEvent } from '@/services/audit-log.service';
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
+import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
@@ -128,7 +129,7 @@ if (user?.id) {
     },
   ];
 
-  mfaStatus.enabled = Boolean(authSession?.user?.twoFactorEnabled);
+  mfaStatus.enabled = isTwoFactorEnabled(authSession?.user);
   mfaStatus.backupCodesRemaining = mfaStatus.enabled
     ? getBackupCodeCount(twoFactorState?.backupCodes)
     : 0;

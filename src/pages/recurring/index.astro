@@ -1,4 +1,5 @@
 ---
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
@@ -23,7 +24,7 @@ import {
 } from '@/services';
 
 const user = Astro.locals.user;
-if (!user?.id) {
+if (!hasWorkspace(user)) {
   return Astro.redirect('/login');
 }
 

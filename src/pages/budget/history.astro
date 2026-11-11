@@ -9,6 +9,7 @@
  * Protected by authentication.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTablePartial.astro';
 import YearToggle from '@/components/molecules/YearToggle.astro';
@@ -18,7 +19,8 @@ import Breadcrumb from '@/components/atoms/Breadcrumb.astro';
 import Button from '@/components/atoms/Button.astro';
 import { CircleX, RotateCcwClock as HistoryIcon } from '@lucide/astro';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 const currentPath = '/budget/history';
 
 // Get query parameters

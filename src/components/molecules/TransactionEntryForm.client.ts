@@ -557,7 +557,7 @@ function initForm(form: HTMLFormElement) {
           document.dispatchEvent(new CustomEvent('transactions-changed'));
         }
       }
-    } catch (err) {
+    } catch {
       if (formError) {
         formError.textContent = 'Network error. Please try again.';
         formError.classList.remove('hidden');

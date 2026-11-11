@@ -40,8 +40,10 @@ function initTransactionDrawer(): void {
   controller = new AbortController();
   const { signal } = controller;
 
-  const drawer = document.getElementById('transaction-drawer');
-  if (!(drawer instanceof HTMLElement)) return;
+  const drawerEl = document.getElementById('transaction-drawer');
+  if (!(drawerEl instanceof HTMLElement)) return;
+  // Typed binding so the hoisted helper functions below see a non-null drawer.
+  const drawer: HTMLElement = drawerEl;
 
   const expenseBtn = drawer.querySelector('[data-tab="expense"]') as HTMLButtonElement | null;
   const incomeBtn = drawer.querySelector('[data-tab="income"]') as HTMLButtonElement | null;

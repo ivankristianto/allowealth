@@ -6,6 +6,7 @@
  * Matches POC design with premium styling.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
 import TransactionDateGroups from '@/components/molecules/TransactionDateGroups.astro';
@@ -37,7 +38,8 @@ import { trackPhase, trackPhaseSync } from '@/lib/perf';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { isValidCurrency } from '@/lib/constants/currency';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 const perf = Astro.locals.perf;
 // Milestone: elapsed time from PerfCollector creation to page entry = middleware overhead
 perf?.recordMilestone('middleware.elapsed');
@@ -135,7 +137,8 @@ const ACCOUNT_TYPE_GROUP_LABELS: Record<AccountType, string> = {
   loan: 'Loans',
 };
 
-const accountOptions = accounts.map((account) => ({
+// IDatabase types query results as any, so name the fields this page reads.
+const accountOptions = accounts.map((account: { id: string; name: string; type: AccountType }) => ({
   id: account.id,
   name: account.name,
   type: ACCOUNT_TYPE_GROUP_LABELS[account.type] || ACCOUNT_TYPE_LABELS[account.type],

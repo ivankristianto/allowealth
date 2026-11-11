@@ -5,6 +5,7 @@
  * Page for viewing an account's balance history.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { accountService } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
@@ -13,7 +14,8 @@ import EmptyState from '@/components/atoms/EmptyState.astro';
 import { ArrowLeft, TrendingUp } from '@lucide/astro';
 import type { AccountHistoryOutput } from '@/lib/types/account';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 
 // Get account ID from URL params
 const { id } = Astro.params;

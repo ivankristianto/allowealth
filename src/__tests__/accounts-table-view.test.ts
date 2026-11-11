@@ -87,7 +87,7 @@ describe('accounts table view integration wiring', () => {
         const accountsWithDisplay = accounts.map((account) => ({
           ...account,
           category_name: account.category_id ? account.category_name : null,
-          owner_name: memberNamesById.get(account.created_by_user_id),
+          owner_name: ownerNameFor(account.created_by_user_id),
         }));
       `)
     );

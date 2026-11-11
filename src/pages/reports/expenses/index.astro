@@ -11,6 +11,7 @@
  * @see docs/architecture/002-interactive-pages.md
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
@@ -31,7 +32,7 @@ import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 const currentPath = '/reports/expenses';
 
 const user = Astro.locals.user;
-if (!user?.id) {
+if (!hasWorkspace(user)) {
   return Astro.redirect('/login');
 }
 

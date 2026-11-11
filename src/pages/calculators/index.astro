@@ -8,6 +8,7 @@
  * @route /calculators
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabSwitcher from '@/components/molecules/TabSwitcher.astro';
 import Label from '@/components/atoms/Label.astro';
@@ -20,7 +21,7 @@ import type { Currency } from '@/lib/constants/currency';
 
 const currentPath = '/calculators';
 const user = Astro.locals.user;
-if (!user?.id) {
+if (!hasWorkspace(user)) {
   return Astro.redirect('/login');
 }
 const primaryCurrency: Currency = await workspaceMetaService.getCurrency(user.workspaceId);

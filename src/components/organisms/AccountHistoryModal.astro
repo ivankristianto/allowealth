@@ -243,6 +243,12 @@ import Button from '@/components/atoms/Button.astro';
     history?: HistoryPoint[];
   }
 
+  declare global {
+    interface DocumentEventMap {
+      'open-account-history': CustomEvent<AccountHistoryData>;
+    }
+  }
+
   function initAccountHistoryModal() {
     document.querySelectorAll('[data-account-history-modal-container]').forEach((container) => {
       // Skip if already initialized
@@ -492,7 +498,7 @@ import Button from '@/components/atoms/Button.astro';
       };
 
       // Listen for open-account-history event
-      const handleOpenHistory = (async (e: CustomEvent<AccountHistoryData>) => {
+      const handleOpenHistory = async (e: CustomEvent<AccountHistoryData>) => {
         currentData = e.detail;
         currentTimeframe = 'monthly';
 
@@ -511,7 +517,7 @@ import Button from '@/components/atoms/Button.astro';
         setTimeout(() => {
           updateDisplay(currentData!, currentTimeframe);
         }, 100);
-      }) as EventListener;
+      };
 
       document.addEventListener('open-account-history', handleOpenHistory);
 

@@ -495,7 +495,7 @@ const serializedChartPayload = JSON.stringify({
         if (entry?.chart) {
           try {
             entry.chart.destroy();
-          } catch (e) {
+          } catch {
             // Chart may already be destroyed
           }
         }

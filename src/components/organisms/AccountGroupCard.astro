@@ -198,7 +198,7 @@ const cardClasses = [
           // Collapse
           content.style.maxHeight = content.scrollHeight + 'px';
           // Force reflow
-          content.offsetHeight;
+          void content.offsetHeight;
           content.style.maxHeight = '0px';
           content.style.opacity = '0';
           content.style.overflow = 'hidden';

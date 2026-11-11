@@ -6,6 +6,7 @@
  * balance comparison charts, and a yearly ledger breakdown.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ForecastAssumptions from '@/components/organisms/ForecastAssumptions.astro';
 import ForecastMonthlyGains from '@/components/organisms/ForecastMonthlyGains.astro';
@@ -17,7 +18,7 @@ import { workspaceMetaService } from '@/services';
 
 const currentPath = '/forecast';
 const user = Astro.locals.user;
-if (!user?.id) {
+if (!hasWorkspace(user)) {
   return Astro.redirect('/login');
 }
 

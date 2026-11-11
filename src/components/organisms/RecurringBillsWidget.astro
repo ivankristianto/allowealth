@@ -81,7 +81,8 @@ function toMonthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-if (!user?.workspaceId) {
+const workspaceId = user?.workspaceId;
+if (!workspaceId) {
   fetchError = 'Unable to load recurring queue.';
 } else {
   try {
@@ -92,15 +93,15 @@ if (!user?.workspaceId) {
 
     const pendingResults = await Promise.all(
       monthKeys.map((month) =>
-        recurringOccurrenceService.findPending(user.workspaceId, { status: 'pending', month }, perf)
+        recurringOccurrenceService.findPending(workspaceId, { status: 'pending', month }, perf)
       )
     );
     const [fetchedCategories, fetchedAccounts] = await Promise.all([
       layoutCategories.length === 0
-        ? categoryService.findAll(user.workspaceId, { is_active: true }, perf)
+        ? categoryService.findAll(workspaceId, { is_active: true }, perf)
         : Promise.resolve([]),
       layoutAccounts.length === 0
-        ? accountService.findAll(user.workspaceId, undefined, perf)
+        ? accountService.findAll(workspaceId, undefined, perf)
         : Promise.resolve([]),
     ]);
     const categorySource: LayoutCategory[] =

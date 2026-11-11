@@ -274,7 +274,7 @@ const groupedItems = items.reduce<
         return true;
       }
 
-      function updateUI(emitChange = false): void {
+      const updateUI = (emitChange = false): void => {
         hiddenInput.value = selectedIds.join(',');
 
         if (selectedIds.length === 0) {
@@ -305,7 +305,7 @@ const groupedItems = items.reduce<
         if (emitChange) {
           dispatchChangeEvent();
         }
-      }
+      };
 
       function toggleSelection(itemId: string): void {
         if (!itemId) return;

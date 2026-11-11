@@ -6,6 +6,7 @@
  * Admins can reopen accounts from this page.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AccountReopenModal from '@components/organisms/AccountReopenModal.astro';
 import Button from '@/components/atoms/Button.astro';
@@ -15,7 +16,8 @@ import { accountService, accountCategoryService } from '@/services';
 import { formatAccountType } from '@/lib/types/account';
 import { formatCurrency } from '@/lib/formatting';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 const currentPath = '/accounts';
 const isAdmin = user.role === 'admin';
 
@@ -164,7 +166,7 @@ const formatClosedDate = (date: Date | null): string => {
   const initializedReopenButtons = new WeakSet<Element>();
 
   function initReopenButtons() {
-    document.querySelectorAll('[data-reopen-account]').forEach((button) => {
+    document.querySelectorAll<HTMLElement>('[data-reopen-account]').forEach((button) => {
       if (initializedReopenButtons.has(button)) return;
       initializedReopenButtons.add(button);
 

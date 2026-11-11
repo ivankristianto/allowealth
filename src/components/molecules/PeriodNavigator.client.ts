@@ -31,14 +31,16 @@ export function initPeriodNavigator() {
     initializedNavigators.add(navigator);
 
     const periodInput = navigator.querySelector('[data-period-input]') as HTMLInputElement;
-    const periodLabel = navigator.querySelector('[data-period-label]');
+    const periodLabelEl = navigator.querySelector('[data-period-label]');
     const prevBtn = navigator.querySelector('[data-period-nav="prev"]') as HTMLButtonElement;
     const nextBtn = navigator.querySelector('[data-period-nav="next"]') as HTMLButtonElement;
     const dropdown = navigator.querySelector('[data-period-dropdown]') as HTMLElement | null;
     const trigger = navigator.querySelector('[data-period-trigger]') as HTMLButtonElement | null;
     const optionsList = navigator.querySelector('[data-period-options-list]') as HTMLElement | null;
 
-    if (!periodInput || !periodLabel) return;
+    if (!periodInput || !periodLabelEl) return;
+    // Typed binding so hoisted helpers like setPeriod see a non-null label.
+    const periodLabel: Element = periodLabelEl;
 
     const navigatorController = new AbortController();
     navigatorControllers.add(navigatorController);

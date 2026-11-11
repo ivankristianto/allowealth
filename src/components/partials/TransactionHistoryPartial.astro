@@ -112,14 +112,14 @@ import Button from '@/components/atoms/Button.astro';
 
               {entry.action === 'update' && entry.oldValue && entry.newValue && (
                 <div class="mt-1 space-y-0.5">
-                  {Object.keys(entry.newValue).map((field) => (
+                  {Object.entries(entry.newValue).map(([field, newFieldValue]) => (
                     <div class="text-xs text-base-content/70">
                       <span class="font-medium">{FIELD_LABELS[field] || field}:</span>{' '}
                       <span class="line-through text-base-content/40">
                         {formatFieldValue(field, entry.oldValue?.[field], entry.oldValue)}
                       </span>{' '}
                       <span aria-label="changed to">&rarr;</span>{' '}
-                      <span>{formatFieldValue(field, entry.newValue[field], entry.newValue)}</span>
+                      <span>{formatFieldValue(field, newFieldValue, entry.newValue)}</span>
                     </div>
                   ))}
                 </div>

@@ -6,13 +6,15 @@
  * Wires to real API endpoint for export.
  */
 
+import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import { Info, Download } from '@lucide/astro';
 import { categoryService, accountService, workspaceMetaService } from '@/services';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
+if (!hasWorkspace(user)) return Astro.redirect('/login');
 const currentPath = '/transactions/export';
 
 // Fetch categories and accounts for filters
