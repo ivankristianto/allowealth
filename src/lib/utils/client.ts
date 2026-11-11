@@ -6,17 +6,15 @@
  */
 
 import { addToast } from '@/lib/stores/toastStore';
-import { authClient } from '@/lib/auth/client';
 
 /**
  * Sign out through Better Auth and redirect to /login on success.
- * Shared by UserProfile dropdown and mobile navigation logout buttons.
- *
- * @param onBeforeRedirect - Optional callback invoked after a successful
- *   server response but before the redirect (e.g. close a dropdown menu).
+ * @param onBeforeRedirect - runs after the server confirms, before the redirect.
  */
 export async function performLogout(onBeforeRedirect?: () => void): Promise<void> {
   try {
+    // Loaded on click: a static import put the ~15 kB auth client in every protected page's layout JS.
+    const { authClient } = await import('@/lib/auth/client');
     // Explicit empty body: with `strict: false`, Better Auth 1.7's client types
     // mark the request argument required.
     const response = await authClient.signOut({});
