@@ -176,6 +176,38 @@ jobs:
       - name: Run unit tests
         run: bun test
 
+  static-sites:
+    name: Static Sites
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.22.2'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: |
+          bun install --frozen-lockfile
+          bun install --frozen-lockfile --cwd apps/docs
+          bun install --frozen-lockfile --cwd apps/site
+
+      - name: Build docs and marketing sites
+        run: bun run docs:build && bun run landing:build
+
+      # Cloudflare Pages serves this HTML outside Astro, so _headers must cover every inline script
+      - name: Check the CSP allows every inline script
+        run: bun test ./src/__tests__/architecture/static-site-headers.test.ts
+        env:
+          CHECK_STATIC_BUILD: apps/docs,apps/site
+
   db-performance:
     name: DB Performance Report
     runs-on: ubuntu-latest

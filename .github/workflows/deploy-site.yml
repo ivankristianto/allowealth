@@ -41,6 +41,11 @@ jobs:
       - name: Build marketing site
         run: bun run --cwd apps/site build
 
+      - name: Check the CSP allows every inline script
+        run: bun test ./src/__tests__/architecture/static-site-headers.test.ts
+        env:
+          CHECK_STATIC_BUILD: apps/site
+
       - name: Deploy marketing site to Cloudflare Pages
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         env:
