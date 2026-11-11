@@ -8,10 +8,9 @@ const workspaceId = `ws-members-${nanoid(8)}`;
 const founderId = `founder-${nanoid(8)}`;
 const actingAdminId = `admin-${nanoid(8)}`;
 const memberId = `member-${nanoid(8)}`;
-const loneWorkspaceId = `ws-lone-${nanoid(8)}`;
-const loneAdminId = `lone-${nanoid(8)}`;
 const superAdminId = `sa-members-${nanoid(8)}`;
-const allUserIds = [founderId, actingAdminId, memberId, loneAdminId, superAdminId];
+const allUserIds = [founderId, actingAdminId, memberId, superAdminId];
+const loneWorkspaceIds: string[] = [];
 
 function adminContext(method: 'DELETE' | 'POST', url: string, body?: unknown) {
   return {
@@ -37,10 +36,7 @@ async function auditRowsFor(action: string, entityId: string) {
 }
 
 beforeAll(async () => {
-  await db.insert(workspaces).values([
-    { id: workspaceId, name: 'Members Household' },
-    { id: loneWorkspaceId, name: 'Lone Household' },
-  ]);
+  await db.insert(workspaces).values([{ id: workspaceId, name: 'Members Household' }]);
   const base = Date.now() - 60_000;
   const user = (
     id: string,
@@ -61,15 +57,15 @@ beforeAll(async () => {
       user(founderId, workspaceId, 'admin', 0),
       user(actingAdminId, workspaceId, 'admin', 1000),
       user(memberId, workspaceId, 'member', 2000),
-      user(loneAdminId, loneWorkspaceId, 'admin', 0),
       user(superAdminId, null, 'super_admin', 0),
     ]);
 });
 
 afterAll(async () => {
-  await db.delete(auditLogs).where(inArray(auditLogs.workspace_id, [workspaceId, loneWorkspaceId]));
+  const workspaceIds = [workspaceId, ...loneWorkspaceIds];
+  await db.delete(auditLogs).where(inArray(auditLogs.workspace_id, workspaceIds));
   await db.delete(auditLogs).where(inArray(auditLogs.user_id, allUserIds));
-  await db.delete(workspaces).where(inArray(workspaces.id, [workspaceId, loneWorkspaceId]));
+  await db.delete(workspaces).where(inArray(workspaces.id, workspaceIds));
   await db.delete(users).where(eq(users.id, superAdminId));
 });
 
@@ -140,35 +136,51 @@ describe('workspace member audit trail', () => {
   });
 });
 
+/** A fresh workspace with one admin, and optionally a second one. */
+async function seedAdminWorkspace(adminCount: 1 | 2) {
+  const id = `ws-lone-${nanoid(8)}`;
+  loneWorkspaceIds.push(id);
+  await db.insert(workspaces).values({ id, name: 'Lone Household' });
+  const adminIds = Array.from({ length: adminCount }, () => `lone-${nanoid(8)}`);
+  await db.insert(users).values(
+    adminIds.map((adminId) => ({
+      id: adminId,
+      workspace_id: id,
+      email: `${adminId}@example.test`,
+      name: 'Admin',
+      role: 'admin' as const,
+    }))
+  );
+  return adminIds[0]!;
+}
+
 describe('the last admin of a workspace stays', () => {
   it('refuses to deactivate the only active admin', async () => {
-    await expect(superAdminService.deactivateUser(loneAdminId)).rejects.toMatchObject({
+    const adminId = await seedAdminWorkspace(1);
+
+    await expect(superAdminService.deactivateUser(adminId)).rejects.toMatchObject({
       statusCode: 409,
     });
-    const row = await db.query.users.findFirst({ where: eq(users.id, loneAdminId) });
+    const row = await db.query.users.findFirst({ where: eq(users.id, adminId) });
     expect(row?.deleted_at).toBeNull();
   });
 
   it('refuses to demote the only active admin to member', async () => {
-    await expect(superAdminService.changeUserRole(loneAdminId, 'member')).rejects.toMatchObject({
+    const adminId = await seedAdminWorkspace(1);
+
+    await expect(superAdminService.changeUserRole(adminId, 'member')).rejects.toMatchObject({
       statusCode: 409,
     });
-    const row = await db.query.users.findFirst({ where: eq(users.id, loneAdminId) });
+    const row = await db.query.users.findFirst({ where: eq(users.id, adminId) });
     expect(row?.role).toBe('admin');
   });
 
   it('still deactivates an admin who has a co-admin', async () => {
-    await db.insert(users).values({
-      id: `${loneAdminId}-co`,
-      workspace_id: loneWorkspaceId,
-      email: `${loneAdminId}-co@example.test`,
-      name: 'Co Admin',
-      role: 'admin',
-    });
+    const adminId = await seedAdminWorkspace(2);
 
-    await superAdminService.deactivateUser(loneAdminId);
+    await superAdminService.deactivateUser(adminId);
 
-    const row = await db.query.users.findFirst({ where: eq(users.id, loneAdminId) });
+    const row = await db.query.users.findFirst({ where: eq(users.id, adminId) });
     expect(row?.deleted_at).not.toBeNull();
   });
 });

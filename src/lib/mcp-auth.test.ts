@@ -43,6 +43,11 @@ import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 import { invalidateMcpToken, validateMcpToken } from './mcp-auth';
 
+beforeEach(() => {
+  mockIsWorkspaceActive.mockReset();
+  mockIsWorkspaceActive.mockImplementation(async () => true);
+});
+
 describe('validateMcpToken', () => {
   beforeEach(() => {
     mockFindFirst.mockReset();
@@ -51,8 +56,6 @@ describe('validateMcpToken', () => {
     mockCacheInvalidate.mockReset();
     mockDb.query.oauthAccessToken.findFirst = mockFindFirst;
     mockDb.query.users.findFirst = mock(async () => null);
-    mockIsWorkspaceActive.mockReset();
-    mockIsWorkspaceActive.mockImplementation(async () => true);
   });
 
   it('returns null for empty token', async () => {
@@ -341,7 +344,6 @@ describe('validateMcpToken with an archived workspace', () => {
   };
 
   beforeEach(() => {
-    mockIsWorkspaceActive.mockReset();
     mockDb.query.oauthAccessToken.findFirst = mock(async () => liveToken());
     mockDb.query.users.findFirst = mock(async () => ({
       workspace_id: 'ws-archived',
