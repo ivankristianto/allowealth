@@ -5,7 +5,7 @@ import * as schema from '@/db/schema/sqlite';
 import { applyMigrations } from '@/db/test-helpers/migrations';
 
 /** A throwaway SQLite file built from the migrations, as the test preload does. */
-export function createFileDatabase(path: string) {
+export function createSetupSqlDatabase(path: string) {
   const raw = new SqliteDatabase(path);
   applyMigrations(raw);
   raw.run('PRAGMA foreign_keys = ON;');
@@ -21,7 +21,7 @@ export function createFileDatabase(path: string) {
 }
 
 export function seedWorkspaceUser(
-  db: ReturnType<typeof createFileDatabase>['db'],
+  db: ReturnType<typeof createSetupSqlDatabase>['db'],
   ids: { workspaceId: string; userId: string }
 ): void {
   const now = new Date();

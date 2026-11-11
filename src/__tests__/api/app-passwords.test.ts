@@ -10,10 +10,10 @@ import { resetDb } from '@/db';
 import * as schema from '@/db/schema/sqlite';
 import { setTestEnv } from '@/lib/env';
 import { clearRateLimitStore } from '@/lib/rate-limit';
-import { createFileDatabase, seedWorkspaceUser } from '../../../tests/helpers/file-db';
+import { createSetupSqlDatabase, seedWorkspaceUser } from '../../../tests/helpers/setup-sql-db';
 
 const DB_PATH = join(import.meta.dir, `app-passwords-int-${nanoid(8)}.sqlite`);
-const testDb = createFileDatabase(DB_PATH);
+const testDb = createSetupSqlDatabase(DB_PATH);
 const { db } = testDb;
 
 const workspaceId = `ws-${nanoid(8)}`;

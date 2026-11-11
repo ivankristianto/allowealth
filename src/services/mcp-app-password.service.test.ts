@@ -5,11 +5,11 @@ import { nanoid } from 'nanoid';
 import * as schema from '@/db/schema/sqlite';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { MAX_APP_PASSWORDS_PER_USER } from '@/lib/mcp-app-password';
-import { createFileDatabase, seedWorkspaceUser } from '../../tests/helpers/file-db';
+import { createSetupSqlDatabase, seedWorkspaceUser } from '../../tests/helpers/setup-sql-db';
 import { AppPasswordError, McpAppPasswordService } from './mcp-app-password.service';
 
 const DB_PATH = join(import.meta.dir, `mcp-app-password-test-${nanoid(8)}.sqlite`);
-const testDb = createFileDatabase(DB_PATH);
+const testDb = createSetupSqlDatabase(DB_PATH);
 const { db } = testDb;
 
 let clock = new Date('2026-06-01T00:00:00Z');
@@ -235,7 +235,7 @@ describe('McpAppPasswordService.revoke and listForUser', () => {
 describe('McpAppPasswordService database errors', () => {
   test('never include the token hash in the error message', async () => {
     const brokenPath = join(import.meta.dir, `mcp-app-password-broken-${nanoid(8)}.sqlite`);
-    const broken = createFileDatabase(brokenPath);
+    const broken = createSetupSqlDatabase(brokenPath);
     try {
       seedWorkspaceUser(broken.db, { workspaceId, userId });
       broken.raw.run('DROP TABLE mcp_app_passwords');
