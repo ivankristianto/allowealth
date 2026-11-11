@@ -1,9 +1,8 @@
 import { Database as SqliteDriver } from 'bun:sqlite';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as sqliteSchema from '@/db/schema/sqlite';
 import type { Database } from '@/db';
+import { applyMigrations } from './migrations';
 
 export interface MemoryDb {
   db: Database;
@@ -13,8 +12,8 @@ export interface MemoryDb {
 /** In-memory SQLite with the full app schema, isolated from every on-disk database. */
 export function createMemoryDb(): MemoryDb {
   const raw = new SqliteDriver(':memory:');
+  applyMigrations(raw);
   raw.run('PRAGMA foreign_keys = ON;');
-  raw.run(readFileSync(join(process.cwd(), 'src', 'db', 'setup.sql'), 'utf8'));
   return { db: drizzle(raw, { schema: sqliteSchema }), raw };
 }
 

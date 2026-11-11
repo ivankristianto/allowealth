@@ -28,7 +28,7 @@ function deleteSqliteArtifacts(dbPath: string) {
 }
 
 function setupTestDatabase(dbPath: string) {
-  execFileSync('bun', ['run', 'db:setup'], {
+  execFileSync('bun', ['run', 'db:migrate'], {
     cwd: process.cwd(),
     env: {
       ...process.env,

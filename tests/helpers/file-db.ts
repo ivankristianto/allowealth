@@ -1,23 +1,13 @@
 import { Database as SqliteDatabase } from 'bun:sqlite';
-import { readFileSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { rmSync } from 'node:fs';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from '@/db/schema/sqlite';
+import { applyMigrations } from '@/db/test-helpers/migrations';
 
-function removeComments(sql: string): string {
-  return sql
-    .replace(/--[^\n]*/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .trim();
-}
-
-/** A throwaway SQLite file built from src/db/setup.sql, as the test preload does. */
-export function createSetupSqlDatabase(path: string) {
+/** A throwaway SQLite file built from the migrations, as the test preload does. */
+export function createFileDatabase(path: string) {
   const raw = new SqliteDatabase(path);
-  const setupSql = readFileSync(join(process.cwd(), 'src', 'db', 'setup.sql'), 'utf8');
-  for (const statement of setupSql.split(';').map(removeComments).filter(Boolean)) {
-    raw.prepare(statement).run();
-  }
+  applyMigrations(raw);
   raw.run('PRAGMA foreign_keys = ON;');
 
   return {
@@ -31,7 +21,7 @@ export function createSetupSqlDatabase(path: string) {
 }
 
 export function seedWorkspaceUser(
-  db: ReturnType<typeof createSetupSqlDatabase>['db'],
+  db: ReturnType<typeof createFileDatabase>['db'],
   ids: { workspaceId: string; userId: string }
 ): void {
   const now = new Date();

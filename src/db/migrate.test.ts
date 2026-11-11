@@ -13,25 +13,6 @@ function getJournalEntryCount(): number {
   return journal.entries.length;
 }
 
-function removeSqlComments(sql: string): string {
-  return sql
-    .replace(/--[^\n]*/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .trim();
-}
-
-function executeStatements(db: Database, sql: string) {
-  const statements = sql
-    .replaceAll('--> statement-breakpoint', ';')
-    .split(';')
-    .map((statement) => removeSqlComments(statement))
-    .filter(Boolean);
-
-  for (const statement of statements) {
-    db.prepare(statement).run();
-  }
-}
-
 describe('runSqliteMigrations', () => {
   let tempDir: string;
 
@@ -60,12 +41,11 @@ describe('runSqliteMigrations', () => {
   });
 
   it('fails with a clear error when schema exists without migration history', () => {
-    const dbPath = join(tempDir, 'setup-without-migrations.db');
+    const dbPath = join(tempDir, 'schema-without-migrations.db');
     const db = new Database(dbPath);
 
     try {
-      const setupSql = readFileSync(join(process.cwd(), 'src/db/setup.sql'), 'utf8');
-      executeStatements(db, setupSql);
+      db.run('CREATE TABLE workspaces (id TEXT PRIMARY KEY)');
     } finally {
       db.close();
     }
