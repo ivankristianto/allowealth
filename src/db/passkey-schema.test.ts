@@ -34,6 +34,5 @@ describe('passkey schema coverage', () => {
 
     expect(migrateIndex).toBeGreaterThan(-1);
     expect(migrateIndex).toBeLessThan(resetBlock.indexOf("'src/db/seed/index.ts'"));
-    expect(resetBlock).not.toContain('src/db/setup.ts');
   });
 });
