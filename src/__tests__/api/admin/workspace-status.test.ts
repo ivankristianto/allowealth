@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from 'bun:test';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db, auditLogs, users, workspaces } from '@/db';
+import { superAdminService } from '@/services';
 
 const workspaceId = `ws-status-${nanoid(8)}`;
 const superAdminId = `sa-status-${nanoid(8)}`;
@@ -56,5 +57,23 @@ describe('POST /api/admin/workspaces/:id/archive and /reactivate', () => {
     const { POST: reactivate } = await import('@/pages/api/admin/workspaces/[id]/reactivate');
 
     expect((await reactivate(statusContext('reactivate', 'admin'))).status).toBe(403);
+  });
+
+  it('returns a generic 500 with an error id when reactivation fails unexpectedly', async () => {
+    const { POST: reactivate } = await import('@/pages/api/admin/workspaces/[id]/reactivate');
+    const original = superAdminService.reactivateWorkspace;
+    superAdminService.reactivateWorkspace = async () => {
+      throw new Error('Failed query: update "workspaces" params: secret_ws');
+    };
+    try {
+      const response = await reactivate(statusContext('reactivate'));
+      const raw = await response.text();
+
+      expect(response.status).toBe(500);
+      expect(raw).not.toContain('secret_ws');
+      expect(JSON.parse(raw).error.details.errorId).toMatch(/^[0-9a-f]{8}$/);
+    } finally {
+      superAdminService.reactivateWorkspace = original;
+    }
   });
 });

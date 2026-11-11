@@ -39,7 +39,7 @@ export const POST: APIRoute = async (context) => {
     if (error instanceof SuperAdminServiceError) {
       return errorResponse(error.message, error.statusCode, error.code);
     }
-    logError('Error reactivating workspace', error);
-    return errorResponse('Failed to reactivate workspace', 500);
+    const errorId = logError('Error reactivating workspace', error);
+    return errorResponse('Failed to reactivate workspace', 500, 'INTERNAL_ERROR', { errorId });
   }
 };
