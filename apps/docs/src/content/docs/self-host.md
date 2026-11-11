@@ -158,7 +158,7 @@ docker compose -f docker/docker-compose.prod.yml start app
 
 ## Reverse proxy
 
-Allowealth listens on port 3000 inside the container. Put it behind a reverse proxy for HTTPS.
+Allowealth listens on port 3000 inside the container. Both compose files publish it on `127.0.0.1` only, so the reverse proxy has to run on the same host (or use a Cloudflare Tunnel). A proxy in another container or on another machine cannot reach it until you change the `ports:` binding.
 
 ### Nginx example
 
@@ -197,10 +197,9 @@ CLIENT_IP_HEADER=cf-connecting-ip
 ```
 
 :::caution
-Only set `CLIENT_IP_HEADER` when Allowealth is reachable **exclusively** through that proxy. The proxy overwrites the header, but anyone who can connect to the app port directly can send it with any value and bypass the rate limits. `docker-compose.prod.yml` publishes the port on all interfaces, so either:
+Only set `CLIENT_IP_HEADER` when Allowealth is reachable **exclusively** through that proxy. The proxy overwrites the header, but anyone who can connect to the app port directly can send it with any value and bypass the rate limits. The compose files bind the port to `127.0.0.1` for this reason. If you change that binding to reach the app from another host, either:
 
-- firewall the port so only the proxy can reach it (for Cloudflare, allow only [Cloudflare's IP ranges](https://www.cloudflare.com/ips/)),
-- bind it to localhost when the proxy runs on the same host (`127.0.0.1:3000:3000`), or
+- firewall the port so only the proxy can reach it (for Cloudflare, allow only [Cloudflare's IP ranges](https://www.cloudflare.com/ips/)), or
 - use a Cloudflare Tunnel, which needs no published port at all.
   :::
 
@@ -305,7 +304,7 @@ docker compose -f docker/docker-compose.prod.yml ps
 docker compose -f docker/docker-compose.prod.yml logs app
 ```
 
-If the container is healthy but unreachable, check your firewall rules and reverse proxy configuration.
+If the container is healthy but unreachable, remember the port is bound to `127.0.0.1`: it answers on the host itself, not from other machines. Then check your firewall rules and reverse proxy configuration.
 
 ## Build from source
 
