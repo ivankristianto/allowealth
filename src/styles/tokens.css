@@ -304,7 +304,6 @@
   --table-icon-size: 22px;
 
   /* Layout tokens (from styles.json) */
-  --layout-container-max-width: 1400px;
   --layout-header-height: 5rem;
   --layout-header-padding: 1.25rem;
   --layout-bottom-nav-height: 4rem;
@@ -321,23 +320,6 @@
   --shadow-premium: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
   --shadow-accent-glow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
   --shadow-accent-glow-lg: 0 25px 50px -12px rgb(21 128 61 / 0.3);
-
-  /* Mobile bottom navigation */
-  --mobile-nav-surface-bg: linear-gradient(
-    to top,
-    rgb(255 255 255 / 1) 0%,
-    rgb(255 255 255 / 0.95) 56%,
-    rgb(255 255 255 / 0.9) 100%
-  );
-  --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.18);
-  --mobile-nav-accent-line: rgb(21 128 61 / 0.25);
-  --mobile-nav-fab-halo: radial-gradient(
-    circle at center,
-    rgb(21 128 61 / 0.2) 0%,
-    transparent 72%
-  );
-  --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.3);
-  --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
 
   /* ========================================
    * ANIMATION TOKENS (from styles.json)
@@ -404,23 +386,6 @@
   /* Sky scale */
   --color-sky-400: #38bdf8;
   --color-sky-500: #0ea5e9;
-
-  /* Mobile bottom navigation — aligned to new base palette */
-  --mobile-nav-surface-bg: linear-gradient(
-    to top,
-    rgb(17 24 39 / 0.96) 0%,
-    rgb(17 24 39 / 0.92) 56%,
-    rgb(17 24 39 / 0.86) 100%
-  );
-  --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.45);
-  --mobile-nav-accent-line: rgb(34 197 94 / 0.35);
-  --mobile-nav-fab-halo: radial-gradient(
-    circle at center,
-    rgb(34 197 94 / 0.24) 0%,
-    transparent 72%
-  );
-  --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.55);
-  --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
 
   /* Rose scale */
   --color-rose-500: #f43f5e;
