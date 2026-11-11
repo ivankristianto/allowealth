@@ -165,9 +165,92 @@ describe('getSafeErrorMessage', () => {
   });
 });
 
+describe('production JSON logging of errors', () => {
+  const originalError = console.error;
+  let errorOutput: string[];
+
+  beforeEach(() => {
+    errorOutput = [];
+    console.error = (...args: unknown[]) => errorOutput.push(args.map(String).join(' '));
+  });
+
+  afterEach(() => {
+    console.error = originalError;
+  });
+
+  function lastEntry(): Record<string, any> {
+    return JSON.parse(errorOutput[errorOutput.length - 1]);
+  }
+
+  test('an Error keeps its name, message, stack, code and cause', async () => {
+    const { createLogger } = await import('./logger');
+    const cause = Object.assign(new Error('UNIQUE constraint failed: budgets.id'), {
+      code: 'SQLITE_CONSTRAINT_UNIQUE',
+    });
+    const error = new TypeError('Failed query: insert into "budgets"', { cause });
+
+    createLogger('database').error('query failed', error);
+
+    const entry = lastEntry();
+    expect(entry.message).toBe('query failed TypeError: Failed query: insert into "budgets"');
+    expect(entry.error.name).toBe('TypeError');
+    expect(entry.error.message).toBe('Failed query: insert into "budgets"');
+    expect(entry.error.stack).toContain('logger.test.ts');
+    expect(entry.error.cause.message).toBe('UNIQUE constraint failed: budgets.id');
+    expect(entry.error.cause.code).toBe('SQLITE_CONSTRAINT_UNIQUE');
+  });
+
+  test('an Error nested in a context object is serialized too', async () => {
+    const { createLogger } = await import('./logger');
+
+    createLogger('cache').error('invalidate failed', { error: new Error('redis down') });
+
+    expect(lastEntry().message).toContain('"message":"redis down"');
+  });
+});
+
 describe('logError', () => {
-  test('is exported as a function', async () => {
+  const originalError = console.error;
+  let errorOutput: string[];
+
+  beforeEach(() => {
+    errorOutput = [];
+    console.error = (...args: unknown[]) => errorOutput.push(args.map(String).join(' '));
+  });
+
+  afterEach(() => {
+    console.error = originalError;
+  });
+
+  test('logs SQL, params and stack unredacted, tagged with the returned id', async () => {
     const { logError } = await import('./logger');
-    expect(typeof logError).toBe('function');
+    const error = new Error(
+      'Failed query: update "accounts" set "name" = ? where "id" = ? params: Savings,acc_123'
+    );
+
+    const errorId = logError('Error updating account', error);
+
+    expect(errorId).toMatch(/^[0-9a-f]{8}$/);
+    const output = errorOutput.join('\n');
+    expect(output).toContain(`errorId=${errorId}`);
+    expect(output).toContain('update \\"accounts\\" set');
+    expect(output).toContain('params: Savings,acc_123');
+    expect(output).toContain('logger.test.ts');
+  });
+
+  test('still redacts credentials and password hashes', async () => {
+    const { logError } = await import('./logger');
+    const hash = await Bun.password.hash('hunter2-hunter2', 'argon2id');
+    const error = new Error(
+      `connect redis://default:s3cret@cache:6379 failed; params: ${hash},user@example.com`
+    );
+
+    logError('Saving user failed', error);
+
+    const output = errorOutput.join('\n');
+    expect(output).not.toContain('s3cret');
+    expect(output).not.toContain(hash);
+    expect(output).toContain('redis://[REDACTED]@cache:6379');
+    expect(output).toContain('user@example.com');
   });
 });

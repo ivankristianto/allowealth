@@ -51,16 +51,54 @@ export function resolveLogLevel(): number {
   return isDev || isTest ? 4 : 1;
 }
 
-/**
- * JSON reporter for production — outputs one structured JSON object per
- * line so log aggregators can index the fields.
- */
-/** Stringify a log argument — objects get JSON-serialized, everything else String() */
+const MAX_CAUSE_DEPTH = 3;
+
+/** Plain-object copy of an Error; JSON.stringify drops its non-enumerable fields otherwise. */
+export function serializeError(error: Error, depth = 0): Record<string, unknown> {
+  const serialized: Record<string, unknown> = {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+  };
+  const code = (error as { code?: unknown }).code;
+  if (code !== undefined) serialized.code = code;
+  if (error.cause !== undefined) {
+    serialized.cause =
+      error.cause instanceof Error
+        ? depth < MAX_CAUSE_DEPTH
+          ? serializeError(error.cause, depth + 1)
+          : `${error.cause.name}: ${error.cause.message}`
+        : error.cause;
+  }
+  return serialized;
+}
+
+function errorReplacer(_key: string, value: unknown): unknown {
+  return value instanceof Error ? serializeError(value) : value;
+}
+
+// Logs keep SQL and stack traces for debugging, but never credentials or password hashes.
+const SECRET_PATTERNS: Array<[RegExp, string]> = [
+  [
+    /\b(postgres(?:ql)?|mysql|rediss?|sqlite|libsql|https?):\/\/[^\s:@/]*:[^\s@/]+@/gi,
+    '$1://[REDACTED]@',
+  ],
+  [/\$argon2(?:id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+/g, '[REDACTED]'],
+  [/\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}/g, '[REDACTED]'],
+];
+
+export function redactSecrets(input: string): string {
+  return SECRET_PATTERNS.reduce(
+    (text, [pattern, replacement]) => text.replace(pattern, replacement),
+    input
+  );
+}
+
 function stringifyArg(arg: unknown): string {
   if (arg === null || arg === undefined) return String(arg);
   if (typeof arg === 'object') {
     try {
-      return JSON.stringify(arg);
+      return JSON.stringify(arg, errorReplacer);
     } catch {
       return String(arg);
     }
@@ -68,12 +106,33 @@ function stringifyArg(arg: unknown): string {
   return String(arg);
 }
 
+function formatPrettyArg(arg: unknown, depth = 0): string {
+  if (!(arg instanceof Error)) return stringifyArg(arg);
+  const code = (arg as { code?: unknown }).code;
+  let output = arg.stack ?? `${arg.name}: ${arg.message}`;
+  if (code !== undefined) output += ` [code=${String(code)}]`;
+  if (arg.cause !== undefined && depth < MAX_CAUSE_DEPTH) {
+    output += `\nCaused by: ${formatPrettyArg(arg.cause, depth + 1)}`;
+  }
+  return output;
+}
+
+/** One JSON object per line, so log aggregators can index the fields. */
 const jsonReporter = {
   log(logObj: LogObject) {
+    const errors = logObj.args.filter((arg): arg is Error => arg instanceof Error);
     const entry: Record<string, unknown> = {
       level: logObj.type,
       tag: logObj.tag || undefined,
-      message: logObj.args.map(stringifyArg).join(' '),
+      message: logObj.args
+        .map((arg) => (arg instanceof Error ? `${arg.name}: ${arg.message}` : stringifyArg(arg)))
+        .join(' '),
+      error:
+        errors.length === 0
+          ? undefined
+          : errors.length === 1
+            ? serializeError(errors[0])
+            : errors.map((error) => serializeError(error)),
       timestamp: new Date().toISOString(),
     };
 
@@ -82,7 +141,7 @@ const jsonReporter = {
       if (entry[k] === undefined) delete entry[k];
     });
 
-    const json = JSON.stringify(entry);
+    const json = redactSecrets(JSON.stringify(entry));
 
     // Route to the matching console method so log collectors capture severity
     switch (logObj.type) {
@@ -106,8 +165,8 @@ const jsonReporter = {
 const prettyReporter = {
   log(logObj: LogObject) {
     const prefix = logObj.tag ? `[${logObj.tag}]` : '';
-    const message = logObj.args.map(stringifyArg).join(' ');
-    const output = prefix ? `${prefix} ${message}` : message;
+    const message = logObj.args.map((arg) => formatPrettyArg(arg)).join(' ');
+    const output = redactSecrets(prefix ? `${prefix} ${message}` : message);
 
     switch (logObj.type) {
       case 'error':
@@ -156,15 +215,9 @@ export function createLogger(tag: string) {
  */
 export const logger = baseLogger;
 
-// ---------------------------------------------------------------------------
-// Error logging with sanitization
-// ---------------------------------------------------------------------------
-
 const errorLog = baseLogger.withTag('error');
 
-/**
- * Sensitive patterns to strip from error messages
- */
+/** Internals to strip from error text before it reaches a client. Server logs keep them. */
 const SENSITIVE_PATTERNS = [
   // File paths
   /\/?[\w\/]+\/(src|lib|services|pages|db)\/[\w\/\-\.]+/gi,
@@ -197,9 +250,7 @@ const INTERNAL_ERROR_MESSAGES = [
   '__proto__',
 ];
 
-/**
- * Sanitized error information for logging
- */
+/** Error information safe to show a client */
 export interface SanitizedError {
   /** Safe error message (generic, no internal details) */
   message: string;
@@ -211,13 +262,7 @@ export interface SanitizedError {
   context?: string;
 }
 
-/**
- * Sanitize an error for safe logging
- *
- * @param error - The error to sanitize
- * @param context - Optional context about where the error occurred
- * @returns Sanitized error information safe for logging
- */
+/** Redact internals from an error for an API response. Never use it on server logs. */
 export function sanitizeError(error: unknown, context?: string): SanitizedError {
   // Handle null/undefined
   if (error === null || error === undefined) {
@@ -271,22 +316,6 @@ export function sanitizeError(error: unknown, context?: string): SanitizedError 
   ];
   const isKnownError = knownErrorNames.includes(errorName) || !errorStack;
 
-  // Sanitize stack trace if present (but keep the error type)
-  if (errorStack) {
-    // Remove file paths from stack trace, keeping only the function names
-    errorStack
-      .replace(/\/?[\w\/]+\/(src|lib|services|pages|db)\/[\w\/\-\.]+/g, (match) => {
-        // Extract just the filename from the path
-        const parts = match.split('/');
-        return parts[parts.length - 1] || 'unknown';
-      })
-      .replace(/\s+at\s+/g, '\n  at ');
-
-    // Don't expose stack traces in production-like logs
-    // Include only the error type in the message
-    sanitizedMessage = sanitizedMessage;
-  }
-
   return {
     message: sanitizedMessage,
     name: errorName,
@@ -318,37 +347,18 @@ function sanitizeString(input: string): string {
 }
 
 /**
- * Log an error safely to console
- *
- * @param message - Context message describing what failed
- * @param error - The error to log (will be sanitized)
+ * Log the full error (stack, cause, SQL) server-side, with secrets redacted.
+ * @returns A short id to hand the client, so a report can be matched to this log line
  */
-export function logError(message: string, error: unknown): void {
-  // Skip logging in test environment to avoid noisy output
-  if (import.meta.env.MODE === 'test') {
-    return;
+export function logError(message: string, error: unknown): string {
+  const errorId = crypto.randomUUID().slice(0, 8);
+  if (import.meta.env.MODE !== 'test') {
+    errorLog.error(`${message} (errorId=${errorId})`, error);
   }
-
-  const sanitized = sanitizeError(error, message);
-
-  // Build the log message
-  const logParts = [`[${sanitized.name}] ${sanitized.message}`];
-
-  // Add context if provided
-  if (sanitized.context) {
-    logParts.push(`Context: ${sanitized.context}`);
-  }
-
-  // Log via structured logger (sanitized)
-  errorLog.error(logParts.join(' | '));
+  return errorId;
 }
 
-/**
- * Create a safe error message for logging without exposing details
- *
- * @param error - The error to get a safe message from
- * @returns A safe, generic error message
- */
+/** Redacted error message for an API response */
 export function getSafeErrorMessage(error: unknown): string {
   const sanitized = sanitizeError(error);
   return sanitized.message;
