@@ -67,6 +67,45 @@ describe('bun version', () => {
   });
 });
 
+// A moved tag on a third-party action runs new code with our secrets (audit 7.5)
+describe('workflow supply chain', () => {
+  for (const file of WORKFLOW_FILES) {
+    it(`${file} pins every action to a commit SHA with its version`, () => {
+      const usesLines = read(file)
+        .split('\n')
+        .filter((line) => /^\s*(- )?uses:/.test(line));
+
+      expect(usesLines.length).toBeGreaterThan(0);
+      for (const line of usesLines) {
+        expect(line).toMatch(/uses: [\w.-]+\/[\w./-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/);
+      }
+    });
+
+    it(`${file} sets least-privilege top-level permissions`, () => {
+      expect(readYaml<Workflow>(file).permissions).toEqual({ contents: 'read' });
+    });
+  }
+
+  it('dependabot watches actions and every bun lockfile', () => {
+    const config = readYaml<{
+      updates: { 'package-ecosystem': string; directory?: string; directories?: string[] }[];
+    }>('.github/dependabot.yml');
+    const ecosystems = config.updates.map((update) => update['package-ecosystem']);
+    const bunDirs = config.updates
+      .filter((update) => update['package-ecosystem'] === 'bun')
+      .flatMap((update) => update.directories ?? [update.directory]);
+    const lockfileDirs = [
+      '/',
+      ...[...new Bun.Glob('apps/*/bun.lock').scanSync(ROOT)].map(
+        (path) => `/${path.replace(/\/bun\.lock$/, '')}`
+      ),
+    ].sort();
+
+    expect(ecosystems).toContain('github-actions');
+    expect([...bunDirs].sort()).toEqual(lockfileDirs);
+  });
+});
+
 interface ComposeFile {
   services: Record<string, { ports?: string[] }>;
 }
