@@ -1,11 +1,10 @@
 /**
- * Compound Interest Calculator API Endpoint
- *
- * POST /api/calculators/compound
- * Calculate compound interest and return results
+ * POST /api/calculators/compound: yearly compound interest schedule.
+ * `?_render=html` returns the rendered CalculatorResultsPartial instead of JSON.
  */
 
 import type { APIRoute } from 'astro';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { integer, maxValue, minValue, object, pipe, number } from 'valibot';
 import {
   successResponse,
@@ -14,8 +13,17 @@ import {
   isValidationError,
   validateBody,
 } from '@/lib/api-utils';
+import {
+  HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
+  createRenderHelper,
+  isRejectedHtmlRenderRequest,
+} from '@/lib/api/renderResponse';
 import { workspaceMetaService } from '@/services';
 import type { YearlyData } from '@/components/molecules/GrowthScheduleTable.astro';
+import CalculatorResultsPartial from '@/components/partials/CalculatorResultsPartial.astro';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('calculators');
 
 // Validation schema for request body
 const compoundInputSchema = object({
@@ -38,6 +46,12 @@ const compoundInputSchema = object({
 });
 
 export const POST: APIRoute = async (context) => {
+  const render = createRenderHelper(context.url, context.request);
+
+  if (isRejectedHtmlRenderRequest(context.url, context.request)) {
+    return render.error(HTML_RENDER_REQUEST_REQUIRED_MESSAGE, 403);
+  }
+
   try {
     // Auth check - user must be logged in
     const auth = getAuthenticatedUser(context);
@@ -46,6 +60,9 @@ export const POST: APIRoute = async (context) => {
     const validation = await validateBody(context.request, compoundInputSchema);
 
     if (isValidationError(validation)) {
+      if (render.wantsHtml()) {
+        return render.error(validation.error.issues[0]?.message ?? 'Validation failed', 400);
+      }
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
@@ -72,18 +89,24 @@ export const POST: APIRoute = async (context) => {
     const totalInterest = yearlyData.reduce((sum, res) => sum + res.interest, 0);
     const finalBalance = yearlyData[yearlyData.length - 1].closingBalance;
 
-    // Return JSON response
-    return successResponse({
-      totalInterest,
-      finalBalance,
-      yearlyData,
-      currency,
-    });
+    const results = { totalInterest, finalBalance, yearlyData, currency };
+
+    if (render.wantsHtml()) {
+      const container = await AstroContainer.create();
+      const html = await container.renderToString(CalculatorResultsPartial, { props: results });
+      return render.html(html);
+    }
+
+    return successResponse(results);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
-      return errorResponse('Unauthorized', 401);
+      return render.wantsHtml()
+        ? render.error('Unauthorized', 401)
+        : errorResponse('Unauthorized', 401);
     }
-    console.error('Error calculating compound interest:', error);
-    return errorResponse('Failed to calculate. Please try again.', 500);
+    log.error('Error calculating compound interest', error);
+    return render.wantsHtml()
+      ? render.error('Failed to calculate. Please try again.', 500)
+      : errorResponse('Failed to calculate. Please try again.', 500);
   }
 };

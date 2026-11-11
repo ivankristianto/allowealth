@@ -1,0 +1,109 @@
+paths:
+  /api/calculators/compound:
+    post:
+      tags: [Calculators]
+      summary: Calculate compound interest
+      description: >
+        Compound the principal yearly at the given rate and return the totals plus a yearly
+        schedule in the workspace's primary currency. With `_render=html` the response is the
+        server-rendered results partial (summary cards and growth schedule table) that the
+        calculators page swaps in. HTML requests must send `X-Requested-With: XMLHttpRequest`.
+      operationId: calculateCompoundInterest
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: _render
+          in: query
+          description: Response mode (`html` returns the server-rendered results partial)
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+        - name: X-Requested-With
+          in: header
+          description: Required as `XMLHttpRequest` when `_render=html`
+          schema:
+            type: string
+            enum: [XMLHttpRequest]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [principal, rate, years]
+              properties:
+                principal:
+                  type: number
+                  minimum: 0
+                  maximum: 1000000000000
+                rate:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                  description: Yearly interest rate in percent
+                years:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+      responses:
+        '200':
+          description: Compound interest schedule
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '../schemas/ApiErrorResponse.yml#/ApiResponse'
+                  - type: object
+                    required: [success, data]
+                    properties:
+                      data:
+                        type: object
+                        required: [totalInterest, finalBalance, yearlyData, currency]
+                        properties:
+                          totalInterest:
+                            type: number
+                          finalBalance:
+                            type: number
+                          currency:
+                            type: string
+                            example: IDR
+                          yearlyData:
+                            type: array
+                            items:
+                              type: object
+                              required: [year, openingBalance, interest, closingBalance]
+                              properties:
+                                year:
+                                  type: integer
+                                openingBalance:
+                                  type: number
+                                interest:
+                                  type: number
+                                closingBalance:
+                                  type: number
+            text/html:
+              schema:
+                type: string
+                description: Rendered CalculatorResultsPartial
+        '400':
+          description: >
+            Validation failed. JSON mode returns `VALIDATION_ERROR` with issue details; HTML
+            mode returns an alert fragment with the first issue's message.
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+            text/html:
+              schema:
+                type: string
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: '`_render=html` requested without `X-Requested-With: XMLHttpRequest`'
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

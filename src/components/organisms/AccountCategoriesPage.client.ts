@@ -6,7 +6,7 @@
  * - Tab toggle filtering with HTML injection
  * - Create/Edit/Delete category actions
  *
- * Pattern: matches budget/categories/categories-client.ts
+ * Pattern: matches BudgetCategoriesPage.client.ts
  * - Event delegation for edit/delete (supports AJAX-injected rows)
  * - Fresh DOM queries at call-time (no stale closure refs)
  */

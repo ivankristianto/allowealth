@@ -11,19 +11,33 @@ function expectNormalizedIssue(issue: any, path: string[]) {
   expect(typeof issue.code).toBe('string');
 }
 
-function createApiContext(body: unknown) {
+function createApiContext(
+  body: unknown,
+  {
+    html = false,
+    xhr = html,
+    signedIn = true,
+  }: { html?: boolean; xhr?: boolean; signedIn?: boolean } = {}
+) {
+  const url = new URL(`http://localhost/api/calculators/compound${html ? '?_render=html' : ''}`);
   return {
-    request: new Request('http://localhost/api/calculators/compound', {
+    url,
+    request: new Request(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(xhr ? { 'X-Requested-With': 'XMLHttpRequest' } : {}),
+      },
       body: JSON.stringify(body),
     }),
     locals: {
-      user: {
-        id: 'user-1',
-        workspaceId: 'workspace-1',
-        role: 'member',
-      },
+      user: signedIn
+        ? {
+            id: 'user-1',
+            workspaceId: 'workspace-1',
+            role: 'member',
+          }
+        : null,
     },
   } as any;
 }
@@ -72,5 +86,51 @@ describe('POST /api/calculators/compound validation', () => {
     expect(payload.data.totalInterest).toBeCloseTo(210, 5);
     expect(payload.data.finalBalance).toBeCloseTo(1210, 5);
     expect(payload.data.currency).toBe('IDR');
+  });
+
+  describe('?_render=html', () => {
+    it('renders the results partial instead of JSON', async () => {
+      workspaceMetaService.getCurrency = mock(async () => 'IDR') as any;
+
+      const response = await POST(
+        createApiContext({ principal: 1000, rate: 10, years: 2 }, { html: true })
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toContain('text/html');
+      // bun:test cannot compile .astro, so the container echoes the component path
+      expect(await response.text()).toContain('CalculatorResultsPartial');
+    });
+
+    it('returns the first validation message as an HTML alert', async () => {
+      workspaceMetaService.getCurrency = mock(async () => 'IDR') as any;
+
+      const response = await POST(
+        createApiContext({ principal: 1000, rate: 10, years: 51 }, { html: true })
+      );
+      const html = await response.text();
+
+      expect(response.status).toBe(400);
+      expect(response.headers.get('Content-Type')).toContain('text/html');
+      expect(html).toContain('role="alert"');
+      expect(html).toContain('Years must be at most 50');
+    });
+
+    it('returns an HTML alert with 401 when signed out', async () => {
+      const response = await POST(
+        createApiContext({ principal: 1000, rate: 10, years: 2 }, { html: true, signedIn: false })
+      );
+
+      expect(response.status).toBe(401);
+      expect(await response.text()).toContain('Unauthorized');
+    });
+
+    it('rejects HTML requests without X-Requested-With', async () => {
+      const response = await POST(
+        createApiContext({ principal: 1000, rate: 10, years: 2 }, { html: true, xhr: false })
+      );
+
+      expect(response.status).toBe(403);
+    });
   });
 });

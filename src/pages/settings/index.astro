@@ -7,37 +7,37 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import Label from '@/components/atoms/Label.astro';
 import Card from '@/components/atoms/Card.astro';
 import Button from '@/components/atoms/Button.astro';
 import Modal from '@/components/molecules/Modal.astro';
 import DiagnosticsDisplay from '@/components/organisms/DiagnosticsDisplay.astro';
-import MemberList from '@/components/organisms/MemberList.astro';
 import InviteMemberModal from '@/components/organisms/InviteMemberModal.astro';
 import { db } from '@/db';
 import { isDemoMode } from '@/lib/demo-mode';
-import { accentGhostBtn } from '@/lib/ui/action-button-classes';
+import SettingsGeneralPanel from '@/components/organisms/settings/SettingsGeneralPanel.astro';
+import SettingsMembersPanel, {
+  type SettingsInvitation,
+  type SettingsMember,
+} from '@/components/organisms/settings/SettingsMembersPanel.astro';
+import {
+  groupedSectionClass,
+  sectionEyebrowClass,
+  sectionTitleClass,
+} from '@/components/organisms/settings/settings-classes';
 import {
   Bell,
-  BuildingComplex,
   CircleAlert,
-  Clock,
   Database,
   Info,
-  Mail,
   RotateCcw,
-  Save,
   Server,
   Settings,
   Trash,
-  UserPlus,
   Users,
-  X,
 } from '@lucide/astro';
 import { DiagnosticsService } from '@/services/diagnostics.service';
-import type { DiagnosticsData } from '@/types/diagnostics';
+import { loadSettingsDiagnostics } from '@/lib/settings/settings-diagnostics';
 import { workspaceService, workspaceMetaService, workspaceInvitationService } from '@/services';
-import { CURRENCY_META, CURRENCY_OPTIONS } from '@/lib/constants/currency';
 
 const currentPath = '/settings';
 
@@ -68,22 +68,9 @@ let workspaceData = {
 };
 let canChangeCurrency = true;
 
-let members: Array<{
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'member' | 'super_admin';
-  createdAt: string;
-  mfaEnabled: boolean;
-}> = [];
+let members: SettingsMember[] = [];
 
-let invitations: Array<{
-  id: string;
-  email: string;
-  role: 'admin' | 'member';
-  expiresAt: string;
-  createdAt: string;
-}> = [];
+let invitations: SettingsInvitation[] = [];
 
 try {
   // Fetch workspace settings directly from services
@@ -138,18 +125,9 @@ try {
   console.error('Failed to fetch workspace data:', error);
 }
 
-let diagnosticsData: DiagnosticsData | null = null;
-let diagnosticsError: string | null = null;
-
-if (isAdmin) {
-  try {
-    const diagnosticsService = new DiagnosticsService(db);
-    diagnosticsData = await diagnosticsService.getDiagnostics();
-  } catch (err) {
-    console.error('Failed to fetch diagnostics:', err);
-    diagnosticsError = err instanceof Error ? err.message : 'Unknown error';
-  }
-}
+const diagnostics = await loadSettingsDiagnostics(user.role, () =>
+  new DiagnosticsService(db).getDiagnostics()
+);
 
 const navItems: Array<{ id: string; label: string; icon: typeof Settings }> = [
   { id: 'general', label: 'General', icon: Settings },
@@ -158,22 +136,12 @@ const navItems: Array<{ id: string; label: string; icon: typeof Settings }> = [
   { id: 'data', label: 'Data', icon: Database },
 ];
 
-if (isAdmin) {
+if (diagnostics.canView) {
   navItems.push({ id: 'server-stats', label: 'Server Stats', icon: Server });
 }
 
 const activeSection = 'general';
 const demoMode = isDemoMode();
-
-const currencyOptions = CURRENCY_OPTIONS.map((opt) => ({
-  value: opt.value,
-  label: `${CURRENCY_META[opt.value].flagEmoji} ${opt.value} — ${CURRENCY_META[opt.value].name}`,
-}));
-
-const weekStartOptions = [
-  { value: 'monday', label: 'Monday' },
-  { value: 'sunday', label: 'Sunday' },
-];
 
 const notificationSettings = [
   {
@@ -201,15 +169,6 @@ const notificationSettings = [
     enabled: false,
   },
 ];
-
-const groupedSectionClass = 'rounded-3xl border border-base-300 bg-base-200/40 p-5 sm:p-6';
-const sectionEyebrowClass = 'text-xs font-semibold uppercase tracking-widest text-base-content/45';
-const sectionTitleClass = 'text-lg font-semibold text-base-content';
-const inviteMemberButtonClassName = accentGhostBtn
-  .split(' ')
-  .filter((className) => !['btn', 'btn-ghost', 'btn-sm', 'md:btn-md'].includes(className))
-  .concat('border-0')
-  .join(' ');
 ---
 
 <ProtectedLayout title="Settings" currentPath={currentPath} subtitle="Manage your preferences">
@@ -226,7 +185,7 @@ const inviteMemberButtonClassName = accentGhostBtn
           <div class="px-3 pb-2 pt-3">
             <p class={sectionEyebrowClass}>Workspace Settings</p>
             <p class="mt-1 text-sm text-base-content/60">
-              Switch between workspace preferences, members, and diagnostics.
+              Switch between workspace preferences, members, notifications, and data.
             </p>
           </div>
           <ul class="flex flex-col gap-1.5" role="tablist" aria-orientation="vertical">
@@ -280,363 +239,20 @@ const inviteMemberButtonClassName = accentGhostBtn
       <article class="flex-1">
         <Card padding="lg" rounded="card-lg" className="w-full">
           <div class="flex flex-col gap-8">
-            {/* General Settings Panel */}
-            <section
-              id="settings-panel-general"
-              data-settings-panel
-              data-tab="general"
-              role="tabpanel"
-              aria-labelledby="settings-tab-general"
-            >
-              <div class="flex flex-col gap-6">
-                <header class="space-y-2">
-                  <p class={sectionEyebrowClass}>General</p>
-                  <h2 class="text-xl font-semibold text-base-content">Workspace Settings</h2>
-                  <p class="text-sm text-base-content/60">
-                    Manage your workspace name and preferences.
-                  </p>
-                </header>
-                <div class="divider my-0"></div>
+            <SettingsGeneralPanel
+              isAdmin={isAdmin}
+              workspaceName={workspaceData.name}
+              settings={workspaceData.settings}
+              canChangeCurrency={canChangeCurrency}
+            />
 
-                <form method="post" id="workspace-settings-form" class="flex flex-col gap-5">
-                  <div class="grid gap-5 xl:grid-cols-2">
-                    <section
-                      class={groupedSectionClass}
-                      aria-labelledby="settings-general-identity"
-                    >
-                      <div class="mb-5 space-y-1">
-                        <p class={sectionEyebrowClass}>Workspace Identity</p>
-                        <h3 id="settings-general-identity" class={sectionTitleClass}>
-                          How your workspace appears
-                        </h3>
-                        <p class="text-sm text-base-content/60">
-                          Name the space your members see in navigation, onboarding, and shared
-                          settings.
-                        </p>
-                      </div>
-
-                      {isAdmin && (
-                        <div class="form-control">
-                          <Label htmlFor="workspace-name">Workspace Name</Label>
-                          <div class="flex gap-2">
-                            <input
-                              type="text"
-                              id="workspace-name"
-                              name="workspaceName"
-                              value={workspaceData.name}
-                              class="input input-bordered flex-1 h-14 rounded-lg border border-base-300 bg-base-100 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                              placeholder="My Workspace"
-                            />
-                          </div>
-                          <p class="mt-2 ml-4 text-xs text-base-content/50">
-                            This name is visible to all workspace members.
-                          </p>
-                        </div>
-                      )}
-
-                      {!isAdmin && (
-                        <div class="form-control">
-                          <Label>Workspace Name</Label>
-                          <div class="flex h-14 items-center gap-3 rounded-lg border border-base-300 bg-base-100 py-4 px-6">
-                            <BuildingComplex
-                              size={20}
-                              class="stroke-current text-base-content/50"
-                              aria-hidden="true"
-                            />
-                            <span class="text-base font-bold">{workspaceData.name}</span>
-                          </div>
-                          <p class="mt-2 ml-4 text-xs text-base-content/50">
-                            Only admins can change the workspace name.
-                          </p>
-                        </div>
-                      )}
-                    </section>
-
-                    <section
-                      class={groupedSectionClass}
-                      aria-labelledby="settings-general-preferences"
-                    >
-                      <div class="mb-5 space-y-1">
-                        <p class={sectionEyebrowClass}>Preferences</p>
-                        <h3 id="settings-general-preferences" class={sectionTitleClass}>
-                          Regional and reporting defaults
-                        </h3>
-                        <p class="text-sm text-base-content/60">
-                          Set the currencies and calendar rules used across your workspace.
-                        </p>
-                      </div>
-
-                      <div class="grid gap-4 md:grid-cols-2">
-                        <div class="form-control">
-                          <Label htmlFor="primary-currency">Primary Currency</Label>
-                          <select
-                            id="primary-currency"
-                            name="currency"
-                            class:list={[
-                              'select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
-                              !canChangeCurrency &&
-                                'appearance-none cursor-not-allowed bg-none pr-6 opacity-70',
-                            ]}
-                            disabled={!canChangeCurrency}
-                          >
-                            {currencyOptions.map((currency) => (
-                              <option
-                                value={currency.value}
-                                selected={workspaceData.settings.currency === currency.value}
-                              >
-                                {currency.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div class="form-control">
-                          <Label htmlFor="secondary-currency">Secondary Currency</Label>
-                          <select
-                            id="secondary-currency"
-                            name="secondaryCurrency"
-                            class:list={[
-                              'select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
-                              !canChangeCurrency &&
-                                'appearance-none cursor-not-allowed bg-none pr-6 opacity-70',
-                            ]}
-                            disabled={!canChangeCurrency}
-                          >
-                            <option value="" selected={!workspaceData.settings.secondaryCurrency}>
-                              None
-                            </option>
-                            {currencyOptions
-                              .filter(
-                                (currency) => currency.value !== workspaceData.settings.currency
-                              )
-                              .map((currency) => (
-                                <option
-                                  value={currency.value}
-                                  selected={
-                                    workspaceData.settings.secondaryCurrency === currency.value
-                                  }
-                                >
-                                  {currency.label}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div class="mt-4">
-                        {!canChangeCurrency && (
-                          <div class="alert alert-info text-sm">
-                            <Info class="size-5 shrink-0" />
-                            <span>
-                              Currency settings are locked after creating accounts, budgets, or
-                              transactions.
-                            </span>
-                          </div>
-                        )}
-                        {canChangeCurrency && (
-                          <div class="alert alert-warning text-sm">
-                            <Info class="size-5 shrink-0" />
-                            <span>
-                              Choose carefully. Currency settings cannot be changed after you add
-                              accounts or transactions.
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div class="mt-4 form-control">
-                        <Label htmlFor="week-starts">Week Starts On</Label>
-                        <select
-                          id="week-starts"
-                          name="weekStart"
-                          class="select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                        >
-                          {weekStartOptions.map((option) => (
-                            <option
-                              value={option.value}
-                              selected={workspaceData.settings.weekStart === option.value}
-                            >
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </section>
-                  </div>
-                </form>
-
-                <div class="rounded-3xl border border-base-300 bg-base-100 px-5 py-4 sm:px-6">
-                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="space-y-1">
-                      <p class={sectionEyebrowClass}>Save</p>
-                      <p class="text-sm text-base-content/60">
-                        Review your changes, then save them explicitly for this tab.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="lg"
-                      className="w-full gap-2 font-bold shadow-sm sm:w-auto"
-                      id="save-settings-btn"
-                    >
-                      <Save size={18} class="stroke-current" aria-hidden="true" />
-                      Save Changes
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Members Panel */}
-            <section
-              id="settings-panel-members"
-              data-settings-panel
-              data-tab="members"
-              role="tabpanel"
-              aria-labelledby="settings-tab-members"
-              class="hidden"
-            >
-              <div class="flex flex-col gap-6">
-                <header class="space-y-2">
-                  <p class={sectionEyebrowClass}>Members</p>
-                  <h2 class="text-xl font-semibold text-base-content">Workspace Members</h2>
-                  <p class="text-sm text-base-content/60">
-                    Manage who has access to this workspace.
-                  </p>
-                  <p class="text-xs text-base-content/50">
-                    Linked sign-in methods and two-factor setup are managed from{' '}
-                    <a href="/security" class="link link-hover ml-1">
-                      Security
-                    </a>
-                    .
-                  </p>
-                </header>
-                <div class="divider my-0"></div>
-
-                <div class={groupedSectionClass}>
-                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="space-y-1">
-                      <p class={sectionEyebrowClass}>Team Access</p>
-                      <h3 class={sectionTitleClass}>Active members and invitations</h3>
-                      <p class="text-sm text-base-content/60">
-                        Keep your workspace roster current and invite collaborators when you are
-                        ready.
-                      </p>
-                    </div>
-                    {isAdmin && !demoMode && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className={`${inviteMemberButtonClassName} w-full sm:w-auto`}
-                        data-open-modal="invite-member-modal"
-                      >
-                        <UserPlus size={16} class="stroke-current" aria-hidden="true" />
-                        Invite Member
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <section class={groupedSectionClass} aria-labelledby="settings-members-active">
-                  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="space-y-1">
-                      <p class={sectionEyebrowClass}>Active Members</p>
-                      <h3 id="settings-members-active" class={sectionTitleClass}>
-                        Current workspace roster
-                      </h3>
-                    </div>
-                    <span class="badge badge-neutral badge-lg">
-                      {members.length} Active Member{members.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  <MemberList members={members} currentUserId={user.id} isAdmin={isAdmin} />
-                </section>
-
-                {/* Pending Invitations (Admin only) */}
-                {!demoMode && isAdmin && invitations.length > 0 && (
-                  <section class={groupedSectionClass} aria-labelledby="settings-members-pending">
-                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div class="space-y-1">
-                        <p class={sectionEyebrowClass}>Pending Invitations</p>
-                        <h3 id="settings-members-pending" class={sectionTitleClass}>
-                          Waiting for a response
-                        </h3>
-                      </div>
-                      <span class="badge badge-warning badge-lg">{invitations.length} Pending</span>
-                    </div>
-
-                    <ul
-                      class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100"
-                      data-invitations-list
-                    >
-                      {invitations.map((invitation) => (
-                        <li
-                          class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
-                          data-invitation-item
-                          data-invitation-id={invitation.id}
-                        >
-                          <div class="flex items-center gap-4">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning">
-                              <Mail size={20} class="stroke-current" aria-hidden="true" />
-                            </div>
-                            <div>
-                              <p class="font-semibold text-base-content">{invitation.email}</p>
-                              <div class="flex items-center gap-2 text-xs text-base-content/60">
-                                <Clock size={12} aria-hidden="true" />
-                                <span>
-                                  Expires{' '}
-                                  {new Date(invitation.expiresAt).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div class="flex items-center gap-3">
-                            <span class="badge badge-warning badge-outline">{invitation.role}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              shape="square"
-                              className="rounded-xl border-0 text-error hover:bg-error/10 hover:text-error"
-                              aria-label={`Cancel invitation to ${invitation.email}`}
-                              data-cancel-invitation
-                              data-invitation-id={invitation.id}
-                              data-invitation-email={invitation.email}
-                            >
-                              <X size={16} class="stroke-current" aria-hidden="true" />
-                            </Button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-
-                {!demoMode && isAdmin && invitations.length === 0 && (
-                  <section class={groupedSectionClass}>
-                    <p class={sectionEyebrowClass}>Pending Invitations</p>
-                    <p class="mt-2 text-sm text-base-content/60">
-                      No pending invitations. Use the "Invite Member" button to add new members.
-                    </p>
-                  </section>
-                )}
-
-                {isAdmin && demoMode && (
-                  <section class={groupedSectionClass}>
-                    <p class={sectionEyebrowClass}>Demo Mode</p>
-                    <p class="mt-2 text-sm text-base-content/60">
-                      Member invitations are disabled in demo mode.
-                    </p>
-                  </section>
-                )}
-              </div>
-            </section>
+            <SettingsMembersPanel
+              members={members}
+              invitations={invitations}
+              currentUserId={user.id}
+              isAdmin={isAdmin}
+              demoMode={demoMode}
+            />
 
             {/* Notifications Panel */}
             <section
@@ -831,7 +447,7 @@ const inviteMemberButtonClassName = accentGhostBtn
               </div>
             </section>
 
-            {isAdmin && (
+            {diagnostics.canView && (
               <section
                 id="settings-panel-server-stats"
                 data-settings-panel
@@ -849,17 +465,17 @@ const inviteMemberButtonClassName = accentGhostBtn
                   </header>
                   <div class="divider my-0" />
 
-                  {diagnosticsError && (
+                  {diagnostics.error && (
                     <div class="alert alert-error rounded-xl" role="alert">
                       <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
                       <div>
                         <h3 class="font-bold">Error Loading Stats</h3>
-                        <p class="text-sm">{diagnosticsError}</p>
+                        <p class="text-sm">{diagnostics.error}</p>
                       </div>
                     </div>
                   )}
 
-                  {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
+                  {diagnostics.data && <DiagnosticsDisplay data={diagnostics.data} />}
                 </div>
               </section>
             )}
@@ -968,249 +584,8 @@ const inviteMemberButtonClassName = accentGhostBtn
       </Button>
     </div>
   </Modal>
-
-  <script src="./settings-client.ts"></script>
 </ProtectedLayout>
 
 <script>
-  import { addToast } from '@/lib/stores/toastStore';
-  import { setButtonLoading } from '@/lib/client-utils';
-  import { getCsrfHeaders } from '@/lib/csrf-client';
-  import { onPageReady } from '@/lib/page-lifecycle.client';
-
-  function initSettingsPage(signal: AbortSignal) {
-    const container = document.querySelector('[data-settings-page]') as HTMLElement | null;
-    if (!container) return; // Not on the settings page
-
-    const isAdmin = container.dataset.isAdmin === 'true';
-
-    // ==================== WORKSPACE SETTINGS FORM ====================
-    const saveBtnBottom = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
-    const settingsForm = document.getElementById(
-      'workspace-settings-form'
-    ) as HTMLFormElement | null;
-    const primaryCurrencySelect = document.getElementById(
-      'primary-currency'
-    ) as HTMLSelectElement | null;
-    const secondaryCurrencySelect = document.getElementById(
-      'secondary-currency'
-    ) as HTMLSelectElement | null;
-
-    async function handleSave() {
-      const allSaveBtns = [saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
-      allSaveBtns.forEach((btn) => setButtonLoading(btn, true));
-
-      try {
-        const formData = new FormData(settingsForm!);
-        const canEditCurrencySettings =
-          !primaryCurrencySelect?.disabled && !secondaryCurrencySelect?.disabled;
-
-        const payload: Record<string, unknown> = {
-          weekStart: formData.get('weekStart'),
-        };
-        if (canEditCurrencySettings) {
-          payload.currency = primaryCurrencySelect?.value ?? formData.get('currency');
-          payload.secondaryCurrency = secondaryCurrencySelect?.value ?? '';
-        }
-
-        // Include workspace name only if admin
-        if (isAdmin) {
-          const workspaceName = formData.get('workspaceName');
-          if (workspaceName) {
-            payload.name = workspaceName;
-          }
-        }
-
-        const response = await fetch('/api/workspace/settings', {
-          method: 'PUT',
-          headers: getCsrfHeaders({
-            'Content-Type': 'application/json',
-          }),
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          addToast('Settings saved successfully!', 'success');
-        } else {
-          const errorMessage =
-            result.error?.message || 'Failed to save settings. Please try again.';
-          addToast(errorMessage, 'error');
-        }
-      } catch (error) {
-        console.error('Settings update error:', error);
-        addToast('An error occurred. Please check your connection and try again.', 'error');
-      } finally {
-        allSaveBtns.forEach((btn) => setButtonLoading(btn, false));
-      }
-    }
-
-    if (saveBtnBottom && settingsForm) {
-      saveBtnBottom.addEventListener('click', handleSave);
-      // Enter in a field submits the form; save via the API instead of a native submission
-      settingsForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        void handleSave();
-      });
-    }
-
-    if (primaryCurrencySelect && secondaryCurrencySelect) {
-      const syncSecondaryCurrencyOptions = () => {
-        const selectedPrimary = primaryCurrencySelect.value;
-        for (const option of Array.from(secondaryCurrencySelect.options)) {
-          if (option.value === '') continue;
-          option.hidden = option.value === selectedPrimary;
-        }
-        if (secondaryCurrencySelect.value === selectedPrimary) {
-          secondaryCurrencySelect.value = '';
-        }
-      };
-
-      primaryCurrencySelect.addEventListener('change', syncSecondaryCurrencyOptions);
-      syncSecondaryCurrencyOptions();
-    }
-
-    // ==================== CANCEL INVITATION ====================
-    const cancelInvitationModal = document.getElementById(
-      'cancel-invitation-modal'
-    ) as HTMLDialogElement | null;
-    const invitationEmailDisplay = cancelInvitationModal?.querySelector(
-      '[data-invitation-email-display]'
-    );
-    const confirmCancelBtn = cancelInvitationModal?.querySelector(
-      '[data-confirm-cancel-invitation]'
-    ) as HTMLButtonElement | null;
-
-    // Handle cancel invitation button clicks - open modal
-    document.querySelectorAll('[data-cancel-invitation]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const invitationId = btn.getAttribute('data-invitation-id');
-        const invitationEmail = btn.getAttribute('data-invitation-email');
-
-        if (
-          invitationId &&
-          invitationEmail &&
-          invitationEmailDisplay &&
-          confirmCancelBtn &&
-          cancelInvitationModal
-        ) {
-          invitationEmailDisplay.textContent = invitationEmail;
-          confirmCancelBtn.setAttribute('data-canceling-invitation-id', invitationId);
-          cancelInvitationModal.showModal();
-        }
-      });
-    });
-
-    // Handle confirm cancel in modal
-    if (confirmCancelBtn && cancelInvitationModal) {
-      confirmCancelBtn.addEventListener('click', async () => {
-        const invitationId = confirmCancelBtn.getAttribute('data-canceling-invitation-id');
-        if (!invitationId) return;
-
-        setButtonLoading(confirmCancelBtn, true);
-
-        try {
-          const response = await fetch(`/api/workspace/invitations?invitationId=${invitationId}`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: getCsrfHeaders(),
-          });
-
-          const result = await response.json();
-
-          if (!response.ok || !result.success) {
-            throw new Error(result.error?.message || 'Failed to cancel invitation');
-          }
-
-          addToast('Invitation cancelled', 'success');
-          cancelInvitationModal.close();
-
-          // Remove the invitation row from the list
-          const invitationRow = document.querySelector(
-            `[data-invitation-item][data-invitation-id="${invitationId}"]`
-          );
-          if (invitationRow) {
-            invitationRow.remove();
-          }
-
-          // Check if there are no more invitations
-          const remainingInvitations = document.querySelectorAll('[data-invitation-item]');
-          if (remainingInvitations.length === 0) {
-            const invitationsList = document.querySelector('[data-invitations-list]');
-            if (invitationsList) {
-              invitationsList.parentElement?.remove();
-            }
-          }
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to cancel invitation';
-          addToast(message, 'error');
-        } finally {
-          setButtonLoading(confirmCancelBtn, false);
-        }
-      });
-    }
-
-    // ==================== DATA PANEL ====================
-    document.querySelectorAll<HTMLButtonElement>('[data-open-modal]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const modalId = btn.dataset.openModal;
-        if (!modalId) return;
-        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
-        modal?.showModal();
-      });
-    });
-
-    const confirmClearHistoryBtn = document.querySelector(
-      '[data-confirm-clear-history]'
-    ) as HTMLButtonElement | null;
-
-    if (confirmClearHistoryBtn) {
-      confirmClearHistoryBtn.addEventListener('click', () => {
-        addToast('Clear History is not yet implemented.', 'info');
-        (document.getElementById('clear-history-modal') as HTMLDialogElement | null)?.close();
-      });
-    }
-
-    const resetInput = document.getElementById(
-      'factory-reset-confirm-input'
-    ) as HTMLInputElement | null;
-    const confirmResetBtn = document.querySelector(
-      '[data-confirm-factory-reset]'
-    ) as HTMLButtonElement | null;
-    const factoryResetModal = document.getElementById(
-      'factory-reset-modal'
-    ) as HTMLDialogElement | null;
-
-    if (resetInput && confirmResetBtn) {
-      resetInput.addEventListener('input', () => {
-        confirmResetBtn.disabled = resetInput.value !== 'RESET';
-      });
-    }
-
-    factoryResetModal?.addEventListener('close', () => {
-      if (resetInput) resetInput.value = '';
-      if (confirmResetBtn) confirmResetBtn.disabled = true;
-    });
-
-    if (confirmResetBtn) {
-      confirmResetBtn.addEventListener('click', () => {
-        addToast('Factory Reset is not yet implemented.', 'info');
-        factoryResetModal?.close();
-      });
-    }
-
-    // Listen for new invitations to refresh the page
-    document.addEventListener(
-      'invitation:created',
-      () => {
-        // Reload the page to show the new invitation
-        window.location.reload();
-      },
-      { signal }
-    );
-  }
-
-  onPageReady(initSettingsPage);
+  import '@/components/organisms/settings/settings-page.client';
 </script>
