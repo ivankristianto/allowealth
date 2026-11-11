@@ -66,6 +66,8 @@ tags:
     description: Budget overview and alerts
   - name: Forecast
     description: Wealth trajectory forecasting and projections
+  - name: Calculators
+    description: Financial planning calculators
   - name: Reports
     description: Financial intelligence reports (monthly and yearly aggregations)
   - name: Recurring
@@ -188,6 +190,8 @@ paths:
 
   /api/forecast:
     $ref: './openapi/paths/forecast.yml#/~1forecast'
+  /api/calculators/compound:
+    $ref: './openapi/paths/calculators.yml#/paths/~1api~1calculators~1compound'
 
   /api/reports:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'

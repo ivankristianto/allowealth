@@ -19,6 +19,7 @@ openapi/
 │   ├── budget.yml                   # Budget overview and alerts endpoints
 │   ├── budgets.yml                  # Budget CRUD endpoints
 │   ├── forecast.yml                 # Forecast endpoints
+│   ├── calculators.yml              # Calculator endpoints (JSON or rendered HTML partial)
 │   ├── reports.yml                  # Reports endpoints
 │   ├── mcp.yml                      # MCP JSON-RPC endpoint (OAuth tokens and app passwords)
 │   └── admin-diagnostics.yml        # Admin diagnostics endpoint
