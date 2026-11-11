@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import {
   createMemoryDb,
   countRows,
@@ -20,14 +20,22 @@ const originalSendPasswordReset = emailService.sendPasswordReset;
 
 let memory: MemoryDb;
 let service: PasswordResetService;
-let sendPasswordReset: ReturnType<typeof mock>;
+type ResetEmail = Parameters<typeof emailService.sendPasswordReset>[0];
+
+let sentEmails: ResetEmail[];
+let failSend: boolean;
 
 beforeEach(() => {
   memory = createMemoryDb();
   seedWorkspaceOwner(memory.raw, 'ws-reset', USER_ID);
   service = new PasswordResetService(memory.db);
-  sendPasswordReset = mock(async () => {});
-  emailService.sendPasswordReset = sendPasswordReset as typeof emailService.sendPasswordReset;
+  sentEmails = [];
+  failSend = false;
+  emailService.sendPasswordReset = async (input: ResetEmail) => {
+    if (failSend) throw new Error('provider down');
+    sentEmails.push(input);
+    return { success: true };
+  };
   setTestEnv({ PUBLIC_URL: 'https://money.example.test' });
 });
 
@@ -40,20 +48,20 @@ afterEach(() => {
 /** Requests a reset and returns the raw token from the emailed link. */
 async function requestToken(email = EMAIL): Promise<string> {
   await service.requestPasswordReset(email);
-  const [{ resetUrl }] = sendPasswordReset.mock.calls.at(-1) as [{ resetUrl: string }];
-  return new URL(resetUrl).searchParams.get('token')!;
+  return new URL(sentEmails.at(-1)!.resetUrl).searchParams.get('token')!;
 }
 
 describe('PasswordResetService.requestPasswordReset', () => {
   it('emails a one-hour reset link on PUBLIC_URL to a known user', async () => {
     const token = await requestToken();
 
-    expect(sendPasswordReset).toHaveBeenCalledTimes(1);
-    expect(sendPasswordReset.mock.calls[0][0]).toEqual({
-      to: EMAIL,
-      resetUrl: `https://money.example.test/reset-password?token=${token}`,
-      expiresIn: '1 hour',
-    });
+    expect(sentEmails).toEqual([
+      {
+        to: EMAIL,
+        resetUrl: `https://money.example.test/reset-password?token=${token}`,
+        expiresIn: '1 hour',
+      },
+    ]);
   });
 
   it('stores only a hash of the token', async () => {
@@ -70,20 +78,18 @@ describe('PasswordResetService.requestPasswordReset', () => {
 
   it('matches the email case-insensitively', async () => {
     await service.requestPasswordReset(EMAIL.toUpperCase());
-    expect(sendPasswordReset).toHaveBeenCalledTimes(1);
+    expect(sentEmails).toHaveLength(1);
   });
 
   it('returns quietly for an unknown email, so callers cannot probe for accounts', async () => {
     await expect(service.requestPasswordReset('nobody@example.test')).resolves.toBeUndefined();
 
-    expect(sendPasswordReset).not.toHaveBeenCalled();
+    expect(sentEmails).toEqual([]);
     expect(countRows(memory.raw, 'password_reset_tokens')).toBe(0);
   });
 
   it('still resolves when the email provider fails', async () => {
-    sendPasswordReset.mockImplementation(async () => {
-      throw new Error('provider down');
-    });
+    failSend = true;
 
     await expect(service.requestPasswordReset(EMAIL)).resolves.toBeUndefined();
   });
@@ -103,7 +109,7 @@ describe('PasswordResetService.requestPasswordReset', () => {
 
       expect(error).toBeInstanceOf(PasswordResetError);
       expect(error.code).toBe(PASSWORD_RESET_ERRORS.INVALID_INPUT);
-      expect(sendPasswordReset).not.toHaveBeenCalled();
+      expect(sentEmails).toEqual([]);
     });
   }
 });
