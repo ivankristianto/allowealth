@@ -62,16 +62,16 @@ export const ALERT_THRESHOLDS = {
  * calculateBudgetStatus('100', '120') // Returns 'exceeded'
  */
 export function calculateBudgetStatus(budget: string, spent: string): BudgetStatus {
-  // Handle zero or negative budget
-  if (decimalIsZero(budget) || decimalCompare(budget, '0') <= 0) {
+  if (decimalCompare(budget, '0') <= 0) {
     return 'healthy';
   }
 
-  const percentage = parseFloat(decimalDivide(decimalMultiply(spent, '100'), budget));
-
-  if (percentage >= ALERT_THRESHOLDS.EXCEEDED) {
+  // Compare spent * 100 with budget * threshold so a rounded percentage can't cross a boundary.
+  const spentTimes100 = decimalMultiply(spent, '100');
+  if (decimalCompare(spentTimes100, decimalMultiply(budget, ALERT_THRESHOLDS.EXCEEDED)) >= 0) {
     return 'exceeded';
-  } else if (percentage >= ALERT_THRESHOLDS.WARNING) {
+  }
+  if (decimalCompare(spentTimes100, decimalMultiply(budget, ALERT_THRESHOLDS.WARNING)) >= 0) {
     return 'warning';
   }
 
@@ -96,27 +96,14 @@ export function calculateBudgetAlert(
   budget: string,
   spent: string
 ): BudgetAlert | null {
-  // Handle zero or negative budget
-  if (decimalIsZero(budget) || decimalCompare(budget, '0') <= 0) {
+  const status = calculateBudgetStatus(budget, spent);
+  if (status === 'healthy') {
     return null;
   }
 
   const percentage = parseFloat(decimalDivide(decimalMultiply(spent, '100'), budget));
   const remaining = decimalSubtract(budget, spent);
   const overage = decimalCompare(spent, budget) > 0 ? decimalSubtract(spent, budget) : '0';
-
-  // Determine status
-  let status: 'warning' | 'exceeded' | null = null;
-  if (percentage >= ALERT_THRESHOLDS.EXCEEDED) {
-    status = 'exceeded';
-  } else if (percentage >= ALERT_THRESHOLDS.WARNING) {
-    status = 'warning';
-  }
-
-  // Return null if no alert
-  if (!status) {
-    return null;
-  }
 
   return {
     category,

@@ -1,6 +1,7 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq, and, gte, lte, sql, inArray, or, isNull } from 'drizzle-orm';
 import { sumAmount } from './base/money-sql';
+import { calculateBudgetStatus } from '@/lib/budget/alerts';
 import { nanoid } from 'nanoid';
 import { parse } from 'valibot';
 import {
@@ -280,12 +281,8 @@ export class BudgetService {
       const calculatedPercentage =
         totalBudgetAmount > 0 ? (budgetAmountNum / totalBudgetAmount) * 100 : 0;
 
-      let status: 'ok' | 'warning' | 'exceeded' = 'ok';
-      if (percentageUsed > 100) {
-        status = 'exceeded';
-      } else if (percentageUsed >= 80) {
-        status = 'warning';
-      }
+      const budgetStatus = calculateBudgetStatus(budgetAmount, spentAmount);
+      const status = budgetStatus === 'healthy' ? 'ok' : budgetStatus;
 
       return {
         budget_id: budget.id,
