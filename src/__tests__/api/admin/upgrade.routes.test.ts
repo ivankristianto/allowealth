@@ -121,14 +121,17 @@ describe('admin upgrade API routes', () => {
   it('POST /api/admin/upgrade/run returns 500 for migration failures', async () => {
     runMigrationsMock.mockResolvedValue({
       success: false,
-      error: 'migration failed',
+      error: 'Failed query: ALTER TABLE "users" ADD "totp" text\nparams: ',
     });
 
     const response = await POST(createPostContext('super_admin'));
-    const payload = await response.json();
+    const raw = await response.text();
+    const payload = JSON.parse(raw);
 
     expect(response.status).toBe(500);
     expect(payload.success).toBe(false);
     expect(payload.error?.code).toBe('MIGRATION_RUN_ERROR');
+    expect(raw).not.toContain('ALTER TABLE');
+    expect(payload.error.message).toContain(payload.error.details.errorId);
   });
 });
