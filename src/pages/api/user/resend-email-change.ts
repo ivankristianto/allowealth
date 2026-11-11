@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { emailVerificationService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { isDemoMode } from '@/lib/demo-mode';
 import { UserServiceError } from '@/services/service-errors';
 import { checkRateLimitByKey, createRateLimitResponse, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
 
@@ -17,6 +18,10 @@ export const prerender = false;
 export const POST: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+
+    if (isDemoMode()) {
+      return errorResponse('This action is disabled in demo mode', 403, 'DEMO_MODE');
+    }
 
     // Rate limit: 3 per hour per user
     const rateLimitResult = checkRateLimitByKey(

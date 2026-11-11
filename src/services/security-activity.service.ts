@@ -6,9 +6,6 @@ import {
   type AuditEntityType,
   type AuditLogEntry,
 } from '@/lib/audit-log';
-import { createLogger } from '@/lib/logger';
-
-const log = createLogger('security-activity');
 
 const CLIENT_SECURITY_ACTIVITY_TYPES = [
   'mfa_enabled',
@@ -89,15 +86,8 @@ export class SecurityActivityService {
 
   async logEvent(input: SecurityActivityInput): Promise<void> {
     const eventDefinition = EVENT_DEFINITIONS[input.type];
+    // Super admins have no workspace; their events are recorded with a null one.
     const workspaceId = await this.getWorkspaceId(input.userId);
-
-    if (!workspaceId) {
-      log.warn('Skipping security activity for user without workspace', {
-        type: input.type,
-        userId: input.userId,
-      });
-      return;
-    }
 
     await this.writeAuditEvent({
       workspaceId,

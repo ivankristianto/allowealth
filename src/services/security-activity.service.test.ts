@@ -1,5 +1,8 @@
-import { describe, expect, mock, test } from 'bun:test';
-import { SecurityActivityService } from './security-activity.service';
+import { afterAll, describe, expect, mock, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import { db, auditLogs, users } from '@/db';
+import { SecurityActivityService, securityActivityService } from './security-activity.service';
 
 function createMockDb(workspaceId: string | null) {
   return {
@@ -58,12 +61,42 @@ describe('SecurityActivityService', () => {
     });
   });
 
-  test('does not write an audit entry when the user is not attached to a workspace', async () => {
+  test('records events for users without a workspace, such as super admins', async () => {
     const writeAuditEvent = mock(() => Promise.resolve());
     const service = new SecurityActivityService(createMockDb(null), writeAuditEvent);
 
     await service.logEvent({ type: 'login', userId: 'user-1' });
 
-    expect(writeAuditEvent).not.toHaveBeenCalled();
+    const auditCalls = (writeAuditEvent as any).mock.calls as Array<[Record<string, unknown>]>;
+    expect(auditCalls[0]?.[0]).toMatchObject({
+      workspaceId: null,
+      userId: 'user-1',
+      action: 'login',
+    });
+  });
+});
+
+describe('SecurityActivityService against the database', () => {
+  const superAdminId = `sa-${nanoid(8)}`;
+
+  afterAll(async () => {
+    await db.delete(auditLogs).where(eq(auditLogs.user_id, superAdminId));
+    await db.delete(users).where(eq(users.id, superAdminId));
+  });
+
+  test('stores a super-admin sign-in', async () => {
+    await db.insert(users).values({
+      id: superAdminId,
+      email: `${superAdminId}@example.test`,
+      name: 'Super Admin',
+      role: 'super_admin',
+      workspace_id: null,
+    });
+
+    await securityActivityService.logEvent({ type: 'login', userId: superAdminId });
+
+    const rows = await db.select().from(auditLogs).where(eq(auditLogs.user_id, superAdminId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ action: 'login', entity_type: 'session', workspace_id: null });
   });
 });

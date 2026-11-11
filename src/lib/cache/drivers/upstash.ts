@@ -5,14 +5,15 @@
  * Talks HTTP, so it needs no TCP connection to Redis.
  *
  * Features:
- * - Fail-silent: Returns null on errors instead of throwing
+ * - Fail-silent by default: returns null on errors instead of throwing.
+ *   `strict: true` rethrows instead, for Better Auth storage.
  * - Tag-based invalidation using Redis Sets
  */
 
 import { Redis } from '@upstash/redis';
-import type { CacheDriver, CacheSetOptions } from '../types';
+import type { CacheDriver, CacheDriverOptions, CacheSetOptions } from '../types';
 import { INCREMENT_WITH_TTL_SCRIPT } from './increment-script';
-import { describeCacheError } from './log-error';
+import { CacheBackendError, describeCacheError } from './log-error';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('cache:upstash');
@@ -20,10 +21,23 @@ const log = createLogger('cache:upstash');
 export class UpstashDriver implements CacheDriver {
   private redis: Redis;
   private defaultTtl: number;
+  private strict: boolean;
 
-  constructor(url: string, token: string, defaultTtl: number = 3600) {
+  constructor(
+    url: string,
+    token: string,
+    defaultTtl: number = 3600,
+    options: CacheDriverOptions = {}
+  ) {
     this.redis = new Redis({ url, token });
     this.defaultTtl = defaultTtl;
+    this.strict = options.strict ?? false;
+  }
+
+  private fail(operation: string, error: unknown): void {
+    const description = describeCacheError(error);
+    log.warn(`${operation} failed:`, description);
+    if (this.strict) throw new CacheBackendError(operation, description);
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -31,7 +45,7 @@ export class UpstashDriver implements CacheDriver {
       const value = await this.redis.get<T>(key);
       return value ?? null;
     } catch (error) {
-      log.warn('Get failed:', describeCacheError(error));
+      this.fail('Get', error);
       return null;
     }
   }
@@ -51,7 +65,7 @@ export class UpstashDriver implements CacheDriver {
         await pipeline.exec();
       }
     } catch (error) {
-      log.warn('Set failed:', describeCacheError(error));
+      this.fail('Set', error);
     }
   }
 
@@ -59,7 +73,7 @@ export class UpstashDriver implements CacheDriver {
     try {
       await this.redis.del(key);
     } catch (error) {
-      log.warn('Delete failed:', describeCacheError(error));
+      this.fail('Delete', error);
     }
   }
 
@@ -72,8 +86,8 @@ export class UpstashDriver implements CacheDriver {
       );
       return Number(value);
     } catch (error) {
-      // Fail open like get/set: a cache outage must not lock users out.
-      log.warn('Increment failed:', describeCacheError(error));
+      // Fail open like get/set: a cache outage must not lock users out of the app cache.
+      this.fail('Increment', error);
       return 1;
     }
   }
@@ -83,7 +97,7 @@ export class UpstashDriver implements CacheDriver {
       const value = await this.redis.getdel<T>(key);
       return value ?? null;
     } catch (error) {
-      log.warn('GetAndDelete failed:', describeCacheError(error));
+      this.fail('GetAndDelete', error);
       return null;
     }
   }
@@ -105,7 +119,7 @@ export class UpstashDriver implements CacheDriver {
         await this.redis.del(...keysToDelete, ...tagKeys);
       }
     } catch (error) {
-      log.warn('InvalidateByTags failed:', describeCacheError(error));
+      this.fail('InvalidateByTags', error);
     }
   }
 }

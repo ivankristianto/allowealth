@@ -76,7 +76,8 @@ export type AuditEntityType =
  * Context for audit log entries
  */
 export interface AuditLogEntry {
-  workspaceId: string;
+  /** Null for events outside any workspace, such as super-admin sign-ins. */
+  workspaceId: string | null;
   userId: string;
   action: AuditAction;
   entityType: AuditEntityType;

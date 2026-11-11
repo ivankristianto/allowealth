@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { workspaceService, userService } from '@/services';
+import { logAuditEvent } from '@/lib/audit-log';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { WorkspaceServiceError, UserServiceError } from '@/services/service-errors';
@@ -43,13 +44,8 @@ export const GET: APIRoute = async (context) => {
 };
 
 /**
- * DELETE /api/workspace/members/:id
- *
- * Remove a member from the workspace (soft delete).
- * Admin only. Cannot remove yourself.
- *
- * Note: This endpoint is at /api/workspace/members with member ID in query params
- * since Astro's file-based routing doesn't support nested dynamic routes easily.
+ * DELETE /api/workspace/members?memberId=: soft-delete a member. Admin only. Self-removal is
+ * refused, so an admin always remains. Audited as member_remove, flagged for the founding owner.
  */
 export const DELETE: APIRoute = async (context) => {
   try {
@@ -80,8 +76,21 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Member not found in this workspace', 404, 'NOT_FOUND');
     }
 
-    // Soft delete the user
+    const foundingMemberId = await workspaceService.findFoundingMemberId(auth.workspaceId);
     await userService.softDelete(memberId);
+
+    await logAuditEvent({
+      workspaceId: auth.workspaceId,
+      userId: auth.userId,
+      action: 'member_remove',
+      entityType: 'user',
+      entityId: memberId,
+      oldValue: {
+        name: member.name,
+        role: member.role,
+        foundingOwner: memberId === foundingMemberId,
+      },
+    });
 
     return successResponse({ message: 'Member removed successfully' });
   } catch (error) {

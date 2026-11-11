@@ -38,6 +38,7 @@ type MockContext = {
     delete: ReturnType<typeof mock>;
   };
   isPrerendered: boolean;
+  redirect: (location: string, status?: number) => Response;
 };
 
 function createContext(pathname: string, cookieValue?: string): MockContext {
@@ -69,6 +70,8 @@ function createContext(pathname: string, cookieValue?: string): MockContext {
       }),
     },
     isPrerendered: false,
+    redirect: (location: string, status = 302) =>
+      new Response(null, { status, headers: { Location: location } }),
   };
 }
 
@@ -188,5 +191,99 @@ describe('authentication middleware', () => {
     expect(context.locals.user).toBeNull();
     expect(context.locals.session).toBeNull();
     expect(context.cookies.delete).toHaveBeenCalledWith('allowealth.session_token', { path: '/' });
+  });
+
+  describe('archived workspaces', () => {
+    const nextOk = mock(async () => new Response('ok'));
+
+    async function seedMember(
+      status: 'active' | 'inactive',
+      role: 'member' | 'super_admin' = 'member'
+    ) {
+      getSessionMock.mockResolvedValue({
+        session: {
+          id: 'session-archived',
+          userId: TEST_USER_ID,
+          token: 'token-archived',
+          expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+          createdAt: new Date('2030-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2030-01-01T00:00:00.000Z'),
+        },
+        user: { id: TEST_USER_ID, email: 'archived@example.com', name: 'Archived User' },
+      });
+      await db.insert(workspaces).values({ id: TEST_WORKSPACE_ID, name: 'Archived', status });
+      await db.insert(users).values({
+        id: TEST_USER_ID,
+        workspace_id: role === 'super_admin' ? null : TEST_WORKSPACE_ID,
+        email: 'archived@example.com',
+        name: 'Archived User',
+        role,
+      });
+    }
+
+    beforeEach(() => {
+      nextOk.mockClear();
+    });
+
+    test('redirects a member of an archived workspace to login and drops the session', async () => {
+      await seedMember('inactive');
+      const context = createContext('/dashboard', 'signed-cookie');
+
+      const response = expectResponse(await authentication(context as never, nextOk));
+
+      expect(response.status).toBe(302);
+      expect(response.headers.get('Location')).toBe('/login?error=workspace_inactive');
+      expect(nextOk).not.toHaveBeenCalled();
+      expect(context.locals.user).toBeNull();
+      expect(context.cookies.delete).toHaveBeenCalledWith('allowealth.session_token', {
+        path: '/',
+      });
+    });
+
+    test('returns 403 to API calls from a member of an archived workspace', async () => {
+      await seedMember('inactive');
+      const context = createContext('/api/transactions', 'signed-cookie');
+
+      const response = expectResponse(await authentication(context as never, nextOk));
+      const payload = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(payload.error.code).toBe('WORKSPACE_INACTIVE');
+      expect(nextOk).not.toHaveBeenCalled();
+    });
+
+    test('lets Better Auth routes through without an app user', async () => {
+      await seedMember('inactive');
+      const context = createContext('/api/auth/sign-out', 'signed-cookie');
+
+      await authentication(context as never, nextOk);
+
+      expect(nextOk).toHaveBeenCalled();
+      expect(context.locals.user).toBeNull();
+    });
+
+    test('restores access once the workspace is reactivated', async () => {
+      await seedMember('inactive');
+      await db
+        .update(workspaces)
+        .set({ status: 'active' })
+        .where(eq(workspaces.id, TEST_WORKSPACE_ID));
+      const context = createContext('/api/transactions', 'signed-cookie');
+
+      await authentication(context as never, nextOk);
+
+      expect(nextOk).toHaveBeenCalled();
+      expect(context.locals.user?.id).toBe(TEST_USER_ID);
+    });
+
+    test('keeps super admins signed in so they can reactivate the workspace', async () => {
+      await seedMember('inactive', 'super_admin');
+      const context = createContext('/admin/workspaces', 'signed-cookie');
+
+      await authentication(context as never, nextOk);
+
+      expect(nextOk).toHaveBeenCalled();
+      expect(context.locals.user?.role).toBe('super_admin');
+    });
   });
 });

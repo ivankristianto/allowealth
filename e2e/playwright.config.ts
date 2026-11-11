@@ -14,6 +14,8 @@ const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 const useDevServer = process.env.E2E_SERVER === 'dev';
 
 const serverEnv = {
+  // Auth rate limits and Turnstile are on unless NODE_ENV opts out.
+  NODE_ENV: 'development',
   // Set explicitly: the built server falls back to db/.dev.db, which may hold real data
   DATABASE_URL: 'db/.e2e.db',
   PORT: String(E2E_PORT),

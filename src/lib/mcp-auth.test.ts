@@ -14,8 +14,10 @@ const mockDb = {
 const mockCacheGet = mock(async () => null);
 const mockCacheSet = mock(async () => {});
 const mockCacheInvalidate = mock(async () => {});
+const mockIsWorkspaceActive = mock(async (_workspaceId: string) => true);
 
 const testDeps = {
+  workspaces: { isWorkspaceActive: mockIsWorkspaceActive },
   db: mockDb,
   getSchema: () => ({
     oauthAccessToken,
@@ -40,6 +42,11 @@ function liveToken(overrides: Record<string, unknown> = {}) {
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 import { invalidateMcpToken, validateMcpToken } from './mcp-auth';
+
+beforeEach(() => {
+  mockIsWorkspaceActive.mockReset();
+  mockIsWorkspaceActive.mockImplementation(async () => true);
+});
 
 describe('validateMcpToken', () => {
   beforeEach(() => {
@@ -325,5 +332,51 @@ describe('validateMcpToken app password dispatch', () => {
     expect(verify).not.toHaveBeenCalled();
     expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
     expect(result?.scope).toBeUndefined();
+  });
+});
+
+describe('validateMcpToken with an archived workspace', () => {
+  const appPasswordContext = {
+    workspaceId: 'ws-archived',
+    userId: 'user-1',
+    tokenId: 'pat-1',
+    scope: 'read' as const,
+  };
+
+  beforeEach(() => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () => liveToken());
+    mockDb.query.users.findFirst = mock(async () => ({
+      workspace_id: 'ws-archived',
+      deleted_at: null,
+    }));
+  });
+
+  it('refuses an OAuth token from a member of an archived workspace', async () => {
+    mockIsWorkspaceActive.mockImplementation(async () => false);
+
+    expect(await validateMcpToken('oauth-token', testDeps)).toBeNull();
+    expect(mockIsWorkspaceActive).toHaveBeenCalledWith('ws-archived');
+  });
+
+  it('refuses an app password from a member of an archived workspace', async () => {
+    mockIsWorkspaceActive.mockImplementation(async () => false);
+    const verify = mock(async () => appPasswordContext);
+
+    expect(
+      await validateMcpToken('aw_pat_live', { ...testDeps, appPasswords: { verify } })
+    ).toBeNull();
+    expect(mockIsWorkspaceActive).toHaveBeenCalledWith('ws-archived');
+  });
+
+  it('accepts both token kinds again once the workspace is reactivated', async () => {
+    mockIsWorkspaceActive.mockImplementation(async () => true);
+    const verify = mock(async () => appPasswordContext);
+
+    expect(await validateMcpToken('oauth-token', testDeps)).toMatchObject({
+      workspaceId: 'ws-archived',
+    });
+    expect(
+      await validateMcpToken('aw_pat_live', { ...testDeps, appPasswords: { verify } })
+    ).toEqual(appPasswordContext);
   });
 });

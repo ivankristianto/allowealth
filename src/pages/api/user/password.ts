@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { isAPIError } from 'better-auth/api';
 import { auth } from '@/lib/auth/server';
+import { isDemoMode } from '@/lib/demo-mode';
 import {
   successResponse,
   errorResponse,
@@ -30,6 +31,10 @@ const BETTER_AUTH_PASSWORD_ERRORS: Record<string, { message: string; code: strin
 export const PUT: APIRoute = async (context) => {
   try {
     const { userId } = getAuthenticatedUser(context);
+
+    if (isDemoMode()) {
+      return errorResponse('This action is disabled in demo mode', 403, 'DEMO_MODE');
+    }
 
     const rateLimitResult = checkRateLimitByKey(
       `password-change:${userId}`,

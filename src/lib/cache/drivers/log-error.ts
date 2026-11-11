@@ -11,3 +11,11 @@ export function describeCacheError(error: unknown): string {
   const message = commandAt === -1 ? error.message : error.message.slice(0, commandAt);
   return `${error.name}: ${message}`;
 }
+
+/** Thrown by strict drivers. Carries only the redacted description, never the key. */
+export class CacheBackendError extends Error {
+  constructor(operation: string, description: string) {
+    super(`Cache ${operation} failed: ${description}`);
+    this.name = 'CacheBackendError';
+  }
+}

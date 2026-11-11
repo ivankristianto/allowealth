@@ -4,9 +4,11 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { captcha, twoFactor } from 'better-auth/plugins';
 import { oauthProvider } from '@better-auth/oauth-provider';
 import { passkey } from '@better-auth/passkey';
+import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import * as schema from '@/db/schema/sqlite';
 import { INTERNAL_IP_HEADER } from '@/lib/auth/client-ip';
+import { isDemoMode } from '@/lib/demo-mode';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 import { EmailService } from '@/services/email';
@@ -15,6 +17,7 @@ import { securityActivityService } from '@/services/security-activity.service';
 import { getAuthBaseURL, getDevelopmentBaseURL } from './base-url';
 import { getOAuthProviderOptions } from './oauth-provider-options';
 import { hashPassword, verifyPassword } from './password';
+import { createAuthRequestGuard, type AuthAccountState } from './request-guard';
 import { createAuthSecondaryStorage } from './secondary-storage';
 
 export const AUTH_PATH_PREFIX = '/api/auth';
@@ -38,12 +41,17 @@ export const AUTH_RATE_LIMIT_RULES = {
 
 export { getAuthBaseURL };
 
+const RELAXED_NODE_ENVS: ReadonlySet<string> = new Set(['development', 'test']);
+
+/** Rate limits, real OAuth credentials and Turnstile stay on unless NODE_ENV opts out. */
+export function authProtectionsEnabled(): boolean {
+  return !RELAXED_NODE_ENVS.has(getEnv('NODE_ENV') ?? '');
+}
+
 export function getTrustedOrigins(): string[] {
-  const nodeEnv = getEnv('NODE_ENV');
-  const isProduction = nodeEnv === 'production';
   const trustedOrigins = [getAuthBaseURL()];
 
-  if (!isProduction && getEnv('DEV_HOST')) {
+  if (!authProtectionsEnabled() && getEnv('DEV_HOST')) {
     trustedOrigins.push(getDevelopmentBaseURL());
   }
 
@@ -60,20 +68,41 @@ export function getTrustedOrigins(): string[] {
 }
 
 function getGoogleClientId(): string | undefined {
-  const nodeEnv = getEnv('NODE_ENV');
-  const isProduction = nodeEnv === 'production';
-  return getEnv('GOOGLE_CLIENT_ID') ?? (isProduction ? undefined : 'test-google-client-id');
+  return (
+    getEnv('GOOGLE_CLIENT_ID') ?? (authProtectionsEnabled() ? undefined : 'test-google-client-id')
+  );
 }
 
 function getGoogleClientSecret(): string | undefined {
-  const nodeEnv = getEnv('NODE_ENV');
-  const isProduction = nodeEnv === 'production';
-  return getEnv('GOOGLE_CLIENT_SECRET') ?? (isProduction ? undefined : 'test-google-client-secret');
+  return (
+    getEnv('GOOGLE_CLIENT_SECRET') ??
+    (authProtectionsEnabled() ? undefined : 'test-google-client-secret')
+  );
+}
+
+async function loadAccountState(userId: string): Promise<AuthAccountState | null> {
+  const [row] = await db
+    .select({
+      role: schema.users.role,
+      deletedAt: schema.users.deleted_at,
+      workspaceId: schema.users.workspace_id,
+      workspaceStatus: schema.workspaces.status,
+    })
+    .from(schema.users)
+    .leftJoin(schema.workspaces, eq(schema.workspaces.id, schema.users.workspace_id))
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+
+  if (!row) return null;
+  return {
+    role: row.role,
+    deletedAt: row.deletedAt,
+    workspaceInactive: row.workspaceId != null && row.workspaceStatus !== 'active',
+  };
 }
 
 function createAuthInstance() {
-  const nodeEnv = getEnv('NODE_ENV');
-  const isProduction = nodeEnv === 'production';
+  const protectionsEnabled = authProtectionsEnabled();
 
   const secret = getEnv('BETTER_AUTH_SECRET');
   if (!secret) {
@@ -83,8 +112,10 @@ function createAuthInstance() {
   const googleClientId = getGoogleClientId();
   const googleClientSecret = getGoogleClientSecret();
 
-  if (isProduction && (!googleClientId || !googleClientSecret)) {
-    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in production');
+  if (protectionsEnabled && (!googleClientId || !googleClientSecret)) {
+    throw new Error(
+      'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set outside development and test'
+    );
   }
 
   const emailService = new EmailService();
@@ -92,8 +123,10 @@ function createAuthInstance() {
   const turnstileSecretKey = getEnv('TURNSTILE_SECRET_KEY');
   const authSecondaryStorage = createAuthSecondaryStorage();
 
-  if (isProduction && (!turnstileSiteKey || !turnstileSecretKey)) {
-    throw new Error('PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set in production');
+  if (protectionsEnabled && (!turnstileSiteKey || !turnstileSecretKey)) {
+    throw new Error(
+      'PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set outside development and test'
+    );
   }
 
   const authPlugins: Array<
@@ -204,9 +237,12 @@ function createAuthInstance() {
     // with secondary storage unless sessions are also persisted to SQLite.
     ...(authSecondaryStorage ? { session: { storeSessionInDatabase: true } } : {}),
     rateLimit: {
-      enabled: isProduction,
+      enabled: protectionsEnabled,
       storage: authSecondaryStorage ? 'secondary-storage' : 'memory',
       customRules: AUTH_RATE_LIMIT_RULES,
+    },
+    hooks: {
+      before: createAuthRequestGuard({ isDemoMode, loadAccountState }),
     },
     advanced: {
       cookiePrefix: 'allowealth',

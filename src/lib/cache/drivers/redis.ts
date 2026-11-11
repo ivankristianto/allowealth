@@ -5,14 +5,15 @@
  * Bun-only (uses Bun.RedisClient).
  *
  * Features:
- * - Fail-silent: Returns null on errors instead of throwing
+ * - Fail-silent by default: returns null on errors instead of throwing.
+ *   `strict: true` rethrows instead, for Better Auth storage.
  * - Tag-based invalidation using Redis Sets (same data model as UpstashDriver)
  * - Automatic pipelining via Promise.all
  */
 
-import type { CacheDriver, CacheSetOptions } from '../types';
+import type { CacheDriver, CacheDriverOptions, CacheSetOptions } from '../types';
 import { INCREMENT_WITH_TTL_SCRIPT } from './increment-script';
-import { describeCacheError } from './log-error';
+import { CacheBackendError, describeCacheError } from './log-error';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('cache:redis');
@@ -20,10 +21,18 @@ const log = createLogger('cache:redis');
 export class RedisDriver implements CacheDriver {
   private redis: InstanceType<typeof Bun.RedisClient>;
   private defaultTtl: number;
+  private strict: boolean;
 
-  constructor(url: string, defaultTtl: number = 3600) {
+  constructor(url: string, defaultTtl: number = 3600, options: CacheDriverOptions = {}) {
     this.redis = new Bun.RedisClient(url);
     this.defaultTtl = defaultTtl;
+    this.strict = options.strict ?? false;
+  }
+
+  private fail(operation: string, error: unknown): void {
+    const description = describeCacheError(error);
+    log.warn(`${operation} failed:`, description);
+    if (this.strict) throw new CacheBackendError(operation, description);
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -35,7 +44,7 @@ export class RedisDriver implements CacheDriver {
 
       return JSON.parse(raw) as T;
     } catch (error) {
-      log.warn('Get failed:', describeCacheError(error));
+      this.fail('Get', error);
       return null;
     }
   }
@@ -57,7 +66,7 @@ export class RedisDriver implements CacheDriver {
         await Promise.all(tagOperations);
       }
     } catch (error) {
-      log.warn('Set failed:', describeCacheError(error));
+      this.fail('Set', error);
     }
   }
 
@@ -65,7 +74,7 @@ export class RedisDriver implements CacheDriver {
     try {
       await this.redis.del(key);
     } catch (error) {
-      log.warn('Delete failed:', describeCacheError(error));
+      this.fail('Delete', error);
     }
   }
 
@@ -79,8 +88,8 @@ export class RedisDriver implements CacheDriver {
       ]);
       return Number(value);
     } catch (error) {
-      // Fail open like get/set: a cache outage must not lock users out.
-      log.warn('Increment failed:', describeCacheError(error));
+      // Fail open like get/set: a cache outage must not lock users out of the app cache.
+      this.fail('Increment', error);
       return 1;
     }
   }
@@ -94,7 +103,7 @@ export class RedisDriver implements CacheDriver {
 
       return JSON.parse(raw) as T;
     } catch (error) {
-      log.warn('GetAndDelete failed:', describeCacheError(error));
+      this.fail('GetAndDelete', error);
       return null;
     }
   }
@@ -114,7 +123,7 @@ export class RedisDriver implements CacheDriver {
         await this.redis.del(...allKeys);
       }
     } catch (error) {
-      log.warn('InvalidateByTags failed:', describeCacheError(error));
+      this.fail('InvalidateByTags', error);
     }
   }
 }

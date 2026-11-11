@@ -11,9 +11,8 @@ import { logError } from '@/lib/logger';
  * Hard-deletes a workspace and all associated data (cascading).
  * Super admin only. Requires confirmation by matching the workspace name.
  *
- * The audit log entry is written BEFORE deletion because audit_logs has
- * a foreign key to workspaces with ON DELETE CASCADE, which would delete
- * the audit log entry along with the workspace.
+ * The audit row survives the delete: audit_logs.workspace_id is set to
+ * NULL when its workspace goes, so the row keeps the id in entity_id.
  *
  * Request body:
  * - confirmName: string (must match the workspace name exactly)
@@ -49,7 +48,6 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Workspace name does not match', 400, 'CONFIRMATION_FAILED');
     }
 
-    // Log audit event BEFORE deletion (cascade would delete the log entry)
     await logAuditEvent({
       workspaceId,
       userId: auth.userId,

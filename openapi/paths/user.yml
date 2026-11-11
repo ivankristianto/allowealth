@@ -77,6 +77,12 @@ paths:
                       code: INVALID_PASSWORD
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Email changes are disabled in demo mode (`DEMO_MODE`)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '429':
           $ref: '../responses/common.yml#/TooManyRequests'
         '500':
@@ -323,6 +329,12 @@ paths:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Password changes are disabled in demo mode (`DEMO_MODE`)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '429':
           $ref: '../responses/common.yml#/TooManyRequests'
         '500':

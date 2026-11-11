@@ -10,7 +10,7 @@
  */
 
 import { workspaces, users, type IDatabase, getActiveSchema } from '@/db';
-import { eq, and, isNull, inArray, sql } from 'drizzle-orm';
+import { eq, and, asc, isNull, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { maxLength, minLength, object, parse, pipe, string, type InferInput } from 'valibot';
 import { WorkspaceServiceError, ServiceErrorCode } from './service-errors';
@@ -64,6 +64,25 @@ export interface OnboardingStatus {
 /**
  * Workspace Service
  */
+/** Active (not soft-deleted) admins of a workspace. */
+export async function countActiveWorkspaceAdmins(
+  database: IDatabase,
+  workspaceId: string
+): Promise<number> {
+  const { users: usersTable } = getActiveSchema();
+  const [row] = await database
+    .select({ count: sql<number>`count(*)` })
+    .from(usersTable)
+    .where(
+      and(
+        eq(usersTable.workspace_id, workspaceId),
+        eq(usersTable.role, 'admin'),
+        isNull(usersTable.deleted_at)
+      )
+    );
+  return Number(row?.count ?? 0);
+}
+
 export class WorkspaceService {
   private get schema() {
     return getActiveSchema();
@@ -120,6 +139,16 @@ export class WorkspaceService {
       .update(this.schema.workspaces)
       .set({ status: 'active', updated_at: new Date() })
       .where(eq(this.schema.workspaces.id, workspaceId));
+  }
+
+  /** The workspace's earliest user, removed or not: the person who created it. */
+  async findFoundingMemberId(workspaceId: string): Promise<string | null> {
+    const founder = await this.db.query.users.findFirst({
+      where: eq(this.schema.users.workspace_id, workspaceId),
+      orderBy: [asc(this.schema.users.created_at), asc(this.schema.users.id)],
+      columns: { id: true },
+    });
+    return founder?.id ?? null;
   }
 
   /**

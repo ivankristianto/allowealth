@@ -42,20 +42,15 @@ export const PATCH: APIRoute = async (context) => {
 
     await superAdminService.changeUserRole(userId, newRole as 'admin' | 'member');
 
-    // Note: audit_logs.workspace_id has a FK constraint. For users without
-    // a workspace, the audit insert will silently fail (logAuditEvent catches).
-    // TODO: Make workspace_id nullable in audit_logs for system-level actions.
-    if (user.workspaceId) {
-      await logAuditEvent({
-        workspaceId: user.workspaceId,
-        userId: auth.userId,
-        action: 'admin_role_change',
-        entityType: 'user',
-        entityId: userId,
-        oldValue: { role: user.role },
-        newValue: { role: newRole },
-      });
-    }
+    await logAuditEvent({
+      workspaceId: user.workspaceId,
+      userId: auth.userId,
+      action: 'admin_role_change',
+      entityType: 'user',
+      entityId: userId,
+      oldValue: { role: user.role },
+      newValue: { role: newRole },
+    });
 
     return successResponse({ message: `User role changed to ${newRole}` });
   } catch (error) {
