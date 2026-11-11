@@ -43,9 +43,19 @@ function renderResultsHtml(html: string): void {
   });
 }
 
-/** Error responses in HTML mode are an alert fragment; show its text in the form's own alert. */
-function readErrorMessage(html: string): string {
-  return sanitizeHtmlFragment(html).textContent?.trim() || 'Calculation failed.';
+/** Middleware (CSRF, auth, rate limits) answers in JSON before the route's HTML alert can. */
+export function readErrorMessage(body: string, contentType: string | null): string {
+  const fallback = 'Calculation failed.';
+  if (contentType?.includes('application/json')) {
+    try {
+      const parsed = JSON.parse(body) as { error?: { message?: string } | string };
+      const message = typeof parsed.error === 'string' ? parsed.error : parsed.error?.message;
+      return message || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return sanitizeHtmlFragment(body).textContent?.trim() || fallback;
 }
 
 // Show loading state
@@ -138,7 +148,7 @@ async function handleFormSubmit(e: Event): Promise<void> {
     const html = await response.text();
 
     if (!response.ok) {
-      showError(readErrorMessage(html));
+      showError(readErrorMessage(html, response.headers.get('Content-Type')));
       return;
     }
 
@@ -176,5 +186,3 @@ document.addEventListener('astro:page-load', initCalculatorsPage);
 document.addEventListener('astro:before-swap', () => {
   controller?.abort();
 });
-
-export {};
