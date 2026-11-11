@@ -106,6 +106,26 @@ describe('workflow supply chain', () => {
   });
 });
 
+describe('unit test discovery', () => {
+  it('bun test scans tests/ as well as src/, and leaves e2e/ to Playwright', () => {
+    const bunfig = Bun.TOML.parse(read('bunfig.toml')) as {
+      test: { root: string; pathIgnorePatterns: string[] };
+    };
+
+    expect(bunfig.test.root).toBe('.');
+    expect(bunfig.test.pathIgnorePatterns).toContain('e2e/**');
+  });
+
+  it('CI runs the unit suite in random order', () => {
+    const workflow = readYaml<Workflow>('.github/workflows/quality-gates.yml');
+    const runs = (workflow.jobs['unit-tests'].steps ?? [])
+      .map((step) => (step as { run?: string }).run ?? '')
+      .filter((run) => run.startsWith('bun test'));
+
+    expect(runs).toEqual(['bun test --randomize']);
+  });
+});
+
 interface ComposeFile {
   services: Record<string, { ports?: string[] }>;
 }

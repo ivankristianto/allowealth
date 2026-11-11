@@ -173,8 +173,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Random order exposes tests that leak state into later files.
+      # Reproduce a failure locally with the --seed=<n> printed in the summary.
       - name: Run unit tests
-        run: bun test
+        run: bun test --randomize
 
   static-sites:
     name: Static Sites
