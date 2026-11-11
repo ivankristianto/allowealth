@@ -13,6 +13,7 @@ import { eq, sql, desc, asc, like, and, isNull } from 'drizzle-orm';
 import { isValidWorkspaceMetaKey } from '@/lib/constants/workspace-meta-keys';
 import { SuperAdminServiceError, ServiceErrorCode } from './service-errors';
 import { softDeleteUserAndRevokeMcpTokens } from './mcp-token-revocation.service';
+import { countActiveWorkspaceAdmins } from './workspace.service';
 
 // === Interfaces ===
 
@@ -643,6 +644,7 @@ export class SuperAdminService {
       );
     }
 
+    await this.assertNotLastAdmin(user);
     await softDeleteUserAndRevokeMcpTokens(this.db, userId);
   }
 
@@ -713,10 +715,31 @@ export class SuperAdminService {
       );
     }
 
+    if (newRole !== 'admin') {
+      await this.assertNotLastAdmin(user);
+    }
+
     await this.db
       .update(schema.users)
       .set({ role: newRole, updated_at: new Date() })
       .where(eq(schema.users.id, userId));
+  }
+
+  // A workspace with no active admin cannot invite, remove or manage anyone.
+  private async assertNotLastAdmin(user: {
+    role: string;
+    workspace_id: string | null;
+    deleted_at: Date | null;
+  }): Promise<void> {
+    if (user.role !== 'admin' || !user.workspace_id || user.deleted_at) return;
+
+    if ((await countActiveWorkspaceAdmins(this.db, user.workspace_id)) <= 1) {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.CONFLICT,
+        'Cannot remove the last admin of a workspace',
+        409
+      );
+    }
   }
 }
 

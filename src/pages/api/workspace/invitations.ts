@@ -8,6 +8,7 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { logAuditEvent } from '@/lib/audit-log';
 import { WorkspaceInvitationServiceError } from '@/services/service-errors';
 import { email, object, optional, picklist, pipe, string } from 'valibot';
 
@@ -84,6 +85,15 @@ export const POST: APIRoute = async (context) => {
       email: validation.data.email,
       role: validation.data.role,
       invitedByUserId: auth.userId,
+    });
+
+    await logAuditEvent({
+      workspaceId: auth.workspaceId,
+      userId: auth.userId,
+      action: 'member_invite',
+      entityType: 'workspace',
+      entityId: auth.workspaceId,
+      newValue: { invitationId: invitation.id, email: invitation.email, role: invitation.role },
     });
 
     return successResponse(
