@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { sumAmount } from './base/money-sql';
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { logAuditEvent } from '@/lib/audit-log';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
@@ -600,7 +601,7 @@ export class RecurringOccurrenceService {
     const pendingRows = await (this.db as any)
       .select({
         currency: this.schema.recurringTemplates.currency,
-        amount: sql<string>`COALESCE(SUM(CAST(${this.schema.recurringTemplates.amount} AS NUMERIC)), 0)`,
+        amount: sumAmount(this.schema.recurringTemplates.amount),
         pending_count: sql<number>`COUNT(*)`,
         overdue_count: sql<number>`COALESCE(SUM(CASE WHEN ${this.schema.recurringOccurrences.due_date} < ${today} THEN 1 ELSE 0 END), 0)`,
       })
@@ -681,7 +682,7 @@ export class RecurringOccurrenceService {
       .select({
         type: this.schema.recurringTemplates.type,
         currency: this.schema.recurringTemplates.currency,
-        amount: sql<string>`COALESCE(SUM(CAST(${this.schema.recurringTemplates.amount} AS NUMERIC)), 0)`,
+        amount: sumAmount(this.schema.recurringTemplates.amount),
         item_count: sql<number>`COUNT(*)`,
       })
       .from(this.schema.recurringOccurrences)

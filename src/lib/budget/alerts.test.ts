@@ -45,6 +45,17 @@ describe('calculateBudgetStatus', () => {
     expect(calculateBudgetStatus('100', '200')).toBe('exceeded');
   });
 
+  it('does not round a spend just under the budget up to 100%', () => {
+    expect(calculateBudgetStatus('1000000', '999999.99')).toBe('warning');
+    expect(calculateBudgetStatus('1000000', '1000000')).toBe('exceeded');
+    expect(calculateBudgetStatus('1000000', '799999.99')).toBe('healthy');
+  });
+
+  it('gives the same status as calculateBudgetAlert at the 100% boundary', () => {
+    expect(calculateBudgetAlert('Food', '1000000', '999999.99')?.status).toBe('warning');
+    expect(calculateBudgetAlert('Food', '1000000', '1000000')?.status).toBe('exceeded');
+  });
+
   it('should return healthy for zero or negative budget', () => {
     expect(calculateBudgetStatus('0', '50')).toBe('healthy');
     expect(calculateBudgetStatus('-100', '50')).toBe('healthy');
