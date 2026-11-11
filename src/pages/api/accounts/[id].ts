@@ -14,7 +14,7 @@ import {
   DEFAULT_TYPE_BY_CATEGORY_NAME,
 } from '@/lib/constants/account-categories';
 import { getCacheManager, CacheTags } from '@/lib/cache';
-import { AccountServiceError } from '@/services/service-errors';
+import { ServiceError } from '@/services/service-errors';
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 
 // Validation schemas
@@ -63,8 +63,8 @@ export const GET: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    logError('Error fetching account', error);
-    return errorResponse('Failed to fetch account', 500);
+    const errorId = logError('Error fetching account', error);
+    return errorResponse('Failed to fetch account', 500, 'INTERNAL_ERROR', { errorId });
   }
 };
 
@@ -141,12 +141,11 @@ export const PUT: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    if (error instanceof AccountServiceError) {
+    if (error instanceof ServiceError) {
       return errorResponse(error.message, error.statusCode, error.code);
     }
-    logError('Error updating account', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return errorResponse(message, 500);
+    const errorId = logError('Error updating account', error);
+    return errorResponse('Failed to update account', 500, 'INTERNAL_ERROR', { errorId });
   }
 };
 
@@ -185,11 +184,10 @@ export const DELETE: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    if (error instanceof AccountServiceError) {
+    if (error instanceof ServiceError) {
       return errorResponse(error.message, error.statusCode, error.code);
     }
-    logError('Error closing account', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return errorResponse(message, 500);
+    const errorId = logError('Error closing account', error);
+    return errorResponse('Failed to close account', 500, 'INTERNAL_ERROR', { errorId });
   }
 };

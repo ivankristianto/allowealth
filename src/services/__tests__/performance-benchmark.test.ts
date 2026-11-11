@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { unlinkSync, existsSync, writeFileSync } from 'node:fs';
 
 import * as schema from '@/db/schema/sqlite';
+import { applyMigrations } from '@/db/test-helpers/migrations';
 import type { IDatabase } from '@/db';
 import { PerfCollector } from '@/lib/perf/collector';
 
@@ -172,39 +173,6 @@ let accountCategoryService: AccountCategoryService;
 let workspaceService: WorkspaceService;
 let userService: UserService;
 
-/**
- * Remove comments from SQL statement
- */
-function removeComments(sql: string): string {
-  // Remove single-line comments (-- ...)
-  let result = sql.replace(/--[^\n]*/g, '');
-  // Remove multi-line comments (/* ... */)
-  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
-  return result.trim();
-}
-
-/**
- * Execute SQL statements from setup.sql
- * Splits by semicolon and executes each statement separately
- */
-function execSetupSql(db: Database, sql: string) {
-  const statements = sql
-    .split(';')
-    .map((s) => removeComments(s).trim())
-    .filter((s) => s.length > 0);
-
-  for (const stmt of statements) {
-    try {
-      db.prepare(stmt).run();
-    } catch (error: any) {
-      // Ignore "already exists" errors for idempotent setup
-      if (!error.message?.includes('already exists')) {
-        throw error;
-      }
-    }
-  }
-}
-
 beforeAll(async () => {
   rawDb = new Database(DB_PATH);
   rawDb.prepare('PRAGMA journal_mode = WAL').run();
@@ -212,9 +180,7 @@ beforeAll(async () => {
   rawDb.prepare('PRAGMA cache_size = -64000').run();
   rawDb.prepare('PRAGMA foreign_keys = ON').run();
 
-  const setupSqlPath = join(process.cwd(), 'src', 'db', 'setup.sql');
-  const sql = await Bun.file(setupSqlPath).text();
-  execSetupSql(rawDb, sql);
+  applyMigrations(rawDb);
 
   db = drizzle(rawDb, { schema });
 

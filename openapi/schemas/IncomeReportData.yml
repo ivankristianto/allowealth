@@ -25,12 +25,17 @@ IncomeReportData:
           type: string
           description: Percentage growth compared with the previous period (decimal string)
           example: "15.5"
+        previousPeriodLabel:
+          type: string
+          description: Label of the period the growth figure compares against
+          example: "Feb 2026"
       required:
         - totalIncome
         - activeIncome
         - passiveIncome
         - otherIncome
         - growthVsPreviousPeriod
+        - previousPeriodLabel
     sourceMix:
       type: array
       description: Income mix by category, sorted descending by value

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 // @TODO: P2 - Consider adding Firefox/WebKit projects for cross-browser testing
@@ -7,6 +8,39 @@ process.env.TZ = 'UTC';
 
 const E2E_PORT = 4320;
 const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+
+// Tests run against the production build by default, as Docker serves it, so build-time CSP
+// and adapter regressions show up. E2E_SERVER=dev runs against `astro dev` for a faster loop.
+const useDevServer = process.env.E2E_SERVER === 'dev';
+
+const serverEnv = {
+  // Auth rate limits and Turnstile are on unless NODE_ENV opts out.
+  NODE_ENV: 'development',
+  // Set explicitly: the built server falls back to db/.dev.db, which may hold real data
+  DATABASE_URL: 'db/.e2e.db',
+  PORT: String(E2E_PORT),
+  SIGNUP_MODE: 'public',
+  E2E_USER_EMAIL: 'demo@example.com',
+  E2E_USER_PASSWORD: 'demo123456789',
+  // Tests that change a user's email trigger a send; never deliver real mail from E2E.
+  EMAIL_PROVIDER: 'console',
+};
+
+const devServer = {
+  // Astro 7 backgrounds `astro dev` when it detects an AI agent, and Playwright
+  // treats the exited launcher as a failed server. --ignore-lock keeps it in the foreground.
+  command: 'bun run dev --ignore-lock',
+  timeout: 120 * 1000,
+  env: { ...serverEnv, DEV_HOST: 'localhost' },
+};
+
+const buildServer = {
+  command: 'bun run build && bun --bun ./dist/server/entry.mjs',
+  // Playwright starts the server in this file's folder; the build and DATABASE_URL are root-relative
+  cwd: fileURLToPath(new URL('..', import.meta.url)),
+  timeout: 300 * 1000,
+  env: { ...serverEnv, HOST: 'localhost', PUBLIC_URL: E2E_BASE_URL },
+};
 
 /**
  * Playwright configuration for E2E testing.
@@ -37,24 +71,9 @@ export default defineConfig({
   },
 
   webServer: {
-    // Astro 7 backgrounds `astro dev` when it detects an AI agent, and Playwright
-    // treats the exited launcher as a failed server. --ignore-lock keeps it in the foreground.
-    command: 'bun run dev --ignore-lock',
+    ...(useDevServer ? devServer : buildServer),
     url: E2E_BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-    env: {
-      // Auth rate limits and Turnstile are on unless NODE_ENV opts out.
-      NODE_ENV: 'development',
-      DATABASE_URL: 'db/.e2e.db',
-      PORT: String(E2E_PORT),
-      DEV_HOST: 'localhost', // Override to ensure server binds to localhost for E2E
-      SIGNUP_MODE: 'public',
-      E2E_USER_EMAIL: 'demo@example.com',
-      E2E_USER_PASSWORD: 'demo123456789',
-      // Tests that change a user's email trigger a send; never deliver real mail from E2E.
-      EMAIL_PROVIDER: 'console',
-    },
   },
 
   projects: [

@@ -1,6 +1,6 @@
 # Database Connection Architecture
 
-> **ADR-006** | Created: 2026-02-04 | Updated: 2026-03-09
+> **ADR-006** | Created: 2026-02-04 | Updated: 2026-11-11
 
 > **Superseded in part — 2026-10-24.** Cloudflare Workers and D1 support was
 > removed from the project. The `bun:sqlite` driver is now the only database
@@ -9,6 +9,12 @@
 > parts of the decision below are retained as historical record and no longer
 > describe the codebase. Cloudflare **Pages** hosting for `apps/docs` and
 > `apps/site` and Cloudflare **Turnstile** are unaffected.
+
+> **Superseded in part, 2026-11-11.** The per-request reset is gone. The
+> `database` middleware and `prepareForRequest()` are deleted, and the app keeps
+> one SQLite connection for the life of the process. See
+> [Connection lifetime](#connection-lifetime). The request lifecycle below is
+> the historical Workers design.
 
 ## Overview
 
@@ -70,7 +76,6 @@ The CLI supports three database targets:
 - `src/db/drivers/d1-http.ts` — remote D1 CLI access
 - `src/db/drivers/d1-local.ts` — local D1 CLI access
 - `src/middleware/runtime-env.ts` — injects runtime env and D1 binding
-- `src/middleware/database.ts` — resets per-request DB state
 
 ## Configuration
 
@@ -118,11 +123,14 @@ Flow:
 4. The first DB access lazily creates the correct Drizzle instance for the active environment.
 5. The request finishes and middleware clears the stored D1 binding.
 
-## Lazy Initialization
+## Connection lifetime
 
-The database instance is created on first use through the exported proxy from `src/db/index.ts`.
+`getDb()` opens one `bun:sqlite` connection on first use and keeps it for the life of the process. The exported `db` is a Proxy over `getDb()`, so modules that import it at load time never open the file early.
 
-This keeps module load safe in Workers and ensures the correct per-request binding is used.
+- Opening a connection per request held two file descriptors per open until GC, threw away the 64 MB page cache, and let concurrent requests swap handles under each other.
+- `PRAGMA busy_timeout = 5000` runs first, so a server write that overlaps a CLI write waits up to five seconds instead of failing with `SQLITE_BUSY`.
+- Connection state such as `PRAGMA foreign_keys` now persists across requests. Runtime code must not change it on the shared handle.
+- `resetDb()` closes the handle, and the next access reopens `DATABASE_URL`. Only tests that switch database files call it.
 
 ## Transactions
 

@@ -21,11 +21,20 @@ NotFound:
         $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
 
 InternalServerError:
-  description: Internal server error
+  description: >-
+    Internal server error. The message is generic; the full error is logged server-side
+    under `error.details.errorId`, which a user can quote in a bug report.
   content:
     application/json:
       schema:
         $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+      example:
+        success: false
+        error:
+          message: Failed to update account
+          code: INTERNAL_ERROR
+          details:
+            errorId: 3f9a1c2b
 
 TooManyRequests:
   description: Rate limit exceeded (`RATE_LIMIT_EXCEEDED`). `error.retryAfter` gives seconds to wait.

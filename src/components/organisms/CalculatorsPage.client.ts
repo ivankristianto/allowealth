@@ -1,15 +1,11 @@
 /**
- * Calculator Page Client Script
- *
- * Handles form submission, fetches results from API, and renders HTML.
- * Uses server-side calculations with client-side HTML rendering.
+ * Compound interest calculator: posts the form and swaps in the server-rendered results partial.
  */
 
 import { csrfFetch } from '@/lib/csrf-client';
-// @TODO: P2 - Use import alias syntax instead of re-export
-import { formatCurrency } from '@/lib/formatting/currency-client';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+import { replaceWithSanitizedHtml, sanitizeHtmlFragment } from '@/lib/dom/sanitize-fragment';
 
 let controller: AbortController | null = null;
 let primaryCurrency: Currency = 'IDR';
@@ -22,115 +18,14 @@ function getResultsContainer(): HTMLElement | null {
   return document.getElementById('results-container');
 }
 
-/**
- * Render results HTML
- * SECURITY NOTE: All interpolated values in the HTML templates below are numeric types
- * processed through formatCurrency(). Never interpolate raw strings without proper escaping.
- * @TODO: P2 - Consider migrating to server-rendered HTML fragments per ADR-002.
- */
-function renderResults(data: {
-  totalInterest: number;
-  finalBalance: number;
-  yearlyData: Array<{
-    year: number;
-    openingBalance: number;
-    interest: number;
-    closingBalance: number;
-  }>;
-  currency: Currency;
-}): void {
+function renderResultsHtml(html: string): void {
   const resultsContainer = getResultsContainer();
   if (!resultsContainer) return;
 
-  const { totalInterest, finalBalance, yearlyData, currency } = data;
-
-  // Generate summary cards HTML
-  const summaryCardsHtml = `
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      <div id="total-interest-card" class="p-6 rounded-3xl border bg-success/10 border-success/20 text-success">
-        <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Total Interest</p>
-        <h4 class="text-2xl font-bold">${formatCurrency(totalInterest, currency)}</h4>
-      </div>
-      <div id="final-balance-card" class="p-6 rounded-3xl border bg-primary/10 border-primary/20 text-primary">
-        <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Final Balance</p>
-        <h4 class="text-2xl font-bold">${formatCurrency(finalBalance, currency)}</h4>
-      </div>
-    </div>
-  `;
-
-  // Generate growth schedule table HTML
-  const tableRowsHtml = yearlyData
-    .map(
-      (row) => `
-    <tr class="hover:bg-base-200/50 transition-colors">
-      <td class="px-6 py-4">
-        <span class="text-sm font-bold text-base-content">Year ${row.year}</span>
-      </td>
-      <td class="px-6 py-4 text-right">
-        <span class="text-sm font-medium text-base-content/60">
-          ${formatCurrency(row.openingBalance, currency)}
-        </span>
-      </td>
-      <td class="px-6 py-4 text-right">
-        <span class="text-sm font-bold text-success">+</span>
-        <span class="text-sm font-bold text-success ml-1">
-          ${formatCurrency(row.interest, currency)}
-        </span>
-      </td>
-      <td class="px-6 py-4 text-right">
-        <span class="text-sm font-bold text-base-content">
-          ${formatCurrency(row.closingBalance, currency)}
-        </span>
-      </td>
-    </tr>
-  `
-    )
-    .join('');
-
-  const tableHtml = `
-    <div id="growth-schedule-table" class="bg-base-100 rounded-card border border-base-300 overflow-hidden">
-      <div class="p-6 border-b border-base-300">
-        <h4 class="font-bold text-base-content tracking-tight">Growth Schedule</h4>
-        <p class="text-xs font-bold uppercase tracking-widest text-base-content/50 mt-1">
-          Yearly breakdown of interest compounding
-        </p>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="table table-zebra w-full text-left">
-          <thead>
-            <tr class="bg-base-200">
-              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50">
-                Year
-              </th>
-              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50 text-right">
-                Opening Balance
-              </th>
-              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-success text-right">
-                Interest Earned
-              </th>
-              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content text-right">
-                Closing Balance
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-base-300">
-            ${tableRowsHtml}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  // Inject HTML
-  resultsContainer.innerHTML = `<div id="calculator-results" class="space-y-8">${summaryCardsHtml}${tableHtml}</div>`;
-
-  // Reveal the results section
+  replaceWithSanitizedHtml(resultsContainer, html);
   resultsContainer.classList.remove('hidden');
-
-  // Smooth scroll to results
   resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Animate results in
   const cards = resultsContainer.querySelectorAll('[id$="-card"]');
   cards.forEach((card, i) => {
     card.animate(
@@ -146,6 +41,21 @@ function renderResults(data: {
       }
     );
   });
+}
+
+/** Middleware (CSRF, auth, rate limits) answers in JSON before the route's HTML alert can. */
+export function readErrorMessage(body: string, contentType: string | null): string {
+  const fallback = 'Calculation failed.';
+  if (contentType?.includes('application/json')) {
+    try {
+      const parsed = JSON.parse(body) as { error?: { message?: string } | string };
+      const message = typeof parsed.error === 'string' ? parsed.error : parsed.error?.message;
+      return message || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return sanitizeHtmlFragment(body).textContent?.trim() || fallback;
 }
 
 // Show loading state
@@ -227,7 +137,7 @@ async function handleFormSubmit(e: Event): Promise<void> {
   showLoadingState();
 
   try {
-    const response = await csrfFetch('/api/calculators/compound', {
+    const response = await csrfFetch('/api/calculators/compound?_render=html', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -235,14 +145,14 @@ async function handleFormSubmit(e: Event): Promise<void> {
       body: JSON.stringify({ principal, rate, years }),
     });
 
-    const result = await response.json();
+    const html = await response.text();
 
-    if (!response.ok || !result.success) {
-      showError(result.error?.message || 'Calculation failed.');
+    if (!response.ok) {
+      showError(readErrorMessage(html, response.headers.get('Content-Type')));
       return;
     }
 
-    renderResults(result.data);
+    renderResultsHtml(html);
   } catch (error) {
     console.error('Error calculating compound interest:', error);
     showError('Failed to calculate. Please try again.');
@@ -276,5 +186,3 @@ document.addEventListener('astro:page-load', initCalculatorsPage);
 document.addEventListener('astro:before-swap', () => {
   controller?.abort();
 });
-
-export {};

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { accountService, transactionService } from '@/services';
+import { accountService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -8,9 +8,8 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
-import { ServiceErrorCode } from '@/services/service-errors';
+import { ServiceError } from '@/services/service-errors';
 import { check, forward, maxLength, minLength, object, optional, pipe, string } from 'valibot';
-import { isValidCurrency } from '@/lib/constants/currency';
 import { positiveAmountSchema } from '@/lib/validation/amount';
 
 const transferSchema = pipe(
@@ -31,7 +30,7 @@ const transferSchema = pipe(
 
 /**
  * POST /api/accounts/transfer
- * Create a transfer transaction between two accounts
+ * Move money between two same-currency accounts and record the transfer transaction
  */
 export const POST: APIRoute = async (context) => {
   try {
@@ -43,62 +42,21 @@ export const POST: APIRoute = async (context) => {
     }
 
     const { fromAccountId, toAccountId, amount, notes } = validation.data;
-    const { fromAccount, toAccount } = await accountService.transfer(
+    const { transactionId } = await accountService.transfer(
       fromAccountId,
       toAccountId,
       amount,
-      auth.workspaceId
+      auth.workspaceId,
+      { createdByUserId: auth.userId, description: notes }
     );
 
-    if (!fromAccount || !toAccount) {
-      return errorResponse('Account not found', 404);
-    }
-
-    if (!isValidCurrency(fromAccount.currency)) {
-      return errorResponse(`Invalid account currency: ${fromAccount.currency}`, 400);
-    }
-
-    const transaction = await transactionService.create({
-      workspace_id: auth.workspaceId,
-      created_by_user_id: auth.userId,
-      type: 'transfer',
-      amount,
-      currency: fromAccount.currency,
-      account_id: fromAccountId,
-      to_account_id: toAccountId,
-      transaction_date: new Date(),
-      description: notes,
-    });
-
-    return successResponse(
-      {
-        fromAccountId,
-        toAccountId,
-        amount,
-        transactionId: transaction?.id ?? null,
-      },
-      201
-    );
+    return successResponse({ fromAccountId, toAccountId, amount, transactionId }, 201);
   } catch (error) {
-    const serviceCode =
-      typeof error === 'object' && error !== null && 'code' in error
-        ? String((error as { code: unknown }).code)
-        : null;
-
-    if (error instanceof Error) {
-      if (error.message === 'Unauthorized') return errorResponse('Unauthorized', 401);
-      if (error.message === 'Account not found') return errorResponse('Account not found', 404);
-      if (error.message.includes('currency')) return errorResponse(error.message, 400);
-      if (error.message.includes('Cannot transfer')) return errorResponse(error.message, 400);
-      if (error.message.includes('Transfer amount must be positive')) {
-        return errorResponse(error.message, 400);
-      }
-      if (serviceCode === ServiceErrorCode.ACCOUNT_CLOSED) {
-        return errorResponse(error.message, 400, ServiceErrorCode.ACCOUNT_CLOSED);
-      }
-      if (serviceCode === ServiceErrorCode.ACCOUNT_NOT_FOUND) {
-        return errorResponse(error.message, 404, ServiceErrorCode.ACCOUNT_NOT_FOUND);
-      }
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof ServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error transferring between accounts', error);
     return errorResponse('Failed to transfer', 500);

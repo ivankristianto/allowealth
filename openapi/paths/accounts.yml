@@ -201,7 +201,9 @@ paths:
     post:
       tags: [Accounts]
       summary: Transfer balance between accounts
-      description: Transfer balance from one account to another of the same currency
+      description: >-
+        Move money from one account to another of the same currency. Both balances, both
+        history rows and the transfer transaction are written in one database transaction.
       security:
         - sessionAuth: []
       requestBody:
@@ -227,7 +229,7 @@ paths:
                   maxLength: 500
                   description: Optional transfer notes
       responses:
-        '200':
+        '201':
           description: Transfer completed successfully
           content:
             application/json:
@@ -239,12 +241,23 @@ paths:
                   data:
                     type: object
                     properties:
-                      fromAccount:
-                        $ref: '../schemas/AccountResponse.yml#/AccountResponse'
-                      toAccount:
-                        $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+                      fromAccountId:
+                        type: string
+                      toAccountId:
+                        type: string
+                      amount:
+                        type: string
+                      transactionId:
+                        type: string
+                        description: ID of the transfer transaction
         '400':
-          $ref: '../responses/common.yml#/BadRequest'
+          description: >-
+            Invalid body, same source and destination, different currencies, invalid amount,
+            or a deactivated account (code ACCOUNT_CLOSED)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '404':

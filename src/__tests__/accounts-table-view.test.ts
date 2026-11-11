@@ -91,7 +91,9 @@ describe('accounts table view integration wiring', () => {
         }));
       `)
     );
-    expect(pageSource).toContain(': formatAccountType(account.type);');
+    expect(read('src/services/account-page-data.service.ts')).toContain(
+      ': formatAccountType(account.type),'
+    );
   });
 
   it('persists the selected view mode and rebinds table behavior across Astro page transitions', () => {

@@ -3,7 +3,7 @@
  * DATABASE_URL at real data must still never have that file opened by tests.
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resolveTestDatabaseUrl } from '@/lib/test-helpers/test-database-url';
@@ -39,14 +39,12 @@ describe('resolveTestDatabaseUrl', () => {
 describe('test preload', () => {
   let sandbox = '';
 
-  // The preload reads src/db/setup.sql from the cwd, so the sandbox gets a copy
+  // The preload migrates from drizzle/sqlite under the cwd, so the sandbox gets a copy
   beforeEach(() => {
     sandbox = mkdtempSync(join(tmpdir(), 'aw-preload-'));
-    mkdirSync(join(sandbox, 'src', 'db'), { recursive: true });
-    copyFileSync(
-      join(REPO_ROOT, 'src', 'db', 'setup.sql'),
-      join(sandbox, 'src', 'db', 'setup.sql')
-    );
+    cpSync(join(REPO_ROOT, 'drizzle', 'sqlite'), join(sandbox, 'drizzle', 'sqlite'), {
+      recursive: true,
+    });
     writeFileSync(join(sandbox, '.env'), 'DATABASE_URL=db/.dev.db\n');
   });
 

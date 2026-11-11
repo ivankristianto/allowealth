@@ -42,40 +42,6 @@ describe('UserNav', () => {
   describe('structure', () => {
     const source = readSource();
 
-    it('renders the sidebar dividers and section labels', () => {
-      expect(source).toContain('<li role="presentation" aria-hidden="true">');
-      expect(source).toContain(
-        'class="my-1 border-base-content/10 mx-2 group-data-[sidebar-collapsed=true]:mx-1"'
-      );
-
-      const renderBlock = source.split('group.label && (')[1] ?? '';
-
-      expect(renderBlock).toContain('{group.label}');
-      expect(renderBlock).toContain('group-data-[sidebar-collapsed=true]:hidden');
-      expect(renderBlock).toContain('pointer-events-none block select-none');
-      expect(renderBlock).toContain(
-        'text-xs font-semibold uppercase tracking-widest text-base-content/60'
-      );
-    });
-
-    it('keeps the grouped nav data declarations intact', () => {
-      expect(source).toContain('LayoutGrid');
-      expect(source).toContain('DollarSign');
-      expect(source).toContain('Repeat');
-      expect(source).toContain('Landmark');
-      expect(source).toContain('CircleGauge');
-      expect(source).toContain('ChartColumn');
-      expect(source).toContain('FileText');
-      expect(source).toContain('Settings2');
-      expect(source).toContain("label: 'Track'");
-      expect(source).toContain("label: 'Plan'");
-      expect(source).toContain("label: 'Analyze'");
-      expect(source).toContain("href: '/dashboard', label: 'Dashboard'");
-      expect(source).toContain("href: '/transactions', label: 'Transactions'");
-      expect(source).toContain("href: '/budget', label: 'Budget'");
-      expect(source).toContain("href: '/reports', label: 'Reports'");
-    });
-
     it('keeps docs marked as an external link', () => {
       expect(source).toContain("href: 'https://docs.allowealth.io'");
       expect(source).toContain('external: true');

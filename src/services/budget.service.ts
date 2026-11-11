@@ -1,5 +1,7 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq, and, gte, lte, sql, inArray, or, isNull } from 'drizzle-orm';
+import { sumAmount } from './base/money-sql';
+import { calculateBudgetStatus } from '@/lib/budget/alerts';
 import { nanoid } from 'nanoid';
 import { parse } from 'valibot';
 import {
@@ -37,6 +39,19 @@ import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { createCrudService } from './base/crud.factory';
 import { WorkspaceMetaService } from './workspace-meta.service';
 import type { Currency } from '@/lib/constants/currency';
+
+interface MonthBudgetRow {
+  id: string;
+  category_id: string;
+  budget_amount: string;
+  category: {
+    name: string;
+    type: string;
+    icon: string;
+    color: string;
+    is_active: boolean;
+  } | null;
+}
 
 export interface BudgetOverview {
   budget_id: string;
@@ -213,7 +228,7 @@ export class BudgetService {
     const monthTransactions = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS NUMERIC))`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(
@@ -256,6 +271,15 @@ export class BudgetService {
       recurringByCategory.set(template.category_id, list);
     }
 
+    return this.summarizeMonth(expenseBudgets, spentByCategory, recurringByCategory);
+  }
+
+  /** Per-category overview rows and totals for one month's budgets and spending. */
+  private summarizeMonth(
+    expenseBudgets: MonthBudgetRow[],
+    spentByCategory: Map<string, string>,
+    recurringByCategory: Map<string, string[]>
+  ): BudgetSummary {
     // Calculate total budget for percentage calculation
     const totalBudgetAmount = expenseBudgets.reduce(
       (sum, b) => sum + parseFloat(b.budget_amount || '0'),
@@ -279,12 +303,8 @@ export class BudgetService {
       const calculatedPercentage =
         totalBudgetAmount > 0 ? (budgetAmountNum / totalBudgetAmount) * 100 : 0;
 
-      let status: 'ok' | 'warning' | 'exceeded' = 'ok';
-      if (percentageUsed > 100) {
-        status = 'exceeded';
-      } else if (percentageUsed >= 80) {
-        status = 'warning';
-      }
+      const budgetStatus = calculateBudgetStatus(budgetAmount, spentAmount);
+      const status = budgetStatus === 'healthy' ? 'ok' : budgetStatus;
 
       return {
         budget_id: budget.id,
@@ -326,6 +346,78 @@ export class BudgetService {
   }
 
   /**
+   * Budget summaries for several months from one budgets query and one spending query.
+   * Recurring totals are left empty: history and trends never read them.
+   */
+  private async fetchMonthlySummaries(
+    workspaceId: string,
+    currency: Currency,
+    periods: Array<{ year: number; month: number }>
+  ): Promise<BudgetSummary[]> {
+    const windows = periods.map(({ year, month }) => ({
+      year,
+      month,
+      // Same local-time bounds as fetchMonthlyOverviewFromDb, so each month buckets identically.
+      start: new Date(year, month - 1, 1),
+      end: new Date(year, month, 0, 23, 59, 59),
+    }));
+    const monthIndex = (year: number, month: number) => year * 12 + month;
+    const indexes = windows.map((w) => monthIndex(w.year, w.month));
+    const budgets = this.schema.budgets;
+    const tx = this.schema.transactions;
+    const toSeconds = (date: Date) => Math.floor(date.getTime() / 1000);
+    const bucket = sql<number>`CASE ${sql.join(
+      windows.map(
+        (w, i) =>
+          sql`WHEN ${tx.transaction_date} BETWEEN ${toSeconds(w.start)} AND ${toSeconds(w.end)} THEN ${i}`
+      ),
+      sql` `
+    )} END`;
+
+    const [periodBudgets, spending] = await Promise.all([
+      this.db.query.budgets.findMany({
+        where: and(
+          eq(budgets.workspace_id, workspaceId),
+          eq(budgets.currency, currency),
+          sql`(${budgets.year} * 12 + ${budgets.month}) BETWEEN ${Math.min(...indexes)} AND ${Math.max(...indexes)}`
+        ),
+        with: { category: true },
+      }),
+      (this.db as any)
+        .select({ bucket, category_id: tx.category_id, total: sumAmount(tx.amount) })
+        .from(tx)
+        .where(
+          and(
+            eq(tx.workspace_id, workspaceId),
+            eq(tx.type, 'expense'),
+            eq(tx.currency, currency),
+            gte(tx.transaction_date, new Date(Math.min(...windows.map((w) => w.start.getTime())))),
+            lte(tx.transaction_date, new Date(Math.max(...windows.map((w) => w.end.getTime())))),
+            sql`${tx.deleted_at} IS NULL`
+          )
+        )
+        .groupBy(bucket, tx.category_id) as Promise<
+        Array<{ bucket: number | null; category_id: string; total: string }>
+      >,
+    ]);
+
+    return windows.map((w, i) => {
+      const expenseBudgets = periodBudgets.filter(
+        (b) =>
+          b.year === w.year &&
+          b.month === w.month &&
+          b.category?.type === 'expense' &&
+          b.category?.is_active === true
+      );
+      const spentByCategory = new Map<string, string>();
+      for (const row of spending) {
+        if (row.bucket === i) spentByCategory.set(row.category_id, row.total || '0');
+      }
+      return this.summarizeMonth(expenseBudgets, spentByCategory, new Map());
+    });
+  }
+
+  /**
    * Get budget history for multiple months
    */
   async getBudgetHistory(
@@ -340,16 +432,16 @@ export class BudgetService {
     }
 
     const now = new Date();
-    const history: MonthlyBudgetHistory[] = [];
-
-    // Get data for each of the last N months
-    for (let i = 0; i < months; i++) {
+    const periods = Array.from({ length: months }, (_, i) => {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
+      return { year: date.getFullYear(), month: date.getMonth() + 1 };
+    });
+    const summaries = await trackQuery('BudgetService.getBudgetHistory', perf, () =>
+      this.fetchMonthlySummaries(workspaceId, currency, periods)
+    );
 
-      const overview = await this.getMonthlyOverview(workspaceId, year, month, currency, perf);
-
+    return periods.map(({ year, month }, i) => {
+      const overview = summaries[i]!;
       const totalBudget = overview.total_budget;
       const totalSpent = overview.total_spent;
       const percentageUsed = !decimalIsZero(totalBudget)
@@ -359,7 +451,7 @@ export class BudgetService {
       // Safely get month name with fallback
       const monthName = MONTH_NAMES[month - 1] ?? `Month ${month}`;
 
-      history.push({
+      return {
         month,
         year,
         month_name: monthName,
@@ -370,10 +462,8 @@ export class BudgetService {
         categories_exceeded: overview.categories_exceeded,
         categories_warning: overview.categories_warning,
         percentage_used: Math.round(percentageUsed * 100) / 100,
-      });
-    }
-
-    return history;
+      };
+    });
   }
 
   /**
@@ -406,16 +496,21 @@ export class BudgetService {
       }
     >();
 
-    // Collect per-category data for each month (oldest first)
-    for (let i = months - 1; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
+    // Oldest month first
+    const periods = Array.from({ length: months }, (_, k) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (months - 1 - k), 1);
+      return { year: date.getFullYear(), month: date.getMonth() + 1 };
+    });
+    const summaries = await trackQuery('BudgetService.getCategoryTrends', perf, () =>
+      this.fetchMonthlySummaries(workspaceId, currency, periods)
+    );
+
+    for (const [k, { year, month }] of periods.entries()) {
       const monthName = MONTH_NAMES[month - 1] ?? `Month ${month}`;
 
       monthColumns.push({ month, year, month_name: monthName });
 
-      const overview = await this.getMonthlyOverview(workspaceId, year, month, currency, perf);
+      const overview = summaries[k]!;
 
       for (const cat of overview.categories) {
         let entry = categoryMap.get(cat.category_id);
@@ -558,7 +653,7 @@ export class BudgetService {
 
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(sum(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
+        total: sumAmount(this.schema.transactions.amount),
       })
       .from(this.schema.transactions)
       .where(

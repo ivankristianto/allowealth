@@ -21,8 +21,13 @@ export const POST: APIRoute = async (context) => {
     const result = await MigrationService.runMigrations();
 
     if (!result.success) {
-      logError('Migration run failed', result.error);
-      return errorResponse(result.error ?? 'Migration failed', 500, 'MIGRATION_RUN_ERROR');
+      const errorId = logError('Migration run failed', result.error);
+      return errorResponse(
+        `Migration failed. Check the server logs for errorId ${errorId}.`,
+        500,
+        'MIGRATION_RUN_ERROR',
+        { errorId }
+      );
     }
 
     return successResponse({ success: true });
@@ -31,7 +36,9 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    logError('Unexpected error running migrations', error);
-    return errorResponse('Unexpected error running migrations', 500, 'MIGRATION_RUN_ERROR');
+    const errorId = logError('Unexpected error running migrations', error);
+    return errorResponse('Unexpected error running migrations', 500, 'MIGRATION_RUN_ERROR', {
+      errorId,
+    });
   }
 };

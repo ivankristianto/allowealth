@@ -6,11 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { Window } from 'happy-dom';
-import {
-  initBulkAddAccounts,
-  validateRow,
-  VALID_ACCOUNT_TYPES,
-} from '../../../pages/accounts/bulk-add-accounts.client';
+import { initBulkAddAccounts, validateRow, VALID_ACCOUNT_TYPES } from './BulkAddAccounts.client';
 
 const VALID_CURRENCIES = ['IDR', 'USD'];
 

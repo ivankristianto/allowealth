@@ -77,5 +77,9 @@ paths:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
               example:
                 success: false
-                error: Failed to fetch diagnostics
-                code: DIAGNOSTICS_ERROR
+                error:
+                  message: Failed to fetch diagnostics
+                  code: DIAGNOSTICS_ERROR
+                  details:
+                    errorId: 3f9a1c2b
+                    errorName: DrizzleQueryError

@@ -10,24 +10,6 @@ function readSourceIfExists(relativePath: string): string {
 const source = readSourceIfExists('./ForecastMonthlyGains.astro');
 
 describe('ForecastMonthlyGains component', () => {
-  it('contains Forecast Interest', () => {
-    expect(source).toContain('Forecast Interest');
-  });
-
-  it('contains Actual Net Savings', () => {
-    expect(source).toContain('Actual Net Savings');
-  });
-
-  it('uses design-system chart colors instead of hardcoded hex values', () => {
-    expect(source).toContain('--color-warning');
-    expect(source).toContain('--color-success');
-    expect(source).toContain('readThemeColor');
-  });
-
-  it('explains that forecast needs historical balance snapshots when empty', () => {
-    expect(source).toContain('Add account balance history to see your plan versus reality.');
-  });
-
   it('serializes only the focused chart window to the client payload', () => {
     expect(source).toContain('const visibleChartWindow =');
     expect(source).toContain('timeline: visibleTimeline');

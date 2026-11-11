@@ -10,7 +10,10 @@ describe('settings page demo mode restrictions', () => {
   });
 
   it('hides invitation management and shows a demo-mode notice', () => {
-    const source = readFileSync('src/pages/settings/index.astro', 'utf8');
+    const source = readFileSync(
+      'src/components/organisms/settings/SettingsMembersPanel.astro',
+      'utf8'
+    );
 
     expect(source).toContain('isAdmin && !demoMode && (');
     expect(source).toContain('!demoMode && isAdmin && invitations.length > 0 && (');

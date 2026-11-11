@@ -1,6 +1,7 @@
 {
   "name": "allowealth",
   "version": "0.33.0",
+  "packageManager": "bun@1.4.4",
   "type": "module",
   "private": true,
   "scripts": {
@@ -33,7 +34,6 @@
     "stylelint:fix": "stylelint \"**/*.css\" --fix --quiet --formatter compact",
     "typecheck": "astro check --minimumSeverity hint --minimumFailingSeverity error",
     "prepare": "husky",
-    "db:setup": "bun run src/db/setup.ts",
     "db:migrate": "bun run src/db/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",

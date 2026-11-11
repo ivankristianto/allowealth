@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getAuthenticatedUser } from '@/lib/api-utils';
 import { errorResponse, successResponse } from '@/lib/api-utils';
 import { diagnosticsService } from '@/services';
+import { logError } from '@/lib/logger';
 
 /**
  * GET /api/admin/diagnostics
@@ -26,15 +27,15 @@ export const GET: APIRoute = async (context) => {
 
     return successResponse(diagnostics);
   } catch (error) {
-    console.error('Diagnostics API error:', error);
-
-    // Handle authentication errors
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
+    // Drizzle messages carry SQL and params, so even super admins get only the error class.
+    const errorId = logError('Diagnostics API error', error);
     return errorResponse('Failed to fetch diagnostics', 500, 'DIAGNOSTICS_ERROR', {
-      message: error instanceof Error ? error.message : String(error),
+      errorId,
+      errorName: error instanceof Error ? error.name : typeof error,
     });
   }
 };

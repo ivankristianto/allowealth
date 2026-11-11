@@ -1,4 +1,7 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { ValiError } from 'valibot';
+import { logError } from '@/lib/logger';
+import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
 import { tools as accountTools, handleListCategories, handleListAccounts } from './accounts.js';
 import {
@@ -80,10 +83,14 @@ export async function handleToolCall(
         };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    // Agents need validation detail to fix their arguments; anything else may carry SQL and params.
+    if (error instanceof ServiceError || error instanceof ValiError) {
+      return { isError: true, content: [{ type: 'text', text: `Error: ${error.message}` }] };
+    }
+    const errorId = logError(`MCP tool ${name} failed`, error);
     return {
       isError: true,
-      content: [{ type: 'text', text: `Error: ${message}` }],
+      content: [{ type: 'text', text: `Error: tool ${name} failed (errorId ${errorId}).` }],
     };
   }
 }

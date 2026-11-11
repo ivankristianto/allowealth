@@ -1,15 +1,5 @@
 ---
-/**
- * Calculator Results Partial Component
- *
- * Server-rendered fragment for calculator results.
- * Displays summary cards and growth schedule table.
- *
- * @param {number} totalInterest - Total interest earned
- * @param {number} finalBalance - Final balance after interest
- * @param {Array<YearlyData>} yearlyData - Yearly breakdown data
- * @param {string} currency - Currency code for formatting (IDR or USD)
- */
+/** Compound calculator results: summary cards and growth schedule, served by ?_render=html. */
 
 import CalculatorResultCard from '@/components/molecules/CalculatorResultCard.astro';
 import GrowthScheduleTable, {
