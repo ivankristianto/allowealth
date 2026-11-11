@@ -236,6 +236,23 @@ export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
   });
 }
 
+export interface WorkspaceUser {
+  userId: string;
+  workspaceId: string;
+  role: 'admin' | 'member';
+}
+
+/**
+ * getAuthenticatedUser for workspace-scoped routes. Super admins have no
+ * workspace, so they get Error('Unauthorized') instead of a null workspaceId.
+ */
+export function getWorkspaceUser(context: APIContext): WorkspaceUser {
+  const auth = getAuthenticatedUser(context);
+  if (auth.role === 'super_admin' || !auth.workspaceId) throw new Error('Unauthorized');
+
+  return { userId: auth.userId, workspaceId: auth.workspaceId, role: auth.role };
+}
+
 /**
  * Get user ID from session
  *

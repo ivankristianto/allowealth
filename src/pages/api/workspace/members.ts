@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { workspaceService, userService } from '@/services';
 import { logAuditEvent } from '@/lib/audit-log';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { WorkspaceServiceError, UserServiceError } from '@/services/service-errors';
 
@@ -13,7 +13,7 @@ import { WorkspaceServiceError, UserServiceError } from '@/services/service-erro
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     // Get workspace members
     const members = await workspaceService.getMembers(auth.workspaceId);
@@ -49,7 +49,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { url } = context;
 
     // Check admin role

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { transactionService } from '@/services';
 import type { CSVRow } from '@/services/transaction.service';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
 // File upload limits
@@ -14,7 +14,7 @@ const MAX_ROW_COUNT = 500;
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { request } = context;
 
     // Parse form data with file

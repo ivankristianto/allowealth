@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { safeParse } from 'valibot';
 import { transactionService } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { transactionIdSchema } from '@/lib/validation/transactions';
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
@@ -19,7 +19,7 @@ import TransactionHistoryPartial from '@/components/partials/TransactionHistoryP
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { id } = context.params;
     const { url } = context;
     const render = createRenderHelper(url, context.request);

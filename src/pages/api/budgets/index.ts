@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { createBudgetAPISchema } from '@/lib/validation';
@@ -18,7 +18,7 @@ import { isValidCurrency } from '@/lib/constants/currency';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     // Parse required query params
     const monthParam = context.url.searchParams.get('month');
@@ -85,7 +85,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     const validation = await validateBody(context.request, createBudgetAPISchema);
 

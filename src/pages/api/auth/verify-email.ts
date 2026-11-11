@@ -66,17 +66,18 @@ export const GET: APIRoute = async ({ request, redirect }) => {
     }
 
     // If user is workspace owner (admin role), activate workspace and seed categories
-    if (user.role === 'admin') {
+    const workspaceId = user.workspace_id;
+    if (user.role === 'admin' && workspaceId) {
       try {
         const workspaceService = new WorkspaceService(db);
-        await workspaceService.activateWorkspace(user.workspace_id);
+        await workspaceService.activateWorkspace(workspaceId);
 
         const accountCategoryService = new AccountCategoryService(db);
-        await accountCategoryService.seedDefaultCategories(user.workspace_id, user.id);
+        await accountCategoryService.seedDefaultCategories(workspaceId, user.id);
 
         log.info('Workspace activated and categories seeded', {
           userId: user.id,
-          workspaceId: user.workspace_id,
+          workspaceId,
         });
       } catch (activationError) {
         // Don't fail verification if activation fails - user can still login

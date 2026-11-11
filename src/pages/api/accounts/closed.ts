@@ -1,11 +1,6 @@
 import type { APIRoute } from 'astro';
 import { accountService } from '@/services';
-import {
-  successResponse,
-  errorResponse,
-  getAuthenticatedUser,
-  getQueryParams,
-} from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser, getQueryParams } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { ACCOUNT_TYPE_LABELS, type AccountType, type Currency } from '@/lib/types/account';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -17,7 +12,7 @@ import { workspaceMetaService } from '@/services';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const params = getQueryParams(new URL(context.request.url));
 
     const validTypes = Object.keys(ACCOUNT_TYPE_LABELS);

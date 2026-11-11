@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
 import { recurringOccurrenceService, RecurringServiceError, ServiceError } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 
 export const POST: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const id = context.params.id;
 
     if (!id) {

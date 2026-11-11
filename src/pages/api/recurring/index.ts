@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  getAuthenticatedUser,
+  getWorkspaceUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { createRecurringTemplateAPISchema } from '@/lib/validation/recurring';
@@ -45,7 +45,7 @@ export const GET: APIRoute = async (context) => {
   }
 
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
 
     const status = parseStatusFilter(context.url.searchParams.get('status'));
@@ -109,7 +109,7 @@ export const POST: APIRoute = async (context) => {
   }
 
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
 
     const contentType = context.request.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {

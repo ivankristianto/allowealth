@@ -6,7 +6,7 @@ import {
   RecurringServiceError,
   ServiceError,
 } from '@/services';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
@@ -40,7 +40,7 @@ export const GET: APIRoute = async (context) => {
   }
 
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
 
     const month = parseMonth(context.url.searchParams.get('month'));

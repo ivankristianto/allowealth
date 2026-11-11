@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { transactionService, workspaceMetaService } from '@/services';
-import { errorResponse, getAuthenticatedUser, isValidDate } from '@/lib/api-utils';
+import { errorResponse, getWorkspaceUser, isValidDate } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { isValidCurrency } from '@/lib/constants/currency';
 
@@ -10,7 +10,7 @@ import { isValidCurrency } from '@/lib/constants/currency';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const auth = getAuthenticatedUser(context);
+    const auth = getWorkspaceUser(context);
     const { url } = context;
 
     // Parse filter params (same as list endpoint)
