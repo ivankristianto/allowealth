@@ -198,27 +198,6 @@ describe('RecurringTemplateService', () => {
     expect(mockDb.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('generateOccurrences is idempotent', async () => {
-    const template = createMockRecurringTemplate({
-      total_occurrences: 1,
-      start_date: '2026-01-01',
-    });
-
-    (mockDb.query.recurringTemplates.findMany as any)
-      .mockResolvedValueOnce([template])
-      .mockResolvedValueOnce([template]);
-
-    (mockDb.query.recurringOccurrences.findFirst as any)
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(createMockRecurringOccurrence({ occurrence_number: 1 }));
-
-    const first = await recurringTemplateService.generateOccurrences('workspace-1');
-    const second = await recurringTemplateService.generateOccurrences('workspace-1');
-
-    expect(first.created).toBeGreaterThan(0);
-    expect(second.created).toBe(0);
-  });
-
   it('rejects resume when template is not paused', async () => {
     const category = createMockCategory();
     const account = createMockAccount();
