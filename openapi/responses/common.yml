@@ -7,7 +7,7 @@ BadRequest:
         $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
 
 Unauthorized:
-  description: Unauthorized - authentication required
+  description: Unauthorized - authentication required, or a workspace route called by a user with no workspace (super admin)
   content:
     application/json:
       schema:
