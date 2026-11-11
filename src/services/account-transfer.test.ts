@@ -203,6 +203,16 @@ describe('AccountService.transfer()', () => {
       expect((await rejection(transfer('savings', 'missing', '1'))).statusCode).toBe(404);
     });
 
+    it('rejects a deleted account with 404 and leaves it untouched', async () => {
+      seedAccount(memory.raw, 'savings', { balance: '1000' });
+      seedAccount(memory.raw, 'gone', { balance: '50' });
+      memory.raw.run(`UPDATE accounts SET deleted_at = 1 WHERE id = 'gone'`);
+
+      expect((await rejection(transfer('savings', 'gone', '1'))).statusCode).toBe(404);
+      expect((await rejection(transfer('gone', 'savings', '1'))).statusCode).toBe(404);
+      expect(balances()).toEqual({ savings: '1000', gone: '50' });
+    });
+
     it('rejects an account from another workspace with 404', async () => {
       seedAccount(memory.raw, 'savings', { balance: '1000' });
       memory.raw.run(`INSERT INTO workspaces (id, name) VALUES ('ws-other', 'Other')`);

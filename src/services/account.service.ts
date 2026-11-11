@@ -469,7 +469,13 @@ export class AccountService {
       tx
         .select()
         .from(accounts)
-        .where(and(eq(accounts.id, id), eq(accounts.workspace_id, workspaceId)))
+        .where(
+          and(
+            eq(accounts.id, id),
+            eq(accounts.workspace_id, workspaceId),
+            isNull(accounts.deleted_at)
+          )
+        )
         .get();
 
     let result: TransferResult & { auditValue: Record<string, unknown> };
