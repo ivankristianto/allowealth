@@ -7,12 +7,10 @@ export const auditLogs = sqliteTable(
   'audit_logs',
   {
     id: text('id').primaryKey(),
-    workspace_id: text('workspace_id')
-      .notNull()
-      .references(() => workspaces.id, { onDelete: 'cascade' }),
-    user_id: text('user_id')
-      .notNull()
-      .references(() => users.id),
+    // Nullable so the trail outlives a deleted workspace or user, and so
+    // super-admin events with no workspace can be recorded.
+    workspace_id: text('workspace_id').references(() => workspaces.id, { onDelete: 'set null' }),
+    user_id: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     action: text('action').notNull(),
     entity_type: text('entity_type').notNull(),
     entity_id: text('entity_id'),

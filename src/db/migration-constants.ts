@@ -9,4 +9,4 @@
  * migrate.ts imports bun:sqlite. This file has zero runtime dependencies and
  * is safe to import from middleware.
  */
-export const EXPECTED_MIGRATION_COUNT = 7;
+export const EXPECTED_MIGRATION_COUNT = 8;

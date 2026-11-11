@@ -680,16 +680,16 @@ CREATE INDEX IF NOT EXISTS `oauthClientAssertion_expiresAt_idx` ON `oauthClientA
 
 CREATE TABLE IF NOT EXISTS `audit_logs` (
   `id` text PRIMARY KEY NOT NULL,
-  `workspace_id` text NOT NULL,
-  `user_id` text NOT NULL,
+  `workspace_id` text,
+  `user_id` text,
   `action` text NOT NULL,
   `entity_type` text NOT NULL,
   `entity_id` text,
   `old_value` text,
   `new_value` text,
   `created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
-  FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+  FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE set null,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 
 CREATE INDEX IF NOT EXISTS `audit_logs_workspace_id_idx` ON `audit_logs` (`workspace_id`);

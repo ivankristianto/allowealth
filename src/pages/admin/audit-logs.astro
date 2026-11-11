@@ -18,10 +18,10 @@ type AuditLogRow = {
   action: string;
   entityType: string;
   entityId: string | null;
-  workspaceId: string;
+  workspaceId: string | null;
   workspaceName: string | null;
   createdAt: Date | number | string;
-  userId: string;
+  userId: string | null;
   userName: string | null;
   userEmail: string | null;
   oldValue: string | null;

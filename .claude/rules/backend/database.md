@@ -253,7 +253,7 @@ const history = await db.select().from(budgetHistory); // Shows initial creation
 
 - ❌ **Include `create` action in history/audit queries** - only `update`/`delete` count
 - ❌ **Use fake workspace IDs like `'system'` for audit log fallback** - `audit_logs.workspace_id` has FK constraint on `workspaces.id`; silently fails via `logAuditEvent` catch
-- ✅ **Guard audit logging with `if (workspaceId)` check** - skip audit for workspace-less users until schema migration makes `workspace_id` nullable
+- ✅ **Pass `workspaceId: null` for events outside a workspace** (super-admin sign-ins) - `audit_logs.workspace_id` and `user_id` are nullable and `ON DELETE SET NULL`, so rows outlive their workspace and user
 
 ## Common Patterns
 
