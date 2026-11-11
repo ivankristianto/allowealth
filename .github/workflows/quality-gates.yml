@@ -270,15 +270,21 @@ jobs:
       - name: Analyze bundle size
         id: bundle-analysis
         run: |
-          echo "Analyzing bundle..."
-          bun run scripts/analyze-bundle.ts > bundle-report.md
-          echo "report_path=bundle-report.md" >> $GITHUB_OUTPUT
+          set -o pipefail
+          echo "report_path=bundle-report.md" >> "$GITHUB_OUTPUT"
+          # Exits 1 when a page is over the per-page budget; tee keeps the table in the job log.
+          status=0
+          bun run scripts/analyze-bundle.ts | tee bundle-report.md || status=$?
+          cat bundle-report.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
       - name: Post bundle size report to PR
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: bundle-size-report
           path: bundle-report.md
+        # Post the table even when the budget check fails, since that is when it matters.
+        if: ${{ !cancelled() && steps.bundle-analysis.outcome != 'skipped' }}
 
       - name: Upload bundle stats as artifact
         uses: actions/upload-artifact@v4
@@ -289,3 +295,4 @@ jobs:
             dist/stats.json
             bundle-report.md
           retention-days: 30
+        if: ${{ !cancelled() }}

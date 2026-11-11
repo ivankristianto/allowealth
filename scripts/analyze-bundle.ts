@@ -1,173 +1,248 @@
 #!/usr/bin/env bun
 
 /**
- * Bundle Size Analyzer
- *
- * IMPORTANT:
- * This reports ACTUAL emitted client JS gzip sizes from dist/client/_astro/*.js.
- * We intentionally avoid summing stats.json nodeParts.gzipLength because that is
- * module-level and can overcount compared to shipped chunk files.
+ * Bundle budget check: gzipped JS each page loads on first paint, from the built
+ * script graph. Prints a Markdown report and exits 1 when a page is over budget.
  */
 
 import { existsSync, readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { join, posix } from 'path';
 import { gzipSync } from 'zlib';
 
-interface ChunkInfo {
-  name: string;
-  rawSize: number;
-  gzipSize: number;
+// From .claude/rules/principles.md ("Bundle budget: 250 kB gzipped client JS").
+export const PAGE_BUDGET_BYTES = 250 * 1024;
+
+export interface PageReport {
+  route: string;
+  component: string;
+  initialBytes: number;
+  lazyBytes: number;
+  chunkCount: number;
 }
 
-const BUDGET_LIMITS = {
-  total: 250 * 1024, // 250 kB
-  chartjs: 180 * 1024, // 180 kB
-  motion: 60 * 1024, // 60 kB
-};
-
-function formatBytes(bytes: number): string {
-  return `${(bytes / 1024).toFixed(2)} kB`;
+export interface BundleAnalysis {
+  pages: PageReport[];
+  decimalLeakChunks: string[];
+  overBudget: PageReport[];
 }
 
-function getStatus(actual: number, limit: number): string {
-  const percentage = (actual / limit) * 100;
-  if (percentage > 100) return '🔴 Over Budget';
-  if (percentage > 90) return '🟡 Near Limit';
-  return '✅ Under Budget';
+interface RouteInfo {
+  routeData: { type: string; route: string; component: string; origin?: string };
+  scripts: Array<{ type: string; value: string }>;
 }
 
-function getPercentage(actual: number, limit: number): string {
-  const percentage = Math.round((actual / limit) * 100);
-  return `${percentage}%`;
+interface AstroManifest {
+  routes: RouteInfo[];
+  entryModules: Record<string, string>;
 }
 
-function loadClientChunks(astroDir: string): ChunkInfo[] {
-  const jsFiles = readdirSync(astroDir).filter((name) => name.endsWith('.js'));
+const STATIC_IMPORT =
+  /\b(?:import|export)\s*(?:[\w$*{}\s,]*?\bfrom\s*)?["'`](\.{1,2}\/[^"'`]+)["'`]/g;
+const DYNAMIC_IMPORT = /\bimport\(\s*["'`](\.{1,2}\/[^"'`]+)["'`]\s*\)/g;
+const RENDER_SCRIPT = /renderScript\(\$\$result,\s*"([^"]+)"\)/g;
+const DECIMAL_MARKER = /(?:from\s*['"]decimal\.js['"]|[/"']decimal\.js(?:[/"']|$))/i;
 
-  return jsFiles.map((name) => {
-    const filePath = join(astroDir, name);
-    const content = readFileSync(filePath);
-
-    return {
-      name,
-      rawSize: content.length,
-      gzipSize: gzipSync(content).length,
-    };
-  });
+export function findImports(source: string): { staticImports: string[]; dynamicImports: string[] } {
+  return {
+    staticImports: [...source.matchAll(STATIC_IMPORT)].map((match) => match[1]),
+    dynamicImports: [...source.matchAll(DYNAMIC_IMPORT)].map((match) => match[1]),
+  };
 }
 
-function sumByPattern(chunks: ChunkInfo[], pattern: RegExp): number {
-  return chunks
-    .filter((chunk) => pattern.test(chunk.name))
-    .reduce((sum, chunk) => sum + chunk.gzipSize, 0);
+export function findRenderedScripts(source: string): string[] {
+  return [...source.matchAll(RENDER_SCRIPT)].map((match) => match[1]);
 }
 
-function hasPotentialDecimalLeak(astroDir: string, chunks: ChunkInfo[]): boolean {
-  const decimalPattern = /(?:from\s*['"]decimal\.js['"]|[/"']decimal\.js(?:[/"']|$))/i;
-
-  return chunks.some((chunk) => {
-    const filePath = join(astroDir, chunk.name);
-    const content = readFileSync(filePath, 'utf-8');
-    return decimalPattern.test(content);
-  });
+/** Pulls the serialized route manifest out of the server build (the `deserializeManifest({...})` call). */
+export function readAstroManifest(serverChunksDir: string): AstroManifest {
+  const marker = 'deserializeManifest({';
+  for (const name of readdirSync(serverChunksDir).filter((file) => file.endsWith('.mjs'))) {
+    const source = readFileSync(join(serverChunksDir, name), 'utf-8');
+    const callStart = source.indexOf(marker);
+    if (callStart === -1) continue;
+    const jsonStart = callStart + marker.length - 1;
+    const jsonEnd = source.indexOf('});', jsonStart);
+    return JSON.parse(source.slice(jsonStart, jsonEnd + 1)) as AstroManifest;
+  }
+  throw new Error(`Astro manifest not found in ${serverChunksDir}. Did the build change shape?`);
 }
 
-function analyzeBundle(): string {
-  const distDir = join(process.cwd(), 'dist');
+/** Visits every file reachable through static imports, starting from `entries` (paths relative to `root`). */
+export function walkStaticGraph(
+  entries: string[],
+  readFile: (relativePath: string) => string,
+  onFile?: (relativePath: string, source: string) => void
+): Set<string> {
+  const seen = new Set<string>();
+  const queue = [...entries];
+  while (queue.length > 0) {
+    const file = queue.pop() as string;
+    if (seen.has(file)) continue;
+    seen.add(file);
+    const source = readFile(file);
+    onFile?.(file, source);
+    for (const specifier of findImports(source).staticImports) {
+      queue.push(posix.join(posix.dirname(file), specifier));
+    }
+  }
+  return seen;
+}
+
+function pageEntryKey(component: string): string {
+  return `\u0000virtual:astro:page:${component.replace(/\.(astro|md|mdx|html)$/, '@_@$1')}`;
+}
+
+function createCachedReader(root: string): (relativePath: string) => string {
+  const cache = new Map<string, string>();
+  return (relativePath) => {
+    let source = cache.get(relativePath);
+    if (source === undefined) {
+      const absolutePath = join(root, relativePath);
+      source = existsSync(absolutePath) ? readFileSync(absolutePath, 'utf-8') : '';
+      cache.set(relativePath, source);
+    }
+    return source;
+  };
+}
+
+export function analyzeBuild(distDir: string, budgetBytes = PAGE_BUDGET_BYTES): BundleAnalysis {
+  const serverDir = join(distDir, 'server');
   const clientDir = join(distDir, 'client');
-  const astroDir = join(clientDir, '_astro');
-
-  if (!existsSync(astroDir)) {
+  if (!existsSync(join(clientDir, '_astro'))) {
     throw new Error('Client build not found. Run `bun run build` first.');
   }
 
-  const clientChunks = loadClientChunks(astroDir);
-  const sortedChunks = [...clientChunks].sort((a, b) => b.gzipSize - a.gzipSize);
-
-  const totalGzipSize = clientChunks.reduce((sum, chunk) => sum + chunk.gzipSize, 0);
-
-  // Match manual chunk names from astro.config.ts
-  const chartjsSize = sumByPattern(clientChunks, /^chartjs\..*\.js$/);
-  const motionSize = sumByPattern(clientChunks, /^motion\..*\.js$/);
-  const hasDecimalLeak = hasPotentialDecimalLeak(astroDir, clientChunks);
-
-  let report = '## 📊 Bundle Size Report\n\n';
-  report += '> Measured from emitted files in `dist/client/_astro/*.js` (actual gzip bytes)\n\n';
-
-  report += '### Summary\n\n';
-  report += '| Category | Size (gzipped) | Budget | Usage | Status |\n';
-  report += '|----------|----------------|--------|-------|--------|\n';
-  report += `| **Total Client JS** | ${formatBytes(totalGzipSize)} | ${formatBytes(BUDGET_LIMITS.total)} | ${getPercentage(totalGzipSize, BUDGET_LIMITS.total)} | ${getStatus(totalGzipSize, BUDGET_LIMITS.total)} |\n`;
-  report += `| Chart.js | ${formatBytes(chartjsSize)} | ${formatBytes(BUDGET_LIMITS.chartjs)} | ${getPercentage(chartjsSize, BUDGET_LIMITS.chartjs)} | ${getStatus(chartjsSize, BUDGET_LIMITS.chartjs)} |\n`;
-  report += `| Motion | ${formatBytes(motionSize)} | ${formatBytes(BUDGET_LIMITS.motion)} | ${getPercentage(motionSize, BUDGET_LIMITS.motion)} | ${getStatus(motionSize, BUDGET_LIMITS.motion)} |\n`;
-
-  if (hasDecimalLeak) {
-    report += '| ⚠️ Decimal.js | detected | 0 kB | N/A | 🔴 **SHOULD NOT BE IN CLIENT** |\n';
-  }
-
-  report += '\n### Top 10 Client Chunks\n\n';
-  report += '| Chunk | Size (gzipped) | Size (raw) |\n';
-  report += '|-------|----------------|------------|\n';
-
-  for (const chunk of sortedChunks.slice(0, 10)) {
-    report += `| \`${chunk.name}\` | ${formatBytes(chunk.gzipSize)} | ${formatBytes(chunk.rawSize)} |\n`;
-  }
-
-  const largeChunks = sortedChunks.filter((chunk) => chunk.gzipSize > 50 * 1024);
-  if (largeChunks.length > 0) {
-    report += '\n### 📦 Large Chunk Breakdown (>50 kB)\n\n';
-    for (const chunk of largeChunks) {
-      report += `- \`${chunk.name}\`: ${formatBytes(chunk.gzipSize)} gzipped (${formatBytes(chunk.rawSize)} raw)\n`;
+  const manifest = readAstroManifest(join(serverDir, 'chunks'));
+  const readServer = createCachedReader(serverDir);
+  const readClient = createCachedReader(clientDir);
+  const gzipCache = new Map<string, number>();
+  const gzipSize = (file: string): number => {
+    let size = gzipCache.get(file);
+    if (size === undefined) {
+      size = gzipSync(readClient(file)).length;
+      gzipCache.set(file, size);
     }
-  }
+    return size;
+  };
+  const sumGzip = (files: Iterable<string>): number =>
+    [...files].reduce((total, file) => total + gzipSize(file), 0);
 
-  const warnings: string[] = [];
+  const pages: PageReport[] = [];
+  let renderedScriptCount = 0;
+  for (const { routeData, scripts } of manifest.routes) {
+    if (routeData.type !== 'page' || routeData.origin === 'internal') continue;
 
-  if (totalGzipSize > BUDGET_LIMITS.total) {
-    warnings.push(
-      `⚠️ **Total client bundle exceeds budget by ${formatBytes(totalGzipSize - BUDGET_LIMITS.total)}**`
-    );
-  }
-
-  if (chartjsSize > BUDGET_LIMITS.chartjs) {
-    warnings.push(
-      `⚠️ **Chart.js exceeds budget by ${formatBytes(chartjsSize - BUDGET_LIMITS.chartjs)}**`
-    );
-  }
-
-  if (motionSize > BUDGET_LIMITS.motion) {
-    warnings.push(
-      `⚠️ **Motion exceeds budget by ${formatBytes(motionSize - BUDGET_LIMITS.motion)}**`
-    );
-  }
-
-  if (hasDecimalLeak) {
-    warnings.push('🔴 **CRITICAL: Decimal.js marker found in client bundle**');
-    warnings.push('  - Decimal.js should only be used on the server');
-    warnings.push('  - Use `import type` for Decimal.js types in client code');
-  }
-
-  if (warnings.length > 0) {
-    report += '\n### ⚠️ Warnings\n\n';
-    for (const warning of warnings) {
-      report += `- ${warning}\n`;
+    const serverEntry = manifest.entryModules[pageEntryKey(routeData.component)];
+    if (!serverEntry) {
+      throw new Error(`No server chunk for ${routeData.component}. Did the build change shape?`);
     }
-  } else {
-    report += '\n### ✅ All Checks Passed\n\n';
-    report += 'All bundle size limits are within budget!\n';
+
+    const clientEntries = new Set<string>();
+    for (const script of scripts) {
+      if (script.type === 'external') clientEntries.add(script.value.replace(/^\//, ''));
+    }
+    // Over-counts components that render conditionally, so the number is an upper bound.
+    walkStaticGraph([serverEntry], readServer, (file, source) => {
+      for (const scriptId of findRenderedScripts(source)) {
+        const clientFile = manifest.entryModules[scriptId];
+        // A silent skip would let every page pass at a few kB, so fail loudly instead.
+        if (!clientFile) throw new Error(`Script ${scriptId} (from ${file}) has no client chunk.`);
+        clientEntries.add(clientFile);
+        renderedScriptCount++;
+      }
+    });
+
+    const dynamicEntries = new Set<string>();
+    const initialFiles = walkStaticGraph([...clientEntries], readClient, (file, source) => {
+      for (const specifier of findImports(source).dynamicImports) {
+        dynamicEntries.add(posix.join(posix.dirname(file), specifier));
+      }
+    });
+    const lazyFiles = [...walkStaticGraph([...dynamicEntries], readClient)].filter(
+      (file) => !initialFiles.has(file)
+    );
+
+    pages.push({
+      route: routeData.route,
+      component: routeData.component,
+      initialBytes: sumGzip(initialFiles),
+      lazyBytes: sumGzip(lazyFiles),
+      chunkCount: initialFiles.size,
+    });
   }
 
-  report += '\n---\n';
-  report += `\n<sub>📈 Generated by [bundle-size workflow](${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${process.env.GITHUB_REPOSITORY || 'owner/repo'}/actions/runs/${process.env.GITHUB_RUN_ID || '0'}) | View [detailed visualization](../actions/runs/${process.env.GITHUB_RUN_ID || '0'}) in artifacts</sub>\n`;
+  if (renderedScriptCount === 0) {
+    throw new Error(
+      'No renderScript() calls found in the server build. Did the build change shape?'
+    );
+  }
 
-  return report;
+  pages.sort((a, b) => b.initialBytes - a.initialBytes || a.route.localeCompare(b.route));
+
+  const astroDir = join(clientDir, '_astro');
+  const decimalLeakChunks = readdirSync(astroDir)
+    .filter((name) => name.endsWith('.js'))
+    .filter((name) => DECIMAL_MARKER.test(readFileSync(join(astroDir, name), 'utf-8')));
+
+  return {
+    pages,
+    decimalLeakChunks,
+    overBudget: pages.filter((page) => page.initialBytes > budgetBytes),
+  };
 }
 
-try {
-  const report = analyzeBundle();
-  console.log(report);
-  process.exit(0);
-} catch (error) {
-  console.error('Error analyzing bundle:', error);
-  process.exit(1);
+function formatKb(bytes: number): string {
+  return `${(bytes / 1024).toFixed(1)} kB`;
+}
+
+export function renderReport(analysis: BundleAnalysis, budgetBytes = PAGE_BUDGET_BYTES): string {
+  const failed = analysis.overBudget.length > 0 || analysis.decimalLeakChunks.length > 0;
+  const lines = [
+    '## Bundle Size Report',
+    '',
+    `Gzipped JS each page loads on first paint, against a ${formatKb(budgetBytes)} per-page budget. ` +
+      'Lazy is code behind dynamic `import()`, loaded on demand and not counted against the budget.',
+    '',
+    failed ? '**Result: over budget**' : '**Result: every page is within budget**',
+    '',
+    '| Page | Initial JS | Budget | Lazy JS | Chunks |',
+    '| ---- | ---------: | -----: | ------: | -----: |',
+  ];
+
+  for (const page of analysis.pages) {
+    const usage = Math.round((page.initialBytes / budgetBytes) * 100);
+    const flag = page.initialBytes > budgetBytes ? ' **over**' : '';
+    lines.push(
+      `| \`${page.route}\` | ${formatKb(page.initialBytes)} | ${usage}%${flag} | ${formatKb(page.lazyBytes)} | ${page.chunkCount} |`
+    );
+  }
+
+  if (analysis.overBudget.length > 0) {
+    lines.push('', '### Over budget', '');
+    for (const page of analysis.overBudget) {
+      lines.push(
+        `- \`${page.route}\` (${page.component}) loads ${formatKb(page.initialBytes)}, ${formatKb(page.initialBytes - budgetBytes)} over.`
+      );
+    }
+  }
+
+  if (analysis.decimalLeakChunks.length > 0) {
+    lines.push('', '### Decimal.js in client bundle', '');
+    lines.push('Decimal.js is server-only. Use `import type` for its types in client code.', '');
+    for (const chunk of analysis.decimalLeakChunks) lines.push(`- \`${chunk}\``);
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+if (import.meta.main) {
+  try {
+    const analysis = analyzeBuild(join(process.cwd(), 'dist'));
+    process.stdout.write(renderReport(analysis));
+    const failed = analysis.overBudget.length > 0 || analysis.decimalLeakChunks.length > 0;
+    process.exit(failed ? 1 : 0);
+  } catch (error) {
+    process.stderr.write(`Error analyzing bundle: ${String(error)}\n`);
+    process.exit(2);
+  }
 }
