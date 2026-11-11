@@ -44,14 +44,8 @@ export const GET: APIRoute = async (context) => {
 };
 
 /**
- * DELETE /api/workspace/members/:id
- *
- * Remove a member from the workspace (soft delete).
- * Admin only. Cannot remove yourself, so an admin always remains. Audited
- * as member_remove, flagged when the member is the founding owner.
- *
- * Note: This endpoint is at /api/workspace/members with member ID in query params
- * since Astro's file-based routing doesn't support nested dynamic routes easily.
+ * DELETE /api/workspace/members?memberId=: soft-delete a member. Admin only. Self-removal is
+ * refused, so an admin always remains. Audited as member_remove, flagged for the founding owner.
  */
 export const DELETE: APIRoute = async (context) => {
   try {

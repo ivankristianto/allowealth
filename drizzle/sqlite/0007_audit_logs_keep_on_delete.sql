@@ -13,8 +13,9 @@ CREATE TABLE `__new_audit_logs` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
--- The migrator runs in a transaction, where PRAGMA foreign_keys=OFF is ignored. Seeds run with
--- foreign keys off, so a row may point at a missing workspace or user: keep the row, null the link.
+-- Seeds run with foreign keys off, so a row may point at a missing workspace or user: keep the row,
+-- null the link. Also keeps the copy safe on a connection with foreign keys on, where the
+-- PRAGMA above is ignored inside the migrator's transaction.
 INSERT INTO `__new_audit_logs`("id", "workspace_id", "user_id", "action", "entity_type", "entity_id", "old_value", "new_value", "created_at") SELECT "id", CASE WHEN EXISTS (SELECT 1 FROM `workspaces` w WHERE w."id" = a."workspace_id") THEN a."workspace_id" END, CASE WHEN EXISTS (SELECT 1 FROM `users` u WHERE u."id" = a."user_id") THEN a."user_id" END, "action", "entity_type", "entity_id", "old_value", "new_value", "created_at" FROM `audit_logs` a;--> statement-breakpoint
 DROP TABLE `audit_logs`;--> statement-breakpoint
 ALTER TABLE `__new_audit_logs` RENAME TO `audit_logs`;--> statement-breakpoint

@@ -6,10 +6,8 @@ import { logAuditEvent } from '@/lib/audit-log';
 import { logError } from '@/lib/logger';
 
 /**
- * POST /api/admin/workspaces/:id/reactivate
- *
- * Restores an archived workspace so its members can sign in again.
- * Super admin only. Logs an audit event.
+ * POST /api/admin/workspaces/:id/reactivate: restore an archived workspace so
+ * its members can sign in again. Super admin only, audited as 'restore'.
  */
 export const POST: APIRoute = async (context) => {
   try {
