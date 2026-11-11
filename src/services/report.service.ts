@@ -16,9 +16,8 @@
  * - Decimal precision for all currency calculations
  *
  * Error Handling:
- * Methods catch errors and return safe default values (empty arrays, zeroed values).
- * This ensures the service gracefully handles missing database connections or
- * invalid input parameters without throwing exceptions.
+ * Errors propagate to the caller. A report that silently fell back to zeros
+ * would show a $0 month after a transient database error.
  *
  * P2: TODO - Improve date precision (add milliseconds to end date: 23:59:59.999)
  */
@@ -267,59 +266,53 @@ export class ReportService {
     currency: Currency = 'IDR',
     userId?: string
   ): Promise<ReportData> {
-    try {
-      // Validate inputs
-      this.validateWorkspaceId(workspaceId);
-      this.validateCurrency(currency);
+    // Validate inputs
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
-      // Validate and parse period format (YYYY-MM)
-      const { year, month } = validatePeriod(period, 'monthly');
-      if (!month) {
-        throw new Error(`Invalid monthly period: ${period}`);
-      }
-
-      // Calculate date range for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      // Get all data in parallel for performance
-      const [
-        totalIncome,
-        totalExpenses,
-        budgetHealthData,
-        expenseByCategory,
-        categoryIntelligence,
-        trendData,
-      ] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
-        this.getBudgetHealth(workspaceId, year, month, currency, userId),
-        this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
-        this.getCategoryIntelligence(workspaceId, year, month, currency, userId),
-        this.getTrendData(workspaceId, year, month, currency, 3, userId), // Trailing 3 months
-      ]);
-
-      // Calculate net savings
-      const netSavings = decimalSubtract(totalIncome, totalExpenses);
-
-      // Count unique expense categories
-      const expenseCategories = expenseByCategory.length;
-
-      return {
-        totalIncome,
-        totalExpenses,
-        netSavings,
-        budgetHealth: budgetHealthData,
-        expenseCategories,
-        expenseByCategory,
-        trendData,
-        categoryIntelligence,
-      };
-    } catch (error) {
-      log.error('error getting monthly report:', error);
-      // Return safe defaults on error
-      return this.getEmptyReport();
+    // Validate and parse period format (YYYY-MM)
+    const { year, month } = validatePeriod(period, 'monthly');
+    if (!month) {
+      throw new Error(`Invalid monthly period: ${period}`);
     }
+
+    // Calculate date range for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Get all data in parallel for performance
+    const [
+      totalIncome,
+      totalExpenses,
+      budgetHealthData,
+      expenseByCategory,
+      categoryIntelligence,
+      trendData,
+    ] = await Promise.all([
+      this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+      this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
+      this.getBudgetHealth(workspaceId, year, month, currency, userId),
+      this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
+      this.getCategoryIntelligence(workspaceId, year, month, currency, userId),
+      this.getTrendData(workspaceId, year, month, currency, 3, userId), // Trailing 3 months
+    ]);
+
+    // Calculate net savings
+    const netSavings = decimalSubtract(totalIncome, totalExpenses);
+
+    // Count unique expense categories
+    const expenseCategories = expenseByCategory.length;
+
+    return {
+      totalIncome,
+      totalExpenses,
+      netSavings,
+      budgetHealth: budgetHealthData,
+      expenseCategories,
+      expenseByCategory,
+      trendData,
+      categoryIntelligence,
+    };
   }
 
   /**
@@ -339,56 +332,50 @@ export class ReportService {
     currency: Currency = 'IDR',
     userId?: string
   ): Promise<ReportData> {
-    try {
-      // Validate inputs
-      this.validateWorkspaceId(workspaceId);
-      this.validateCurrency(currency);
+    // Validate inputs
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
-      // Validate year
-      validatePeriod(year.toString(), 'yearly');
+    // Validate year
+    validatePeriod(year.toString(), 'yearly');
 
-      // Calculate date range for the year
-      const startDate = new Date(year, 0, 1);
-      const endDate = new Date(year, 11, 31, 23, 59, 59);
+    // Calculate date range for the year
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-      // Get all data in parallel for performance
-      const [
-        totalIncome,
-        totalExpenses,
-        budgetHealthData,
-        expenseByCategory,
-        categoryIntelligence,
-        trendData,
-      ] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
-        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
-        this.getYearlyBudgetHealth(workspaceId, year, currency, userId),
-        this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
-        this.getYearlyCategoryIntelligence(workspaceId, year, currency, userId),
-        this.getYearlyTrendData(workspaceId, year, currency, userId), // 12 months
-      ]);
+    // Get all data in parallel for performance
+    const [
+      totalIncome,
+      totalExpenses,
+      budgetHealthData,
+      expenseByCategory,
+      categoryIntelligence,
+      trendData,
+    ] = await Promise.all([
+      this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+      this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
+      this.getYearlyBudgetHealth(workspaceId, year, currency, userId),
+      this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
+      this.getYearlyCategoryIntelligence(workspaceId, year, currency, userId),
+      this.getYearlyTrendData(workspaceId, year, currency, userId), // 12 months
+    ]);
 
-      // Calculate net savings
-      const netSavings = decimalSubtract(totalIncome, totalExpenses);
+    // Calculate net savings
+    const netSavings = decimalSubtract(totalIncome, totalExpenses);
 
-      // Count unique expense categories
-      const expenseCategories = expenseByCategory.length;
+    // Count unique expense categories
+    const expenseCategories = expenseByCategory.length;
 
-      return {
-        totalIncome,
-        totalExpenses,
-        netSavings,
-        budgetHealth: budgetHealthData,
-        expenseCategories,
-        expenseByCategory,
-        trendData,
-        categoryIntelligence,
-      };
-    } catch (error) {
-      log.error('error getting yearly report:', error);
-      // Return safe defaults on error
-      return this.getEmptyReport();
-    }
+    return {
+      totalIncome,
+      totalExpenses,
+      netSavings,
+      budgetHealth: budgetHealthData,
+      expenseCategories,
+      expenseByCategory,
+      trendData,
+      categoryIntelligence,
+    };
   }
 
   async getRecurringBreakdown(
@@ -785,65 +772,52 @@ export class ReportService {
     currency: Currency = 'IDR',
     userId?: string
   ): Promise<OverviewReportData> {
-    try {
-      this.validateWorkspaceId(workspaceId);
-      this.validateCurrency(currency);
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
-      let startDate: Date;
-      let endDate: Date;
+    let startDate: Date;
+    let endDate: Date;
 
-      if (range === 'monthly') {
-        const { year, month } = validatePeriod(period, 'monthly');
-        if (!month) throw new Error(`Invalid monthly period: ${period}`);
-        startDate = new Date(year, month - 1, 1);
-        endDate = new Date(year, month, 0, 23, 59, 59);
-      } else {
-        const { year } = validatePeriod(period, 'yearly');
-        startDate = new Date(year, 0, 1);
-        endDate = new Date(year, 11, 31, 23, 59, 59);
-      }
-
-      const [totalIncome, totalExpenses, trendData, incomeCategories, expenseCategories] =
-        await Promise.all([
-          this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
-          this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
-          this.getOverviewTrendData(workspaceId, startDate, endDate, range, currency, userId),
-          this.getIncomeByCategory(workspaceId, startDate, endDate, currency, userId),
-          this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
-        ]);
-
-      const netSavings = decimalSubtract(totalIncome, totalExpenses);
-      const savingsRate = decimalIsZero(totalIncome)
-        ? '0'
-        : decimalDivide(decimalMultiply(netSavings, '100'), totalIncome);
-
-      return {
-        totalIncome,
-        totalExpenses,
-        netSavings,
-        savingsRate,
-        trendData,
-        incomePreview: {
-          topCategories: incomeCategories,
-          total: totalIncome,
-        },
-        expensePreview: {
-          topCategories: expenseCategories,
-          total: totalExpenses,
-        },
-      };
-    } catch (error) {
-      log.error('error getting overview report:', error);
-      return {
-        totalIncome: '0',
-        totalExpenses: '0',
-        netSavings: '0',
-        savingsRate: '0',
-        trendData: [],
-        incomePreview: { topCategories: [], total: '0' },
-        expensePreview: { topCategories: [], total: '0' },
-      };
+    if (range === 'monthly') {
+      const { year, month } = validatePeriod(period, 'monthly');
+      if (!month) throw new Error(`Invalid monthly period: ${period}`);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0, 23, 59, 59);
+    } else {
+      const { year } = validatePeriod(period, 'yearly');
+      startDate = new Date(year, 0, 1);
+      endDate = new Date(year, 11, 31, 23, 59, 59);
     }
+
+    const [totalIncome, totalExpenses, trendData, incomeCategories, expenseCategories] =
+      await Promise.all([
+        this.getTotalIncome(workspaceId, startDate, endDate, currency, userId),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency, userId),
+        this.getOverviewTrendData(workspaceId, startDate, endDate, range, currency, userId),
+        this.getIncomeByCategory(workspaceId, startDate, endDate, currency, userId),
+        this.getExpenseByCategory(workspaceId, startDate, endDate, currency, userId),
+      ]);
+
+    const netSavings = decimalSubtract(totalIncome, totalExpenses);
+    const savingsRate = decimalIsZero(totalIncome)
+      ? '0'
+      : decimalDivide(decimalMultiply(netSavings, '100'), totalIncome);
+
+    return {
+      totalIncome,
+      totalExpenses,
+      netSavings,
+      savingsRate,
+      trendData,
+      incomePreview: {
+        topCategories: incomeCategories,
+        total: totalIncome,
+      },
+      expensePreview: {
+        topCategories: expenseCategories,
+        total: totalExpenses,
+      },
+    };
   }
 
   /**
@@ -856,52 +830,39 @@ export class ReportService {
     currency: Currency = 'IDR',
     userId?: string
   ): Promise<ExpenseReportData> {
-    try {
-      this.validateWorkspaceId(workspaceId);
-      this.validateCurrency(currency);
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
-      const baseReport =
-        range === 'monthly'
-          ? await this.getMonthlyReport(workspaceId, period, currency, userId)
-          : await this.getYearlyReport(
-              workspaceId,
-              validatePeriod(period, 'yearly').year,
-              currency,
-              userId
-            );
+    const baseReport =
+      range === 'monthly'
+        ? await this.getMonthlyReport(workspaceId, period, currency, userId)
+        : await this.getYearlyReport(
+            workspaceId,
+            validatePeriod(period, 'yearly').year,
+            currency,
+            userId
+          );
 
-      let recurringBreakdown: RecurringBreakdown | null = null;
-      if (range === 'monthly') {
-        try {
-          const { year, month } = validatePeriod(period, 'monthly');
-          if (month) {
-            recurringBreakdown = await this.getRecurringBreakdown(
-              workspaceId,
-              year,
-              month,
-              currency
-            );
-          }
-        } catch {
-          // recurring breakdown is optional
+    let recurringBreakdown: RecurringBreakdown | null = null;
+    if (range === 'monthly') {
+      try {
+        const { year, month } = validatePeriod(period, 'monthly');
+        if (month) {
+          recurringBreakdown = await this.getRecurringBreakdown(workspaceId, year, month, currency);
         }
+      } catch (error) {
+        // The breakdown is an optional section: render the report without it, but say why.
+        log.warn('recurring breakdown failed; rendering expense report without it', error);
       }
-
-      const memberSummary = await this.getMemberSummary(workspaceId, period, range, currency);
-
-      return {
-        ...baseReport,
-        recurringBreakdown,
-        memberSummary,
-      };
-    } catch (error) {
-      log.error('error getting expense report:', error);
-      return {
-        ...this.getEmptyReport(),
-        recurringBreakdown: null,
-        memberSummary: [],
-      };
     }
+
+    const memberSummary = await this.getMemberSummary(workspaceId, period, range, currency);
+
+    return {
+      ...baseReport,
+      recurringBreakdown,
+      memberSummary,
+    };
   }
 
   /**
@@ -914,98 +875,74 @@ export class ReportService {
     currency: Currency = 'IDR',
     filters: IncomeReportFilters = {}
   ): Promise<IncomeReportData> {
-    try {
-      this.validateWorkspaceId(workspaceId);
-      this.validateCurrency(currency);
+    this.validateWorkspaceId(workspaceId);
+    this.validateCurrency(currency);
 
-      let startDate: Date;
-      let endDate: Date;
-      let prevStartDate: Date;
-      let prevEndDate: Date;
+    let startDate: Date;
+    let endDate: Date;
+    let prevStartDate: Date;
+    let prevEndDate: Date;
 
-      if (range === 'monthly') {
-        const { year, month } = validatePeriod(period, 'monthly');
-        if (!month) throw new Error(`Invalid monthly period: ${period}`);
-        startDate = new Date(year, month - 1, 1);
-        endDate = new Date(year, month, 0, 23, 59, 59);
-        prevStartDate = new Date(year, month - 2, 1);
-        prevEndDate = new Date(year, month - 1, 0, 23, 59, 59);
-      } else {
-        const { year } = validatePeriod(period, 'yearly');
-        startDate = new Date(year, 0, 1);
-        endDate = new Date(year, 11, 31, 23, 59, 59);
-        prevStartDate = new Date(year - 1, 0, 1);
-        prevEndDate = new Date(year - 1, 11, 31, 23, 59, 59);
-      }
-
-      const [
-        totalIncome,
-        prevTotalIncome,
-        sourceGroup,
-        sourceMix,
-        sourceGroupTrend,
-        members,
-        history,
-      ] = await Promise.all([
-        this.getTotalIncome(workspaceId, startDate, endDate, currency, filters.userId),
-        this.getTotalIncome(workspaceId, prevStartDate, prevEndDate, currency, filters.userId),
-        this.getIncomeBySourceGroup(workspaceId, startDate, endDate, currency, filters.userId),
-        this.getIncomeByCategory(workspaceId, startDate, endDate, currency, filters.userId),
-        this.getIncomeSourceTrendData(workspaceId, startDate, endDate, currency, filters.userId),
-        this.getMemberIncomeSummary(workspaceId, startDate, endDate, currency),
-        this.getIncomeHistory(workspaceId, startDate, endDate, currency, filters),
-      ]);
-
-      const growthVsPreviousPeriod = decimalIsZero(prevTotalIncome)
-        ? decimalIsZero(totalIncome)
-          ? '0'
-          : '100'
-        : decimalDivide(
-            decimalMultiply(decimalSubtract(totalIncome, prevTotalIncome), '100'),
-            prevTotalIncome
-          );
-      const previousPeriodLabel =
-        range === 'monthly'
-          ? prevStartDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-          : String(prevStartDate.getFullYear());
-
-      return {
-        summary: {
-          totalIncome,
-          activeIncome: sourceGroup.active,
-          passiveIncome: sourceGroup.passive,
-          otherIncome: sourceGroup.other,
-          growthVsPreviousPeriod,
-          previousPeriodLabel,
-        },
-        sourceMix,
-        sourceGroupTrend,
-        members,
-        history,
-      };
-    } catch (error) {
-      log.error('error getting income report:', error);
-      return {
-        summary: {
-          totalIncome: '0',
-          activeIncome: '0',
-          passiveIncome: '0',
-          otherIncome: '0',
-          growthVsPreviousPeriod: '0',
-          previousPeriodLabel: '',
-        },
-        sourceMix: [],
-        sourceGroupTrend: [],
-        members: [],
-        history: {
-          transactions: [],
-          total: 0,
-          page: 1,
-          pageSize: PAGINATION.DEFAULT_PAGE_SIZE,
-          appliedFilters: {},
-        },
-      };
+    if (range === 'monthly') {
+      const { year, month } = validatePeriod(period, 'monthly');
+      if (!month) throw new Error(`Invalid monthly period: ${period}`);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0, 23, 59, 59);
+      prevStartDate = new Date(year, month - 2, 1);
+      prevEndDate = new Date(year, month - 1, 0, 23, 59, 59);
+    } else {
+      const { year } = validatePeriod(period, 'yearly');
+      startDate = new Date(year, 0, 1);
+      endDate = new Date(year, 11, 31, 23, 59, 59);
+      prevStartDate = new Date(year - 1, 0, 1);
+      prevEndDate = new Date(year - 1, 11, 31, 23, 59, 59);
     }
+
+    const [
+      totalIncome,
+      prevTotalIncome,
+      sourceGroup,
+      sourceMix,
+      sourceGroupTrend,
+      members,
+      history,
+    ] = await Promise.all([
+      this.getTotalIncome(workspaceId, startDate, endDate, currency, filters.userId),
+      this.getTotalIncome(workspaceId, prevStartDate, prevEndDate, currency, filters.userId),
+      this.getIncomeBySourceGroup(workspaceId, startDate, endDate, currency, filters.userId),
+      this.getIncomeByCategory(workspaceId, startDate, endDate, currency, filters.userId),
+      this.getIncomeSourceTrendData(workspaceId, startDate, endDate, currency, filters.userId),
+      this.getMemberIncomeSummary(workspaceId, startDate, endDate, currency),
+      this.getIncomeHistory(workspaceId, startDate, endDate, currency, filters),
+    ]);
+
+    const growthVsPreviousPeriod = decimalIsZero(prevTotalIncome)
+      ? decimalIsZero(totalIncome)
+        ? '0'
+        : '100'
+      : decimalDivide(
+          decimalMultiply(decimalSubtract(totalIncome, prevTotalIncome), '100'),
+          prevTotalIncome
+        );
+    const previousPeriodLabel =
+      range === 'monthly'
+        ? prevStartDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : String(prevStartDate.getFullYear());
+
+    return {
+      summary: {
+        totalIncome,
+        activeIncome: sourceGroup.active,
+        passiveIncome: sourceGroup.passive,
+        otherIncome: sourceGroup.other,
+        growthVsPreviousPeriod,
+        previousPeriodLabel,
+      },
+      sourceMix,
+      sourceGroupTrend,
+      members,
+      history,
+    };
   }
 
   // ============================================
@@ -1867,16 +1804,4 @@ export class ReportService {
    * Get empty report data (safe defaults)
    * @private
    */
-  private getEmptyReport(): ReportData {
-    return {
-      totalIncome: '0',
-      totalExpenses: '0',
-      netSavings: '0',
-      budgetHealth: 0,
-      expenseCategories: 0,
-      expenseByCategory: [],
-      trendData: [],
-      categoryIntelligence: [],
-    };
-  }
 }
