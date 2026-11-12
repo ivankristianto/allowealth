@@ -68,7 +68,8 @@ describe('SpendingCard - status mapping', () => {
     expect(getBudgetStatusClass(79)).toBe('status-ok');
     expect(getBudgetStatusClass(80)).toBe('status-warning');
     expect(getBudgetStatusClass(99)).toBe('status-warning');
-    expect(getBudgetStatusClass(100)).toBe('status-danger');
+    expect(getBudgetStatusClass(100)).toBe('status-warning');
+    expect(getBudgetStatusClass(100.5)).toBe('status-danger');
     expect(getBudgetStatusClass(150)).toBe('status-danger');
   });
 });

@@ -39,21 +39,27 @@ describe('calculateBudgetStatus', () => {
     expect(calculateBudgetStatus('100', '99.99')).toBe('warning');
   });
 
-  it('should return exceeded for 100% and above', () => {
-    expect(calculateBudgetStatus('100', '100')).toBe('exceeded');
+  it('should return warning at exactly 100% (on budget)', () => {
+    expect(calculateBudgetStatus('100', '100')).toBe('warning');
+  });
+
+  it('should return exceeded above 100%', () => {
+    expect(calculateBudgetStatus('100', '100.01')).toBe('exceeded');
     expect(calculateBudgetStatus('100', '120')).toBe('exceeded');
     expect(calculateBudgetStatus('100', '200')).toBe('exceeded');
   });
 
   it('does not round a spend just under the budget up to 100%', () => {
     expect(calculateBudgetStatus('1000000', '999999.99')).toBe('warning');
-    expect(calculateBudgetStatus('1000000', '1000000')).toBe('exceeded');
+    expect(calculateBudgetStatus('1000000', '1000000')).toBe('warning');
+    expect(calculateBudgetStatus('1000000', '1000000.01')).toBe('exceeded');
     expect(calculateBudgetStatus('1000000', '799999.99')).toBe('healthy');
   });
 
   it('gives the same status as calculateBudgetAlert at the 100% boundary', () => {
     expect(calculateBudgetAlert('Food', '1000000', '999999.99')?.status).toBe('warning');
-    expect(calculateBudgetAlert('Food', '1000000', '1000000')?.status).toBe('exceeded');
+    expect(calculateBudgetAlert('Food', '1000000', '1000000')?.status).toBe('warning');
+    expect(calculateBudgetAlert('Food', '1000000', '1000000.01')?.status).toBe('exceeded');
   });
 
   it('should return healthy for zero or negative budget', () => {
@@ -68,7 +74,8 @@ describe('calculateBudgetStatus', () => {
   it('should handle very small budgets', () => {
     expect(calculateBudgetStatus('1', '0.5')).toBe('healthy');
     expect(calculateBudgetStatus('1', '0.8')).toBe('warning');
-    expect(calculateBudgetStatus('1', '1')).toBe('exceeded');
+    expect(calculateBudgetStatus('1', '1')).toBe('warning');
+    expect(calculateBudgetStatus('1', '1.01')).toBe('exceeded');
   });
 
   it('should handle decimal amounts', () => {
@@ -76,7 +83,8 @@ describe('calculateBudgetStatus', () => {
     expect(calculateBudgetStatus('100.5', '80')).toBe('healthy');
     // 80.4 / 100.5 = 80.0% -> warning (at or above 80%)
     expect(calculateBudgetStatus('100.5', '80.4')).toBe('warning');
-    expect(calculateBudgetStatus('100.5', '100.5')).toBe('exceeded');
+    expect(calculateBudgetStatus('100.5', '100.5')).toBe('warning');
+    expect(calculateBudgetStatus('100.5', '100.51')).toBe('exceeded');
   });
 
   it('should handle budget with zero spent', () => {
@@ -112,11 +120,11 @@ describe('calculateBudgetAlert', () => {
     }
   });
 
-  it('should return exceeded alert at 100%', () => {
+  it('should return a warning alert at exactly 100%', () => {
     const alert = calculateBudgetAlert('Entertainment', '100', '100');
     expect(alert).not.toBeNull();
     if (alert) {
-      expect(alert.status).toBe('exceeded');
+      expect(alert.status).toBe('warning');
       expect(alert.percentage).toBe(100);
       expect(alert.remaining).toBe('0');
       expect(alert.overage).toBe('0');
@@ -306,16 +314,21 @@ describe('isBudgetWarning', () => {
     expect(isBudgetWarning('100', '99')).toBe(true);
   });
 
+  it('should return true at exactly 100%', () => {
+    expect(isBudgetWarning('100', '100')).toBe(true);
+  });
+
   it('should return false for healthy and exceeded', () => {
     expect(isBudgetWarning('100', '50')).toBe(false);
-    expect(isBudgetWarning('100', '100')).toBe(false);
+    expect(isBudgetWarning('100', '100.01')).toBe(false);
     expect(isBudgetWarning('100', '120')).toBe(false);
   });
 });
 
 describe('isBudgetExceeded', () => {
   it('should return true for exceeded budgets', () => {
-    expect(isBudgetExceeded('100', '100')).toBe(true);
+    expect(isBudgetExceeded('100', '100')).toBe(false);
+    expect(isBudgetExceeded('100', '100.01')).toBe(true);
     expect(isBudgetExceeded('100', '120')).toBe(true);
     expect(isBudgetExceeded('100', '200')).toBe(true);
   });
