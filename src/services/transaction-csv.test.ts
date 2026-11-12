@@ -166,4 +166,54 @@ describe('TransactionService CSV', () => {
       expect(countRows(memory.raw, 'transactions', `to_account_id = 'acc-usd'`)).toBe(0);
     });
   });
+
+  describe('importFromCSV duplicate detection', () => {
+    async function seedManualExpense(amount: string) {
+      await memory.db.insert(transactions).values({
+        id: 'tx-manual',
+        workspace_id: WORKSPACE_ID,
+        created_by_user_id: USER_ID,
+        category_id: 'cat-food',
+        account_id: 'acc-idr',
+        type: 'expense',
+        amount,
+        currency: 'IDR',
+        description: 'typed by hand',
+        transaction_date: new Date(Date.UTC(2026, 0, 15)),
+      });
+    }
+
+    it('skips an imported row that matches a manual entry stored with trailing zeros', async () => {
+      await seedManualExpense('1000.00');
+
+      const result = await service.importFromCSV(WORKSPACE_ID, USER_ID, [expenseRow()], {});
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(countRows(memory.raw, 'transactions')).toBe(1);
+    });
+
+    it('skips an imported row with trailing zeros that matches a plain stored amount', async () => {
+      await seedManualExpense('1000');
+
+      const result = await service.importFromCSV(
+        WORKSPACE_ID,
+        USER_ID,
+        [expenseRow({ amount: '1000.00' })],
+        {}
+      );
+
+      expect(result.imported).toBe(0);
+      expect(result.skipped).toBe(1);
+    });
+
+    it('still imports a row whose amount differs', async () => {
+      await seedManualExpense('1000.50');
+
+      const result = await service.importFromCSV(WORKSPACE_ID, USER_ID, [expenseRow()], {});
+
+      expect(result.imported).toBe(1);
+      expect(result.skipped).toBe(0);
+    });
+  });
 });

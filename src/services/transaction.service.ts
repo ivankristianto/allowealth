@@ -1267,8 +1267,9 @@ export class TransactionService {
         }>) {
           const txDate = this.toIsoString(t.transaction_date);
           const dateKey = txDate ? txDate.split('T')[0] : '';
+          // Manual entries keep the amount as typed ("50000.00"); imports store the normalized form.
           existingKeys.add(
-            `${dateKey}-${t.type}-${t.amount}-${t.category_id ?? ''}-${t.account_id}`
+            `${dateKey}-${t.type}-${normalizeAmount(String(t.amount))}-${t.category_id ?? ''}-${t.account_id}`
           );
         }
       }
