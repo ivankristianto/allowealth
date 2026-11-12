@@ -139,27 +139,7 @@ export class TransactionService {
   }
 
   private async invalidateWorkspaceCaches(workspaceId: string): Promise<void> {
-    await invalidateTags(
-      [
-        CacheTags.workspace(workspaceId),
-        CacheTags.TRANSACTIONS,
-        CacheTags.DASHBOARD,
-        CacheTags.BUDGET,
-      ],
-      'strict'
-    );
-  }
-
-  private async invalidateWorkspaceCachesBestEffort(workspaceId: string): Promise<void> {
-    await invalidateTags(
-      [
-        CacheTags.workspace(workspaceId),
-        CacheTags.TRANSACTIONS,
-        CacheTags.DASHBOARD,
-        CacheTags.BUDGET,
-      ],
-      'best-effort'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
   }
 
   /**
@@ -349,7 +329,7 @@ export class TransactionService {
     try {
       await cache.set(cacheKey, result, {
         ttl: 1800, // 30 minutes
-        tags: [CacheTags.workspace(filters.workspace_id), CacheTags.TRANSACTIONS],
+        tags: [CacheTags.workspace(filters.workspace_id)],
       });
     } catch (error) {
       // Cache write failed - log and continue (DB result is still valid)
@@ -1471,7 +1451,7 @@ export class TransactionService {
         },
       });
 
-      await this.invalidateWorkspaceCachesBestEffort(workspaceId);
+      await this.invalidateWorkspaceCaches(workspaceId);
     }
 
     return result;

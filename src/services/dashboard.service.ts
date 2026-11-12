@@ -242,12 +242,7 @@ export class DashboardService {
       // Cache the result
       await cache.set(cacheKey, result, {
         ttl: 3600,
-        tags: [
-          CacheTags.workspace(workspaceId),
-          CacheTags.DASHBOARD,
-          CacheTags.BUDGET,
-          CacheTags.TRANSACTIONS,
-        ],
+        tags: [CacheTags.workspace(workspaceId)],
       });
 
       return result;

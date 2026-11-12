@@ -58,18 +58,7 @@ export class RecurringTemplateService {
   }
 
   private async invalidateWorkspaceCache(workspaceId: string): Promise<void> {
-    await invalidateTags(
-      [
-        CacheTags.workspace(workspaceId),
-        CacheTags.RECURRING,
-        CacheTags.RECURRING_OCCURRENCES,
-        CacheTags.RECURRING_CALENDAR,
-        CacheTags.RECURRING_FORECAST,
-        CacheTags.TRANSACTIONS,
-        CacheTags.DASHBOARD,
-      ],
-      'strict'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
   }
 
   private mapTemplateOutput(
@@ -361,7 +350,7 @@ export class RecurringTemplateService {
     try {
       await cache.set(cacheKey, result, {
         ttl: 1800,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING],
+        tags: [CacheTags.workspace(workspaceId)],
       });
     } catch (error) {
       log.warn('cache write failed for recurring template list:', error);

@@ -21,11 +21,11 @@
  * const data = await fetchFromDb();
  * await cache.set(key, data, {
  *   ttl: 3600,
- *   tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET],
+ *   tags: [CacheTags.workspace(workspaceId)],
  * });
  *
  * // Invalidate on mutation
- * await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+ * await cache.invalidateByTags([CacheTags.workspace(workspaceId)]);
  * ```
  */
 
@@ -34,7 +34,7 @@ export { CacheManager, getCacheManager, resetCacheManager } from './cache-manage
 export { cacheOrFetch } from './cache-or-fetch';
 export { CacheKeys, hashFilters, simpleHash } from './keys';
 export { CacheTags } from './tags';
-export { invalidateTags, type InvalidationPolicy } from './invalidate';
+export { invalidateTags } from './invalidate';
 
 // Type exports
 export type { CacheDriver, CacheSetOptions, CacheConfig } from './types';

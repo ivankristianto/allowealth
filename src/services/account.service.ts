@@ -207,7 +207,7 @@ export class AccountService {
       );
     }
 
-    await invalidateTags([CacheTags.workspace(input.workspace_id), CacheTags.ACCOUNTS]);
+    await invalidateTags([CacheTags.workspace(input.workspace_id)]);
 
     return account;
   }
@@ -273,7 +273,7 @@ export class AccountService {
 
     return cacheOrFetch(
       cacheKey,
-      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS] },
+      { ttl: 3600, tags: [CacheTags.workspace(workspaceId)] },
       () =>
         trackQuery('AccountService.findAll', perf, () =>
           this.db.query.accounts.findMany({
@@ -357,7 +357,7 @@ export class AccountService {
         and(eq(this.schema.accounts.id, id), eq(this.schema.accounts.workspace_id, workspaceId))
       );
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -431,7 +431,7 @@ export class AccountService {
       );
     }
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return this.findById(id, workspaceId);
   }
@@ -621,13 +621,7 @@ export class AccountService {
       newValue: result.auditValue,
     });
 
-    await invalidateTags([
-      CacheTags.workspace(workspaceId),
-      CacheTags.ACCOUNTS,
-      CacheTags.TRANSACTIONS,
-      CacheTags.DASHBOARD,
-      CacheTags.BUDGET,
-    ]);
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return {
       fromAccount: result.fromAccount,
@@ -675,7 +669,7 @@ export class AccountService {
         and(eq(this.schema.accounts.id, id), eq(this.schema.accounts.workspace_id, workspaceId))
       );
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -710,7 +704,7 @@ export class AccountService {
         and(eq(this.schema.accounts.id, id), eq(this.schema.accounts.workspace_id, workspaceId))
       );
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return this.findById(id, workspaceId);
   }
@@ -776,111 +770,106 @@ export class AccountService {
       hashFilters(filters ?? {})
     );
 
-    return cacheOrFetch(
-      cacheKey,
-      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS] },
-      () =>
-        trackQuery('AccountService.getSnapshotForMonth', perf, async () => {
-          const allAccounts = await this.findAll(workspaceId, {
-            ...filters,
-            includeInactive: true,
-          });
+    return cacheOrFetch(cacheKey, { ttl: 3600, tags: [CacheTags.workspace(workspaceId)] }, () =>
+      trackQuery('AccountService.getSnapshotForMonth', perf, async () => {
+        const allAccounts = await this.findAll(workspaceId, {
+          ...filters,
+          includeInactive: true,
+        });
 
-          perf?.recordPhase('AccountService.getSnapshotForMonth.accountCount', allAccounts.length);
+        perf?.recordPhase('AccountService.getSnapshotForMonth.accountCount', allAccounts.length);
 
-          if (allAccounts.length === 0) {
-            return [];
-          }
+        if (allAccounts.length === 0) {
+          return [];
+        }
 
-          // Fetch one latest history row per account, chunked to avoid parameter limits.
-          // Two-step approach: 1) get max recorded_at per account, 2) fetch full rows.
-          // This avoids dialect-specific raw SQL (DISTINCT ON for PG, self-join for SQLite)
-          // and works through Drizzle's query builder on all drivers.
-          const accountIds = allAccounts.map((a) => a.id);
-          const idChunks = this.chunkIds(accountIds, 500);
-          perf?.recordPhase('AccountService.getSnapshotForMonth.chunkCount', idChunks.length);
-          const historyTable = this.schema.accountHistory;
-          const allHistory: Array<{ account_id: string; balance: string; recorded_at: Date }> = [];
+        // Fetch one latest history row per account, chunked to avoid parameter limits.
+        // Two-step approach: 1) get max recorded_at per account, 2) fetch full rows.
+        // This avoids dialect-specific raw SQL (DISTINCT ON for PG, self-join for SQLite)
+        // and works through Drizzle's query builder on all drivers.
+        const accountIds = allAccounts.map((a) => a.id);
+        const idChunks = this.chunkIds(accountIds, 500);
+        perf?.recordPhase('AccountService.getSnapshotForMonth.chunkCount', idChunks.length);
+        const historyTable = this.schema.accountHistory;
+        const allHistory: Array<{ account_id: string; balance: string; recorded_at: Date }> = [];
 
-          for (const chunk of idChunks) {
-            // Step 1: Get the max recorded_at per account_id
-            const maxDates = await (this.db as any)
-              .select({
-                account_id: historyTable.account_id,
-                max_recorded_at: sql<string>`MAX(${historyTable.recorded_at})`.as(
-                  'max_recorded_at'
-                ),
-              })
-              .from(historyTable)
-              .where(
-                and(
-                  inArray(historyTable.account_id, chunk),
-                  // lte() maps the Date through the column, which stores epoch seconds.
-                  lte(historyTable.recorded_at, endOfMonth)
-                )
+        for (const chunk of idChunks) {
+          // Step 1: Get the max recorded_at per account_id
+          const maxDates = await (this.db as any)
+            .select({
+              account_id: historyTable.account_id,
+              max_recorded_at: sql<string>`MAX(${historyTable.recorded_at})`.as('max_recorded_at'),
+            })
+            .from(historyTable)
+            .where(
+              and(
+                inArray(historyTable.account_id, chunk),
+                // lte() maps the Date through the column, which stores epoch seconds.
+                lte(historyTable.recorded_at, endOfMonth)
               )
-              .groupBy(historyTable.account_id);
+            )
+            .groupBy(historyTable.account_id);
 
-            if (maxDates.length === 0) continue;
+          if (maxDates.length === 0) continue;
 
-            // Step 2: Fetch full rows matching (account_id, max_recorded_at) pairs
-            const conditions = maxDates.map(
-              (row: any) =>
-                sql`(${historyTable.account_id} = ${row.account_id} AND ${historyTable.recorded_at} = ${row.max_recorded_at})`
-            );
-
-            const rows = await (this.db as any)
-              .select({
-                account_id: historyTable.account_id,
-                balance: historyTable.balance,
-                recorded_at: historyTable.recorded_at,
-              })
-              .from(historyTable)
-              .where(sql.join(conditions, sql` OR `));
-
-            for (const row of rows) {
-              allHistory.push({
-                account_id: row.account_id,
-                balance: row.balance,
-                recorded_at:
-                  row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
-              });
-            }
-          }
-          perf?.recordPhase(
-            'AccountService.getSnapshotForMonth.historyRowsFetched',
-            allHistory.length
+          // Step 2: Fetch full rows matching (account_id, max_recorded_at) pairs
+          const conditions = maxDates.map(
+            (row: any) =>
+              sql`(${historyTable.account_id} = ${row.account_id} AND ${historyTable.recorded_at} = ${row.max_recorded_at})`
           );
 
-          // Build lookup map: keep only the most recent entry per account
-          const historyMap = new Map<string, (typeof allHistory)[0]>();
-          for (const history of allHistory) {
-            const existing = historyMap.get(history.account_id);
-            if (!existing || history.recorded_at > existing.recorded_at) {
-              historyMap.set(history.account_id, history);
-            }
+          const rows = await (this.db as any)
+            .select({
+              account_id: historyTable.account_id,
+              balance: historyTable.balance,
+              recorded_at: historyTable.recorded_at,
+            })
+            .from(historyTable)
+            .where(sql.join(conditions, sql` OR `));
+
+          for (const row of rows) {
+            allHistory.push({
+              account_id: row.account_id,
+              balance: row.balance,
+              recorded_at:
+                row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
+            });
           }
+        }
+        perf?.recordPhase(
+          'AccountService.getSnapshotForMonth.historyRowsFetched',
+          allHistory.length
+        );
 
-          // An account existed in the month if it had a balance recorded by its end.
-          // created_at alone is not enough: an account entered later with a dated
-          // opening balance was created after the month it opened in.
-          const accountsExistingAtTime = allAccounts.filter(
-            (account) => historyMap.has(account.id) || new Date(account.created_at) <= endOfMonth
-          );
+        // Build lookup map: keep only the most recent entry per account
+        const historyMap = new Map<string, (typeof allHistory)[0]>();
+        for (const history of allHistory) {
+          const existing = historyMap.get(history.account_id);
+          if (!existing || history.recorded_at > existing.recorded_at) {
+            historyMap.set(history.account_id, history);
+          }
+        }
 
-          // Map accounts to snapshots with O(1) lookups
-          const snapshots = accountsExistingAtTime.map((account) => {
-            const history = historyMap.get(account.id);
+        // An account existed in the month if it had a balance recorded by its end.
+        // created_at alone is not enough: an account entered later with a dated
+        // opening balance was created after the month it opened in.
+        const accountsExistingAtTime = allAccounts.filter(
+          (account) => historyMap.has(account.id) || new Date(account.created_at) <= endOfMonth
+        );
 
-            return {
-              ...account,
-              snapshot_balance: history?.balance ?? account.initial_balance ?? account.balance,
-              snapshot_date: history?.recorded_at || account.created_at,
-            };
-          });
+        // Map accounts to snapshots with O(1) lookups
+        const snapshots = accountsExistingAtTime.map((account) => {
+          const history = historyMap.get(account.id);
 
-          return snapshots;
-        })
+          return {
+            ...account,
+            snapshot_balance: history?.balance ?? account.initial_balance ?? account.balance,
+            snapshot_date: history?.recorded_at || account.created_at,
+          };
+        });
+
+        return snapshots;
+      })
     );
   }
 
@@ -1094,7 +1083,7 @@ export class AccountService {
         )
       );
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
   }
 
   /**

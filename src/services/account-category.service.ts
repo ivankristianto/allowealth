@@ -79,10 +79,7 @@ export class AccountCategoryService {
         })
         .returning();
 
-      await invalidateTags(
-        [CacheTags.workspace(validated.workspace_id), CacheTags.ACCOUNT_CATEGORIES],
-        'best-effort'
-      );
+      await invalidateTags([CacheTags.workspace(validated.workspace_id)]);
 
       return category;
     } catch (error: any) {
@@ -122,18 +119,15 @@ export class AccountCategoryService {
       conditions.push(eq(this.schema.accountCategories.is_system, filters.is_system));
     }
 
-    return cacheOrFetch(
-      cacheKey,
-      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES] },
-      () =>
-        this.db.query.accountCategories.findMany({
-          where: and(...conditions),
-          orderBy: (accountCategories: any, { asc, desc }: any) => [
-            desc(accountCategories.is_system),
-            asc(accountCategories.sort_order),
-            asc(accountCategories.name),
-          ],
-        })
+    return cacheOrFetch(cacheKey, { ttl: 3600, tags: [CacheTags.workspace(workspaceId)] }, () =>
+      this.db.query.accountCategories.findMany({
+        where: and(...conditions),
+        orderBy: (accountCategories: any, { asc, desc }: any) => [
+          desc(accountCategories.is_system),
+          asc(accountCategories.sort_order),
+          asc(accountCategories.name),
+        ],
+      })
     );
   }
 
@@ -198,10 +192,7 @@ export class AccountCategoryService {
         )
       );
 
-    await invalidateTags(
-      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
-      'best-effort'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return this.findById(id, workspaceId);
   }
@@ -254,10 +245,7 @@ export class AccountCategoryService {
         )
       );
 
-    await invalidateTags(
-      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
-      'best-effort'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return { success: true };
   }
@@ -329,9 +317,6 @@ export class AccountCategoryService {
       await Promise.resolve(this.db.insert(this.schema.accountCategories).values(row));
     }
 
-    await invalidateTags(
-      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
-      'best-effort'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
   }
 }

@@ -185,10 +185,7 @@ export const POST: APIRoute = async ({ request }) => {
         .run();
     });
 
-    await invalidateTags(
-      [CacheTags.workspace(workspaceId), CacheTags.ACCOUNT_CATEGORIES],
-      'best-effort'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 201,

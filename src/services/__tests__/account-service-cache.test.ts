@@ -45,8 +45,7 @@ describe('AccountService.findAll caching', () => {
 
     // Verify tags
     const options = cacheSetCall[2];
-    expect(options.tags).toContain(CacheTags.workspace(workspaceId));
-    expect(options.tags).toContain(CacheTags.ACCOUNTS);
+    expect(options.tags).toEqual([CacheTags.workspace(workspaceId)]);
   });
 
   it('should return cached results on cache hit', async () => {

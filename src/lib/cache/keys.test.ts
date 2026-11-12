@@ -67,12 +67,4 @@ describe('CacheTags', () => {
   it('should build session tag correctly', () => {
     expect(CacheTags.session('sid_789')).toBe('session:sid_789');
   });
-
-  it('should have entity type constants', () => {
-    expect(CacheTags.BUDGET).toBe('budget');
-    expect(CacheTags.TRANSACTIONS).toBe('transactions');
-    expect(CacheTags.SETTINGS).toBe('settings');
-    expect(CacheTags.DASHBOARD).toBe('dashboard');
-    expect(CacheTags.SESSION).toBe('session');
-  });
 });

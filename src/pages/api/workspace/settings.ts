@@ -163,7 +163,7 @@ export const PUT: APIRoute = async (context) => {
     // Invalidate layout cache since workspace settings changed (best-effort)
     try {
       const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId), CacheTags.LAYOUT]);
+      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId)]);
     } catch (cacheError) {
       logError(`Cache invalidation failed for workspace ${auth.workspaceId}`, cacheError);
     }

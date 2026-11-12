@@ -181,7 +181,7 @@ export class BudgetService {
       cacheKey,
       {
         ttl: 3600,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET, CacheTags.TRANSACTIONS],
+        tags: [CacheTags.workspace(workspaceId)],
       },
       () =>
         trackQuery('BudgetService.getMonthlyOverview', perf, () =>
@@ -858,7 +858,7 @@ export class BudgetService {
 
     // Invalidate budget cache
     const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId)]);
 
     return { updated, errors };
   }
@@ -929,7 +929,7 @@ export class BudgetService {
 
     // Invalidate budget cache
     const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id), CacheTags.BUDGET]);
+    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id)]);
 
     return budget as Budget;
   }
@@ -992,7 +992,7 @@ export class BudgetService {
 
     // Invalidate budget cache
     const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId)]);
 
     const updatedBudget = await this.getBudgetById(id, workspaceId);
     return updatedBudget as Budget;
@@ -1025,7 +1025,7 @@ export class BudgetService {
 
     // Invalidate budget cache
     const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId)]);
 
     return { success: true };
   }
@@ -1234,7 +1234,7 @@ export class BudgetService {
 
     if (result.initialized_count > 0) {
       const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id), CacheTags.BUDGET]);
+      await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id)]);
     }
 
     return result;
@@ -1320,7 +1320,7 @@ export class BudgetService {
 
     // Invalidate budget cache for the workspace
     const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id), CacheTags.BUDGET]);
+    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id)]);
 
     return {
       copied_count: budgetsToCopy.length,
