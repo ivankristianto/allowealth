@@ -82,6 +82,8 @@ async function toggleHistory(control: HTMLElement) {
   try {
     // Fetch server-rendered HTML
     const res = await csrfFetch(`/api/accounts/${accountId}/history?limit=10&_render=html`);
+    // Error responses are JSON; rendering them would put raw JSON in the row.
+    if (!res.ok) throw new Error(`History request failed: ${res.status}`);
     const html = await res.text();
 
     // Inject server-rendered HTML directly
