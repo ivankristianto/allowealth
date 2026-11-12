@@ -299,14 +299,20 @@ export function getQueryParams(url: URL): Record<string, string> {
   return params;
 }
 
+/** Parse an integer query param, falling back when it is missing or not a number. */
+export function parseIntParam(value: string | null, fallback: number): number {
+  const parsed = parseInt(value ?? '', 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
 /**
  * Parse pagination params
  * Normal requests are capped at 100 items.
  * Internal requests (with _internal=true) are capped at 10000 for caching purposes.
  */
 export function getPaginationParams(url: URL): { limit: number; offset: number } {
-  const limit = parseInt(url.searchParams.get('limit') || String(PAGINATION.DEFAULT_PAGE_SIZE), 10);
-  const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const limit = parseIntParam(url.searchParams.get('limit'), PAGINATION.DEFAULT_PAGE_SIZE);
+  const offset = parseIntParam(url.searchParams.get('offset'), 0);
   const isInternal = url.searchParams.get('_internal') === 'true';
 
   // Internal requests (for caching) allow higher limits
