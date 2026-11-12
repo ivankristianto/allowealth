@@ -1,4 +1,4 @@
-# ADR 014: Service Layer Architecture
+# ADR 015: Service Layer Architecture
 
 **Status:** Accepted  
 **Date:** 2026-04-11  

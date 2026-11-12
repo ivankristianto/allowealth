@@ -224,6 +224,8 @@ await cache.set('categories', categories, {
 
 ### Performance Impact
 
+The figures below date from the remote-database setup (about 400ms per round trip). They have not been re-measured on local SQLite.
+
 **Without Cache:**
 
 - Dashboard: 7,000ms (10+ queries × 400ms RTT)
@@ -491,10 +493,8 @@ log.info('query executed', { duration, rows, query });
 
 # Test Core Web Vitals
 # Use Lighthouse or WebPageTest
-npm run lighthouse
 ```
 
 **Monitor in production:**
 
 - Application logs - request duration, cache hit rate, runtime diagnostics
-- Upstash Console - cache operations, hit rate

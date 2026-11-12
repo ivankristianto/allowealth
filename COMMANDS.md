@@ -222,7 +222,7 @@ bun run lint:fix && bun run stylelint:fix && bun run format:fix && bun run typec
 | `bun run db:generate`    | Generate SQLite migration from schema changes     |
 | `bun run db:migrate`     | Apply pending SQLite migrations                   |
 | `bun run db:studio`      | Open Drizzle Studio (visual DB browser)           |
-| `bun run db:seed --yes`  | Wipe and seed demo data (3 months default)        |
+| `bun run db:seed --yes`  | Wipe and seed demo data (6 months default)        |
 | `bun run db:seed:stress` | Seed 5 years of family stress-test data (`--yes`) |
 | `bun run db:reset --yes` | Same as `aw db reset --yes`                       |
 | `bun run db:empty --yes` | Delete all rows; keep schema and migrations       |
@@ -238,8 +238,8 @@ bun run db:generate          # Generate migration
 bun run db:migrate           # Apply migration
 
 # Seed with custom options
-bun run db:seed --yes              # Default: 3 months of data
-bun run db:seed --yes --months=6   # Seed 6 months of transactions
+bun run db:seed --yes              # Default: 6 months of data
+bun run db:seed --yes --months=3   # Seed 3 months of transactions
 bun run db:seed --yes --months=12 --transactions=5000  # 12 months + 5k extra
 ```
 

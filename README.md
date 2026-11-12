@@ -162,37 +162,15 @@ The seeder creates realistic sample data for testing:
 # Wipe the database and seed full demo data
 bun run db:seed --yes
 
-# Seed database with dashboard test data (lightweight, focused on dashboard)
-bun run db:seed:dashboard
-
 # Reset database with full demo data
 bun run db:reset --yes
-
-# Reset database with dashboard test data
-bun run db:reset:dashboard
 
 # Empty database (delete every row; keep the schema and migration history)
 bun run db:empty --yes
 
-# Empty production database (with 5-second safety delay)
-bun run db:empty:prod
+# With NODE_ENV=production, db:empty waits 5 seconds before deleting
+NODE_ENV=production bun run db:empty --yes
 ```
-
-### Dashboard Test User
-
-For dashboard testing, you can use the dashboard seeder which creates:
-
-- **Email:** `test@example.com`
-- **Password:** `Test12345678!`
-
-The dashboard seeder creates focused test data:
-
-- **1 User** with default settings
-- **11 Categories** (3 income, 8 expense types)
-- **3 Payment Methods** (Cash, Bank Transfer, Credit Card)
-- **200+ Transactions** spanning 90 days
-- **6 Assets** with varied update dates (to test priority logic)
-- **90 Exchange Rate entries** (IDR/USD)
 
 ### Troubleshooting
 
@@ -223,10 +201,10 @@ Create a new workspace with custom settings and admin invitation:
 
 ```bash
 # Basic workspace creation
-bun run cli:create-workspace -- --name "My Family" --email admin@example.com
+bun run aw workspace create --name "My Family" --email admin@example.com
 
 # Create with custom settings
-bun run cli:create-workspace -- --name "Business" --email owner@business.com --currency USD --week-start sunday
+bun run aw workspace create --name "Business" --email owner@business.com --currency USD --week-start sunday
 ```
 
 **Example Output:**
@@ -259,7 +237,7 @@ Invitation link:
 View all workspaces with their details:
 
 ```bash
-bun run cli:list-workspaces
+bun run aw workspace list
 ```
 
 **Example Output:**
@@ -298,10 +276,10 @@ Remove a workspace and all associated data:
 
 ```bash
 # Delete with confirmation prompt
-bun run cli:delete-workspace -- --id abc123def456
+bun run aw workspace delete --id abc123def456
 
 # Force delete without confirmation (use with caution)
-bun run cli:delete-workspace -- --id abc123def456 --force
+bun run aw workspace delete --id abc123def456 --force
 ```
 
 **Example Output (with confirmation):**

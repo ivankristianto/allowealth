@@ -16,9 +16,9 @@ Use a service-layer cache-aside architecture with driver abstraction and tag-bas
 
 - `CacheManager`: central runtime manager for cache operations.
 - `CacheDriver` interface: consistent API for all drivers.
-- `UpstashDriver`: shared production cache backend (REST API).
-- `RedisDriver`: local/self-hosted cache backend (TCP via Bun.Redis, Bun-only).
-- `MemoryDriver`: local/dev in-memory cache backend.
+- `RedisDriver`: production cache backend (TCP via Bun.Redis, Bun-only). Docker Compose sets `CACHE_DRIVER=redis` by default and runs a bundled Redis service.
+- `UpstashDriver`: optional hosted backend (REST API), used when `CACHE_DRIVER=upstash`.
+- `MemoryDriver`: in-process cache. The default when `CACHE_DRIVER` is unset, used in dev and tests.
 - `NoopDriver`: explicit no-cache mode (tests or disabled cache).
 
 ### Canonical Driver Interface
