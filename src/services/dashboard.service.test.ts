@@ -78,6 +78,18 @@ describe('DashboardService', () => {
     });
   });
 
+  describe('account reminders', () => {
+    it('skips closed accounts', async () => {
+      seedAccount(memory.raw, 'acc-closed', { status: 'closed' });
+      const ninetyDaysAgo = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60;
+      memory.raw.run('UPDATE accounts SET last_updated = ?', [ninetyDaysAgo]);
+
+      const result = await dashboardService.getDashboardData(FIXTURE_WORKSPACE, month, year, 'USD');
+
+      expect(result.accountReminders.map((r) => r.accountId)).toEqual(['acc']);
+    });
+  });
+
   describe('section failures', () => {
     for (const table of ['budgets', 'accounts', 'transactions']) {
       it(`rejects and caches nothing when the ${table} query fails`, async () => {

@@ -128,6 +128,35 @@ describe('AccountInlineHistory client behavior', () => {
     expect(container.innerHTML).toContain('_render=html');
   });
 
+  it('shows an error message instead of the JSON body when the request fails', async () => {
+    (globalThis as Record<string, unknown>).fetch = mock(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+    );
+    initInlineHistory();
+
+    const toggle = document.querySelector(
+      '[aria-controls="account-table-history-acc-1"]'
+    ) as HTMLButtonElement | null;
+    const container = document.querySelector(
+      '#account-table-history-acc-1 [data-history-container]'
+    );
+
+    if (!toggle || !container) {
+      throw new Error('Expected first table history toggle and container');
+    }
+
+    toggle.click();
+    await waitForAsyncWork();
+
+    expect(container.textContent).toContain('Failed to load history.');
+    expect(container.textContent).not.toContain('Unauthorized');
+  });
+
   it('collapses the same table history container on second click', async () => {
     initInlineHistory();
 

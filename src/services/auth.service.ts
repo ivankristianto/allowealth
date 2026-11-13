@@ -193,29 +193,24 @@ async function createInvitedUser(
   }
 }
 
+// Deletes the workspace only when this signup created it; an invite's workspace must survive.
 async function cleanupFailedDomainBootstrap(
   userId: string,
-  workspaceId: string | null,
+  createdWorkspaceId: string | null,
   database: IDatabase
 ): Promise<void> {
-  const domainUser = await database.query.users.findFirst({
-    where: eq(schema.users.id, userId),
-  });
-
-  const workspaceIdToDelete = workspaceId ?? domainUser?.workspace_id ?? null;
-
   await database.delete(schema.users).where(eq(schema.users.id, userId));
 
-  if (!workspaceIdToDelete) {
+  if (!createdWorkspaceId) {
     return;
   }
 
   const remainingWorkspaceUsers = await database.query.users.findMany({
-    where: eq(schema.users.workspace_id, workspaceIdToDelete),
+    where: eq(schema.users.workspace_id, createdWorkspaceId),
   });
 
   if (remainingWorkspaceUsers.length === 0) {
-    await database.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceIdToDelete));
+    await database.delete(schema.workspaces).where(eq(schema.workspaces.id, createdWorkspaceId));
   }
 }
 

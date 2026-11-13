@@ -179,8 +179,7 @@ describe('getStatusBadgeClasses', () => {
 });
 
 describe('getBudgetStatusClass', () => {
-  it('should return status-danger for percentage >= 100', () => {
-    expect(getBudgetStatusClass(100)).toBe('status-danger');
+  it('should return status-danger above 100%', () => {
     expect(getBudgetStatusClass(100.1)).toBe('status-danger');
     expect(getBudgetStatusClass(150)).toBe('status-danger');
   });
@@ -203,7 +202,7 @@ describe('getBudgetStatusClass', () => {
     expect(getBudgetStatusClass(79.99)).toBe('status-ok');
     expect(getBudgetStatusClass(80)).toBe('status-warning');
     expect(getBudgetStatusClass(99.99)).toBe('status-warning');
-    expect(getBudgetStatusClass(100)).toBe('status-danger');
+    expect(getBudgetStatusClass(100)).toBe('status-warning');
   });
 });
 

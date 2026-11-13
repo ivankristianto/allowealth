@@ -45,7 +45,7 @@ export interface BudgetHealthSummary {
  */
 export const ALERT_THRESHOLDS = {
   WARNING: 80, // 80% of budget
-  EXCEEDED: 100, // 100% of budget
+  EXCEEDED: 100, // over 100% of budget; exactly 100% is on budget
 } as const;
 
 /**
@@ -58,7 +58,7 @@ export const ALERT_THRESHOLDS = {
  * @example
  * calculateBudgetStatus('100', '50') // Returns 'healthy'
  * calculateBudgetStatus('100', '85') // Returns 'warning'
- * calculateBudgetStatus('100', '100') // Returns 'exceeded'
+ * calculateBudgetStatus('100', '100') // Returns 'warning' (on budget, not over)
  * calculateBudgetStatus('100', '120') // Returns 'exceeded'
  */
 export function calculateBudgetStatus(budget: string, spent: string): BudgetStatus {
@@ -68,7 +68,7 @@ export function calculateBudgetStatus(budget: string, spent: string): BudgetStat
 
   // Compare spent * 100 with budget * threshold so a rounded percentage can't cross a boundary.
   const spentTimes100 = decimalMultiply(spent, '100');
-  if (decimalCompare(spentTimes100, decimalMultiply(budget, ALERT_THRESHOLDS.EXCEEDED)) >= 0) {
+  if (decimalCompare(spentTimes100, decimalMultiply(budget, ALERT_THRESHOLDS.EXCEEDED)) > 0) {
     return 'exceeded';
   }
   if (decimalCompare(spentTimes100, decimalMultiply(budget, ALERT_THRESHOLDS.WARNING)) >= 0) {

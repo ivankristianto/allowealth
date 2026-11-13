@@ -56,8 +56,16 @@ describe('budget status at the 100% boundary', () => {
     };
   }
 
-  it('reports exactly 100% as exceeded on the budget page and the dashboard', async () => {
+  it('reports exactly 100% as on budget (warning) on the budget page and the dashboard', async () => {
     expect(await statuses('500', '500')).toEqual({
+      budgetPage: 'warning',
+      exceededCount: 0,
+      dashboard: 'warning',
+    });
+  });
+
+  it('reports one cent over the budget as exceeded in both places', async () => {
+    expect(await statuses('500', '500.01')).toEqual({
       budgetPage: 'exceeded',
       exceededCount: 1,
       dashboard: 'exceeded',

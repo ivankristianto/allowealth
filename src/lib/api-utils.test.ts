@@ -8,8 +8,10 @@
 import { describe, test, expect } from 'bun:test';
 import type { APIContext } from 'astro';
 import { minLength, object, pipe, string } from 'valibot';
+import { PAGINATION } from '@/lib/constants/pagination';
 import {
   getAuthenticatedUser,
+  getPaginationParams,
   getWorkspaceUser,
   isValidationError,
   validateBody,
@@ -275,5 +277,21 @@ describe('validateBody', () => {
     const parsedName: string = validation.data.name;
     expect(parsedName).toBe('Alice');
     expect(validation.data).toEqual({ name: 'Alice' });
+  });
+});
+
+describe('getPaginationParams', () => {
+  const params = (query: string) => getPaginationParams(new URL(`http://localhost/api/x?${query}`));
+
+  test('falls back to the defaults when limit or offset is not a number', () => {
+    expect(params('limit=abc&offset=xyz')).toEqual({
+      limit: PAGINATION.DEFAULT_PAGE_SIZE,
+      offset: 0,
+    });
+  });
+
+  test('clamps numeric values to the allowed range', () => {
+    expect(params('limit=0&offset=-5')).toEqual({ limit: 1, offset: 0 });
+    expect(params('limit=500')).toEqual({ limit: 100, offset: 0 });
   });
 });

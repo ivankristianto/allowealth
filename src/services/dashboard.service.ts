@@ -309,6 +309,7 @@ export class DashboardService {
     // Calculate account reminders from the same data
     const reminders: AccountReminder[] = [];
     for (const account of workspaceAccounts) {
+      if (account.status === 'closed') continue;
       const priorityResult = calculateAccountPriority(account.last_updated);
       if (priorityResult.needsUpdate) {
         reminders.push({

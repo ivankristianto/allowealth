@@ -1,7 +1,12 @@
 import type { APIRoute } from 'astro';
 import { db, auditLogs, users } from '@/db';
 import { desc, sql, and, eq } from 'drizzle-orm';
-import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  getAuthenticatedUser,
+  parseIntParam,
+} from '@/lib/api-utils';
 import { logError } from '@/lib/logger';
 
 /**
@@ -28,8 +33,8 @@ export const GET: APIRoute = async (context) => {
     const action = url.searchParams.get('action') || undefined;
     const entityType = url.searchParams.get('entityType') || undefined;
     const workspaceId = url.searchParams.get('workspaceId') || undefined;
-    const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50', 10), 1), 100);
-    const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0);
+    const limit = Math.min(Math.max(parseIntParam(url.searchParams.get('limit'), 50), 1), 100);
+    const offset = Math.max(parseIntParam(url.searchParams.get('offset'), 0), 0);
 
     // Build filter conditions
     const conditions = [];

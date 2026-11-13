@@ -289,7 +289,7 @@ export const transitions = {
  * @returns Status class name for styling
  */
 export function getBudgetStatusClass(percentage: number): BudgetStatusClassName {
-  if (percentage >= 100) return 'status-danger';
+  if (percentage > 100) return 'status-danger';
   if (percentage >= 80) return 'status-warning';
   return 'status-ok';
 }
