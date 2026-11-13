@@ -49,11 +49,7 @@ export const PATCH: APIRoute = async (context) => {
     // Invalidate layout cache (best-effort)
     try {
       const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(auth.workspaceId),
-        CacheTags.ACCOUNTS,
-        CacheTags.LAYOUT,
-      ]);
+      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId)]);
     } catch (cacheError) {
       logError(
         `Failed to invalidate cache after ownership transfer [workspaceId=${auth.workspaceId}, accountId=${id}]`,

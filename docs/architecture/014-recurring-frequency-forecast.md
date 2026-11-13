@@ -25,7 +25,7 @@ Forecasts are computed via pure date math, not pre-generated occurrence rows. Th
 
 ### Caching
 
-Forecast data uses a 6-hour TTL (21600s) with tag-based invalidation via `CacheTags.RECURRING_FORECAST`. All template mutations (create, update, pause, resume, cancel) and occurrence mutations (confirm, skip) invalidate the forecast cache. This is safe because forecast data only changes when templates change.
+Forecast data uses a 6-hour TTL (21600s) and is tagged with `CacheTags.workspace(workspaceId)`. All template mutations (create, update, pause, resume, cancel) and occurrence mutations (confirm, skip) invalidate the forecast cache. This is safe because forecast data only changes when templates change.
 
 ## Consequences
 

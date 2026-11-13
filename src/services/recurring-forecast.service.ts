@@ -245,7 +245,7 @@ export class RecurringForecastService {
     try {
       await cache.set(cacheKey, result, {
         ttl: FORECAST_TTL,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_FORECAST],
+        tags: [CacheTags.workspace(workspaceId)],
       });
     } catch (error) {
       log.warn('cache write failed for recurring forecast:', error);

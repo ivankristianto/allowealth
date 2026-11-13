@@ -70,10 +70,7 @@ export class CategoryService {
         .returning();
     });
 
-    await invalidateTags(
-      [CacheTags.workspace(validated.workspace_id), CacheTags.CATEGORIES],
-      'best-effort'
-    );
+    await invalidateTags([CacheTags.workspace(validated.workspace_id)]);
 
     return category;
   }
@@ -116,7 +113,7 @@ export class CategoryService {
 
     return cacheOrFetch(
       cacheKey,
-      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.CATEGORIES] },
+      { ttl: 3600, tags: [CacheTags.workspace(workspaceId)] },
       () =>
         trackQuery('CategoryService.findAll', perf, () =>
           this.db.query.categories.findMany({
@@ -172,7 +169,7 @@ export class CategoryService {
         );
     });
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES], 'best-effort');
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return this.findById(id, workspaceId, perf);
   }
@@ -210,7 +207,7 @@ export class CategoryService {
         );
     });
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES], 'best-effort');
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return { success: true };
   }
@@ -294,7 +291,7 @@ export class CategoryService {
       categoryMap.set(cat.name, id);
     }
 
-    await invalidateTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES], 'best-effort');
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
 
     return categoryMap;
   }

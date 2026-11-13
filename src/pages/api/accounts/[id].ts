@@ -124,11 +124,7 @@ export const PUT: APIRoute = async (context) => {
     // Invalidate layout cache since accounts changed (best-effort)
     try {
       const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(auth.workspaceId),
-        CacheTags.ACCOUNTS,
-        CacheTags.LAYOUT,
-      ]);
+      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId)]);
     } catch (cacheError) {
       logError(
         `Failed to invalidate cache after account update [workspaceId=${auth.workspaceId}, accountId=${id}]`,
@@ -167,11 +163,7 @@ export const DELETE: APIRoute = async (context) => {
     // Invalidate layout cache since accounts changed (best-effort)
     try {
       const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(auth.workspaceId),
-        CacheTags.ACCOUNTS,
-        CacheTags.LAYOUT,
-      ]);
+      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId)]);
     } catch (cacheError) {
       logError(
         `Failed to invalidate cache after account delete [workspaceId=${auth.workspaceId}, accountId=${id}]`,

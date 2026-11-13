@@ -162,7 +162,7 @@ export class UserMetaService {
       });
 
     // Invalidate settings cache
-    await invalidateTags([CacheTags.user(userId), CacheTags.SETTINGS], 'strict');
+    await invalidateTags([CacheTags.user(userId)]);
   }
 
   /**
@@ -200,7 +200,7 @@ export class UserMetaService {
     await this.meta.delete(userId, key);
 
     // Invalidate settings cache
-    await invalidateTags([CacheTags.user(userId), CacheTags.SETTINGS], 'strict');
+    await invalidateTags([CacheTags.user(userId)]);
   }
 
   // ============================================================================
@@ -288,7 +288,7 @@ export class UserMetaService {
     // Cache the result
     await cache.set(cacheKey, result, {
       ttl: 3600,
-      tags: [CacheTags.user(userId), CacheTags.SETTINGS],
+      tags: [CacheTags.user(userId)],
     });
 
     return result;

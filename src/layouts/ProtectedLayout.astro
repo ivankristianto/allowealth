@@ -139,14 +139,7 @@ if (cached) {
           },
           {
             ttl: 300,
-            tags: [
-              CacheTags.workspace(user.workspaceId),
-              CacheTags.user(user.id),
-              CacheTags.LAYOUT,
-              CacheTags.CATEGORIES,
-              CacheTags.ACCOUNTS,
-              CacheTags.SETTINGS,
-            ],
+            tags: [CacheTags.workspace(user.workspaceId), CacheTags.user(user.id)],
           }
         );
       }

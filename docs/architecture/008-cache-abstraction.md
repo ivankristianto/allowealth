@@ -43,18 +43,13 @@ export interface CacheDriver {
 
 ### Invalidation Policy
 
-Standard invalidation helper:
-
-- `invalidateTags(tags, 'strict')`: bubble cache failures to caller (transaction-like behavior).
-- `invalidateTags(tags, 'best-effort')`: swallow cache failures and continue primary operation.
-
-Services choose policy explicitly based on mutation criticality.
+`invalidateTags(tags)` is the standard helper. The app cache drivers log and swallow backend errors, so a cache outage never fails the write that triggered it. A failed invalidation can leave stale entries until their TTL expires.
 
 ### Tag Contract
 
 - Workspace scope: `CacheTags.workspace(workspaceId)`
-- Domain tags: `CacheTags.TRANSACTIONS`, `CacheTags.BUDGET`, `CacheTags.DASHBOARD`, `CacheTags.RECURRING`, etc.
-- Auth/API key tags: `CacheTags.API_KEYS`, `apikey:<prefix>` (for API key lifecycle operations)
+- User scope: `CacheTags.user(userId)`
+- No global domain tags. `invalidateByTags` deletes the union of its tags, so a global tag such as `accounts` would flush that entity's cache in every workspace. A write invalidates its whole workspace (or user) instead.
 
 ## Consequences
 

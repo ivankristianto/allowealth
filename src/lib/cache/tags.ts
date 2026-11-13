@@ -14,19 +14,7 @@ export const CacheTags = {
   /** Session-scoped tag: session:{id} */
   session: (id: string): string => `session:${id}`,
 
-  // Entity type tags
-  BUDGET: 'budget' as const,
-  TRANSACTIONS: 'transactions' as const,
-  SETTINGS: 'settings' as const,
-  DASHBOARD: 'dashboard' as const,
-  RECURRING: 'recurring' as const,
-  RECURRING_OCCURRENCES: 'recurring-occurrences' as const,
-  RECURRING_CALENDAR: 'recurring-calendar' as const,
-  RECURRING_FORECAST: 'recurring-forecast' as const,
-  SESSION: 'session' as const,
-  CATEGORIES: 'categories' as const,
-  ACCOUNTS: 'accounts' as const,
-  LAYOUT: 'layout' as const,
-  ACCOUNT_CATEGORIES: 'account-categories' as const,
+  // Tag app data by workspace or user only. invalidateByTags deletes the union of its tags, so a
+  // global tag such as 'accounts' would flush that entity's cache in every workspace.
   MCP_TOKENS: 'mcp_tokens' as const,
 } as const;

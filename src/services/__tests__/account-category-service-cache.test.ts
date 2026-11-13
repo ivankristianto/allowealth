@@ -57,8 +57,7 @@ describe('AccountCategoryService.findAll caching', () => {
     expect(cacheSetCall[0]).toContain(workspaceId);
 
     const options = cacheSetCall[2];
-    expect(options.tags).toContain(CacheTags.workspace(workspaceId));
-    expect(options.tags).toContain(CacheTags.ACCOUNT_CATEGORIES);
+    expect(options.tags).toEqual([CacheTags.workspace(workspaceId)]);
   });
 
   it('should invalidate cache on create', async () => {
@@ -88,8 +87,7 @@ describe('AccountCategoryService.findAll caching', () => {
 
     expect(cache.invalidateByTags).toHaveBeenCalledTimes(1);
     const tags = (cache.invalidateByTags as any).mock.calls[0][0];
-    expect(tags).toContain(CacheTags.workspace(workspaceId));
-    expect(tags).toContain(CacheTags.ACCOUNT_CATEGORIES);
+    expect(tags).toEqual([CacheTags.workspace(workspaceId)]);
   });
 
   it('should invalidate cache on seedDefaultCategories', async () => {
@@ -107,8 +105,7 @@ describe('AccountCategoryService.findAll caching', () => {
 
     expect(cache.invalidateByTags).toHaveBeenCalledTimes(1);
     const tags = (cache.invalidateByTags as any).mock.calls[0][0];
-    expect(tags).toContain(CacheTags.workspace(workspaceId));
-    expect(tags).toContain(CacheTags.ACCOUNT_CATEGORIES);
+    expect(tags).toEqual([CacheTags.workspace(workspaceId)]);
   });
 
   it('should return cached results on cache hit', async () => {

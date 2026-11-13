@@ -32,11 +32,7 @@ export const POST: APIRoute = async (context) => {
     // Invalidate cache
     try {
       const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(auth.workspaceId),
-        CacheTags.ACCOUNTS,
-        CacheTags.LAYOUT,
-      ]);
+      await cache.invalidateByTags([CacheTags.workspace(auth.workspaceId)]);
     } catch (cacheError) {
       logError(
         `Failed to invalidate cache after account reopen [workspaceId=${auth.workspaceId}, accountId=${id}]`,

@@ -1,26 +1,12 @@
 import { getCacheManager } from './cache-manager';
 
-export type InvalidationPolicy = 'strict' | 'best-effort';
-
 /**
- * Shared cache invalidation helper with explicit policy control.
- * - strict: rethrow cache errors to preserve current transactional behavior.
- * - best-effort: swallow cache errors to keep primary operation successful.
+ * Invalidates cache entries by tag. App cache drivers log and swallow backend errors, so a cache
+ * outage never fails the write that triggered it.
  */
-export async function invalidateTags(
-  tags: string[],
-  policy: InvalidationPolicy = 'best-effort'
-): Promise<void> {
+export async function invalidateTags(tags: string[]): Promise<void> {
   const uniqueTags = Array.from(new Set(tags.filter((tag) => tag && tag.trim() !== '')));
   if (uniqueTags.length === 0) return;
 
-  const cache = getCacheManager();
-
-  try {
-    await cache.invalidateByTags(uniqueTags);
-  } catch (error) {
-    if (policy === 'strict') {
-      throw error;
-    }
-  }
+  await getCacheManager().invalidateByTags(uniqueTags);
 }

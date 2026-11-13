@@ -126,18 +126,7 @@ export class RecurringOccurrenceService {
   }
 
   private async invalidateWorkspaceCache(workspaceId: string): Promise<void> {
-    await invalidateTags(
-      [
-        CacheTags.workspace(workspaceId),
-        CacheTags.RECURRING,
-        CacheTags.RECURRING_OCCURRENCES,
-        CacheTags.RECURRING_CALENDAR,
-        CacheTags.RECURRING_FORECAST,
-        CacheTags.TRANSACTIONS,
-        CacheTags.DASHBOARD,
-      ],
-      'strict'
-    );
+    await invalidateTags([CacheTags.workspace(workspaceId)]);
   }
 
   async findPending(
@@ -215,7 +204,7 @@ export class RecurringOccurrenceService {
     try {
       await cache.set(cacheKey, result, {
         ttl: 900,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_OCCURRENCES],
+        tags: [CacheTags.workspace(workspaceId)],
       });
     } catch (error) {
       log.warn('cache write failed for recurring occurrences:', error);
@@ -571,7 +560,7 @@ export class RecurringOccurrenceService {
     try {
       await cache.set(cacheKey, result, {
         ttl: 900,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_CALENDAR],
+        tags: [CacheTags.workspace(workspaceId)],
       });
     } catch (error) {
       log.warn('cache write failed for recurring calendar:', error);
@@ -663,7 +652,7 @@ export class RecurringOccurrenceService {
     try {
       await cache.set(cacheKey, stats, {
         ttl: 900,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.RECURRING_OCCURRENCES],
+        tags: [CacheTags.workspace(workspaceId)],
       });
     } catch (error) {
       log.warn('cache write failed for recurring stats:', error);
