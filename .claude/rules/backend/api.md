@@ -76,20 +76,29 @@ See `docs/architecture/002-interactive-pages.md` for full details.
 ## Authentication
 
 ```typescript
-import { requireAuth } from '@/middleware/auth';
+import type { APIRoute } from 'astro';
+import { getWorkspaceUser, successResponse, errorResponse } from '@/lib/api-utils';
 
-export async function GET({ locals }) {
-  // User is guaranteed to exist (middleware redirects if not)
-  const user = locals.user!;
-
-  const budgets = await budgetService.getUserBudgets(user.id);
-  return new Response(JSON.stringify({ budgets }));
-}
+export const GET: APIRoute = async (context) => {
+  try {
+    const auth = getWorkspaceUser(context);
+    const budgets = await budgetService.findAllBudgets(auth.workspaceId, month, year);
+    return successResponse(budgets);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    // ...ServiceError and logError handling, see Error Handling below
+  }
+};
 ```
 
 **Rules:**
 
-- ✅ **Use `locals.user` from middleware** - already authenticated
+- ✅ **Use `getWorkspaceUser(context)` for workspace-scoped routes** - reads `context.locals.user` set by the auth middleware and returns `{ userId, workspaceId, role }`
+- ✅ **Use `getAuthenticatedUser(context)` when super admins may call the route** - its `workspaceId` is `null` for a super admin
+- ✅ **Map `Error('Unauthorized')` to a 401** - both helpers throw it when there is no user or workspace
+- ❌ **Use `requireAuth` or `getUserId` from `@/lib/api-utils`** - deprecated wrappers
 - ✅ **Add auth checks in service layer** - defense in depth
 
 See `docs/architecture/003-api-authentication.md` for full details.
@@ -156,20 +165,18 @@ export async function POST({ request, locals }) {
 
 ## CSRF Protection
 
-```typescript
-import { verifyCsrfToken } from '@/lib/csrf';
+The `csrf` middleware (`src/middleware/csrf.ts`) enforces CSRF for every route. It runs after `authentication` and uses the double-submit cookie pattern from `src/lib/csrf.ts`.
 
-export async function POST({ request, locals, cookies }) {
-  const token = request.headers.get('X-CSRF-Token');
-  if (!verifyCsrfToken(token, cookies)) {
-    return new Response(JSON.stringify({ error: 'Invalid CSRF token' }), {
-      status: 403,
-    });
-  }
+- For POST, PUT, PATCH and DELETE under `/api/` with a session, it compares the `X-CSRF-Token` header with the `csrf_token` cookie
+- A mismatch returns 403 with code `CSRF_VALIDATION_FAILED` before the route runs
+- `/api/auth/*` is exempt, because Better Auth does its own checks
+- On authenticated page loads it sets the `csrf_token` cookie if it is missing
 
-  // Process request...
-}
-```
+**Rules:**
+
+- ✅ **Add nothing to the route** - the middleware has already rejected bad requests
+- ✅ **Send the header from client code with `@/lib/csrf-client`** - `csrfFetch()` or `getCsrfHeaders()`
+- ❌ **Check the CSRF token inside a route handler** - duplicates the middleware
 
 ## Rebuilding Requests
 

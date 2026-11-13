@@ -113,7 +113,7 @@ await cache.invalidateTags(['budget:123']);
 
 **Rules:**
 
-- ✅ **Use CacheManager + Tag-based drivers** — Upstash (prod), Memory (dev)
+- ✅ **Use CacheManager + Tag-based drivers** — Redis (prod default in Docker Compose), Upstash (optional), Memory (default when `CACHE_DRIVER` is unset, used in dev and tests)
 - ✅ **Handle cache errors gracefully** — fall back to database queries
 - ✅ **Use tag-based cache invalidation** (`user:123`, `budget:123`) with configurable TTLs
 
