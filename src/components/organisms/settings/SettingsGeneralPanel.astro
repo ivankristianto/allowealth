@@ -8,7 +8,7 @@ import { groupedSectionClass, sectionEyebrowClass, sectionTitleClass } from './s
 export interface Props {
   isAdmin: boolean;
   workspaceName: string;
-  settings: { currency: string; secondaryCurrency: string; weekStart: string };
+  settings: { currency: string; secondaryCurrency: string; weekStart: string; timezone: string };
   canChangeCurrency: boolean;
 }
 
@@ -23,6 +23,11 @@ const weekStartOptions = [
   { value: 'monday', label: 'Monday' },
   { value: 'sunday', label: 'Sunday' },
 ];
+
+const supportedTimezones = Intl.supportedValuesOf('timeZone');
+const timezoneOptions = supportedTimezones.includes(settings.timezone)
+  ? supportedTimezones
+  : [settings.timezone, ...supportedTimezones];
 ---
 
 <section
@@ -184,6 +189,36 @@ const weekStartOptions = [
                 </option>
               ))}
             </select>
+          </div>
+
+          <div class="mt-4 form-control">
+            <Label htmlFor="workspace-timezone">Timezone</Label>
+            <select
+              id="workspace-timezone"
+              name="timezone"
+              data-saved-timezone={settings.timezone}
+              aria-describedby="workspace-timezone-help"
+              class="select select-bordered h-14 w-full rounded-lg border border-base-300 bg-base-100 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              {timezoneOptions.map((zone) => (
+                <option value={zone} selected={settings.timezone === zone}>
+                  {zone.replaceAll('_', ' ')}
+                </option>
+              ))}
+            </select>
+            <p id="workspace-timezone-help" class="mt-2 text-sm text-base-content/60">
+              Decides which day counts as today for new transactions, due bills and reports.
+            </p>
+            <p class="mt-2 hidden text-sm text-base-content/70" data-timezone-suggestion>
+              This browser is on <span class="font-semibold" data-timezone-suggestion-zone></span>.
+              <button
+                type="button"
+                class="font-bold underline underline-offset-2"
+                data-timezone-suggestion-apply
+              >
+                Use it
+              </button>
+            </p>
           </div>
         </section>
       </div>

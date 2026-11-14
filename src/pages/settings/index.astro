@@ -64,6 +64,7 @@ let workspaceData = {
     currency: 'IDR',
     secondaryCurrency: '',
     weekStart: 'monday',
+    timezone: 'UTC',
   },
 };
 let canChangeCurrency = true;
@@ -88,6 +89,7 @@ try {
         currency: settings.currency,
         secondaryCurrency: settings.secondaryCurrency,
         weekStart: settings.weekStart,
+        timezone: settings.timezone,
       },
     };
 

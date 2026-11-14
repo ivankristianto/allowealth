@@ -4,6 +4,34 @@ import { addToast } from '@/lib/stores/toastStore';
 import { setButtonLoading } from '@/lib/client-utils';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { onPageReady } from '@/lib/page-lifecycle.client';
+import { getRuntimeTimeZone } from '@/lib/utils/date';
+
+/**
+ * Offers the browser's zone while the workspace is still on the UTC default.
+ * Only fills the select; nothing is saved until the member clicks Save.
+ */
+export function bindTimezoneSuggestion(signal?: AbortSignal): void {
+  const select = document.getElementById('workspace-timezone') as HTMLSelectElement | null;
+  const suggestion = document.querySelector<HTMLElement>('[data-timezone-suggestion]');
+  if (!select || !suggestion) return;
+
+  const browserZone = getRuntimeTimeZone();
+  const hasOption = Array.from(select.options).some((option) => option.value === browserZone);
+  if (select.dataset.savedTimezone !== 'UTC' || browserZone === 'UTC' || !hasOption) return;
+
+  const zoneLabel = suggestion.querySelector<HTMLElement>('[data-timezone-suggestion-zone]');
+  if (zoneLabel) zoneLabel.textContent = browserZone.replaceAll('_', ' ');
+  suggestion.classList.remove('hidden');
+
+  suggestion.querySelector<HTMLButtonElement>('[data-timezone-suggestion-apply]')?.addEventListener(
+    'click',
+    () => {
+      select.value = browserZone;
+      suggestion.classList.add('hidden');
+    },
+    { signal }
+  );
+}
 
 function bindSettingsTabs(container: HTMLElement, signal: AbortSignal) {
   const tabs = Array.from(container.querySelectorAll<HTMLButtonElement>('[data-settings-tab]'));
@@ -96,6 +124,7 @@ function initSettingsPage(signal: AbortSignal) {
 
       const payload: Record<string, unknown> = {
         weekStart: formData.get('weekStart'),
+        timezone: formData.get('timezone'),
       };
       if (canEditCurrencySettings) {
         payload.currency = primaryCurrencySelect?.value ?? formData.get('currency');
@@ -134,6 +163,8 @@ function initSettingsPage(signal: AbortSignal) {
       allSaveBtns.forEach((btn) => setButtonLoading(btn, false));
     }
   }
+
+  bindTimezoneSuggestion(signal);
 
   if (saveBtnBottom && settingsForm) {
     saveBtnBottom.addEventListener('click', handleSave);
