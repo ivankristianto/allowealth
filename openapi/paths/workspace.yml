@@ -30,6 +30,7 @@ paths:
                       USD: "250"
                     forecastMonthlyTopup: 5000000
                     forecastAnnualRate: 7
+                    timezone: "Asia/Jakarta"
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '500':
@@ -42,7 +43,9 @@ paths:
         Update workspace settings. Workspace admins can update the workspace name, and all members
         can update saved preferences.
         Available settings: name, currency, secondaryCurrency, weekStart, monthlyIncome,
-        forecastMonthlyTopup, forecastAnnualRate.
+        forecastMonthlyTopup, forecastAnnualRate, timezone.
+        `timezone` decides which calendar day counts as "today" and which month as the current
+        month for defaults, due and overdue bills, and reports. It must be an IANA zone name.
       security:
         - sessionAuth: []
       requestBody:
@@ -72,6 +75,7 @@ paths:
                       USD: "250"
                     forecastMonthlyTopup: 5000000
                     forecastAnnualRate: 7
+                    timezone: "Asia/Jakarta"
         '400':
           description: Validation error or invalid input
           content:

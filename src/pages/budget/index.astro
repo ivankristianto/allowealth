@@ -9,6 +9,7 @@
  * Redesigned as part of Task 15 & 16 (Budget Page - Card Grid & Header).
  */
 
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
 import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
@@ -54,9 +55,9 @@ const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 
 // Parse and validate year/month parameters with strict numeric validation
-const now = new Date();
-const currentYear = now.getFullYear();
-const currentMonth = now.getMonth() + 1;
+const { year: currentYear, month: currentMonth } = getDatePartsInTimeZone(
+  await workspaceMetaService.getTimezone(user.workspaceId)
+);
 
 // Use Number() for strict validation (rejects "1abc", "1.9", etc.)
 const parsedYear = yearParam ? Number(yearParam) : null;

@@ -28,12 +28,8 @@ import {
   workspaceMetaService,
   accountService,
 } from '@/services';
-import {
-  parseMonthKey,
-  formatMonthKey,
-  getCurrentMonthKey,
-  transformTransaction,
-} from '@/lib/utils';
+import { parseMonthKey, formatMonthKey, transformTransaction } from '@/lib/utils';
+import { getCurrentDateISO, getCurrentMonthKey } from '@/lib/utils/date';
 import { trackPhase, trackPhaseSync } from '@/lib/perf';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -79,7 +75,9 @@ const accountIdsParam = searchParams.account_ids || '';
 const accountIds = accountIdsParam ? accountIdsParam.split(',').filter(Boolean) : [];
 
 // Calculate current month key from today's date (used as default)
-const todayMonthKey = getCurrentMonthKey();
+const workspaceTimezone = await workspaceMetaService.getTimezone(user.workspaceId);
+const todayIso = getCurrentDateISO(workspaceTimezone);
+const todayMonthKey = getCurrentMonthKey(workspaceTimezone);
 
 // Determine effective month (from URL or default to today's month)
 const effectiveMonth = selectedMonth || todayMonthKey;
@@ -237,7 +235,7 @@ const buildBaseUrl = () => {
 };
 
 const baseUrl = buildBaseUrl();
-const dateGroups = groupTransactionsByDate(transactions);
+const dateGroups = groupTransactionsByDate(transactions, todayIso);
 const paginationCurrentClass =
   'inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 font-medium text-base-content';
 
@@ -388,6 +386,7 @@ perf?.recordMilestone('preRender.elapsed');
               showActions={true}
               showBulkSelection={true}
               inCard={true}
+              todayIso={todayIso}
             />
           ) : (
             <div id="empty-state" class="py-24 text-center">

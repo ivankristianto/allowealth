@@ -24,6 +24,7 @@ import {
 } from 'valibot';
 import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
 import { positiveAmountSchema } from './amount';
+import { getLatestDateISO } from '@/lib/utils/date';
 
 /**
  * Validation schemas for Transaction operations
@@ -36,8 +37,9 @@ const requiredId = (message: string) => pipe(string(), minLength(1, message));
 
 const positiveAmountValidation = positiveAmountSchema();
 
+// Loose bound: the workspace zone isn't known here, so TransactionService checks the exact day
 const futureTransactionCheck = check(
-  (value: Date) => value <= new Date(),
+  (value: Date) => value.toISOString().slice(0, 10) <= getLatestDateISO(),
   'Transaction date cannot be in the future'
 );
 
@@ -50,7 +52,7 @@ const dateStringValidation = pipe(
   regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   check((value) => {
     const parsedDate = new Date(`${value}T00:00:00.000Z`);
-    return !Number.isNaN(parsedDate.getTime()) && parsedDate <= new Date();
+    return !Number.isNaN(parsedDate.getTime()) && value <= getLatestDateISO();
   }, 'Invalid date or date cannot be in the future')
 );
 

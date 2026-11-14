@@ -6,9 +6,10 @@ export interface Props {
   calendarData: RecurringCalendarDay[];
   year: number;
   month: number;
+  todayIso: string;
 }
 
-const { calendarData = [], year, month } = Astro.props;
+const { calendarData = [], year, month, todayIso } = Astro.props;
 ---
 
-<RecurringCalendar calendarData={calendarData} year={year} month={month} />
+<RecurringCalendar calendarData={calendarData} year={year} month={month} todayIso={todayIso} />

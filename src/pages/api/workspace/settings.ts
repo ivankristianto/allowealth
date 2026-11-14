@@ -10,6 +10,7 @@ import {
 import { logError } from '@/lib/utils';
 import { WorkspaceMetaServiceError, WorkspaceServiceError } from '@/services/service-errors';
 import {
+  check,
   literal,
   maxLength,
   maxValue,
@@ -33,6 +34,7 @@ import {
 } from '@/lib/constants/workspace-meta-keys';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
+import { normalizeTimeZone } from '@/lib/utils/date';
 
 const currencySchema = picklist(AVAILABLE_CURRENCIES);
 
@@ -52,6 +54,16 @@ const updateWorkspaceSettingsSchema = object({
   ),
   forecastMonthlyTopup: optional(pipe(number(), minValue(0), maxValue(MAX_FORECAST_MONTHLY_TOPUP))),
   forecastAnnualRate: optional(pipe(number(), minValue(0), maxValue(MAX_FORECAST_ANNUAL_RATE))),
+  timezone: optional(
+    pipe(
+      string(),
+      maxLength(64),
+      check(
+        (value) => normalizeTimeZone(value) !== null,
+        'Timezone must be an IANA name such as Asia/Jakarta'
+      )
+    )
+  ),
 });
 
 /**
@@ -83,6 +95,7 @@ export const GET: APIRoute = async (context) => {
         monthlyIncome: parseMonthlyIncomeValue(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
+        timezone: settings.timezone,
       },
     });
   } catch (error) {
@@ -102,7 +115,7 @@ export const GET: APIRoute = async (context) => {
  *
  * Updates workspace settings. Admin only for name changes.
  * All members can update preferences (currency, secondaryCurrency, weekStart, monthlyIncome,
- * forecastMonthlyTopup, forecastAnnualRate).
+ * forecastMonthlyTopup, forecastAnnualRate, timezone).
  */
 export const PUT: APIRoute = async (context) => {
   try {
@@ -122,6 +135,7 @@ export const PUT: APIRoute = async (context) => {
       monthlyIncome,
       forecastMonthlyTopup,
       forecastAnnualRate,
+      timezone,
     } = validation.data;
 
     // Name changes require admin role
@@ -159,6 +173,9 @@ export const PUT: APIRoute = async (context) => {
     if (forecastAnnualRate !== undefined) {
       await workspaceMetaService.setForecastAnnualRate(auth.workspaceId, forecastAnnualRate);
     }
+    if (timezone !== undefined) {
+      await workspaceMetaService.setTimezone(auth.workspaceId, timezone);
+    }
 
     // Invalidate layout cache since workspace settings changed (best-effort)
     try {
@@ -183,6 +200,7 @@ export const PUT: APIRoute = async (context) => {
         monthlyIncome: parseMonthlyIncomeValue(settings.monthlyIncome),
         forecastMonthlyTopup: settings.forecastMonthlyTopup,
         forecastAnnualRate: settings.forecastAnnualRate,
+        timezone: settings.timezone,
       },
     });
   } catch (error) {

@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
@@ -82,9 +83,9 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Current month info for highlighting
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
+    const { year: currentYear, month: currentMonth } = getDatePartsInTimeZone(
+      await workspaceMetaService.getTimezone(auth.workspaceId)
+    );
 
     // Check if HTML rendering is requested
     if (render.wantsHtml()) {

@@ -12,7 +12,7 @@ import {
 } from '@/lib/formatting/amount-input';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
-import { getCurrentDateISO } from '@/lib/utils/date';
+import { getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 import {
   clearConfirmError,
   closeConfirmationModal,
@@ -46,7 +46,7 @@ export interface OccurrenceActionsOptions {
 
 export function isOccurrenceActionable(
   occurrence: Pick<RecurringOccurrenceLike, 'due_date'>,
-  today = getCurrentDateISO()
+  today = getWorkspaceToday()
 ): boolean {
   return occurrence.due_date <= today;
 }
@@ -125,7 +125,7 @@ export function bindOccurrenceActions(options: OccurrenceActionsOptions): void {
     if (idInput) idInput.value = occurrence.id;
     if (dateInput) {
       dateInput.value = occurrence.due_date;
-      dateInput.max = getCurrentDateISO();
+      dateInput.max = getWorkspaceToday();
     }
     if (categorySelect) categorySelect.value = occurrence.category.id;
     if (accountSelect) accountSelect.value = occurrence.account.id;

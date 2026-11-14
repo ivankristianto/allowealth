@@ -1,3 +1,5 @@
+import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
+
 export type RecurringOccurrenceType = 'expense' | 'income';
 export type RecurringActionType = 'confirm' | 'skip';
 export type EndMode = 'none' | 'count' | 'date';
@@ -37,8 +39,9 @@ export function getOccurrenceActionWarning(
   return `You can only ${action} occurrences on or after the ${getTimingNoun(type)}`;
 }
 
-function getCurrentMonthHeadingLabel(now = new Date()): string {
-  return new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-US', {
+function getCurrentMonthHeadingLabel(): string {
+  const [year, month] = getWorkspaceMonth().split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   });

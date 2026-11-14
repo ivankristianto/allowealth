@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { transactionService, workspaceMetaService } from '@/services';
 import { errorResponse, getWorkspaceUser, isValidDate } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { isValidCurrency } from '@/lib/constants/currency';
 
 /**
@@ -75,7 +76,7 @@ export const GET: APIRoute = async (context) => {
     const csv = await transactionService.exportToCSV(filters);
 
     // Generate filename with date
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateISO(await workspaceMetaService.getTimezone(auth.workspaceId));
     const filename = `transactions_${today}.csv`;
 
     // Return CSV file

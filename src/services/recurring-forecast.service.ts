@@ -15,6 +15,8 @@ import { decimalAdd, decimalRound, decimalSubtract } from '@/lib/utils/decimal';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
 import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
 import { normalizeForecastFilters } from '@/lib/utils/recurring-forecast-filters';
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
+import { WorkspaceMetaService } from './workspace-meta.service';
 import {
   mapRecurringTemplateOutput,
   type RecurringTemplateWithRelations,
@@ -170,9 +172,11 @@ const FORECAST_TTL = 6 * 60 * 60; // 6 hours
 export class RecurringForecastService {
   private schema = getActiveSchema();
   private db: IDatabase;
+  private workspaceMetaService: WorkspaceMetaService;
 
   constructor(db: IDatabase) {
     this.db = db;
+    this.workspaceMetaService = new WorkspaceMetaService(db);
   }
 
   async getForecast(
@@ -182,7 +186,15 @@ export class RecurringForecastService {
     perf?: PerfCollector
   ): Promise<ForecastResult> {
     const normalizedFilters = normalizeForecastFilters(filters);
-    const filterKey = hashFilters({ ...normalizedFilters, monthCount } as Record<string, unknown>);
+    const timeZone = await this.workspaceMetaService.getTimezone(workspaceId);
+    const { year: startYear, month: startMonth } = getDatePartsInTimeZone(timeZone);
+    // The start month is in the key so a cached forecast rolls over with the workspace's month
+    const filterKey = hashFilters({
+      ...normalizedFilters,
+      monthCount,
+      startYear,
+      startMonth,
+    } as Record<string, unknown>);
     const cacheKey = CacheKeys.recurringForecast(workspaceId, filterKey);
     const cache = getCacheManager();
 
@@ -235,10 +247,6 @@ export class RecurringForecastService {
         nextDueDate: null,
       })
     );
-
-    const now = new Date();
-    const startYear = now.getUTCFullYear();
-    const startMonth = now.getUTCMonth() + 1;
 
     const result = computeForecast(mapped, startYear, startMonth, monthCount);
 

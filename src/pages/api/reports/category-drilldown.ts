@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { BudgetServiceError } from '@/services/service-errors';
 import { validatePeriod } from '@/lib/utils/period-validation';
 import { isValidNanoid } from '@/lib/validation/nanoid';
@@ -196,6 +197,7 @@ export const GET: APIRoute = async (context) => {
           period,
           currency,
           transactions,
+          todayIso: getCurrentDateISO(await workspaceMetaService.getTimezone(auth.workspaceId)),
           total: categoryTransactionsData.totalCount,
           limit: categoryTransactionsData.limit,
           offset: categoryTransactionsData.offset,

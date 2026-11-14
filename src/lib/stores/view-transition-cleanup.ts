@@ -6,6 +6,7 @@
  */
 
 import { resetFilters } from './transactionFiltersStore';
+import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
 import {
   transactionsDataStore,
   isLoading as transactionsLoading,
@@ -34,7 +35,7 @@ function resetPageStores(): void {
   transactionsLoading.set(false);
   invalidateAllCache();
 
-  selectedYear.set(new Date().getFullYear());
+  selectedYear.set(Number(getWorkspaceMonth().slice(0, 4)));
   budgetLoading.set(false);
   availableYears.set([]);
   budgetCurrency.set('IDR');

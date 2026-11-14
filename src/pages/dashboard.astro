@@ -16,6 +16,7 @@
  * - Net worth widget
  */
 
+import { getCurrentDateISO, getDatePartsInTimeZone } from '@/lib/utils/date';
 import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { dashboardService, workspaceMetaService, workspaceService } from '@/services';
@@ -38,10 +39,12 @@ const currentPath = '/dashboard';
 const user = Astro.locals.user;
 const perf = Astro.locals.perf;
 
-// Get current month and year
 const now = new Date();
-const currentMonth = now.getMonth() + 1;
-const currentYear = now.getFullYear();
+const workspaceTimezone = hasWorkspace(user)
+  ? await workspaceMetaService.getTimezone(user.workspaceId)
+  : 'UTC';
+const todayIso = getCurrentDateISO(workspaceTimezone, now);
+const { year: currentYear, month: currentMonth } = getDatePartsInTimeZone(workspaceTimezone, now);
 const activeCurrencyCookie = Astro.cookies.get('activeCurrency')?.value;
 
 // Check onboarding status and get currency
@@ -232,6 +235,7 @@ const spendingCategories =
               transactions={recentTransactions}
               loading={!dashboardData}
               viewAllUrl="/transactions"
+              todayIso={todayIso}
             />
           </div>
 

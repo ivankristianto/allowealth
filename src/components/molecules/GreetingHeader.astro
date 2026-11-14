@@ -13,13 +13,19 @@ export interface Props {
   userName?: string;
   /** Current date */
   currentDate?: Date;
+  /** IANA zone the hour and date are shown in; the server's zone when omitted */
+  timeZone?: string;
 }
 
-const { userName, currentDate } = Astro.props;
+const { userName, currentDate, timeZone } = Astro.props;
 
 // Get greeting based on time of day (computed during Astro render)
 const getGreeting = (): string => {
-  const hour = (currentDate ?? new Date()).getHours();
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone }).format(
+      currentDate ?? new Date()
+    )
+  );
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
@@ -32,6 +38,7 @@ const displayName = userName?.split(' ')[0] ?? 'there';
 const formatFullDate = (date: Date | undefined): string => {
   if (!date) return '';
   return date.toLocaleDateString('en-US', {
+    timeZone,
     weekday: 'long',
     year: 'numeric',
     month: 'long',

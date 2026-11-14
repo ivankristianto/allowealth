@@ -156,6 +156,7 @@ import Button from '@/components/atoms/Button.astro';
   import { csrfFetch } from '@/lib/csrf-client';
   import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
   import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+  import { getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 
   const initializedModals = new WeakSet<Element>();
 
@@ -193,9 +194,7 @@ import Button from '@/components/atoms/Button.astro';
           ? attachAmountFormatter(balanceInput, selectedCurrency)
           : null;
 
-        // Compute today in local timezone (not UTC) to avoid date mismatch
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const today = getWorkspaceToday();
         if (dateInput) {
           dateInput.value = today;
           dateInput.max = today;

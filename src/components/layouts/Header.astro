@@ -39,6 +39,8 @@ interface Props {
   userName?: string;
   /** Current date for greeting */
   currentDate?: Date;
+  /** Workspace IANA zone for the greeting's hour and date */
+  timeZone?: string;
 }
 
 const {
@@ -50,6 +52,7 @@ const {
   secondaryCurrency,
   userName,
   currentDate,
+  timeZone,
 } = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 const showNewTransactionButton = user != null && user.role !== 'super_admin';
@@ -77,7 +80,7 @@ const showNewTransactionButton = user != null && user.role !== 'super_admin';
         {userName ? (
           <>
             <h1 class="sr-only">{title}</h1>
-            <GreetingHeader userName={userName} currentDate={currentDate} />
+            <GreetingHeader userName={userName} currentDate={currentDate} timeZone={timeZone} />
           </>
         ) : (
           <>

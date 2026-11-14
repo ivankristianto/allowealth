@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { Window } from 'happy-dom';
 import { toasts, clearAllToasts } from '@/lib/stores/toastStore';
-import { getCurrentDateISO } from '@/lib/utils/date';
+import { getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 
 type Globals = Record<string, unknown>;
 const GLOBAL_KEYS = [
@@ -137,7 +137,7 @@ describe('bindOccurrenceActions', () => {
 
   it('fills the confirm form and posts the stripped amount', async () => {
     const onMutated = bind();
-    const today = getCurrentDateISO();
+    const today = getWorkspaceToday();
 
     trigger('confirm', today);
 
@@ -169,7 +169,7 @@ describe('bindOccurrenceActions', () => {
     );
     const onMutated = bind();
 
-    trigger('confirm', getCurrentDateISO());
+    trigger('confirm', getWorkspaceToday());
     $<HTMLButtonElement>('[data-confirm-submit]').click();
     await flush();
 
@@ -183,7 +183,7 @@ describe('bindOccurrenceActions', () => {
   it('skips with the trimmed reason', async () => {
     const onMutated = bind();
 
-    trigger('skip', getCurrentDateISO());
+    trigger('skip', getWorkspaceToday());
     expect($<HTMLElement>('[data-skip-template-name]').textContent).toBe('Skip Rent?');
 
     const reason = $<HTMLTextAreaElement>('[data-skip-reason]');
@@ -219,7 +219,7 @@ describe('bindOccurrenceActions', () => {
     bind();
     controller.abort();
 
-    trigger('confirm', getCurrentDateISO());
+    trigger('confirm', getWorkspaceToday());
 
     expect($<HTMLDialogElement>('#recurring-confirm-modal').open).toBe(false);
   });

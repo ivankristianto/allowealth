@@ -6,7 +6,12 @@ import IconBadge from '@/components/atoms/IconBadge.astro';
 import CurrencyDisplay from '@/components/atoms/Currency.astro';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
-import { accountService, categoryService, recurringOccurrenceService } from '@/services';
+import {
+  accountService,
+  categoryService,
+  recurringOccurrenceService,
+  workspaceMetaService,
+} from '@/services';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 import {
   CalendarClock,
@@ -48,7 +53,10 @@ interface LayoutAccount {
 const { className = '' } = Astro.props;
 const user = Astro.locals.user;
 const perf = Astro.locals.perf;
-const todayIso = getCurrentDateISO();
+const workspaceId = user?.workspaceId;
+const todayIso = getCurrentDateISO(
+  workspaceId ? await workspaceMetaService.getTimezone(workspaceId) : undefined
+);
 const layoutCategories: LayoutCategory[] = [...(Astro.locals.layoutCategories ?? [])];
 const layoutAccounts: LayoutAccount[] = [...(Astro.locals.layoutAccounts ?? [])];
 
@@ -81,14 +89,13 @@ function toMonthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-const workspaceId = user?.workspaceId;
 if (!workspaceId) {
   fetchError = 'Unable to load recurring queue.';
 } else {
   try {
-    const now = new Date();
+    const [todayYear, todayMonth] = todayIso.split('-').map(Number);
     const monthKeys = [-1, 0, 1].map((offset) =>
-      toMonthKey(new Date(now.getFullYear(), now.getMonth() + offset, 1))
+      toMonthKey(new Date(todayYear, todayMonth - 1 + offset, 1))
     );
 
     const pendingResults = await Promise.all(

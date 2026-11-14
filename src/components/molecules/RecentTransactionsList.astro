@@ -23,6 +23,8 @@ export interface Props {
   loading?: boolean;
   viewAllUrl?: string;
   className?: string;
+  /** Today (YYYY-MM-DD) in the workspace zone, for Today/Yesterday labels */
+  todayIso?: string;
 }
 
 const {
@@ -30,11 +32,12 @@ const {
   loading = false,
   viewAllUrl = '/transactions',
   className = '',
+  todayIso,
 } = Astro.props;
 
 const maxTransactions = 10;
 const displayTransactions = transactions.slice(0, maxTransactions);
-const dateGroups = groupTransactionsByDate(displayTransactions);
+const dateGroups = groupTransactionsByDate(displayTransactions, todayIso);
 ---
 
 <div class={className} data-recent-transactions-list data-testid="recent-transactions">
@@ -88,7 +91,7 @@ const dateGroups = groupTransactionsByDate(displayTransactions);
     ) : (
       // Transactions list grouped by date
       <div role="list" aria-label="Recent transactions">
-        <TransactionDateGroups groups={dateGroups} showActions={false} />
+        <TransactionDateGroups groups={dateGroups} showActions={false} todayIso={todayIso} />
       </div>
     )}
   </Card>

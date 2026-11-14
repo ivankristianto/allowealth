@@ -26,6 +26,7 @@ import {
   isValidCurrency,
   type Currency,
 } from '@/lib/constants/currency';
+import { addDaysISO, getCurrentDateISO } from '@/lib/utils/date';
 
 export interface Props {
   type: 'expense' | 'income';
@@ -54,6 +55,8 @@ export interface Props {
   bulk?: boolean;
   formId?: string;
   activeCurrency?: Currency;
+  /** Workspace IANA zone that decides "today"; the server's zone when omitted */
+  timeZone?: string;
 }
 
 const {
@@ -70,6 +73,7 @@ const {
   bulk = false,
   formId: propFormId,
   activeCurrency,
+  timeZone,
 } = Astro.props;
 
 const isEditMode = mode === 'edit';
@@ -91,10 +95,8 @@ const filteredAccounts = activeCurrency
     })
   : classFiltered;
 
-const today = new Date().toISOString().split('T')[0];
-const yesterdayDate = new Date();
-yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-const yesterday = yesterdayDate.toISOString().split('T')[0];
+const today = getCurrentDateISO(timeZone);
+const yesterday = addDaysISO(today, -1);
 
 // Filter categories by type
 const typeCategories = categories.filter((c) => c.type === type);

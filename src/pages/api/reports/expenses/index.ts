@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService, budgetService, workspaceMetaService, workspaceService } from '@/services';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
@@ -133,7 +134,10 @@ export const GET: APIRoute = async (context) => {
     try {
       const [yearPart, monthPart] = period.split('-');
       const year = parseInt(yearPart, 10);
-      const month = range === 'monthly' ? parseInt(monthPart, 10) : new Date().getMonth() + 1;
+      const month =
+        range === 'monthly'
+          ? parseInt(monthPart, 10)
+          : getDatePartsInTimeZone(await workspaceMetaService.getTimezone(auth.workspaceId)).month;
       const budgetData = await budgetService.getMonthlyOverview(
         auth.workspaceId,
         year,
@@ -251,9 +255,9 @@ export const GET: APIRoute = async (context) => {
       }
 
       if (partial === 'selector') {
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
+        const { year: currentYear, month: currentMonth } = getDatePartsInTimeZone(
+          await workspaceMetaService.getTimezone(auth.workspaceId)
+        );
         const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
           const date = new Date(currentYear, currentMonth - 1 - i, 1);
           const year = date.getFullYear();

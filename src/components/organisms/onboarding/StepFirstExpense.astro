@@ -9,6 +9,7 @@
 import { ArrowLeft, CircleCheckBig } from '@lucide/astro';
 import AmountInput from '@/components/atoms/AmountInput.astro';
 import type { Currency } from '@/lib/constants/currency';
+import { getCurrentDateISO } from '@/lib/utils/date';
 
 export interface CategoryOption {
   id: string;
@@ -25,11 +26,13 @@ export interface Props {
   categories: CategoryOption[];
   accounts: AccountOption[];
   currencies: Currency[];
+  /** Workspace IANA zone that decides the default date */
+  timeZone: string;
 }
 
-const { categories, accounts, currencies } = Astro.props;
+const { categories, accounts, currencies, timeZone } = Astro.props;
 const primaryCurrency = currencies[0];
-const today = new Date().toISOString().split('T')[0];
+const today = getCurrentDateISO(timeZone);
 
 // Default to first account's currency
 const defaultAccount = accounts[0];

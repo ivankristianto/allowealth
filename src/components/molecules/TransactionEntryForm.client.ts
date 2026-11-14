@@ -6,6 +6,8 @@ import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
 import type { Currency } from '@/lib/constants/currency';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
+import { addDaysISO } from '@/lib/utils/date';
+import { getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 
 function initTransactionEntryForms() {
   document.querySelectorAll<HTMLFormElement>('[data-transaction-form]').forEach(initForm);
@@ -20,8 +22,8 @@ function initForm(form: HTMLFormElement) {
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
   const action = form.dataset.action || '/api/transactions';
   const modalId = form.dataset.modalId || '';
-  const todayStr = form.dataset.today || new Date().toISOString().split('T')[0];
-  const yesterdayStr = form.dataset.yesterday || '';
+  const todayStr = form.dataset.today || getWorkspaceToday();
+  const yesterdayStr = form.dataset.yesterday || addDaysISO(todayStr, -1);
 
   const categories = JSON.parse(form.dataset.categoriesJson || '[]');
   const accounts = JSON.parse(form.dataset.accountsJson || '[]') as Array<{
@@ -224,9 +226,7 @@ function initForm(form: HTMLFormElement) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'Date must be in YYYY-MM-DD format';
         const date = new Date(value);
         if (isNaN(date.getTime())) return 'Invalid date';
-        const todayUTC = Date.now();
-        const inputDateUTC = new Date(value).getTime();
-        if (inputDateUTC > todayUTC) return 'Date cannot be in the future';
+        if (value > getWorkspaceToday()) return 'Date cannot be in the future';
         return null;
       },
     },
@@ -445,9 +445,7 @@ function initForm(form: HTMLFormElement) {
         currency: String(formData.get('currency') || DEFAULT_CURRENCY),
         category_id: String(formData.get('category_id') || ''),
         account_id: String(formData.get('account_id') || ''),
-        transaction_date: String(
-          formData.get('transaction_date') || new Date().toISOString().split('T')[0]
-        ),
+        transaction_date: String(formData.get('transaction_date') || todayStr),
       };
 
       const apiUrl = isEditMode ? `${action}/${transactionId}` : action;

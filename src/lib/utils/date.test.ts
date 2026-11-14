@@ -20,6 +20,10 @@ import {
   getEndOfMonth,
   getDaysBetween,
   getCurrentDateISO,
+  getCurrentMonthISO,
+  addDaysISO,
+  getDatePartsInTimeZone,
+  normalizeTimeZone,
   parseMonthKey,
   parseMonthKeyToISO,
   formatMonthKey,
@@ -291,9 +295,66 @@ describe('date utilities', () => {
   });
 
   describe('getCurrentDateISO', () => {
-    test('returns current date in ISO format', () => {
-      const result = getCurrentDateISO();
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // 2026-11-01 00:30 in UTC+7 is still 2026-10-31 17:30 in UTC (#428)
+    const justAfterJakartaMidnight = new Date('2026-11-01T00:30:00+07:00');
+
+    test('returns the calendar day in the given zone', () => {
+      expect(getCurrentDateISO('Asia/Jakarta', justAfterJakartaMidnight)).toBe('2026-11-01');
+      expect(getCurrentDateISO('UTC', justAfterJakartaMidnight)).toBe('2026-10-31');
+    });
+
+    test('handles zones west of UTC', () => {
+      expect(getCurrentDateISO('America/Los_Angeles', new Date('2026-03-01T05:00:00Z'))).toBe(
+        '2026-02-28'
+      );
+    });
+
+    test('falls back to the runtime zone when none is given', () => {
+      expect(getCurrentDateISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe('getCurrentMonthISO', () => {
+    test('returns the month in the given zone on the 1st', () => {
+      const instant = new Date('2026-11-01T00:30:00+07:00');
+      expect(getCurrentMonthISO('Asia/Jakarta', instant)).toBe('2026-11');
+      expect(getCurrentMonthISO('UTC', instant)).toBe('2026-10');
+    });
+
+    test('rolls the year over on 1 January', () => {
+      expect(getCurrentMonthISO('Asia/Jakarta', new Date('2026-12-31T18:00:00Z'))).toBe('2027-01');
+    });
+  });
+
+  describe('addDaysISO', () => {
+    test('crosses month and year boundaries', () => {
+      expect(addDaysISO('2026-11-01', -1)).toBe('2026-10-31');
+      expect(addDaysISO('2026-12-31', 1)).toBe('2027-01-01');
+      expect(addDaysISO('2028-02-28', 1)).toBe('2028-02-29');
+    });
+  });
+
+  describe('getDatePartsInTimeZone', () => {
+    test('returns numeric year, month and day in the zone', () => {
+      expect(getDatePartsInTimeZone('Asia/Jakarta', new Date('2026-11-01T00:30:00+07:00'))).toEqual(
+        { year: 2026, month: 11, day: 1 }
+      );
+    });
+  });
+
+  describe('normalizeTimeZone', () => {
+    test('accepts IANA names and returns the canonical spelling', () => {
+      expect(normalizeTimeZone('Asia/Jakarta')).toBe('Asia/Jakarta');
+      expect(normalizeTimeZone('UTC')).toBe('UTC');
+      expect(normalizeTimeZone('utc')).toBe('UTC');
+    });
+
+    test('rejects unknown zones, offsets and non-strings', () => {
+      expect(normalizeTimeZone('Mars/Olympus_Mons')).toBeNull();
+      expect(normalizeTimeZone('+07:00')).toBeNull();
+      expect(normalizeTimeZone('')).toBeNull();
+      expect(normalizeTimeZone(undefined)).toBeNull();
+      expect(normalizeTimeZone(7)).toBeNull();
     });
   });
 });
@@ -400,13 +461,14 @@ describe('month key utilities', () => {
   });
 
   describe('getCurrentMonthKey', () => {
-    test('returns current month key', () => {
-      const result = getCurrentMonthKey();
-      expect(result).toMatch(/^\d{2}-\d{4}$/);
+    test('returns current month key in the given zone', () => {
+      const instant = new Date('2026-11-01T00:30:00+07:00');
+      expect(getCurrentMonthKey('Asia/Jakarta', instant)).toBe('11-2026');
+      expect(getCurrentMonthKey('UTC', instant)).toBe('10-2026');
+    });
 
-      const now = new Date();
-      const expected = createMonthKey(now);
-      expect(result).toBe(expected);
+    test('falls back to the runtime zone when none is given', () => {
+      expect(getCurrentMonthKey()).toBe(createMonthKey(new Date()));
     });
   });
 

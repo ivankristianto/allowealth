@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { auditLogService } from '@/services';
+import { auditLogService, workspaceMetaService } from '@/services';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/logger';
 
@@ -17,7 +18,7 @@ export const GET: APIRoute = async (context) => {
     }
 
     const csv = await auditLogService.exportToCsv(auth.userId, auth.workspaceId);
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getCurrentDateISO(await workspaceMetaService.getTimezone(auth.workspaceId));
     const filename = `security-audit-${dateStr}.csv`;
 
     return new Response(csv, {

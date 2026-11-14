@@ -9,6 +9,7 @@
  * Protected by authentication.
  */
 
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
 import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetHistoryTablePartial from '@/components/partials/BudgetHistoryTablePartial.astro';
@@ -30,9 +31,9 @@ const viewParam = url.searchParams.get('view');
 const initialViewMode = viewParam === 'trends' ? ('trends' as const) : ('monthly' as const);
 
 // Current date info
-const now = new Date();
-const currentMonth = now.getMonth() + 1;
-const currentYear = now.getFullYear();
+const { year: currentYear, month: currentMonth } = getDatePartsInTimeZone(
+  await workspaceMetaService.getTimezone(user.workspaceId)
+);
 
 // Default to current year, parse from URL if provided
 const selectedYear = yearParam ? parseInt(yearParam, 10) : currentYear;

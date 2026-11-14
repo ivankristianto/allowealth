@@ -3,6 +3,7 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { budgetService, workspaceMetaService } from '@/services';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
@@ -49,9 +50,9 @@ export const GET: APIRoute = async (context) => {
     const partial = url.searchParams.get('_partial') || 'all';
 
     // Default to current month if not specified
-    const now = new Date();
-    const year = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
-    const month = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
+    const today = getDatePartsInTimeZone(await workspaceMetaService.getTimezone(auth.workspaceId));
+    const year = yearParam ? parseInt(yearParam, 10) : today.year;
+    const month = monthParam ? parseInt(monthParam, 10) : today.month;
     const workspaceCurrencyConfig = await workspaceMetaService.getWorkspaceCurrencies(
       auth.workspaceId
     );

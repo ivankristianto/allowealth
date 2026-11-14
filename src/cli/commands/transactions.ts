@@ -127,7 +127,8 @@ function mapCreatePayload(args: Record<string, unknown>): CreateTransactionInput
     amount: requiredString(args, 'amount'),
     currency: validatedCurrency(requiredString(args, 'currency')),
     account_id: requiredString(args, 'account-id'),
-    transaction_date: dateFromArg(args['transaction-date'], 'transaction-date') ?? new Date(),
+    // Left out, the service uses the workspace's today
+    transaction_date: dateFromArg(args['transaction-date'], 'transaction-date'),
   };
   const categoryId = optionalString(args, 'category-id');
   if (categoryId !== undefined) payload.category_id = categoryId;

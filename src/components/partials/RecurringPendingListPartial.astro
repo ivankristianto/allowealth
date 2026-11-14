@@ -6,13 +6,15 @@ export interface Props {
   occurrences: RecurringOccurrenceOutput[];
   hasTemplates?: boolean;
   monthLabel?: string;
+  todayIso: string;
 }
 
-const { occurrences = [], hasTemplates = false, monthLabel = '' } = Astro.props;
+const { occurrences = [], hasTemplates = false, monthLabel = '', todayIso } = Astro.props;
 ---
 
 <RecurringPendingList
   occurrences={occurrences}
   hasTemplates={hasTemplates}
   monthLabel={monthLabel}
+  todayIso={todayIso}
 />

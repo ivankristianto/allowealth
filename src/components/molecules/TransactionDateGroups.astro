@@ -21,6 +21,8 @@ export interface Props {
   showCount?: boolean;
   variant?: 'default' | 'compact';
   inCard?: boolean;
+  /** Today (YYYY-MM-DD) in the workspace zone, for Today/Yesterday labels */
+  todayIso?: string;
 }
 
 const {
@@ -30,6 +32,7 @@ const {
   showCount = true,
   variant = 'default',
   inCard = false,
+  todayIso,
 } = Astro.props;
 
 const isCompact = variant === 'compact';
@@ -103,6 +106,7 @@ const isCompact = variant === 'compact';
               transaction={transaction}
               showActions={showActions}
               showBulkSelection={showBulkSelection}
+              todayIso={todayIso}
             />
           ))}
         </div>

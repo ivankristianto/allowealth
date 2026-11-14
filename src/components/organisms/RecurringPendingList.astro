@@ -4,22 +4,22 @@ import RecurringPendingCard from '@/components/molecules/RecurringPendingCard.as
 import { CircleAlert, CircleCheckBig, CircleMinus } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { formatRecurringFrequencyLabel } from '@/lib/utils/recurring-frequency';
-import { getCurrentDateISO } from '@/lib/utils/date';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 
 export interface Props {
   occurrences: RecurringOccurrenceOutput[];
   hasTemplates?: boolean;
   monthLabel?: string;
+  /** Today (YYYY-MM-DD) in the workspace zone; decides overdue and actionable rows */
+  todayIso: string;
 }
 
-const { occurrences = [], hasTemplates = false, monthLabel = '' } = Astro.props;
+const { occurrences = [], hasTemplates = false, monthLabel = '', todayIso } = Astro.props;
 
 const incomeCount = occurrences.filter((occurrence) => occurrence.templateType === 'income').length;
 const expenseCount = occurrences.filter(
   (occurrence) => occurrence.templateType === 'expense'
 ).length;
-const todayIso = getCurrentDateISO();
 
 function formatDueDateLabel(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-US', {
@@ -86,7 +86,7 @@ import Button from '@/components/atoms/Button.astro';
     <>
       <div class="space-y-2.5 md:hidden">
         {occurrences.map((occurrence) => (
-          <RecurringPendingCard occurrence={occurrence} />
+          <RecurringPendingCard occurrence={occurrence} todayIso={todayIso} />
         ))}
       </div>
 

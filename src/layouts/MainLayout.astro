@@ -33,6 +33,7 @@ interface Props {
   userName?: string;
   currentDate?: Date;
   workspaceName?: string;
+  timeZone?: string;
 }
 
 const {
@@ -46,12 +47,13 @@ const {
   userName,
   currentDate,
   workspaceName,
+  timeZone,
 } = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 const demoMode = isDemoMode();
 ---
 
-<BaseLayout title={title} ssrTheme={ssrTheme} workspaceName={workspaceName}>
+<BaseLayout title={title} ssrTheme={ssrTheme} workspaceName={workspaceName} timeZone={timeZone}>
   <div
     class="drawer lg:drawer-open group overflow-x-hidden lg:overflow-y-hidden lg:h-screen"
     data-sidebar-root
@@ -76,6 +78,7 @@ const demoMode = isDemoMode();
         secondaryCurrency={secondaryCurrency}
         userName={userName}
         currentDate={currentDate}
+        timeZone={timeZone}
       >
         {hasHeaderSlot && <slot name="header" slot="header" />}
       </Header>

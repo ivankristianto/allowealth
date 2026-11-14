@@ -15,7 +15,9 @@ import {
   type UpdateRecurringTemplateInput,
 } from '@/lib/validation/recurring';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
+import { WorkspaceMetaService } from './workspace-meta.service';
 import {
   mapRecurringTemplateOutput,
   type RecurringOccurrenceStats,
@@ -52,9 +54,15 @@ function toIsoDate(date: Date): string {
 export class RecurringTemplateService {
   private schema = getActiveSchema();
   private db: IDatabase;
+  private workspaceMetaService: WorkspaceMetaService;
 
   constructor(db: IDatabase) {
     this.db = db;
+    this.workspaceMetaService = new WorkspaceMetaService(db);
+  }
+
+  private async getWorkspaceToday(workspaceId: string): Promise<string> {
+    return getCurrentDateISO(await this.workspaceMetaService.getTimezone(workspaceId));
   }
 
   private async invalidateWorkspaceCache(workspaceId: string): Promise<void> {
@@ -182,6 +190,7 @@ export class RecurringTemplateService {
     });
 
     const templateId = nanoid();
+    const todayIso = await this.getWorkspaceToday(validated.workspace_id);
 
     const createdTemplate = runTransaction(this.db, (tx) => {
       tx.insert(this.schema.recurringTemplates)
@@ -229,7 +238,7 @@ export class RecurringTemplateService {
       }
 
       if (template.status === 'active') {
-        const plan = this.planOccurrences(template as RecurringTemplate, null);
+        const plan = this.planOccurrences(template as RecurringTemplate, null, todayIso);
         if (plan.rows.length > 0) {
           tx.insert(this.schema.recurringOccurrences).values(plan.rows).onConflictDoNothing().run();
         }
@@ -522,7 +531,7 @@ export class RecurringTemplateService {
 
     if (updated && updated.status === 'active') {
       if (hasScheduleChanges) {
-        const today = toIsoDate(new Date());
+        const today = await this.getWorkspaceToday(workspaceId);
         await this.db
           .delete(this.schema.recurringOccurrences)
           .where(
@@ -714,7 +723,7 @@ export class RecurringTemplateService {
         )
       );
 
-    const today = toIsoDate(new Date());
+    const today = await this.getWorkspaceToday(workspaceId);
     await this.db
       .delete(this.schema.recurringOccurrences)
       .where(
@@ -822,8 +831,13 @@ export class RecurringTemplateService {
       .groupBy(occurrences.template_id);
     const latestByTemplate = new Map(latestRows.map((row) => [row.template_id, row.latest]));
 
+    const todayIso = await this.getWorkspaceToday(workspaceId);
     const plans = templates.map((template) =>
-      this.planOccurrences(template as RecurringTemplate, latestByTemplate.get(template.id) ?? null)
+      this.planOccurrences(
+        template as RecurringTemplate,
+        latestByTemplate.get(template.id) ?? null,
+        todayIso
+      )
     );
     const rows = plans.flatMap((plan) => plan.rows);
     const exhaustedIds = templates.filter((_, i) => plans[i]!.exhausted).map((t) => t.id);
@@ -855,13 +869,18 @@ export class RecurringTemplateService {
     return { created: rows.length };
   }
 
-  private planOccurrences(template: RecurringTemplate, latestOccurrenceNumber: number | null) {
+  /** Plans pending rows up to the end of next month, counted from the workspace's `todayIso`. */
+  private planOccurrences(
+    template: RecurringTemplate,
+    latestOccurrenceNumber: number | null,
+    todayIso: string
+  ) {
     const startOccurrence = template.starting_occurrence_number || 1;
     let occurrenceNumber =
       latestOccurrenceNumber !== null ? latestOccurrenceNumber + 1 : startOccurrence;
 
-    const today = new Date();
-    const lookaheadEndDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 2, 0));
+    const [todayYear, todayMonth] = todayIso.split('-').map(Number);
+    const lookaheadEndDate = new Date(Date.UTC(todayYear, todayMonth + 1, 0));
     const lookaheadEnd = toIsoDate(lookaheadEndDate);
 
     const rows: Array<typeof recurringOccurrences.$inferInsert> = [];
@@ -917,7 +936,8 @@ export class RecurringTemplateService {
 
     const { rows, exhausted } = this.planOccurrences(
       template,
-      latestOccurrence ? latestOccurrence.occurrence_number : null
+      latestOccurrence ? latestOccurrence.occurrence_number : null,
+      await this.getWorkspaceToday(template.workspace_id)
     );
 
     if (rows.length > 0) {

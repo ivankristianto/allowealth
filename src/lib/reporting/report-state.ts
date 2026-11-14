@@ -7,6 +7,7 @@
  */
 
 import type { Currency } from '@/lib/constants/currency';
+import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
 
 export interface ReportState {
   range: 'monthly' | 'yearly';
@@ -42,8 +43,7 @@ export function normalizeReportState(state: Partial<ReportState>): ReportState {
   }
 
   if (range === 'monthly' && period.length === 4) {
-    const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    period = `${period}-${month}`;
+    period = `${period}-${getWorkspaceMonth().slice(5, 7)}`;
   }
 
   return {

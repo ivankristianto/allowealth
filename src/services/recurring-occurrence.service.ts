@@ -19,6 +19,7 @@ import { generateInstallmentDescription } from '@/lib/utils/recurring-dates';
 import type { RecurringMonthlySummary } from '@/lib/utils/recurring-summary';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
 import { TransactionService } from './transaction.service';
+import { WorkspaceMetaService } from './workspace-meta.service';
 
 const log = createLogger('recurring-occurrence');
 
@@ -35,16 +36,11 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function parseMonthRange(monthKey?: string): { start: string; end: string } {
-  const now = new Date();
-  const fallbackYear = now.getUTCFullYear();
-  const fallbackMonth = now.getUTCMonth() + 1;
+/** `todayIso` is the workspace's today; its month is the fallback when `monthKey` is missing. */
+function parseMonthRange(todayIso: string, monthKey?: string): { start: string; end: string } {
+  const [fallbackYear, fallbackMonth] = todayIso.split('-').map(Number);
 
-  const [yearRaw, monthRaw] = (
-    monthKey || `${fallbackYear}-${String(fallbackMonth).padStart(2, '0')}`
-  )
-    .split('-')
-    .map(Number);
+  const [yearRaw, monthRaw] = (monthKey || todayIso.slice(0, 7)).split('-').map(Number);
 
   const year = Number.isFinite(yearRaw) ? yearRaw : fallbackYear;
   const month = Number.isFinite(monthRaw) ? monthRaw : fallbackMonth;
@@ -70,14 +66,20 @@ export class RecurringOccurrenceService {
   private schema = getActiveSchema();
   private db: IDatabase;
   private transactionService: TransactionService;
+  private workspaceMetaService: WorkspaceMetaService;
 
   constructor(db: IDatabase, transactionService?: TransactionService) {
     this.db = db;
     this.transactionService = transactionService ?? new TransactionService(db);
+    this.workspaceMetaService = new WorkspaceMetaService(db);
   }
 
-  private ensureOccurrenceIsDue(dueDate: string): void {
-    const todayIso = getCurrentDateISO();
+  private async getWorkspaceToday(workspaceId: string): Promise<string> {
+    return getCurrentDateISO(await this.workspaceMetaService.getTimezone(workspaceId));
+  }
+
+  private async ensureOccurrenceIsDue(workspaceId: string, dueDate: string): Promise<void> {
+    const todayIso = await this.getWorkspaceToday(workspaceId);
     if (dueDate > todayIso) {
       throw new RecurringServiceError(
         ServiceErrorCode.OCCURRENCE_NOT_DUE,
@@ -134,10 +136,13 @@ export class RecurringOccurrenceService {
     filters: PendingFilters = {},
     perf?: PerfCollector
   ): Promise<{ occurrences: RecurringOccurrenceOutput[]; total: number }> {
+    const todayIso = await this.getWorkspaceToday(workspaceId);
+    // `today` is in the key so a cached "due within" list doesn't outlive the day it was built on
     const normalizedFilters = {
       month: filters.month ?? null,
       status: filters.status ?? 'pending',
       due_within: filters.due_within ?? null,
+      today: todayIso,
     };
 
     const cache = getCacheManager();
@@ -155,7 +160,7 @@ export class RecurringOccurrenceService {
     }
 
     const result = await trackQuery('RecurringOccurrenceService.findPending', perf, async () => {
-      const monthRange = parseMonthRange(filters.month);
+      const monthRange = parseMonthRange(todayIso, filters.month);
       const conditions = [eq(this.schema.recurringOccurrences.workspace_id, workspaceId)];
 
       if (filters.status && filters.status !== 'all') {
@@ -166,10 +171,9 @@ export class RecurringOccurrenceService {
 
       const dueWithinDays = parseDueWithinDays(filters.due_within);
       if (dueWithinDays !== null) {
-        const today = new Date();
-        const targetDate = new Date();
+        const targetDate = new Date(`${todayIso}T00:00:00Z`);
         targetDate.setUTCDate(targetDate.getUTCDate() + dueWithinDays);
-        conditions.push(gte(this.schema.recurringOccurrences.due_date, toIsoDate(today)));
+        conditions.push(gte(this.schema.recurringOccurrences.due_date, todayIso));
         conditions.push(lte(this.schema.recurringOccurrences.due_date, toIsoDate(targetDate)));
       } else {
         conditions.push(gte(this.schema.recurringOccurrences.due_date, monthRange.start));
@@ -303,7 +307,7 @@ export class RecurringOccurrenceService {
       );
     }
 
-    this.ensureOccurrenceIsDue(occurrence.due_date);
+    await this.ensureOccurrenceIsDue(workspaceId, occurrence.due_date);
 
     const template = occurrence.template as RecurringTemplate;
     const description =
@@ -449,7 +453,7 @@ export class RecurringOccurrenceService {
       );
     }
 
-    this.ensureOccurrenceIsDue(occurrence.due_date);
+    await this.ensureOccurrenceIsDue(workspaceId, occurrence.due_date);
 
     await this.db
       .update(this.schema.recurringOccurrences)
@@ -570,8 +574,9 @@ export class RecurringOccurrenceService {
   }
 
   async getStats(workspaceId: string): Promise<RecurringStats> {
+    const today = await this.getWorkspaceToday(workspaceId);
     const cache = getCacheManager();
-    const cacheKey = CacheKeys.recurringStats(workspaceId);
+    const cacheKey = CacheKeys.recurringStats(workspaceId, today);
 
     try {
       const cached = await cache.get<RecurringStats>(cacheKey);
@@ -582,10 +587,7 @@ export class RecurringOccurrenceService {
       log.warn('cache read failed for recurring stats:', error);
     }
 
-    const now = new Date();
-    const today = toIsoDate(now);
-    const monthStart = toIsoDate(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)));
-    const monthEnd = toIsoDate(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)));
+    const { start: monthStart, end: monthEnd } = parseMonthRange(today);
 
     const pendingRows = await (this.db as any)
       .select({
@@ -665,7 +667,7 @@ export class RecurringOccurrenceService {
     workspaceId: string,
     monthKey?: string
   ): Promise<RecurringMonthlySummary> {
-    const monthRange = parseMonthRange(monthKey);
+    const monthRange = parseMonthRange(await this.getWorkspaceToday(workspaceId), monthKey);
 
     const rows = await (this.db as any)
       .select({
