@@ -118,9 +118,11 @@ paths:
       summary: Create a transaction
       description: >-
         Create an expense, income or transfer. Requires `Content-Type: application/json`
-        (415 `UNSUPPORTED_MEDIA_TYPE` otherwise). Known limitation: when the category or account
-        is unknown, inactive or closed, this route currently answers 500 `Failed to create
-        transaction` instead of a 4xx, so check IDs against /api/categories and /api/accounts first.
+        (415 `UNSUPPORTED_MEDIA_TYPE` otherwise). An unknown category or account returns 404
+        (`CATEGORY_NOT_FOUND`, `ACCOUNT_NOT_FOUND`); an inactive category, a closed account or a
+        currency that differs from the account's returns 400 (`CATEGORY_INACTIVE`,
+        `ACCOUNT_CLOSED`, `VALIDATION_ERROR`). `transaction_date` may not be later than today in
+        the workspace timezone.
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -163,6 +165,8 @@ paths:
           $ref: '../responses/common.yml#/Unauthorized'
         '403':
           $ref: '../responses/common.yml#/Forbidden'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
         '415':
           $ref: '../responses/common.yml#/UnsupportedMediaType'
         '429':

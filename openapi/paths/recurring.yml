@@ -471,10 +471,10 @@ paths:
 
 
         - Default window: the whole calendar month given by `month` (first to last day), or the
-        current UTC month when `month` is omitted or malformed.
+        current month in the workspace timezone when `month` is omitted or malformed.
 
         - `due_within=Nd` (e.g. `7d`) replaces the month window with today through today plus N
-        days (UTC dates, inclusive). `month` is then ignored. Values not matching `^\d+d$` are
+        days (inclusive, today in the workspace timezone). `month` is then ignored. Values not matching `^\d+d$` are
         silently ignored and the month window applies.
 
         - `due_before=YYYY-MM-DD` keeps due dates on or before that date. Without `month` it
@@ -491,7 +491,7 @@ paths:
       parameters:
         - name: month
           in: query
-          description: Calendar month, YYYY-MM. Defaults to the current UTC month.
+          description: Calendar month, YYYY-MM. Defaults to the current month in the workspace timezone.
           schema:
             type: string
             pattern: '^\d{4}-\d{2}$'
@@ -506,7 +506,7 @@ paths:
         - name: due_within
           in: query
           description: >-
-            `Nd` limits results to due dates from today to today plus N days (inclusive, UTC) and
+            `Nd` limits results to due dates from today to today plus N days (inclusive, workspace timezone) and
             overrides `month`. `0d` means due today. Plain numbers such as `7` are ignored.
           schema:
             type: string
@@ -734,7 +734,7 @@ paths:
       summary: Get recurring cash-flow forecast
       description: >-
         Projects each matching template's amount onto its due dates for the next `monthCount`
-        months, starting with the current UTC month. Projections come from template schedules,
+        months, starting with the current month in the workspace timezone. Projections come from template schedules,
         not from stored occurrences, so confirmed or skipped occurrences do not change them.
         Invalid filter values fall back to defaults.
       security:
@@ -799,7 +799,7 @@ paths:
       tags: [Recurring]
       summary: Get recurring stats
       description: >-
-        Counts for the current UTC calendar month only. `pendingCount` and `pendingByCurrency`
+        Counts for the current calendar month in the workspace timezone only. `pendingCount` and `pendingByCurrency`
         cover pending occurrences of active templates due this month; `overdueCount` is the subset
         due before today (earlier months are not counted); `confirmedThisMonth` counts occurrences
         due this month that were confirmed. The `month` parameter affects only the HTML partial.

@@ -34,7 +34,7 @@ CreateTransactionRequest:
       type: string
       format: date
       pattern: '^\d{4}-\d{2}-\d{2}$'
-      description: Date in YYYY-MM-DD. Cannot be in the future.
+      description: Date in YYYY-MM-DD. Cannot be later than today in the workspace timezone.
       example: '2026-03-10'
     description:
       type: string

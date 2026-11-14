@@ -42,6 +42,7 @@ The examples below assume:
 ```bash
 export ALLOWEALTH_URL="https://your-instance.example"
 export ALLOWEALTH_TOKEN="aw_pat_your_token_here"
+export WORKSPACE_TZ="Asia/Jakarta" # the workspace time zone, see below
 ```
 
 ## Scopes
@@ -101,6 +102,10 @@ curl -s "$ALLOWEALTH_URL/api/accounts" -H "Authorization: Bearer $ALLOWEALTH_TOK
 curl -s "$ALLOWEALTH_URL/api/categories" -H "Authorization: Bearer $ALLOWEALTH_TOKEN"
 curl -s "$ALLOWEALTH_URL/api/workspace/settings" -H "Authorization: Bearer $ALLOWEALTH_TOKEN"
 ```
+
+## Dates and the workspace time zone
+
+"Today" and "this month" follow the workspace time zone, set under **Settings > General**. It decides the default month, which bills are due or overdue, and the latest date a transaction may carry. Read it from `data.settings.timezone` in `/api/workspace/settings` and send every date (`transaction_date`, `start_date`, `due_before`) as a calendar day in that zone. If the agent runs in another zone, compute today with the workspace zone, for example `TZ="$WORKSPACE_TZ" date +%F`.
 
 ## Examples
 
@@ -166,10 +171,10 @@ curl -s "$ALLOWEALTH_URL/api/recurring/calendar?year=2026&month=11" \
 
 ### 5. List unpaid bills and mark one paid
 
-Ask for every pending item due on or before today, across all months, in one call. Pass today's date in your own time zone as `due_before`. Always include `status=pending`: without it the endpoint returns confirmed and skipped items too.
+Ask for every pending item due on or before today, across all months, in one call. Pass today's date in the workspace time zone as `due_before`. Always include `status=pending`: without it the endpoint returns confirmed and skipped items too.
 
 ```bash
-curl -s "$ALLOWEALTH_URL/api/recurring/occurrences?status=pending&due_before=$(date +%F)" \
+curl -s "$ALLOWEALTH_URL/api/recurring/occurrences?status=pending&due_before=$(TZ="$WORKSPACE_TZ" date +%F)" \
   -H "Authorization: Bearer $ALLOWEALTH_TOKEN"
 ```
 
