@@ -27,6 +27,8 @@ interface PendingFilters {
   month?: string;
   status?: 'pending' | 'confirmed' | 'skipped' | 'all';
   due_within?: string;
+  /** Inclusive YYYY-MM-DD upper bound on due_date; without `month` it spans every month. */
+  due_before?: string;
 }
 
 function toIsoDate(date: Date): string {
@@ -143,6 +145,7 @@ export class RecurringOccurrenceService {
       status: filters.status ?? 'pending',
       due_within: filters.due_within ?? null,
       today: todayIso,
+      due_before: filters.due_before ?? null,
     };
 
     const cache = getCacheManager();
@@ -175,9 +178,12 @@ export class RecurringOccurrenceService {
         targetDate.setUTCDate(targetDate.getUTCDate() + dueWithinDays);
         conditions.push(gte(this.schema.recurringOccurrences.due_date, todayIso));
         conditions.push(lte(this.schema.recurringOccurrences.due_date, toIsoDate(targetDate)));
-      } else {
+      } else if (filters.month || !filters.due_before) {
         conditions.push(gte(this.schema.recurringOccurrences.due_date, monthRange.start));
         conditions.push(lte(this.schema.recurringOccurrences.due_date, monthRange.end));
+      }
+      if (filters.due_before) {
+        conditions.push(lte(this.schema.recurringOccurrences.due_date, filters.due_before));
       }
 
       const occurrences = await this.db.query.recurringOccurrences.findMany({

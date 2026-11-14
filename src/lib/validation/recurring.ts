@@ -284,6 +284,16 @@ export const confirmOccurrenceAPISchema = strictObject({
 
 export const occurrenceStatusSchema = recurringOccurrenceStatusEnum;
 
+/** `due_before` query value: a real calendar date, so `2026-02-31` is rejected rather than rolled over. */
+export const occurrenceDueBeforeSchema = pipe(
+  string(),
+  regex(/^\d{4}-\d{2}-\d{2}$/, 'due_before must be in YYYY-MM-DD format'),
+  check((value) => {
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }, 'due_before must be a valid date')
+);
+
 export type CreateRecurringTemplateInput = InferInput<typeof createRecurringTemplateSchema>;
 export type UpdateRecurringTemplateInput = InferInput<typeof updateRecurringTemplateSchema>;
 export type ConfirmOccurrenceInput = InferInput<typeof confirmOccurrenceSchema>;
