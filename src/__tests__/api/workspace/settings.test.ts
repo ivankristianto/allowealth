@@ -10,6 +10,7 @@ let PUT: any;
 const originalFindById = workspaceService.findById;
 const originalGetSettings = workspaceMetaService.getSettings;
 const originalSetMonthlyIncome = workspaceMetaService.setMonthlyIncome;
+const originalSetTimezone = workspaceMetaService.setTimezone;
 
 function createApiContext(method: 'GET' | 'PUT', body?: unknown) {
   return {
@@ -40,6 +41,7 @@ describe('/api/workspace/settings monthly income contract', () => {
     workspaceService.findById = originalFindById;
     workspaceMetaService.getSettings = originalGetSettings;
     workspaceMetaService.setMonthlyIncome = originalSetMonthlyIncome;
+    workspaceMetaService.setTimezone = originalSetTimezone;
   });
 
   it('returns monthlyIncome as a currency map in GET responses', async () => {
@@ -118,5 +120,67 @@ describe('/api/workspace/settings monthly income contract', () => {
     expect(workspacePath).toContain(
       'Available settings: name, currency, secondaryCurrency, weekStart, monthlyIncome,'
     );
+  });
+
+  describe('timezone', () => {
+    const baseSettings = {
+      currency: 'IDR',
+      secondaryCurrency: '',
+      weekStart: 'monday',
+      monthlyIncome: {},
+      forecastMonthlyTopup: 5_000_000,
+      forecastAnnualRate: 7,
+    };
+
+    function mockWorkspace(timezone: string) {
+      workspaceService.findById = mock(async () => ({
+        id: 'ws-1',
+        name: 'Family Budget',
+        created_at: 1_741_403_200_000,
+      })) as any;
+      workspaceMetaService.getSettings = mock(async () => ({ ...baseSettings, timezone })) as any;
+    }
+
+    it('returns the workspace timezone in GET responses', async () => {
+      mockWorkspace('Asia/Jakarta');
+
+      const response = await GET(createApiContext('GET'));
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload.data.settings.timezone).toBe('Asia/Jakarta');
+    });
+
+    it('saves a valid IANA timezone on PUT', async () => {
+      mockWorkspace('Asia/Jakarta');
+      workspaceMetaService.setTimezone = mock(async () => {}) as any;
+
+      const response = await PUT(createApiContext('PUT', { timezone: 'Asia/Jakarta' }));
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(workspaceMetaService.setTimezone).toHaveBeenCalledWith('ws-1', 'Asia/Jakarta');
+      expect(payload.data.settings.timezone).toBe('Asia/Jakarta');
+    });
+
+    for (const timezone of ['Mars/Olympus_Mons', '+07:00', '', 'Asia/Jakarta; DROP TABLE']) {
+      it(`rejects ${JSON.stringify(timezone)} with a 400 before touching storage`, async () => {
+        mockWorkspace('UTC');
+        workspaceMetaService.setTimezone = mock(async () => {}) as any;
+
+        const response = await PUT(createApiContext('PUT', { timezone }));
+        const payload = await response.json();
+
+        expect(response.status).toBe(400);
+        expect(payload.error.code).toBe('VALIDATION_ERROR');
+        expect(workspaceMetaService.setTimezone).not.toHaveBeenCalled();
+      });
+    }
+
+    it('documents timezone in the workspace settings OpenAPI schemas', () => {
+      expect(read('openapi/schemas/WorkspaceSettings.yml')).toContain('timezone');
+      expect(read('openapi/schemas/UpdateWorkspaceSettingsRequest.yml')).toContain('timezone');
+      expect(read('openapi/paths/workspace.yml')).toContain('timezone');
+    });
   });
 });

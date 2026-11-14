@@ -268,12 +268,64 @@ export function getDaysBetween(startDate: Date | string, endDate: Date | string)
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
-/**
- * Get current date in ISO format (YYYY-MM-DD)
- * @returns Current date as ISO string
- */
-export function getCurrentDateISO(): string {
-  return new Date().toISOString().split('T')[0] ?? '';
+// IANA names only; Intl also accepts raw offsets like "+07:00", which we don't want to store.
+const IANA_ZONE_PATTERN = /^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/;
+
+/** Returns the canonical IANA name, or null when the value is not a zone Intl knows. */
+export function normalizeTimeZone(value: unknown): string | null {
+  if (typeof value !== 'string' || !IANA_ZONE_PATTERN.test(value)) return null;
+  try {
+    return new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone;
+  } catch {
+    return null;
+  }
+}
+
+/** The zone this runtime runs in: the browser's on the client, the process's on the server. */
+export function getRuntimeTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
+const dayFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function getDayFormatter(timeZone: string): Intl.DateTimeFormat {
+  let formatter = dayFormatters.get(timeZone);
+  if (!formatter) {
+    // en-CA formats as YYYY-MM-DD
+    formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    dayFormatters.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+/** Calendar year, month (1-12) and day of `now` as seen in `timeZone` (runtime zone if omitted). */
+export function getDatePartsInTimeZone(
+  timeZone: string = getRuntimeTimeZone(),
+  now: Date = new Date()
+): { year: number; month: number; day: number } {
+  const [year, month, day] = getCurrentDateISO(timeZone, now).split('-').map(Number);
+  return { year, month, day };
+}
+
+/** Today as YYYY-MM-DD in `timeZone` (runtime zone if omitted). */
+export function getCurrentDateISO(
+  timeZone: string = getRuntimeTimeZone(),
+  now: Date = new Date()
+): string {
+  return getDayFormatter(timeZone).format(now);
+}
+
+/** The current month as YYYY-MM in `timeZone` (runtime zone if omitted). */
+export function getCurrentMonthISO(
+  timeZone: string = getRuntimeTimeZone(),
+  now: Date = new Date()
+): string {
+  return getCurrentDateISO(timeZone, now).slice(0, 7);
 }
 
 /**
@@ -373,13 +425,13 @@ export function createMonthKey(date: Date): string {
   return `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
 }
 
-/**
- * Get the current month key
- *
- * @returns Current month key in MM-YYYY format
- */
-export function getCurrentMonthKey(): string {
-  return createMonthKey(new Date());
+/** The current month key (MM-YYYY) in `timeZone` (runtime zone if omitted). */
+export function getCurrentMonthKey(
+  timeZone: string = getRuntimeTimeZone(),
+  now: Date = new Date()
+): string {
+  const { year, month } = getDatePartsInTimeZone(timeZone, now);
+  return `${String(month).padStart(2, '0')}-${year}`;
 }
 
 /**

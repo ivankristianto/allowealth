@@ -36,6 +36,7 @@ import {
   isValidWorkspaceMetaKey,
 } from '@/lib/constants/workspace-meta-keys';
 import { MAX_FORECAST_ANNUAL_RATE, MAX_FORECAST_MONTHLY_TOPUP } from '@/lib/forecast/assumptions';
+import { normalizeTimeZone } from '@/lib/utils/date';
 import { WorkspaceMetaServiceError, ServiceErrorCode } from './service-errors';
 
 /**
@@ -178,6 +179,12 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
     case WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED:
       if (value !== 'true' && value !== 'false') {
         throw new Error('Onboarding expense skipped must be "true" or "false"');
+      }
+      break;
+
+    case WORKSPACE_META_KEYS.TIMEZONE:
+      if (normalizeTimeZone(value) !== value) {
+        throw new Error(`Invalid timezone: ${value}. Use an IANA name such as Asia/Jakarta`);
       }
       break;
 
@@ -670,6 +677,24 @@ export class WorkspaceMetaService {
   }
 
   /**
+   * The workspace's IANA timezone, 'UTC' when unset.
+   * Skips the workspace existence check: callers already hold a session for this workspace.
+   */
+  async getTimezone(workspaceId: string): Promise<string> {
+    const value = await this.meta.get(workspaceId, WORKSPACE_META_KEYS.TIMEZONE);
+    return normalizeTimeZone(value) ?? DEFAULT_WORKSPACE_SETTINGS.timezone;
+  }
+
+  /** Stores the canonical spelling of `timezone`; throws INVALID_META_VALUE for unknown zones. */
+  async setTimezone(workspaceId: string, timezone: string): Promise<void> {
+    await this.set(
+      workspaceId,
+      WORKSPACE_META_KEYS.TIMEZONE,
+      normalizeTimeZone(timezone) ?? timezone
+    );
+  }
+
+  /**
    * Get all workspace settings as a typed object
    *
    * @param workspaceId - Workspace ID
@@ -716,6 +741,9 @@ export class WorkspaceMetaService {
           max: MAX_FORECAST_ANNUAL_RATE,
         }
       ),
+      timezone:
+        normalizeTimeZone(metaAll[WORKSPACE_META_KEYS.TIMEZONE]) ??
+        DEFAULT_WORKSPACE_SETTINGS.timezone,
     };
   }
 

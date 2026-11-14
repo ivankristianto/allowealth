@@ -8,6 +8,7 @@ WorkspaceSettings:
     - monthlyIncome
     - forecastMonthlyTopup
     - forecastAnnualRate
+    - timezone
   properties:
     currency:
       type: string
@@ -45,3 +46,9 @@ WorkspaceSettings:
       type: number
       description: Saved expected annual percentage yield used by the forecast page.
       example: 7
+    timezone:
+      type: string
+      description: >
+        IANA timezone of the workspace. Decides which calendar day counts as "today" and which
+        month as the current month. Defaults to UTC until a member sets it.
+      example: "Asia/Jakarta"

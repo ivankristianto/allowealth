@@ -18,6 +18,7 @@ export const WORKSPACE_META_KEYS = {
   FORECAST_MONTHLY_TOPUP: 'forecast_monthly_topup',
   FORECAST_ANNUAL_RATE: 'forecast_annual_rate',
   ONBOARDING_EXPENSE_SKIPPED: 'onboarding_expense_skipped',
+  TIMEZONE: 'timezone',
 } as const;
 
 /**
@@ -36,6 +37,7 @@ export const WORKSPACE_META_DEFAULTS: Record<WorkspaceMetaKey, string> = {
   [WORKSPACE_META_KEYS.FORECAST_MONTHLY_TOPUP]: '5000000',
   [WORKSPACE_META_KEYS.FORECAST_ANNUAL_RATE]: '7',
   [WORKSPACE_META_KEYS.ONBOARDING_EXPENSE_SKIPPED]: 'false',
+  [WORKSPACE_META_KEYS.TIMEZONE]: 'UTC',
 };
 
 /**
@@ -112,6 +114,8 @@ export interface WorkspaceSettings {
   monthlyIncome: MonthlyIncomeMap;
   forecastMonthlyTopup: number;
   forecastAnnualRate: number;
+  /** IANA zone that decides what "today" and "this month" mean for the workspace */
+  timezone: string;
 }
 
 /**
@@ -124,4 +128,5 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   monthlyIncome: {},
   forecastMonthlyTopup: 5000000,
   forecastAnnualRate: 7,
+  timezone: 'UTC',
 };
