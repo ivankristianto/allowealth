@@ -272,10 +272,6 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
       emailInput.required = true;
       passwordInput.required = true;
 
-      // Email validation pattern
-      emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
-      emailInput.title = 'Please enter a valid email address';
-
       // Clear messages on input
       const inputs = form.querySelectorAll('input');
       inputs.forEach((input) => {
