@@ -1,0 +1,97 @@
+# Response of POST /api/recurring/occurrences/{id}/confirm
+ConfirmOccurrenceResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          $ref: './ConfirmOccurrenceResponse.yml#/ConfirmedTransactionRow'
+
+ConfirmedTransactionRow:
+  type: object
+  description: >-
+    The transaction created by the confirm, as the raw database row with its related rows.
+    This differs from the Transaction schema used by /api/transactions: foreign keys
+    (`category_id`, `account_id`, `to_account_id`) are included, and `category`, `account`
+    and `toAccount` carry every column of the related row.
+  required:
+    - id
+    - workspace_id
+    - created_by_user_id
+    - category_id
+    - account_id
+    - to_account_id
+    - type
+    - amount
+    - currency
+    - description
+    - transaction_date
+    - created_at
+    - updated_at
+    - category
+    - account
+  properties:
+    id:
+      type: string
+    workspace_id:
+      type: string
+    created_by_user_id:
+      type: string
+    category_id:
+      type: string
+      nullable: true
+    account_id:
+      type: string
+    to_account_id:
+      type: string
+      nullable: true
+    type:
+      type: string
+      enum: [expense, income]
+      description: Copied from the template
+    amount:
+      type: string
+      description: The confirmed amount, decimal as a string
+    currency:
+      type: string
+      enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+      description: Copied from the template
+    description:
+      type: string
+      nullable: true
+      description: >-
+        Template description or name. For installments, a generated label with the occurrence
+        number out of the total.
+    transaction_date:
+      type: string
+      format: date-time
+    updated_by_user_id:
+      type: string
+      nullable: true
+    deleted_by_user_id:
+      type: string
+      nullable: true
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    category:
+      type: object
+      nullable: true
+      description: Full category row (id, name, type, icon, color and other columns)
+      additionalProperties: true
+    account:
+      type: object
+      description: Full account row (id, name, type, currency and other columns)
+      additionalProperties: true
+    toAccount:
+      type: object
+      nullable: true
+      additionalProperties: true

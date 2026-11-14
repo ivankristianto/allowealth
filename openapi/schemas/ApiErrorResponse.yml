@@ -5,8 +5,7 @@ ApiResponse:
     success:
       type: boolean
     data:
-      type: object
-      description: Response data (present on success)
+      description: Response data (present on success). An object or an array, depending on the operation.
     error:
       type: object
       description: Error details (present on failure)
@@ -16,4 +15,4 @@ ApiResponse:
         code:
           type: string
         details:
-          type: object
+          description: Extra context whose shape depends on `code`. See ErrorResponse.

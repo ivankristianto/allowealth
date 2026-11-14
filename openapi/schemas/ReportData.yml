@@ -16,31 +16,44 @@ ReportData:
       example: "5015000"
     budgetHealth:
       type: number
-      description: Budget health percentage (0-100+, >100 means over budget)
+      description: >-
+        Expenses as a percentage of the total expense budget, rounded to 1 decimal place. Above 100
+        means over budget; 0 when no budget is set. Monthly: that month's budgets. Yearly: the sum
+        of all monthly budgets in the year.
       example: 85.5
     expenseCategories:
       type: integer
-      description: Count of categories with expenses
+      description: Number of entries in `expenseByCategory`
       example: 6
     expenseByCategory:
       type: array
-      description: Top expense categories for donut chart
+      description: >-
+        Every expense category with spending in the period, sorted by value descending (not
+        truncated). Categories are grouped by name; `sourceType` is absent.
       items:
         $ref: "./CategoryExpense.yml#/CategoryExpense"
     trendData:
       type: array
-      description: Financial velocity trend data for bar chart (3 months for monthly, 12 for yearly)
+      description: >-
+        Income versus expenses per month. Monthly range: the 3 months ending with the selected month.
+        Yearly range: the 12 months of the selected year.
       items:
         $ref: "./TrendDataPoint.yml#/TrendDataPoint"
     categoryIntelligence:
       type: array
-      description: Category spending intelligence with budget limits
+      description: >-
+        One row per expense category that has a budget in the selected period and currency (the
+        monthly range also requires the category to be active). Categories with spending but no
+        budget are not listed here.
       items:
         $ref: "./CategoryIntelligence.yml#/CategoryIntelligence"
     recurringBreakdown:
       type: object
       nullable: true
-      description: Recurring versus one-time spending, null when it cannot be computed
+      description: >-
+        Recurring versus one-time spending for the month, across the whole workspace even when
+        `user_id` is set. Always null for the yearly range, and null for a monthly range when the
+        breakdown fails to compute.
       properties:
         recurringTotal:
           type: string
@@ -69,7 +82,9 @@ ReportData:
         - recurringByCategory
     memberSummary:
       type: array
-      description: Per-member totals for the selected period
+      description: >-
+        Per-member totals for the selected period, sorted by total expenses descending. Covers the
+        whole workspace even when `user_id` is set.
       items:
         $ref: "./MemberSummaryRow.yml#/MemberSummaryRow"
   required:

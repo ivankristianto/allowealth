@@ -1,9 +1,35 @@
 # Account Schema
 Account:
   type: object
+  description: An account row as stored. Every column is returned; empty values are `null`.
+  required:
+    - id
+    - workspace_id
+    - created_by_user_id
+    - name
+    - type
+    - account_class
+    - category_id
+    - balance
+    - initial_balance
+    - currency
+    - credit_limit
+    - is_cash_account
+    - status
+    - closed_at
+    - closed_by_user_id
+    - last_updated
+    - deleted_at
+    - created_at
+    - updated_at
   properties:
     id:
       type: string
+    workspace_id:
+      type: string
+    created_by_user_id:
+      type: string
+      description: Owner of the account. The `owner` filter on GET /api/accounts matches this field.
     name:
       type: string
     type:
@@ -12,16 +38,34 @@ Account:
     account_class:
       type: string
       enum: [liquid, non_liquid, debt]
-      description: Account classification for portfolio grouping. Auto-derived from account type.
+      description: >-
+        Derived from `type`: cash, bank_account and e_wallet are liquid; credit_card and loan are
+        debt; everything else is non_liquid.
     category_id:
       type: string
       nullable: true
+      description: Account category ID (see /api/account-categories)
     balance:
       type: string
-      pattern: '^\d+(\.\d{1,2})?$'
+      pattern: '^-?\d+(\.\d{1,2})?$'
+      description: >-
+        Decimal string, to keep precision. Debt accounts store the amount owed as a positive
+        number. A transfer does not check for sufficient funds, so a balance can be negative.
+      example: '1500000.50'
+    initial_balance:
+      type: string
+      nullable: true
+      description: Opening balance at creation, as a decimal string
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+    credit_limit:
+      type: string
+      nullable: true
+      description: Credit limit as a decimal string. No API writes it, so it is usually `null`.
+    is_cash_account:
+      type: boolean
+      description: Legacy flag. No API writes it, so it is usually `false`; use `type` instead.
     status:
       type: string
       enum: [active, closed]
@@ -38,6 +82,12 @@ Account:
     last_updated:
       type: string
       format: date-time
+      description: When the balance was last recorded
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Soft-delete timestamp. Always `null` in responses, since deleted rows are filtered out.
     created_at:
       type: string
       format: date-time

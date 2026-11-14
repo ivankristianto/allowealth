@@ -5,38 +5,47 @@ paths:
       tags: [Budget]
       summary: Get budget overview
       description: |
-        Retrieve budget overview for a specific month.
+        Budget versus spending for one month in one currency: totals plus one row per budget.
+        Only budgets on active expense categories are included. Month bounds use the server's
+        local time zone.
 
-        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
-        When requesting HTML (`_render=html`), the response contains server-rendered HTML fragments
-        that can be injected directly into the DOM.
+        Returns 400 with `Invalid year parameter`, `Invalid month parameter` or
+        `Invalid currency parameter` (checked in that order). Values are read with `parseInt`,
+        so trailing non-digits are ignored (`2026x` reads as 2026).
+
+        `_render=html` returns server-rendered fragments for the web UI and needs the
+        `X-Requested-With: XMLHttpRequest` header. API clients should use the JSON default.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: year
           in: query
-          description: Year (defaults to current year)
+          description: Year, 2000-2100. Defaults to the current year.
           schema:
             type: integer
             minimum: 2000
             maximum: 2100
         - name: month
           in: query
-          description: Month (1-12, defaults to current month)
+          description: Month, 1-12. Defaults to the current month.
           schema:
             type: integer
             minimum: 1
             maximum: 12
         - name: currency
           in: query
-          description: Currency (defaults to IDR)
+          description: >-
+            Currency code. Defaults to the workspace primary currency. Must be the workspace's
+            primary or secondary currency (see GET /api/workspace/settings), otherwise 400.
           schema:
             type: string
             enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
-            default: IDR
         - name: _render
           in: query
-          description: Response format (json or html)
+          description: >-
+            Response format. `html` returns HTML fragments for the web UI and only works with
+            the header `X-Requested-With: XMLHttpRequest`; without it the request gets 403.
           schema:
             type: string
             enum: [json, html]
@@ -44,12 +53,11 @@ paths:
         - name: _partial
           in: query
           description: |
-            Which partial(s) to render when using HTML format.
-            Only applicable when _render=html.
-            - summary: Budget summary section
-            - cards: Budget cards grid
-            - advice: AI advice banner
-            - all: All partials (default)
+            Which fragments to render. Only used when `_render=html`.
+            - summary: summary section, followed by the `copy-action` fragment
+            - cards: card grid, followed by the `table` fragment and a `meta` JSON line
+            - advice: advice banner
+            - all: everything (default)
           schema:
             type: string
             enum: [summary, cards, advice, all]
@@ -65,8 +73,9 @@ paths:
               schema:
                 type: string
                 description: |
-                  Server-rendered HTML fragments with PARTIAL markers.
-                  Each partial is prefixed with a comment marker (e.g., `<!-- PARTIAL:summary -->`).
+                  Server-rendered HTML fragments, each prefixed with a marker comment such as
+                  `<!-- PARTIAL:summary -->`. Markers: summary, copy-action, cards, table, advice,
+                  meta (a JSON array of `{ id, budget_id, budget_amount }`).
                 example: |
                   <!-- PARTIAL:summary -->
                   <section class="bg-base-100 rounded-card...">...</section>
@@ -80,6 +89,10 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -87,69 +100,50 @@ paths:
     get:
       tags: [Budget]
       summary: Get budget history
-      description: Retrieve budget history for multiple months with category breakdowns
+      description: |
+        Monthly budget totals for the last `months` months, newest first, including the
+        current month. Per-category rows are not included; use GET /api/budget/category-trends
+        or GET /api/budget/overview for those.
+
+        Returns 400 with `Invalid currency parameter`, `Invalid months parameter (must be 1-24)`
+        or `Invalid year parameter`.
+
+        `_render=html` returns a server-rendered table for the web UI and needs the
+        `X-Requested-With: XMLHttpRequest` header. API clients should use the JSON default.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: currency
           in: query
-          description: Currency (defaults to IDR)
+          description: >-
+            Currency code. Defaults to the workspace primary currency. Must be the workspace's
+            primary or secondary currency (see GET /api/workspace/settings), otherwise 400.
           schema:
             type: string
             enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
-            default: IDR
         - name: months
           in: query
-          description: Number of months to retrieve (1-24, default 12)
+          description: Number of months back from the current month, 1-24. Defaults to 24.
           schema:
             type: integer
             minimum: 1
             maximum: 24
-            default: 12
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/BudgetHistoryResponse.yml#/BudgetHistoryResponse'
-        '400':
-          $ref: '../responses/common.yml#/BadRequest'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
-
-  /api/budget/category-trends:
-    get:
-      tags: [Budget]
-      summary: Get category trends
-      description: |
-        Retrieve category spending trends across multiple months.
-        Returns a matrix of categories (rows) × months (columns), sorted by worst budget adherence.
-
-        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
-        When requesting HTML (`_render=html`), the response contains a server-rendered HTML table fragment.
-      security:
-        - sessionAuth: []
-      parameters:
-        - name: currency
+            default: 24
+        - name: year
           in: query
-          description: Currency (defaults to IDR)
-          schema:
-            type: string
-            enum: [IDR, USD]
-            default: IDR
-        - name: months
-          in: query
-          description: Number of months to display (3, 6, or 12)
+          description: >-
+            Keep only months from this year (2000-2100). Applied after the `months` window, so
+            months older than the window are never returned; the result can be empty.
           schema:
             type: integer
-            enum: [3, 6, 12]
-            default: 6
+            minimum: 2000
+            maximum: 2100
         - name: _render
           in: query
-          description: Response format (json or html)
+          description: >-
+            Response format. `html` returns an HTML table for the web UI and only works with the
+            header `X-Requested-With: XMLHttpRequest`; without it the request gets 403.
           schema:
             type: string
             enum: [json, html]
@@ -160,67 +154,83 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      months:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            month:
-                              type: integer
-                            year:
-                              type: integer
-                            month_name:
-                              type: string
-                      categories:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            category_id:
-                              type: string
-                            category_name:
-                              type: string
-                            category_icon:
-                              type: string
-                            category_color:
-                              type: string
-                            avg_percentage_used:
-                              type: number
-                            months:
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  month:
-                                    type: integer
-                                  year:
-                                    type: integer
-                                  month_name:
-                                    type: string
-                                  spent_amount:
-                                    type: string
-                                  budget_amount:
-                                    type: string
-                                  percentage_used:
-                                    type: number
-                                  status:
-                                    type: string
-                                    enum: [ok, warning, exceeded]
+                $ref: '../schemas/BudgetHistoryResponse.yml#/BudgetHistoryResponse'
             text/html:
               schema:
                 type: string
-                description: Server-rendered HTML table fragment with PARTIAL marker.
+                description: Server-rendered HTML table fragment prefixed with `<!-- PARTIAL:table -->`.
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budget/category-trends:
+    get:
+      tags: [Budget]
+      summary: Get category trends
+      description: |
+        Category spending against budget across recent months, as a matrix of categories
+        (rows) by months (columns, oldest first, ending with the current month). Rows are
+        sorted by worst average budget adherence.
+
+        Returns 400 with `Invalid currency parameter` or
+        `Invalid months parameter (must be 3, 6, or 12)`.
+
+        `_render=html` returns a server-rendered table for the web UI and needs the
+        `X-Requested-With: XMLHttpRequest` header. API clients should use the JSON default.
+      security:
+        - sessionAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: >-
+            Currency code. Defaults to the workspace primary currency. Must be the workspace's
+            primary or secondary currency (see GET /api/workspace/settings), otherwise 400.
+          schema:
+            type: string
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
+        - name: months
+          in: query
+          description: Number of months to include (3, 6 or 12). Any other value returns 400.
+          schema:
+            type: integer
+            enum: [3, 6, 12]
+            default: 6
+        - name: _render
+          in: query
+          description: >-
+            Response format. `html` returns an HTML table for the web UI and only works with the
+            header `X-Requested-With: XMLHttpRequest`; without it the request gets 403.
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetCategoryTrendsResponse.yml#/BudgetCategoryTrendsResponse'
+            text/html:
+              schema:
+                type: string
+                description: Server-rendered HTML table fragment prefixed with `<!-- PARTIAL:table -->`.
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -228,11 +238,27 @@ paths:
     get:
       tags: [Budget]
       summary: Get category remaining budget
-      description: Retrieve remaining budget for a specific category in current month
+      description: |
+        Budget, spending and remaining amount for one category in the current calendar month
+        (server time). There is no month parameter. Works for any category in the workspace,
+        including income or inactive ones; with no budget set, budget_amount is `"0"`.
+
+        Returns 400 when `currency` is missing or not one of the workspace's currencies, and
+        404 when the category does not exist in the workspace.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
+        - name: currency
+          in: query
+          required: true
+          description: >-
+            Currency code. Required. Must be the workspace's primary or secondary currency (see
+            GET /api/workspace/settings), otherwise 400.
+          schema:
+            type: string
+            enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
       responses:
         '200':
           description: Successful response
@@ -244,12 +270,16 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           description: Category not found
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 

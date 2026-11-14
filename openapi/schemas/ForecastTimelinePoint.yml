@@ -1,0 +1,65 @@
+# One month of the forecast timeline. Amounts are numbers in the workspace primary currency; planned, trajectory and interest values are rounded to whole units.
+ForecastTimelinePoint:
+  type: object
+  properties:
+    key:
+      type: string
+      description: Month key in YYYY-MM format
+      example: '2026-03'
+    dateLabel:
+      type: string
+      description: English month label, "Mon YYYY"
+      example: 'Mar 2026'
+    actualBalance:
+      type: number
+      nullable: true
+      description: >-
+        Summed recorded balance of the non-debt accounts for the month. Null when no balance is
+        recorded for the month, which includes every month after the latest recorded one.
+      example: 1200000
+    plannedBalance:
+      type: number
+      nullable: true
+      description: >-
+        Planned balance: starts at the earliest actual balance and adds monthly interest plus the
+        saved monthly top-up each month. Never null in the current code.
+      example: 1260000
+    currentTrajectoryBalance:
+      type: number
+      nullable: true
+      description: >-
+        Projection from the latest actual balance, adding monthly interest plus the trailing
+        3-month average net savings. Null before the latest actual month.
+      example: 1412000
+    forecastInterest:
+      type: number
+      nullable: true
+      description: Planned-path interest for the month, 0 for the first month. Never null in the current code.
+      example: 12000
+    actualNetSavings:
+      type: number
+      nullable: true
+      description: >-
+        Income minus expenses for the month. 0 for a past month with no transactions, null after
+        the latest actual month.
+      example: 500000
+    income:
+      type: number
+      nullable: true
+      description: Income for the month, null after the latest actual month
+      example: 800000
+    expenses:
+      type: number
+      nullable: true
+      description: Expenses for the month, null after the latest actual month
+      example: 300000
+  required:
+    - key
+    - dateLabel
+    - actualBalance
+    - plannedBalance
+    - currentTrajectoryBalance
+    - forecastInterest
+    - actualNetSavings
+    - income
+    - expenses

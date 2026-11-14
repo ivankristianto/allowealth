@@ -7,6 +7,9 @@ BudgetHistoryResponse:
       properties:
         data:
           type: array
+          description: >-
+            One entry per month, newest first, starting with the current month. Months with no
+            budgets are still listed, with zero totals.
           items:
             type: object
             required:
@@ -33,29 +36,28 @@ BudgetHistoryResponse:
                 description: Year
               month_name:
                 type: string
-                description: Full month name (e.g., "January")
+                description: Full English month name (e.g., "January")
               total_budget:
                 type: string
                 pattern: '^\d+(\.\d{1,2})?$'
-                description: Total budget amount for the month
+                description: Sum of budgets for active expense categories in the month
               total_spent:
                 type: string
                 pattern: '^\d+(\.\d{1,2})?$'
-                description: Total spent amount for the month
+                description: Expense total in the month for those budgeted categories
               total_balance:
                 type: string
-                pattern: '^\d+(\.\d{1,2})?$'
-                description: Remaining balance (total_budget - total_spent)
+                pattern: '^-?\d+(\.\d{1,2})?$'
+                description: total_budget minus total_spent. Negative when overspent.
               categories_count:
                 type: integer
-                description: Number of active categories
+                description: Number of budgets in the month whose category is an active expense category
               categories_exceeded:
                 type: integer
-                description: Number of categories that exceeded budget
+                description: Number of those categories above 100% of budget
               categories_warning:
                 type: integer
-                description: Number of categories approaching budget limit
+                description: Number of those categories at 80% to 100% of budget
               percentage_used:
                 type: number
-                format: float
-                description: Percentage of total budget used (0-100+)
+                description: total_spent as a percentage of total_budget, rounded to 2 decimals. 0 when total_budget is 0.

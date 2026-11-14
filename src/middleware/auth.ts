@@ -12,11 +12,9 @@
  */
 
 import type { MiddlewareHandler } from 'astro';
-import { eq } from 'drizzle-orm';
-import { db } from '@/db';
-import { users, workspaces } from '@/db/schema';
 import { auth, AUTH_PATH_PREFIX, getSessionCookieName } from '@/lib/auth/server';
-import type { AuthSession, AuthUser, BetterAuthUser } from '@/lib/auth/types';
+import { hydrateUser } from '@/lib/auth/hydrate-user';
+import type { AuthSession, BetterAuthUser } from '@/lib/auth/types';
 import { logError } from '@/lib/logger';
 
 /** Non-httpOnly cookie for client-side auth detection on static pages */
@@ -27,6 +25,12 @@ const WORKSPACE_INACTIVE_REDIRECT = '/login?error=workspace_inactive';
 export const authentication: MiddlewareHandler = async (context, next) => {
   const perf = context.locals.perf;
   const authStart = performance.now();
+
+  // appPasswordAuthentication already set locals from the Bearer token; cookies are ignored.
+  if (context.locals.appPassword) {
+    perf?.recordPhase('mw.auth', performance.now() - authStart);
+    return next();
+  }
 
   if (context.isPrerendered) {
     context.locals.user = null;
@@ -58,7 +62,8 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     if (!result?.session || !result.user) {
       clearAuthenticatedLocals(context, isAuthApi, sessionCookieName);
     } else {
-      const hydrated = await hydrateUser(result.user as BetterAuthUser);
+      const sessionUser = result.user as BetterAuthUser;
+      const hydrated = await hydrateUser(sessionUser.id, sessionUser);
       const hydratedUser = hydrated?.user;
 
       if (!hydratedUser || hydratedUser.deletedAt) {
@@ -132,40 +137,5 @@ function mapSession(session: Record<string, unknown>): AuthSession {
     updatedAt: new Date(session.updatedAt as string | number | Date),
     ipAddress: typeof session.ipAddress === 'string' ? session.ipAddress : null,
     userAgent: typeof session.userAgent === 'string' ? session.userAgent : null,
-  };
-}
-
-interface HydratedUser {
-  user: AuthUser;
-  workspaceInactive: boolean;
-}
-
-async function hydrateUser(authUser: BetterAuthUser): Promise<HydratedUser | null> {
-  // One query per request: the workspace status rides along with the user row.
-  const [row] = await db
-    .select({ user: users, workspaceStatus: workspaces.status })
-    .from(users)
-    .leftJoin(workspaces, eq(workspaces.id, users.workspace_id))
-    .where(eq(users.id, authUser.id))
-    .limit(1);
-
-  if (!row) {
-    return null;
-  }
-
-  const domainUser = row.user;
-  const user: AuthUser = {
-    id: domainUser.id,
-    email: domainUser.email ?? authUser.email,
-    name: domainUser.name ?? authUser.name,
-    role: domainUser.role,
-    workspaceId: domainUser.workspace_id ?? null,
-    avatarUrl: domainUser.avatar_url ?? authUser.image ?? null,
-    deletedAt: domainUser.deleted_at ?? null,
-  };
-
-  return {
-    user,
-    workspaceInactive: domainUser.workspace_id != null && row.workspaceStatus !== 'active',
   };
 }

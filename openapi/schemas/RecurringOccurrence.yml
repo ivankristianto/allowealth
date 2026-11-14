@@ -1,5 +1,6 @@
 RecurringOccurrence:
   type: object
+  description: One expected payment or receipt generated from a recurring template
   required:
     - id
     - template_id
@@ -7,18 +8,27 @@ RecurringOccurrence:
     - due_date
     - occurrence_number
     - status
+    - transaction_id
+    - confirmed_amount
+    - skip_reason
+    - confirmed_at
     - created_at
     - updated_at
     - templateName
     - templateType
     - templateAmount
+    - templateFrequency
+    - templateIntervalCount
     - currency
     - category
     - account
     - isInstallment
+    - installmentLabel
+    - totalOccurrences
   properties:
     id:
       type: string
+      description: Occurrence ID, used by the confirm endpoint (and the session-only skip endpoint)
     template_id:
       type: string
     workspace_id:
@@ -35,9 +45,11 @@ RecurringOccurrence:
     transaction_id:
       type: string
       nullable: true
+      description: Transaction created on confirm
     confirmed_amount:
       type: string
       nullable: true
+      description: Amount used on confirm, decimal as a string
     skip_reason:
       type: string
       nullable: true
@@ -58,12 +70,19 @@ RecurringOccurrence:
       enum: [expense, income]
     templateAmount:
       type: string
-      description: Decimal amount as string
+      description: Expected amount from the template, decimal as a string
+    templateFrequency:
+      type: string
+      enum: [weekly, monthly]
+    templateIntervalCount:
+      type: integer
+      minimum: 1
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     category:
       type: object
+      description: The template's category (the default `category_id` for confirm)
       required: [id, name, icon, color, type]
       properties:
         id:
@@ -79,6 +98,7 @@ RecurringOccurrence:
           enum: [expense, income]
     account:
       type: object
+      description: The template's account (the default `account_id` for confirm)
       required: [id, name, type]
       properties:
         id:

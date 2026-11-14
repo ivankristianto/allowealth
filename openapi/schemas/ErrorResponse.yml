@@ -16,5 +16,30 @@ ErrorResponse:
               type: string
             code:
               type: string
+              description: >-
+                Machine-readable code. Optional: many 401 and 404 responses send only a message.
             details:
-              type: object
+              description: >-
+                For `VALIDATION_ERROR`, an array of issues. For `INTERNAL_ERROR`, an object with
+                the `errorId` logged server-side.
+              oneOf:
+                - type: array
+                  items:
+                    $ref: './ErrorResponse.yml#/ValidationIssue'
+                - type: object
+                  additionalProperties: true
+
+ValidationIssue:
+  type: object
+  required: [path, message, code]
+  properties:
+    path:
+      type: array
+      items:
+        type: string
+      description: Path to the offending field, e.g. `["amount"]`. Empty for body-level problems.
+    message:
+      type: string
+    code:
+      type: string
+      description: Valibot issue type, e.g. `regex`, `picklist`, `strict_object`, `check`, `custom`

@@ -1,20 +1,106 @@
 # Common HTTP Response Definitions
 BadRequest:
-  description: Bad request - validation error or invalid input
+  description: >-
+    Bad request. Body validation failures return code `VALIDATION_ERROR` with the issues in
+    `error.details`. Invalid IDs or query values return a message without details.
   content:
     application/json:
       schema:
         $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+      examples:
+        validation:
+          summary: Body failed validation
+          value:
+            success: false
+            error:
+              message: Validation failed
+              code: VALIDATION_ERROR
+              details:
+                - path: [amount]
+                  message: Amount must be a positive plain number with up to 2 decimal places (e.g. 100000 or 100000.50)
+                  code: regex
+        invalidJson:
+          summary: Body is not valid JSON
+          value:
+            success: false
+            error:
+              message: Validation failed
+              code: VALIDATION_ERROR
+              details:
+                - path: []
+                  message: Invalid JSON in request body
+                  code: custom
 
 Unauthorized:
-  description: Unauthorized - authentication required, or a workspace route called by a user with no workspace (super admin)
+  description: >-
+    Unauthorized. No valid session cookie or app password, or a workspace route called by a user
+    with no workspace (super admin). A Bearer token that is not a valid, unexpired, unrevoked app
+    password returns code `APP_PASSWORD_INVALID`. A missing session returns message
+    `Unauthorized`, with code `UNAUTHORIZED` on some routes and no code on others.
   content:
     application/json:
       schema:
         $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+      examples:
+        noSession:
+          summary: No session and no Bearer token
+          value:
+            success: false
+            error:
+              message: Unauthorized
+        invalidAppPassword:
+          summary: Bad app password
+          value:
+            success: false
+            error:
+              message: Invalid, expired or revoked app password
+              code: APP_PASSWORD_INVALID
+
+Forbidden:
+  description: >-
+    Forbidden. With an app password: `APP_PASSWORD_ROUTE_NOT_ALLOWED` when the method and path
+    are not on the app password allowlist, `APP_PASSWORD_SCOPE_INSUFFICIENT` when a `read` token
+    sends anything other than GET or HEAD. `WORKSPACE_INACTIVE` when the workspace is archived.
+    With a session cookie: `CSRF_VALIDATION_FAILED` when a POST, PUT, PATCH or DELETE lacks a
+    matching `X-CSRF-Token` header. Any route: `_render=html` without the
+    `X-Requested-With: XMLHttpRequest` header returns 403 with a message and no code. Some
+    routes also return `INSUFFICIENT_PERMISSIONS` for actions limited to workspace admins.
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+      examples:
+        routeNotAllowed:
+          summary: Route not on the app password allowlist
+          value:
+            success: false
+            error:
+              message: App passwords cannot use DELETE /api/accounts/abc123
+              code: APP_PASSWORD_ROUTE_NOT_ALLOWED
+        scopeInsufficient:
+          summary: Read-only app password used for a write
+          value:
+            success: false
+            error:
+              message: This app password is read-only. Create a read-write app password to make changes.
+              code: APP_PASSWORD_SCOPE_INSUFFICIENT
+
+UnsupportedMediaType:
+  description: 'The request body was not sent with `Content-Type: application/json` (`UNSUPPORTED_MEDIA_TYPE`).'
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+      example:
+        success: false
+        error:
+          message: Content-Type must be application/json
+          code: UNSUPPORTED_MEDIA_TYPE
 
 NotFound:
-  description: Resource not found
+  description: >-
+    Resource not found. Many handlers send only a message; service-level lookups add a code such
+    as `TRANSACTION_NOT_FOUND`, `CATEGORY_NOT_FOUND` or `RECURRING_TEMPLATE_NOT_FOUND`.
   content:
     application/json:
       schema:
@@ -37,8 +123,42 @@ InternalServerError:
             errorId: 3f9a1c2b
 
 TooManyRequests:
-  description: Rate limit exceeded (`RATE_LIMIT_EXCEEDED`). `error.retryAfter` gives seconds to wait.
+  description: >-
+    Rate limit exceeded (`RATE_LIMIT_EXCEEDED`). Wait `Retry-After` seconds (also in
+    `error.retryAfter`). App passwords are limited to 60 requests per minute per token.
+  headers:
+    Retry-After:
+      description: Seconds to wait before retrying
+      schema:
+        type: integer
+    X-RateLimit-Limit:
+      description: Requests allowed per window
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: Requests left in the current window
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: Unix time (seconds) when the window resets
+      schema:
+        type: integer
   content:
     application/json:
       schema:
-        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        allOf:
+          - $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+          - type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  retryAfter:
+                    type: integer
+                    description: Seconds to wait before retrying
+      example:
+        success: false
+        error:
+          message: Too many API requests for this app password.
+          code: RATE_LIMIT_EXCEEDED
+          retryAfter: 42

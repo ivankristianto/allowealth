@@ -1,0 +1,28 @@
+import type { APIRoute } from 'astro';
+import { errorResponse } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
+import { getOpenApiJson } from '@/lib/openapi/document';
+
+/**
+ * GET /api/openapi.json
+ *
+ * The bundled OpenAPI document. Any signed-in caller may read it: a session or an app password.
+ */
+export const GET: APIRoute = async (context) => {
+  if (!context.locals.user) {
+    return errorResponse('Unauthorized', 401);
+  }
+
+  try {
+    return new Response(getOpenApiJson(), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, max-age=300',
+      },
+    });
+  } catch (error) {
+    const errorId = logError('Error building OpenAPI document', error);
+    return errorResponse('Failed to load the API description', 500, 'INTERNAL_ERROR', { errorId });
+  }
+};

@@ -1,28 +1,41 @@
-# Create Transaction Request Schema
+# Create Transaction Request Schema (createTransactionAPISchema)
 CreateTransactionRequest:
   type: object
-  required: [type, amount, currency, category_id, payment_method_id, transaction_date]
+  description: >-
+    Unknown keys are rejected. `category_id` is required for `expense` and `income`;
+    `to_account_id` is required for `transfer`.
+  additionalProperties: false
+  required: [type, amount, currency, account_id, transaction_date]
   properties:
     type:
       type: string
-      enum: [expense, income]
+      enum: [expense, income, transfer]
     amount:
       type: string
       pattern: '^\d{1,15}(\.\d{1,2})?$'
-      description: Amount as string (decimal with up to 2 decimal places)
+      description: Positive plain number as a string, up to 2 decimals, no sign or separators. Must be greater than 0.
+      example: '150000'
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     category_id:
       type: string
-      format: uuid
-    payment_method_id:
+      minLength: 1
+      description: Budget category ID. Required unless `type` is `transfer`.
+    account_id:
       type: string
-      format: uuid
+      minLength: 1
+      description: Source account ID
+    to_account_id:
+      type: string
+      minLength: 1
+      description: Destination account ID. Required when `type` is `transfer`.
     transaction_date:
       type: string
       format: date
-      description: Transaction date in YYYY-MM-DD format
-      example: '2024-01-15'
+      pattern: '^\d{4}-\d{2}-\d{2}$'
+      description: Date in YYYY-MM-DD. Cannot be later than today in the workspace timezone.
+      example: '2026-03-10'
     description:
       type: string
+      maxLength: 500

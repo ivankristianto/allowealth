@@ -11,6 +11,7 @@ import { sequence } from 'astro:middleware';
 import { installerGuard } from './installer';
 import { perfDebug } from './perf-debug';
 import { securityHeaders } from './security-headers';
+import { appPasswordAuthentication } from './app-password';
 import { authentication } from './auth';
 import { csrf } from './csrf';
 import { migrationGuard } from './migration-guard';
@@ -20,6 +21,7 @@ export const onRequest = sequence(
   installerGuard,
   perfDebug,
   securityHeaders,
+  appPasswordAuthentication,
   authentication,
   csrf,
   migrationGuard,

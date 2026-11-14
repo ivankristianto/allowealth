@@ -10,6 +10,13 @@ info:
     HTTP-only cookie. Authentication is mounted through the Better Auth catch-all route at
     `/api/auth/*`, with `/api/auth/verify-email` remaining app-owned.
 
+    **App passwords:**
+    Scripts and AI agents can call a fixed set of REST operations with an app password sent as
+    `Authorization: Bearer aw_pat_...` (see the `bearerAuth` security scheme). Operations that
+    accept one list `bearerAuth` in their `security`; every other operation returns 403 for app
+    passwords. A `read` app password may only use GET; a `read-write` one may also create,
+    update and delete where the operation allows it. Start with `GET /api/openapi.json` to fetch this document.
+
     Common public auth endpoints used by the app:
     - `POST /api/auth/sign-up/email`
     - `POST /api/auth/sign-in/email`
@@ -74,6 +81,8 @@ tags:
     description: Recurring template and occurrence management
   - name: Admin
     description: Admin-only endpoints for system monitoring and diagnostics
+  - name: Meta
+    description: Machine-readable description of this API
 
 paths:
   /api/auth/sign-up/email:
@@ -189,14 +198,20 @@ paths:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1export'
 
   /api/forecast:
-    $ref: './openapi/paths/forecast.yml#/~1forecast'
+    $ref: './openapi/paths/forecast.yml#/paths/~1api~1forecast'
   /api/calculators/compound:
     $ref: './openapi/paths/calculators.yml#/paths/~1api~1calculators~1compound'
 
   /api/reports:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'
+  /api/reports/expenses:
+    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1expenses'
+  /api/reports/income:
+    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1income'
   /api/reports/members:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1members'
+  /api/reports/category-drilldown:
+    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1category-drilldown'
   /api/recurring:
     $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring'
   /api/recurring/{id}:
@@ -215,8 +230,13 @@ paths:
     $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1occurrences~1{id}~1skip'
   /api/recurring/calendar:
     $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1calendar'
+  /api/recurring/forecast:
+    $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1forecast'
   /api/recurring/stats:
     $ref: './openapi/paths/recurring.yml#/paths/~1api~1recurring~1stats'
+
+  /api/openapi.json:
+    $ref: './openapi/paths/meta.yml#/paths/~1api~1openapi.json'
 
   # Admin endpoints
   /api/admin/diagnostics:
@@ -227,7 +247,29 @@ components:
       type: apiKey
       in: cookie
       name: better-auth.session_token
-      description: Better Auth session cookie used by middleware-backed authentication
+      description: >-
+        Better Auth session cookie used by middleware-backed authentication. POST, PUT, PATCH and
+        DELETE requests with a session also need an `X-CSRF-Token` header matching the
+        `csrf_token` cookie.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        App password sent as `Authorization: Bearer aw_pat_...`. Create one in the app under
+        Security > App Passwords.
+
+        - Scopes: `read` allows GET and HEAD only. `read-write` also allows POST, PUT, PATCH and
+          DELETE.
+        - Deny by default: only operations that list `bearerAuth` in their `security` accept app
+          passwords. Any other route or method returns 403 `APP_PASSWORD_ROUTE_NOT_ALLOWED`. A
+          `read` token sending a write returns 403 `APP_PASSWORD_SCOPE_INSUFFICIENT`.
+        - An invalid, expired or revoked token, or a Bearer token without the `aw_pat_` prefix,
+          returns 401 `APP_PASSWORD_INVALID`.
+        - A Bearer request ignores cookies and needs no CSRF header.
+        - Rate limit: 60 requests per minute per token. Over the limit returns 429
+          `RATE_LIMIT_EXCEEDED` with a `Retry-After` header. Responses carry
+          `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
+        - The token acts as the member who created it, in that member's workspace.
 
   parameters:
     IdParameter:
@@ -238,8 +280,14 @@ components:
       $ref: './openapi/responses/common.yml#/BadRequest'
     Unauthorized:
       $ref: './openapi/responses/common.yml#/Unauthorized'
+    Forbidden:
+      $ref: './openapi/responses/common.yml#/Forbidden'
     NotFound:
       $ref: './openapi/responses/common.yml#/NotFound'
+    UnsupportedMediaType:
+      $ref: './openapi/responses/common.yml#/UnsupportedMediaType'
+    TooManyRequests:
+      $ref: './openapi/responses/common.yml#/TooManyRequests'
     InternalServerError:
       $ref: './openapi/responses/common.yml#/InternalServerError'
 
@@ -248,6 +296,8 @@ components:
       $ref: './openapi/schemas/ApiErrorResponse.yml#/ApiResponse'
     ErrorResponse:
       $ref: './openapi/schemas/ErrorResponse.yml#/ErrorResponse'
+    ValidationIssue:
+      $ref: './openapi/schemas/ErrorResponse.yml#/ValidationIssue'
 
     # Authentication Schemas
     Password:
@@ -404,6 +454,10 @@ components:
       $ref: './openapi/schemas/RecurringStats.yml#/RecurringStats'
     ConfirmOccurrenceRequest:
       $ref: './openapi/schemas/ConfirmOccurrenceRequest.yml#/ConfirmOccurrenceRequest'
+    ConfirmOccurrenceResponse:
+      $ref: './openapi/schemas/ConfirmOccurrenceResponse.yml#/ConfirmOccurrenceResponse'
+    RecurringForecast:
+      $ref: './openapi/schemas/RecurringForecast.yml#/RecurringForecast'
 
     # Admin Schemas
     RuntimeInfo:

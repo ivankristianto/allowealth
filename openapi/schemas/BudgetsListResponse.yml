@@ -9,5 +9,6 @@ BudgetsListResponse:
       type: boolean
     data:
       type: array
+      description: Budget rows for the month, unordered. No spending figures; see GET /api/budget/overview.
       items:
-        $ref: './Budget.yml#/Budget'
+        $ref: './BudgetWithCategory.yml#/BudgetWithCategory'

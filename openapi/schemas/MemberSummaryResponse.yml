@@ -1,11 +1,17 @@
-# Member summary API response
+# Member summary API success response
 MemberSummaryResponse:
-  allOf:
-    - $ref: './ApiErrorResponse.yml#/ApiResponse'
-    - type: object
-      required: [success, data]
-      properties:
-        data:
-          type: array
-          items:
-            $ref: './MemberSummaryRow.yml#/MemberSummaryRow'
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: array
+      description: >-
+        One row per member who created at least one income or expense transaction in the period and
+        currency, sorted by total expenses descending. Empty array when there are none.
+      items:
+        $ref: './MemberSummaryRow.yml#/MemberSummaryRow'
+  required:
+    - success
+    - data

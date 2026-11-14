@@ -1,0 +1,86 @@
+# Category drill-down data (used by /api/reports/category-drilldown)
+CategoryDrilldownData:
+  type: object
+  properties:
+    categoryId:
+      type: string
+      description: The `categoryId` query value
+      example: V1StGXR8_Z5jdHi6B-myT
+    categoryName:
+      type: string
+      description: The `categoryName` query value, echoed as sent (not read from the database)
+      example: Groceries
+    categoryIcon:
+      type: string
+      description: The `categoryIcon` query value, `tag` when omitted
+      example: tag
+    categoryColor:
+      type: string
+      description: The `categoryColor` query value, `bg-base-300` when omitted
+      example: bg-base-300
+    spent:
+      type: number
+      nullable: true
+      description: >-
+        The `spent` query value parsed as a number, 0 when omitted, null when it does not parse.
+        Echoed for display; not computed by the server.
+      example: 1850000
+    budgetLimit:
+      type: number
+      nullable: true
+      description: >-
+        The `budgetLimit` query value parsed as a number, null when omitted or when it does not
+        parse. Echoed for display; not computed by the server.
+      example: 4000000
+    period:
+      type: string
+      description: The `period` query value
+      example: "2026-03"
+    currency:
+      type: string
+      description: The `currency` query value
+      example: IDR
+    transactions:
+      type: array
+      description: >-
+        The category's transactions in the period and currency, newest first, one page of `limit`
+        rows starting at `offset`. Only transactions of the resolved type are included.
+      items:
+        $ref: './CategoryDrilldownTransaction.yml#/CategoryDrilldownTransaction'
+    total:
+      type: integer
+      description: Number of matching transactions across all pages
+      example: 12
+    totalAmount:
+      type: string
+      description: >-
+        Sum of the amounts in `transactions` (decimal string). Covers the returned page only, not
+        every matching transaction.
+      example: "1850000"
+    limit:
+      type: integer
+      description: Page size used, after clamping to 1..500
+      example: 100
+    offset:
+      type: integer
+      description: Offset used, after clamping to 0 or more
+      example: 0
+    hasMore:
+      type: boolean
+      description: True when more transactions exist after this page
+      example: false
+  required:
+    - categoryId
+    - categoryName
+    - categoryIcon
+    - categoryColor
+    - spent
+    - budgetLimit
+    - period
+    - currency
+    - transactions
+    - total
+    - totalAmount
+    - limit
+    - offset
+    - hasMore

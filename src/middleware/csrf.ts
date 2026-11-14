@@ -21,7 +21,8 @@ import {
 export const csrf: MiddlewareHandler = async (context, next) => {
   const pathname = context.url.pathname;
 
-  if (context.isPrerendered) {
+  // App-password requests authenticate by a header browsers never add on their own; cookies are ignored.
+  if (context.isPrerendered || context.locals.appPassword) {
     return next();
   }
 

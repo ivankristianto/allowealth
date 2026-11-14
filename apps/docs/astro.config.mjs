@@ -59,6 +59,7 @@ export default defineConfig({
             { slug: 'reference/commands' },
             { slug: 'reference/cli' },
             { slug: 'reference/api-overview' },
+            { slug: 'reference/ai-agent-rest' },
             { slug: 'reference/architecture' },
           ],
         },

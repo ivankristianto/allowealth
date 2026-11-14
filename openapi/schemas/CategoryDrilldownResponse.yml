@@ -1,0 +1,12 @@
+# Category drill-down API success response
+CategoryDrilldownResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      $ref: './CategoryDrilldownData.yml#/CategoryDrilldownData'
+  required:
+    - success
+    - data

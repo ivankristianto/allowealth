@@ -1,0 +1,57 @@
+# Budget row with its category row joined, as returned by GET /api/budgets
+BudgetWithCategory:
+  allOf:
+    - $ref: './Budget.yml#/Budget'
+    - type: object
+      required: [category]
+      properties:
+        category:
+          type: object
+          description: The budget's category as stored (any type, active or not)
+          required:
+            - id
+            - workspace_id
+            - created_by_user_id
+            - name
+            - type
+            - income_source_type
+            - description
+            - icon
+            - color
+            - is_active
+            - created_at
+            - updated_at
+          properties:
+            id:
+              type: string
+              description: Category ID (nanoid)
+            workspace_id:
+              type: string
+            created_by_user_id:
+              type: string
+            name:
+              type: string
+            type:
+              type: string
+              enum: [expense, income]
+            income_source_type:
+              type: string
+              enum: [active, passive, other]
+              description: Only meaningful for income categories; defaults to `other`
+            description:
+              type: string
+              nullable: true
+            icon:
+              type: string
+              description: Lucide icon name
+            color:
+              type: string
+              description: DaisyUI color class as stored (e.g. `bg-primary`), not a hex value
+            is_active:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time

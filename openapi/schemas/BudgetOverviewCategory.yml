@@ -1,0 +1,68 @@
+# One category row in the budget overview
+BudgetOverviewCategory:
+  type: object
+  required:
+    - budget_id
+    - category_id
+    - category_name
+    - category_type
+    - category_icon
+    - category_color
+    - percentage
+    - budget_amount
+    - spent_amount
+    - recurringTotal
+    - isRecurringOverBudget
+    - balance
+    - status
+    - percentage_used
+  properties:
+    budget_id:
+      type: string
+      description: Budget record ID (nanoid). Use with GET /api/budgets/{id}.
+    category_id:
+      type: string
+      description: Category ID (nanoid)
+    category_name:
+      type: string
+    category_type:
+      type: string
+      enum: [expense, income]
+      description: Always `expense` in practice; the overview filters to expense categories
+    category_icon:
+      type: string
+      description: Lucide icon name
+    category_color:
+      type: string
+      description: Category color as a hex value (for example `#3d4451`), converted from the stored class name
+    percentage:
+      type: string
+      pattern: '^\d+\.\d{2}$'
+      description: >-
+        This category's share of the month's total budget, as a string with 2 decimals
+        (for example `"16.65"`). Not the share spent; see `percentage_used`.
+    budget_amount:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+      description: Budgeted amount for the month
+    spent_amount:
+      $ref: './BudgetSpentAmount.yml#/BudgetSpentAmount'
+    recurringTotal:
+      type: string
+      description: Sum of active recurring expense templates in this category that overlap the month
+    isRecurringOverBudget:
+      type: boolean
+      description: True when recurringTotal is greater than budget_amount
+    balance:
+      type: string
+      pattern: '^-?\d+(\.\d{1,2})?$'
+      description: budget_amount minus spent_amount. Negative when overspent.
+    status:
+      type: string
+      enum: [ok, warning, exceeded]
+      description: >-
+        `exceeded` when spending is above 100% of the budget, `warning` from 80% up to 100%,
+        otherwise `ok`. A zero budget is always `ok`.
+    percentage_used:
+      type: number
+      description: Spent as a percentage of budget_amount, rounded to 2 decimals. 0 when the budget is 0.

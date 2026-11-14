@@ -8,7 +8,9 @@ import {
   ServiceError,
 } from '@/services';
 import { getCurrentDateISO } from '@/lib/utils/date';
+import { safeParse } from 'valibot';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
+import { occurrenceDueBeforeSchema } from '@/lib/validation/recurring';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
@@ -49,13 +51,25 @@ export const GET: APIRoute = async (context) => {
     const month = parseMonth(context.url.searchParams.get('month'), todayIso);
     const status = parseStatusFilter(context.url.searchParams.get('status'));
     const dueWithin = context.url.searchParams.get('due_within') || undefined;
+    const dueBeforeParam = context.url.searchParams.get('due_before');
+    const dueBefore =
+      dueBeforeParam === null ? undefined : safeParse(occurrenceDueBeforeSchema, dueBeforeParam);
+    if (dueBefore && !dueBefore.success) {
+      const message = dueBefore.issues[0].message;
+      return render.wantsHtml()
+        ? render.error(message, 400)
+        : errorResponse(message, 400, 'VALIDATION_ERROR');
+    }
+    // due_before alone spans every month; with an explicit month both apply.
+    const monthFilter = dueBefore && !context.url.searchParams.get('month') ? undefined : month;
 
     const result = await recurringOccurrenceService.findPending(
       auth.workspaceId,
       {
-        month,
+        month: monthFilter,
         status,
         due_within: dueWithin,
+        due_before: dueBefore?.output,
       },
       perf
     );

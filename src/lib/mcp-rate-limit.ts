@@ -6,10 +6,12 @@ import { checkRateLimitByKey, type RateLimitResult } from '@/lib/rate-limit';
 
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 60;
-const ENDPOINT_ID = 'api-mcp';
+const DEFAULT_ENDPOINT_ID = 'api-mcp';
 const UPSTASH_TTL_SECONDS = 120;
 
 export interface McpRateLimitDeps {
+  /** Separate buckets per surface, so REST calls do not eat into a token's MCP budget. */
+  endpointId?: string;
   now?: () => number;
   hash?: (value: string) => string;
   checkByKey?: (key: string, config: { maxRequests: number; windowMs: number }) => RateLimitResult;
@@ -44,7 +46,8 @@ export function buildMcpRateLimitKey(token: string, deps: McpRateLimitDeps = {})
   const now = deps.now?.() ?? Date.now();
   const hash = deps.hash ?? simpleHash;
   const windowEpochMinute = Math.floor(now / WINDOW_MS);
-  return `mcp:ratelimit:${hash(token)}:${ENDPOINT_ID}:${windowEpochMinute}`;
+  const endpointId = deps.endpointId ?? DEFAULT_ENDPOINT_ID;
+  return `mcp:ratelimit:${hash(token)}:${endpointId}:${windowEpochMinute}`;
 }
 
 export async function checkMcpRateLimit(

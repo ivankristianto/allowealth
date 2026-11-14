@@ -1,52 +1,113 @@
-# Transaction Schema
+# Transaction Schema (API output of transformTransaction)
 Transaction:
   type: object
+  required:
+    - id
+    - type
+    - amount
+    - currency
+    - description
+    - transaction_date
+    - updated_by_user_id
+    - deleted_by_user_id
+    - deleted_at
+    - created_at
+    - updated_at
+    - category
+    - account
+    - toAccount
+    - has_history
+    - is_recurring
   properties:
     id:
       type: string
-      format: uuid
+      description: Transaction ID (nanoid)
     type:
       type: string
-      enum: [expense, income]
+      enum: [expense, income, transfer]
     amount:
       type: string
-      pattern: '^\d+(\.\d{1,2})?$'
-      description: Amount as string (decimal with up to 2 decimal places)
+      pattern: '^\d{1,15}(\.\d{1,2})?$'
+      description: Positive decimal amount as a string. The sign comes from `type`.
+      example: '150000'
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
-    category_id:
+    description:
       type: string
-      format: uuid
-    payment_method_id:
-      type: string
-      format: uuid
+      nullable: true
     transaction_date:
       type: string
       format: date-time
-    description:
-      oneOf:
-        - type: string
-        - type: 'null'
+      description: >-
+        Transaction date as an ISO timestamp. Transactions created through the API are stored at
+        midnight UTC, e.g. `2026-03-10T00:00:00.000Z`.
     updated_by_user_id:
-      oneOf:
-        - type: string
-        - type: 'null'
+      type: string
+      nullable: true
     deleted_by_user_id:
-      oneOf:
-        - type: string
-        - type: 'null'
+      type: string
+      nullable: true
     deleted_at:
-      oneOf:
-        - type: string
-          format: date-time
-        - type: 'null'
+      type: string
+      format: date-time
+      nullable: true
     created_at:
       type: string
       format: date-time
-    has_history:
-      type: boolean
-      description: Whether this transaction has audit history beyond creation (edits or deletions)
     updated_at:
       type: string
       format: date-time
+    category:
+      type: object
+      nullable: true
+      description: Budget category. `null` for transfers.
+      required: [id, name, type, icon, color]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [expense, income]
+        icon:
+          type: string
+        color:
+          type: string
+    account:
+      type: object
+      description: Source account (where the money comes from or goes into)
+      required: [id, name, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+    toAccount:
+      type: object
+      nullable: true
+      description: Destination account for transfers, otherwise `null`
+      required: [id, name, type]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+    has_history:
+      type: boolean
+      description: >-
+        Whether the transaction has been edited or deleted. Computed only by the list endpoint;
+        single-transaction responses always return `false`.
+    is_recurring:
+      type: boolean
+      description: >-
+        Whether a recurring occurrence produced this transaction. Computed only by the list
+        endpoint; single-transaction responses always return `false`.
+    created_by_user_name:
+      type: string
+      description: Name of the member who created it. Present only in list responses.

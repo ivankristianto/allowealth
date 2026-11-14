@@ -4,7 +4,7 @@ TrendDataPoint:
   properties:
     name:
       type: string
-      description: Period label (e.g., "Jan", "Feb" for monthly or "2024" for yearly)
+      description: Short English month label ("Jan" to "Dec"). Yearly reports also use month labels, one per month.
       example: "Feb"
     income:
       type: string

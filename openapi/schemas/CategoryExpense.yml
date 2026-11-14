@@ -1,4 +1,4 @@
-# Category expense for donut chart
+# Category total, used for both expense and income category breakdowns
 CategoryExpense:
   type: object
   properties:
@@ -8,12 +8,12 @@ CategoryExpense:
       example: "Utilities"
     value:
       type: string
-      description: Total spent in this category (decimal string for precision)
+      description: Total for this category in the selected period and currency (decimal string)
       example: "1850000"
     sourceType:
       type: string
       enum: [active, passive, other]
-      description: Income source classification (income categories only)
+      description: Income source classification. Present on income categories only, absent on expense categories.
   required:
     - name
     - value

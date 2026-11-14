@@ -1,0 +1,118 @@
+# One transaction in a category drill-down. Shaped like a transaction list item, but several fields are placeholders.
+CategoryDrilldownTransaction:
+  type: object
+  properties:
+    id:
+      type: string
+      description: Transaction ID (21-character nanoid)
+      example: tXn4bC9dE2fG7hJ1kL3mN
+    amount:
+      type: string
+      description: Transaction amount (decimal string)
+      example: "125000"
+    currency:
+      type: string
+      description: ISO 4217 code, always the requested currency
+      example: IDR
+    type:
+      type: string
+      description: >-
+        The `categoryType` query value when sent (echoed without validation), otherwise the
+        category's own type.
+      example: expense
+    transaction_date:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp in UTC
+      example: "2026-03-10T05:00:00.000Z"
+    description:
+      type: string
+      description: Transaction description, empty string when unset
+      example: Groceries
+    category:
+      type: object
+      description: Built from the request, not read from the database
+      properties:
+        id:
+          type: string
+          description: The `categoryId` query value
+        name:
+          type: string
+          description: The `categoryName` query value
+        type:
+          type: string
+          description: Same value as the transaction `type`
+      required:
+        - id
+        - name
+        - type
+    account:
+      type: object
+      description: Only `name` is real. `id` is always an empty string and `type` is always `bank`.
+      properties:
+        id:
+          type: string
+          description: Always an empty string
+          example: ""
+        name:
+          type: string
+          description: Account name, "Unknown" when the account is missing
+          example: Cash
+        type:
+          type: string
+          description: Always `bank`, whatever the real account type
+          example: bank
+        currency:
+          type: string
+          description: Same as the transaction currency
+          example: IDR
+      required:
+        - id
+        - name
+        - type
+        - currency
+    created_at:
+      type: string
+      format: date-time
+      description: Placeholder, always equal to `transaction_date`
+    updated_at:
+      type: string
+      format: date-time
+      description: Placeholder, always equal to `transaction_date`
+    updated_by_user_id:
+      type: string
+      nullable: true
+      description: Always null
+    deleted_by_user_id:
+      type: string
+      nullable: true
+      description: Always null
+    deleted_at:
+      type: string
+      nullable: true
+      description: Always null
+    has_history:
+      type: boolean
+      description: True when the audit log holds an update or delete for this transaction
+      example: false
+    created_by_user_name:
+      type: string
+      nullable: true
+      description: Name of the user who created the transaction, null when unknown
+      example: Alex Doe
+  required:
+    - id
+    - amount
+    - currency
+    - type
+    - transaction_date
+    - description
+    - category
+    - account
+    - created_at
+    - updated_at
+    - updated_by_user_id
+    - deleted_by_user_id
+    - deleted_at
+    - has_history
+    - created_by_user_name

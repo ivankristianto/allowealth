@@ -1,23 +1,32 @@
-# Budget Schema
+# Budget Schema (the stored budget row, as returned by the API)
 Budget:
   type: object
   required:
     - id
+    - workspace_id
+    - created_by_user_id
     - category_id
     - month
     - year
     - budget_amount
     - currency
     - is_closed
+    - notes
     - created_at
     - updated_at
   properties:
     id:
       type: string
-      format: uuid
+      description: Budget ID (nanoid)
+    workspace_id:
+      type: string
+      description: Owning workspace ID
+    created_by_user_id:
+      type: string
+      description: ID of the user who created the budget
     category_id:
       type: string
-      format: uuid
+      description: Category ID (nanoid)
     month:
       type: integer
       minimum: 1
@@ -31,7 +40,7 @@ Budget:
     budget_amount:
       type: string
       pattern: '^\d+(\.\d{1,2})?$'
-      description: Budget amount as decimal string
+      description: Budget amount as a decimal string with up to 2 decimals (e.g. "500.50")
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
@@ -39,22 +48,12 @@ Budget:
       type: boolean
       description: Whether the budget period is closed (locked from edits)
     notes:
-      oneOf:
-        - type: string
-          maxLength: 500
-        - type: 'null'
+      type: string
+      nullable: true
+      maxLength: 500
     created_at:
       type: string
       format: date-time
     updated_at:
       type: string
       format: date-time
-    category_name:
-      type: string
-      description: Category name (joined from categories table)
-    category_icon:
-      type: string
-      description: Category icon (joined from categories table)
-    category_color:
-      type: string
-      description: Category color (joined from categories table)

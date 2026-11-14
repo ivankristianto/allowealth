@@ -1,11 +1,11 @@
-# Category intelligence row for table
+# Category intelligence row: one per expense category with a budget in the selected period and currency
 CategoryIntelligence:
   type: object
   properties:
     id:
       type: string
-      description: Category ID
-      example: "cat_123"
+      description: Category ID (21-character nanoid)
+      example: "V1StGXR8_Z5jdHi6B-myT"
     name:
       type: string
       description: Category name
@@ -17,15 +17,23 @@ CategoryIntelligence:
     budgetLimit:
       type: string
       nullable: true
-      description: Budget limit for this category, null if not set
+      description: >-
+        Budget amount for this category (decimal string). Monthly: the month's budget. Yearly: the
+        sum of the year's monthly budgets. Only categories with a budget in the selected currency
+        are listed, so in practice this is never null.
       example: "4000000"
     icon:
       type: string
       description: Lucide icon name for this category
       example: "zap"
+    color:
+      type: string
+      description: DaisyUI color class for this category, `bg-neutral` when unset
+      example: "bg-warning"
   required:
     - id
     - name
     - spent
     - budgetLimit
     - icon
+    - color
