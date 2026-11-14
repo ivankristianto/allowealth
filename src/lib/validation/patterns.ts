@@ -114,7 +114,7 @@ export const password = {
    * Matches: ! @ # $ % ^ & * ( ) _ + - = [ ] { } ; ' : " \ | , . < > / ?
    */
   special: {
-    html: '[!@#$%^&*()_+\\-=\\[\\]{};\':\"\\\\|,.<>\\/?]',
+    html: '[!@#$%^&*\\(\\)_+\\-=\\[\\]\\{\\};\':"\\\\\\|,.<>\\/?]',
     regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
     title: 'At least one special character (!@#$%^&* etc.)',
   },
@@ -127,7 +127,7 @@ export const password = {
    * requirement individually to provide better user feedback.
    */
   combined: {
-    html: '(?=.*[a-zA-Z])(?=.*[0-9!@#$%^&*()_+\\-=\\[\\]{};\':\"\\\\|,.<>\\/?]).{12,}',
+    html: '(?=.*[a-zA-Z])(?=.*[0-9!@#$%^&*\\(\\)_+\\-=\\[\\]\\{\\};\':"\\\\\\|,.<>\\/?]).{12,}',
     regex: /^(?=.*[a-zA-Z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{12,}$/,
     title: 'At least 12 characters with letters and numbers/special characters',
   },
@@ -152,7 +152,7 @@ export const url = {
   /**
    * HTML pattern attribute value
    */
-  html: 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)',
+  html: 'https?:\\/\\/(www\\.)?[a-zA-Z0-9@:%._\\+~#=\\-]{1,256}\\.[a-zA-Z0-9\\(\\)]{1,6}\\b([a-zA-Z0-9\\(\\)@:%_\\+.~#?&\\/=\\-]*)',
 
   /**
    * RegExp for URL validation
@@ -190,7 +190,7 @@ export const phone = {
    * HTML pattern attribute value
    * Supports: +1234567890, (123) 456-7890, 123-456-7890, etc.
    */
-  html: '^\\+?[1-9]\\d{1,14}$|^\\(?[1-9]\\d{2,3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}$',
+  html: '^\\+?[1-9]\\d{1,14}$|^\\(?[1-9]\\d{2,3}\\)?[\\s.\\-]?\\d{3}[\\s.\\-]?\\d{4}$',
 
   /**
    * RegExp for phone validation
@@ -222,7 +222,7 @@ export const creditCard = {
   /**
    * HTML pattern attribute value
    */
-  html: '[0-9]{13,19}|[0-9]{4}[\\s-][0-9]{4}[\\s-][0-9]{4}[\\s-][0-9]{4,7}',
+  html: '[0-9]{13,19}|[0-9]{4}[\\s\\-][0-9]{4}[\\s\\-][0-9]{4}[\\s\\-][0-9]{4,7}',
 
   /**
    * RegExp for credit card validation
@@ -354,7 +354,7 @@ export const date = {
  * Common pattern for usernames, handles, etc.
  */
 export const username = {
-  html: '[a-zA-Z0-9_-]{3,20}',
+  html: '[a-zA-Z0-9_\\-]{3,20}',
   regex: /^[a-zA-Z0-9_-]{3,20}$/,
   title: 'Username must be 3-20 characters (letters, numbers, underscores, hyphens only)',
   examples: {
