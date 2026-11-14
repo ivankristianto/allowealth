@@ -78,13 +78,13 @@ Never reachable with an app password: sign-in and other `/api/auth/*` routes, `/
 
 ## Errors
 
-| Status | Code                              | Meaning                                                                          |
-| ------ | --------------------------------- | -------------------------------------------------------------------------------- |
-| 401    | `APP_PASSWORD_INVALID`            | Missing, malformed, expired or revoked token, or not an app password             |
-| 403    | `APP_PASSWORD_ROUTE_NOT_ALLOWED`  | The route or method is not on the list above                                     |
-| 403    | `APP_PASSWORD_SCOPE_INSUFFICIENT` | A read-only token tried to write                                                 |
-| 403    | `WORKSPACE_INACTIVE`              | The workspace was archived                                                       |
-| 429    | `RATE_LIMIT_EXCEEDED`             | More than 60 requests in a minute for this token; wait for `Retry-After` seconds |
+| Status | Code                              | Meaning                                                                            |
+| ------ | --------------------------------- | ---------------------------------------------------------------------------------- |
+| 401    | `APP_PASSWORD_INVALID`            | Malformed, expired or revoked token, or a Bearer token that is not an app password |
+| 403    | `APP_PASSWORD_ROUTE_NOT_ALLOWED`  | The route or method is not on the list above                                       |
+| 403    | `APP_PASSWORD_SCOPE_INSUFFICIENT` | A read-only token tried to write                                                   |
+| 403    | `WORKSPACE_INACTIVE`              | The workspace was archived                                                         |
+| 429    | `RATE_LIMIT_EXCEEDED`             | More than 60 requests in a minute for this token; wait for `Retry-After` seconds   |
 
 ## Learn the API
 
@@ -166,7 +166,7 @@ curl -s "$ALLOWEALTH_URL/api/recurring/calendar?year=2026&month=11" \
 
 ### 5. List unpaid bills and mark one paid
 
-There is no single call for this yet. Fetch pending items one month at a time and keep those with `due_date` on or before today. Always pass `status=pending`: without it the endpoint returns every status. Bills left unpaid from earlier months stay pending, so also check the previous month or two.
+There is no single call for this yet. Fetch pending items one month at a time and keep those with `due_date` on or before today. Always pass `status=pending`: without it the endpoint returns every status. Bills left unpaid from earlier months stay pending, so also check the previous month or two. Anything older than the months you query is missed, and `overdueCount` from `/api/recurring/stats` only covers the current month, so it cannot tell you about them.
 
 ```bash
 for month in 2026-09 2026-10 2026-11; do

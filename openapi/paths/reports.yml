@@ -1,4 +1,7 @@
 # Report endpoint paths
+# P2: TODO - Add description notes about dynamic error message values (e.g., "Invalid month: {value}")
+# P2: TODO - Add separate example for yearly period format validation error
+# P3: TODO - Consider adding rate limiting documentation to security section
 paths:
   /api/reports:
     get:
