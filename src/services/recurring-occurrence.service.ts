@@ -17,11 +17,20 @@ import { confirmOccurrenceSchema, skipOccurrenceSchema } from '@/lib/validation/
 import { getCurrentDateISO } from '@/lib/utils/date';
 import { generateInstallmentDescription } from '@/lib/utils/recurring-dates';
 import type { RecurringMonthlySummary } from '@/lib/utils/recurring-summary';
+import { RecurringTemplateService } from './recurring-template.service';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
 import { TransactionService } from './transaction.service';
 import { WorkspaceMetaService } from './workspace-meta.service';
 
 const log = createLogger('recurring-occurrence');
+
+// Workspace id -> the workspace day its occurrences were last topped up on.
+const toppedUpOn = new Map<string, string>();
+
+/** Test hook: forget which workspaces were topped up today. */
+export function resetOccurrenceTopUps(): void {
+  toppedUpOn.clear();
+}
 
 interface PendingFilters {
   month?: string;
@@ -78,6 +87,16 @@ export class RecurringOccurrenceService {
 
   private async getWorkspaceToday(workspaceId: string): Promise<string> {
     return getCurrentDateISO(await this.workspaceMetaService.getTimezone(workspaceId));
+  }
+
+  /**
+   * Generates pending occurrences up to the end of next month, once per workspace day.
+   * Nothing else runs generation in production (the image ships no CLI), so reads do it.
+   */
+  private async topUpOccurrences(workspaceId: string, todayIso: string): Promise<void> {
+    if (toppedUpOn.get(workspaceId) === todayIso) return;
+    await new RecurringTemplateService(this.db).generateOccurrences(workspaceId);
+    toppedUpOn.set(workspaceId, todayIso);
   }
 
   private async ensureOccurrenceIsDue(workspaceId: string, dueDate: string): Promise<void> {
@@ -139,6 +158,7 @@ export class RecurringOccurrenceService {
     perf?: PerfCollector
   ): Promise<{ occurrences: RecurringOccurrenceOutput[]; total: number }> {
     const todayIso = await this.getWorkspaceToday(workspaceId);
+    await this.topUpOccurrences(workspaceId, todayIso);
     // `today` is in the key so a cached "due within" list doesn't outlive the day it was built on
     const normalizedFilters = {
       month: filters.month ?? null,
@@ -520,6 +540,7 @@ export class RecurringOccurrenceService {
     year: number,
     month: number
   ): Promise<RecurringCalendarDay[]> {
+    await this.topUpOccurrences(workspaceId, await this.getWorkspaceToday(workspaceId));
     const cache = getCacheManager();
     const cacheKey = CacheKeys.recurringCalendar(workspaceId, year, month);
 
@@ -581,6 +602,7 @@ export class RecurringOccurrenceService {
 
   async getStats(workspaceId: string): Promise<RecurringStats> {
     const today = await this.getWorkspaceToday(workspaceId);
+    await this.topUpOccurrences(workspaceId, today);
     const cache = getCacheManager();
     const cacheKey = CacheKeys.recurringStats(workspaceId, today);
 
@@ -673,7 +695,9 @@ export class RecurringOccurrenceService {
     workspaceId: string,
     monthKey?: string
   ): Promise<RecurringMonthlySummary> {
-    const monthRange = parseMonthRange(await this.getWorkspaceToday(workspaceId), monthKey);
+    const todayIso = await this.getWorkspaceToday(workspaceId);
+    await this.topUpOccurrences(workspaceId, todayIso);
+    const monthRange = parseMonthRange(todayIso, monthKey);
 
     const rows = await (this.db as any)
       .select({
