@@ -477,10 +477,14 @@ paths:
         days (UTC dates, inclusive). `month` is then ignored. Values not matching `^\d+d$` are
         silently ignored and the month window applies.
 
+        - `due_before=YYYY-MM-DD` keeps due dates on or before that date. Without `month` it
+        drops the month window and spans every earlier month, so
+        `status=pending&due_before=<today>` lists every unpaid occurrence that is due. With
+        `month` or `due_within`, both conditions apply. The caller supplies the date; the server
+        does not compute "today" for this filter.
 
-        There is no window that reaches back before today across months: to find pending
-        occurrences that are overdue from earlier months, query each earlier `month` with
-        `status=pending`. Pending occurrences of templates that are not active are left out.
+
+        Pending occurrences of templates that are not active are left out.
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -508,6 +512,17 @@ paths:
             type: string
             pattern: '^\d+d$'
             example: 7d
+        - name: due_before
+          in: query
+          description: >-
+            Inclusive upper bound on the due date, YYYY-MM-DD. Without `month` it searches every
+            month. A malformed or impossible date (such as `2026-02-31`) returns 400
+            `VALIDATION_ERROR`.
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+            example: '2026-11-14'
         - name: _render
           in: query
           description: 'Browser-only. `html` returns a server-rendered partial and requires `X-Requested-With: XMLHttpRequest` (403 without it). Omit for JSON.'
@@ -536,6 +551,8 @@ paths:
                           total:
                             type: integer
                             description: Length of `occurrences` (the list is not paginated)
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '403':

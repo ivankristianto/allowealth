@@ -166,13 +166,11 @@ curl -s "$ALLOWEALTH_URL/api/recurring/calendar?year=2026&month=11" \
 
 ### 5. List unpaid bills and mark one paid
 
-There is no single call for this yet. Fetch pending items one month at a time and keep those with `due_date` on or before today. Always pass `status=pending`: without it the endpoint returns every status. Bills left unpaid from earlier months stay pending, so also check the previous month or two. Anything older than the months you query is missed, and `overdueCount` from `/api/recurring/stats` only covers the current month, so it cannot tell you about them.
+Ask for every pending item due on or before today, across all months, in one call. Pass today's date in your own time zone as `due_before`. Always include `status=pending`: without it the endpoint returns confirmed and skipped items too.
 
 ```bash
-for month in 2026-09 2026-10 2026-11; do
-  curl -s "$ALLOWEALTH_URL/api/recurring/occurrences?status=pending&month=$month" \
-    -H "Authorization: Bearer $ALLOWEALTH_TOKEN"
-done
+curl -s "$ALLOWEALTH_URL/api/recurring/occurrences?status=pending&due_before=$(date +%F)" \
+  -H "Authorization: Bearer $ALLOWEALTH_TOKEN"
 ```
 
 Confirming an occurrence records the payment as a transaction:
