@@ -226,9 +226,7 @@ function initForm(form: HTMLFormElement) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'Date must be in YYYY-MM-DD format';
         const date = new Date(value);
         if (isNaN(date.getTime())) return 'Invalid date';
-        const todayUTC = Date.now();
-        const inputDateUTC = new Date(value).getTime();
-        if (inputDateUTC > todayUTC) return 'Date cannot be in the future';
+        if (value > getWorkspaceToday()) return 'Date cannot be in the future';
         return null;
       },
     },

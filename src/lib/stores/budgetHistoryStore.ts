@@ -1,4 +1,7 @@
 import { atom, computed } from 'nanostores';
+import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
+
+const getWorkspaceYear = (): number => Number(getWorkspaceMonth().slice(0, 4));
 
 /**
  * Budget History Store
@@ -19,7 +22,7 @@ export interface BudgetHistoryState {
 }
 
 // Individual atoms for granular reactivity
-export const selectedYear = atom<number>(new Date().getFullYear());
+export const selectedYear = atom<number>(getWorkspaceYear());
 export const isLoading = atom<boolean>(false);
 export const availableYears = atom<number[]>([]);
 export const currency = atom<Currency>('IDR');
@@ -27,7 +30,7 @@ export const viewMode = atom<HistoryViewMode>('monthly');
 export const monthRange = atom<3 | 6 | 12>(6);
 
 // Computed value for checking if current year is selected
-export const isCurrentYear = computed(selectedYear, (year) => year === new Date().getFullYear());
+export const isCurrentYear = computed(selectedYear, (year) => year === getWorkspaceYear());
 
 /**
  * Initialize the store with SSR data

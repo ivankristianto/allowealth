@@ -283,3 +283,25 @@ export async function setBudgetViaAPI(
     throw new Error(`Failed to create budget: ${createResponse.status()} - ${errorText}`);
   }
 }
+
+/**
+ * Set the workspace timezone (IANA name) that decides "today" for defaults.
+ * The E2E database is shared, so put it back to 'UTC' when a test is done.
+ */
+export async function setWorkspaceTimezoneViaAPI(
+  request: APIRequestContext,
+  timezone: string
+): Promise<void> {
+  const response = await request.put(`${E2E_BASE_URL}/api/workspace/settings`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
+    data: { timezone },
+  });
+
+  if (!response.ok()) {
+    throw new Error(
+      `Failed to set workspace timezone: ${response.status()} - ${await response.text()}`
+    );
+  }
+}
