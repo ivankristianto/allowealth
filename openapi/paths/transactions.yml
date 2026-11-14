@@ -3,81 +3,102 @@ paths:
   /api/transactions:
     get:
       tags: [Transactions]
-      summary: List all transactions
-      description: Retrieve paginated list of transactions with optional filters
+      summary: List transactions
+      description: >-
+        Paginated list of the workspace's transactions, newest first (by transaction date, then
+        creation time). Soft-deleted transactions are excluded. When both `start_date` and
+        `end_date` are sent, `data.summary` adds income and expense totals for that range.
+        Invalid `type` values are ignored; `limit` and `offset` are clamped, not rejected.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: type
           in: query
-          description: Filter by transaction type
+          description: Filter by type. Only `expense` and `income` are honored; any other value (including `transfer`) is ignored.
           schema:
             type: string
             enum: [expense, income]
         - name: category_id
           in: query
-          description: Filter by category ID
+          description: Filter by one category ID
           schema:
             type: string
+        - name: category_ids
+          in: query
+          description: Filter by several category IDs, comma-separated
+          schema:
+            type: string
+            example: catA,catB
         - name: account_id
           in: query
-          description: Filter by account ID
+          description: Filter by source account ID
           schema:
             type: string
+        - name: account_ids
+          in: query
+          description: Filter by several source account IDs, comma-separated
+          schema:
+            type: string
+            example: accA,accB
         - name: user_id
           in: query
-          description: Optional workspace member user ID filter
+          description: Only transactions created by this workspace member
           schema:
             type: string
         - name: currency
           in: query
-          description: Filter by currency
+          description: >-
+            Filter by currency. Must be the workspace's primary or secondary currency, otherwise
+            the request fails with 400 `Invalid currency parameter`.
           schema:
             type: string
             enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
         - name: start_date
           in: query
-          description: Filter by start date (ISO 8601)
+          description: Inclusive lower bound, YYYY-MM-DD (any string `new Date()` parses). 400 if unparseable.
           schema:
             type: string
             format: date
+            example: '2026-03-01'
         - name: end_date
           in: query
-          description: Filter by end date (ISO 8601)
+          description: >-
+            Upper bound, YYYY-MM-DD, compared as midnight UTC. Transactions created through this
+            API are stored at midnight UTC, so the day itself is included. 400 if unparseable.
           schema:
             type: string
             format: date
+            example: '2026-03-31'
         - name: search
           in: query
-          description: Search in transaction description
+          description: Substring match on the description (SQL LIKE, case-insensitive for ASCII letters)
           schema:
             type: string
-        - name: category_ids
-          in: query
-          description: |
-            Filter by multiple category IDs (comma-separated).
-            Example: `category_ids=cat1,cat2,cat3`
-          schema:
-            type: string
-            example: cat1,cat2,cat3
         - name: limit
           in: query
-          description: Number of results per page (1-100)
+          description: Page size, clamped to 1-100
           schema:
             type: integer
             minimum: 1
             maximum: 100
-            default: 50
+            default: 25
         - name: offset
           in: query
-          description: Number of results to skip
+          description: Number of results to skip, clamped to 0 or more
           schema:
             type: integer
             minimum: 0
             default: 0
+        - name: _render
+          in: query
+          description: 'Browser-only. `html` returns server-rendered partials and requires `X-Requested-With: XMLHttpRequest` (403 without it). Omit for JSON.'
+          schema:
+            type: string
+            enum: [html]
       responses:
         '200':
-          description: Successful response
+          description: Transactions page
           content:
             application/json:
               schema:
@@ -86,23 +107,52 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     post:
       tags: [Transactions]
-      summary: Create a new transaction
-      description: Create a new income or expense transaction
+      summary: Create a transaction
+      description: >-
+        Create an expense, income or transfer. Requires `Content-Type: application/json`
+        (415 `UNSUPPORTED_MEDIA_TYPE` otherwise). Known limitation: when the category or account
+        is unknown, inactive or closed, this route currently answers 500 `Failed to create
+        transaction` instead of a 4xx, so check IDs against /api/categories and /api/accounts first.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '../schemas/CreateTransactionRequest.yml#/CreateTransactionRequest'
+            examples:
+              expense:
+                summary: Expense
+                value:
+                  type: expense
+                  amount: '45000'
+                  currency: IDR
+                  category_id: catFood0000000000000
+                  account_id: accCash0000000000000
+                  transaction_date: '2026-03-10'
+                  description: Lunch
+              transfer:
+                summary: Transfer between accounts
+                value:
+                  type: transfer
+                  amount: '500000'
+                  currency: IDR
+                  account_id: accBank0000000000000
+                  to_account_id: accCash0000000000000
+                  transaction_date: '2026-03-10'
       responses:
         '201':
-          description: Transaction created successfully
+          description: Transaction created
           content:
             application/json:
               schema:
@@ -111,21 +161,30 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '415':
+          $ref: '../responses/common.yml#/UnsupportedMediaType'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
   /api/transactions/{id}:
     get:
       tags: [Transactions]
-      summary: Get a transaction by ID
-      description: Retrieve a single transaction by its ID
+      summary: Get a transaction
+      description: >-
+        One transaction by ID. Soft-deleted transactions return 404. `has_history`,
+        `is_recurring` and `created_by_user_name` are not computed here (see Transaction).
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
         '200':
-          description: Successful response
+          description: The transaction
           content:
             application/json:
               schema:
@@ -134,16 +193,23 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           $ref: '../responses/common.yml#/NotFound'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     put:
       tags: [Transactions]
       summary: Update a transaction
-      description: Update an existing transaction (all fields optional)
+      description: >-
+        Partial update: send only the fields to change. Requires `Content-Type: application/json`
+        (415 otherwise). Writes an audit history entry.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       requestBody:
@@ -154,7 +220,7 @@ paths:
               $ref: '../schemas/UpdateTransactionRequest.yml#/UpdateTransactionRequest'
       responses:
         '200':
-          description: Transaction updated successfully
+          description: Transaction updated
           content:
             application/json:
               schema:
@@ -163,40 +229,53 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           $ref: '../responses/common.yml#/NotFound'
+        '415':
+          $ref: '../responses/common.yml#/UnsupportedMediaType'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     delete:
       tags: [Transactions]
       summary: Delete a transaction
-      description: Soft delete a transaction (marks as deleted, doesn't remove record)
+      description: Soft delete. The row is kept with `deleted_at` set and no longer appears in lists or lookups.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
         '200':
-          description: Transaction deleted successfully
+          description: Transaction deleted
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '../schemas/ApiErrorResponse.yml#/ApiResponse'
+                  - type: object
+                    required: [success, data]
                     properties:
-                      message:
-                        type: string
-                        example: Transaction deleted successfully
+                      data:
+                        type: object
+                        required: [message]
+                        properties:
+                          message:
+                            type: string
+                            example: Transaction deleted successfully
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           $ref: '../responses/common.yml#/NotFound'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -204,25 +283,30 @@ paths:
     get:
       tags: [Transactions]
       summary: Get transaction audit history
-      description: Retrieve create, update, and delete audit events for a transaction
+      description: >-
+        Create, update and delete audit events for a transaction, oldest first. By default only
+        the latest 5 updates are included; `all=true` returns every update. An unknown ID returns
+        an empty history, not 404.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
         - name: all
           in: query
-          description: Return all update events (default returns the latest 5 updates)
-          schema:
-            type: boolean
-        - name: _render
-          in: query
-          description: Response format (json or server-rendered html fragment)
+          description: '`true` returns every update event. Any other value means the default (latest 5).'
           schema:
             type: string
-            enum: [json, html]
+            enum: ['true', 'false']
+        - name: _render
+          in: query
+          description: 'Browser-only. `html` returns a server-rendered partial and requires `X-Requested-With: XMLHttpRequest` (403 without it). Omit for JSON.'
+          schema:
+            type: string
+            enum: [html]
       responses:
         '200':
-          description: Successful response
+          description: Audit history
           content:
             application/json:
               schema:
@@ -231,8 +315,10 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
-        '404':
-          $ref: '../responses/common.yml#/NotFound'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 

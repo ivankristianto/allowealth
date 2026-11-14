@@ -1,26 +1,36 @@
-# Update Transaction Request Schema
+# Update Transaction Request Schema (updateTransactionAPISchema)
 UpdateTransactionRequest:
   type: object
+  description: All fields optional; send only what changes. Unknown keys are rejected.
+  additionalProperties: false
   properties:
     type:
       type: string
-      enum: [expense, income]
+      enum: [expense, income, transfer]
     amount:
       type: string
       pattern: '^\d{1,15}(\.\d{1,2})?$'
+      description: Positive plain number as a string, up to 2 decimals. Must be greater than 0.
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
     category_id:
       type: string
-      format: uuid
-    payment_method_id:
+      minLength: 1
+    account_id:
       type: string
-      format: uuid
+      minLength: 1
+    to_account_id:
+      type: string
+      minLength: 1
+      nullable: true
+      description: Destination account for transfers. Send `null` to clear it.
     transaction_date:
       type: string
       format: date
-      description: Transaction date in YYYY-MM-DD format
-      example: '2024-01-15'
+      pattern: '^\d{4}-\d{2}-\d{2}$'
+      description: Date in YYYY-MM-DD. Cannot be in the future.
+      example: '2026-03-10'
     description:
       type: string
+      maxLength: 500

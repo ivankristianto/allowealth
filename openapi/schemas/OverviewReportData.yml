@@ -16,19 +16,26 @@ OverviewReportData:
       example: "5015000"
     savingsRate:
       type: string
-      description: Savings rate as a decimal string percentage
-      example: "51.4"
+      description: >-
+        Net savings as a percentage of income, rounded to 2 decimal places (decimal string). Negative
+        when expenses exceed income, "0" when income is zero.
+      example: "51.44"
     trendData:
       type: array
-      description: Income versus expense trend for recent periods
+      description: >-
+        Income versus expenses per month. Monthly range: the 3 months ending with the selected month.
+        Yearly range: the 12 months of the selected year.
       items:
         $ref: "./TrendDataPoint.yml#/TrendDataPoint"
     incomePreview:
       type: object
-      description: Ranked income sources preview for the overview page
+      description: Income by category for the overview page
       properties:
         topCategories:
           type: array
+          description: >-
+            Every income category with income in the period, sorted by value descending (not
+            truncated). Each item carries `sourceType`.
           items:
             $ref: "./CategoryExpense.yml#/CategoryExpense"
         total:
@@ -40,10 +47,13 @@ OverviewReportData:
         - total
     expensePreview:
       type: object
-      description: Ranked expense categories preview for the overview page
+      description: Expenses by category for the overview page
       properties:
         topCategories:
           type: array
+          description: >-
+            Every expense category with spending in the period, sorted by value descending (not
+            truncated). Categories are grouped by name.
           items:
             $ref: "./CategoryExpense.yml#/CategoryExpense"
         total:

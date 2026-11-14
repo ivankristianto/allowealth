@@ -4,20 +4,37 @@ paths:
     get:
       tags: [Accounts]
       summary: List all account categories
-      description: Retrieve all account categories for the authenticated user
+      description: >-
+        Account categories in the caller's workspace as a bare array in `data`, with no
+        pagination. System categories come first, then by `sortOrder`, then by name. Bad filter
+        values are not rejected.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: isLiability
           in: query
-          description: Filter by liability status
+          description: >-
+            Filter by liability status. Exactly `true` keeps liability categories; any other
+            value keeps only non-liability ones. Omit it to get both.
           schema:
             type: boolean
         - name: isSystem
           in: query
-          description: Filter by system categories
+          description: >-
+            Filter by system categories. Exactly `true` keeps system categories; any other value
+            keeps only custom ones. Omit it to get both.
           schema:
             type: boolean
+        - name: _render
+          in: query
+          description: >-
+            Set to `html` to get a server-rendered table fragment (`text/html`) instead of JSON.
+            Used by the web UI. Only honored with the header `X-Requested-With: XMLHttpRequest`;
+            without it the request fails with 403. API clients should omit it.
+          schema:
+            type: string
+            enum: [html]
       responses:
         '200':
           description: Successful response
@@ -25,10 +42,18 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/AccountCategoriesListResponse.yml#/AccountCategoriesListResponse'
+            text/html:
+              schema:
+                type: string
+                description: Table fragment, returned only for `_render=html`
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     post:
@@ -67,9 +92,12 @@ paths:
     get:
       tags: [Accounts]
       summary: Get an account category by ID
-      description: Retrieve a single account category by its ID
+      description: >-
+        Retrieve a single account category in the caller's workspace, with its active account
+        count. An ID from another workspace returns 404 with message `Category not found`.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
@@ -83,8 +111,12 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           $ref: '../responses/common.yml#/NotFound'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     put:

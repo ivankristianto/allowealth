@@ -11,14 +11,21 @@ RecurringTemplate:
     - category_id
     - account_id
     - day_of_month
+    - frequency
+    - interval_count
     - start_date
+    - end_date
+    - total_occurrences
     - is_installment
+    - installment_label
     - starting_occurrence_number
+    - description
     - status
     - created_at
     - updated_at
     - category
     - account
+    - nextDueDate
     - pendingCount
     - confirmedCount
     - skippedCount
@@ -31,12 +38,14 @@ RecurringTemplate:
       type: string
     name:
       type: string
+      maxLength: 200
     type:
       type: string
       enum: [expense, income]
     amount:
       type: string
-      description: Decimal amount as string
+      description: Expected amount per occurrence, decimal as a string
+      example: '250000'
     currency:
       type: string
       enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
@@ -46,8 +55,17 @@ RecurringTemplate:
       type: string
     day_of_month:
       type: integer
-      minimum: 1
+      minimum: 0
       maximum: 31
+      description: Due day for monthly templates (1-31). `0` for weekly templates, which repeat on the weekday of `start_date`.
+    frequency:
+      type: string
+      enum: [weekly, monthly]
+    interval_count:
+      type: integer
+      minimum: 1
+      maximum: 52
+      description: Repeat every N weeks or months, e.g. `frequency=monthly, interval_count=3` is quarterly
     start_date:
       type: string
       format: date
@@ -58,6 +76,7 @@ RecurringTemplate:
     total_occurrences:
       type: integer
       nullable: true
+      description: Stop after this many occurrences. Always set for installments.
     is_installment:
       type: boolean
     installment_label:
@@ -66,6 +85,7 @@ RecurringTemplate:
     starting_occurrence_number:
       type: integer
       minimum: 1
+      description: Number of the first generated occurrence (for installments already partly paid)
     description:
       type: string
       nullable: true
@@ -82,9 +102,11 @@ RecurringTemplate:
       type: string
       format: date
       nullable: true
+      description: Due date of the earliest pending occurrence. `null` unless the template is active.
     pendingCount:
       type: integer
       minimum: 0
+      description: Pending occurrences. Always `0` unless the template is active.
     confirmedCount:
       type: integer
       minimum: 0

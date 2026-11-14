@@ -4,9 +4,16 @@ paths:
     get:
       tags: [Budget]
       summary: List budgets for a month
-      description: Retrieve all budgets for the authenticated user for a specific month/year
+      description: |
+        All budget rows in the workspace for one month, each with its category row joined.
+        Includes every category type and inactive categories. Amounts only; for spending
+        against budget use GET /api/budget/overview.
+
+        Returns 400 with code `MISSING_PARAMS` (month or year absent), `INVALID_MONTH`,
+        `INVALID_YEAR` or `INVALID_CURRENCY`.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: month
           in: query
@@ -26,7 +33,10 @@ paths:
             maximum: 2100
         - name: currency
           in: query
-          description: Filter by currency (optional)
+          description: >-
+            Optional currency filter. When omitted, budgets in all currencies are returned. Must
+            be the workspace's primary or secondary currency (see GET /api/workspace/settings),
+            otherwise 400.
           schema:
             type: string
             enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
@@ -41,6 +51,10 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -87,9 +101,12 @@ paths:
     get:
       tags: [Budget]
       summary: Get a budget by ID
-      description: Retrieve a single budget record by its ID
+      description: |
+        One budget row by ID, without the category join or spending figures.
+        Returns 404 when the budget does not exist in the workspace.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
@@ -101,12 +118,16 @@ paths:
                 $ref: '../schemas/BudgetResponse.yml#/BudgetResponse'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           description: Budget not found
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 

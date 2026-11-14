@@ -1,0 +1,97 @@
+# Budget Category Trends Response Schema
+BudgetCategoryTrendsResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: object
+          required: [months, categories]
+          properties:
+            months:
+              type: array
+              description: Column headers, oldest first, ending with the current month
+              items:
+                type: object
+                required: [month, year, month_name]
+                properties:
+                  month:
+                    type: integer
+                    minimum: 1
+                    maximum: 12
+                  year:
+                    type: integer
+                  month_name:
+                    type: string
+                    description: Full English month name
+            categories:
+              type: array
+              description: >-
+                Every active expense category that has a budget in at least one of the months,
+                sorted by avg_percentage_used, highest first.
+              items:
+                type: object
+                required:
+                  [
+                    category_id,
+                    category_name,
+                    category_icon,
+                    category_color,
+                    avg_percentage_used,
+                    months,
+                  ]
+                properties:
+                  category_id:
+                    type: string
+                    description: Category ID (nanoid)
+                  category_name:
+                    type: string
+                  category_icon:
+                    type: string
+                    description: Lucide icon name
+                  category_color:
+                    type: string
+                    description: Hex color (for example `#3d4451`)
+                  avg_percentage_used:
+                    type: number
+                    description: >-
+                      Mean of percentage_used over the months where the category had a budget
+                      (zero-filled months are excluded), rounded to 2 decimals
+                  months:
+                    type: array
+                    description: >-
+                      One cell per entry in data.months, oldest first. Months without a budget
+                      are filled with `"0"` amounts, 0 percent and status `ok`.
+                    items:
+                      type: object
+                      required:
+                        [
+                          month,
+                          year,
+                          month_name,
+                          spent_amount,
+                          budget_amount,
+                          percentage_used,
+                          status,
+                        ]
+                      properties:
+                        month:
+                          type: integer
+                          minimum: 1
+                          maximum: 12
+                        year:
+                          type: integer
+                        month_name:
+                          type: string
+                        spent_amount:
+                          $ref: './BudgetSpentAmount.yml#/BudgetSpentAmount'
+                        budget_amount:
+                          type: string
+                          pattern: '^\d+(\.\d{1,2})?$'
+                        percentage_used:
+                          type: number
+                          description: Spent as a percentage of budget_amount, rounded to 2 decimals
+                        status:
+                          type: string
+                          enum: [ok, warning, exceeded]

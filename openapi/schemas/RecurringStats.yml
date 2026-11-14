@@ -11,6 +11,7 @@ RecurringStats:
       minimum: 0
     pendingByCurrency:
       type: array
+      description: Sum of template amounts of this month's pending occurrences, per currency
       items:
         type: object
         required: [currency, amount]

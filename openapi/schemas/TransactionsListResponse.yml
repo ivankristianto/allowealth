@@ -11,6 +11,7 @@ TransactionsListResponse:
           properties:
             transactions:
               type: array
+              description: Newest first. Soft-deleted transactions are excluded.
               items:
                 $ref: './Transaction.yml#/Transaction'
             pagination:
@@ -23,3 +24,21 @@ TransactionsListResponse:
                   type: integer
                 total:
                   type: integer
+                  description: Matching transactions across all pages
+            summary:
+              type: object
+              description: >-
+                Present only when both `start_date` and `end_date` are sent. Totals over the date
+                range, filtered by `user_id`, `currency`, `account_id` and `account_ids` only
+                (type, category and search filters are ignored here).
+              required: [income, expenses, transactionCount]
+              properties:
+                income:
+                  type: number
+                  description: Sum of income amounts (a JSON number, not a string)
+                expenses:
+                  type: number
+                  description: Sum of expense amounts (a JSON number, not a string)
+                transactionCount:
+                  type: integer
+                  description: Number of expense transactions (income and transfers are not counted)

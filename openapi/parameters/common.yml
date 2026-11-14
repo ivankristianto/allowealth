@@ -3,7 +3,8 @@ IdParameter:
   name: id
   in: path
   required: true
-  description: Resource ID (UUID)
+  description: Resource ID (nanoid, usually 21 URL-safe characters)
   schema:
     type: string
-    format: uuid
+    pattern: '^[A-Za-z0-9_-]+$'
+    example: V1StGXR8_Z5jdHi6B-myT

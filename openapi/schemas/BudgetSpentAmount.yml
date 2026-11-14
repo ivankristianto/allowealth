@@ -1,0 +1,10 @@
+# Spent amount as returned by the budget read endpoints
+BudgetSpentAmount:
+  description: >-
+    Expense total for the category and month. Mixed type: a JSON number (for example `120.25`)
+    when there is spending, the string `"0"` when there is none. Parse both forms.
+  oneOf:
+    - type: number
+      minimum: 0
+    - type: string
+      pattern: '^\d+(\.\d{1,2})?$'

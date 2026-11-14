@@ -4,32 +4,36 @@ paths:
     get:
       tags: [Accounts]
       summary: List all accounts
-      description: Retrieve all accounts for the authenticated user
+      description: >-
+        Active (not closed, not deleted) accounts in the caller's workspace, sorted by name. The
+        list is a bare array in `data`, with no pagination. Unknown `type` or `currency` values
+        are ignored rather than rejected. Closed accounts are at GET /api/accounts/closed.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: type
           in: query
-          description: Filter by account type
+          description: Filter by account type. An unknown value is ignored (no filter, no error).
           schema:
             type: string
             enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
         - name: categoryId
           in: query
-          description: Filter by account category ID
+          description: Filter by account category ID. An unknown ID returns an empty list.
           schema:
             type: string
         - name: currency
           in: query
-          description: Filter by currency
+          description: Filter by currency. An unknown value is ignored (no filter, no error).
           schema:
             type: string
             enum: [IDR, USD, SGD, PHP, EUR, GBP, MYR, THB, JPY, AUD, KRW, INR]
         - name: owner
           in: query
-          description: |
-            Filter by owner user ID.
-            Non-admin users may only use their own user ID.
+          description: >-
+            Filter by owner user ID (matches `created_by_user_id`). A non-admin passing any ID
+            other than their own gets 403 with code `INSUFFICIENT_PERMISSIONS`.
           schema:
             type: string
       responses:
@@ -44,11 +48,9 @@ paths:
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '403':
-          description: Insufficient permissions for requested owner filter
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     post:
@@ -81,9 +83,12 @@ paths:
     get:
       tags: [Accounts]
       summary: Get an account by ID
-      description: Retrieve a single account by its ID
+      description: >-
+        Retrieve a single active account in the caller's workspace. A closed or deleted account,
+        or an ID from another workspace, returns 404 with message `Account not found`.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
@@ -97,8 +102,12 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           $ref: '../responses/common.yml#/NotFound'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     put:

@@ -7,7 +7,9 @@ IncomeReportData:
       properties:
         totalIncome:
           type: string
-          description: Total income for the period (decimal string)
+          description: >-
+            Total income for the period (decimal string). Narrowed by `user_id` when set; not
+            narrowed by `source_type` or `category_id`.
           example: "13000000"
         activeIncome:
           type: string
@@ -19,15 +21,18 @@ IncomeReportData:
           example: "2500000"
         otherIncome:
           type: string
-          description: Total income classified as other for the period
+          description: Total income classified as other (or unclassified) for the period
           example: "500000"
         growthVsPreviousPeriod:
           type: string
-          description: Percentage growth compared with the previous period (decimal string)
-          example: "15.5"
+          description: >-
+            Percentage change from the previous month (monthly) or previous year (yearly), rounded
+            to 2 decimal places (decimal string). "100" when the previous period had no income and
+            this one does, "0" when both are zero. Can be negative.
+          example: "15.50"
         previousPeriodLabel:
           type: string
-          description: Label of the period the growth figure compares against
+          description: Label of the previous period, "Mon YYYY" for monthly or "YYYY" for yearly
           example: "Feb 2026"
       required:
         - totalIncome
@@ -38,7 +43,8 @@ IncomeReportData:
         - previousPeriodLabel
     sourceMix:
       type: array
-      description: Income mix by category, sorted descending by value
+      description: >-
+        Income by category, sorted descending by value. Narrowed by `user_id` when set.
       items:
         type: object
         properties:
@@ -58,13 +64,15 @@ IncomeReportData:
           - sourceType
     sourceGroupTrend:
       type: array
-      description: Income trend by source classification over time
+      description: >-
+        Income by source classification per month of the selected period: one row for the monthly
+        range, 12 rows (January to December) for the yearly range.
       items:
         type: object
         properties:
           name:
             type: string
-            description: Period label
+            description: Short English month label ("Jan" to "Dec")
           active:
             type: string
             description: Active income total for the period
@@ -81,7 +89,9 @@ IncomeReportData:
           - other
     members:
       type: array
-      description: Per-member income totals for the selected period
+      description: >-
+        Per-member income totals for the selected period, sorted by total income descending. Covers
+        the whole workspace even when `user_id` is set.
       items:
         type: object
         properties:
@@ -100,7 +110,9 @@ IncomeReportData:
           - transactionCount
     history:
       type: object
-      description: Paginated income transaction history
+      description: >-
+        Paginated income transactions, newest first. The only section narrowed by all three filters
+        (`user_id`, `source_type`, `category_id`).
       properties:
         transactions:
           type: array
@@ -111,12 +123,17 @@ IncomeReportData:
                 type: string
               description:
                 type: string
+                description: Transaction description, empty string when unset
               amount:
                 type: string
+                description: Transaction amount (decimal string)
               currency:
                 type: string
+                description: ISO 4217 code, always the requested currency
               transaction_date:
                 type: string
+                format: date-time
+                description: ISO 8601 timestamp in UTC
               category_name:
                 type: string
               category_icon:
@@ -141,12 +158,18 @@ IncomeReportData:
               - created_by_name
         total:
           type: integer
+          description: Number of matching transactions across all pages
         page:
           type: integer
+          description: Page returned, after clamping to at least 1
         pageSize:
           type: integer
+          description: Page size used, after clamping to 1..100
         appliedFilters:
           type: object
+          description: >-
+            Filters that were applied. A key is present only when its filter was valid and used;
+            an ignored `source_type` or `category_id` is absent here.
           properties:
             userId:
               type: string

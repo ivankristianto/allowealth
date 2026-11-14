@@ -10,8 +10,11 @@ TransactionHistoryEntry:
       enum: [create, update, delete]
     userName:
       type: string
+      description: Member name, or `Unknown` when the user no longer exists
     userId:
       type: string
+      nullable: true
+      description: '`null` when the user was deleted'
     createdAt:
       type: string
       format: date-time

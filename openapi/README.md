@@ -22,10 +22,11 @@ openapi/
 │   ├── calculators.yml              # Calculator endpoints (JSON or rendered HTML partial)
 │   ├── reports.yml                  # Reports endpoints
 │   ├── mcp.yml                      # MCP JSON-RPC endpoint (OAuth tokens and app passwords)
+│   ├── meta.yml                     # GET /api/openapi.json (this spec, bundled)
 │   └── admin-diagnostics.yml        # Admin diagnostics endpoint
 ├── schemas/                         # Reusable data model definitions
 │   ├── ApiErrorResponse.yml         # Base API response schema
-│   ├── ErrorResponse.yml            # Error response schema
+│   ├── ErrorResponse.yml            # Error response schema (+ ValidationIssue)
 │   ├── SignupRequest.yml            # Registration request schema
 │   ├── LoginRequest.yml             # Login request schema
 │   ├── ForgotPasswordRequest.yml    # Password reset request schema
@@ -80,7 +81,21 @@ openapi/
 │   ├── BudgetAlertsResponse.yml     # Budget alerts response
 │   ├── CategoryRemainingResponse.yml # Category remaining budget response
 │   ├── BudgetHistoryResponse.yml    # Budget history response
+│   ├── BudgetOverviewCategory.yml   # One category row of the budget overview
+│   ├── BudgetSpentAmount.yml        # Spent amount (number, or "0" when nothing spent)
+│   ├── BudgetWithCategory.yml       # Budget row with its nested category (GET /api/budgets)
+│   ├── BudgetCategoryTrendsResponse.yml # Category trends response
 │   └── ... (other budget schemas)
+│   │
+│   │ # Reports and forecast schemas
+│   ├── CategoryDrilldownResponse.yml # Category drilldown response
+│   ├── CategoryDrilldownData.yml    # Category drilldown data
+│   ├── CategoryDrilldownTransaction.yml # Transaction row in a category drilldown
+│   ├── ForecastTimelinePoint.yml    # One point of the wealth forecast timeline
+│   │
+│   │ # Recurring schemas
+│   ├── ConfirmOccurrenceResponse.yml # Confirm result (raw transaction row)
+│   ├── RecurringForecast.yml        # Recurring cash-flow forecast
 │   │
 │   │ # Admin schemas
 │   ├── RuntimeInfo.yml             # Runtime environment information
@@ -90,7 +105,7 @@ openapi/
 │   ├── ConfigurationValidation.yml  # Configuration validation results
 │   └── DiagnosticsResponse.yml    # Admin diagnostics response
 ├── responses/                       # Reusable response definitions
-│   └── common.yml                   # Common HTTP responses (400, 401, 404, 500)
+│   └── common.yml                   # Common HTTP responses (400, 401, 403, 404, 415, 429, 500)
 └── parameters/                      # Reusable parameter definitions
     └── common.yml                   # Common parameters (id)
 ```

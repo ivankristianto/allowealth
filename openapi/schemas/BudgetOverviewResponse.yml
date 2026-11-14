@@ -7,49 +7,37 @@ BudgetOverviewResponse:
       properties:
         data:
           type: object
-          required: [categories, totals]
+          description: >-
+            One month's budgets in one currency. Only budgets whose category is an active expense
+            category are included. Totals are sums over `categories`.
+          required:
+            - total_budget
+            - total_spent
+            - total_balance
+            - categories_warning
+            - categories_exceeded
+            - categories
           properties:
+            total_budget:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+              description: Sum of `budget_amount` over all categories
+            total_spent:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+              description: Sum of expense transactions in the month for the budgeted categories
+            total_balance:
+              type: string
+              pattern: '^-?\d+(\.\d{1,2})?$'
+              description: total_budget minus total_spent. Negative when overspent.
+            categories_warning:
+              type: integer
+              description: Number of categories with status `warning`
+            categories_exceeded:
+              type: integer
+              description: Number of categories with status `exceeded`
             categories:
               type: array
+              description: One row per budget. Order follows the database and is not guaranteed.
               items:
-                type: object
-                properties:
-                  budget_id:
-                    type: string
-                    format: nanoid
-                    description: Budget record ID
-                  category_id:
-                    type: string
-                    format: uuid
-                  category_name:
-                    type: string
-                  budget_amount:
-                    type: string
-                    pattern: '^\d+(\.\d{1,2})?$'
-                  expense_amount:
-                    type: string
-                    pattern: '^\d+(\.\d{1,2})?$'
-                  balance:
-                    type: string
-                    pattern: '^\d+(\.\d{1,2})?$'
-                  percentage:
-                    type: number
-                    format: float
-                  status:
-                    type: string
-                    enum: [ok, warning, exceeded]
-            totals:
-              type: object
-              properties:
-                total_budget:
-                  type: string
-                  pattern: '^\d+(\.\d{1,2})?$'
-                total_expense:
-                  type: string
-                  pattern: '^\d+(\.\d{1,2})?$'
-                total_balance:
-                  type: string
-                  pattern: '^\d+(\.\d{1,2})?$'
-                budget_percentage:
-                  type: number
-                  format: float
+                $ref: './BudgetOverviewCategory.yml#/BudgetOverviewCategory'

@@ -1,15 +1,36 @@
 # Category Schema
 Category:
   type: object
+  description: A budget category row as stored. Every column is returned.
+  required:
+    - id
+    - workspace_id
+    - created_by_user_id
+    - name
+    - type
+    - income_source_type
+    - description
+    - icon
+    - color
+    - is_active
+    - created_at
+    - updated_at
   properties:
     id:
       type: string
-      format: uuid
+    workspace_id:
+      type: string
+    created_by_user_id:
+      type: string
     name:
       type: string
     type:
       type: string
       enum: [expense, income]
+    income_source_type:
+      type: string
+      enum: [active, passive, other]
+      description: Kind of income. Meaningful for income categories; defaults to `other`.
     description:
       type: string
       nullable: true
@@ -17,12 +38,13 @@ Category:
       description: Optional description of the category
     icon:
       type: string
-      description: Lucide icon name for the category
+      description: Lucide icon name for the category (default `tag`)
     color:
       type: string
-      description: DaisyUI semantic color class for the category
+      description: DaisyUI semantic color class for the category (default `bg-neutral`)
     is_active:
       type: boolean
+      description: '`false` once the category is deleted (soft delete)'
     created_at:
       type: string
       format: date-time

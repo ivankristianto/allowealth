@@ -1,23 +1,33 @@
-/forecast:
-  get:
-    summary: Get forecast reality-check data
-    description: >
-      Build the forecast reality-check view using the workspace's saved forecast assumptions,
-      primary-currency non-debt accounts, monthly actual net savings, a fixed 24-month-forward
-      horizon, focused chart window metadata, and yearly grouped breakdown rows.
-    operationId: getForecast
-    tags:
-      - Forecast
-    responses:
-      '200':
-        description: Forecast calculated successfully
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/ForecastResponse.yml'
-      '400':
-        $ref: '../responses/common.yml#/BadRequest'
-      '401':
-        $ref: '../responses/common.yml#/Unauthorized'
-      '500':
-        $ref: '../responses/common.yml#/InternalServerError'
+# Forecast endpoint paths
+paths:
+  /api/forecast:
+    get:
+      summary: Get forecast reality-check data
+      description: >
+        Build the forecast reality-check view from the workspace's saved forecast assumptions
+        (monthly top-up and annual rate, edited through workspace settings), the balance history of
+        non-debt accounts in the workspace primary currency, and monthly actual net savings. The
+        horizon is fixed at 24 months after the latest recorded balance month. Takes no query
+        parameters. A workspace with no account balance history gets empty `timeline` and
+        `yearlyBreakdown` arrays and a zeroed `summary`.
+      operationId: getForecast
+      tags:
+        - Forecast
+      security:
+        - sessionAuth: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Forecast calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ForecastResponse.yml#/ForecastResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

@@ -1,183 +1,160 @@
-type: object
-properties:
-  success:
-    type: boolean
-    example: true
-  data:
-    type: object
-    properties:
-      assumptions:
-        type: object
-        description: Saved workspace forecast assumptions used to build the response.
-        properties:
-          monthlyTopup:
-            type: number
-            example: 5000000
-          annualRate:
-            type: number
-            example: 7
-      timeline:
-        type: array
-        description: Full month-by-month forecast timeline from the earliest actual balance month through the fixed 24-month-forward horizon.
-        items:
+# Forecast reality-check API success response
+ForecastResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      description: >-
+        Forecast built from the workspace's saved assumptions and the non-debt accounts in the
+        workspace primary currency. The response does not name the currency. All amounts are
+        numbers, not decimal strings. Planned, trajectory, interest and average values are rounded
+        to whole units; actual balances, income and expenses are not.
+      properties:
+        assumptions:
           type: object
+          description: Saved workspace forecast assumptions used to build the response.
           properties:
-            key:
-              type: string
-              description: Month key in YYYY-MM format
-              example: '2024-03'
-            dateLabel:
-              type: string
-              description: Display label for the month
-              example: 'Mar 2024'
-            actualBalance:
+            monthlyTopup:
               type: number
-              nullable: true
-              description: Aggregated actual balance for the month when historical data exists.
-              example: 1200000
-            plannedBalance:
+              description: Monthly contribution in the primary currency
+              example: 5000000
+            annualRate:
               type: number
-              nullable: true
-              description: Planned balance projection using saved assumptions.
-              example: 1260000
-            currentTrajectoryBalance:
-              type: number
-              nullable: true
-              description: Forward projection from the latest actual balance using trailing average net savings.
-              example: 1412000
-            forecastInterest:
-              type: number
-              nullable: true
-              description: Forecast interest earned for the month.
-              example: 12000
-            actualNetSavings:
-              type: number
-              nullable: true
-              description: Actual monthly net savings, defined as income minus expense.
-              example: 500000
-            income:
-              type: number
-              nullable: true
-              description: Actual monthly income aggregated for the month.
-              example: 800000
-            expenses:
-              type: number
-              nullable: true
-              description: Actual monthly expenses aggregated for the month.
-              example: 300000
-      chartWindow:
-        type: object
-        description: Metadata for the default focused chart viewport.
-        properties:
-          startIndex:
-            type: integer
-            example: 0
-          endIndex:
-            type: integer
-            example: 26
-          startKey:
-            type: string
-            nullable: true
-            example: '2024-01'
-          endKey:
-            type: string
-            nullable: true
-            example: '2026-03'
-          latestActualKey:
-            type: string
-            nullable: true
-            example: '2024-03'
-      yearlyBreakdown:
-        type: array
-        description: Year-grouped forecast rows with monthly children for the expandable breakdown table.
-        items:
+              description: Expected annual percentage yield, e.g. 7 for 7%
+              example: 7
+          required:
+            - monthlyTopup
+            - annualRate
+        timeline:
+          type: array
+          description: >-
+            One entry per month, from the earliest month with a recorded account balance through 24
+            months after the latest one. Empty when no account has balance history.
+          items:
+            $ref: './ForecastTimelinePoint.yml#/ForecastTimelinePoint'
+        chartWindow:
           type: object
+          description: >-
+            Default chart viewport: up to 12 months before and 24 months after the latest actual
+            month, as indexes into `timeline`. With an empty timeline: `startIndex` 0, `endIndex`
+            -1 and null keys.
           properties:
-            year:
+            startIndex:
               type: integer
-              example: 2024
-            yearLabel:
+              example: 0
+            endIndex:
+              type: integer
+              example: 36
+            startKey:
               type: string
-              example: '2024'
+              nullable: true
+              example: '2025-03'
+            endKey:
+              type: string
+              nullable: true
+              example: '2028-03'
+            latestActualKey:
+              type: string
+              nullable: true
+              example: '2026-03'
+          required:
+            - startIndex
+            - endIndex
+            - startKey
+            - endKey
+            - latestActualKey
+        yearlyBreakdown:
+          type: array
+          description: The timeline grouped by calendar year, oldest first.
+          items:
+            type: object
+            properties:
+              year:
+                type: integer
+                example: 2026
+              yearLabel:
+                type: string
+                example: '2026'
+              plannedEndingBalance:
+                type: number
+                nullable: true
+                description: Planned balance of the year's last month in the timeline
+                example: 2984000
+              actualEndingBalance:
+                type: number
+                nullable: true
+                description: Last non-null actual balance in the year, null when the year has none
+                example: 1200000
+              currentTrajectoryEndingBalance:
+                type: number
+                nullable: true
+                description: Last non-null trajectory balance in the year, null when the year has none
+                example: 1412000
+              forecastInterestTotal:
+                type: number
+                example: 54000
+              actualNetSavingsTotal:
+                type: number
+                nullable: true
+                description: Sum of actual net savings for months with recorded actual data in that year.
+                example: 600000
+              months:
+                type: array
+                items:
+                  $ref: './ForecastTimelinePoint.yml#/ForecastTimelinePoint'
+            required:
+              - year
+              - yearLabel
+              - plannedEndingBalance
+              - actualEndingBalance
+              - currentTrajectoryEndingBalance
+              - forecastInterestTotal
+              - actualNetSavingsTotal
+              - months
+        summary:
+          type: object
+          description: >-
+            Fixed-horizon summary metrics. With no balance history every number is 0 and
+            `latestActualKey` is null.
+          properties:
+            latestActualKey:
+              type: string
+              nullable: true
+              example: '2026-03'
+            latestActualBalance:
+              type: number
+              example: 1200000
             plannedEndingBalance:
               type: number
-              nullable: true
+              description: Planned balance of the last timeline month
               example: 2984000
-            actualEndingBalance:
-              type: number
-              nullable: true
-              example: 1200000
             currentTrajectoryEndingBalance:
               type: number
-              nullable: true
-              example: 1412000
-            forecastInterestTotal:
+              description: Trajectory balance of the last timeline month
+              example: 3126000
+            totalForecastInterest:
               type: number
-              example: 54000
-            actualNetSavingsTotal:
+              example: 218000
+            trailingAverageNetSavings:
               type: number
-              nullable: true
-              description: Sum of actual net savings for months with recorded actual data in that year.
-              example: 600000
-            months:
-              type: array
-              items:
-                type: object
-                properties:
-                  key:
-                    type: string
-                    example: '2024-03'
-                  dateLabel:
-                    type: string
-                    example: 'Mar 2024'
-                  actualBalance:
-                    type: number
-                    nullable: true
-                    example: 1200000
-                  plannedBalance:
-                    type: number
-                    nullable: true
-                    example: 1260000
-                  currentTrajectoryBalance:
-                    type: number
-                    nullable: true
-                    example: 1412000
-                  forecastInterest:
-                    type: number
-                    nullable: true
-                    example: 12000
-                  actualNetSavings:
-                    type: number
-                    nullable: true
-                    example: 500000
-                  income:
-                    type: number
-                    nullable: true
-                    example: 800000
-                  expenses:
-                    type: number
-                    nullable: true
-                    example: 300000
-      summary:
-        type: object
-        description: Fixed-horizon summary metrics for the forecast reality-check view.
-        properties:
-          latestActualKey:
-            type: string
-            nullable: true
-            example: '2024-03'
-          latestActualBalance:
-            type: number
-            example: 1200000
-          plannedEndingBalance:
-            type: number
-            example: 2984000
-          currentTrajectoryEndingBalance:
-            type: number
-            example: 3126000
-          totalForecastInterest:
-            type: number
-            example: 218000
-          trailingAverageNetSavings:
-            type: number
-            example: 200000
+              description: Average net savings over the last 3 months up to the latest actual month
+              example: 200000
+          required:
+            - latestActualKey
+            - latestActualBalance
+            - plannedEndingBalance
+            - currentTrajectoryEndingBalance
+            - totalForecastInterest
+            - trailingAverageNetSavings
+      required:
+        - assumptions
+        - timeline
+        - chartWindow
+        - yearlyBreakdown
+        - summary
+  required:
+    - success
+    - data

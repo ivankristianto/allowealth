@@ -1,16 +1,25 @@
 ConfirmOccurrenceRequest:
   type: object
+  description: >-
+    All four fields are required, even when they match the template. Use the occurrence's
+    `templateAmount`, `category.id` and `account.id` to confirm as planned. Unknown keys are rejected.
+  additionalProperties: false
   required: [amount, transaction_date, category_id, account_id]
   properties:
     amount:
       type: string
       pattern: '^\d{1,15}(\.\d{1,2})?$'
-      description: Decimal amount as string
+      description: Actual amount, positive decimal as a string with up to 2 decimals
+      example: '250000'
     transaction_date:
       type: string
       format: date
-      description: Transaction date in YYYY-MM-DD format (future dates allowed)
+      pattern: '^\d{4}-\d{2}-\d{2}$'
+      description: Date of the created transaction, YYYY-MM-DD. Not limited to today or the past.
+      example: '2026-03-05'
     category_id:
       type: string
+      minLength: 1
     account_id:
       type: string
+      minLength: 1

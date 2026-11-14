@@ -4,19 +4,25 @@ paths:
     get:
       tags: [Categories]
       summary: List all categories
-      description: Retrieve all categories for the authenticated user
+      description: >-
+        Budget categories in the caller's workspace, sorted by name, as a bare array in `data`
+        with no pagination. Deleted (inactive) categories are included unless you pass
+        `is_active=true`. Bad filter values are not rejected.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - name: type
           in: query
-          description: Filter by category type
+          description: Filter by category type. Any other value is ignored (no filter, no error).
           schema:
             type: string
             enum: [expense, income]
         - name: is_active
           in: query
-          description: Filter by active status
+          description: >-
+            Filter by active status. Exactly `true` keeps active categories; any other value,
+            including `1` or `TRUE`, keeps only inactive ones. Omit it to get both.
           schema:
             type: boolean
       responses:
@@ -30,6 +36,10 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     post:
@@ -68,9 +78,13 @@ paths:
     get:
       tags: [Categories]
       summary: Get a category by ID
-      description: Retrieve a single category by its ID
+      description: >-
+        Retrieve a single budget category in the caller's workspace, including a deleted one
+        (`is_active: false`). An ID from another workspace returns 404 with message
+        `Category not found`.
       security:
         - sessionAuth: []
+        - bearerAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
@@ -84,8 +98,12 @@ paths:
           $ref: '../responses/common.yml#/BadRequest'
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
         '404':
           $ref: '../responses/common.yml#/NotFound'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
     put:
