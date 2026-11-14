@@ -144,7 +144,7 @@ These tokens last 24 hours. Signing out of Allowealth disconnects them. Click **
 
 ### App Passwords
 
-App passwords are long-lived tokens for scripts, scheduled jobs and AI agents that cannot open a browser to sign in. They work with the MCP endpoint (`/api/mcp`) and the local MCP server. They do not work with the rest of the API.
+App passwords are long-lived tokens for scripts, scheduled jobs and AI agents that cannot open a browser to sign in. They work with the MCP endpoint (`/api/mcp`), the local MCP server, and a fixed list of REST API routes. See [Connect an AI agent over REST](/reference/ai-agent-rest/) for that list.
 
 #### Create an App Password
 
@@ -154,8 +154,8 @@ Creating one needs a sign-in from the last 15 minutes. If your sign-in is older,
 2. In **App Passwords**, click **Create**
 3. Enter a name you will recognize later (for example, "Nightly import script")
 4. Choose the access:
-   - **Read only** lists accounts, categories, transactions, budgets and the dashboard
-   - **Read and write** can also add expenses and income
+   - **Read only** lists accounts, categories, transactions, budgets and the dashboard. Over REST it also reads scheduled items and reports
+   - **Read and write** can also add expenses and income. Over REST it can also edit transactions, add scheduled items and mark bills paid
 5. Choose when it expires: 30 days, 90 days, 1 year, or no expiry
 6. Click **Create**
 7. **Copy the token now.** It starts with `aw_pat_` and is shown only once
@@ -169,7 +169,7 @@ curl -X POST https://your-allowealth-domain.com/api/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-For the local MCP server, set it as `ALLOWEALTH_ACCESS_TOKEN`.
+For the local MCP server, set it as `ALLOWEALTH_ACCESS_TOKEN`. The same header works on the [REST routes app passwords can use](/reference/ai-agent-rest/).
 
 #### Store App Passwords Securely
 
