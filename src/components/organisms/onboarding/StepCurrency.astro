@@ -164,16 +164,21 @@ import Button from '@/components/atoms/Button.astro';
         const res = await csrfFetch('/api/workspace/settings', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currency,
-            secondaryCurrency: secondaryCurrency || null,
-            timezone,
-          }),
+          body: JSON.stringify({ currency, secondaryCurrency: secondaryCurrency || null }),
         });
 
         if (!res.ok) {
           const data = await res.json();
           throw new Error(data.error?.message || 'Failed to save currency');
+        }
+
+        // Best effort: a zone the server doesn't know must not block onboarding
+        if (timezone) {
+          await csrfFetch('/api/workspace/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ timezone }),
+          }).catch(() => undefined);
         }
 
         // Navigate to next step (page reload picks up new state)

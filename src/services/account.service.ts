@@ -16,6 +16,7 @@ import { createTransactionSchema } from '@/lib/validation/transactions';
 import type { AccountType, Currency } from '@/lib/types/account';
 import { deriveAccountClass } from '@/lib/types/account';
 import { WorkspaceMetaService } from './workspace-meta.service';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
@@ -464,6 +465,18 @@ export class AccountService {
     }
 
     const now = new Date();
+    const workspaceToday = getCurrentDateISO(
+      await this.workspaceMetaService.getTimezone(workspaceId)
+    );
+    // Stored like other transaction dates: UTC midnight of the workspace's calendar day
+    const transferDate = record.transactionDate ?? new Date(`${workspaceToday}T00:00:00.000Z`);
+    if (transferDate.toISOString().slice(0, 10) > workspaceToday) {
+      throw new AccountServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Transaction date cannot be in the future',
+        400
+      );
+    }
     const accounts = this.schema.accounts;
     const findAccount = (tx: DbTransaction, id: string) =>
       tx
@@ -514,7 +527,7 @@ export class AccountService {
           currency: fromAccount.currency,
           account_id: fromId,
           to_account_id: toId,
-          transaction_date: record.transactionDate ?? now,
+          transaction_date: transferDate,
           description: record.description,
         });
         if (!parsed.success) {
