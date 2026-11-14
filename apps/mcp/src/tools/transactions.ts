@@ -110,7 +110,10 @@ export const addExpenseTool: Tool = {
       currency: { type: 'string', enum: [...SUPPORTED_CURRENCIES], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
       account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
-      date: { type: 'string', description: 'Transaction date (YYYY-MM-DD). Defaults to today.' },
+      date: {
+        type: 'string',
+        description: 'Transaction date (YYYY-MM-DD). Defaults to today in the workspace timezone.',
+      },
       description: { type: 'string', description: 'Optional description/note' },
     },
     required: ['amount', 'currency', 'category_name', 'account_name'],
@@ -131,7 +134,10 @@ export const addIncomeTool: Tool = {
       currency: { type: 'string', enum: [...SUPPORTED_CURRENCIES], description: 'Currency code' },
       category_name: { type: 'string', description: 'Category name (fuzzy matched)' },
       account_name: { type: 'string', description: 'Account/account name (fuzzy matched)' },
-      date: { type: 'string', description: 'Transaction date (YYYY-MM-DD). Defaults to today.' },
+      date: {
+        type: 'string',
+        description: 'Transaction date (YYYY-MM-DD). Defaults to today in the workspace timezone.',
+      },
       description: { type: 'string', description: 'Optional description/note' },
     },
     required: ['amount', 'currency', 'category_name', 'account_name'],
@@ -254,7 +260,8 @@ export async function handleAddTransaction(
     };
   }
 
-  const transactionDate = input.date ? new Date(input.date) : new Date();
+  // Without a date the service uses the workspace's today
+  const transactionDate = input.date ? new Date(input.date) : undefined;
 
   const transaction = await ctx.services.transaction.create({
     workspace_id: workspaceId,
@@ -280,7 +287,10 @@ export async function handleAddTransaction(
             currency: transaction?.currency,
             category: categoryResult.category.name,
             account: accountResult.account.name,
-            date: transactionDate.toISOString().split('T')[0],
+            date:
+              transaction?.transaction_date instanceof Date
+                ? transaction.transaction_date.toISOString().split('T')[0]
+                : String(transaction?.transaction_date ?? '').split('T')[0],
             description: transaction?.description,
           },
           null,

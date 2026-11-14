@@ -52,6 +52,7 @@ interface LayoutData {
   categoryUsageCounts: Array<{ category_id: string; count: number }>;
   workspaceCurrencies: { primary: Currency; secondary: Currency | null };
   workspaceName: string;
+  workspaceTimezone: string;
 }
 
 interface Props {
@@ -91,6 +92,7 @@ let workspaceCurrencies: { primary: Currency; secondary: Currency | null } = {
   secondary: null,
 };
 let workspaceName = '';
+let workspaceTimezone = 'UTC';
 
 // Try to get from cache first (fail-silent: cache errors should never break the page)
 let cached: LayoutData | null = null;
@@ -113,17 +115,27 @@ if (cached) {
   categoryUsageCounts = cached.categoryUsageCounts;
   workspaceCurrencies = cached.workspaceCurrencies ?? workspaceCurrencies;
   workspaceName = cached.workspaceName ?? workspaceName;
+  // Entries cached before the timezone setting existed lack the field
+  workspaceTimezone = cached.workspaceTimezone ?? workspaceTimezone;
 } else {
   try {
-    [categories, accounts, userSettings, categoryUsageCounts, workspaceCurrencies, workspaceName] =
-      await Promise.all([
-        categoryService.findAll(user.workspaceId, { is_active: true }),
-        accountService.findAll(user.workspaceId),
-        userMetaService.getUserSettings(user.id),
-        transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
-        workspaceMetaService.getWorkspaceCurrencies(user.workspaceId),
-        workspaceService.findById(user.workspaceId).then((workspace) => workspace?.name ?? ''),
-      ]);
+    [
+      categories,
+      accounts,
+      userSettings,
+      categoryUsageCounts,
+      workspaceCurrencies,
+      workspaceName,
+      workspaceTimezone,
+    ] = await Promise.all([
+      categoryService.findAll(user.workspaceId, { is_active: true }),
+      accountService.findAll(user.workspaceId),
+      userMetaService.getUserSettings(user.id),
+      transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
+      workspaceMetaService.getWorkspaceCurrencies(user.workspaceId),
+      workspaceService.findById(user.workspaceId).then((workspace) => workspace?.name ?? ''),
+      workspaceMetaService.getTimezone(user.workspaceId),
+    ]);
     // Cache the results (5 minutes TTL — reduces cache miss frequency)
     try {
       if (cache && cacheKey) {
@@ -136,6 +148,7 @@ if (cached) {
             categoryUsageCounts,
             workspaceCurrencies,
             workspaceName,
+            workspaceTimezone,
           },
           {
             ttl: 300,
@@ -198,6 +211,7 @@ if (
   primaryCurrency={workspaceCurrencies.primary}
   secondaryCurrency={workspaceCurrencies.secondary}
   workspaceName={workspaceName}
+  timeZone={workspaceTimezone}
 >
   <slot name="header" slot="header" />
   <slot />
@@ -214,4 +228,5 @@ if (
   accounts={accounts}
   categoryUsageCounts={categoryUsageCounts}
   activeCurrency={activeCurrency}
+  timeZone={workspaceTimezone}
 />

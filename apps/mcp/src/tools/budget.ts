@@ -45,9 +45,10 @@ export async function handleGetBudgetSummary(args: Record<string, unknown>, ctx:
   const { workspaceId } = ctx.auth;
   const input = parse(budgetSummarySchema, args);
 
-  const now = new Date();
-  const month = input.month ?? now.getMonth() + 1;
-  const year = input.year ?? now.getFullYear();
+  // "Current month" follows the workspace timezone, not the server's
+  const current = await ctx.services.budget.getWorkspaceMonth(workspaceId);
+  const month = input.month ?? current.month;
+  const year = input.year ?? current.year;
 
   const overview = await ctx.services.budget.getMonthlyOverview(
     workspaceId,

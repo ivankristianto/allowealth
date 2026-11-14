@@ -13,6 +13,7 @@ import {
 import { csrfFetch } from '@/lib/csrf-client';
 import { buildReportUrl } from '@/lib/reporting/report-state';
 import { addToast } from '@/lib/stores/toastStore';
+import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
 export type ReportRange = 'monthly' | 'yearly';
@@ -59,12 +60,9 @@ export interface ReportPageConfig {
   clickHandlers?: Array<(event: MouseEvent, controller: ReportPageController) => void>;
 }
 
-function getDefaultPeriod(range: ReportRange, now = new Date()): string {
-  const year = now.getFullYear();
-  if (range === 'monthly') {
-    return `${year}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-  }
-  return year.toString();
+function getDefaultPeriod(range: ReportRange): string {
+  const month = getWorkspaceMonth();
+  return range === 'monthly' ? month : month.slice(0, 4);
 }
 
 export function resolvePeriodLabel(range: ReportRange, period: string): string {
@@ -78,14 +76,9 @@ export function resolvePeriodLabel(range: ReportRange, period: string): string {
 }
 
 /** Converts the period to the new range: '2024-02' -> '2024', or '2024' -> '2024-<current month>' */
-export function convertPeriodForRange(
-  range: ReportRange,
-  period: string,
-  now = new Date()
-): string {
+export function convertPeriodForRange(range: ReportRange, period: string): string {
   if (range === 'yearly') return period.split('-')[0];
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
-  return `${period}-${month}`;
+  return `${period}-${getWorkspaceMonth().slice(5, 7)}`;
 }
 
 function getActiveCurrencyFromCookie(): Currency | null {

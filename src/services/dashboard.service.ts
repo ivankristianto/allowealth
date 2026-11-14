@@ -29,6 +29,8 @@ import {
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery, trackService } from '@/lib/perf';
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
+import { WorkspaceMetaService } from './workspace-meta.service';
 
 export interface CurrencyAmount {
   currency: Currency;
@@ -160,7 +162,11 @@ export class DashboardService {
    * Create a new DashboardService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  private workspaceMetaService: WorkspaceMetaService;
+
+  constructor(private db: IDatabase) {
+    this.workspaceMetaService = new WorkspaceMetaService(db);
+  }
 
   /**
    * Get complete dashboard data for a workspace (optimized version)
@@ -186,9 +192,15 @@ export class DashboardService {
     perf?: PerfCollector
   ): Promise<DashboardData> {
     return trackService('DashboardService.getDashboardData', perf, async () => {
-      const now = new Date();
-      const currentMonth = month ?? now.getMonth() + 1;
-      const currentYear = year ?? now.getFullYear();
+      let currentMonth = month;
+      let currentYear = year;
+      if (currentMonth === undefined || currentYear === undefined) {
+        const today = getDatePartsInTimeZone(
+          await this.workspaceMetaService.getTimezone(workspaceId)
+        );
+        currentMonth ??= today.month;
+        currentYear ??= today.year;
+      }
 
       // Try cache first
       const cache = getCacheManager();

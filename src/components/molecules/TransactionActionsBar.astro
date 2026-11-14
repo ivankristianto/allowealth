@@ -90,6 +90,7 @@ const transactionActionClassName = ghostBtn
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { navigate } from 'astro:transitions/client';
+  import { getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 
   function initTransactionActionsBar() {
     const actionsBar = document.querySelector(
@@ -138,7 +139,7 @@ const transactionActionClassName = ghostBtn
         const downloadUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = downloadUrl;
-        link.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `transactions-${getWorkspaceToday()}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

@@ -3,9 +3,11 @@ import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import {
   recurringOccurrenceService,
   recurringTemplateService,
+  workspaceMetaService,
   RecurringServiceError,
   ServiceError,
 } from '@/services';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
@@ -21,9 +23,9 @@ function parseStatusFilter(value: string | null): StatusFilter {
   return 'all';
 }
 
-function parseMonth(value: string | null): string {
+function parseMonth(value: string | null, todayIso: string): string {
   if (value && /^\d{4}-\d{2}$/.test(value)) return value;
-  return new Date().toISOString().slice(0, 7);
+  return todayIso.slice(0, 7);
 }
 
 function toMonthLabel(month: string): string {
@@ -43,7 +45,8 @@ export const GET: APIRoute = async (context) => {
     const auth = getWorkspaceUser(context);
     const perf = context.locals.perf;
 
-    const month = parseMonth(context.url.searchParams.get('month'));
+    const todayIso = getCurrentDateISO(await workspaceMetaService.getTimezone(auth.workspaceId));
+    const month = parseMonth(context.url.searchParams.get('month'), todayIso);
     const status = parseStatusFilter(context.url.searchParams.get('status'));
     const dueWithin = context.url.searchParams.get('due_within') || undefined;
 
@@ -66,6 +69,7 @@ export const GET: APIRoute = async (context) => {
           occurrences: result.occurrences,
           hasTemplates,
           monthLabel: toMonthLabel(month),
+          todayIso,
         },
       });
 

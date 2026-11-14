@@ -36,7 +36,7 @@ import {
 import type { AccountType } from '@/lib/types/account';
 import { formatAccountType } from '@/lib/types/account';
 import { getAccountsPageData } from '@/services/account-page-data.service';
-import { formatMonthYear } from '@/lib/utils/date';
+import { formatMonthYear, getDatePartsInTimeZone } from '@/lib/utils/date';
 import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 import { calculateGroupTotalsByCurrency } from '@/lib/utils/account';
@@ -102,8 +102,9 @@ if (ownerUserId) {
 const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 const now = new Date();
-const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
-const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
+const today = getDatePartsInTimeZone(await workspaceMetaService.getTimezone(user.workspaceId), now);
+const selectedYear = yearParam ? parseInt(yearParam, 10) : today.year;
+const selectedMonth = monthParam ? parseInt(monthParam, 10) : today.month;
 const isViewingCurrentMonth = !yearParam && !monthParam;
 
 // Format current month for display
@@ -137,7 +138,7 @@ const monthlyPeriodOptions: PeriodOption[] = Array.from(
   { length: PERIOD_SELECTOR_MONTH_LIMIT },
   (_, i) => {
     const monthsBack = i;
-    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const date = new Date(today.year, today.month - 1 - monthsBack, 1);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const monthStr = month.toString().padStart(2, '0');
@@ -528,6 +529,7 @@ const accountsWithDisplay = accounts.map((account) => ({
 
 <script>
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
   import { initInlineHistory } from '@/components/molecules/AccountInlineHistory.client';
   import { initAccountSearch } from '@/components/organisms/AccountSearch.client';
   import { initAccountsTableClient } from '@/components/organisms/accounts-table.client';
@@ -588,9 +590,7 @@ const accountsWithDisplay = accounts.map((account) => ({
         const [year, month] = period.split('-');
         const periodYear = parseInt(year, 10);
         const periodMonth = parseInt(month, 10);
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
+        const [currentYear, currentMonth] = getWorkspaceMonth().split('-').map(Number);
         const nextUrl = new URL(window.location.href);
 
         if (periodYear === currentYear && periodMonth === currentMonth) {

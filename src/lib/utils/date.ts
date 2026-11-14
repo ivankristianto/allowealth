@@ -320,6 +320,21 @@ export function getCurrentDateISO(
   return getDayFormatter(timeZone).format(now);
 }
 
+/**
+ * The calendar day in the zone furthest ahead of UTC (UTC+14).
+ * A date after it is in the future for every workspace, whatever its zone.
+ */
+export function getLatestDateISO(now: Date = new Date()): string {
+  return getCurrentDateISO('Pacific/Kiritimati', now);
+}
+
+/** Shifts a YYYY-MM-DD calendar date by `days`, independent of any zone. */
+export function addDaysISO(dateIso: string, days: number): string {
+  const date = new Date(`${dateIso}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 /** The current month as YYYY-MM in `timeZone` (runtime zone if omitted). */
 export function getCurrentMonthISO(
   timeZone: string = getRuntimeTimeZone(),

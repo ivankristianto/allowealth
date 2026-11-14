@@ -12,7 +12,7 @@ import {
   decimalSum,
   decimalIsZero,
 } from '@/lib/utils/decimal';
-import { MONTH_NAMES } from '@/lib/utils/date';
+import { MONTH_NAMES, getDatePartsInTimeZone } from '@/lib/utils/date';
 import {
   createBudgetSchema,
   updateBudgetSchema,
@@ -139,6 +139,14 @@ export class BudgetService {
       getWorkspaceId: () => getActiveSchema().budgets.workspace_id,
     });
     this.workspaceMetaService = new WorkspaceMetaService(db);
+  }
+
+  /** Current year and month (1-12) in the workspace's timezone */
+  async getWorkspaceMonth(workspaceId: string): Promise<{ year: number; month: number }> {
+    const { year, month } = getDatePartsInTimeZone(
+      await this.workspaceMetaService.getTimezone(workspaceId)
+    );
+    return { year, month };
   }
 
   private async assertWorkspaceCurrencyAllowed(workspaceId: string, currency: Currency) {
@@ -431,9 +439,9 @@ export class BudgetService {
       throw new Error('Invalid months parameter (must be 1-24)');
     }
 
-    const now = new Date();
+    const now = await this.getWorkspaceMonth(workspaceId);
     const periods = Array.from({ length: months }, (_, i) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(now.year, now.month - 1 - i, 1);
       return { year: date.getFullYear(), month: date.getMonth() + 1 };
     });
     const summaries = await trackQuery('BudgetService.getBudgetHistory', perf, () =>
@@ -481,7 +489,7 @@ export class BudgetService {
       throw new Error('Invalid months parameter (must be 1-24)');
     }
 
-    const now = new Date();
+    const now = await this.getWorkspaceMonth(workspaceId);
     const monthColumns: CategoryTrendData['months'] = [];
     const categoryMap = new Map<
       string,
@@ -498,7 +506,7 @@ export class BudgetService {
 
     // Oldest month first
     const periods = Array.from({ length: months }, (_, k) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - (months - 1 - k), 1);
+      const date = new Date(now.year, now.month - 1 - (months - 1 - k), 1);
       return { year: date.getFullYear(), month: date.getMonth() + 1 };
     });
     const summaries = await trackQuery('BudgetService.getCategoryTrends', perf, () =>
@@ -586,11 +594,11 @@ export class BudgetService {
    * Get budget alerts for current month
    */
   async getAlerts(workspaceId: string, currency: Currency, perf?: PerfCollector) {
-    const now = new Date();
+    const now = await this.getWorkspaceMonth(workspaceId);
     const overview = await this.getMonthlyOverview(
       workspaceId,
-      now.getFullYear(),
-      now.getMonth() + 1,
+      now.year,
+      now.month,
       currency,
       perf
     );
@@ -631,11 +639,9 @@ export class BudgetService {
       throw new Error('Category not found');
     }
 
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
-    const startDate = new Date(currentYear, now.getMonth(), 1);
-    const endDate = new Date(currentYear, now.getMonth() + 1, 0, 23, 59, 59);
+    const { year: currentYear, month: currentMonth } = await this.getWorkspaceMonth(workspaceId);
+    const startDate = new Date(currentYear, currentMonth - 1, 1);
+    const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
     // Get budget for current month from budgets table
     const budget = await this.db.query.budgets.findFirst({

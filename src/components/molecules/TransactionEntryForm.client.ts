@@ -6,6 +6,8 @@ import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
 import type { Currency } from '@/lib/constants/currency';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
+import { addDaysISO } from '@/lib/utils/date';
+import { getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 
 function initTransactionEntryForms() {
   document.querySelectorAll<HTMLFormElement>('[data-transaction-form]').forEach(initForm);
@@ -20,8 +22,8 @@ function initForm(form: HTMLFormElement) {
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
   const action = form.dataset.action || '/api/transactions';
   const modalId = form.dataset.modalId || '';
-  const todayStr = form.dataset.today || new Date().toISOString().split('T')[0];
-  const yesterdayStr = form.dataset.yesterday || '';
+  const todayStr = form.dataset.today || getWorkspaceToday();
+  const yesterdayStr = form.dataset.yesterday || addDaysISO(todayStr, -1);
 
   const categories = JSON.parse(form.dataset.categoriesJson || '[]');
   const accounts = JSON.parse(form.dataset.accountsJson || '[]') as Array<{
@@ -445,9 +447,7 @@ function initForm(form: HTMLFormElement) {
         currency: String(formData.get('currency') || DEFAULT_CURRENCY),
         category_id: String(formData.get('category_id') || ''),
         account_id: String(formData.get('account_id') || ''),
-        transaction_date: String(
-          formData.get('transaction_date') || new Date().toISOString().split('T')[0]
-        ),
+        transaction_date: String(formData.get('transaction_date') || todayStr),
       };
 
       const apiUrl = isEditMode ? `${action}/${transactionId}` : action;

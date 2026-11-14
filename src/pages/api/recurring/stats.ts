@@ -9,9 +9,9 @@ import {
 } from '@/lib/api/renderResponse';
 import RecurringStatsPartial from '@/components/partials/RecurringStatsPartial.astro';
 
-function parseMonth(value: string | null): string {
-  if (value && /^\d{4}-\d{2}$/.test(value)) return value;
-  return new Date().toISOString().slice(0, 7);
+/** Undefined lets the service fall back to the workspace's current month */
+function parseMonth(value: string | null): string | undefined {
+  return value && /^\d{4}-\d{2}$/.test(value) ? value : undefined;
 }
 
 export const GET: APIRoute = async (context) => {

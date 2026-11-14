@@ -11,6 +11,7 @@
  * @see docs/architecture/002-interactive-pages.md
  */
 
+import { getDatePartsInTimeZone } from '@/lib/utils/date';
 import { hasWorkspace } from '@/lib/auth/workspace-user';
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
@@ -55,9 +56,9 @@ const selectedCurrency =
 const defaultRange: 'monthly' | 'yearly' =
   urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
 
-const now = new Date();
-const currentYear = now.getFullYear();
-const currentMonth = now.getMonth() + 1;
+const { year: currentYear, month: currentMonth } = getDatePartsInTimeZone(
+  await workspaceMetaService.getTimezone(user.workspaceId)
+);
 
 const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
   const date = new Date(currentYear, currentMonth - 1 - i, 1);

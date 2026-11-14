@@ -1,4 +1,5 @@
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { addDaysISO, getCurrentDateISO } from './date';
 
 export interface DateGroup {
   label: string; // Combined: "Today, 13 February 2026" or "13 February 2026"
@@ -28,24 +29,16 @@ function toDateKey(year: number, month: number, day: number): string {
 function formatDateLabel(
   year: number,
   month: number,
-  day: number
+  day: number,
+  todayKey: string
 ): { relative?: string; full: string } {
   const date = new Date(year, month, day);
   const full = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  const now = new Date();
-  const todayKey = toDateKey(now.getFullYear(), now.getMonth(), now.getDate());
   const dateKey = toDateKey(year, month, day);
 
   if (dateKey === todayKey) return { relative: 'Today', full };
-
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  const yesterdayKey = toDateKey(
-    yesterday.getFullYear(),
-    yesterday.getMonth(),
-    yesterday.getDate()
-  );
-  if (dateKey === yesterdayKey) return { relative: 'Yesterday', full };
+  if (dateKey === addDaysISO(todayKey, -1)) return { relative: 'Yesterday', full };
 
   return { full };
 }
@@ -53,8 +46,12 @@ function formatDateLabel(
 /**
  * Group transactions by date, ordered by date descending (most recent first).
  * Preserves original order of transactions within each date group.
+ * `todayIso` is the workspace's today; the runtime zone's when omitted.
  */
-export function groupTransactionsByDate(transactions: TransactionOutput[]): DateGroup[] {
+export function groupTransactionsByDate(
+  transactions: TransactionOutput[],
+  todayIso: string = getCurrentDateISO()
+): DateGroup[] {
   if (transactions.length === 0) return [];
 
   const groupMap = new Map<
@@ -68,7 +65,7 @@ export function groupTransactionsByDate(transactions: TransactionOutput[]): Date
     const key = toDateKey(year, month, day);
 
     if (!groupMap.has(key)) {
-      const { relative, full } = formatDateLabel(year, month, day);
+      const { relative, full } = formatDateLabel(year, month, day, todayIso);
       groupMap.set(key, { relativeLabel: relative, fullDate: full, transactions: [] });
       dateOrder.push(key);
     }

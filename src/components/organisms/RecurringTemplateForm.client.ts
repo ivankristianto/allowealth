@@ -7,6 +7,7 @@ import {
 } from '@/lib/formatting/amount-input';
 import { DEFAULT_CURRENCY, isValidCurrency, type Currency } from '@/lib/constants/currency';
 import { normalizeInstallmentState, type EndMode } from '@/components/organisms/recurring-ui';
+import { getWorkspaceMonth, getWorkspaceToday } from '@/lib/utils/workspace-time.client';
 
 interface RecurringTemplateLike {
   id: string;
@@ -44,20 +45,8 @@ interface RecurringTemplatePrefill {
 let controller: AbortController | null = null;
 let amountFormatter: ReturnType<typeof attachAmountFormatter> | null = null;
 
-function getCurrentMonthValue(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-}
-
-function getCurrentDateValue(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+const getCurrentMonthValue = (): string => getWorkspaceMonth();
+const getCurrentDateValue = (): string => getWorkspaceToday();
 
 function initRecurringTemplateForm(): void {
   controller?.abort();

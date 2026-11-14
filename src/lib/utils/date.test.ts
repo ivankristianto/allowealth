@@ -21,6 +21,7 @@ import {
   getDaysBetween,
   getCurrentDateISO,
   getCurrentMonthISO,
+  addDaysISO,
   getDatePartsInTimeZone,
   normalizeTimeZone,
   parseMonthKey,
@@ -322,6 +323,14 @@ describe('date utilities', () => {
 
     test('rolls the year over on 1 January', () => {
       expect(getCurrentMonthISO('Asia/Jakarta', new Date('2026-12-31T18:00:00Z'))).toBe('2027-01');
+    });
+  });
+
+  describe('addDaysISO', () => {
+    test('crosses month and year boundaries', () => {
+      expect(addDaysISO('2026-11-01', -1)).toBe('2026-10-31');
+      expect(addDaysISO('2026-12-31', 1)).toBe('2027-01-01');
+      expect(addDaysISO('2028-02-28', 1)).toBe('2028-02-29');
     });
   });
 

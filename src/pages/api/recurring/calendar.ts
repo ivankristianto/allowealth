@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { recurringOccurrenceService, RecurringServiceError, ServiceError } from '@/services';
+import {
+  recurringOccurrenceService,
+  workspaceMetaService,
+  RecurringServiceError,
+  ServiceError,
+} from '@/services';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { successResponse, errorResponse, getWorkspaceUser } from '@/lib/api-utils';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
@@ -9,18 +15,14 @@ import {
 } from '@/lib/api/renderResponse';
 import RecurringCalendarPartial from '@/components/partials/RecurringCalendarPartial.astro';
 
-function parseYear(value: string | null): number {
+function parseYear(value: string | null, fallback: number): number {
   const parsed = Number.parseInt(value || '', 10);
-  return Number.isFinite(parsed) && parsed >= 2000 && parsed <= 2100
-    ? parsed
-    : new Date().getFullYear();
+  return Number.isFinite(parsed) && parsed >= 2000 && parsed <= 2100 ? parsed : fallback;
 }
 
-function parseMonth(value: string | null): number {
+function parseMonth(value: string | null, fallback: number): number {
   const parsed = Number.parseInt(value || '', 10);
-  return Number.isFinite(parsed) && parsed >= 1 && parsed <= 12
-    ? parsed
-    : new Date().getMonth() + 1;
+  return Number.isFinite(parsed) && parsed >= 1 && parsed <= 12 ? parsed : fallback;
 }
 
 export const GET: APIRoute = async (context) => {
@@ -33,8 +35,10 @@ export const GET: APIRoute = async (context) => {
   try {
     const auth = getWorkspaceUser(context);
 
-    const year = parseYear(context.url.searchParams.get('year'));
-    const month = parseMonth(context.url.searchParams.get('month'));
+    const todayIso = getCurrentDateISO(await workspaceMetaService.getTimezone(auth.workspaceId));
+    const [currentYear, currentMonth] = todayIso.split('-').map(Number);
+    const year = parseYear(context.url.searchParams.get('year'), currentYear);
+    const month = parseMonth(context.url.searchParams.get('month'), currentMonth);
 
     const calendarData = await recurringOccurrenceService.getCalendarData(
       auth.workspaceId,
@@ -49,6 +53,7 @@ export const GET: APIRoute = async (context) => {
           calendarData,
           year,
           month,
+          todayIso,
         },
       });
       return render.html(html);

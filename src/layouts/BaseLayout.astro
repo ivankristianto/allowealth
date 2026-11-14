@@ -9,9 +9,11 @@ interface Props {
   title?: string;
   ssrTheme?: string;
   workspaceName?: string;
+  /** Workspace IANA zone, read by client scripts that need "today" */
+  timeZone?: string;
 }
 
-const { title = 'allowealth', ssrTheme, workspaceName } = Astro.props;
+const { title = 'allowealth', ssrTheme, workspaceName, timeZone } = Astro.props;
 
 // Construct browser title:
 // - "Page Title | Workspace Name - allowealth" for workspace-scoped pages
@@ -57,7 +59,7 @@ const perfDebugComment =
       rel="stylesheet"
     />
   </head>
-  <body>
+  <body data-workspace-timezone={timeZone}>
     <slot />
     <ToastContainer />
     {perfDebugComment && <Fragment set:html={perfDebugComment} />}

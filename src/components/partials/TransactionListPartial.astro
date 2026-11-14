@@ -20,6 +20,8 @@ export interface Props {
   showActions?: boolean;
   showBulkSelection?: boolean;
   currentMonth?: string;
+  /** Today (YYYY-MM-DD) in the workspace zone, for Today/Yesterday labels */
+  todayIso?: string;
 }
 
 const {
@@ -27,8 +29,9 @@ const {
   showActions = true,
   showBulkSelection = showActions,
   currentMonth = '',
+  todayIso,
 } = Astro.props;
-const dateGroups = groupTransactionsByDate(transactions);
+const dateGroups = groupTransactionsByDate(transactions, todayIso);
 ---
 
 {transactions.length > 0 ? (
@@ -37,6 +40,7 @@ const dateGroups = groupTransactionsByDate(transactions);
     showActions={showActions}
     showBulkSelection={showBulkSelection}
     inCard={true}
+    todayIso={todayIso}
   />
 ) : (
   <div id="empty-state" class="py-24 text-center">

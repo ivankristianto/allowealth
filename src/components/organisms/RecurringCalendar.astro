@@ -10,9 +10,11 @@ export interface Props {
   year: number;
   month: number;
   loading?: boolean;
+  /** Today (YYYY-MM-DD) in the workspace zone; pending days before it show as overdue */
+  todayIso: string;
 }
 
-const { calendarData = [], year, month, loading = false } = Astro.props;
+const { calendarData = [], year, month, loading = false, todayIso } = Astro.props;
 
 const monthDate = new Date(year, month - 1, 1);
 const monthLabel = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -20,7 +22,6 @@ const daysInMonth = new Date(year, month, 0).getDate();
 const firstDayMondayIndex = (monthDate.getDay() + 6) % 7;
 
 const dayMap = new Map(calendarData.map((day) => [day.date, day.occurrences]));
-const todayIso = new Date().toISOString().slice(0, 10);
 
 const cells: Array<{ day: number | null; date: string | null }> = [];
 for (let i = 0; i < firstDayMondayIndex; i += 1) {

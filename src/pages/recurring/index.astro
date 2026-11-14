@@ -21,7 +21,9 @@ import {
   recurringOccurrenceService,
   categoryService,
   accountService,
+  workspaceMetaService,
 } from '@/services';
+import { getCurrentDateISO } from '@/lib/utils/date';
 
 const user = Astro.locals.user;
 if (!hasWorkspace(user)) {
@@ -31,8 +33,9 @@ if (!hasWorkspace(user)) {
 const url = Astro.url;
 const view = url.searchParams.get('view') === 'calendar' ? 'calendar' : 'list';
 
-const now = new Date();
-const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+const todayIso = getCurrentDateISO(await workspaceMetaService.getTimezone(user.workspaceId));
+const currentMonth = todayIso.slice(0, 7);
+const [currentYearNum, currentMonthNum] = currentMonth.split('-').map(Number);
 const monthParam = url.searchParams.get('month') || currentMonth;
 const monthMatch = monthParam.match(/^(\d{4})-(\d{2})$/);
 const safeMonth = monthMatch ? monthParam : currentMonth;
@@ -40,7 +43,7 @@ const [year, month] = safeMonth.split('-').map(Number);
 
 const periodOptions: PeriodOption[] = [];
 for (let offset = -1; offset <= 18; offset += 1) {
-  const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+  const date = new Date(currentYearNum, currentMonthNum - 1 - offset, 1);
   const value = `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
   const label = date.toLocaleDateString('en-US', {
     month: 'long',
@@ -54,13 +57,14 @@ const selectedMonthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-U
   month: 'long',
   year: 'numeric',
 });
-const currentMonthHeadingLabel = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString(
-  'en-US',
-  {
-    month: 'long',
-    year: 'numeric',
-  }
-);
+const currentMonthHeadingLabel = new Date(
+  currentYearNum,
+  currentMonthNum - 1,
+  1
+).toLocaleDateString('en-US', {
+  month: 'long',
+  year: 'numeric',
+});
 const actionInboxTitle =
   selectedMonthLabel === currentMonthHeadingLabel
     ? 'Due This Month'
@@ -316,6 +320,7 @@ const recurringActionClassName = accentGhostBtn
                 occurrences={pendingResult.occurrences}
                 hasTemplates={templateResult.total > 0}
                 monthLabel={selectedMonthLabel}
+                todayIso={todayIso}
               />
             </div>
           </div>
@@ -333,6 +338,7 @@ const recurringActionClassName = accentGhostBtn
                 year={year}
                 month={month}
                 loading={initialCalendarLoading}
+                todayIso={todayIso}
               />
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
 import { csrfFetch, getCsrfHeaders } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
-import { getCurrentDateISO } from '@/lib/utils/date';
+import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
 import {
   clearConfirmError,
   closeConfirmationModal,
@@ -51,14 +51,15 @@ function parseMonthToYearMonth(period: string): string {
 
 function monthToYearMonthParts(month: string): { year: number; month: number } {
   const [yearRaw, monthRaw] = month.split('-').map(Number);
-  const now = new Date();
-  const year = Number.isFinite(yearRaw) ? yearRaw : now.getFullYear();
-  const monthNum = Number.isFinite(monthRaw) ? monthRaw : now.getMonth() + 1;
+  const [currentYear, currentMonthNum] = getWorkspaceMonth().split('-').map(Number);
+  const year = Number.isFinite(yearRaw) ? yearRaw : currentYear;
+  const monthNum = Number.isFinite(monthRaw) ? monthRaw : currentMonthNum;
   return { year, month: monthNum };
 }
 
 function getCurrentMonthHeadingLabel(): string {
-  return new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-US', {
+  const [year, month] = getWorkspaceMonth().split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -127,7 +128,7 @@ async function refreshPendingList(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-pending-list-container');
   if (!container) return;
 
-  const month = currentMonth || getCurrentDateISO().slice(0, 7);
+  const month = currentMonth || getWorkspaceMonth();
   const html = await fetchHtml(
     `/api/recurring/occurrences?month=${encodeURIComponent(month)}&status=pending&_render=html`,
     signal
@@ -141,7 +142,7 @@ async function refreshStats(signal: AbortSignal): Promise<void> {
   const container = document.getElementById('recurring-stats-container');
   if (!container) return;
 
-  const month = currentMonth || getCurrentDateISO().slice(0, 7);
+  const month = currentMonth || getWorkspaceMonth();
   const html = await fetchHtml(
     `/api/recurring/stats?month=${encodeURIComponent(month)}&_render=html`,
     signal
@@ -369,7 +370,7 @@ function initRecurringPage(): void {
   if (!pageRoot) return;
 
   currentView = pageRoot.dataset.initialView === 'calendar' ? 'calendar' : 'list';
-  currentMonth = pageRoot.dataset.initialMonth || new Date().toISOString().slice(0, 7);
+  currentMonth = pageRoot.dataset.initialMonth || getWorkspaceMonth();
   loadedCalendarMonth = null;
   updateActionInboxTitle(
     pageRoot.dataset.initialMonthLabel || formatMonthLabelFromPeriod(currentMonth)

@@ -18,6 +18,8 @@ import {
   type UpdateTransactionInput,
 } from '@/lib/validation/transactions';
 import { TransactionServiceError, ServiceErrorCode } from './service-errors';
+import { WorkspaceMetaService } from './workspace-meta.service';
+import { getCurrentDateISO } from '@/lib/utils/date';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
@@ -115,6 +117,7 @@ export class TransactionService {
   private db: IDatabase;
   private categoryService: CategoryService;
   private accountService: AccountService;
+  private workspaceMetaService: WorkspaceMetaService;
 
   /**
    * Safely convert Date/number/string to ISO string.
@@ -136,6 +139,22 @@ export class TransactionService {
     this.db = db;
     this.categoryService = new CategoryService(db);
     this.accountService = new AccountService(db);
+    this.workspaceMetaService = new WorkspaceMetaService(db);
+  }
+
+  private async getWorkspaceToday(workspaceId: string): Promise<string> {
+    return getCurrentDateISO(await this.workspaceMetaService.getTimezone(workspaceId));
+  }
+
+  /** Transaction dates are stored as UTC midnight of the calendar day the user picked. */
+  private async assertNotAfterWorkspaceToday(workspaceId: string, date: Date): Promise<void> {
+    if (date.toISOString().slice(0, 10) > (await this.getWorkspaceToday(workspaceId))) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Transaction date cannot be in the future',
+        400
+      );
+    }
   }
 
   private async invalidateWorkspaceCaches(workspaceId: string): Promise<void> {
@@ -150,7 +169,16 @@ export class TransactionService {
     const createSchema = options.skipDateValidation
       ? createTransactionSchemaNoFutureDate
       : createTransactionSchema;
-    const validated = parse(createSchema, input);
+    // Without a date the transaction lands on the workspace's today, not the server's UTC day
+    const validated = parse(createSchema, {
+      ...input,
+      transaction_date:
+        input.transaction_date ??
+        new Date(`${await this.getWorkspaceToday(input.workspace_id)}T00:00:00.000Z`),
+    });
+    if (!options.skipDateValidation) {
+      await this.assertNotAfterWorkspaceToday(validated.workspace_id, validated.transaction_date);
+    }
 
     // For non-transfer transactions, verify category exists and belongs to workspace
     if (validated.type !== 'transfer' && validated.category_id) {
@@ -582,6 +610,9 @@ export class TransactionService {
   ): ReturnType<typeof this.findById> {
     // Validate input using the transaction schema
     const validated = parse(updateTransactionSchema, input);
+    if (validated.transaction_date !== undefined) {
+      await this.assertNotAfterWorkspaceToday(workspaceId, validated.transaction_date);
+    }
 
     // Fetch current transaction for diff computation
     const existing = await this.findById(id, workspaceId);
@@ -1257,6 +1288,7 @@ export class TransactionService {
 
     // --- Phase 1: Validate all rows (no DB writes) ---
     const now = new Date();
+    const todayIso = await this.getWorkspaceToday(workspaceId);
     const validRows: TransactionInsertRow[] = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -1284,7 +1316,7 @@ export class TransactionService {
         result.errors.push({ row: i + 1, message: 'Invalid date format' });
         continue;
       }
-      if (transactionDate > now) {
+      if (transactionDate.toISOString().slice(0, 10) > todayIso) {
         result.errors.push({
           row: i + 1,
           message: 'Transaction date cannot be in the future',

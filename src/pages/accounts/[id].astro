@@ -10,7 +10,12 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Button from '@/components/atoms/Button.astro';
-import { accountService, transactionService, workspaceService } from '@/services';
+import {
+  accountService,
+  transactionService,
+  workspaceMetaService,
+  workspaceService,
+} from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import {
   ACCOUNT_CLASS_LABELS,
@@ -18,7 +23,7 @@ import {
   type AccountClass,
   type AccountType,
 } from '@/lib/types/account';
-import { formatMonthYear } from '@/lib/utils/date';
+import { formatMonthYear, getDatePartsInTimeZone } from '@/lib/utils/date';
 import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import {
   ArrowLeft,
@@ -52,16 +57,14 @@ const workspaceMembers = isAdmin ? await workspaceService.getMembers(user.worksp
 
 // Month navigation
 const url = new URL(Astro.url);
-const now = new Date();
+const today = getDatePartsInTimeZone(await workspaceMetaService.getTimezone(user.workspaceId));
 const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 const parsedYear = yearParam ? parseInt(yearParam, 10) : NaN;
 const parsedMonth = monthParam ? parseInt(monthParam, 10) : NaN;
-const selectedYear = Number.isFinite(parsedYear) ? parsedYear : now.getFullYear();
+const selectedYear = Number.isFinite(parsedYear) ? parsedYear : today.year;
 const selectedMonth =
-  Number.isFinite(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
-    ? parsedMonth
-    : now.getMonth() + 1;
+  Number.isFinite(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : today.month;
 const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
 
 // Generate period options (latest -> oldest)
@@ -69,7 +72,7 @@ const monthlyPeriodOptions: PeriodOption[] = Array.from(
   { length: PERIOD_SELECTOR_MONTH_LIMIT },
   (_, i) => {
     const monthsBack = i;
-    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const date = new Date(today.year, today.month - 1 - monthsBack, 1);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const monthStr = month.toString().padStart(2, '0');
@@ -100,7 +103,7 @@ const { transactions, summary } = await transactionService.getTransactionsByAcco
 );
 
 // Determine if viewing current month or historical
-const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+const isCurrentMonth = selectedYear === today.year && selectedMonth === today.month;
 const selectedMonthLabel = formatMonthYear(new Date(selectedYear, selectedMonth - 1));
 
 // Fetch balance history (latest 12 entries)
@@ -549,6 +552,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
 
 <script>
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
   import { isValidCurrency, type Currency } from '@/lib/constants/currency';
 
   let periodChangeController: AbortController | null = null;
@@ -566,9 +570,7 @@ const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBal
         const [year, month] = period.split('-');
         const periodYear = parseInt(year, 10);
         const periodMonth = parseInt(month, 10);
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
+        const [currentYear, currentMonth] = getWorkspaceMonth().split('-').map(Number);
         const nextUrl = new URL(window.location.href);
 
         if (periodYear === currentYear && periodMonth === currentMonth) {

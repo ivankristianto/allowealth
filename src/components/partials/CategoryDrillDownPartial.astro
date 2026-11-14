@@ -36,6 +36,8 @@ export interface Props {
   limit: number;
   offset: number;
   hasMore: boolean;
+  /** Today (YYYY-MM-DD) in the workspace zone, for Today/Yesterday labels */
+  todayIso?: string;
 }
 
 const {
@@ -51,11 +53,12 @@ const {
   limit,
   offset,
   hasMore,
+  todayIso,
 } = Astro.props;
 
 const displayPeriod = formatPeriodLabel(period);
 
-const dateGroups = groupTransactionsByDate(transactions);
+const dateGroups = groupTransactionsByDate(transactions, todayIso);
 
 // Budget calculations
 const hasBudget = typeof budgetLimit === 'number' && budgetLimit > 0;
@@ -194,7 +197,12 @@ import Button from '@/components/atoms/Button.astro';
         />
       </div>
     ) : (
-      <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
+      <TransactionDateGroups
+        groups={dateGroups}
+        showActions={false}
+        variant="compact"
+        todayIso={todayIso}
+      />
     )}
 
     <div class="flex items-center justify-between px-6 pb-2">

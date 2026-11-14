@@ -15,6 +15,8 @@ import {
 import { nanoid } from 'nanoid';
 import { eq } from 'drizzle-orm';
 import { SEED_TIME_HOUR } from '../lib/dates';
+import { getCurrentDateISO } from '@/lib/utils/date';
+import { DEFAULT_WORKSPACE_SETTINGS } from '@/lib/constants/workspace-meta-keys';
 import { amt } from '../lib/amounts';
 import { RECURRING_TEMPLATE_DATA } from '../data/recurring';
 
@@ -35,13 +37,13 @@ export async function seedRecurringData(
   console.log('🔁 Seeding recurring templates and occurrences...');
 
   const now = new Date();
-  const todayIso = now.toISOString().slice(0, 10);
-  const windowStartIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2, 1))
+  // Seeded workspaces keep the default timezone, so "today" here must be that zone's today
+  const todayIso = getCurrentDateISO(DEFAULT_WORKSPACE_SETTINGS.timezone, now);
+  const [todayYear, todayMonth] = todayIso.split('-').map(Number);
+  const windowStartIso = new Date(Date.UTC(todayYear, todayMonth - 3, 1))
     .toISOString()
     .slice(0, 10);
-  const windowEndIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 0))
-    .toISOString()
-    .slice(0, 10);
+  const windowEndIso = new Date(Date.UTC(todayYear, todayMonth + 2, 0)).toISOString().slice(0, 10);
 
   let templateCount = 0;
   let occurrenceCount = 0;

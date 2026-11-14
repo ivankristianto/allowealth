@@ -25,6 +25,7 @@ import {
   Trash,
 } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { getCurrentDateISO } from '@/lib/utils/date';
 
 export interface Props {
   transaction?: TransactionOutput;
@@ -32,6 +33,8 @@ export interface Props {
   showBulkSelection?: boolean;
   loading?: boolean;
   className?: string;
+  /** Today (YYYY-MM-DD) in the workspace zone, for Today/Yesterday labels */
+  todayIso?: string;
 }
 
 const {
@@ -40,6 +43,7 @@ const {
   showBulkSelection = false,
   loading = false,
   className = '',
+  todayIso = getCurrentDateISO(),
 } = Astro.props;
 
 // Safely extract transaction data (only when not loading)
@@ -61,8 +65,8 @@ const date = transaction ? parseLocalDate(transaction.transaction_date) : new Da
 
 // Format date with relative context
 const formatDate = (d: Date): string => {
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const [todayYear, todayMonth, todayDay] = todayIso.split('-').map(Number);
+  const startOfToday = new Date(todayYear, todayMonth - 1, todayDay);
   const startOfDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86400000);
 
@@ -70,7 +74,7 @@ const formatDate = (d: Date): string => {
   if (diffDays === 1) return 'Yesterday';
 
   // Include year if different from current year
-  if (d.getFullYear() !== now.getFullYear()) {
+  if (d.getFullYear() !== todayYear) {
     return d.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

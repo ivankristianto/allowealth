@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock, setSystemTime } from 'bun:test';
 import { RecurringOccurrenceService } from './recurring-occurrence.service';
 import { RecurringServiceError, ServiceErrorCode } from './service-errors';
 import {
@@ -184,6 +184,54 @@ describe('RecurringOccurrenceService', () => {
 
     expect(thrownError).toMatchObject({
       code: ServiceErrorCode.OCCURRENCE_NOT_DUE,
+    });
+  });
+
+  describe('workspace timezone', () => {
+    // 00:30 on 1 Nov in UTC+7 is still 31 Oct in UTC (#428)
+    beforeEach(() => setSystemTime(new Date('2026-11-01T00:30:00+07:00')));
+    afterEach(() => setSystemTime());
+
+    function mockOccurrenceDueOn(dueDate: string) {
+      const template = {
+        ...createMockRecurringTemplate(),
+        category: createMockCategory(),
+        account: createMockAccount(),
+      };
+      (mockDb.query.recurringOccurrences.findFirst as any)
+        .mockResolvedValueOnce({
+          ...createMockRecurringOccurrence({ status: 'pending', due_date: dueDate }),
+          template,
+        })
+        .mockResolvedValueOnce({
+          ...createMockRecurringOccurrence({ status: 'skipped', due_date: dueDate }),
+          template,
+        });
+    }
+
+    it('lets a bill due today in the workspace zone be skipped before UTC reaches that day', async () => {
+      (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce({
+        meta_value: 'Asia/Jakarta',
+      });
+      mockOccurrenceDueOn('2026-11-01');
+
+      const result = await recurringOccurrenceService.skip('ro-1', 'workspace-1');
+
+      expect(result.status).toBe('skipped');
+    });
+
+    it('treats the same bill as not yet due when the workspace runs on UTC', async () => {
+      (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce(undefined);
+      mockOccurrenceDueOn('2026-11-01');
+
+      let thrownError: unknown;
+      try {
+        await recurringOccurrenceService.skip('ro-1', 'workspace-1');
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toMatchObject({ code: ServiceErrorCode.OCCURRENCE_NOT_DUE });
     });
   });
 

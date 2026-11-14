@@ -64,9 +64,10 @@ export async function handleGetDashboard(args: Record<string, unknown>, ctx: Too
   const { workspaceId } = ctx.auth;
   const input = parse(dashboardSchema, args);
 
-  const now = new Date();
-  const month = input.month ?? now.getMonth() + 1;
-  const year = input.year ?? now.getFullYear();
+  // "Current month" follows the workspace timezone, not the server's
+  const current = await ctx.services.budget.getWorkspaceMonth(workspaceId);
+  const month = input.month ?? current.month;
+  const year = input.year ?? current.year;
 
   const data = await ctx.services.dashboard.getDashboardData(
     workspaceId,

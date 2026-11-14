@@ -285,6 +285,7 @@ import Button from '@/components/atoms/Button.astro';
   import { csrfFetch } from '@/lib/csrf-client';
   import { stripAmountFormatting } from '@/lib/formatting/amount-input';
   import { isValidCurrency, type Currency } from '@/lib/constants/currency';
+  import { getWorkspaceMonth } from '@/lib/utils/workspace-time.client';
   import {
     clearConfirmError,
     closeConfirmationModal,
@@ -564,9 +565,7 @@ import Button from '@/components/atoms/Button.astro';
       const rawCurrency = formData.get('currency');
       const currency: Currency =
         typeof rawCurrency === 'string' && isValidCurrency(rawCurrency) ? rawCurrency : 'IDR';
-      const now = new Date();
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
+      const [year, month] = getWorkspaceMonth().split('-').map(Number);
 
       const budgets: Array<{ categoryId: string; amount: string; currency: string }> = [];
 

@@ -2,16 +2,16 @@
 import { CircleAlert, CircleCheckBig, CircleMinus, CirclePlus } from '@lucide/astro';
 import Button from '@/components/atoms/Button.astro';
 import { formatCurrency } from '@/lib/formatting';
-import { getCurrentDateISO } from '@/lib/utils/date';
 import type { RecurringOccurrenceOutput } from '@/lib/types/recurring';
 
 export interface Props {
   occurrence: RecurringOccurrenceOutput;
+  /** Today (YYYY-MM-DD) in the workspace zone */
+  todayIso: string;
 }
 
-const { occurrence } = Astro.props;
+const { occurrence, todayIso } = Astro.props;
 
-const todayIso = getCurrentDateISO();
 const isOverdue = occurrence.status === 'pending' && occurrence.due_date < todayIso;
 const canAct = occurrence.status === 'pending' && occurrence.due_date <= todayIso;
 const isExpense = occurrence.templateType === 'expense';

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { transactionService, workspaceMetaService } from '@/services';
+import { ServiceError } from '@/services/service-errors';
 import {
   successResponse,
   errorResponse,
@@ -11,7 +12,8 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
-import { logError, transformTransaction, formatMonthKey, getCurrentMonthKey } from '@/lib/utils';
+import { logError, transformTransaction, formatMonthKey } from '@/lib/utils';
+import { getCurrentDateISO, getCurrentMonthKey } from '@/lib/utils/date';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
@@ -184,11 +186,13 @@ export const GET: APIRoute = async (context) => {
       }
 
       if (partial === 'all' || partial === 'list') {
+        const timeZone = await workspaceMetaService.getTimezone(auth.workspaceId);
         const listHtml = await container.renderToString(TransactionListPartial, {
           props: {
             transactions,
             showActions: true,
-            currentMonth: getCurrentMonthKey(),
+            currentMonth: getCurrentMonthKey(timeZone),
+            todayIso: getCurrentDateISO(timeZone),
           },
         });
         htmlParts.push(`<!-- PARTIAL:list -->\n${listHtml}`);
@@ -281,6 +285,9 @@ export const POST: APIRoute = async (context) => {
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof ServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error creating transaction', error);
     return errorResponse('Failed to create transaction', 500);

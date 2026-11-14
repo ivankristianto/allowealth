@@ -5,7 +5,7 @@
  * real database connections, ensuring tests run consistently.
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, mock, setSystemTime } from 'bun:test';
 import { TransactionService } from './transaction.service';
 import {
   createMockDatabase,
@@ -86,6 +86,43 @@ describe('TransactionService', () => {
       (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
 
       await expect(transactionService.create(input)).rejects.toThrow('Category not found');
+    });
+
+    describe('future-date check uses the workspace timezone', () => {
+      // 00:30 on 1 Nov in UTC+7 is still 31 Oct in UTC (#428)
+      beforeEach(() => setSystemTime(new Date('2026-11-01T00:30:00+07:00')));
+      afterEach(() => setSystemTime());
+
+      const firstOfNovember = {
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
+        type: 'expense' as const,
+        amount: '50000',
+        currency: 'IDR' as const,
+        category_id: 'cat-1',
+        account_id: 'account-1',
+        transaction_date: new Date('2026-11-01T00:00:00.000Z'),
+      };
+
+      it('accepts today in an Asia/Jakarta workspace while UTC is still on yesterday', async () => {
+        (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce({
+          meta_value: 'Asia/Jakarta',
+        });
+        // Stop right after the date check: the next step looks up the category
+        (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
+
+        await expect(transactionService.create(firstOfNovember)).rejects.toThrow(
+          'Category not found'
+        );
+      });
+
+      it('rejects the same date in a UTC workspace', async () => {
+        (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce(undefined);
+
+        await expect(transactionService.create(firstOfNovember)).rejects.toThrow(
+          'Transaction date cannot be in the future'
+        );
+      });
     });
 
     it('should throw error if account not found', async () => {

@@ -41,8 +41,9 @@ export const CacheKeys = {
   recurring: (workspaceId: string, filtersHash: string): string =>
     `${PREFIX}:recurring:${workspaceId}:${filtersHash}`,
 
-  /** Recurring stats: cache:recurring-stats:{workspaceId} */
-  recurringStats: (workspaceId: string): string => `${PREFIX}:recurring-stats:${workspaceId}`,
+  /** Recurring stats: cache:recurring-stats:{workspaceId}:{today}; overdue counts change at midnight */
+  recurringStats: (workspaceId: string, today: string): string =>
+    `${PREFIX}:recurring-stats:${workspaceId}:${today}`,
 
   /** Recurring occurrences list: cache:recurring-occurrences:{workspaceId}:{filtersHash} */
   recurringOccurrences: (workspaceId: string, filtersHash: string): string =>
