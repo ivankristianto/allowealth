@@ -17,6 +17,18 @@ describe('mcp-rate-limit', () => {
     ).toBe('mcp:ratelimit:hash:token-1:api-mcp:2');
   });
 
+  it('keeps REST and MCP calls in separate buckets', async () => {
+    for (let i = 0; i < 60; i++) {
+      await checkMcpRateLimit('token-shared', { now: () => 120_000 });
+    }
+
+    expect((await checkMcpRateLimit('token-shared', { now: () => 120_000 })).allowed).toBe(false);
+    expect(
+      (await checkMcpRateLimit('token-shared', { now: () => 120_000, endpointId: 'api-rest' }))
+        .allowed
+    ).toBe(true);
+  });
+
   it('blocks requests after 60 calls in the same minute', async () => {
     for (let i = 0; i < 60; i++) {
       const result = await checkMcpRateLimit('token-1', {

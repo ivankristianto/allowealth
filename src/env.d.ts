@@ -1,6 +1,7 @@
 /// <reference types="astro/client" />
 
 import type { AuthSession, AuthUser } from '@/lib/auth/types';
+import type { AppPasswordScope } from '@/lib/mcp-app-password';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 import type { PerfCollector } from '@/lib/perf';
 
@@ -11,6 +12,8 @@ declare global {
     interface Locals {
       user?: AuthUser | null;
       session?: AuthSession | null;
+      /** Set when the request authenticated with a Bearer app password; `session` is then null. */
+      appPassword?: { tokenId: string; scope: AppPasswordScope } | null;
       userSettings?: UserSettings;
       layoutCategories?: ReadonlyArray<{
         id: string;
