@@ -57,6 +57,13 @@
       "when": 1794363936042,
       "tag": "0007_audit_logs_keep_on_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794706649695,
+      "tag": "0008_app_password_permissions",
+      "breakpoints": true
     }
   ]
 }
