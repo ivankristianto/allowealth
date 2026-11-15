@@ -101,6 +101,7 @@ describe(`migration ${REBUILD_TAG}`, () => {
         )
         .all() as Array<{ name: string }>;
       expect(indexes.map((index) => index.name).sort()).toEqual([
+        'audit_logs_actor_token_id_idx',
         'audit_logs_created_at_idx',
         'audit_logs_user_id_idx',
         'audit_logs_workspace_created_idx',

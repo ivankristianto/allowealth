@@ -311,17 +311,7 @@ export async function seedBulkTransactions(
   console.log('   Seeding benchmark audit logs...');
   const auditSampleSize = Math.min(500, allTxnIds.length);
   const auditSample = allTxnIds.slice(0, auditSampleSize);
-  const auditBatch: Array<{
-    id: string;
-    workspace_id: string;
-    user_id: string;
-    action: 'create' | 'update' | 'delete';
-    entity_type: string;
-    entity_id: string;
-    old_value: string | null;
-    new_value: string | null;
-    created_at: Date;
-  }> = [];
+  const auditBatch: Array<typeof auditLogs.$inferInsert> = [];
   let auditCount = 0;
 
   for (const txnId of auditSample) {

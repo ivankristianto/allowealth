@@ -17,6 +17,7 @@ function context(
       workspaceId: 'workspace-1',
       userId: 'user-1',
       tokenId: 'pat_1',
+      tokenName: 'Cron agent',
       permissions: [],
       ...auth,
     },

@@ -6,11 +6,13 @@
 import type { MiddlewareHandler } from 'astro';
 import { errorResponse } from '@/lib/api-utils';
 import { authorizeAppPasswordRequest } from '@/lib/app-password-rest-access';
+import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
 import { hydrateUser } from '@/lib/auth/hydrate-user';
 import { createLogger, logError } from '@/lib/logger';
 import { isAppPasswordToken } from '@/lib/mcp-app-password';
 import { checkMcpRateLimit } from '@/lib/mcp-rate-limit';
 import { applyRateLimitHeaders, createRateLimitResponse } from '@/lib/rate-limit';
+import { recordTokenDenial } from '@/lib/token-denial-audit';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 
 const log = createLogger('app-password-auth');
@@ -18,6 +20,8 @@ const log = createLogger('app-password-auth');
 const REST_RATE_LIMIT_ENDPOINT = 'api-rest';
 const AUTH_API_PREFIX = '/api/auth/';
 const MCP_PATH = '/api/mcp';
+const MAX_RECORDED_METHOD_LENGTH = 16;
+const MAX_RECORDED_PATH_LENGTH = 200;
 
 /** Returns the Bearer credential, '' for an empty one, or null when there is no Bearer header. */
 function extractBearerToken(request: Request): string | null {
@@ -99,6 +103,17 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
       code: decision.code,
       ...decision.details,
     });
+    await recordTokenDenial(verified, {
+      subject:
+        decision.code === 'APP_PASSWORD_PERMISSION_MISSING'
+          ? decision.details.permission
+          : 'route:unlisted',
+      details: {
+        method: context.request.method.slice(0, MAX_RECORDED_METHOD_LENGTH),
+        path: pathname.slice(0, MAX_RECORDED_PATH_LENGTH),
+        ...decision.details,
+      },
+    });
     return applyRateLimitHeaders(
       errorResponse(decision.message, 403, decision.code, decision.details),
       rateLimit
@@ -109,7 +124,7 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
   context.locals.session = null;
   context.locals.appPassword = { tokenId: verified.tokenId, permissions };
 
-  const response = await next();
+  const response = await runWithAuditActor(auditActorFromAuth(verified), next);
   try {
     response.headers.set('X-RateLimit-Limit', String(rateLimit.limit));
     response.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));

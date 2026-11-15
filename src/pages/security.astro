@@ -18,13 +18,14 @@ import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import { SessionManagementService } from '@/services/session-management.service';
 import { auditLogService } from '@/services';
-import type { SecurityEvent } from '@/services/audit-log.service';
+import { UNNAMED_TOKEN_LABEL, type SecurityEvent } from '@/services/audit-log.service';
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
+import { parseTokenActivityFilter } from '@/lib/token-activity-filter';
 import {
   mcpAppPasswordService,
   type AppPasswordSummary,
@@ -178,13 +179,35 @@ if (user?.id) {
   }
 }
 
-// Fetch recent security activity from audit logs
+const activityTokenId = parseTokenActivityFilter(Astro.url);
 let securityEvents: SecurityEvent[] = [];
 if (user?.id && user?.workspaceId) {
   try {
-    securityEvents = await auditLogService.listForUser(user.id, user.workspaceId);
+    securityEvents = await auditLogService.listForUser(user.id, user.workspaceId, {
+      actorTokenId: activityTokenId ?? undefined,
+    });
   } catch (err) {
     logError('Failed to fetch security events', err);
+  }
+}
+let activityTokenFilter: { name: string } | null = null;
+if (activityTokenId && user?.id && user?.workspaceId) {
+  try {
+    const liveTokens = [
+      ...appPasswords,
+      ...connectedApps.map((app) => ({ id: app.tokenId, name: app.clientName })),
+    ];
+    activityTokenFilter = {
+      name: await auditLogService.tokenActivityName(
+        user.id,
+        user.workspaceId,
+        activityTokenId,
+        liveTokens
+      ),
+    };
+  } catch (err) {
+    logError('Failed to name the token activity filter', err);
+    activityTokenFilter = { name: UNNAMED_TOKEN_LABEL };
   }
 }
 
@@ -221,7 +244,7 @@ const demoMode = isDemoMode();
       {!demoMode && (
         <SecurityAppPasswordsCard appPasswords={appPasswords} recentSignIn={recentSignIn} />
       )}
-      <SecurityRecentUserActivitiesCard events={securityEvents} />
+      <SecurityRecentUserActivitiesCard events={securityEvents} tokenFilter={activityTokenFilter} />
     </div>
   </div>
 

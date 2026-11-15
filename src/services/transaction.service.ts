@@ -22,6 +22,7 @@ import { WorkspaceMetaService } from './workspace-meta.service';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { auditActorFields } from '@/lib/audit-actor';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -952,6 +953,7 @@ export class TransactionService {
           user_id: userId,
           action: 'update',
           entity_type: 'transaction',
+          ...auditActorFields(),
           entity_id: id,
           old_value: JSON.stringify({ [field]: row[field] ?? null }),
           new_value: JSON.stringify({ [field]: value }),
@@ -1073,6 +1075,7 @@ export class TransactionService {
         user_id: userId,
         action: 'delete',
         entity_type: 'transaction',
+        ...auditActorFields(),
         entity_id: id,
         old_value: JSON.stringify({
           type: row.type,

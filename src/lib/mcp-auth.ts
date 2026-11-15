@@ -2,7 +2,7 @@ import { db, getActiveSchema } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
 import { isAppPasswordToken } from '@/lib/mcp-app-password';
-import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import { MCP_OAUTH_CLIENTS, getMcpOAuthClientName } from '@/lib/mcp-oauth';
 import { PERMISSION_IDS, type Permission } from '@/lib/permissions/registry';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { WorkspaceService } from '@/services/workspace.service';
@@ -13,6 +13,8 @@ export interface McpAuthContext {
   workspaceId: string;
   userId: string;
   tokenId: string;
+  /** The app password's name, or the OAuth client's display name. */
+  tokenName: string;
   /** What the token may do on REST and MCP. App passwords expand their stored grants. */
   permissions: readonly Permission[];
 }
@@ -92,6 +94,7 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
     workspaceId: userRecord.workspace_id,
     userId,
     tokenId: tokenRecord.id,
+    tokenName: getMcpOAuthClientName(tokenRecord.clientId),
     // The `mcp` OAuth scope is all-or-nothing, so it grants every permission.
     permissions: PERMISSION_IDS,
   };

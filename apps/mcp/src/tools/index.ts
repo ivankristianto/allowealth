@@ -1,7 +1,9 @@
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { ANY_VALID_TOKEN } from '@/lib/app-password-rest-access';
-import { logError } from '@/lib/logger';
+import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
+import { createLogger, logError } from '@/lib/logger';
+import { recordTokenDenial } from '@/lib/token-denial-audit';
 import { isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
@@ -23,6 +25,9 @@ import {
 import { tokenInfoTool, handleGetTokenInfo } from './token-info.js';
 
 type ToolPermissions = readonly Permission[] | typeof ANY_VALID_TOKEN;
+
+const log = createLogger('mcp-tools');
+const MAX_RECORDED_TOOL_NAME_LENGTH = 100;
 
 /** Permissions a token needs, all of them, to call each tool; ANY_VALID_TOKEN for tools without workspace data. */
 export const TOOL_PERMISSIONS: Readonly<Record<string, ToolPermissions>> = {
@@ -72,16 +77,22 @@ const TOOLS: readonly Tool[] = [
   return { ...tool, annotations };
 });
 
+interface ToolDenial {
+  message: string;
+  /** Empty for a tool with no permission entry, which no grant could unlock. */
+  missing: Permission[];
+}
+
 /** Why the token may not call the tool, or null when it may. */
-function toolDenial(name: string, granted: readonly Permission[]): string | null {
+function toolDenial(name: string, granted: readonly Permission[]): ToolDenial | null {
   const required = toolPermissions(name);
   if (required === ANY_VALID_TOKEN) return null;
   // With no entry nothing is missing, so an unmapped tool has to be refused here.
-  if (required.length === 0) return `Tool ${name} is not available.`;
+  if (required.length === 0) return { message: `Tool ${name} is not available.`, missing: [] };
   const missing = required.filter((permission) => !granted.includes(permission));
   if (missing.length === 0) return null;
   const noun = missing.length === 1 ? 'permission' : 'permissions';
-  return `Tool ${name} needs the ${missing.join(', ')} ${noun}.`;
+  return { message: `Tool ${name} needs the ${missing.join(', ')} ${noun}.`, missing };
 }
 
 /** Every tool without `auth`; with it, only the tools that token may call. */
@@ -91,13 +102,33 @@ export function registerTools(auth?: Pick<ToolContext['auth'], 'permissions'>): 
     : [...TOOLS];
 }
 
-export async function handleToolCall(
+type ToolCallResult = { content: Array<{ type: string; text: string }>; isError?: boolean };
+
+/** Runs a tool for the token in `ctx`; audit rows its writes produce name that token. */
+export function handleToolCall(
   name: string,
   args: Record<string, unknown>,
   ctx: ToolContext
-): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+): Promise<ToolCallResult> {
+  return runWithAuditActor(auditActorFromAuth(ctx.auth), () => runToolCall(name, args, ctx));
+}
+
+async function runToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  ctx: ToolContext
+): Promise<ToolCallResult> {
   const denial = toolDenial(name, ctx.auth.permissions);
-  if (denial) return { isError: true, content: [{ type: 'text', text: denial }] };
+  if (denial) {
+    const tool = name.slice(0, MAX_RECORDED_TOOL_NAME_LENGTH);
+    log.warn('MCP tool call denied', { tokenId: ctx.auth.tokenId, tool, missing: denial.missing });
+    // Unmapped names are client-chosen, so they share one subject to keep the dedupe key bounded.
+    await recordTokenDenial(ctx.auth, {
+      subject: denial.missing.length > 0 ? `tool:${name}` : 'tool:unknown',
+      details: denial.missing.length > 0 ? { tool, missing: denial.missing } : { tool },
+    });
+    return { isError: true, content: [{ type: 'text', text: denial.message }] };
+  }
 
   try {
     switch (name) {

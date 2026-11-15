@@ -47,6 +47,7 @@ const ACTION_LABELS: Record<string, string> = {
   'recurring_template.delete': 'Recurring Transaction Deleted',
   'recurring_occurrence.confirm': 'Recurring Occurrence Confirmed',
   'recurring_occurrence.skip': 'Recurring Occurrence Skipped',
+  token_denied: 'Permission Denied',
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -101,6 +102,7 @@ const SELF_DESCRIBING_ACTIONS = new Set([
   'recurring_template.delete',
   'recurring_occurrence.confirm',
   'recurring_occurrence.skip',
+  'token_denied',
 ]);
 
 const ACTION_TONES: Record<string, SecurityEventTone> = {
@@ -136,6 +138,7 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
   'recurring_template.delete': 'warning',
   email_change_request: 'warning',
   account_unlink: 'warning',
+  token_denied: 'warning',
 
   delete: 'error',
   admin_delete: 'error',
@@ -145,6 +148,8 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
   profile_update: 'success',
   account_link: 'success',
 };
+
+export const UNNAMED_TOKEN_LABEL = 'this token';
 
 export type SecurityEventTone = 'success' | 'info' | 'warning' | 'error';
 
@@ -160,6 +165,14 @@ export interface SecurityEvent {
   label: string;
   timestamp: string;
   tone: SecurityEventTone;
+  /** Name of the app password or OAuth client that made the change; null for the user's own session. */
+  via: string | null;
+}
+
+export interface ListSecurityEventsOptions {
+  limit?: number;
+  /** Only events made with this app password or OAuth token. */
+  actorTokenId?: string;
 }
 
 export interface AuditLogRow {
@@ -173,6 +186,10 @@ export interface AuditLogRow {
   newValue: string | null;
 }
 
+interface SecurityEventRow extends AuditLogRow {
+  actorTokenName: string | null;
+}
+
 export class AuditLogService {
   private get schema() {
     return getActiveSchema();
@@ -184,8 +201,14 @@ export class AuditLogService {
    * Fetch the most recent audit log entries for a specific user and workspace,
    * formatted as UI-ready security events.
    */
-  async listForUser(userId: string, workspaceId: string, limit = 50): Promise<SecurityEvent[]> {
+  async listForUser(
+    userId: string,
+    workspaceId: string,
+    { limit = 50, actorTokenId }: ListSecurityEventsOptions = {}
+  ): Promise<SecurityEvent[]> {
     const { auditLogs } = this.schema;
+    const conditions = [eq(auditLogs.user_id, userId), eq(auditLogs.workspace_id, workspaceId)];
+    if (actorTokenId) conditions.push(eq(auditLogs.actor_token_id, actorTokenId));
 
     // IDatabase interface does not expose the full Drizzle query builder chain
     // (orderBy, limit, etc.) — using `as any` here is consistent with the
@@ -200,19 +223,47 @@ export class AuditLogService {
         createdAt: auditLogs.created_at,
         oldValue: auditLogs.old_value,
         newValue: auditLogs.new_value,
+        actorTokenName: auditLogs.actor_token_name,
       })
       .from(auditLogs)
-      .where(and(eq(auditLogs.user_id, userId), eq(auditLogs.workspace_id, workspaceId)))
+      .where(and(...conditions))
       .orderBy(desc(auditLogs.created_at))
       .limit(limit);
     const timeZone = await new WorkspaceMetaService(this.db).getTimezone(workspaceId);
 
-    return (rows as AuditLogRow[]).map((row) => ({
+    return (rows as SecurityEventRow[]).map((row) => ({
       id: row.id,
       label: AuditLogService.formatLabel(row.action, row.entityType),
       timestamp: AuditLogService.formatTimestamp(new Date(row.createdAt), timeZone),
       tone: AuditLogService.getTone(row.action),
+      via: row.actorTokenName,
     }));
+  }
+
+  /** Heading name for one token's activity: its current name while it exists, else the name its events recorded. */
+  async tokenActivityName(
+    userId: string,
+    workspaceId: string,
+    tokenId: string,
+    liveTokens: ReadonlyArray<{ id: string; name: string }>
+  ): Promise<string> {
+    const live = liveTokens.find((token) => token.id === tokenId);
+    if (live) return live.name;
+
+    const { auditLogs } = this.schema;
+    const [row] = await (this.db as any)
+      .select({ name: auditLogs.actor_token_name })
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.user_id, userId),
+          eq(auditLogs.workspace_id, workspaceId),
+          eq(auditLogs.actor_token_id, tokenId)
+        )
+      )
+      .orderBy(desc(auditLogs.created_at))
+      .limit(1);
+    return (row as { name: string | null } | undefined)?.name ?? UNNAMED_TOKEN_LABEL;
   }
 
   /**

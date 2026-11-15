@@ -1,6 +1,7 @@
 ---
 import Button from '@/components/atoms/Button.astro';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import { tokenActivityHref } from '@/lib/token-activity-filter';
 
 interface ConnectedApp {
   tokenId: string;
@@ -58,18 +59,28 @@ function getAuthorizeUrl(clientId: string): string {
                 {app.accessTokenExpiresAt.toLocaleDateString()}
               </p>
             </div>
-            <form method="POST" action="/api/user/revoke-mcp-token" data-revoke-token-form>
-              <input type="hidden" name="tokenId" value={app.tokenId} />
+            <div class="flex shrink-0 items-center gap-1">
               <Button
-                type="submit"
+                href={tokenActivityHref(app.tokenId)}
                 variant="ghost"
                 size="sm"
-                className="text-error shrink-0"
-                data-revoke-token-button
+                aria-label={`Activity of ${app.clientName}`}
               >
-                Revoke
+                Activity
               </Button>
-            </form>
+              <form method="POST" action="/api/user/revoke-mcp-token" data-revoke-token-form>
+                <input type="hidden" name="tokenId" value={app.tokenId} />
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  className="text-error shrink-0"
+                  data-revoke-token-button
+                >
+                  Revoke
+                </Button>
+              </form>
+            </div>
           </li>
         ))}
       </ul>
