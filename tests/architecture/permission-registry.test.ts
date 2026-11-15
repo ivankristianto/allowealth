@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ANY_VALID_TOKEN, APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
 import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
 import {
+  PERMISSION_IDS,
   SCOPE_PERMISSION_GRANTS,
   expandPermissionGrants,
   isPermission,
@@ -26,6 +29,15 @@ describe('REST allowlist permissions', () => {
       .filter(({ permission }) => permission === ANY_VALID_TOKEN)
       .map(({ rule, method }) => `${method} ${rule.path}`);
     expect(open).toEqual(['GET /api/openapi.json']);
+  });
+});
+
+describe('OpenAPI app password permissions', () => {
+  test('the documented permission enum matches the registry', () => {
+    const schemas = Bun.YAML.parse(
+      readFileSync(join(process.cwd(), 'openapi/schemas/AppPassword.yml'), 'utf8')
+    ) as { AppPasswordPermission: { enum: string[] } };
+    expect(schemas.AppPasswordPermission.enum).toEqual([...PERMISSION_IDS]);
   });
 });
 

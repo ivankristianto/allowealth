@@ -156,6 +156,7 @@ Creating one needs a sign-in from the last 15 minutes. If your sign-in is older,
 4. Choose the access:
    - **Read only** lists accounts, categories, transactions, budgets and the dashboard. Over REST it also reads scheduled items and reports
    - **Read and write** can also add expenses and income. Over REST it can also edit transactions, add scheduled items and mark bills paid
+   - **Custom** shows every permission, grouped by what it touches (transactions, budgets, recurring bills and so on). Tick only what the job needs. Unlike the presets, a custom token never gains permissions added in later releases
 5. Choose when it expires: 30 days, 90 days, 1 year, or no expiry
 6. Click **Create**
 7. **Copy the token now.** It starts with `aw_pat_` and is shown only once
@@ -176,7 +177,14 @@ For the local MCP server, set it as `ALLOWEALTH_ACCESS_TOKEN`. The same header w
 - Keep them in a password manager or your CI secret store
 - Never commit them to version control
 - Never paste them into email or chat
-- Prefer **Read only** and an expiry date unless the job needs more
+- Prefer **Read only**, or **Custom** with just what the job needs, and an expiry date
+
+#### Edit an App Password
+
+1. Find it in the **App Passwords** list
+2. Click **Edit**, change the name or the access, and click **Save**
+
+The token itself does not change, so nothing needs a new secret. The new access applies from its next request. Like creating one, editing needs a sign-in from the last 15 minutes.
 
 #### Revoke an App Password
 
@@ -188,11 +196,11 @@ Anything using it loses access on its next request. App passwords are **not** re
 #### What the List Shows
 
 - **Name** you gave it
-- **Access**: read only, or read and write
+- **Access**: **Read only**, **Read and write**, or the custom permissions as small labels
 - **Hint**: the first characters of the token, so you can tell tokens apart
 - **Created**, **Last used** and **Expires** dates
 
-Creating and revoking app passwords appears in **Recent Activity**.
+Creating, editing and revoking app passwords appears in **Recent Activity**.
 
 ### Security Events
 
