@@ -4,51 +4,71 @@
  */
 
 import type { AppPasswordScope } from '@/lib/mcp-app-password';
+import type { Permission } from '@/lib/permissions/registry';
 
 export type AppPasswordRestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+/** Marks a route that carries no workspace data, such as the OpenAPI document. */
+export const ANY_VALID_TOKEN = 'any-valid-token';
+
+export type AppPasswordRestPermission = Permission | typeof ANY_VALID_TOKEN;
+
+export type AppPasswordRestPermissionMap = Readonly<
+  Partial<Record<AppPasswordRestMethod, AppPasswordRestPermission>>
+>;
 
 export interface AppPasswordRestRoute {
   /** OpenAPI-style template; `{id}` matches one ID segment. */
   path: string;
   methods: readonly AppPasswordRestMethod[];
+  permissions: AppPasswordRestPermissionMap;
+}
+
+// Methods come from the permission map, so an allowed method cannot lack a permission.
+function rule(path: string, permissions: AppPasswordRestPermissionMap): AppPasswordRestRoute {
+  return { path, methods: Object.keys(permissions) as AppPasswordRestMethod[], permissions };
 }
 
 export const APP_PASSWORD_REST_ROUTES: readonly AppPasswordRestRoute[] = [
-  { path: '/api/openapi.json', methods: ['GET'] },
+  rule('/api/openapi.json', { GET: ANY_VALID_TOKEN }),
 
-  { path: '/api/transactions', methods: ['GET', 'POST'] },
-  { path: '/api/transactions/{id}', methods: ['GET', 'PUT', 'DELETE'] },
-  { path: '/api/transactions/{id}/history', methods: ['GET'] },
+  rule('/api/transactions', { GET: 'transactions:read', POST: 'transactions:create' }),
+  rule('/api/transactions/{id}', {
+    GET: 'transactions:read',
+    PUT: 'transactions:update',
+    DELETE: 'transactions:delete',
+  }),
+  rule('/api/transactions/{id}/history', { GET: 'transactions:read' }),
 
-  { path: '/api/budget/overview', methods: ['GET'] },
-  { path: '/api/budget/history', methods: ['GET'] },
-  { path: '/api/budget/category-trends', methods: ['GET'] },
-  { path: '/api/budget/category/{id}/remaining', methods: ['GET'] },
-  { path: '/api/budgets', methods: ['GET'] },
-  { path: '/api/budgets/{id}', methods: ['GET'] },
+  rule('/api/budget/overview', { GET: 'budgets:read' }),
+  rule('/api/budget/history', { GET: 'budgets:read' }),
+  rule('/api/budget/category-trends', { GET: 'budgets:read' }),
+  rule('/api/budget/category/{id}/remaining', { GET: 'budgets:read' }),
+  rule('/api/budgets', { GET: 'budgets:read' }),
+  rule('/api/budgets/{id}', { GET: 'budgets:read' }),
 
-  { path: '/api/recurring', methods: ['GET', 'POST'] },
-  { path: '/api/recurring/{id}', methods: ['GET', 'PUT'] },
-  { path: '/api/recurring/occurrences', methods: ['GET'] },
-  { path: '/api/recurring/occurrences/{id}/confirm', methods: ['POST'] },
-  { path: '/api/recurring/calendar', methods: ['GET'] },
-  { path: '/api/recurring/forecast', methods: ['GET'] },
-  { path: '/api/recurring/stats', methods: ['GET'] },
+  rule('/api/recurring', { GET: 'recurring:read', POST: 'recurring:write' }),
+  rule('/api/recurring/{id}', { GET: 'recurring:read', PUT: 'recurring:write' }),
+  rule('/api/recurring/occurrences', { GET: 'recurring:read' }),
+  rule('/api/recurring/occurrences/{id}/confirm', { POST: 'recurring:confirm' }),
+  rule('/api/recurring/calendar', { GET: 'recurring:read' }),
+  rule('/api/recurring/forecast', { GET: 'recurring:read' }),
+  rule('/api/recurring/stats', { GET: 'recurring:read' }),
 
-  { path: '/api/accounts', methods: ['GET'] },
-  { path: '/api/accounts/{id}', methods: ['GET'] },
-  { path: '/api/categories', methods: ['GET'] },
-  { path: '/api/categories/{id}', methods: ['GET'] },
-  { path: '/api/account-categories', methods: ['GET'] },
-  { path: '/api/account-categories/{id}', methods: ['GET'] },
-  { path: '/api/workspace/settings', methods: ['GET'] },
+  rule('/api/accounts', { GET: 'accounts:read' }),
+  rule('/api/accounts/{id}', { GET: 'accounts:read' }),
+  rule('/api/categories', { GET: 'categories:read' }),
+  rule('/api/categories/{id}', { GET: 'categories:read' }),
+  rule('/api/account-categories', { GET: 'categories:read' }),
+  rule('/api/account-categories/{id}', { GET: 'categories:read' }),
+  rule('/api/workspace/settings', { GET: 'settings:read' }),
 
-  { path: '/api/forecast', methods: ['GET'] },
-  { path: '/api/reports', methods: ['GET'] },
-  { path: '/api/reports/expenses', methods: ['GET'] },
-  { path: '/api/reports/income', methods: ['GET'] },
-  { path: '/api/reports/members', methods: ['GET'] },
-  { path: '/api/reports/category-drilldown', methods: ['GET'] },
+  rule('/api/forecast', { GET: 'forecast:read' }),
+  rule('/api/reports', { GET: 'reports:read' }),
+  rule('/api/reports/expenses', { GET: 'reports:read' }),
+  rule('/api/reports/income', { GET: 'reports:read' }),
+  rule('/api/reports/members', { GET: 'reports:read' }),
+  rule('/api/reports/category-drilldown', { GET: 'reports:read' }),
 ];
 
 export type AppPasswordRestDecision =

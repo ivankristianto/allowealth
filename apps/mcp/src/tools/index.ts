@@ -1,6 +1,7 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { logError } from '@/lib/logger';
+import { isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
 import { tools as accountTools, handleListCategories, handleListAccounts } from './accounts.js';
@@ -19,15 +20,24 @@ import {
   handleGetAccountSummary,
 } from './dashboard.js';
 
-// An allowlist, so a tool added later stays off-limits to read-only tokens until listed here.
-export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
-  'list_categories',
-  'list_accounts',
-  'list_transactions',
-  'get_budget_summary',
-  'get_dashboard',
-  'get_account_summary',
-]);
+/** Permissions a token needs, all of them, to call each tool. */
+export const TOOL_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> = {
+  list_categories: ['categories:read'],
+  list_accounts: ['accounts:read'],
+  list_transactions: ['transactions:read'],
+  add_expense: ['transactions:create'],
+  add_income: ['transactions:create'],
+  get_budget_summary: ['budgets:read'],
+  get_dashboard: ['accounts:read', 'transactions:read', 'budgets:read'],
+  get_account_summary: ['accounts:read'],
+};
+
+// Still an allowlist: a tool missing from TOOL_PERMISSIONS stays off-limits to read-only tokens.
+export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set(
+  Object.entries(TOOL_PERMISSIONS)
+    .filter(([, permissions]) => permissions.length > 0 && permissions.every(isReadPermission))
+    .map(([name]) => name)
+);
 
 export function isToolAllowed(name: string, auth: Pick<ToolContext['auth'], 'scope'>): boolean {
   return auth.scope !== 'read' || READ_ONLY_TOOLS.has(name);

@@ -1,0 +1,1 @@
+ALTER TABLE `mcp_app_passwords` ADD `permissions` text DEFAULT '[]' NOT NULL;

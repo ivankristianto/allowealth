@@ -14,7 +14,7 @@ export type AppPasswordExpiryOption = (typeof APP_PASSWORD_EXPIRY_OPTIONS)[numbe
 export const DEFAULT_APP_PASSWORD_EXPIRY: AppPasswordExpiryOption = '90';
 
 export const APP_PASSWORD_NAME_MAX_LENGTH = 64;
-export const MAX_APP_PASSWORDS_PER_USER = 20;
+export const MAX_APP_PASSWORDS_PER_USER = 5;
 
 /** Creating a token needs a session signed in within this window. */
 export const APP_PASSWORD_REAUTH_WINDOW_MS = 15 * 60 * 1000;

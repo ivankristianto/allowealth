@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import type { PermissionGrant } from '@/lib/permissions/registry';
 import { users } from './users';
 import { workspaces } from './workspaces';
 
@@ -17,6 +18,11 @@ export const mcpAppPasswords = sqliteTable(
     token_hash: text('token_hash').notNull().unique(),
     token_hint: text('token_hint').notNull(),
     scope: text('scope', { enum: ['read', 'read-write'] }).notNull(),
+    // Registry permissions or wildcards (`*`, `*:read`); empty grants nothing.
+    permissions: text('permissions', { mode: 'json' })
+      .$type<PermissionGrant[]>()
+      .notNull()
+      .default([]),
     expires_at: integer('expires_at', { mode: 'timestamp' }),
     last_used_at: integer('last_used_at', { mode: 'timestamp' }),
     created_at: integer('created_at', { mode: 'timestamp' })
