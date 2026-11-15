@@ -1,17 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { ANY_VALID_TOKEN, APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
-import { APP_PASSWORD_SCOPES } from '@/lib/mcp-app-password';
+import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
 import {
   SCOPE_PERMISSION_GRANTS,
   expandPermissionGrants,
   isPermission,
 } from '@/lib/permissions/registry';
-import {
-  READ_ONLY_TOOLS,
-  TOOL_PERMISSIONS,
-  isToolAllowed,
-  registerTools,
-} from '@mcp-server/tools/index';
+import { TOOL_PERMISSIONS, registerTools } from '@mcp-server/tools/index';
 
 const restPairs = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
   rule.methods.map((method) => ({ rule, method, permission: rule.permissions[method] }))
@@ -47,28 +42,22 @@ describe('MCP tool permissions', () => {
     expect(Object.keys(TOOL_PERMISSIONS).sort()).toEqual([...toolNames].sort());
   });
 
-  test('read-only tokens keep exactly the six tools they reach today', () => {
-    expect([...READ_ONLY_TOOLS].sort()).toEqual([
+  test('each scope preset sees exactly the tools it saw before permissions', () => {
+    const toolsFor = (scope: AppPasswordScope) =>
+      registerTools({ permissions: expandPermissionGrants(SCOPE_PERMISSION_GRANTS[scope]) })
+        .map((tool) => tool.name)
+        .sort();
+    const readTools = [
       'get_account_summary',
       'get_budget_summary',
       'get_dashboard',
       'list_accounts',
       'list_categories',
       'list_transactions',
-    ]);
-  });
+    ];
 
-  test('each scope preset allows exactly the tools the scope allows today', () => {
-    const mismatches = APP_PASSWORD_SCOPES.flatMap((scope) => {
-      const granted = new Set<string>(expandPermissionGrants(SCOPE_PERMISSION_GRANTS[scope]));
-      return toolNames
-        .filter(
-          (name) =>
-            isToolAllowed(name, { scope }) !==
-            TOOL_PERMISSIONS[name].every((permission) => granted.has(permission))
-        )
-        .map((name) => `${scope}: ${name}`);
-    });
-    expect(mismatches).toEqual([]);
+    expect(APP_PASSWORD_SCOPES).toEqual(['read', 'read-write']);
+    expect(toolsFor('read')).toEqual(readTools);
+    expect(toolsFor('read-write')).toEqual([...readTools, 'add_expense', 'add_income'].sort());
   });
 });

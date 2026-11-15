@@ -186,7 +186,7 @@ describe('/api/mcp with app passwords', () => {
       })
     ).json()) as { result: { isError?: boolean; content: Array<{ text: string }> } };
     expect(write.result.isError).toBe(true);
-    expect(write.result.content[0].text).toContain('read-write');
+    expect(write.result.content[0].text).toContain('transactions:create');
 
     const read = (await (
       await callMcp(token, 'tools/call', { name: 'list_categories', arguments: {} })

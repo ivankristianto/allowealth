@@ -1,7 +1,7 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { logError } from '@/lib/logger';
-import { isReadPermission, type Permission } from '@/lib/permissions/registry';
+import type { Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
 import { tools as accountTools, handleListCategories, handleListAccounts } from './accounts.js';
@@ -32,28 +32,32 @@ export const TOOL_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> =
   get_account_summary: ['accounts:read'],
 };
 
-// Still an allowlist: a tool missing from TOOL_PERMISSIONS stays off-limits to read-only tokens.
-export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set(
-  Object.entries(TOOL_PERMISSIONS)
-    .filter(([, permissions]) => permissions.length > 0 && permissions.every(isReadPermission))
-    .map(([name]) => name)
-);
+const TOOLS: readonly Tool[] = [
+  ...accountTools,
+  listTransactionsTool,
+  addExpenseTool,
+  addIncomeTool,
+  budgetTool,
+  dashboardTool,
+  accountSummaryTool,
+];
 
-export function isToolAllowed(name: string, auth: Pick<ToolContext['auth'], 'scope'>): boolean {
-  return auth.scope !== 'read' || READ_ONLY_TOOLS.has(name);
+/** Why the token may not call the tool, or null when it may. */
+function toolDenial(name: string, granted: readonly Permission[]): string | null {
+  const required = TOOL_PERMISSIONS[name];
+  // With no entry nothing is missing, so an unmapped tool has to be refused here.
+  if (!required?.length) return `Tool ${name} is not available.`;
+  const missing = required.filter((permission) => !granted.includes(permission));
+  if (missing.length === 0) return null;
+  const noun = missing.length === 1 ? 'permission' : 'permissions';
+  return `Tool ${name} needs the ${missing.join(', ')} ${noun}.`;
 }
 
-export function registerTools(auth?: Pick<ToolContext['auth'], 'scope'>): Tool[] {
-  const tools = [
-    ...accountTools,
-    listTransactionsTool,
-    addExpenseTool,
-    addIncomeTool,
-    budgetTool,
-    dashboardTool,
-    accountSummaryTool,
-  ];
-  return auth ? tools.filter((tool) => isToolAllowed(tool.name, auth)) : tools;
+/** Every tool without `auth`; with it, only the tools that token may call. */
+export function registerTools(auth?: Pick<ToolContext['auth'], 'permissions'>): Tool[] {
+  return auth
+    ? TOOLS.filter((tool) => toolDenial(tool.name, auth.permissions) === null)
+    : [...TOOLS];
 }
 
 export async function handleToolCall(
@@ -61,12 +65,8 @@ export async function handleToolCall(
   args: Record<string, unknown>,
   ctx: ToolContext
 ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
-  if (!isToolAllowed(name, ctx.auth)) {
-    return {
-      isError: true,
-      content: [{ type: 'text', text: `Tool ${name} needs a read-write token.` }],
-    };
-  }
+  const denial = toolDenial(name, ctx.auth.permissions);
+  if (denial) return { isError: true, content: [{ type: 'text', text: denial }] };
 
   try {
     switch (name) {
