@@ -2,12 +2,13 @@
  * The /api/user/app-passwords routes: creating with a preset or custom permissions,
  * reading one token, and editing it, against a throwaway SQLite file.
  */
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { join } from 'node:path';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { resetDb } from '@/db';
 import * as schema from '@/db/schema/sqlite';
+import { getCacheManager, resetCacheManager } from '@/lib/cache';
 import { setTestEnv } from '@/lib/env';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { APP_PASSWORD_WRITE_RATE_LIMIT } from '@/lib/mcp-app-password';
@@ -237,6 +238,19 @@ describe('PATCH /api/user/app-passwords/{id}', () => {
     expect(JSON.parse(update?.new_value ?? '{}')).toMatchObject({
       permissions: ['accounts:read'],
     });
+  });
+
+  it("invalidates the token's cache tag, as revoking does", async () => {
+    const { id } = await create({ scope: 'read' });
+    resetCacheManager();
+    const invalidate = spyOn(getCacheManager(), 'invalidateByTags');
+    try {
+      expect((await patch(id, { scope: 'read-write' })).status).toBe(200);
+      expect(invalidate).toHaveBeenCalledWith([`mcp-token:${id}`]);
+    } finally {
+      invalidate.mockRestore();
+      resetCacheManager();
+    }
   });
 
   it('renames without touching permissions, and switches back to a preset', async () => {

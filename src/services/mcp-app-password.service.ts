@@ -1,6 +1,6 @@
 import { DrizzleQueryError, and, count, desc, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { db as defaultDb, getActiveSchema, type Database } from '@/db';
+import { db as defaultDb, getActiveSchema, runTransaction, type Database } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import {
   MAX_APP_PASSWORDS_PER_USER,
@@ -154,19 +154,25 @@ export class McpAppPasswordService {
     changes: UpdateAppPasswordInput
   ): Promise<{ before: AppPasswordSummary; after: AppPasswordSummary } | null> {
     const { mcpAppPasswords } = this.schema;
-    const before = await this.findForUser(userId, id);
-    if (!before) return null;
+    const ownToken = and(eq(mcpAppPasswords.id, id), eq(mcpAppPasswords.user_id, userId));
 
-    const [row] = await this.database
-      .update(mcpAppPasswords)
-      .set({
-        ...(changes.name !== undefined && { name: changes.name }),
-        ...(changes.permissions !== undefined && { permissions: changes.permissions }),
-      })
-      .where(and(eq(mcpAppPasswords.id, id), eq(mcpAppPasswords.user_id, userId)))
-      .returning();
+    // One transaction, so the `before` the audit log records is the row this update replaced.
+    const rows = runTransaction(this.database, (tx) => {
+      const before = tx.select().from(mcpAppPasswords).where(ownToken).get();
+      if (!before) return null;
+      const after = tx
+        .update(mcpAppPasswords)
+        .set({
+          ...(changes.name !== undefined && { name: changes.name }),
+          ...(changes.permissions !== undefined && { permissions: changes.permissions }),
+        })
+        .where(ownToken)
+        .returning()
+        .get();
+      return after ? { before, after } : null;
+    });
 
-    return row ? { before, after: this.toSummary(row) } : null;
+    return rows && { before: this.toSummary(rows.before), after: this.toSummary(rows.after) };
   }
 
   /** Deletes the row; returns null when it does not exist or belongs to someone else. */

@@ -6,11 +6,10 @@ import {
   createRenderHelper,
   isRejectedHtmlRenderRequest,
 } from '@/lib/api/renderResponse';
-import { isDemoMode } from '@/lib/demo-mode';
 import { logError } from '@/lib/logger';
-import { APP_PASSWORD_WRITE_RATE_LIMIT, isRecentSignIn } from '@/lib/mcp-app-password';
+import { refuseAppPasswordWrite } from '@/lib/app-password-write-guard';
+import { isRecentSignIn } from '@/lib/mcp-app-password';
 import { invalidateMcpToken } from '@/lib/mcp-auth';
-import { checkRateLimitByKey, createRateLimitResponse } from '@/lib/rate-limit';
 import { updateAppPasswordSchema } from '@/lib/validation/app-passwords';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { securityActivityService } from '@/services/security-activity.service';
@@ -67,26 +66,11 @@ export const PATCH: APIRoute = async (context) => {
   const user = context.locals.user;
   const session = context.locals.session;
   if (!user?.id || !session) return errorResponse('Unauthorized', 401);
-  if (isDemoMode()) return errorResponse('App passwords are disabled in demo mode', 403);
-
-  if (!isRecentSignIn(session.createdAt)) {
-    return errorResponse(
-      'Sign in again to change an app password. This needs a sign-in from the last 15 minutes.',
-      403,
-      'REAUTH_REQUIRED'
-    );
-  }
-
   const id = context.params.id;
   if (!id) return errorResponse('Missing app password id', 400);
 
-  const rateLimit = checkRateLimitByKey(
-    `app-password-update:${user.id}`,
-    APP_PASSWORD_WRITE_RATE_LIMIT
-  );
-  if (!rateLimit.allowed) {
-    return createRateLimitResponse(rateLimit, 'Too many app password changes. Try again later.');
-  }
+  const refused = refuseAppPasswordWrite('update', user.id, session);
+  if (refused) return refused;
 
   const validation = await validateBody(context.request, updateAppPasswordSchema);
   if (isValidationError(validation)) {
@@ -98,6 +82,7 @@ export const PATCH: APIRoute = async (context) => {
     if (!updated) return notFound();
 
     const { before, after } = updated;
+    await invalidateMcpToken(after.id);
     await securityActivityService.logEvent({
       type: 'app_password_updated',
       userId: user.id,

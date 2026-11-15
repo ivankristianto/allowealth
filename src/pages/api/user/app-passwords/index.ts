@@ -6,11 +6,9 @@ import {
   createRenderHelper,
   isRejectedHtmlRenderRequest,
 } from '@/lib/api/renderResponse';
-import { APP_PASSWORD_WRITE_RATE_LIMIT, isRecentSignIn } from '@/lib/mcp-app-password';
+import { refuseAppPasswordWrite } from '@/lib/app-password-write-guard';
+import { logError } from '@/lib/logger';
 import { createAppPasswordSchema } from '@/lib/validation/app-passwords';
-import { isDemoMode } from '@/lib/demo-mode';
-import { checkRateLimitByKey, createRateLimitResponse } from '@/lib/rate-limit';
-import { logError } from '@/lib/utils';
 import { AppPasswordError, mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { securityActivityService } from '@/services/security-activity.service';
 import SecurityAppPasswordsListPartial from '@/components/partials/SecurityAppPasswordsListPartial.astro';
@@ -57,23 +55,8 @@ export const POST: APIRoute = async (context) => {
   const user = context.locals.user;
   const session = context.locals.session;
   if (!user?.id || !session) return errorResponse('Unauthorized', 401);
-  if (isDemoMode()) return errorResponse('App passwords are disabled in demo mode', 403);
-
-  if (!isRecentSignIn(session.createdAt)) {
-    return errorResponse(
-      'Sign in again to create an app password. This needs a sign-in from the last 15 minutes.',
-      403,
-      'REAUTH_REQUIRED'
-    );
-  }
-
-  const rateLimit = checkRateLimitByKey(
-    `app-password-create:${user.id}`,
-    APP_PASSWORD_WRITE_RATE_LIMIT
-  );
-  if (!rateLimit.allowed) {
-    return createRateLimitResponse(rateLimit, 'Too many app passwords created. Try again later.');
-  }
+  const refused = refuseAppPasswordWrite('create', user.id, session);
+  if (refused) return refused;
 
   const validation = await validateBody(context.request, createAppPasswordSchema);
   if (isValidationError(validation)) {
