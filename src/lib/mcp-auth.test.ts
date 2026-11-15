@@ -185,6 +185,44 @@ describe('validateMcpToken', () => {
     }
   });
 
+  it('limits a token with allowealth: scopes to exactly those permissions', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({
+        scopes: JSON.stringify([
+          'openid',
+          'mcp',
+          'allowealth:budgets:read',
+          'allowealth:transactions:create',
+        ]),
+      })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    const result = await validateMcpToken('scoped-token', testDeps);
+
+    expect(result?.permissions).toEqual(['transactions:create', 'budgets:read']);
+  });
+
+  it('grants nothing when the only allowealth: scope left the registry', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({ scopes: JSON.stringify(['openid', 'mcp', 'allowealth:transactions:launch']) })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    const result = await validateMcpToken('retired-scope-token', testDeps);
+
+    expect(result?.permissions).toEqual([]);
+  });
+
+  it('still needs the mcp scope when permission scopes were granted', async () => {
+    mockDb.query.oauthAccessToken.findFirst = mock(async () =>
+      liveToken({ scopes: JSON.stringify(['openid', 'allowealth:accounts:read']) })
+    );
+    mockDb.query.users.findFirst = mock(async () => ({ workspace_id: 'ws-1' }));
+
+    expect(await validateMcpToken('no-mcp-token', testDeps)).toBeNull();
+  });
+
   it('returns McpAuthContext for valid token', async () => {
     mockCacheGet.mockResolvedValue(null);
     const expiresAt = new Date(Date.now() + 3600_000);
@@ -336,7 +374,7 @@ describe('validateMcpToken app password dispatch', () => {
     expect(mockDb.query.oauthAccessToken.findFirst).not.toHaveBeenCalled();
   });
 
-  it('gives OAuth tokens every permission', async () => {
+  it('sends other tokens to the OAuth lookup, where an mcp-only token keeps every permission', async () => {
     const verify = mock(async () => appPasswordContext);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
