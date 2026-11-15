@@ -3,6 +3,7 @@ import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
 import { isAppPasswordToken, type AppPasswordScope } from '@/lib/mcp-app-password';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import type { Permission } from '@/lib/permissions/registry';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { WorkspaceService } from '@/services/workspace.service';
 import { eq } from 'drizzle-orm';
@@ -13,6 +14,8 @@ export interface McpAuthContext {
   tokenId: string;
   /** Set for app passwords only; OAuth tokens have full MCP access. */
   scope?: AppPasswordScope;
+  /** App passwords only, expanded from stored grants. Enforcement still reads `scope`. */
+  permissions?: readonly Permission[];
 }
 
 interface McpAuthDeps {

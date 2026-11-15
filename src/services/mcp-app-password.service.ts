@@ -12,6 +12,7 @@ import {
   type AppPasswordScope,
 } from '@/lib/mcp-app-password';
 import type { McpAuthContext } from '@/lib/mcp-auth';
+import { SCOPE_PERMISSION_GRANTS, expandPermissionGrants } from '@/lib/permissions/registry';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_USED_WRITE_INTERVAL_MS = 60_000;
@@ -104,6 +105,7 @@ export class McpAppPasswordService {
       token_hash: await hashOAuthToken(token),
       token_hint: getAppPasswordHint(token),
       scope: input.scope,
+      permissions: [...SCOPE_PERMISSION_GRANTS[input.scope]],
       expires_at: days === null ? null : new Date(createdAt.getTime() + days * DAY_MS),
       last_used_at: null,
       created_at: createdAt,
@@ -150,6 +152,7 @@ export class McpAppPasswordService {
           userId: mcpAppPasswords.user_id,
           workspaceId: mcpAppPasswords.workspace_id,
           scope: mcpAppPasswords.scope,
+          permissions: mcpAppPasswords.permissions,
           expiresAt: mcpAppPasswords.expires_at,
           lastUsedAt: mcpAppPasswords.last_used_at,
           userWorkspaceId: users.workspace_id,
@@ -184,6 +187,7 @@ export class McpAppPasswordService {
       userId: record.userId,
       tokenId: record.id,
       scope: record.scope,
+      permissions: expandPermissionGrants(record.permissions),
     };
   }
 
