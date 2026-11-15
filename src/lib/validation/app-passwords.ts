@@ -37,7 +37,7 @@ const limitsSchema = v.pipe(
             v.pipe(v.string('Category ids must be strings'), v.minLength(1), v.maxLength(64)),
             'category_ids must be a list'
           ),
-          v.minLength(1, 'List at least one category, or leave category_ids out'),
+          v.minLength(1, 'Choose at least one category'),
           v.maxLength(MAX_LIMIT_CATEGORY_IDS, 'Too many categories')
         )
       ),

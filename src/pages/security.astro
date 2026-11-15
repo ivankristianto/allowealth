@@ -17,7 +17,7 @@ import MfaSetupModal from '@/components/organisms/MfaSetupModal.astro';
 import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import { SessionManagementService } from '@/services/session-management.service';
-import { auditLogService } from '@/services';
+import { auditLogService, categoryService } from '@/services';
 import { UNNAMED_TOKEN_LABEL, type SecurityEvent } from '@/services/audit-log.service';
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
@@ -25,6 +25,7 @@ import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getMcpOAuthClientName, getMcpOAuthRedirectUri, type ConnectedApp } from '@/lib/mcp-oauth';
 import { parseStoredScopes, permissionLabelsFromScopes } from '@/lib/mcp-oauth-scopes';
+import type { LimitCategory } from '@/lib/app-password-limits';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
 import { parseTokenActivityFilter } from '@/lib/token-activity-filter';
 import {
@@ -135,9 +136,11 @@ if (user?.id) {
 }
 
 let appPasswords: AppPasswordSummary[] = [];
+let limitCategories: LimitCategory[] = [];
 if (user?.id) {
   try {
     appPasswords = await mcpAppPasswordService.listForUser(user.id);
+    if (user.workspaceId) limitCategories = await categoryService.findAll(user.workspaceId);
   } catch (err) {
     logError('Failed to fetch app passwords', err);
   }
@@ -239,7 +242,11 @@ const demoMode = isDemoMode();
       <SecurityPasskeysCard passkeys={passkeys} demoMode={demoMode} />
       <SecurityConnectedAppsCard apps={connectedApps} redirectUri={redirectUri} />
       {!demoMode && (
-        <SecurityAppPasswordsCard appPasswords={appPasswords} recentSignIn={recentSignIn} />
+        <SecurityAppPasswordsCard
+          appPasswords={appPasswords}
+          recentSignIn={recentSignIn}
+          categories={limitCategories}
+        />
       )}
       <SecurityRecentUserActivitiesCard events={securityEvents} tokenFilter={activityTokenFilter} />
     </div>

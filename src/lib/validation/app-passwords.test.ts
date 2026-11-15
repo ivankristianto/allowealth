@@ -81,7 +81,7 @@ describe('limits', () => {
 
   test('refuses an empty category list, which would read as no limit', () => {
     expect(issues(createAppPasswordSchema, { ...base, limits: { category_ids: [] } })).toEqual([
-      'List at least one category, or leave category_ids out',
+      'Choose at least one category',
     ]);
   });
 

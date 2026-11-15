@@ -85,7 +85,7 @@ function routeContext(
     url: new URL(request.url),
     params: { id: options.id },
     locals: {
-      user: user ? { id: user } : null,
+      user: user ? { id: user, workspaceId } : null,
       session: options.session ?? FRESH_SESSION(),
     },
   } as never;
@@ -150,7 +150,8 @@ async function getEditForm(
       )
     );
     const props = renderToString.mock.calls[0]?.[1]?.props as
-      { appPassword: AppPasswordBody; recentSignIn: boolean } | undefined;
+      | { appPassword: AppPasswordBody; recentSignIn: boolean; categories: Array<{ id: string }> }
+      | undefined;
     return { response, props };
   } finally {
     renderToString.mockRestore();
@@ -299,9 +300,12 @@ describe('GET /api/user/app-passwords/{id}', () => {
 describe('GET /api/user/app-passwords/{id}?_render=html', () => {
   // Under bun the container prints the component tag instead of its markup, so these check
   // which partial rendered and the props it got; the markup itself was checked in a browser.
-  it('renders the edit form partial for the requested token on a fresh session', async () => {
+  it('renders the edit form partial for the requested token, with the workspace categories', async () => {
     await create({ scope: 'read' });
-    const { id } = await create({ permissions: ['budgets:read'] });
+    const { id } = await create({
+      permissions: ['budgets:read'],
+      limits: { category_ids: [FOOD_CATEGORY] },
+    });
 
     const { response, props } = await getEditForm(id);
 
@@ -309,7 +313,12 @@ describe('GET /api/user/app-passwords/{id}?_render=html', () => {
     expect(response.headers.get('Content-Type')).toContain('text/html');
     expect(await response.text()).toContain('SecurityAppPasswordEditPartial.astro');
     expect(props?.recentSignIn).toBe(true);
-    expect(props?.appPassword).toMatchObject({ id, permissions: ['budgets:read'] });
+    expect(props?.appPassword).toMatchObject({
+      id,
+      permissions: ['budgets:read'],
+      limits: { category_ids: [FOOD_CATEGORY] },
+    });
+    expect(props?.categories.map((category) => category.id)).toEqual([FOOD_CATEGORY]);
   });
 
   it('asks the partial for the sign-in notice when the session is old', async () => {

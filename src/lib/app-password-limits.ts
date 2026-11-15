@@ -24,3 +24,28 @@ export function describeAppPasswordLimits(limits: AppPasswordLimits): string[] {
   if (limits.own_transactions_only) labels.push('Own transactions only');
   return labels;
 }
+
+export interface LimitCategory {
+  id: string;
+  name: string;
+  type: 'expense' | 'income';
+  is_active: boolean;
+}
+
+const CATEGORY_GROUPS = [
+  { type: 'expense', label: 'Expense' },
+  { type: 'income', label: 'Income' },
+] as const;
+
+/** What the category picker offers: active categories, plus inactive ones still listed, so saving keeps them. */
+export function limitCategoryGroups(
+  categories: readonly LimitCategory[],
+  limits: AppPasswordLimits
+): Array<{ label: string; categories: LimitCategory[] }> {
+  const listed = new Set(limits.category_ids ?? []);
+  const offered = categories.filter((category) => category.is_active || listed.has(category.id));
+  return CATEGORY_GROUPS.map(({ type, label }) => ({
+    label,
+    categories: offered.filter((category) => category.type === type),
+  })).filter((group) => group.categories.length > 0);
+}
