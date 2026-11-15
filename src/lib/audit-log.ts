@@ -6,6 +6,7 @@
  */
 
 import { db, auditLogs } from '@/db';
+import { auditActorFields } from '@/lib/audit-actor';
 import { logError } from '@/lib/utils';
 import { nanoid } from 'nanoid';
 
@@ -99,6 +100,7 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
       user_id: entry.userId,
       action: entry.action,
       entity_type: entry.entityType,
+      ...auditActorFields(),
       entity_id: entry.entityId ?? null,
       old_value: entry.oldValue ? JSON.stringify(entry.oldValue) : null,
       new_value: entry.newValue ? JSON.stringify(entry.newValue) : null,

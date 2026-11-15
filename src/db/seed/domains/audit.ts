@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { transactions, auditLogs } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { auditActorFields } from '@/lib/audit-actor';
 
 /**
  * Seed transaction audit logs for demo history feature
@@ -54,6 +55,7 @@ export async function seedTransactionAuditLogs(
       user_id: adminUserId,
       action: 'create',
       entity_type: 'transaction',
+      ...auditActorFields(),
       entity_id: t.id,
       old_value: null,
       new_value: JSON.stringify({
@@ -90,6 +92,7 @@ export async function seedTransactionAuditLogs(
       user_id: memberUserId,
       action: 'update',
       entity_type: 'transaction',
+      ...auditActorFields(),
       entity_id: t.id,
       old_value: JSON.stringify({ amount: oldAmount }),
       new_value: JSON.stringify({ amount: newAmount }),
@@ -116,6 +119,7 @@ export async function seedTransactionAuditLogs(
         user_id: adminUserId,
         action: 'update',
         entity_type: 'transaction',
+        ...auditActorFields(),
         entity_id: t.id,
         old_value: JSON.stringify({ description: t.description }),
         new_value: JSON.stringify({ description: newDesc }),
@@ -146,6 +150,7 @@ export async function seedTransactionAuditLogs(
       user_id: memberUserId,
       action: 'delete',
       entity_type: 'transaction',
+      ...auditActorFields(),
       entity_id: t.id,
       old_value: JSON.stringify({
         amount: t.amount,
