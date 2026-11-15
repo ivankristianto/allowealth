@@ -6,7 +6,7 @@
  */
 
 import { db, auditLogs } from '@/db';
-import { auditActorFields } from '@/lib/audit-actor';
+import { auditActorFields } from '@/lib/token-actor';
 import { logError } from '@/lib/utils';
 import { nanoid } from 'nanoid';
 

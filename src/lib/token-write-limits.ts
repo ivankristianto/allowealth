@@ -4,7 +4,7 @@
  */
 
 import type { AppPasswordLimitName } from '@/lib/app-password-limits';
-import { currentAuditActor, type AuditActor } from '@/lib/audit-actor';
+import { currentTokenActor, type TokenActor } from '@/lib/token-actor';
 import { recordTokenDenial } from '@/lib/token-denial-audit';
 import { TokenLimitError } from '@/services/service-errors';
 
@@ -15,7 +15,7 @@ const LIMIT_MESSAGES: Readonly<Record<AppPasswordLimitName, string>> = {
 };
 
 async function refuse(
-  actor: AuditActor,
+  actor: TokenActor,
   limit: AppPasswordLimitName,
   details: Record<string, unknown>
 ): Promise<never> {
@@ -27,7 +27,7 @@ async function refuse(
 export async function assertCategoriesAllowed(
   categoryIds: ReadonlyArray<string | null>
 ): Promise<void> {
-  const actor = currentAuditActor();
+  const actor = currentTokenActor();
   const allowed = actor?.limits.category_ids;
   if (!actor || allowed === undefined) return;
   const refused = categoryIds.find((id) => id === null || !allowed.includes(id));
@@ -39,7 +39,7 @@ export async function assertOwnTransaction(transaction: {
   id: string;
   created_by_token_id: string | null;
 }): Promise<void> {
-  const actor = currentAuditActor();
+  const actor = currentTokenActor();
   if (!actor?.limits.own_transactions_only) return;
   if (transaction.created_by_token_id === actor.tokenId) return;
   await refuse(actor, 'own_transactions', { transaction_id: transaction.id });
@@ -47,6 +47,6 @@ export async function assertOwnTransaction(transaction: {
 
 /** The app password creating a row, for `created_by_token_id`; null for sessions and OAuth. */
 export function creatingAppPasswordId(): string | null {
-  const actor = currentAuditActor();
+  const actor = currentTokenActor();
   return actor?.kind === 'app_password' ? actor.tokenId : null;
 }

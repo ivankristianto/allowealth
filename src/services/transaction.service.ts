@@ -22,7 +22,7 @@ import { WorkspaceMetaService } from './workspace-meta.service';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
-import { auditActorFields } from '@/lib/audit-actor';
+import { auditActorFields } from '@/lib/token-actor';
 import {
   assertCategoriesAllowed,
   assertOwnTransaction,

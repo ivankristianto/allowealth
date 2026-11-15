@@ -7,7 +7,7 @@ import { and, desc, eq, gte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db as defaultDb, getActiveSchema, runTransaction, type Database } from '@/db';
 import type { AppPasswordLimitName } from '@/lib/app-password-limits';
-import { auditActorFields, auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
+import { auditActorFields, runWithTokenActor } from '@/lib/token-actor';
 import { getCacheManager, type CacheManager } from '@/lib/cache';
 import { logError } from '@/lib/logger';
 import type { McpAuthContext } from '@/lib/mcp-auth';
@@ -103,9 +103,7 @@ export async function recordTokenDenial(
   if (await seenInCache(`audit-denial:${token.tokenId}:${denial.subject}`, deps.cache)) return;
 
   try {
-    runWithAuditActor(auditActorFromAuth(token), () =>
-      insertWithinBounds(deps.database ?? defaultDb, token, denial)
-    );
+    runWithTokenActor(token, () => insertWithinBounds(deps.database ?? defaultDb, token, denial));
   } catch (error) {
     // The refusal itself must still reach the caller, so a failed audit write is only logged.
     logError('Failed to record token denial', error);

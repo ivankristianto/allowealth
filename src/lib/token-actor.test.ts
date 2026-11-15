@@ -1,21 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 import {
   auditActorFields,
-  auditActorFromAuth,
-  currentAuditActor,
-  runWithAuditActor,
-  type AuditActor,
-} from './audit-actor';
+  currentTokenActor,
+  runWithTokenActor,
+  type TokenActor,
+} from './token-actor';
 
 const owner = { userId: 'user_1', workspaceId: 'ws_1' };
-const nightly: AuditActor = {
+const nightly: TokenActor = {
   ...owner,
   tokenId: 'pat_1',
   kind: 'app_password',
   tokenName: 'Nightly import',
   limits: { own_transactions_only: true },
 };
-const desktop: AuditActor = {
+const desktop: TokenActor = {
   ...owner,
   tokenId: 'tok_1',
   kind: 'oauth',
@@ -33,7 +32,7 @@ describe('auditActorFields', () => {
   });
 
   test('returns the actor for the request it runs in, after awaits too', async () => {
-    const fields = await runWithAuditActor(nightly, async () => {
+    const fields = await runWithTokenActor(nightly, async () => {
       await Promise.resolve();
       return auditActorFields();
     });
@@ -52,11 +51,11 @@ describe('auditActorFields', () => {
       releaseFirst = resolve;
     });
 
-    const first = runWithAuditActor(nightly, async () => {
+    const first = runWithTokenActor(nightly, async () => {
       await firstPaused;
       return auditActorFields().actor_token_id;
     });
-    const second = runWithAuditActor(desktop, async () => {
+    const second = runWithTokenActor(desktop, async () => {
       const id = auditActorFields().actor_token_id;
       releaseFirst();
       return id;
@@ -66,19 +65,11 @@ describe('auditActorFields', () => {
   });
 });
 
-describe('currentAuditActor', () => {
+describe('currentTokenActor', () => {
   test("carries the token's limits inside the request and nothing outside it", () => {
-    expect(runWithAuditActor(nightly, () => currentAuditActor()?.limits)).toEqual({
+    expect(runWithTokenActor(nightly, () => currentTokenActor()?.limits)).toEqual({
       own_transactions_only: true,
     });
-    expect(currentAuditActor()).toBeUndefined();
-  });
-});
-
-describe('auditActorFromAuth', () => {
-  test('keeps only the actor fields of an MCP auth context', () => {
-    expect(
-      auditActorFromAuth({ ...desktop, permissions: ['accounts:read'] } as AuditActor)
-    ).toEqual(desktop);
+    expect(currentTokenActor()).toBeUndefined();
   });
 });

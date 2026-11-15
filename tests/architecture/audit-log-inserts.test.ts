@@ -67,7 +67,7 @@ describe('audit log inserts', () => {
 
   test('flags a row built without the helper', () => {
     const source = `
-      import { auditActorFields } from '@/lib/audit-actor';
+      import { auditActorFields } from '@/lib/token-actor';
       await db.insert(auditLogs).values({ id, action: 'create', entity_type: 'account', ...auditActorFields() });
       rows.push({ id, action: 'delete', entity_type: 'transaction' });
       await db.insert(this.schema.auditLogs).values(rows);

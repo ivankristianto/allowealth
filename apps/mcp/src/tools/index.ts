@@ -1,7 +1,7 @@
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { ANY_VALID_TOKEN } from '@/lib/app-password-rest-access';
-import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
+import { runWithTokenActor } from '@/lib/token-actor';
 import { createLogger, logError } from '@/lib/logger';
 import { recordTokenDenial } from '@/lib/token-denial-audit';
 import { isReadPermission, type Permission } from '@/lib/permissions/registry';
@@ -110,7 +110,7 @@ export function handleToolCall(
   args: Record<string, unknown>,
   ctx: ToolContext
 ): Promise<ToolCallResult> {
-  return runWithAuditActor(auditActorFromAuth(ctx.auth), () => runToolCall(name, args, ctx));
+  return runWithTokenActor(ctx.auth, () => runToolCall(name, args, ctx));
 }
 
 async function runToolCall(

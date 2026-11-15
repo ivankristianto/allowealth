@@ -6,7 +6,7 @@
 import type { MiddlewareHandler } from 'astro';
 import { errorResponse } from '@/lib/api-utils';
 import { authorizeAppPasswordRequest } from '@/lib/app-password-rest-access';
-import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
+import { runWithTokenActor } from '@/lib/token-actor';
 import { hydrateUser } from '@/lib/auth/hydrate-user';
 import { createLogger, logError } from '@/lib/logger';
 import { isAppPasswordToken } from '@/lib/mcp-app-password';
@@ -124,7 +124,7 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
   context.locals.session = null;
   context.locals.appPassword = { tokenId: verified.tokenId, permissions };
 
-  const response = await runWithAuditActor(auditActorFromAuth(verified), next);
+  const response = await runWithTokenActor(verified, next);
   try {
     response.headers.set('X-RateLimit-Limit', String(rateLimit.limit));
     response.headers.set('X-RateLimit-Remaining', String(rateLimit.remaining));
