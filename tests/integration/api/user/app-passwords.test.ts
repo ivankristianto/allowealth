@@ -4,6 +4,7 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { join } from 'node:path';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { resetDb } from '@/db';
@@ -108,6 +109,32 @@ async function getOne(id: string, user = userId) {
   return GET(
     routeContext(new Request(`http://localhost/api/user/app-passwords/${id}`), { user, id })
   );
+}
+
+/** Fetches the edit form and returns the response with the props the partial was given. */
+async function getEditForm(
+  id: string,
+  options: { user?: string; session?: { createdAt: Date }; requestedWith?: string | null } = {}
+) {
+  const { GET } = await import('@/pages/api/user/app-passwords/[id]');
+  const requestedWith =
+    options.requestedWith === undefined ? 'XMLHttpRequest' : options.requestedWith;
+  const renderToString = spyOn(AstroContainer.prototype, 'renderToString');
+  try {
+    const response = await GET(
+      routeContext(
+        new Request(`http://localhost/api/user/app-passwords/${id}?_render=html`, {
+          headers: requestedWith ? { 'X-Requested-With': requestedWith } : {},
+        }),
+        { user: options.user ?? userId, session: options.session, id }
+      )
+    );
+    const props = renderToString.mock.calls[0]?.[1]?.props as
+      { appPassword: AppPasswordBody; recentSignIn: boolean } | undefined;
+    return { response, props };
+  } finally {
+    renderToString.mockRestore();
+  }
 }
 
 async function listToolNames(token: string): Promise<string[]> {
@@ -217,6 +244,51 @@ describe('GET /api/user/app-passwords/{id}', () => {
     ).toMatchObject({ id, permissions: ['*'], preset: 'read-write' });
 
     expect((await getOne(id, otherUserId)).status).toBe(404);
+  });
+});
+
+describe('GET /api/user/app-passwords/{id}?_render=html', () => {
+  // Under bun the container prints the component tag instead of its markup, so these check
+  // which partial rendered and the props it got; the markup itself was checked in a browser.
+  it('renders the edit form partial for the requested token on a fresh session', async () => {
+    await create({ scope: 'read' });
+    const { id } = await create({ permissions: ['budgets:read'] });
+
+    const { response, props } = await getEditForm(id);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toContain('text/html');
+    expect(await response.text()).toContain('SecurityAppPasswordEditPartial.astro');
+    expect(props?.recentSignIn).toBe(true);
+    expect(props?.appPassword).toMatchObject({ id, permissions: ['budgets:read'] });
+  });
+
+  it('asks the partial for the sign-in notice when the session is old', async () => {
+    const { id } = await create({ scope: 'read' });
+
+    const { response, props } = await getEditForm(id, { session: STALE_SESSION() });
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('recentSignIn="false"');
+    expect(props?.recentSignIn).toBe(false);
+  });
+
+  it("returns 404 for another user's token without rendering", async () => {
+    const { id } = await create({ scope: 'read' });
+
+    const { response, props } = await getEditForm(id, { user: otherUserId });
+
+    expect(response.status).toBe(404);
+    expect(props).toBeUndefined();
+  });
+
+  it('refuses an HTML request without X-Requested-With', async () => {
+    const { id } = await create({ scope: 'read' });
+
+    const { response, props } = await getEditForm(id, { requestedWith: null });
+
+    expect(response.status).toBe(403);
+    expect(props).toBeUndefined();
   });
 });
 
