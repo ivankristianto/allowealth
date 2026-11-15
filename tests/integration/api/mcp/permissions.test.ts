@@ -142,6 +142,17 @@ describe('MCP tool access by app password permissions', () => {
     });
   });
 
+  test('an Object.prototype member name is refused like any other unknown tool', async () => {
+    const token = await createTokenWithGrants(['*']);
+
+    for (const name of ['constructor', 'hasOwnProperty', '__proto__', 'toString']) {
+      expect(await callTool(token, name)).toEqual({
+        isError: true,
+        content: [{ type: 'text', text: `Tool ${name} is not available.` }],
+      });
+    }
+  });
+
   test('a token with no permissions sees no tools', async () => {
     const token = await createTokenWithGrants([]);
 

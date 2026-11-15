@@ -38,6 +38,11 @@ export function toolAnnotations(permissions: readonly Permission[]): ToolAnnotat
   return {};
 }
 
+// Own keys only: a client-chosen name such as `constructor` would otherwise hit Object.prototype.
+function toolPermissions(name: string): readonly Permission[] {
+  return Object.hasOwn(TOOL_PERMISSIONS, name) ? TOOL_PERMISSIONS[name] : [];
+}
+
 const TOOLS: readonly Tool[] = [
   ...accountTools,
   listTransactionsTool,
@@ -46,13 +51,13 @@ const TOOLS: readonly Tool[] = [
   budgetTool,
   dashboardTool,
   accountSummaryTool,
-].map((tool) => ({ ...tool, annotations: toolAnnotations(TOOL_PERMISSIONS[tool.name] ?? []) }));
+].map((tool) => ({ ...tool, annotations: toolAnnotations(toolPermissions(tool.name)) }));
 
 /** Why the token may not call the tool, or null when it may. */
 function toolDenial(name: string, granted: readonly Permission[]): string | null {
-  const required = TOOL_PERMISSIONS[name];
+  const required = toolPermissions(name);
   // With no entry nothing is missing, so an unmapped tool has to be refused here.
-  if (!required?.length) return `Tool ${name} is not available.`;
+  if (required.length === 0) return `Tool ${name} is not available.`;
   const missing = required.filter((permission) => !granted.includes(permission));
   if (missing.length === 0) return null;
   const noun = missing.length === 1 ? 'permission' : 'permissions';
