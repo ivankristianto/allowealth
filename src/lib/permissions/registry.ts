@@ -3,8 +3,6 @@
  * name the permission they need. No DB imports, so client scripts can share this module.
  */
 
-import type { AppPasswordScope } from '@/lib/mcp-app-password';
-
 export const PERMISSIONS = [
   {
     id: 'transactions:read',
@@ -75,6 +73,10 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number]['id'];
 
+export type PermissionResource = Permission extends `${infer Resource}:${string}`
+  ? Resource
+  : never;
+
 /** Stored grants may also be wildcards, expanded against the registry when a token is verified. */
 export type PermissionGrant = Permission | '*' | '*:read';
 
@@ -89,14 +91,6 @@ export function isPermission(value: unknown): value is Permission {
 export function isReadPermission(permission: Permission): boolean {
   return permission.endsWith(':read');
 }
-
-/** The grants each legacy scope stands for; wildcards keep them covering permissions added later. */
-export const SCOPE_PERMISSION_GRANTS: Readonly<
-  Record<AppPasswordScope, readonly PermissionGrant[]>
-> = {
-  read: ['*:read'],
-  'read-write': ['*'],
-};
 
 /**
  * Expands stored grants to concrete permissions in registry order. Unknown values are dropped

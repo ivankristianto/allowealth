@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test';
 import {
   PERMISSIONS,
   PERMISSION_IDS,
-  SCOPE_PERMISSION_GRANTS,
   expandPermissionGrants,
   isPermission,
   isReadPermission,
@@ -71,15 +70,5 @@ describe('expandPermissionGrants', () => {
     expect(expandPermissionGrants('["*"]')).toEqual([]);
     expect(expandPermissionGrants(null)).toEqual([]);
     expect(expandPermissionGrants([42, { id: '*' }])).toEqual([]);
-  });
-});
-
-describe('scope presets', () => {
-  test('read expands to every read permission, read-write to everything', () => {
-    expect(SCOPE_PERMISSION_GRANTS).toEqual({ read: ['*:read'], 'read-write': ['*'] });
-    expect(expandPermissionGrants(SCOPE_PERMISSION_GRANTS.read)).toEqual(READ_PERMISSIONS);
-    expect(expandPermissionGrants(SCOPE_PERMISSION_GRANTS['read-write'])).toEqual([
-      ...PERMISSION_IDS,
-    ]);
   });
 });

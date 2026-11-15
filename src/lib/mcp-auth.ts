@@ -1,7 +1,7 @@
 import { db, getActiveSchema } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
-import { isAppPasswordToken, type AppPasswordScope } from '@/lib/mcp-app-password';
+import { isAppPasswordToken } from '@/lib/mcp-app-password';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
 import { PERMISSION_IDS, type Permission } from '@/lib/permissions/registry';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
@@ -12,8 +12,6 @@ export interface McpAuthContext {
   workspaceId: string;
   userId: string;
   tokenId: string;
-  /** Set for app passwords only, for display. `permissions` decides access. */
-  scope?: AppPasswordScope;
   /** What the token may do on REST and MCP. App passwords expand their stored grants. */
   permissions: readonly Permission[];
 }

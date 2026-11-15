@@ -18,17 +18,12 @@ interface ToolCallResult {
 }
 
 async function createTokenWithGrants(grants: readonly PermissionGrant[]): Promise<string> {
-  // A read-scoped row proves the stored permissions decide, not the scope.
-  const { token, appPassword } = await service.create({
+  const { token } = await service.create({
     userId: USER_ID,
     name: `mcp ${crypto.randomUUID()}`,
-    scope: 'read',
+    permissions: [...grants],
     expiry: '30',
   });
-  await db
-    .update(mcpAppPasswords)
-    .set({ permissions: [...grants] })
-    .where(eq(mcpAppPasswords.id, appPassword.id));
   return token;
 }
 

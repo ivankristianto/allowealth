@@ -89,8 +89,6 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
     return createRateLimitResponse(rateLimit, 'Too many API requests for this app password.');
   }
 
-  // verify() always sets scope for app passwords; the type is shared with OAuth tokens.
-  const scope = verified.scope ?? 'read';
   const { permissions } = verified;
   const decision = authorizeAppPasswordRequest(context.request.method, pathname, permissions);
   if (!decision.allowed) {
@@ -109,7 +107,7 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
 
   context.locals.user = user;
   context.locals.session = null;
-  context.locals.appPassword = { tokenId: verified.tokenId, scope, permissions };
+  context.locals.appPassword = { tokenId: verified.tokenId, permissions };
 
   const response = await next();
   try {

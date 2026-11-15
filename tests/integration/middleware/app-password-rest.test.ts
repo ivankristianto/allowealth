@@ -9,6 +9,7 @@ import * as realAuthServer from '@/lib/auth/server';
 import * as realOpenApiSources from '@/lib/openapi/sources';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 import type { AppPasswordScope } from '@/lib/mcp-app-password';
+import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
 import { APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
 import {
   PERMISSION_IDS,
@@ -118,7 +119,7 @@ async function createToken(
   const { token, appPassword } = await tokenService.create({
     userId: USER_ID,
     name: `test ${scope} ${crypto.randomUUID()}`,
-    scope,
+    permissions: [...APP_PASSWORD_PRESETS[scope].grants],
     expiry: '30',
   });
   return { token, id: appPassword.id };
@@ -131,12 +132,13 @@ async function setGrants(id: string, grants: readonly PermissionGrant[]): Promis
     .where(eq(mcpAppPasswords.id, id));
 }
 
-async function createTokenWithGrants(
-  grants: readonly PermissionGrant[],
-  scope: AppPasswordScope = 'read'
-): Promise<string> {
-  const { token, id } = await createToken(scope);
-  await setGrants(id, grants);
+async function createTokenWithGrants(grants: readonly PermissionGrant[]): Promise<string> {
+  const { token } = await service.create({
+    userId: USER_ID,
+    name: `test grants ${crypto.randomUUID()}`,
+    permissions: [...grants],
+    expiry: '30',
+  });
   return token;
 }
 
@@ -211,7 +213,6 @@ describe('app password authentication on the REST API', () => {
     expect(context.locals.user?.id).toBe(USER_ID);
     expect(context.locals.user?.workspaceId).toBe(WORKSPACE_ID);
     expect(context.locals.session).toBeNull();
-    expect(context.locals.appPassword?.scope).toBe('read');
     expect(context.locals.appPassword?.permissions).toEqual(expandPermissionGrants(['*:read']));
     expect(response.headers.get('X-RateLimit-Limit')).toBe('60');
   });
@@ -242,7 +243,6 @@ describe('app password authentication on the REST API', () => {
 
     expect(response.status).toBe(200);
     expect(routeHandler).toHaveBeenCalledTimes(1);
-    expect(context.locals.appPassword?.scope).toBe('read-write');
     expect(context.locals.appPassword?.permissions).toEqual(PERMISSION_IDS);
   });
 
@@ -474,21 +474,6 @@ describe('app password authentication on the REST API', () => {
       await expectPermissionMissing(await request('POST', '/api/recurring'), 'recurring:write');
       await expectPermissionMissing(await request('GET', '/api/accounts'), 'accounts:read');
       expect(routeHandler).toHaveBeenCalledTimes(4);
-    });
-
-    test('scope no longer decides anything', async () => {
-      const readScoped = await createTokenWithGrants(['transactions:create'], 'read');
-      const writeScoped = await createTokenWithGrants(['budgets:read'], 'read-write');
-
-      const write = await runChain(
-        createContext('/api/transactions', { method: 'POST', bearer: readScoped })
-      );
-      expect(write.status).toBe(200);
-
-      await expectPermissionMissing(
-        await runChain(createContext('/api/transactions', { method: 'POST', bearer: writeScoped })),
-        'transactions:create'
-      );
     });
 
     test('a token with no permissions reaches only the OpenAPI document', async () => {

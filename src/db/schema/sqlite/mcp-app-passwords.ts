@@ -17,7 +17,6 @@ export const mcpAppPasswords = sqliteTable(
     name: text('name').notNull(),
     token_hash: text('token_hash').notNull().unique(),
     token_hint: text('token_hint').notNull(),
-    scope: text('scope', { enum: ['read', 'read-write'] }).notNull(),
     // Registry permissions or wildcards (`*`, `*:read`); empty grants nothing.
     permissions: text('permissions', { mode: 'json' })
       .$type<PermissionGrant[]>()

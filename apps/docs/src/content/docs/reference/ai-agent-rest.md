@@ -21,10 +21,11 @@ App passwords only reach the routes listed below. Everything else answers `403`.
 2. Click **Create**, give it a name you will recognize, and pick the access:
    - **Read only** for an agent that only reports
    - **Read and write** for an agent that also adds expenses, adds scheduled items or marks bills paid
+   - **Custom** to tick exactly the permissions the agent needs, listed below
 3. Pick an expiry and click **Create**
 4. Copy the token. It starts with `aw_pat_` and is shown once
 
-See [Profile and Security](/end-users/profile-security/#app-passwords) for revoking and storing tokens.
+To change a token's name or access later, click **Edit** next to it. The token stays the same and the change applies from its next request. See [Profile and Security](/end-users/profile-security/#app-passwords) for revoking and storing tokens.
 
 ## Send it with every request
 
@@ -45,14 +46,36 @@ export ALLOWEALTH_TOKEN="aw_pat_your_token_here"
 export WORKSPACE_TZ="Asia/Jakarta" # the workspace time zone, see below
 ```
 
-## Scopes
+## Access: presets and custom permissions
 
-| Scope        | Methods allowed                      |
-| ------------ | ------------------------------------ |
-| `read`       | `GET`, `HEAD`                        |
-| `read-write` | `GET`, `HEAD`, plus the writes below |
+Every route and method below needs one permission, named `resource:action`. `HEAD` needs the same one as `GET`, and `/api/openapi.json` needs none. A token gets its permissions in one of two ways.
 
-Behind each scope is a set of permissions named `resource:action`, such as `transactions:read` or `transactions:create`. `/api/openapi.json` needs none. Every other route and method needs one, and `HEAD` needs the same one as `GET`. A `read` token holds every `:read` permission and a `read-write` token holds all of them.
+**Presets** cover the common cases and keep covering permissions added in later releases:
+
+| Preset       | Stored as    | Grants                                        |
+| ------------ | ------------ | --------------------------------------------- |
+| `read`       | `["*:read"]` | Every `:read` permission, so `GET` and `HEAD` |
+| `read-write` | `["*"]`      | Every permission                              |
+
+**Custom** tokens hold exactly the permissions you pick and nothing added later:
+
+| Permission            | Allows                                                         |
+| --------------------- | -------------------------------------------------------------- |
+| `transactions:read`   | List and view transactions and their edit history              |
+| `transactions:create` | Record new expenses and income                                 |
+| `transactions:update` | Change existing transactions                                   |
+| `transactions:delete` | Delete transactions                                            |
+| `budgets:read`        | View budgets, budget history and category spending trends      |
+| `recurring:read`      | View recurring bills, upcoming occurrences, calendar and stats |
+| `recurring:write`     | Create and edit recurring bills                                |
+| `recurring:confirm`   | Confirm a due occurrence, which records its transaction        |
+| `accounts:read`       | View accounts, balances and account totals                     |
+| `categories:read`     | View budget categories and account categories                  |
+| `settings:read`       | View workspace settings such as currency and time zone         |
+| `forecast:read`       | View the cash flow forecast                                    |
+| `reports:read`        | View expense, income, member and category reports              |
+
+The app password API reports each token's `permissions` as stored and a `preset` of `read`, `read-write` or `custom`. A custom list is still `custom` when it happens to name every permission, because it will not pick up new ones. When creating or editing a token through `POST /api/user/app-passwords` or `PATCH /api/user/app-passwords/{id}`, send either `scope` (a preset) or `permissions` (a non-empty list from the table, no wildcards), never both. Those routes need a browser session; an app password cannot manage app passwords.
 
 ## Allowed routes
 

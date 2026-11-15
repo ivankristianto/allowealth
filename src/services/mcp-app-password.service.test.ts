@@ -47,7 +47,7 @@ describe('McpAppPasswordService.create', () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'Nightly import',
-      scope: 'read',
+      permissions: ['*:read'],
       expiry: '30',
     });
 
@@ -69,41 +69,46 @@ describe('McpAppPasswordService.create', () => {
     const { appPassword } = await service.create({
       userId,
       name: 'CI',
-      scope: 'read-write',
+      permissions: ['*'],
       expiry: 'never',
     });
     expect(appPassword.expiresAt).toBeNull();
   });
 
-  test('stores the wildcard matching the chosen scope', async () => {
-    const read = await service.create({ userId, name: 'r', scope: 'read', expiry: '30' });
-    const readWrite = await service.create({
+  test('stores the grants it is given and reports their preset', async () => {
+    const read = await service.create({ userId, name: 'r', permissions: ['*:read'], expiry: '30' });
+    const custom = await service.create({
       userId,
-      name: 'rw',
-      scope: 'read-write',
+      name: 'c',
+      permissions: ['transactions:create', 'accounts:read'],
       expiry: '30',
     });
 
     expect(storedPermissions(read.appPassword.id)).toEqual(['*:read']);
-    expect(storedPermissions(readWrite.appPassword.id)).toEqual(['*']);
+    expect(read.appPassword).toMatchObject({ permissions: ['*:read'], preset: 'read' });
+    expect(storedPermissions(custom.appPassword.id)).toEqual([
+      'transactions:create',
+      'accounts:read',
+    ]);
+    expect(custom.appPassword.preset).toBe('custom');
   });
 
   test('refuses users without a workspace', async () => {
     db.update(schema.users).set({ workspace_id: null }).where(eq(schema.users.id, userId)).run();
 
     const error = await service
-      .create({ userId, name: 'x', scope: 'read', expiry: '30' })
+      .create({ userId, name: 'x', permissions: ['*:read'], expiry: '30' })
       .catch((caught: unknown) => caught);
     expect(error).toMatchObject({ code: 'NO_WORKSPACE' });
   });
 
   test(`caps each user at ${MAX_APP_PASSWORDS_PER_USER} app passwords`, async () => {
     for (let i = 0; i < MAX_APP_PASSWORDS_PER_USER; i++) {
-      await service.create({ userId, name: `t${i}`, scope: 'read', expiry: '30' });
+      await service.create({ userId, name: `t${i}`, permissions: ['*:read'], expiry: '30' });
     }
 
     const error = await service
-      .create({ userId, name: 'one more', scope: 'read', expiry: '30' })
+      .create({ userId, name: 'one more', permissions: ['*:read'], expiry: '30' })
       .catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(AppPasswordError);
     expect(error).toMatchObject({ code: 'LIMIT_REACHED' });
@@ -113,7 +118,9 @@ describe('McpAppPasswordService.create', () => {
     expect(MAX_APP_PASSWORDS_PER_USER).toBe(5);
     const created = [];
     for (let i = 0; i < MAX_APP_PASSWORDS_PER_USER; i++) {
-      created.push(await service.create({ userId, name: `t${i}`, scope: 'read', expiry: '30' }));
+      created.push(
+        await service.create({ userId, name: `t${i}`, permissions: ['*:read'], expiry: '30' })
+      );
     }
     // Tokens made under the old limit of 20; create() can no longer get a user here.
     for (const suffix of ['legacy-a', 'legacy-b']) {
@@ -126,7 +133,6 @@ describe('McpAppPasswordService.create', () => {
           name: suffix,
           token_hash: await hashOAuthToken(token),
           token_hint: token.slice(0, 11),
-          scope: 'read-write',
           permissions: ['*'],
           created_at: clock,
         })
@@ -139,7 +145,7 @@ describe('McpAppPasswordService.create', () => {
     }
     const tryCreate = () =>
       service
-        .create({ userId, name: 'one more', scope: 'read', expiry: '30' })
+        .create({ userId, name: 'one more', permissions: ['*:read'], expiry: '30' })
         .catch((caught: unknown) => caught);
     expect(await tryCreate()).toMatchObject({ code: 'LIMIT_REACHED' });
 
@@ -154,11 +160,11 @@ describe('McpAppPasswordService.create', () => {
 });
 
 describe('McpAppPasswordService.verify', () => {
-  test('accepts a valid token and returns its scope and expanded permissions', async () => {
+  test('accepts a valid token and returns its expanded permissions', async () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'Agent',
-      scope: 'read',
+      permissions: ['*:read'],
       expiry: '90',
     });
 
@@ -166,7 +172,6 @@ describe('McpAppPasswordService.verify', () => {
       workspaceId,
       userId,
       tokenId: appPassword.id,
-      scope: 'read',
       permissions: READ_PERMISSIONS,
     });
   });
@@ -175,7 +180,7 @@ describe('McpAppPasswordService.verify', () => {
     const { token } = await service.create({
       userId,
       name: 'Agent',
-      scope: 'read-write',
+      permissions: ['*'],
       expiry: '90',
     });
 
@@ -186,7 +191,7 @@ describe('McpAppPasswordService.verify', () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'Agent',
-      scope: 'read-write',
+      permissions: ['*'],
       expiry: '90',
     });
     db.update(schema.mcpAppPasswords)
@@ -194,10 +199,7 @@ describe('McpAppPasswordService.verify', () => {
       .where(eq(schema.mcpAppPasswords.id, appPassword.id))
       .run();
 
-    expect(await service.verify(token)).toMatchObject({
-      scope: 'read-write',
-      permissions: ['transactions:create'],
-    });
+    expect((await service.verify(token))?.permissions).toEqual(['transactions:create']);
   });
 
   test('refuses unknown and non-prefixed tokens', async () => {
@@ -206,7 +208,12 @@ describe('McpAppPasswordService.verify', () => {
   });
 
   test('refuses an expired token', async () => {
-    const { token } = await service.create({ userId, name: 'Old', scope: 'read', expiry: '30' });
+    const { token } = await service.create({
+      userId,
+      name: 'Old',
+      permissions: ['*:read'],
+      expiry: '30',
+    });
 
     advance(30 * 24 * 60 * 60 * 1000);
     expect(await service.verify(token)).toBeNull();
@@ -216,7 +223,7 @@ describe('McpAppPasswordService.verify', () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'Gone',
-      scope: 'read-write',
+      permissions: ['*'],
       expiry: '30',
     });
     expect(await service.verify(token)).not.toBeNull();
@@ -229,7 +236,12 @@ describe('McpAppPasswordService.verify', () => {
   });
 
   test('refuses tokens of a soft-deleted user', async () => {
-    const { token } = await service.create({ userId, name: 'x', scope: 'read', expiry: 'never' });
+    const { token } = await service.create({
+      userId,
+      name: 'x',
+      permissions: ['*:read'],
+      expiry: 'never',
+    });
 
     db.update(schema.users)
       .set({ deleted_at: new Date() })
@@ -239,7 +251,12 @@ describe('McpAppPasswordService.verify', () => {
   });
 
   test('refuses tokens once the user leaves the workspace', async () => {
-    const { token } = await service.create({ userId, name: 'x', scope: 'read', expiry: 'never' });
+    const { token } = await service.create({
+      userId,
+      name: 'x',
+      permissions: ['*:read'],
+      expiry: 'never',
+    });
     const otherWorkspace = `ws-${nanoid(8)}`;
     seedWorkspaceUser(db, { workspaceId: otherWorkspace, userId: `usr-${nanoid(8)}` });
 
@@ -257,7 +274,7 @@ describe('McpAppPasswordService.verify', () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'x',
-      scope: 'read',
+      permissions: ['*:read'],
       expiry: '30',
     });
 
@@ -276,7 +293,7 @@ describe('McpAppPasswordService.verify', () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'x',
-      scope: 'read',
+      permissions: ['*:read'],
       expiry: '30',
     });
     const lastUsed = () =>
@@ -300,12 +317,52 @@ describe('McpAppPasswordService.verify', () => {
   });
 });
 
+describe('McpAppPasswordService.update', () => {
+  test('changes only the given fields, and verify reads the new grants', async () => {
+    const { token, appPassword } = await service.create({
+      userId,
+      name: 'Agent',
+      permissions: ['*'],
+      expiry: '30',
+    });
+
+    const renamed = await service.update(userId, appPassword.id, { name: 'Reporter' });
+    expect(renamed?.before).toMatchObject({ name: 'Agent', preset: 'read-write' });
+    expect(renamed?.after).toMatchObject({ name: 'Reporter', permissions: ['*'] });
+
+    const narrowed = await service.update(userId, appPassword.id, {
+      permissions: ['budgets:read'],
+    });
+    expect(narrowed?.after).toMatchObject({
+      name: 'Reporter',
+      permissions: ['budgets:read'],
+      preset: 'custom',
+    });
+    expect((await service.verify(token))?.permissions).toEqual(['budgets:read']);
+  });
+
+  test("returns null for another user's token and leaves it unchanged", async () => {
+    const { appPassword } = await service.create({
+      userId,
+      name: 'Mine',
+      permissions: ['*:read'],
+      expiry: '30',
+    });
+    const otherUser = `usr-${nanoid(8)}`;
+    seedWorkspaceUser(db, { workspaceId, userId: otherUser });
+
+    expect(await service.update(otherUser, appPassword.id, { permissions: ['*'] })).toBeNull();
+    expect(await service.findForUser(otherUser, appPassword.id)).toBeNull();
+    expect(storedPermissions(appPassword.id)).toEqual(['*:read']);
+  });
+});
+
 describe('McpAppPasswordService.revoke and listForUser', () => {
   test("cannot revoke another user's token", async () => {
     const { token, appPassword } = await service.create({
       userId,
       name: 'Mine',
-      scope: 'read',
+      permissions: ['*:read'],
       expiry: '30',
     });
     const otherUser = `usr-${nanoid(8)}`;
@@ -316,9 +373,9 @@ describe('McpAppPasswordService.revoke and listForUser', () => {
   });
 
   test('lists newest first and flags expired tokens', async () => {
-    await service.create({ userId, name: 'first', scope: 'read', expiry: '30' });
+    await service.create({ userId, name: 'first', permissions: ['*:read'], expiry: '30' });
     advance(60_000);
-    await service.create({ userId, name: 'second', scope: 'read-write', expiry: 'never' });
+    await service.create({ userId, name: 'second', permissions: ['*'], expiry: 'never' });
     advance(31 * 24 * 60 * 60 * 1000);
 
     const list = await service.listForUser(userId);
@@ -346,7 +403,7 @@ describe('McpAppPasswordService database errors', () => {
       expect((verifyError as Error).message).not.toContain('params');
 
       const createError = await brokenService
-        .create({ userId, name: 'x', scope: 'read', expiry: '30' })
+        .create({ userId, name: 'x', permissions: ['*:read'], expiry: '30' })
         .catch((caught: Error) => caught);
       expect(createError).toBeInstanceOf(Error);
       expect((createError as Error).message).not.toContain('params');

@@ -298,7 +298,7 @@ describe('validateMcpToken app password dispatch', () => {
     workspaceId: 'ws-1',
     userId: 'user-1',
     tokenId: 'pat_1',
-    scope: 'read' as const,
+    permissions: ['accounts:read' as const],
   };
 
   beforeEach(() => {
@@ -328,7 +328,7 @@ describe('validateMcpToken app password dispatch', () => {
     expect(mockDb.query.oauthAccessToken.findFirst).not.toHaveBeenCalled();
   });
 
-  it('gives OAuth tokens every permission and no scope', async () => {
+  it('gives OAuth tokens every permission', async () => {
     const verify = mock(async () => appPasswordContext);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
@@ -348,7 +348,6 @@ describe('validateMcpToken app password dispatch', () => {
       tokenId: 'tok-1',
       permissions: PERMISSION_IDS,
     });
-    expect(result?.scope).toBeUndefined();
   });
 });
 
@@ -357,7 +356,7 @@ describe('validateMcpToken with an archived workspace', () => {
     workspaceId: 'ws-archived',
     userId: 'user-1',
     tokenId: 'pat-1',
-    scope: 'read' as const,
+    permissions: ['accounts:read' as const],
   };
 
   beforeEach(() => {

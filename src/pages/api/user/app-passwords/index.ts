@@ -1,37 +1,17 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import * as v from 'valibot';
 import { errorResponse, isValidationError, successResponse, validateBody } from '@/lib/api-utils';
 import {
   HTML_RENDER_REQUEST_REQUIRED_MESSAGE,
   createRenderHelper,
   isRejectedHtmlRenderRequest,
 } from '@/lib/api/renderResponse';
-import {
-  APP_PASSWORD_EXPIRY_OPTIONS,
-  APP_PASSWORD_NAME_MAX_LENGTH,
-  APP_PASSWORD_SCOPES,
-  isRecentSignIn,
-} from '@/lib/mcp-app-password';
-import { isDemoMode } from '@/lib/demo-mode';
-import { checkRateLimitByKey, createRateLimitResponse } from '@/lib/rate-limit';
-import { logError } from '@/lib/utils';
+import { refuseAppPasswordWrite } from '@/lib/app-password-write-guard';
+import { logError } from '@/lib/logger';
+import { createAppPasswordSchema } from '@/lib/validation/app-passwords';
 import { AppPasswordError, mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { securityActivityService } from '@/services/security-activity.service';
 import SecurityAppPasswordsListPartial from '@/components/partials/SecurityAppPasswordsListPartial.astro';
-
-const CREATE_RATE_LIMIT = { maxRequests: 10, windowMs: 15 * 60 * 1000 };
-
-const createAppPasswordSchema = v.object({
-  name: v.pipe(
-    v.string(),
-    v.trim(),
-    v.minLength(1, 'Name is required'),
-    v.maxLength(APP_PASSWORD_NAME_MAX_LENGTH, 'Name is too long')
-  ),
-  scope: v.picklist(APP_PASSWORD_SCOPES, 'Choose read or read-write'),
-  expiry: v.picklist(APP_PASSWORD_EXPIRY_OPTIONS, 'Choose an expiry'),
-});
 
 /**
  * GET /api/user/app-passwords
@@ -75,20 +55,8 @@ export const POST: APIRoute = async (context) => {
   const user = context.locals.user;
   const session = context.locals.session;
   if (!user?.id || !session) return errorResponse('Unauthorized', 401);
-  if (isDemoMode()) return errorResponse('App passwords are disabled in demo mode', 403);
-
-  if (!isRecentSignIn(session.createdAt)) {
-    return errorResponse(
-      'Sign in again to create an app password. This needs a sign-in from the last 15 minutes.',
-      403,
-      'REAUTH_REQUIRED'
-    );
-  }
-
-  const rateLimit = checkRateLimitByKey(`app-password-create:${user.id}`, CREATE_RATE_LIMIT);
-  if (!rateLimit.allowed) {
-    return createRateLimitResponse(rateLimit, 'Too many app passwords created. Try again later.');
-  }
+  const refused = refuseAppPasswordWrite('create', user.id, session);
+  if (refused) return refused;
 
   const validation = await validateBody(context.request, createAppPasswordSchema);
   if (isValidationError(validation)) {
@@ -107,7 +75,8 @@ export const POST: APIRoute = async (context) => {
       entityId: appPassword.id,
       newValue: {
         name: appPassword.name,
-        scope: appPassword.scope,
+        permissions: appPassword.permissions,
+        preset: appPassword.preset,
         expiresAt: appPassword.expiresAt?.toISOString() ?? null,
       },
     });
