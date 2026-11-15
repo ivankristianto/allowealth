@@ -1,5 +1,6 @@
 /**
- * Enforces the acting app password's write limits, so REST and MCP writes share one check.
+ * Enforces the acting app password's write limits in the services, for REST and MCP alike.
+ * Paths without per-row checks (bulk edits, imports) refuse a limited token outright.
  * Session requests and OAuth tokens carry no limits, so every check passes for them.
  */
 
@@ -43,6 +44,20 @@ export async function assertOwnTransaction(transaction: {
   if (!actor?.limits.own_transactions_only) return;
   if (transaction.created_by_token_id === actor.tokenId) return;
   await refuse(actor, 'own_transactions', { transaction_id: transaction.id });
+}
+
+/** Refuses any limited token: bulk edits, bulk deletes and imports skip the per-row checks. */
+export async function assertNoBulkWriteLimits(options: {
+  changesExisting: boolean;
+}): Promise<void> {
+  const actor = currentTokenActor();
+  if (!actor) return;
+  if (actor.limits.category_ids !== undefined) {
+    await refuse(actor, 'category', { operation: 'bulk' });
+  }
+  if (options.changesExisting && actor.limits.own_transactions_only) {
+    await refuse(actor, 'own_transactions', { operation: 'bulk' });
+  }
 }
 
 /** The app password creating a row, for `created_by_token_id`; null for sessions and OAuth. */

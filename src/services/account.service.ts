@@ -22,6 +22,7 @@ import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal
 import { CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { createLogger } from '@/lib/logger';
+import { assertCategoriesAllowed } from '@/lib/token-write-limits';
 
 const log = createLogger('account');
 
@@ -448,6 +449,8 @@ export class AccountService {
     workspaceId: string,
     record: TransferRecordInput
   ): Promise<TransferResult> {
+    // The transfer row it records has no category, which a category-limited token may not write.
+    await assertCategoriesAllowed([null]);
     if (fromId === toId) {
       throw new AccountServiceError(
         ServiceErrorCode.VALIDATION_ERROR,

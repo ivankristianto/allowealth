@@ -17,6 +17,8 @@ import type { AppPasswordLimits } from '@/lib/app-password-limits';
 import { hydrateUser } from '@/lib/auth/hydrate-user';
 import { resetCacheManager } from '@/lib/cache';
 import { clearRateLimitStore } from '@/lib/rate-limit';
+import { runWithTokenActor } from '@/lib/token-actor';
+import { accountService, transactionService } from '@/services';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 
 type Route = (context: never) => Response | Promise<Response>;
@@ -277,6 +279,25 @@ describe('app password limits on the REST API', () => {
       expect((await transactionRow(unlisted)).category_id).toBe(RENT);
     });
 
+    test('deletes only in listed categories, and never a transfer', async () => {
+      const { token } = await createToken({ category_ids: [FOOD] });
+      const listed = await insertTransaction(FOOD, null);
+      const unlisted = await insertTransaction(RENT, null);
+      const transfer = await insertTransaction(FOOD, null);
+      await db
+        .update(transactions)
+        .set({ type: 'transfer', to_account_id: SAVINGS })
+        .where(eq(transactions.id, transfer));
+      const remove = (id: string) =>
+        call(routes.deleteTransaction, 'DELETE', `/api/transactions/${id}`, { bearer: token, id });
+
+      expect((await remove(listed)).status).toBe(200);
+      await expectLimit(await remove(unlisted), 'category');
+      await expectLimit(await remove(transfer), 'category');
+      expect((await transactionRow(unlisted)).deleted_at).toBeNull();
+      expect((await transactionRow(transfer)).deleted_at).toBeNull();
+    });
+
     test('transfers have no category, so a limited token cannot create, edit or switch to one', async () => {
       const transferBody = { ...expenseBody(FOOD), type: 'transfer', to_account_id: SAVINGS };
       const run = async (token: string) => {
@@ -392,6 +413,34 @@ describe('app password limits on the REST API', () => {
       expect((await update(own)).status).toBe(200);
       expect((await remove(own)).status).toBe(200);
     });
+  });
+
+  test('bulk writes, imports and account transfers refuse a limited token outright', async () => {
+    const { token } = await createToken({ category_ids: [FOOD], own_transactions_only: true });
+    const actor = (await service.verify(token))!;
+    const listed = await insertTransaction(FOOD, null);
+    const asToken = (write: () => Promise<unknown>) =>
+      runWithTokenActor(actor, write).then(
+        () => 'allowed',
+        (error: { limit?: string }) => error.limit
+      );
+
+    expect(
+      await Promise.all([
+        asToken(() => transactionService.bulkDelete([listed], WORKSPACE_ID, USER_ID)),
+        asToken(() => transactionService.bulkUpdateCategory([listed], FOOD, WORKSPACE_ID, USER_ID)),
+        asToken(() =>
+          transactionService.bulkUpdateAccount([listed], SAVINGS, WORKSPACE_ID, USER_ID)
+        ),
+        asToken(() => transactionService.importFromCSV(WORKSPACE_ID, USER_ID, [], {})),
+        asToken(() =>
+          accountService.transfer(WALLET, SAVINGS, '1000', WORKSPACE_ID, {
+            createdByUserId: USER_ID,
+          })
+        ),
+      ])
+    ).toEqual(['category', 'category', 'category', 'category', 'category']);
+    expect((await transactionRow(listed)).deleted_at).toBeNull();
   });
 
   test('refusals are recorded as token_denied under limit subjects', async () => {

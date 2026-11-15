@@ -25,6 +25,7 @@ import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { auditActorFields } from '@/lib/token-actor';
 import {
   assertCategoriesAllowed,
+  assertNoBulkWriteLimits,
   assertOwnTransaction,
   creatingAppPasswordId,
 } from '@/lib/token-write-limits';
@@ -846,6 +847,7 @@ export class TransactionService {
       );
     }
     await assertOwnTransaction(transaction);
+    await assertCategoriesAllowed([limitedCategory(transaction)]);
 
     const deleteData: { deleted_at: Date; updated_at: Date; deleted_by_user_id?: string } = {
       deleted_at: new Date(),
@@ -1013,6 +1015,7 @@ export class TransactionService {
     userId: string
   ): Promise<BulkOperationResult> {
     this.assertBulkLimit(ids);
+    await assertNoBulkWriteLimits({ changesExisting: true });
 
     const category = await this.categoryService.findById(categoryId, workspaceId);
     if (!category) {
@@ -1046,6 +1049,7 @@ export class TransactionService {
     userId: string
   ): Promise<BulkOperationResult> {
     this.assertBulkLimit(ids);
+    await assertNoBulkWriteLimits({ changesExisting: true });
 
     const account = await this.accountService.findByIdIncludingClosed(accountId, workspaceId);
     if (!account) {
@@ -1077,6 +1081,7 @@ export class TransactionService {
     userId: string
   ): Promise<BulkOperationResult> {
     this.assertBulkLimit(ids);
+    await assertNoBulkWriteLimits({ changesExisting: true });
 
     const targets = await this.loadBulkTargets(ids, workspaceId);
     const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
@@ -1239,6 +1244,7 @@ export class TransactionService {
     rows: CSVRow[],
     columnMapping: Record<string, string>
   ): Promise<CSVImportResult> {
+    await assertNoBulkWriteLimits({ changesExisting: false });
     const result: CSVImportResult = {
       imported: 0,
       skipped: 0,

@@ -8,8 +8,12 @@ import { TokenLimitError } from '@/services/service-errors';
 const recordTokenDenial = mock(async () => {});
 mockModuleForFile('@/lib/token-denial-audit', realDenialAudit, () => ({ recordTokenDenial }));
 
-const { assertCategoriesAllowed, assertOwnTransaction, creatingAppPasswordId } =
-  await import('./token-write-limits');
+const {
+  assertCategoriesAllowed,
+  assertNoBulkWriteLimits,
+  assertOwnTransaction,
+  creatingAppPasswordId,
+} = await import('./token-write-limits');
 
 function actor(limits: AppPasswordLimits, kind: TokenActor['kind'] = 'app_password'): TokenActor {
   return { kind, tokenId: 'pat_1', tokenName: 'Agent', userId: 'u1', workspaceId: 'w1', limits };
@@ -100,6 +104,31 @@ describe('assertOwnTransaction', () => {
       subject: 'limit:own_transactions',
       details: { limit: 'own_transactions', transaction_id: 'tx_1' },
     });
+  });
+});
+
+describe('assertNoBulkWriteLimits', () => {
+  test('passes outside a token request and for a token without limits', async () => {
+    await assertNoBulkWriteLimits({ changesExisting: true });
+    await runWithTokenActor(actor({}), () => assertNoBulkWriteLimits({ changesExisting: true }));
+  });
+
+  test('refuses a category-limited token, which per-row checks cannot cover', async () => {
+    const error = await refusal(() =>
+      runWithTokenActor(actor({ category_ids: ['cat_a'] }), () =>
+        assertNoBulkWriteLimits({ changesExisting: false })
+      )
+    );
+    expect(error.limit).toBe('category');
+  });
+
+  test('refuses own transactions only when existing rows change', async () => {
+    const own = actor({ own_transactions_only: true });
+    await runWithTokenActor(own, () => assertNoBulkWriteLimits({ changesExisting: false }));
+    const error = await refusal(() =>
+      runWithTokenActor(own, () => assertNoBulkWriteLimits({ changesExisting: true }))
+    );
+    expect(error.limit).toBe('own_transactions');
   });
 });
 
