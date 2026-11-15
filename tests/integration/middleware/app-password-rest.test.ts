@@ -124,7 +124,6 @@ async function createToken(
   return { token, id: appPassword.id };
 }
 
-/** Overwrites a token's stored grants, the way #480's API will. */
 async function setGrants(id: string, grants: readonly PermissionGrant[]): Promise<void> {
   await db
     .update(mcpAppPasswords)
@@ -372,52 +371,52 @@ describe('app password authentication on the REST API', () => {
     const RESOURCE_CASES: readonly {
       permission: Permission;
       allowed: readonly [string, string];
-      unknown: readonly [string, string];
+      unlisted: readonly [string, string];
     }[] = [
       {
         permission: 'transactions:create',
         allowed: ['POST', '/api/transactions'],
-        unknown: ['DELETE', '/api/transactions/bulk'],
+        unlisted: ['DELETE', '/api/transactions/bulk'],
       },
       {
         permission: 'budgets:read',
         allowed: ['GET', '/api/budget/overview'],
-        unknown: ['POST', '/api/budgets'],
+        unlisted: ['POST', '/api/budgets'],
       },
       {
         permission: 'recurring:confirm',
         allowed: ['POST', '/api/recurring/occurrences/occ_1/confirm'],
-        unknown: ['DELETE', '/api/recurring/abc123'],
+        unlisted: ['DELETE', '/api/recurring/abc123'],
       },
       {
         permission: 'accounts:read',
         allowed: ['GET', '/api/accounts/abc123'],
-        unknown: ['PUT', '/api/accounts/abc123'],
+        unlisted: ['PUT', '/api/accounts/abc123'],
       },
       {
         permission: 'categories:read',
         allowed: ['GET', '/api/account-categories'],
-        unknown: ['POST', '/api/categories'],
+        unlisted: ['POST', '/api/categories'],
       },
       {
         permission: 'settings:read',
         allowed: ['GET', '/api/workspace/settings'],
-        unknown: ['PUT', '/api/workspace/settings'],
+        unlisted: ['PUT', '/api/workspace/settings'],
       },
       {
         permission: 'forecast:read',
         allowed: ['GET', '/api/forecast'],
-        unknown: ['POST', '/api/forecast'],
+        unlisted: ['POST', '/api/forecast'],
       },
       {
         permission: 'reports:read',
         allowed: ['GET', '/api/reports/expenses'],
-        unknown: ['POST', '/api/reports'],
+        unlisted: ['POST', '/api/reports'],
       },
     ];
 
-    for (const { permission, allowed, unknown } of RESOURCE_CASES) {
-      test(`${permission}: allowed with it, named when missing, unknown routes stay closed`, async () => {
+    for (const { permission, allowed, unlisted } of RESOURCE_CASES) {
+      test(`${permission}: allowed with it, named when missing, unlisted routes stay closed`, async () => {
         const [method, path] = allowed;
         const { token, id } = await createToken('read');
 
@@ -434,9 +433,9 @@ describe('app password authentication on the REST API', () => {
         );
 
         await setGrants(id, ['*']);
-        const [unknownMethod, unknownPath] = unknown;
+        const [unlistedMethod, unlistedPath] = unlisted;
         const denied = await runChain(
-          createContext(unknownPath, { method: unknownMethod, bearer: token })
+          createContext(unlistedPath, { method: unlistedMethod, bearer: token })
         );
         expect(denied.status).toBe(403);
         expect((await denied.json()).error.code).toBe('APP_PASSWORD_ROUTE_NOT_ALLOWED');
@@ -504,6 +503,7 @@ describe('app password authentication on the REST API', () => {
       );
     });
 
+    // Separate tests per verb set keep each fresh token under the 60-requests-a-minute limit.
     for (const scope of ['read', 'read-write'] as const) {
       test(`the ${scope} preset reaches exactly what the ${scope} scope reached before`, async () => {
         const token = scope === 'read' ? readToken : readWriteToken;
@@ -519,6 +519,17 @@ describe('app password authentication on the REST API', () => {
           }
         }
         expect(mismatches).toEqual([]);
+      });
+
+      test(`the ${scope} preset may HEAD every GET route`, async () => {
+        const token = scope === 'read' ? readToken : readWriteToken;
+        const failures: string[] = [];
+        for (const rule of APP_PASSWORD_REST_ROUTES.filter((r) => r.methods.includes('GET'))) {
+          const path = rule.path.replaceAll('{id}', 'abc123');
+          const response = await runChain(createContext(path, { method: 'HEAD', bearer: token }));
+          if (response.status !== 200) failures.push(`HEAD ${rule.path} ${response.status}`);
+        }
+        expect(failures).toEqual([]);
       });
     }
   });
