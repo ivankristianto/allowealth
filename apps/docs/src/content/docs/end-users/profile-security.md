@@ -160,7 +160,7 @@ Creating one needs a sign-in from the last 15 minutes. If your sign-in is older,
    - **Read and write** can also add expenses and income. Over REST it can also edit transactions, add scheduled items and mark bills paid
    - **Custom** shows every permission, grouped by what it touches (transactions, budgets, recurring bills and so on). Tick only what the job needs. Unlike the presets, a custom token never gains permissions added in later releases
 5. Optionally, set **Limits** on what it may change:
-   - **Only these categories**: tick the categories it may use. Adding or editing a transaction or a recurring bill, and confirming a bill, must use one of them, and it cannot move a transaction out of a category you did not tick. Transfers are refused
+   - **Only these categories**: tick the categories it may use. Adding or editing a transaction or a recurring bill, and marking a bill paid, must use one of them, and it cannot move a transaction or a bill out of a category you did not tick. Transfers are refused
    - **Only its own transactions**: it can edit or delete only transactions it added itself
    - Limits never hide anything: the token still reads every account, category, budget and report its access allows
 6. Choose when it expires: 30 days, 90 days, 1 year, or no expiry
