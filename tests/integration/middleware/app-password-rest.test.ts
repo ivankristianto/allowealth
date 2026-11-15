@@ -532,24 +532,39 @@ describe('app password authentication on the REST API', () => {
       expect(events[0].via).toBe(readWrite.name);
     });
 
-    test('a denied request is recorded once per token and permission every 10 minutes', async () => {
+    test('a denied request is recorded once per token and subject every 10 minutes', async () => {
       const start = new Date('2026-11-15T09:00:00Z');
       setSystemTime(start);
       const post = () =>
         runChain(createContext('/api/transactions', { method: 'POST', bearer: readToken }));
+      const probe = () =>
+        runChain(createContext('/api/admin/overview', { method: 'GET', bearer: readToken }));
 
       await expectPermissionMissing(await post(), 'transactions:create');
       await expectPermissionMissing(await post(), 'transactions:create');
       await runChain(
         createContext('/api/transactions/txn-1', { method: 'DELETE', bearer: readToken })
       );
+      expect((await probe()).status).toBe(403);
+      expect((await probe()).status).toBe(403);
 
-      const denials = await auditRows('app_password_denied');
-      expect(denials).toHaveLength(2);
+      const denials = await auditRows('token_denied');
+      expect(denials).toHaveLength(3);
       expect(denials.map((row) => JSON.parse(row.new_value!))).toEqual(
         expect.arrayContaining([
-          { method: 'POST', path: '/api/transactions', permission: 'transactions:create' },
-          { method: 'DELETE', path: '/api/transactions/txn-1', permission: 'transactions:delete' },
+          {
+            subject: 'transactions:create',
+            method: 'POST',
+            path: '/api/transactions',
+            permission: 'transactions:create',
+          },
+          {
+            subject: 'transactions:delete',
+            method: 'DELETE',
+            path: '/api/transactions/txn-1',
+            permission: 'transactions:delete',
+          },
+          { subject: 'route:unlisted', method: 'GET', path: '/api/admin/overview' },
         ])
       );
       expect(denials[0]).toMatchObject({
@@ -563,7 +578,7 @@ describe('app password authentication on the REST API', () => {
       setSystemTime(new Date(start.getTime() + 10 * 60_000 + 1_000));
       await post();
 
-      expect(await auditRows('app_password_denied')).toHaveLength(3);
+      expect(await auditRows('token_denied')).toHaveLength(4);
     });
   });
 

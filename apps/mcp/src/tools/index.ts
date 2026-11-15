@@ -1,7 +1,8 @@
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { ANY_VALID_TOKEN } from '@/lib/app-password-rest-access';
-import { logError } from '@/lib/logger';
+import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
+import { createLogger, logError } from '@/lib/logger';
 import { recordTokenDenial } from '@/lib/token-denial-audit';
 import { isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
@@ -24,6 +25,9 @@ import {
 import { tokenInfoTool, handleGetTokenInfo } from './token-info.js';
 
 type ToolPermissions = readonly Permission[] | typeof ANY_VALID_TOKEN;
+
+const log = createLogger('mcp-tools');
+const MAX_RECORDED_TOOL_NAME_LENGTH = 100;
 
 /** Permissions a token needs, all of them, to call each tool; ANY_VALID_TOKEN for tools without workspace data. */
 export const TOOL_PERMISSIONS: Readonly<Record<string, ToolPermissions>> = {
@@ -98,20 +102,31 @@ export function registerTools(auth?: Pick<ToolContext['auth'], 'permissions'>): 
     : [...TOOLS];
 }
 
-export async function handleToolCall(
+type ToolCallResult = { content: Array<{ type: string; text: string }>; isError?: boolean };
+
+/** Runs a tool for the token in `ctx`; audit rows its writes produce name that token. */
+export function handleToolCall(
   name: string,
   args: Record<string, unknown>,
   ctx: ToolContext
-): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+): Promise<ToolCallResult> {
+  return runWithAuditActor(auditActorFromAuth(ctx.auth), () => runToolCall(name, args, ctx));
+}
+
+async function runToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  ctx: ToolContext
+): Promise<ToolCallResult> {
   const denial = toolDenial(name, ctx.auth.permissions);
   if (denial) {
-    // Unknown tool names are client-chosen, so only mapped tools reach the audit log.
-    if (denial.missing.length > 0) {
-      await recordTokenDenial(ctx.auth, {
-        subject: `tool:${name}`,
-        details: { tool: name, missing: denial.missing },
-      });
-    }
+    const tool = name.slice(0, MAX_RECORDED_TOOL_NAME_LENGTH);
+    log.warn('MCP tool call denied', { tokenId: ctx.auth.tokenId, tool, missing: denial.missing });
+    // Unmapped names are client-chosen, so they share one subject to keep the dedupe key bounded.
+    await recordTokenDenial(ctx.auth, {
+      subject: denial.missing.length > 0 ? `tool:${name}` : 'tool:unknown',
+      details: denial.missing.length > 0 ? { tool, missing: denial.missing } : { tool },
+    });
     return { isError: true, content: [{ type: 'text', text: denial.message }] };
   }
 

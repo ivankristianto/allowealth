@@ -47,7 +47,7 @@ const ACTION_LABELS: Record<string, string> = {
   'recurring_template.delete': 'Recurring Transaction Deleted',
   'recurring_occurrence.confirm': 'Recurring Occurrence Confirmed',
   'recurring_occurrence.skip': 'Recurring Occurrence Skipped',
-  app_password_denied: 'Permission Denied',
+  token_denied: 'Permission Denied',
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -102,7 +102,7 @@ const SELF_DESCRIBING_ACTIONS = new Set([
   'recurring_template.delete',
   'recurring_occurrence.confirm',
   'recurring_occurrence.skip',
-  'app_password_denied',
+  'token_denied',
 ]);
 
 const ACTION_TONES: Record<string, SecurityEventTone> = {
@@ -138,7 +138,7 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
   'recurring_template.delete': 'warning',
   email_change_request: 'warning',
   account_unlink: 'warning',
-  app_password_denied: 'warning',
+  token_denied: 'warning',
 
   delete: 'error',
   admin_delete: 'error',
@@ -148,6 +148,8 @@ const ACTION_TONES: Record<string, SecurityEventTone> = {
   profile_update: 'success',
   account_link: 'success',
 };
+
+export const UNNAMED_TOKEN_LABEL = 'this token';
 
 export type SecurityEventTone = 'success' | 'info' | 'warning' | 'error';
 
@@ -236,6 +238,32 @@ export class AuditLogService {
       tone: AuditLogService.getTone(row.action),
       via: row.actorTokenName,
     }));
+  }
+
+  /** Heading name for one token's activity: its current name while it exists, else the name its events recorded. */
+  async tokenActivityName(
+    userId: string,
+    workspaceId: string,
+    tokenId: string,
+    liveTokens: ReadonlyArray<{ id: string; name: string }>
+  ): Promise<string> {
+    const live = liveTokens.find((token) => token.id === tokenId);
+    if (live) return live.name;
+
+    const { auditLogs } = this.schema;
+    const [row] = await (this.db as any)
+      .select({ name: auditLogs.actor_token_name })
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.user_id, userId),
+          eq(auditLogs.workspace_id, workspaceId),
+          eq(auditLogs.actor_token_id, tokenId)
+        )
+      )
+      .orderBy(desc(auditLogs.created_at))
+      .limit(1);
+    return (row as { name: string | null } | undefined)?.name ?? UNNAMED_TOKEN_LABEL;
   }
 
   /**

@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
-import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
 import { validateMcpToken } from '@/lib/mcp-auth';
 import { TOKEN_RATE_LIMIT, checkMcpRateLimit } from '@/lib/mcp-rate-limit';
 import { createRateLimitResponse } from '@/lib/rate-limit';
@@ -184,9 +183,7 @@ export const POST: APIRoute = async (context) => {
     return errorResponse(400, 'Missing "method" field in JSON-RPC request');
   }
 
-  const result = await runWithAuditActor(auditActorFromAuth(auth), () =>
-    dispatchMcpMessage(body, ctx)
-  );
+  const result = await dispatchMcpMessage(body, ctx);
 
   // Notifications (no id) get 204 No Content
   if (!result) {

@@ -2,7 +2,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { db } from '@/db';
-import { auditActorFromAuth, runWithAuditActor } from '@/lib/audit-actor';
 import { authenticate, getAuthContext } from './auth.js';
 import { createServices } from './context.js';
 import { registerTools, handleToolCall } from './tools/index.js';
@@ -29,9 +28,7 @@ async function main(): Promise<void> {
     // Re-check key validity on each call (catches revocation/expiry without restart)
     const freshAuth = await getAuthContext();
     const freshCtx: ToolContext = { ...ctx, auth: freshAuth };
-    return runWithAuditActor(auditActorFromAuth(freshAuth), () =>
-      handleToolCall(request.params.name, request.params.arguments ?? {}, freshCtx)
-    );
+    return handleToolCall(request.params.name, request.params.arguments ?? {}, freshCtx);
   });
 
   const transport = new StdioServerTransport();

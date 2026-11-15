@@ -211,7 +211,7 @@ Recent security activity appears in the **Security Events** section:
 - MFA setup or removal
 - Passkey registration
 - Changes made with an app password or connected app, marked "via" and the token's name. A revoked token keeps its name here
-- **Permission Denied** when a token asked for something it may not do. Repeats are shown at most once per token and permission (or MCP tool) every 10 minutes
+- **Permission Denied** when a token asked for something it may not do, including routes and MCP tools it can never use. Each token shows the same refusal at most once, and at most five refusals in all, every 10 minutes
 
 Review this log periodically for unauthorized activity.
 

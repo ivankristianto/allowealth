@@ -326,7 +326,7 @@ describe('AuditLogService', () => {
         actorTokenName: 'Nightly import',
       });
       insertAuditLog({
-        action: 'app_password_denied',
+        action: 'token_denied',
         entityType: 'app_password',
         createdAt: new Date('2024-01-15T09:00:00Z'),
         actorTokenId: 'pat_other',
@@ -345,6 +345,27 @@ describe('AuditLogService', () => {
         actorTokenId: 'pat_nightly',
       });
       expect(nightly.map((event) => event.label)).toEqual(['Created Transaction']);
+    });
+
+    test('tokenActivityName prefers the live name, then the name its events recorded', async () => {
+      insertAuditLog({
+        action: 'create',
+        entityType: 'transaction',
+        createdAt: new Date('2024-01-15T08:00:00Z'),
+        actorTokenId: 'pat_revoked',
+        actorTokenName: 'Old importer',
+      });
+      const live = [{ id: 'pat_live', name: 'Nightly import' }];
+
+      expect(await auditLogService.tokenActivityName(USER_ID, WORKSPACE_ID, 'pat_live', live)).toBe(
+        'Nightly import'
+      );
+      expect(
+        await auditLogService.tokenActivityName(USER_ID, WORKSPACE_ID, 'pat_revoked', live)
+      ).toBe('Old importer');
+      expect(
+        await auditLogService.tokenActivityName(USER_ID, WORKSPACE_ID, 'pat_unknown', live)
+      ).toBe('this token');
     });
 
     test('exportToCsv defaults to 1000 records', async () => {

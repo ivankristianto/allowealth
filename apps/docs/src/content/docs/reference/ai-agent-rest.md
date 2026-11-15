@@ -252,4 +252,4 @@ curl -s -X POST "$ALLOWEALTH_URL/api/recurring/occurrences/OCCURRENCE_ID/confirm
 - Set an expiry, and revoke the token when you stop using the agent
 - Keep the token in the agent machine's secret store, never in a repository
 - **Last used** on the Security page shows when the token last made a request
-- Every change the token makes appears in the Security page's Recent Activity as "via" its name, and **Activity** on the token's row lists only its events. A `403 APP_PASSWORD_PERMISSION_MISSING` is recorded there too, once per permission every 10 minutes
+- Every change the token makes appears in the Security page's Recent Activity as "via" its name, and **Activity** on the token's row lists only its events. Refused requests (`403 APP_PASSWORD_PERMISSION_MISSING` or `APP_PASSWORD_ROUTE_NOT_ALLOWED`) are recorded there too, each kind at most once, and at most five in all, per token every 10 minutes

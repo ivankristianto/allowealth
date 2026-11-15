@@ -181,7 +181,7 @@ describe('MCP audit attribution', () => {
     });
   });
 
-  test('a denied tool call is recorded once with the tool and the missing permissions', async () => {
+  test('denied tool calls are recorded once each, with unknown tools under one subject', async () => {
     const { token, appPassword } = await service.create({
       userId: USER_ID,
       name: 'Reader',
@@ -192,9 +192,10 @@ describe('MCP audit attribution', () => {
     expect((await callTool(token, 'get_dashboard')).isError).toBe(true);
     expect((await callTool(token, 'get_dashboard')).isError).toBe(true);
     expect((await callTool(token, 'no_such_tool')).isError).toBe(true);
+    expect((await callTool(token, 'another_made_up_tool')).isError).toBe(true);
 
-    const denials = await auditRows('app_password_denied');
-    expect(denials).toHaveLength(1);
+    const denials = await auditRows('token_denied');
+    expect(denials).toHaveLength(2);
     expect(denials[0]).toMatchObject({
       workspace_id: WORKSPACE_ID,
       entity_type: 'app_password',
@@ -202,9 +203,15 @@ describe('MCP audit attribution', () => {
       actor_token_id: appPassword.id,
       actor_token_name: 'Reader',
     });
-    expect(JSON.parse(denials[0].new_value!)).toEqual({
-      tool: 'get_dashboard',
-      missing: ['transactions:read', 'budgets:read'],
-    });
+    expect(denials.map((row) => JSON.parse(row.new_value!))).toEqual(
+      expect.arrayContaining([
+        {
+          subject: 'tool:get_dashboard',
+          tool: 'get_dashboard',
+          missing: ['transactions:read', 'budgets:read'],
+        },
+        { subject: 'tool:unknown', tool: 'no_such_tool' },
+      ])
+    );
   });
 });

@@ -18,7 +18,7 @@ import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import { SessionManagementService } from '@/services/session-management.service';
 import { auditLogService } from '@/services';
-import type { SecurityEvent } from '@/services/audit-log.service';
+import { UNNAMED_TOKEN_LABEL, type SecurityEvent } from '@/services/audit-log.service';
 import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
@@ -190,16 +190,26 @@ if (user?.id && user?.workspaceId) {
     logError('Failed to fetch security events', err);
   }
 }
-// A live token shows its current name; a revoked one, the name its events recorded.
-const activityTokenFilter = activityTokenId
-  ? {
-      name:
-        appPasswords.find((appPassword) => appPassword.id === activityTokenId)?.name ??
-        connectedApps.find((app) => app.tokenId === activityTokenId)?.clientName ??
-        securityEvents.find((event) => event.via)?.via ??
-        'this token',
-    }
-  : null;
+let activityTokenFilter: { name: string } | null = null;
+if (activityTokenId && user?.id && user?.workspaceId) {
+  try {
+    const liveTokens = [
+      ...appPasswords,
+      ...connectedApps.map((app) => ({ id: app.tokenId, name: app.clientName })),
+    ];
+    activityTokenFilter = {
+      name: await auditLogService.tokenActivityName(
+        user.id,
+        user.workspaceId,
+        activityTokenId,
+        liveTokens
+      ),
+    };
+  } catch (err) {
+    logError('Failed to name the token activity filter', err);
+    activityTokenFilter = { name: UNNAMED_TOKEN_LABEL };
+  }
+}
 
 const demoMode = isDemoMode();
 ---

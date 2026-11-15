@@ -20,6 +20,8 @@ const log = createLogger('app-password-auth');
 const REST_RATE_LIMIT_ENDPOINT = 'api-rest';
 const AUTH_API_PREFIX = '/api/auth/';
 const MCP_PATH = '/api/mcp';
+const MAX_RECORDED_METHOD_LENGTH = 16;
+const MAX_RECORDED_PATH_LENGTH = 200;
 
 /** Returns the Bearer credential, '' for an empty one, or null when there is no Bearer header. */
 function extractBearerToken(request: Request): string | null {
@@ -101,14 +103,17 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
       code: decision.code,
       ...decision.details,
     });
-    // Route-not-allowed denials carry a client-chosen path, which would make the dedupe key unbounded.
-    if (decision.code === 'APP_PASSWORD_PERMISSION_MISSING') {
-      const { permission } = decision.details;
-      await recordTokenDenial(verified, {
-        subject: permission,
-        details: { method: context.request.method, path: pathname, permission },
-      });
-    }
+    await recordTokenDenial(verified, {
+      subject:
+        decision.code === 'APP_PASSWORD_PERMISSION_MISSING'
+          ? decision.details.permission
+          : 'route:unlisted',
+      details: {
+        method: context.request.method.slice(0, MAX_RECORDED_METHOD_LENGTH),
+        path: pathname.slice(0, MAX_RECORDED_PATH_LENGTH),
+        ...decision.details,
+      },
+    });
     return applyRateLimitHeaders(
       errorResponse(decision.message, 403, decision.code, decision.details),
       rateLimit
