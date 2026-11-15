@@ -244,7 +244,12 @@ const demoMode = isDemoMode();
           // Stop watching after 2s — any content loads should be done by then
           window.setTimeout(stopWatching, 2000);
         } else {
-          container.scrollTop = 0;
+          const hashTarget = window.location.hash
+            ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+            : null;
+          // A link such as /security#recent-activity should land on its target, not the top.
+          if (hashTarget) hashTarget.scrollIntoView();
+          else container.scrollTop = 0;
         }
       });
     }
