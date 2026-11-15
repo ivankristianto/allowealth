@@ -4,6 +4,7 @@ import { setButtonLoading } from '@/lib/client-utils';
 import { replaceWithSanitizedHtml } from '@/lib/dom/sanitize-fragment';
 import { onPageReady } from '@/lib/page-lifecycle.client';
 import { readAccessFields, syncCustomPermissions } from './AppPasswordAccessFields.client';
+import { readLimitFields, syncCategoryLimit } from './AppPasswordLimitFields.client';
 
 const ENDPOINT = '/api/user/app-passwords';
 
@@ -79,6 +80,7 @@ function initAppPasswordsCard(signal: AbortSignal): void {
         if (createForm) {
           createForm.reset();
           syncCustomPermissions(createForm);
+          syncCategoryLimit(createForm);
         }
         createModal.showModal();
         createForm?.querySelector<HTMLInputElement>('input[name="name"]')?.focus();
@@ -166,6 +168,7 @@ function initAppPasswordsCard(signal: AbortSignal): void {
             name: formData.get('name'),
             expiry: formData.get('expiry'),
             ...readAccessFields(formData),
+            ...readLimitFields(formData),
           }),
         });
         const body = await readJson<
@@ -197,9 +200,10 @@ function initAppPasswordsCard(signal: AbortSignal): void {
     'change',
     (event) => {
       const target = event.target as HTMLElement;
-      if (!target.matches('[data-app-password-preset]')) return;
       const form = target.closest('form');
-      if (form) syncCustomPermissions(form);
+      if (!form) return;
+      if (target.matches('[data-app-password-preset]')) syncCustomPermissions(form);
+      if (target.matches('[data-app-password-category-limit]')) syncCategoryLimit(form);
     },
     { signal }
   );
@@ -225,7 +229,11 @@ function initAppPasswordsCard(signal: AbortSignal): void {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: formData.get('name'), ...readAccessFields(formData) }),
+          body: JSON.stringify({
+            name: formData.get('name'),
+            ...readAccessFields(formData),
+            ...readLimitFields(formData),
+          }),
         });
         if (!response.ok) {
           const body = await readJson<ApiErrorBody>(response);

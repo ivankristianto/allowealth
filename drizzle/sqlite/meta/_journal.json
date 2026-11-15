@@ -85,6 +85,13 @@
       "when": 1794714207208,
       "tag": "0011_audit_log_token_actor",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1794719418817,
+      "tag": "0012_app_password_limits",
+      "breakpoints": true
     }
   ]
 }

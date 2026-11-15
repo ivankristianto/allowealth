@@ -173,6 +173,7 @@ describe('McpAppPasswordService.verify', () => {
       userId,
       tokenId: appPassword.id,
       tokenName: 'Agent',
+      limits: {},
       permissions: READ_PERMISSIONS,
       kind: 'app_password',
     });
@@ -356,6 +357,76 @@ describe('McpAppPasswordService.update', () => {
     expect(await service.update(otherUser, appPassword.id, { permissions: ['*'] })).toBeNull();
     expect(await service.findForUser(otherUser, appPassword.id)).toBeNull();
     expect(storedPermissions(appPassword.id)).toEqual(['*:read']);
+  });
+});
+
+describe('McpAppPasswordService limits', () => {
+  function seedCategory(id: string, inWorkspace = workspaceId) {
+    db.insert(schema.categories)
+      .values({
+        id,
+        workspace_id: inWorkspace,
+        created_by_user_id: userId,
+        name: id,
+        type: 'expense',
+      })
+      .run();
+  }
+
+  test('stores limits on create and update, and verify carries them', async () => {
+    seedCategory('cat-food');
+    seedCategory('cat-rent');
+    const { token, appPassword } = await service.create({
+      userId,
+      name: 'Agent',
+      permissions: ['*'],
+      expiry: '30',
+      limits: { category_ids: ['cat-food'] },
+    });
+    expect(appPassword.limits).toEqual({ category_ids: ['cat-food'] });
+    expect((await service.verify(token))?.limits).toEqual({ category_ids: ['cat-food'] });
+
+    const updated = await service.update(userId, appPassword.id, {
+      limits: { category_ids: ['cat-rent'], own_transactions_only: true },
+    });
+    expect(updated?.before.limits).toEqual({ category_ids: ['cat-food'] });
+    expect(updated?.after.limits).toEqual({
+      category_ids: ['cat-rent'],
+      own_transactions_only: true,
+    });
+
+    const renamed = await service.update(userId, appPassword.id, { name: 'Renamed' });
+    expect(renamed?.after.limits).toEqual(updated?.after.limits);
+  });
+
+  test('refuses category ids that are unknown or belong to another workspace', async () => {
+    const otherWorkspace = `ws-${nanoid(8)}`;
+    seedWorkspaceUser(db, { workspaceId: otherWorkspace, userId: `usr-${nanoid(8)}` });
+    seedCategory('cat-mine');
+    seedCategory('cat-theirs', otherWorkspace);
+    const { appPassword } = await service.create({
+      userId,
+      name: 'Agent',
+      permissions: ['*'],
+      expiry: '30',
+    });
+
+    for (const category_ids of [['cat-mine', 'cat-theirs'], ['cat-missing']]) {
+      const created = service.create({
+        userId,
+        name: 'Agent',
+        permissions: ['*'],
+        expiry: '30',
+        limits: { category_ids },
+      });
+      await expect(created).rejects.toMatchObject({ code: 'UNKNOWN_CATEGORY' });
+      await expect(
+        service.update(userId, appPassword.id, { limits: { category_ids } })
+      ).rejects.toMatchObject({
+        code: 'UNKNOWN_CATEGORY',
+      });
+    }
+    expect((await service.findForUser(userId, appPassword.id))?.limits).toEqual({});
   });
 });
 

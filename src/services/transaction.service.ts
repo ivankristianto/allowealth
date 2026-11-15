@@ -22,7 +22,13 @@ import { WorkspaceMetaService } from './workspace-meta.service';
 import { getCurrentDateISO } from '@/lib/utils/date';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
-import { auditActorFields } from '@/lib/audit-actor';
+import { auditActorFields } from '@/lib/token-actor';
+import {
+  assertCategoriesAllowed,
+  assertNoBulkWriteLimits,
+  assertOwnTransaction,
+  creatingAppPasswordId,
+} from '@/lib/token-write-limits';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -106,6 +112,11 @@ interface MonthSummaryFilters {
   include_deleted?: boolean;
   start_date: Date;
   end_date: Date;
+}
+
+/** The category a write lands in for the category limit; a transfer has none, even with a stale category_id. */
+function limitedCategory(row: { type: string; category_id?: string | null }): string | null {
+  return row.type === 'transfer' ? null : (row.category_id ?? null);
 }
 
 export class TransactionService {
@@ -202,6 +213,7 @@ export class TransactionService {
         );
       }
     }
+    await assertCategoriesAllowed([limitedCategory(validated)]);
 
     // Verify source account exists, belongs to workspace, and is active
     const account = await this.accountService.findByIdIncludingClosed(
@@ -275,6 +287,7 @@ export class TransactionService {
         to_account_id: validated.to_account_id || null,
         transaction_date: validated.transaction_date,
         description: validated.description,
+        created_by_token_id: creatingAppPasswordId(),
         created_at: new Date(),
         updated_at: new Date(),
       })
@@ -624,6 +637,7 @@ export class TransactionService {
         404
       );
     }
+    await assertOwnTransaction(existing);
 
     // Verify category if being updated
     if (validated.category_id !== undefined) {
@@ -643,6 +657,15 @@ export class TransactionService {
         );
       }
     }
+    // Both states are checked, so a token can neither edit outside its categories nor
+    // turn a transaction into or out of a transfer.
+    await assertCategoriesAllowed([
+      limitedCategory(existing),
+      limitedCategory({
+        type: validated.type ?? existing.type,
+        category_id: validated.category_id ?? existing.category_id,
+      }),
+    ]);
 
     // Verify account if being updated
     let sourceAccountForValidation = existing.account;
@@ -823,6 +846,8 @@ export class TransactionService {
         404
       );
     }
+    await assertOwnTransaction(transaction);
+    await assertCategoriesAllowed([limitedCategory(transaction)]);
 
     const deleteData: { deleted_at: Date; updated_at: Date; deleted_by_user_id?: string } = {
       deleted_at: new Date(),
@@ -990,6 +1015,7 @@ export class TransactionService {
     userId: string
   ): Promise<BulkOperationResult> {
     this.assertBulkLimit(ids);
+    await assertNoBulkWriteLimits({ changesExisting: true });
 
     const category = await this.categoryService.findById(categoryId, workspaceId);
     if (!category) {
@@ -1023,6 +1049,7 @@ export class TransactionService {
     userId: string
   ): Promise<BulkOperationResult> {
     this.assertBulkLimit(ids);
+    await assertNoBulkWriteLimits({ changesExisting: true });
 
     const account = await this.accountService.findByIdIncludingClosed(accountId, workspaceId);
     if (!account) {
@@ -1054,6 +1081,7 @@ export class TransactionService {
     userId: string
   ): Promise<BulkOperationResult> {
     this.assertBulkLimit(ids);
+    await assertNoBulkWriteLimits({ changesExisting: true });
 
     const targets = await this.loadBulkTargets(ids, workspaceId);
     const result: BulkOperationResult = { updated: 0, failed: 0, errors: [] };
@@ -1216,6 +1244,7 @@ export class TransactionService {
     rows: CSVRow[],
     columnMapping: Record<string, string>
   ): Promise<CSVImportResult> {
+    await assertNoBulkWriteLimits({ changesExisting: false });
     const result: CSVImportResult = {
       imported: 0,
       skipped: 0,

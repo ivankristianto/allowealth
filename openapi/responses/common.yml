@@ -60,8 +60,10 @@ Forbidden:
   description: >-
     Forbidden. With an app password: `APP_PASSWORD_ROUTE_NOT_ALLOWED` when the method and path
     are not on the app password allowlist, `APP_PASSWORD_PERMISSION_MISSING` when the token lacks
-    the permission the route needs (named in `error.details.permission`). `WORKSPACE_INACTIVE`
-    when the workspace is archived.
+    the permission the route needs (named in `error.details.permission`), and
+    `APP_PASSWORD_LIMIT` when a write breaks one of the token's limits (named in
+    `error.details.limit`: `category` or `own_transactions`). `WORKSPACE_INACTIVE` when the
+    workspace is archived.
     With a session cookie: `CSRF_VALIDATION_FAILED` when a POST, PUT, PATCH or DELETE lacks a
     matching `X-CSRF-Token` header. Any route: `_render=html` without the
     `X-Requested-With: XMLHttpRequest` header returns 403 with a message and no code. Some
@@ -87,6 +89,15 @@ Forbidden:
               code: APP_PASSWORD_PERMISSION_MISSING
               details:
                 permission: transactions:create
+        limitHit:
+          summary: Write outside the app password's limits
+          value:
+            success: false
+            error:
+              message: This app password's category limit does not allow this category.
+              code: APP_PASSWORD_LIMIT
+              details:
+                limit: category
 
 UnsupportedMediaType:
   description: 'The request body was not sent with `Content-Type: application/json` (`UNSUPPORTED_MEDIA_TYPE`).'

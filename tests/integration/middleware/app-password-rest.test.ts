@@ -745,12 +745,13 @@ describe('app password authentication on the REST API', () => {
         (ctx) => selfGet(ctx as never) as Promise<Response>
       );
 
-    test('describes a read preset token with its expanded permissions', async () => {
+    test('describes a read preset token with its expanded permissions and limits', async () => {
       const { token, appPassword } = await service.create({
         userId: USER_ID,
         name: 'Nightly report',
         permissions: ['*:read'],
         expiry: '30',
+        limits: { own_transactions_only: true },
       });
 
       const response = await callSelf({ bearer: token });
@@ -765,6 +766,7 @@ describe('app password authentication on the REST API', () => {
         name: 'Nightly report',
         preset: 'read',
         permissions: expandPermissionGrants(['*:read']),
+        limits: { own_transactions_only: true },
         expires_at: stored?.expiresAt?.toISOString(),
         created_at: stored?.createdAt.toISOString(),
         rate_limit: { limit: 60, window_seconds: 60 },

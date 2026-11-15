@@ -1,4 +1,5 @@
 import { db, getActiveSchema } from '@/db';
+import type { AppPasswordLimits } from '@/lib/app-password-limits';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
 import { isAppPasswordToken } from '@/lib/mcp-app-password';
@@ -18,6 +19,8 @@ export interface McpAuthContext {
   tokenName: string;
   /** What the token may do on REST and MCP: expanded app password grants, or granted OAuth scopes. */
   permissions: readonly Permission[];
+  /** An app password's write limits; always empty for OAuth tokens. */
+  limits: AppPasswordLimits;
 }
 
 interface McpAuthDeps {
@@ -87,6 +90,7 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
     tokenId: tokenRecord.id,
     tokenName: getMcpOAuthClientName(tokenRecord.clientId),
     permissions: oauthPermissionsFromScopes(scopes),
+    limits: {},
   };
 }
 

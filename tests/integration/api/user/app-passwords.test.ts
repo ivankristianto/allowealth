@@ -31,7 +31,11 @@ interface AppPasswordBody {
   name: string;
   permissions: string[];
   preset: string;
+  limits: Record<string, unknown>;
 }
+
+const FOOD_CATEGORY = `cat-${nanoid(8)}`;
+const FOREIGN_CATEGORY = `cat-${nanoid(8)}`;
 
 interface ErrorBody {
   error: { code: string; message: string; details?: Array<{ message: string }> };
@@ -40,6 +44,22 @@ interface ErrorBody {
 beforeAll(() => {
   seedWorkspaceUser(db, { workspaceId, userId });
   seedWorkspaceUser(db, { workspaceId, userId: otherUserId });
+  const foreignWorkspaceId = `ws-${nanoid(8)}`;
+  const foreignUserId = `usr-${nanoid(8)}`;
+  seedWorkspaceUser(db, { workspaceId: foreignWorkspaceId, userId: foreignUserId });
+  db.insert(schema.categories)
+    .values(
+      [
+        { id: FOOD_CATEGORY, workspace_id: workspaceId, created_by_user_id: userId, name: 'Food' },
+        {
+          id: FOREIGN_CATEGORY,
+          workspace_id: foreignWorkspaceId,
+          created_by_user_id: foreignUserId,
+          name: 'Food',
+        },
+      ].map((category) => ({ ...category, type: 'expense' as const }))
+    )
+    .run();
   setTestEnv({ DATABASE_URL: DB_PATH });
   resetDb();
 });
@@ -65,7 +85,7 @@ function routeContext(
     url: new URL(request.url),
     params: { id: options.id },
     locals: {
-      user: user ? { id: user } : null,
+      user: user ? { id: user, workspaceId } : null,
       session: options.session ?? FRESH_SESSION(),
     },
   } as never;
@@ -130,7 +150,8 @@ async function getEditForm(
       )
     );
     const props = renderToString.mock.calls[0]?.[1]?.props as
-      { appPassword: AppPasswordBody; recentSignIn: boolean } | undefined;
+      | { appPassword: AppPasswordBody; recentSignIn: boolean; categories: Array<{ id: string }> }
+      | undefined;
     return { response, props };
   } finally {
     renderToString.mockRestore();
@@ -223,6 +244,35 @@ describe('POST /api/user/app-passwords', () => {
     expect(storedPermissions(appPassword.id)).toEqual(['transactions:create', 'accounts:read']);
   });
 
+  it('creates a token with limits and records them in the activity log', async () => {
+    const response = await post({
+      name: 'Grocery agent',
+      expiry: '30',
+      scope: 'read-write',
+      limits: { category_ids: [FOOD_CATEGORY], own_transactions_only: true },
+    });
+    const { appPassword } = ((await response.json()) as { data: { appPassword: AppPasswordBody } })
+      .data;
+
+    const limits = { category_ids: [FOOD_CATEGORY], own_transactions_only: true };
+    expect(response.status).toBe(201);
+    expect(appPassword.limits).toEqual(limits);
+    expect(JSON.parse(auditRows(appPassword.id)[0]?.new_value ?? '{}')).toMatchObject({ limits });
+  });
+
+  it('refuses a category from another workspace and stores nothing', async () => {
+    const response = await post({
+      name: 'Grocery agent',
+      expiry: '30',
+      scope: 'read-write',
+      limits: { category_ids: [FOREIGN_CATEGORY] },
+    });
+
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as ErrorBody).error.code).toBe('UNKNOWN_CATEGORY');
+    expect(db.select().from(schema.mcpAppPasswords).all()).toEqual([]);
+  });
+
   // Every rule lives in src/lib/validation/app-passwords.test.ts; this proves the route applies it.
   it('answers an invalid body with VALIDATION_ERROR and stores nothing', async () => {
     await expectValidationError(
@@ -250,9 +300,12 @@ describe('GET /api/user/app-passwords/{id}', () => {
 describe('GET /api/user/app-passwords/{id}?_render=html', () => {
   // Under bun the container prints the component tag instead of its markup, so these check
   // which partial rendered and the props it got; the markup itself was checked in a browser.
-  it('renders the edit form partial for the requested token on a fresh session', async () => {
+  it('renders the edit form partial for the requested token, with the workspace categories', async () => {
     await create({ scope: 'read' });
-    const { id } = await create({ permissions: ['budgets:read'] });
+    const { id } = await create({
+      permissions: ['budgets:read'],
+      limits: { category_ids: [FOOD_CATEGORY] },
+    });
 
     const { response, props } = await getEditForm(id);
 
@@ -260,7 +313,12 @@ describe('GET /api/user/app-passwords/{id}?_render=html', () => {
     expect(response.headers.get('Content-Type')).toContain('text/html');
     expect(await response.text()).toContain('SecurityAppPasswordEditPartial.astro');
     expect(props?.recentSignIn).toBe(true);
-    expect(props?.appPassword).toMatchObject({ id, permissions: ['budgets:read'] });
+    expect(props?.appPassword).toMatchObject({
+      id,
+      permissions: ['budgets:read'],
+      limits: { category_ids: [FOOD_CATEGORY] },
+    });
+    expect(props?.categories.map((category) => category.id)).toEqual([FOOD_CATEGORY]);
   });
 
   it('asks the partial for the sign-in notice when the session is old', async () => {
@@ -339,6 +397,26 @@ describe('PATCH /api/user/app-passwords/{id}', () => {
 
     expect((await patch(id, { scope: 'read' })).status).toBe(200);
     expect(storedPermissions(id)).toEqual(['*:read']);
+  });
+
+  it('sets and clears limits, logging both values, and refuses an unknown category', async () => {
+    const { id } = await create({ scope: 'read-write' });
+    const limits = { category_ids: [FOOD_CATEGORY] };
+
+    const limited = await patch(id, { limits });
+    expect(limited.status).toBe(200);
+    expect(
+      ((await limited.json()) as { data: { appPassword: AppPasswordBody } }).data.appPassword.limits
+    ).toEqual(limits);
+
+    const refused = await patch(id, { limits: { category_ids: ['cat-missing'] } });
+    expect(refused.status).toBe(400);
+    expect(((await refused.json()) as ErrorBody).error.code).toBe('UNKNOWN_CATEGORY');
+
+    expect((await patch(id, { limits: {} })).status).toBe(200);
+    const updates = auditRows(id).filter((row) => row.action === 'update');
+    expect(updates.map((row) => JSON.parse(row.new_value ?? '{}').limits)).toEqual([limits, {}]);
+    expect(JSON.parse(updates[1]?.old_value ?? '{}').limits).toEqual(limits);
   });
 
   it("returns 404 for another user's token and leaves it unchanged", async () => {

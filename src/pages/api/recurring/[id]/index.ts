@@ -111,7 +111,7 @@ export const PUT: APIRoute = async (context) => {
     }
 
     if (error instanceof RecurringServiceError || error instanceof ServiceError) {
-      return errorResponse(error.message, error.statusCode, error.code);
+      return errorResponse(error.message, error.statusCode, error.code, error.details);
     }
 
     return errorResponse('Failed to update recurring template', 500);

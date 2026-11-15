@@ -259,6 +259,7 @@ erDiagram
         timestamp transaction_date
         text updated_by_user_id FK
         text deleted_by_user_id FK
+        text created_by_token_id
         timestamp deleted_at
         timestamp created_at
         timestamp updated_at

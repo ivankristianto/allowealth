@@ -11,7 +11,8 @@ import { refuseAppPasswordWrite } from '@/lib/app-password-write-guard';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
 import { invalidateMcpToken } from '@/lib/mcp-auth';
 import { updateAppPasswordSchema } from '@/lib/validation/app-passwords';
-import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
+import { categoryService } from '@/services';
+import { AppPasswordError, mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { securityActivityService } from '@/services/security-activity.service';
 import SecurityAppPasswordEditPartial from '@/components/partials/SecurityAppPasswordEditPartial.astro';
 
@@ -41,11 +42,13 @@ export const GET: APIRoute = async (context) => {
 
     if (render.wantsHtml()) {
       const session = context.locals.session;
+      const categories = user.workspaceId ? await categoryService.findAll(user.workspaceId) : [];
       const container = await AstroContainer.create();
       const html = await container.renderToString(SecurityAppPasswordEditPartial, {
         props: {
           appPassword,
           recentSignIn: Boolean(session && isRecentSignIn(session.createdAt)),
+          categories,
         },
       });
       return render.html(html);
@@ -60,7 +63,7 @@ export const GET: APIRoute = async (context) => {
 
 /**
  * PATCH /api/user/app-passwords/:id
- * Renames one of the current user's app passwords or changes its permissions. Needs a recent sign-in.
+ * Renames one of the current user's app passwords or changes its permissions or limits. Needs a recent sign-in.
  */
 export const PATCH: APIRoute = async (context) => {
   const user = context.locals.user;
@@ -87,12 +90,15 @@ export const PATCH: APIRoute = async (context) => {
       type: 'app_password_updated',
       userId: user.id,
       entityId: after.id,
-      oldValue: { name: before.name, permissions: before.permissions },
-      newValue: { name: after.name, permissions: after.permissions },
+      oldValue: { name: before.name, permissions: before.permissions, limits: before.limits },
+      newValue: { name: after.name, permissions: after.permissions, limits: after.limits },
     });
 
     return successResponse({ appPassword: after });
   } catch (error) {
+    if (error instanceof AppPasswordError) {
+      return errorResponse(error.message, error.status, error.code);
+    }
     const errorId = logError('Failed to update app password', error);
     return errorResponse('Failed to update app password', 500, 'INTERNAL_ERROR', { errorId });
   }

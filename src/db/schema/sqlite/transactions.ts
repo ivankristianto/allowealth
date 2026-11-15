@@ -26,6 +26,8 @@ export const transactions = sqliteTable(
     transaction_date: integer('transaction_date', { mode: 'timestamp' }).notNull(),
     updated_by_user_id: text('updated_by_user_id').references(() => users.id),
     deleted_by_user_id: text('deleted_by_user_id').references(() => users.id),
+    // The app password that created the row. No foreign key: revoking a token deletes its row.
+    created_by_token_id: text('created_by_token_id'),
     deleted_at: integer('deleted_at', { mode: 'timestamp' }),
     created_at: integer('created_at', { mode: 'timestamp' })
       .$defaultFn(() => new Date())
@@ -72,5 +74,6 @@ export const transactions = sqliteTable(
     index('transactions_created_by_user_id_idx').on(table.created_by_user_id),
     index('transactions_updated_by_user_id_idx').on(table.updated_by_user_id),
     index('transactions_deleted_by_user_id_idx').on(table.deleted_by_user_id),
+    index('transactions_created_by_token_id_idx').on(table.created_by_token_id),
   ]
 );

@@ -72,6 +72,10 @@ ConfirmedTransactionRow:
     deleted_by_user_id:
       type: string
       nullable: true
+    created_by_token_id:
+      type: string
+      nullable: true
+      description: The app password that confirmed the occurrence, or null for a session or OAuth token.
     deleted_at:
       type: string
       format: date-time

@@ -3,6 +3,7 @@
  * the labels the token list uses. No DB imports, so components and client scripts can share it.
  */
 
+import type { AppPasswordLimits } from '@/lib/app-password-limits';
 import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
 import type { TokenRateLimit } from '@/lib/mcp-rate-limit';
 import {
@@ -58,6 +59,8 @@ export interface AppPasswordTokenInfo {
   name: string;
   preset: AppPasswordPreset;
   permissions: readonly Permission[];
+  /** Write limits; `{}` when the token has none. */
+  limits: AppPasswordLimits;
   expires_at: string | null;
   created_at: string;
   /** Null where no limit applies, as on the stdio MCP server. */
@@ -74,7 +77,7 @@ export type TokenInfo = AppPasswordTokenInfo | OAuthTokenInfo;
 
 /** `permissions` are the expanded grants the request was authorized with. */
 export function describeAppPasswordToken(
-  token: Pick<AppPasswordSummary, 'id' | 'name' | 'preset' | 'createdAt' | 'expiresAt'>,
+  token: Pick<AppPasswordSummary, 'id' | 'name' | 'preset' | 'limits' | 'createdAt' | 'expiresAt'>,
   permissions: readonly Permission[],
   rateLimit: TokenRateLimit | null
 ): AppPasswordTokenInfo {
@@ -84,6 +87,7 @@ export function describeAppPasswordToken(
     name: token.name,
     preset: token.preset,
     permissions,
+    limits: token.limits,
     expires_at: token.expiresAt?.toISOString() ?? null,
     created_at: token.createdAt.toISOString(),
     rate_limit: rateLimit,
