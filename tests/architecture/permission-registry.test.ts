@@ -6,7 +6,7 @@ import {
   expandPermissionGrants,
   isPermission,
 } from '@/lib/permissions/registry';
-import { TOOL_PERMISSIONS, registerTools } from '@mcp-server/tools/index';
+import { TOOL_PERMISSIONS, registerTools, toolAnnotations } from '@mcp-server/tools/index';
 
 const restPairs = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
   rule.methods.map((method) => ({ rule, method, permission: rule.permissions[method] }))
@@ -59,5 +59,53 @@ describe('MCP tool permissions', () => {
     expect(APP_PASSWORD_SCOPES).toEqual(['read', 'read-write']);
     expect(toolsFor('read')).toEqual(readTools);
     expect(toolsFor('read-write')).toEqual([...readTools, 'add_expense', 'add_income'].sort());
+  });
+});
+
+describe('MCP tool annotations', () => {
+  test('a tool whose permissions are all reads is read-only', () => {
+    expect(toolAnnotations(['accounts:read', 'budgets:read'])).toEqual({ readOnlyHint: true });
+  });
+
+  test('a tool that only adds data is a non-destructive write', () => {
+    expect(toolAnnotations(['transactions:create'])).toEqual({
+      readOnlyHint: false,
+      destructiveHint: false,
+    });
+    expect(toolAnnotations(['recurring:read', 'recurring:confirm'])).toEqual({
+      readOnlyHint: false,
+      destructiveHint: false,
+    });
+  });
+
+  test('a tool that can change or remove data is destructive', () => {
+    for (const permission of [
+      'transactions:update',
+      'transactions:delete',
+      'recurring:write',
+    ] as const) {
+      expect(toolAnnotations(['transactions:create', permission])).toEqual({
+        readOnlyHint: false,
+        destructiveHint: true,
+      });
+    }
+  });
+
+  test('each registered tool advertises the hints its permissions imply', () => {
+    const write = { readOnlyHint: false, destructiveHint: false };
+    const annotations = Object.fromEntries(
+      registerTools().map((tool) => [tool.name, tool.annotations])
+    );
+
+    expect(annotations).toEqual({
+      list_categories: { readOnlyHint: true },
+      list_accounts: { readOnlyHint: true },
+      list_transactions: { readOnlyHint: true },
+      add_expense: write,
+      add_income: write,
+      get_budget_summary: { readOnlyHint: true },
+      get_dashboard: { readOnlyHint: true },
+      get_account_summary: { readOnlyHint: true },
+    });
   });
 });

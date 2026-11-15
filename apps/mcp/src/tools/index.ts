@@ -1,7 +1,7 @@
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { logError } from '@/lib/logger';
-import { isDeletePermission, isReadPermission, type Permission } from '@/lib/permissions/registry';
+import { isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
 import { tools as accountTools, handleListCategories, handleListAccounts } from './accounts.js';
@@ -32,10 +32,17 @@ export const TOOL_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> =
   get_account_summary: ['accounts:read'],
 };
 
+// Creating or confirming adds a record and overwrites nothing.
+function isAdditivePermission(permission: Permission): boolean {
+  return permission.endsWith(':create') || permission.endsWith(':confirm');
+}
+
+/** Hints set explicitly, because MCP clients treat a write without `destructiveHint` as destructive. */
 export function toolAnnotations(permissions: readonly Permission[]): ToolAnnotations {
   if (permissions.length > 0 && permissions.every(isReadPermission)) return { readOnlyHint: true };
-  if (permissions.some(isDeletePermission)) return { destructiveHint: true };
-  return {};
+  const writes = permissions.filter((permission) => !isReadPermission(permission));
+  const additiveOnly = writes.length > 0 && writes.every(isAdditivePermission);
+  return { readOnlyHint: false, destructiveHint: !additiveOnly };
 }
 
 // Own keys only: a client-chosen name such as `constructor` would otherwise hit Object.prototype.
