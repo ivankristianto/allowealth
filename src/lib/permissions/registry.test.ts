@@ -2,7 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import {
   PERMISSIONS,
   PERMISSION_IDS,
+  PERMISSION_GROUPS,
   SCOPE_PERMISSION_GRANTS,
+  deriveAppPasswordPreset,
   expandPermissionGrants,
   isPermission,
   isReadPermission,
@@ -81,5 +83,32 @@ describe('scope presets', () => {
     expect(expandPermissionGrants(SCOPE_PERMISSION_GRANTS['read-write'])).toEqual([
       ...PERMISSION_IDS,
     ]);
+  });
+});
+
+describe('deriveAppPasswordPreset', () => {
+  test('names a preset only for its exact stored wildcard', () => {
+    expect(deriveAppPasswordPreset(['*:read'])).toBe('read');
+    expect(deriveAppPasswordPreset(['*'])).toBe('read-write');
+  });
+
+  test('calls every other grant list custom, even one listing every permission', () => {
+    expect(deriveAppPasswordPreset(['accounts:read'])).toBe('custom');
+    expect(deriveAppPasswordPreset([...PERMISSION_IDS])).toBe('custom');
+    expect(deriveAppPasswordPreset(READ_PERMISSIONS)).toBe('custom');
+    expect(deriveAppPasswordPreset(['*', '*:read'])).toBe('custom');
+    expect(deriveAppPasswordPreset([])).toBe('custom');
+  });
+});
+
+describe('PERMISSION_GROUPS', () => {
+  test('lists every permission once, grouped by resource in registry order', () => {
+    expect(PERMISSION_GROUPS.flatMap((group) => group.permissions.map((p) => p.id))).toEqual([
+      ...PERMISSION_IDS,
+    ]);
+    for (const group of PERMISSION_GROUPS) {
+      expect(group.label.length).toBeGreaterThan(0);
+      expect(group.permissions.every((p) => p.id.startsWith(`${group.resource}:`))).toBe(true);
+    }
   });
 });

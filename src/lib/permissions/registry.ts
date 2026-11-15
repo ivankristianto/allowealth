@@ -3,7 +3,7 @@
  * name the permission they need. No DB imports, so client scripts can share this module.
  */
 
-import type { AppPasswordScope } from '@/lib/mcp-app-password';
+import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
 
 export const PERMISSIONS = [
   {
@@ -75,6 +75,37 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number]['id'];
 
+type PermissionResource = Permission extends `${infer Resource}:${string}` ? Resource : never;
+
+const RESOURCE_LABELS: Readonly<Record<PermissionResource, string>> = {
+  transactions: 'Transactions',
+  budgets: 'Budgets',
+  recurring: 'Recurring bills',
+  accounts: 'Accounts',
+  categories: 'Categories',
+  settings: 'Workspace settings',
+  forecast: 'Forecast',
+  reports: 'Reports',
+};
+
+export interface PermissionGroup {
+  resource: PermissionResource;
+  label: string;
+  permissions: (typeof PERMISSIONS)[number][];
+}
+
+/** The registry grouped by resource, in registry order, for the custom permission picker. */
+export const PERMISSION_GROUPS: readonly PermissionGroup[] = PERMISSIONS.reduce<PermissionGroup[]>(
+  (groups, permission) => {
+    const resource = permission.id.split(':')[0] as PermissionResource;
+    const group = groups.find((existing) => existing.resource === resource);
+    if (group) group.permissions.push(permission);
+    else groups.push({ resource, label: RESOURCE_LABELS[resource], permissions: [permission] });
+    return groups;
+  },
+  []
+);
+
 /** Stored grants may also be wildcards, expanded against the registry when a token is verified. */
 export type PermissionGrant = Permission | '*' | '*:read';
 
@@ -97,6 +128,20 @@ export const SCOPE_PERMISSION_GRANTS: Readonly<
   read: ['*:read'],
   'read-write': ['*'],
 };
+
+export type AppPasswordPreset = AppPasswordScope | 'custom';
+
+/** Only the exact stored wildcard is a preset; an explicit list, even of everything, is custom. */
+export function deriveAppPasswordPreset(grants: readonly unknown[]): AppPasswordPreset {
+  const preset = APP_PASSWORD_SCOPES.find((scope) => {
+    const presetGrants = SCOPE_PERMISSION_GRANTS[scope];
+    return (
+      grants.length === presetGrants.length &&
+      presetGrants.every((grant, index) => grants[index] === grant)
+    );
+  });
+  return preset ?? 'custom';
+}
 
 /**
  * Expands stored grants to concrete permissions in registry order. Unknown values are dropped
