@@ -6,6 +6,7 @@ import {
   type AppPasswordScope,
 } from '@/lib/mcp-app-password';
 import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
+import { MAX_LIMIT_CATEGORY_IDS, type AppPasswordLimits } from '@/lib/app-password-limits';
 import { PERMISSION_IDS, type Permission, type PermissionGrant } from '@/lib/permissions/registry';
 
 const nameSchema = v.pipe(
@@ -26,9 +27,34 @@ const permissionsSchema = v.pipe(
   v.minLength(1, 'Choose at least one permission')
 );
 
+// Strict, so a misspelled key cannot leave a token unlimited. The service checks category ids.
+const limitsSchema = v.pipe(
+  v.strictObject(
+    {
+      category_ids: v.optional(
+        v.pipe(
+          v.array(
+            v.pipe(v.string('Category ids must be strings'), v.minLength(1), v.maxLength(64)),
+            'category_ids must be a list'
+          ),
+          v.minLength(1, 'List at least one category, or leave category_ids out'),
+          v.maxLength(MAX_LIMIT_CATEGORY_IDS, 'Too many categories')
+        )
+      ),
+      own_transactions_only: v.optional(v.boolean('own_transactions_only must be true or false')),
+    },
+    'Limits take only category_ids and own_transactions_only'
+  ),
+  v.transform(({ category_ids, own_transactions_only }): AppPasswordLimits => ({
+    ...(category_ids && { category_ids: [...new Set(category_ids)] }),
+    ...(own_transactions_only && { own_transactions_only: true }),
+  }))
+);
+
 const accessFields = {
   scope: v.optional(scopeSchema),
   permissions: v.optional(permissionsSchema),
+  limits: v.optional(limitsSchema),
 };
 
 interface AccessInput {
@@ -53,7 +79,7 @@ export const createAppPasswordSchema = v.pipe(
     ...accessFields,
   }),
   v.rawTransform(({ dataset, addIssue, NEVER }) => {
-    const { name, expiry, scope, permissions } = dataset.value;
+    const { name, expiry, scope, permissions, limits } = dataset.value;
     if (scope !== undefined && permissions !== undefined) {
       addIssue({ message: BOTH_ACCESS_FIELDS });
       return NEVER;
@@ -63,7 +89,7 @@ export const createAppPasswordSchema = v.pipe(
       addIssue({ message: 'Send either scope or permissions' });
       return NEVER;
     }
-    return { name, expiry, permissions: grants };
+    return { name, expiry, permissions: grants, limits: limits ?? {} };
   })
 );
 
@@ -73,19 +99,20 @@ export const updateAppPasswordSchema = v.pipe(
     ...accessFields,
   }),
   v.rawTransform(({ dataset, addIssue, NEVER }) => {
-    const { name, scope, permissions } = dataset.value;
+    const { name, scope, permissions, limits } = dataset.value;
     if (scope !== undefined && permissions !== undefined) {
       addIssue({ message: BOTH_ACCESS_FIELDS });
       return NEVER;
     }
     const grants = toGrants({ scope, permissions });
-    if (name === undefined && !grants) {
-      addIssue({ message: 'Send a name, a scope or permissions' });
+    if (name === undefined && !grants && limits === undefined) {
+      addIssue({ message: 'Send a name, a scope, permissions or limits' });
       return NEVER;
     }
     return {
       ...(name !== undefined && { name }),
       ...(grants && { permissions: grants }),
+      ...(limits && { limits }),
     };
   })
 );

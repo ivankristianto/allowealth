@@ -5,7 +5,7 @@ import { logError } from '@/lib/logger';
 import { TOKEN_RATE_LIMIT } from '@/lib/mcp-rate-limit';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 
-/** GET /api/app-password/self: the calling app password's name, permissions, expiry and rate limit. */
+/** GET /api/app-password/self: the calling app password's name, permissions, limits, expiry and rate limit. */
 export const GET: APIRoute = async (context) => {
   try {
     const { userId } = getAuthenticatedUser(context);

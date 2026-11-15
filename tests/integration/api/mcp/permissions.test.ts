@@ -215,6 +215,7 @@ describe('MCP tool access by token permissions', () => {
       name: 'Morning summary',
       preset: 'read',
       permissions: expandPermissionGrants(['*:read']),
+      limits: {},
       expires_at: stored?.expiresAt?.toISOString(),
       created_at: stored?.createdAt.toISOString(),
       rate_limit: { limit: 60, window_seconds: 60 },

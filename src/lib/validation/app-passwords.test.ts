@@ -14,6 +14,7 @@ describe('createAppPasswordSchema', () => {
     expect(v.parse(createAppPasswordSchema, { ...base, scope: 'read' })).toEqual({
       ...base,
       permissions: ['*:read'],
+      limits: {},
     });
     expect(v.parse(createAppPasswordSchema, { ...base, scope: 'read-write' }).permissions).toEqual([
       '*',
@@ -63,6 +64,34 @@ describe('createAppPasswordSchema', () => {
   });
 });
 
+describe('limits', () => {
+  const base = { name: 'Nightly import', expiry: '30', scope: 'read-write' };
+
+  test('stores category ids without duplicates and own_transactions_only only when true', () => {
+    expect(
+      v.parse(createAppPasswordSchema, {
+        ...base,
+        limits: { category_ids: ['cat_a', 'cat_b', 'cat_a'], own_transactions_only: true },
+      }).limits
+    ).toEqual({ category_ids: ['cat_a', 'cat_b'], own_transactions_only: true });
+    expect(
+      v.parse(createAppPasswordSchema, { ...base, limits: { own_transactions_only: false } }).limits
+    ).toEqual({});
+  });
+
+  test('refuses an empty category list, which would read as no limit', () => {
+    expect(issues(createAppPasswordSchema, { ...base, limits: { category_ids: [] } })).toEqual([
+      'List at least one category, or leave category_ids out',
+    ]);
+  });
+
+  test('refuses unknown keys, so a misspelled limit cannot leave the token unlimited', () => {
+    expect(
+      issues(createAppPasswordSchema, { ...base, limits: { category_id: ['cat_a'] } })
+    ).toEqual(['Limits take only category_ids and own_transactions_only']);
+  });
+});
+
 describe('updateAppPasswordSchema', () => {
   test('accepts a name alone', () => {
     expect(v.parse(updateAppPasswordSchema, { name: '  Renamed  ' })).toEqual({ name: 'Renamed' });
@@ -86,7 +115,16 @@ describe('updateAppPasswordSchema', () => {
     ).toEqual(['Send either scope or permissions, not both']);
   });
 
+  test('accepts limits alone, and an empty object clears them', () => {
+    expect(v.parse(updateAppPasswordSchema, { limits: { category_ids: ['cat_a'] } })).toEqual({
+      limits: { category_ids: ['cat_a'] },
+    });
+    expect(v.parse(updateAppPasswordSchema, { limits: {} })).toEqual({ limits: {} });
+  });
+
   test('rejects a body that changes nothing', () => {
-    expect(issues(updateAppPasswordSchema, {})).toEqual(['Send a name, a scope or permissions']);
+    expect(issues(updateAppPasswordSchema, {})).toEqual([
+      'Send a name, a scope, permissions or limits',
+    ]);
   });
 });

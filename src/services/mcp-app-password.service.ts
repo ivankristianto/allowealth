@@ -1,4 +1,4 @@
-import { DrizzleQueryError, and, count, desc, eq } from 'drizzle-orm';
+import { DrizzleQueryError, and, count, desc, eq, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db as defaultDb, getActiveSchema, runTransaction, type Database } from '@/db';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
@@ -10,6 +10,7 @@ import {
   isAppPasswordToken,
   type AppPasswordExpiryOption,
 } from '@/lib/mcp-app-password';
+import type { AppPasswordLimits } from '@/lib/app-password-limits';
 import type { McpAuthContext } from '@/lib/mcp-auth';
 import { deriveAppPasswordPreset, type AppPasswordPreset } from '@/lib/app-password-access';
 import { expandPermissionGrants, type PermissionGrant } from '@/lib/permissions/registry';
@@ -36,6 +37,7 @@ export interface AppPasswordSummary {
   /** Stored grants, wildcards included. */
   permissions: PermissionGrant[];
   preset: AppPasswordPreset;
+  limits: AppPasswordLimits;
   createdAt: Date;
   lastUsedAt: Date | null;
   expiresAt: Date | null;
@@ -47,14 +49,17 @@ export interface CreateAppPasswordInput {
   name: string;
   permissions: PermissionGrant[];
   expiry: AppPasswordExpiryOption;
+  limits?: AppPasswordLimits;
 }
 
 export interface UpdateAppPasswordInput {
   name?: string;
   permissions?: PermissionGrant[];
+  /** Replaces the stored limits; `{}` clears them. */
+  limits?: AppPasswordLimits;
 }
 
-export type AppPasswordErrorCode = 'LIMIT_REACHED' | 'NO_WORKSPACE';
+export type AppPasswordErrorCode = 'LIMIT_REACHED' | 'NO_WORKSPACE' | 'UNKNOWN_CATEGORY';
 
 export class AppPasswordError extends Error {
   constructor(
@@ -69,6 +74,28 @@ export class AppPasswordError extends Error {
 export class McpAppPasswordService {
   private get schema() {
     return getActiveSchema();
+  }
+
+  /** Synchronous so update can run it inside its transaction. */
+  private assertWorkspaceCategories(
+    executor: Pick<Database, 'select'>,
+    workspaceId: string,
+    limits: AppPasswordLimits | undefined
+  ): void {
+    const ids = limits?.category_ids;
+    if (!ids) return;
+    const { categories } = this.schema;
+    const found = executor
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.workspace_id, workspaceId), inArray(categories.id, ids)))
+      .all();
+    if (found.length !== new Set(ids).size) {
+      throw new AppPasswordError(
+        'Limits name a category that is not in this workspace',
+        'UNKNOWN_CATEGORY'
+      );
+    }
   }
 
   constructor(
@@ -89,6 +116,7 @@ export class McpAppPasswordService {
     if (!owner?.workspace_id || owner.deleted_at) {
       throw new AppPasswordError('App passwords need an active workspace', 'NO_WORKSPACE');
     }
+    this.assertWorkspaceCategories(this.database, owner.workspace_id, input.limits);
 
     const [{ total }] = await this.database
       .select({ total: count() })
@@ -112,6 +140,7 @@ export class McpAppPasswordService {
       token_hash: await hashOAuthToken(token),
       token_hint: getAppPasswordHint(token),
       permissions: input.permissions,
+      limits: input.limits ?? {},
       expires_at: days === null ? null : new Date(createdAt.getTime() + days * DAY_MS),
       last_used_at: null,
       created_at: createdAt,
@@ -160,11 +189,13 @@ export class McpAppPasswordService {
     const rows = runTransaction(this.database, (tx) => {
       const before = tx.select().from(mcpAppPasswords).where(ownToken).get();
       if (!before) return null;
+      this.assertWorkspaceCategories(tx, before.workspace_id, changes.limits);
       const after = tx
         .update(mcpAppPasswords)
         .set({
           ...(changes.name !== undefined && { name: changes.name }),
           ...(changes.permissions !== undefined && { permissions: changes.permissions }),
+          ...(changes.limits !== undefined && { limits: changes.limits }),
         })
         .where(ownToken)
         .returning()
@@ -245,6 +276,7 @@ export class McpAppPasswordService {
     name: string;
     token_hint: string;
     permissions: PermissionGrant[];
+    limits: AppPasswordLimits;
     created_at: Date;
     last_used_at: Date | null;
     expires_at: Date | null;
@@ -255,6 +287,7 @@ export class McpAppPasswordService {
       tokenHint: row.token_hint,
       permissions: row.permissions,
       preset: deriveAppPasswordPreset(row.permissions),
+      limits: row.limits,
       createdAt: row.created_at,
       lastUsedAt: row.last_used_at,
       expiresAt: row.expires_at,

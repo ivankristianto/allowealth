@@ -77,6 +77,7 @@ export const POST: APIRoute = async (context) => {
         name: appPassword.name,
         permissions: appPassword.permissions,
         preset: appPassword.preset,
+        limits: appPassword.limits,
         expiresAt: appPassword.expiresAt?.toISOString() ?? null,
       },
     });

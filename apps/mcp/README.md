@@ -151,17 +151,17 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 
 ## Available Tools
 
-| Tool                  | Access | Description                                                                  |
-| --------------------- | ------ | ---------------------------------------------------------------------------- |
-| `list_categories`     | Read   | List active budget categories, optionally filtered by type (expense/income)  |
-| `list_accounts`       | Read   | List active accounts (bank accounts, e-wallets, cash) with balances          |
-| `list_transactions`   | Read   | List recent transactions with optional type, date range, and limit filters   |
-| `add_expense`         | Write  | Create an expense transaction (category and account names are fuzzy-matched) |
-| `add_income`          | Write  | Create an income transaction (category and account names are fuzzy-matched)  |
-| `get_budget_summary`  | Read   | Get monthly budget overview with per-category breakdown and status           |
-| `get_dashboard`       | Read   | Get combined financial snapshot: accounts, income, expenses, budget health   |
-| `get_account_summary` | Read   | Get account totals grouped by currency and type                              |
-| `get_token_info`      | Read   | Describe the token in use: name, preset, permissions, expiry and rate limit  |
+| Tool                  | Access | Description                                                                         |
+| --------------------- | ------ | ----------------------------------------------------------------------------------- |
+| `list_categories`     | Read   | List active budget categories, optionally filtered by type (expense/income)         |
+| `list_accounts`       | Read   | List active accounts (bank accounts, e-wallets, cash) with balances                 |
+| `list_transactions`   | Read   | List recent transactions with optional type, date range, and limit filters          |
+| `add_expense`         | Write  | Create an expense transaction (category and account names are fuzzy-matched)        |
+| `add_income`          | Write  | Create an income transaction (category and account names are fuzzy-matched)         |
+| `get_budget_summary`  | Read   | Get monthly budget overview with per-category breakdown and status                  |
+| `get_dashboard`       | Read   | Get combined financial snapshot: accounts, income, expenses, budget health          |
+| `get_account_summary` | Read   | Get account totals grouped by currency and type                                     |
+| `get_token_info`      | Read   | Describe the token in use: name, preset, permissions, limits, expiry and rate limit |
 
 Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold the permissions granted on the consent screen (see Security below). A tool without an entry is refused to every token, and a test fails until it has one. `get_token_info` is mapped to `ANY_VALID_TOKEN` instead, so every token may call it. Over stdio its `rate_limit` is `null`, because the local server applies none. The stdio and HTTP servers apply the same check.
 
