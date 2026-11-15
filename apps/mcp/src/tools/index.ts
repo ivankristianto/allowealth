@@ -1,7 +1,7 @@
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { logError } from '@/lib/logger';
-import type { Permission } from '@/lib/permissions/registry';
+import { isDeletePermission, isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
 import { tools as accountTools, handleListCategories, handleListAccounts } from './accounts.js';
@@ -32,6 +32,12 @@ export const TOOL_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> =
   get_account_summary: ['accounts:read'],
 };
 
+export function toolAnnotations(permissions: readonly Permission[]): ToolAnnotations {
+  if (permissions.length > 0 && permissions.every(isReadPermission)) return { readOnlyHint: true };
+  if (permissions.some(isDeletePermission)) return { destructiveHint: true };
+  return {};
+}
+
 const TOOLS: readonly Tool[] = [
   ...accountTools,
   listTransactionsTool,
@@ -40,7 +46,7 @@ const TOOLS: readonly Tool[] = [
   budgetTool,
   dashboardTool,
   accountSummaryTool,
-];
+].map((tool) => ({ ...tool, annotations: toolAnnotations(TOOL_PERMISSIONS[tool.name] ?? []) }));
 
 /** Why the token may not call the tool, or null when it may. */
 function toolDenial(name: string, granted: readonly Permission[]): string | null {

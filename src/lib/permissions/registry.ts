@@ -90,6 +90,10 @@ export function isReadPermission(permission: Permission): boolean {
   return permission.endsWith(':read');
 }
 
+export function isDeletePermission(permission: Permission): boolean {
+  return permission.endsWith(':delete');
+}
+
 /** The grants each legacy scope stands for; wildcards keep them covering permissions added later. */
 export const SCOPE_PERMISSION_GRANTS: Readonly<
   Record<AppPasswordScope, readonly PermissionGrant[]>
