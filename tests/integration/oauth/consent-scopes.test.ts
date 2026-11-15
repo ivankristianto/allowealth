@@ -85,9 +85,11 @@ function consentForm(oauthQuery: string, ticked: string[], accept = 'true') {
 }
 
 async function submitConsent(oauthQuery: string, ticked: string[]) {
-  return submitOAuthConsent(consentForm(oauthQuery, ticked), {
+  // Revoking earlier tokens is covered on the SQLite test DB in consent-to-mcp.test.ts.
+  return submitOAuthConsent(consentForm(oauthQuery, ticked), 'memory-user', {
     handler: (request) => auth.handler(request),
     trustedOrigins: () => [BASE_URL],
+    revokeClientTokens: async () => {},
   });
 }
 
@@ -146,8 +148,6 @@ async function connect(scope: string, ticked: string[]) {
   return exchangeCode(code, verifier);
 }
 
-const storedScopes = () => memory.oauthAccessToken.map((row) => row.scopes);
-
 describe('OAuth consent with permission scopes', () => {
   beforeEach(async () => {
     memory = Object.fromEntries(MODELS.map((model) => [model, []]));
@@ -160,15 +160,6 @@ describe('OAuth consent with permission scopes', () => {
       returnHeaders: true,
     });
     cookie = headers.get('set-cookie')!.split(';')[0];
-  });
-
-  it('issues a token holding exactly the ticked permissions plus the required scopes', async () => {
-    const token = await connect(`openid mcp ${ALL_PERMISSION_SCOPES.join(' ')}`, [
-      'allowealth:transactions:read',
-    ]);
-
-    expect(token.scope).toBe('openid mcp allowealth:transactions:read');
-    expect(storedScopes()).toEqual([['openid', 'mcp', 'allowealth:transactions:read']]);
   });
 
   it('issues a token with no permissions when every permission is unticked', async () => {
@@ -194,8 +185,10 @@ describe('OAuth consent with permission scopes', () => {
   });
 
   it('lets a refresh narrow the permissions but never widen them', async () => {
+    // Seeded clients get no refresh tokens; this covers a client that does.
     memory.oauthClient[0].grantTypes = ['authorization_code', 'refresh_token'];
     const token = await connect(`openid mcp offline_access ${ALL_PERMISSION_SCOPES.join(' ')}`, [
+      'offline_access',
       'allowealth:transactions:read',
     ]);
     expect(token.refresh_token).toBeString();

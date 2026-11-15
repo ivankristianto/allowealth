@@ -1,5 +1,5 @@
 import { type DbTransaction, type IDatabase, getActiveSchema, runTransaction } from '@/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getCacheManager, CacheTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 
@@ -77,6 +77,45 @@ export async function revokeMcpTokensForUser(
   options: { invalidateByTags?: (tags: string[]) => Promise<void> } = {}
 ): Promise<void> {
   const tokenRows = runTransaction(db, (tx) => deleteMcpTokens(tx, userId));
+  await invalidateMcpTokenTagsBestEffort(userId, tokenRows, options.invalidateByTags);
+}
+
+/** Revokes one user's access and refresh tokens for one OAuth client, as reconnecting it does. */
+export async function revokeOAuthClientTokens(
+  db: IDatabase,
+  userId: string,
+  clientId: string,
+  options: { invalidateByTags?: (tags: string[]) => Promise<void> } = {}
+): Promise<void> {
+  const schema = getActiveSchema();
+  const tokenRows = runTransaction(db, (tx) => {
+    const rows = tx.query.oauthAccessToken
+      .findMany({
+        where: and(
+          eq(schema.oauthAccessToken.userId, userId),
+          eq(schema.oauthAccessToken.clientId, clientId)
+        ),
+        columns: { id: true },
+      })
+      .sync();
+    tx.delete(schema.oauthRefreshToken)
+      .where(
+        and(
+          eq(schema.oauthRefreshToken.userId, userId),
+          eq(schema.oauthRefreshToken.clientId, clientId)
+        )
+      )
+      .run();
+    tx.delete(schema.oauthAccessToken)
+      .where(
+        and(
+          eq(schema.oauthAccessToken.userId, userId),
+          eq(schema.oauthAccessToken.clientId, clientId)
+        )
+      )
+      .run();
+    return rows;
+  });
   await invalidateMcpTokenTagsBestEffort(userId, tokenRows, options.invalidateByTags);
 }
 

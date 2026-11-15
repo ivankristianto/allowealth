@@ -1,17 +1,25 @@
+import { db } from '@/db';
 import { AUTH_PATH_PREFIX, auth, getTrustedOrigins } from '@/lib/auth/server';
-import { resolveConsentScopes } from '@/lib/mcp-oauth-scopes';
+import { resolveConsentScopes, splitScopes } from '@/lib/mcp-oauth-scopes';
+import { revokeOAuthClientTokens } from '@/services/mcp-token-revocation.service';
 
 export type OAuthConsentResult = { url: string } | { error: string };
 
 interface OAuthConsentDeps {
   handler: (request: Request) => Promise<Response>;
   trustedOrigins: () => string[];
+  revokeClientTokens: (userId: string, clientId: string) => Promise<void>;
 }
 
 const defaultDeps: OAuthConsentDeps = {
   handler: (request) => auth.handler(request),
   trustedOrigins: getTrustedOrigins,
+  revokeClientTokens: (userId, clientId) => revokeOAuthClientTokens(db, userId, clientId),
 };
+
+const NOTHING_TICKED_ERROR =
+  'Nothing is ticked, so there is nothing to grant. Tick at least one item, or choose Deny.';
+const NO_MCP_NOTE = 'This app did not ask for MCP access, so it cannot use Allowealth tools.';
 
 /**
  * The consent form posts to the page itself, outside the `/api/*` CSRF
@@ -35,6 +43,7 @@ export function isTrustedFormOrigin(
  */
 export async function submitOAuthConsent(
   request: Request,
+  userId: string,
   overrides: Partial<OAuthConsentDeps> = {}
 ): Promise<OAuthConsentResult> {
   const deps = { ...defaultDeps, ...overrides };
@@ -53,10 +62,20 @@ export async function submitOAuthConsent(
     accept,
     oauth_query: oauthQuery,
   };
-  // Scopes come from the signed request, never the form, so ticked boxes can only narrow them.
-  const requested = new URLSearchParams(oauthQuery).get('scope')?.split(' ').filter(Boolean) ?? [];
+  // Ticked boxes are filtered against the scopes in `oauth_query`, whose signature the provider
+  // checks, so the form can only narrow the request.
+  const authorizeQuery = new URLSearchParams(oauthQuery);
+  const requested = splitScopes(authorizeQuery.get('scope'));
   if (accept && requested.length > 0) {
-    consent.scope = resolveConsentScopes(requested, form.getAll('scope').map(String)).join(' ');
+    const granted = resolveConsentScopes(requested, form.getAll('scope').map(String));
+    if (granted.length === 0) {
+      return {
+        error: requested.includes('mcp')
+          ? NOTHING_TICKED_ERROR
+          : `${NOTHING_TICKED_ERROR} ${NO_MCP_NOTE}`,
+      };
+    }
+    consent.scope = granted.join(' ');
   }
 
   // Through the auth handler (not `auth.api`, whose type omits plugin
@@ -82,6 +101,13 @@ export async function submitOAuthConsent(
 
   if (!response.ok || !data.url) {
     return { error: data.error_description || data.message || 'Authorization failed.' };
+  }
+
+  // A new code replaces the app's earlier tokens, so reconnecting with fewer permissions takes
+  // effect at once instead of when the old token expires.
+  const clientId = authorizeQuery.get('client_id');
+  if (accept && clientId && new URL(data.url, request.url).searchParams.has('code')) {
+    await deps.revokeClientTokens(userId, clientId);
   }
 
   return { url: data.url };

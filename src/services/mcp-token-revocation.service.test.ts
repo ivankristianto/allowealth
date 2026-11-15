@@ -11,6 +11,7 @@ const mockInvalidateByTags = mock(async () => {});
 
 import {
   revokeMcpTokensForUser,
+  revokeOAuthClientTokens,
   softDeleteUserAndRevokeMcpTokens,
 } from './mcp-token-revocation.service';
 
@@ -37,6 +38,48 @@ describe('mcp-token-revocation.service', () => {
       'mcp-token:tok-2',
       CacheTags.MCP_TOKENS,
     ]);
+  });
+
+  it("revokes one client's tokens for one user and leaves every other token", async () => {
+    const { db, raw } = createMemoryDb();
+    for (const userId of ['user-a', 'user-b']) {
+      raw.run(`INSERT INTO user (id, name, email) VALUES (?, 'Member', ?)`, [
+        userId,
+        `${userId}@example.test`,
+      ]);
+    }
+    for (const clientId of ['client-a', 'client-b']) {
+      raw.run(`INSERT INTO oauthClient (id, clientId, redirectUris) VALUES (?, ?, '[]')`, [
+        clientId,
+        clientId,
+      ]);
+    }
+    const tokens = [
+      ['rt-a', 'at-a', 'user-a', 'client-a'],
+      ['rt-other-client', 'at-other-client', 'user-a', 'client-b'],
+      ['rt-other-user', 'at-other-user', 'user-b', 'client-a'],
+    ];
+    for (const [refreshId, accessId, userId, clientId] of tokens) {
+      raw.run(
+        `INSERT INTO oauthRefreshToken (id, token, clientId, userId, scopes) VALUES (?, ?, ?, ?, '[]')`,
+        [refreshId, `${refreshId}-hash`, clientId, userId]
+      );
+      raw.run(
+        `INSERT INTO oauthAccessToken (id, token, clientId, userId, refreshId, scopes)
+         VALUES (?, ?, ?, ?, ?, '["mcp"]')`,
+        [accessId, `${accessId}-hash`, clientId, userId, refreshId]
+      );
+    }
+
+    await revokeOAuthClientTokens(db, 'user-a', 'client-a', {
+      invalidateByTags: mockInvalidateByTags,
+    });
+
+    expect(countRows(raw, 'oauthAccessToken', `id = 'at-a'`)).toBe(0);
+    expect(countRows(raw, 'oauthRefreshToken', `id = 'rt-a'`)).toBe(0);
+    expect(countRows(raw, 'oauthAccessToken')).toBe(2);
+    expect(countRows(raw, 'oauthRefreshToken')).toBe(2);
+    expect(mockInvalidateByTags).toHaveBeenCalledWith(['mcp-token:at-a', CacheTags.MCP_TOKENS]);
   });
 
   it('soft deletes the user and revokes MCP tokens in one transaction flow', async () => {

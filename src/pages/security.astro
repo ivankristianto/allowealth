@@ -23,8 +23,8 @@ import type { NormalizedSession } from '@/lib/auth/types';
 import { auth } from '@/lib/auth/server';
 import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
-import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
-import { describeOAuthPermissions, parseStoredScopes } from '@/lib/mcp-oauth-scopes';
+import { getMcpOAuthClientName, getMcpOAuthRedirectUri, type ConnectedApp } from '@/lib/mcp-oauth';
+import { parseStoredScopes, permissionLabelsFromScopes } from '@/lib/mcp-oauth-scopes';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
 import { parseTokenActivityFilter } from '@/lib/token-activity-filter';
 import {
@@ -42,14 +42,7 @@ const redirectUri = getMcpOAuthRedirectUri();
 const user = Astro.locals.user;
 const schema = getActiveSchema();
 
-let connectedApps: Array<{
-  tokenId: string;
-  clientName: string;
-  clientId: string;
-  createdAt: Date;
-  accessTokenExpiresAt: Date;
-  permissionLabels: string[];
-}> = [];
+let connectedApps: ConnectedApp[] = [];
 
 if (user?.id) {
   const tokens = await db
@@ -78,7 +71,7 @@ if (user?.id) {
             clientId: token.clientId,
             createdAt: token.createdAt,
             accessTokenExpiresAt: token.expiresAt,
-            permissionLabels: describeOAuthPermissions(parseStoredScopes(token.scopes)),
+            permissionLabels: permissionLabelsFromScopes(parseStoredScopes(token.scopes)),
           },
         ]
       : []

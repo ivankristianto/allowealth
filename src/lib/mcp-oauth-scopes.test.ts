@@ -2,16 +2,32 @@ import { describe, expect, test } from 'bun:test';
 import { PERMISSION_IDS } from '@/lib/permissions/registry';
 import {
   PERMISSION_OAUTH_SCOPES,
-  describeOAuthPermissions,
   getConsentScopeChoices,
   oauthPermissionsFromScopes,
   parseStoredScopes,
+  permissionLabelsFromScopes,
   resolveConsentScopes,
+  splitScopes,
 } from './mcp-oauth-scopes';
 
 describe('PERMISSION_OAUTH_SCOPES', () => {
   test('names one allowealth: scope per registry permission, in registry order', () => {
     expect(PERMISSION_OAUTH_SCOPES).toEqual(PERMISSION_IDS.map((id) => `allowealth:${id}`));
+  });
+});
+
+describe('splitScopes', () => {
+  test('splits on spaces and drops blanks and repeats', () => {
+    expect(splitScopes('openid  mcp openid allowealth:accounts:read ')).toEqual([
+      'openid',
+      'mcp',
+      'allowealth:accounts:read',
+    ]);
+  });
+
+  test('returns no scopes for a missing value', () => {
+    expect(splitScopes(null)).toEqual([]);
+    expect(splitScopes('')).toEqual([]);
   });
 });
 
@@ -61,34 +77,38 @@ describe('oauthPermissionsFromScopes', () => {
   });
 });
 
-describe('describeOAuthPermissions', () => {
-  test('lists the labels of the granted permissions', () => {
+describe('permissionLabelsFromScopes', () => {
+  test('lists the registry labels of the granted permissions', () => {
     expect(
-      describeOAuthPermissions(['mcp', 'allowealth:accounts:read', 'allowealth:transactions:read'])
+      permissionLabelsFromScopes([
+        'mcp',
+        'allowealth:accounts:read',
+        'allowealth:transactions:read',
+      ])
     ).toEqual(['Read transactions', 'Read accounts']);
   });
 
-  test('says No permissions for a token without current permission scopes', () => {
-    expect(describeOAuthPermissions(['openid', 'mcp'])).toEqual(['No permissions']);
-    expect(describeOAuthPermissions(['mcp', 'allowealth:transactions:launch'])).toEqual([
-      'No permissions',
-    ]);
+  test('lists nothing for a token without current permission scopes', () => {
+    expect(permissionLabelsFromScopes(['openid', 'mcp', 'allowealth:x:launch'])).toEqual([]);
   });
 });
 
 describe('getConsentScopeChoices', () => {
-  test('lists non-permission scopes as required and permissions grouped by resource', () => {
+  test('splits required, optional and permission scopes, grouping permissions by resource', () => {
     const choices = getConsentScopeChoices([
       'openid',
+      'email',
       'mcp',
+      'offline_access',
       'allowealth:transactions:create',
       'allowealth:budgets:read',
       'allowealth:transactions:read',
     ]);
 
-    expect(choices.required.map((choice) => choice.scope)).toEqual(['openid', 'mcp']);
+    expect(choices.required).toEqual(['openid', 'mcp']);
+    expect(choices.optional).toEqual(['email', 'offline_access']);
     expect(
-      choices.groups.map((group) => ({
+      choices.permissionGroups.map((group) => ({
         label: group.label,
         scopes: group.permissions.map((permission) => permission.scope),
       }))
@@ -99,46 +119,44 @@ describe('getConsentScopeChoices', () => {
       },
       { label: 'Budgets', scopes: ['allowealth:budgets:read'] },
     ]);
-    expect(choices.groups[1].permissions[0]).toMatchObject({
+    expect(choices.permissionGroups[1].permissions[0]).toMatchObject({
       label: 'Read budgets',
       description: 'View budgets, budget history and category spending trends.',
     });
   });
 
-  test('offers no permission groups for a request without permission scopes', () => {
-    expect(getConsentScopeChoices(['openid', 'mcp']).groups).toEqual([]);
+  test('lists a repeated scope once', () => {
+    expect(getConsentScopeChoices(['openid', 'mcp', 'openid', 'email', 'email'])).toMatchObject({
+      required: ['openid', 'mcp'],
+      optional: ['email'],
+    });
   });
 
-  test('keeps other requested scopes visible as required', () => {
-    const choices = getConsentScopeChoices(['openid', 'offline_access', 'mcp']);
-
-    expect(choices.required.map((choice) => choice.scope)).toEqual([
-      'openid',
-      'offline_access',
-      'mcp',
-    ]);
-    expect(choices.required.every((choice) => choice.label.length > 0)).toBe(true);
+  test('offers no permission groups for a request without permission scopes', () => {
+    expect(getConsentScopeChoices(['openid', 'mcp']).permissionGroups).toEqual([]);
   });
 });
 
 describe('resolveConsentScopes', () => {
   const requested = [
     'openid',
+    'email',
     'mcp',
     'allowealth:transactions:read',
     'allowealth:transactions:create',
   ];
 
-  test('re-adds the required scopes to the ticked permissions, in request order', () => {
-    expect(resolveConsentScopes(requested, ['allowealth:transactions:create'])).toEqual([
+  test('re-adds the required scopes to the ticked ones, in request order', () => {
+    expect(resolveConsentScopes(requested, ['allowealth:transactions:create', 'email'])).toEqual([
       'openid',
+      'email',
       'mcp',
       'allowealth:transactions:create',
     ]);
   });
 
-  test('ignores a required scope sent as a ticked box', () => {
-    expect(resolveConsentScopes(requested, ['mcp', 'allowealth:transactions:read'])).toEqual([
+  test('leaves out optional scopes the user unticked', () => {
+    expect(resolveConsentScopes(requested, ['allowealth:transactions:read'])).toEqual([
       'openid',
       'mcp',
       'allowealth:transactions:read',
@@ -151,11 +169,15 @@ describe('resolveConsentScopes', () => {
     ).toEqual(['openid', 'mcp', 'allowealth:transactions:read']);
   });
 
-  test('keeps only the required scopes when every permission is unticked', () => {
+  test('keeps only the required scopes when everything is unticked', () => {
     expect(resolveConsentScopes(requested, [])).toEqual(['openid', 'mcp']);
-    expect(resolveConsentScopes(requested, ['mcp', 'allowealth:reports:read'])).toEqual([
+  });
+
+  test('grants each repeated scope once', () => {
+    expect(resolveConsentScopes(['openid', 'mcp', 'mcp', 'email', 'email'], ['email'])).toEqual([
       'openid',
       'mcp',
+      'email',
     ]);
   });
 });

@@ -2,5 +2,5 @@
 export function syncNoPermissionsWarning(form: HTMLFormElement): void {
   const warning = form.querySelector<HTMLElement>('[data-oauth-no-permissions]');
   if (!warning) return;
-  warning.hidden = form.querySelector('input[name="scope"]:checked') !== null;
+  warning.hidden = form.querySelector('input[data-oauth-permission]:checked') !== null;
 }

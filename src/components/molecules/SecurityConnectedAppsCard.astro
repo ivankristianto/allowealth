@@ -1,16 +1,8 @@
 ---
 import Button from '@/components/atoms/Button.astro';
-import { MCP_CONNECT_SCOPES, MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import { MCP_CONNECT_SCOPES, MCP_OAUTH_CLIENTS, type ConnectedApp } from '@/lib/mcp-oauth';
+import { tokenClasses } from '@/lib/tokens';
 import { tokenActivityHref } from '@/lib/token-activity-filter';
-
-interface ConnectedApp {
-  tokenId: string;
-  clientName: string;
-  clientId: string;
-  createdAt: Date;
-  accessTokenExpiresAt: Date;
-  permissionLabels: string[];
-}
 
 interface Props {
   apps: ConnectedApp[];
@@ -66,9 +58,15 @@ function getAuthorizeUrl(clientId: string): string {
                 aria-label={`Permissions of ${app.clientName}`}
                 data-connected-app-permissions
               >
-                {app.permissionLabels.map((label) => (
-                  <li class="badge badge-sm badge-ghost h-auto py-0.5">{label}</li>
-                ))}
+                {(app.permissionLabels.length > 0 ? app.permissionLabels : ['No permissions']).map(
+                  (label) => (
+                    <li
+                      class:list={['badge badge-sm badge-ghost h-auto', tokenClasses.badgePadding]}
+                    >
+                      {label}
+                    </li>
+                  )
+                )}
               </ul>
               <p class="text-xs text-base-content/50">
                 Authorized {app.createdAt.toLocaleDateString()} · Expires{' '}
