@@ -1,4 +1,5 @@
 import { getAuthBaseURL } from '@/lib/auth/base-url';
+import { PERMISSION_OAUTH_SCOPES } from '@/lib/mcp-oauth-scopes';
 
 export const MCP_OAUTH_CLIENTS = [
   { clientId: 'mcp-claude-desktop', name: 'Claude Desktop' },
@@ -6,8 +7,18 @@ export const MCP_OAUTH_CLIENTS = [
   { clientId: 'mcp-generic', name: 'Generic MCP Client' },
 ] as const;
 
-/** Scopes the OAuth provider supports. The Security page requests `openid mcp`. */
-export const MCP_OAUTH_SCOPES = ['openid', 'profile', 'email', 'offline_access', 'mcp'] as const;
+/** Scopes the OAuth provider supports and advertises in its discovery metadata. */
+export const MCP_OAUTH_SCOPES: readonly string[] = [
+  'openid',
+  'profile',
+  'email',
+  'offline_access',
+  'mcp',
+  ...PERMISSION_OAUTH_SCOPES,
+];
+
+/** What the Security page's connect buttons request, so the user picks on the consent page. */
+export const MCP_CONNECT_SCOPES: readonly string[] = ['openid', 'mcp', ...PERMISSION_OAUTH_SCOPES];
 
 /** MCP access tokens last 24 hours (the display-token page tells users this). */
 export const MCP_ACCESS_TOKEN_TTL_SECONDS = 86_400;

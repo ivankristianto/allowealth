@@ -4,15 +4,27 @@ import { getRedirectTarget, isTrustedFormOrigin, submitOAuthConsent } from './oa
 const APP_ORIGIN = 'http://localhost:4321';
 const trustedOrigins = () => [APP_ORIGIN, 'https://*.allowealth.com'];
 
-function consentRequest(origin: string | null, fields: Record<string, string>): Request {
+function consentRequest(
+  origin: string | null,
+  fields: Record<string, string>,
+  tickedScopes: string[] = []
+): Request {
   const headers = new Headers({ Cookie: 'allowealth.session_token=abc' });
   if (origin) headers.set('Origin', origin);
+  const body = new URLSearchParams(fields);
+  for (const scope of tickedScopes) body.append('scope', scope);
   return new Request(`${APP_ORIGIN}/oauth/authorize?client_id=mcp-generic`, {
     method: 'POST',
     headers,
-    body: new URLSearchParams(fields),
+    body,
   });
 }
+
+const SCOPED_QUERY = new URLSearchParams({
+  client_id: 'x',
+  scope: 'openid mcp allowealth:accounts:read allowealth:budgets:read',
+  sig: 'y',
+}).toString();
 
 describe('isTrustedFormOrigin', () => {
   it('accepts an exact app origin', () => {
@@ -78,6 +90,39 @@ describe('submitOAuthConsent', () => {
     expect(await forwarded!.json()).toEqual({ accept: true, oauth_query: 'client_id=x&sig=y' });
   });
 
+  it('sends the required scopes plus the ticked permissions as scope', async () => {
+    let body: unknown;
+    const handler = mock(async (request: Request) => {
+      body = await request.json();
+      return Response.json({ redirect: true, url: '/oauth/display-token?code=abc' });
+    });
+
+    await submitOAuthConsent(
+      consentRequest(APP_ORIGIN, { accept: 'true', oauth_query: SCOPED_QUERY }, [
+        'allowealth:budgets:read',
+      ]),
+      { handler, trustedOrigins }
+    );
+
+    expect(body).toEqual({
+      accept: true,
+      oauth_query: SCOPED_QUERY,
+      scope: 'openid mcp allowealth:budgets:read',
+    });
+  });
+
+  it('refuses a consent with every permission unticked before reaching Better Auth', async () => {
+    const handler = mock(async () => Response.json({ url: '/x' }));
+
+    const result = await submitOAuthConsent(
+      consentRequest(APP_ORIGIN, { accept: 'true', oauth_query: SCOPED_QUERY }),
+      { handler, trustedOrigins }
+    );
+
+    expect(result).toEqual({ error: 'Choose at least one permission, or deny access.' });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it('sends accept=false for the Deny button', async () => {
     let body: unknown;
     const handler = mock(async (request: Request) => {
@@ -86,11 +131,11 @@ describe('submitOAuthConsent', () => {
     });
 
     await submitOAuthConsent(
-      consentRequest(APP_ORIGIN, { accept: 'false', oauth_query: 'client_id=x&sig=y' }),
+      consentRequest(APP_ORIGIN, { accept: 'false', oauth_query: SCOPED_QUERY }),
       { handler, trustedOrigins }
     );
 
-    expect(body).toEqual({ accept: false, oauth_query: 'client_id=x&sig=y' });
+    expect(body).toEqual({ accept: false, oauth_query: SCOPED_QUERY });
   });
 
   it('surfaces the Better Auth error instead of redirecting', async () => {

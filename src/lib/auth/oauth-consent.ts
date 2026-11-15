@@ -1,4 +1,5 @@
 import { AUTH_PATH_PREFIX, auth, getTrustedOrigins } from '@/lib/auth/server';
+import { resolveConsentScopes } from '@/lib/mcp-oauth-scopes';
 
 export type OAuthConsentResult = { url: string } | { error: string };
 
@@ -29,9 +30,8 @@ export function isTrustedFormOrigin(
 }
 
 /**
- * Submit the consent form server-side. Better Auth's `/oauth2/consent` takes
- * JSON with the signed authorize query (`oauth_query`) and answers with the
- * URL to continue to, so the page needs no client-side script.
+ * Submit the consent form server-side. Better Auth's `/oauth2/consent` takes JSON with the signed
+ * authorize query (`oauth_query`) and the granted `scope`, and answers with the URL to continue to.
  */
 export async function submitOAuthConsent(
   request: Request,
@@ -48,6 +48,20 @@ export async function submitOAuthConsent(
     return { error: 'This authorization request is invalid. Start again from Security.' };
   }
 
+  const accept = form.get('accept') === 'true';
+  const consent: { accept: boolean; oauth_query: string; scope?: string } = {
+    accept,
+    oauth_query: oauthQuery,
+  };
+  // Scopes come from the signed request, never the form, so ticked boxes can only narrow them.
+  const requested = new URLSearchParams(oauthQuery).get('scope')?.split(' ').filter(Boolean) ?? [];
+  if (accept && requested.length > 0) {
+    const ticked = form.getAll('scope').map(String);
+    const resolution = resolveConsentScopes(requested, ticked);
+    if ('error' in resolution) return resolution;
+    consent.scope = resolution.scopes.join(' ');
+  }
+
   // Through the auth handler (not `auth.api`, whose type omits plugin
   // endpoints), so Better Auth applies its usual cookie and origin checks.
   const consentUrl = new URL(`${AUTH_PATH_PREFIX}/oauth2/consent`, request.url);
@@ -60,7 +74,7 @@ export async function submitOAuthConsent(
         Cookie: request.headers.get('cookie') ?? '',
         Origin: request.headers.get('origin') ?? '',
       },
-      body: JSON.stringify({ accept: form.get('accept') === 'true', oauth_query: oauthQuery }),
+      body: JSON.stringify(consent),
     })
   );
   const data = (await response.json().catch(() => ({}))) as {
