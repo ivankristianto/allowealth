@@ -287,7 +287,7 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Unauthorized', 401);
     }
     if (error instanceof ServiceError) {
-      return errorResponse(error.message, error.statusCode, error.code);
+      return errorResponse(error.message, error.statusCode, error.code, error.details);
     }
     logError('Error creating transaction', error);
     return errorResponse('Failed to create transaction', 500);

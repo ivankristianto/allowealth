@@ -6,6 +6,7 @@ import { logAuditEvent } from '@/lib/audit-log';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { assertCategoriesAllowed } from '@/lib/token-write-limits';
 import { parse } from 'valibot';
 import type { RecurringTemplate, RecurringTemplateOutput } from '@/lib/types/recurring';
 import {
@@ -188,6 +189,7 @@ export class RecurringTemplateService {
       categoryId: validated.category_id,
       accountId: validated.account_id,
     });
+    await assertCategoriesAllowed([validated.category_id]);
 
     const templateId = nanoid();
     const todayIso = await this.getWorkspaceToday(validated.workspace_id);
@@ -440,6 +442,11 @@ export class RecurringTemplateService {
         accountId: validated.account_id,
       });
     }
+    // Checked even when the category stays, so a token cannot edit outside its categories.
+    await assertCategoriesAllowed([
+      existing.category_id,
+      validated.category_id ?? existing.category_id,
+    ]);
 
     for (const key of [
       'name',

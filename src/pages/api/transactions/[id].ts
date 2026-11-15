@@ -115,7 +115,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Unauthorized', 401);
     }
     if (error instanceof ServiceError) {
-      return errorResponse(error.message, error.statusCode, error.code);
+      return errorResponse(error.message, error.statusCode, error.code, error.details);
     }
     logError('Error updating transaction', error);
     return errorResponse('Failed to update transaction', 500);
@@ -145,7 +145,7 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Unauthorized', 401);
     }
     if (error instanceof ServiceError) {
-      return errorResponse(error.message, error.statusCode, error.code);
+      return errorResponse(error.message, error.statusCode, error.code, error.details);
     }
     logError('Error deleting transaction', error);
     return errorResponse('Failed to delete transaction', 500);

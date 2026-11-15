@@ -23,6 +23,11 @@ import { getCurrentDateISO } from '@/lib/utils/date';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { auditActorFields } from '@/lib/audit-actor';
+import {
+  assertCategoriesAllowed,
+  assertOwnTransaction,
+  creatingAppPasswordId,
+} from '@/lib/token-write-limits';
 import { logAuditEvent } from '@/lib/audit-log';
 import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 import { isValidCurrency } from '@/lib/constants/currency';
@@ -202,6 +207,9 @@ export class TransactionService {
         );
       }
     }
+    await assertCategoriesAllowed([
+      validated.type === 'transfer' ? null : (validated.category_id ?? null),
+    ]);
 
     // Verify source account exists, belongs to workspace, and is active
     const account = await this.accountService.findByIdIncludingClosed(
@@ -275,6 +283,7 @@ export class TransactionService {
         to_account_id: validated.to_account_id || null,
         transaction_date: validated.transaction_date,
         description: validated.description,
+        created_by_token_id: creatingAppPasswordId(),
         created_at: new Date(),
         updated_at: new Date(),
       })
@@ -624,6 +633,7 @@ export class TransactionService {
         404
       );
     }
+    await assertOwnTransaction(existing);
 
     // Verify category if being updated
     if (validated.category_id !== undefined) {
@@ -643,6 +653,11 @@ export class TransactionService {
         );
       }
     }
+    // Checked even when the category stays, so a token cannot edit outside its categories.
+    await assertCategoriesAllowed([
+      existing.category_id,
+      validated.category_id ?? existing.category_id,
+    ]);
 
     // Verify account if being updated
     let sourceAccountForValidation = existing.account;
@@ -823,6 +838,7 @@ export class TransactionService {
         404
       );
     }
+    await assertOwnTransaction(transaction);
 
     const deleteData: { deleted_at: Date; updated_at: Date; deleted_by_user_id?: string } = {
       deleted_at: new Date(),
