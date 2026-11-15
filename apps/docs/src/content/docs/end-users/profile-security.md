@@ -159,9 +159,13 @@ Creating one needs a sign-in from the last 15 minutes. If your sign-in is older,
    - **Read only** lists accounts, categories, transactions, budgets and the dashboard. Over REST it also reads scheduled items and reports
    - **Read and write** can also add expenses and income. Over REST it can also edit transactions, add scheduled items and mark bills paid
    - **Custom** shows every permission, grouped by what it touches (transactions, budgets, recurring bills and so on). Tick only what the job needs. Unlike the presets, a custom token never gains permissions added in later releases
-5. Choose when it expires: 30 days, 90 days, 1 year, or no expiry
-6. Click **Create**
-7. **Copy the token now.** It starts with `aw_pat_` and is shown only once
+5. Optionally, set **Limits** on what it may change:
+   - **Only these categories**: tick the categories it may use. Adding or editing a transaction or a recurring bill, and confirming a bill, must use one of them, and it cannot move a transaction out of a category you did not tick. Transfers are refused
+   - **Only its own transactions**: it can edit or delete only transactions it added itself
+   - Limits never hide anything: the token still reads every account, category, budget and report its access allows
+6. Choose when it expires: 30 days, 90 days, 1 year, or no expiry
+7. Click **Create**
+8. **Copy the token now.** It starts with `aw_pat_` and is shown only once
 
 Use it as a Bearer token:
 
@@ -179,12 +183,12 @@ For the local MCP server, set it as `ALLOWEALTH_ACCESS_TOKEN`. The same header w
 - Keep them in a password manager or your CI secret store
 - Never commit them to version control
 - Never paste them into email or chat
-- Prefer **Read only**, or **Custom** with just what the job needs, and an expiry date
+- Prefer **Read only**, or **Custom** with just what the job needs, and an expiry date. For a token that writes, add **Limits**
 
 #### Edit an App Password
 
 1. Find it in the **App Passwords** list
-2. Click **Edit**, change the name or the access, and click **Save**
+2. Click **Edit**, change the name, the access or the limits, and click **Save**
 
 The token itself does not change, so nothing needs a new secret. The new access applies from its next request. Like creating one, editing needs a sign-in from the last 15 minutes.
 
@@ -199,6 +203,7 @@ Anything using it loses access on its next request. App passwords are **not** re
 
 - **Name** you gave it
 - **Access**: **Read only**, **Read and write**, or the custom permissions as small labels
+- **Limits**, when set: "2 categories", "Own transactions only"
 - **Hint**: the first characters of the token, so you can tell tokens apart
 - **Created**, **Last used** and **Expires** dates
 
@@ -213,7 +218,7 @@ Recent security activity appears in the **Security Events** section:
 - MFA setup or removal
 - Passkey registration
 - Changes made with an app password or connected app, marked "via" and the token's name. A revoked token keeps its name here
-- **Permission Denied** when a token asked for something it may not do, including routes and MCP tools it can never use. Each token shows the same refusal at most once, and at most five refusals in all, every 10 minutes
+- **Permission Denied** when a token asked for something it may not do, including routes and MCP tools it can never use and writes its limits refuse. Each token shows the same refusal at most once, and at most five refusals in all, every 10 minutes
 
 Review this log periodically for unauthorized activity.
 

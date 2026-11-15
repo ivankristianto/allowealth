@@ -22,7 +22,8 @@ ErrorResponse:
               description: >-
                 For `VALIDATION_ERROR`, an array of issues. For `INTERNAL_ERROR`, an object with
                 the `errorId` logged server-side. For `APP_PASSWORD_PERMISSION_MISSING`, an
-                object with the missing `permission`.
+                object with the missing `permission`. For `APP_PASSWORD_LIMIT`, an object
+                with the `limit` the write broke (`category` or `own_transactions`).
               oneOf:
                 - type: array
                   items:

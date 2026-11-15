@@ -60,7 +60,7 @@ paths:
       summary: Describe the calling app password
       description: >-
         Returns the app password sent as the Bearer token: its name, preset, expanded permissions,
-        expiry and rate limit. Any valid app password may call it, so an agent can check what it
+        write limits, expiry and rate limit. Any valid app password may call it, so an agent can check what it
         may do before it tries. A request with a session cookie and no app password gets 400
         `APP_PASSWORD_REQUIRED`.
       x-required-permission: any

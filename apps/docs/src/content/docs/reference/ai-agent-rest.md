@@ -77,6 +77,17 @@ Every route and method below needs one permission, named `resource:action`. `HEA
 
 The app password API reports each token's `permissions` as stored and a `preset` of `read`, `read-write` or `custom`. A custom list is still `custom` when it happens to name every permission, because it will not pick up new ones. When creating or editing a token through `POST /api/user/app-passwords` or `PATCH /api/user/app-passwords/{id}`, send either `scope` (a preset) or `permissions` (a non-empty list from the table, no wildcards), never both. Those routes need a browser session; an app password cannot manage app passwords.
 
+## Limits
+
+Permissions say what kind of change a token may make. Optional limits narrow where it may make it. Set them in the token's **Limits** section on the Security page, or send `limits` when creating or editing it:
+
+| Limit                     | Stored as                                | Effect                                                                                                                                                                                           |
+| ------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Only these categories     | `"category_ids": ["cat_...", "cat_..."]` | Creating or editing a transaction or a recurring bill, and confirming an occurrence, must use a listed category. An edit must also start in one. Transfers have no category, so they are refused |
+| Only its own transactions | `"own_transactions_only": true`          | Editing or deleting a transaction works only on transactions this token created. Transactions entered in the app, by another token, or before this release are refused                           |
+
+Limits never narrow reads: the token still sees every account, category, budget, report and bill its permissions allow, so summaries stay complete. Category ids must belong to the workspace when you set them; a category deleted later matches nothing, so it never widens the list. `"limits": {}` removes every limit. A refused write answers `403` with code `APP_PASSWORD_LIMIT` and the limit in `error.details.limit` (`category` or `own_transactions`). Over MCP the tool returns an error result naming the limit.
+
 ## Allowed routes
 
 | Route                                                                     | Read | Write (needs the matching permission) |
@@ -110,6 +121,7 @@ Never reachable with an app password: sign-in and other `/api/auth/*` routes, `/
 | 401    | `APP_PASSWORD_INVALID`            | Malformed, expired or revoked token, or a Bearer token that is not an app password  |
 | 403    | `APP_PASSWORD_ROUTE_NOT_ALLOWED`  | The route or method is not on the list above                                        |
 | 403    | `APP_PASSWORD_PERMISSION_MISSING` | The token lacks the permission the route needs, named in `error.details.permission` |
+| 403    | `APP_PASSWORD_LIMIT`              | The write breaks one of the token's limits, named in `error.details.limit`          |
 | 403    | `WORKSPACE_INACTIVE`              | The workspace was archived                                                          |
 | 429    | `RATE_LIMIT_EXCEEDED`             | More than 60 requests in a minute for this token; wait for `Retry-After` seconds    |
 
@@ -130,6 +142,7 @@ curl -s "$ALLOWEALTH_URL/api/app-password/self" -H "Authorization: Bearer $ALLOW
     "name": "Expense logger",
     "preset": "custom",
     "permissions": ["transactions:create", "budgets:read"],
+    "limits": { "category_ids": ["cat_V1StGXR8Z5jdHi6B"] },
     "expires_at": "2027-02-12T09:30:00.000Z",
     "created_at": "2026-11-14T09:30:00.000Z",
     "rate_limit": { "limit": 60, "window_seconds": 60 }
@@ -137,7 +150,7 @@ curl -s "$ALLOWEALTH_URL/api/app-password/self" -H "Authorization: Bearer $ALLOW
 }
 ```
 
-`permissions` is what the token can do right now, with presets expanded, so a `read` token lists every `:read` permission. `expires_at` is `null` for a token that never expires. The live request count stays in the `X-RateLimit-*` headers. Any valid app password may call this route, even one with no permissions.
+`permissions` is what the token can do right now, with presets expanded, so a `read` token lists every `:read` permission. `limits` is `{}` for a token without limits. `expires_at` is `null` for a token that never expires. The live request count stays in the `X-RateLimit-*` headers. Any valid app password may call this route, even one with no permissions.
 
 A planning agent can stop here: if the task needs `transactions:create` and the list lacks it, ask the user for a token that has it instead of collecting `403`s. Over MCP, the `get_token_info` tool returns the same fields.
 
@@ -248,8 +261,8 @@ curl -s -X POST "$ALLOWEALTH_URL/api/recurring/occurrences/OCCURRENCE_ID/confirm
 
 ## Keep it safe
 
-- Give the agent a read-only token unless it needs to write
+- Give the agent a read-only token unless it needs to write. If it writes, limit it to the categories it works in and to its own transactions
 - Set an expiry, and revoke the token when you stop using the agent
 - Keep the token in the agent machine's secret store, never in a repository
 - **Last used** on the Security page shows when the token last made a request
-- Every change the token makes appears in the Security page's Recent Activity as "via" its name, and **Activity** on the token's row lists only its events. Refused requests (`403 APP_PASSWORD_PERMISSION_MISSING` or `APP_PASSWORD_ROUTE_NOT_ALLOWED`) are recorded there too, each kind at most once, and at most five in all, per token every 10 minutes
+- Every change the token makes appears in the Security page's Recent Activity as "via" its name, and **Activity** on the token's row lists only its events. Refused requests (`403 APP_PASSWORD_PERMISSION_MISSING`, `APP_PASSWORD_ROUTE_NOT_ALLOWED` or `APP_PASSWORD_LIMIT`) are recorded there too, each kind at most once, and at most five in all, per token every 10 minutes
