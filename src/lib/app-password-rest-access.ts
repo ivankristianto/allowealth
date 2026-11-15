@@ -4,25 +4,28 @@
  */
 
 import type { AppPasswordScope } from '@/lib/mcp-app-password';
-import { ANY_VALID_TOKEN, type AnyValidToken, type Permission } from '@/lib/permissions/registry';
+import type { Permission } from '@/lib/permissions/registry';
 
 export type AppPasswordRestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export type AppPasswordRestPermission = Permission | AnyValidToken;
+/** Marks a route that carries no workspace data, such as the OpenAPI document. */
+export const ANY_VALID_TOKEN = 'any-valid-token';
+
+export type AppPasswordRestPermission = Permission | typeof ANY_VALID_TOKEN;
+
+export type AppPasswordRestPermissionMap = Readonly<
+  Partial<Record<AppPasswordRestMethod, AppPasswordRestPermission>>
+>;
 
 export interface AppPasswordRestRoute {
   /** OpenAPI-style template; `{id}` matches one ID segment. */
   path: string;
   methods: readonly AppPasswordRestMethod[];
-  /** The permission each allowed method needs. */
-  permissions: Readonly<Partial<Record<AppPasswordRestMethod, AppPasswordRestPermission>>>;
+  permissions: AppPasswordRestPermissionMap;
 }
 
 // Methods come from the permission map, so an allowed method cannot lack a permission.
-function rule(
-  path: string,
-  permissions: Partial<Record<AppPasswordRestMethod, AppPasswordRestPermission>>
-): AppPasswordRestRoute {
+function rule(path: string, permissions: AppPasswordRestPermissionMap): AppPasswordRestRoute {
   return { path, methods: Object.keys(permissions) as AppPasswordRestMethod[], permissions };
 }
 

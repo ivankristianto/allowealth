@@ -78,10 +78,6 @@ export type Permission = (typeof PERMISSIONS)[number]['id'];
 /** Stored grants may also be wildcards, expanded against the registry when a token is verified. */
 export type PermissionGrant = Permission | '*' | '*:read';
 
-/** For routes that carry no workspace data, such as the OpenAPI document. */
-export const ANY_VALID_TOKEN = 'any-valid-token';
-export type AnyValidToken = typeof ANY_VALID_TOKEN;
-
 export const PERMISSION_IDS: readonly Permission[] = PERMISSIONS.map((permission) => permission.id);
 
 const PERMISSION_ID_SET: ReadonlySet<string> = new Set(PERMISSION_IDS);

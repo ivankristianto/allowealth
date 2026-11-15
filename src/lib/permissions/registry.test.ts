@@ -5,9 +5,10 @@ import {
   SCOPE_PERMISSION_GRANTS,
   expandPermissionGrants,
   isPermission,
+  isReadPermission,
 } from './registry';
 
-const READ_PERMISSIONS = PERMISSION_IDS.filter((id) => id.endsWith(':read'));
+const READ_PERMISSIONS = PERMISSION_IDS.filter(isReadPermission);
 
 describe('permission registry', () => {
   test('every permission is resource:action with a label and description', () => {
@@ -59,7 +60,7 @@ describe('expandPermissionGrants', () => {
   test('a wildcard combined with explicit permissions grants their union', () => {
     const expanded = expandPermissionGrants(['*:read', 'transactions:create']);
     expect(expanded).toContain('transactions:create');
-    expect(expanded.filter((id) => id.endsWith(':read'))).toEqual(READ_PERMISSIONS);
+    expect(expanded.filter(isReadPermission)).toEqual(READ_PERMISSIONS);
   });
 
   test('ignores values the registry no longer knows instead of throwing', () => {

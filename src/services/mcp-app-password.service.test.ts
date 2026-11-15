@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import * as schema from '@/db/schema/sqlite';
 import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { MAX_APP_PASSWORDS_PER_USER } from '@/lib/mcp-app-password';
-import { PERMISSION_IDS } from '@/lib/permissions/registry';
+import { PERMISSION_IDS, isReadPermission } from '@/lib/permissions/registry';
 import { createSetupSqlDatabase, seedWorkspaceUser } from '../../tests/helpers/setup-sql-db';
 import { AppPasswordError, McpAppPasswordService } from './mcp-app-password.service';
 
@@ -32,7 +32,7 @@ function advance(ms: number) {
   clock = new Date(clock.getTime() + ms);
 }
 
-const READ_PERMISSIONS = PERMISSION_IDS.filter((id) => id.endsWith(':read'));
+const READ_PERMISSIONS = PERMISSION_IDS.filter(isReadPermission);
 
 function storedPermissions(id: string) {
   return db

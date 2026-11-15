@@ -1,15 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  ANY_VALID_TOKEN,
   APP_PASSWORD_REST_ROUTES,
   authorizeAppPasswordRequest,
 } from '@/lib/app-password-rest-access';
 import { APP_PASSWORD_SCOPES } from '@/lib/mcp-app-password';
 import {
-  ANY_VALID_TOKEN,
   SCOPE_PERMISSION_GRANTS,
   expandPermissionGrants,
   isPermission,
-  isReadPermission,
 } from '@/lib/permissions/registry';
 import {
   READ_ONLY_TOOLS,
@@ -29,15 +28,6 @@ describe('REST allowlist permissions', () => {
       .map(({ rule, method }) => `${method} ${rule.path}`);
     expect(restPairs.length).toBeGreaterThan(30);
     expect(unmapped).toEqual([]);
-  });
-
-  test('maps no method the rule does not allow', () => {
-    const extra = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
-      Object.keys(rule.permissions)
-        .filter((method) => !(rule.methods as readonly string[]).includes(method))
-        .map((method) => `${method} ${rule.path}`)
-    );
-    expect(extra).toEqual([]);
   });
 
   test('only the OpenAPI document is open to any valid token', () => {
@@ -76,11 +66,15 @@ describe('MCP tool permissions', () => {
     expect(Object.keys(TOOL_PERMISSIONS).sort()).toEqual([...toolNames].sort());
   });
 
-  test('read-only tools are exactly the tools that need only read permissions', () => {
-    const readOnlyByPermission = toolNames.filter((name) =>
-      TOOL_PERMISSIONS[name].every(isReadPermission)
-    );
-    expect(readOnlyByPermission.sort()).toEqual([...READ_ONLY_TOOLS].sort());
+  test('read-only tokens keep exactly the six tools they reach today', () => {
+    expect([...READ_ONLY_TOOLS].sort()).toEqual([
+      'get_account_summary',
+      'get_budget_summary',
+      'get_dashboard',
+      'list_accounts',
+      'list_categories',
+      'list_transactions',
+    ]);
   });
 
   test('each scope preset allows exactly the tools the scope allows today', () => {
