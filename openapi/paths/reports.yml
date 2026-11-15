@@ -28,6 +28,7 @@ paths:
         **Report Types:**
         - Monthly: one month (`period=YYYY-MM`)
         - Yearly: one calendar year (`period=YYYY`)
+      x-required-permission: reports:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -242,6 +243,7 @@ paths:
         `INVALID_PERIOD_FORMAT`, `INVALID_MONTH`, `INVALID_YEAR`,
         `INVALID_CURRENCY`, `INVALID_USER_ID`. Messages match the overview
         report's.
+      x-required-permission: reports:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -356,6 +358,7 @@ paths:
         `INVALID_CURRENCY`, `INVALID_USER_ID`. `page`, `pageSize`,
         `source_type` and `category_id` never cause a 400: bad values are
         clamped or ignored.
+      x-required-permission: reports:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -533,6 +536,7 @@ paths:
         'yearly'."), `MISSING_PERIOD`, `INVALID_PERIOD` (every malformed or
         out-of-range period, unlike the other report routes), and
         `INVALID_CURRENCY`.
+      x-required-permission: reports:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -602,6 +606,7 @@ paths:
         `period` format (`INVALID_PERIOD_FORMAT`, `INVALID_MONTH`,
         `INVALID_YEAR`). 404 `CATEGORY_NOT_FOUND` when the category does not
         exist in the workspace.
+      x-required-permission: reports:read
       security:
         - sessionAuth: []
         - bearerAuth: []

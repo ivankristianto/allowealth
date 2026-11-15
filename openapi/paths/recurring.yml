@@ -6,6 +6,7 @@ paths:
       description: >-
         Recurring templates for the workspace, newest first, paginated. Unknown `status` or
         `type` values are ignored (treated as no filter); bad `page`/`limit` fall back to defaults.
+      x-required-permission: recurring:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -91,6 +92,7 @@ paths:
         `Content-Type: application/json` (415 otherwise). Unknown keys are rejected. The category
         must be an active category in the workspace and the account an open account (404
         `CATEGORY_NOT_FOUND` / `ACCOUNT_NOT_FOUND`, 400 `ACCOUNT_CLOSED`).
+      x-required-permission: recurring:write
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -206,6 +208,7 @@ paths:
       tags: [Recurring]
       summary: Get recurring template by ID
       description: A recurring template plus all its occurrences, newest due date first
+      x-required-permission: recurring:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -250,6 +253,7 @@ paths:
         (415 otherwise). Unknown keys are rejected, including `status`. Status changes go through
         the pause, resume and cancel endpoints, which accept only a session (not app passwords).
         Integer fields also accept numeric strings.
+      x-required-permission: recurring:write
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -485,6 +489,7 @@ paths:
 
 
         Pending occurrences of templates that are not active are left out.
+      x-required-permission: recurring:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -573,6 +578,7 @@ paths:
         or earlier. Conflicts return 409 with code `OCCURRENCE_NOT_DUE`,
         `OCCURRENCE_ALREADY_CONFIRMED`, `OCCURRENCE_ALREADY_SKIPPED` or `TEMPLATE_NOT_ACTIVE`.
         An unknown occurrence returns 404 `RECURRING_OCCURRENCE_NOT_FOUND`.
+      x-required-permission: recurring:confirm
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -672,6 +678,7 @@ paths:
         All occurrences (any status, any template status) due in one calendar month, grouped by
         due date. Days without occurrences are omitted. Out-of-range or missing `year`/`month`
         fall back to the current year and month.
+      x-required-permission: recurring:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -737,6 +744,7 @@ paths:
         months, starting with the current month in the workspace timezone. Projections come from template schedules,
         not from stored occurrences, so confirmed or skipped occurrences do not change them.
         Invalid filter values fall back to defaults.
+      x-required-permission: recurring:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -803,6 +811,7 @@ paths:
         cover pending occurrences of active templates due this month; `overdueCount` is the subset
         due before today (earlier months are not counted); `confirmedThisMonth` counts occurrences
         due this month that were confirmed. The `month` parameter affects only the HTML partial.
+      x-required-permission: recurring:read
       security:
         - sessionAuth: []
         - bearerAuth: []

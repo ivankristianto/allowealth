@@ -12,6 +12,7 @@ const validateMcpTokenMock = mock(async (): Promise<McpAuthContext | null> => ({
   userId: 'user-1',
   tokenId: 'tok-1',
   permissions: [],
+  kind: 'oauth',
 }));
 const createServicesMock = mock(() => ({ service: 'ok' }));
 const registerToolsMock = mock(() => []);
@@ -48,6 +49,7 @@ describe('POST /api/mcp', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       permissions: [],
+      kind: 'oauth',
     });
   });
 

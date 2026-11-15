@@ -23,13 +23,14 @@ API endpoints live in `src/pages/api/` and follow file-based routing.
 - `/api/admin/*`: operational diagnostics and admin dashboards
 - `/api/mcp`: MCP HTTP transport endpoint. Accepts an OAuth access token or an app password (`aw_pat_...`) as a Bearer token
 - `/api/user/app-passwords`: list, create and revoke app passwords (session auth, creation needs a sign-in from the last 15 minutes)
-- `/api/openapi.json`: the bundled OpenAPI document, for any signed-in caller
+- `/api/openapi.json`: the bundled OpenAPI document, whole for a session, only the token's own operations for an app password
+- `/api/app-password/self`: describes the calling app password (name, permissions, expiry, rate limit)
 
 ## Authentication
 
 Browser requests use the Better Auth session cookie, and state-changing calls also need the `X-CSRF-Token` header.
 
-Scripts and AI agents can send an app password instead: `Authorization: Bearer aw_pat_...`. It works on an allowlist of routes only, a `read` token is limited to GET, and Bearer requests skip CSRF and ignore cookies. See [Connect an AI agent over REST](/reference/ai-agent-rest/) for the route list, scopes and examples.
+Scripts and AI agents can send an app password instead: `Authorization: Bearer aw_pat_...`. It works on an allowlist of routes only, each route and method needs one `resource:action` permission (a `read` preset holds every `:read` one, `read-write` holds them all), and Bearer requests skip CSRF and ignore cookies. See [Connect an AI agent over REST](/reference/ai-agent-rest/) for the route list, the permissions and examples.
 
 ## Implementation pattern
 

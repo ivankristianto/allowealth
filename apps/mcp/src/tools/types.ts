@@ -3,20 +3,20 @@ import type { BudgetService } from '@/services/budget.service';
 import type { AccountService } from '@/services/account.service';
 import type { DashboardService } from '@/services/dashboard.service';
 import type { CategoryService } from '@/services/category.service';
-import type { Permission } from '@/lib/permissions/registry';
+import type { McpAppPasswordService } from '@/services/mcp-app-password.service';
+import type { McpAuthContext } from '@/lib/mcp-auth';
+import type { TokenRateLimit } from '@/lib/mcp-rate-limit';
 
 export interface ToolContext {
-  auth: {
-    workspaceId: string;
-    userId: string;
-    tokenId: string;
-    permissions: readonly Permission[];
-  };
+  auth: McpAuthContext;
+  /** The limit this transport applies to the token, or null where none applies (stdio). */
+  rateLimit: TokenRateLimit | null;
   services: {
     transaction: TransactionService;
     budget: BudgetService;
     account: AccountService;
     dashboard: DashboardService;
     category: CategoryService;
+    appPassword: Pick<McpAppPasswordService, 'findForUser'>;
   };
 }

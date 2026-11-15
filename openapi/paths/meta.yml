@@ -6,8 +6,12 @@ paths:
       summary: Get this OpenAPI document
       description: >-
         Returns this specification bundled into a single OpenAPI 3.1 JSON document (all `$ref`s
-        local). Any authenticated caller may read it: a session cookie or an app password of
-        either scope. Responses may be cached privately for 5 minutes.
+        local). A session gets the whole document. An app password gets only the operations it
+        may call: other operations are removed, paths left with none are dropped, and
+        `components` stay whole. Any valid app password may read it. Responses vary by
+        `Authorization`. A session's copy may be cached privately for 5 minutes; an app
+        password's copy is `no-cache`, so a permission edit shows on the next fetch.
+      x-required-permission: any
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -16,9 +20,14 @@ paths:
           description: The bundled OpenAPI document
           headers:
             Cache-Control:
+              description: '`private, max-age=300` for a session, `private, no-cache` for an app password.'
               schema:
                 type: string
                 example: private, max-age=300
+            Vary:
+              schema:
+                type: string
+                example: Authorization
           content:
             application/json:
               schema:
@@ -36,6 +45,45 @@ paths:
                   components:
                     type: object
                 additionalProperties: true
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/app-password/self:
+    get:
+      tags: [Meta]
+      summary: Describe the calling app password
+      description: >-
+        Returns the app password sent as the Bearer token: its name, preset, expanded permissions,
+        expiry and rate limit. Any valid app password may call it, so an agent can check what it
+        may do before it tries. A request with a session cookie and no app password gets 400
+        `APP_PASSWORD_REQUIRED`.
+      x-required-permission: any
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The calling app password
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AppPassword.yml#/AppPasswordSelfResponse'
+        '400':
+          description: The request carries no app password to describe
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: This endpoint describes the app password sent as a Bearer token, and this request has none
+                  code: APP_PASSWORD_REQUIRED
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '403':

@@ -41,6 +41,7 @@ let appPasswordAuthentication: typeof import('@/middleware/app-password').appPas
 let authentication: typeof import('@/middleware/auth').authentication;
 let csrf: typeof import('@/middleware/csrf').csrf;
 let openApiGet: typeof import('@/pages/api/openapi.json').GET;
+let selfGet: typeof import('@/pages/api/app-password/self').GET;
 
 const WORKSPACE_ID = 'app-pw-rest-workspace';
 const USER_ID = 'app-pw-rest-user';
@@ -180,6 +181,7 @@ describe('app password authentication on the REST API', () => {
     ({ authentication } = await import('@/middleware/auth'));
     ({ csrf } = await import('@/middleware/csrf'));
     ({ GET: openApiGet } = await import('@/pages/api/openapi.json'));
+    ({ GET: selfGet } = await import('@/pages/api/app-password/self'));
   });
 
   beforeEach(async () => {
@@ -476,12 +478,15 @@ describe('app password authentication on the REST API', () => {
       expect(routeHandler).toHaveBeenCalledTimes(4);
     });
 
-    test('a token with no permissions reaches only the OpenAPI document', async () => {
+    test('a token with no permissions reaches only the OpenAPI document and its own description', async () => {
       const token = await createTokenWithGrants([]);
 
       expect((await runChain(createContext('/api/openapi.json', { bearer: token }))).status).toBe(
         200
       );
+      expect(
+        (await runChain(createContext('/api/app-password/self', { bearer: token }))).status
+      ).toBe(200);
       await expectPermissionMissing(
         await runChain(createContext('/api/accounts', { bearer: token })),
         'accounts:read'
@@ -519,7 +524,125 @@ describe('app password authentication on the REST API', () => {
     }
   });
 
+  describe('GET /api/app-password/self', () => {
+    const DAY_MS = 86_400_000;
+    const callSelf = (options: RequestOptions) =>
+      runChain(
+        createContext('/api/app-password/self', options),
+        (ctx) => selfGet(ctx as never) as Promise<Response>
+      );
+
+    test('describes a read preset token with its expanded permissions', async () => {
+      const { token, appPassword } = await service.create({
+        userId: USER_ID,
+        name: 'Nightly report',
+        permissions: ['*:read'],
+        expiry: '30',
+      });
+
+      const response = await callSelf({ bearer: token });
+
+      expect(response.status).toBe(200);
+      const { data } = await response.json();
+      // Stored dates keep whole seconds, so compare with the row as read back.
+      const stored = await service.findForUser(USER_ID, appPassword.id);
+      expect(data).toEqual({
+        kind: 'app_password',
+        id: appPassword.id,
+        name: 'Nightly report',
+        preset: 'read',
+        permissions: expandPermissionGrants(['*:read']),
+        expires_at: stored?.expiresAt?.toISOString(),
+        created_at: stored?.createdAt.toISOString(),
+        rate_limit: { limit: 60, window_seconds: 60 },
+      });
+      expect(Date.parse(data.expires_at) - Date.parse(data.created_at)).toBe(30 * DAY_MS);
+    });
+
+    test('describes a custom token that never expires', async () => {
+      const { token } = await service.create({
+        userId: USER_ID,
+        name: 'Expense logger',
+        permissions: ['transactions:create', 'budgets:read'],
+        expiry: 'never',
+      });
+
+      const { data } = await (await callSelf({ bearer: token })).json();
+
+      expect(data).toMatchObject({
+        name: 'Expense logger',
+        preset: 'custom',
+        permissions: ['transactions:create', 'budgets:read'],
+        expires_at: null,
+      });
+    });
+
+    test('a session request gets 400, since there is no token to describe', async () => {
+      mockCookieSession();
+
+      const response = await callSelf({ cookies: { [SESSION_COOKIE]: 'signed-cookie' } });
+
+      expect(response.status).toBe(400);
+      expect((await response.json()).error.code).toBe('APP_PASSWORD_REQUIRED');
+    });
+
+    test('an unauthenticated request gets 401', async () => {
+      expect((await callSelf({})).status).toBe(401);
+    });
+  });
+
   describe('GET /api/openapi.json', () => {
+    type Spec = {
+      openapi: string;
+      paths: Record<string, Record<string, unknown>>;
+      components: Record<string, Record<string, unknown>>;
+    };
+    const HTTP_METHODS = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch']);
+
+    async function fetchSpec(options: RequestOptions): Promise<Spec> {
+      const response = await runChain(
+        createContext('/api/openapi.json', options),
+        (ctx) => openApiGet(ctx as never) as Promise<Response>
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+      return (await response.json()) as Spec;
+    }
+
+    function operations(spec: Spec): string[] {
+      return Object.entries(spec.paths)
+        .flatMap(([path, item]) =>
+          Object.keys(item)
+            .filter((key) => HTTP_METHODS.has(key))
+            .map((method) => `${method.toUpperCase()} ${path}`)
+        )
+        .sort();
+    }
+
+    function unresolvedRefs(spec: Spec): string[] {
+      const refs: string[] = [];
+      const collect = (node: unknown): void => {
+        if (Array.isArray(node)) return node.forEach(collect);
+        if (typeof node !== 'object' || node === null) return;
+        for (const [key, value] of Object.entries(node)) {
+          if (key === '$ref' && typeof value === 'string') refs.push(value);
+          else collect(value);
+        }
+      };
+      collect(spec);
+      return refs.filter((ref) => {
+        let target: unknown = spec;
+        for (const segment of ref.replace(/^#\//, '').split('/')) {
+          const key = segment.replaceAll('~1', '/').replaceAll('~0', '~');
+          if (typeof target !== 'object' || target === null || !Object.hasOwn(target, key)) {
+            return true;
+          }
+          target = (target as Record<string, unknown>)[key];
+        }
+        return false;
+      });
+    }
+
     test('requires authentication', async () => {
       const response = await runChain(
         createContext('/api/openapi.json'),
@@ -528,36 +651,70 @@ describe('app password authentication on the REST API', () => {
       expect(response.status).toBe(401);
     });
 
-    test('serves the bundled spec to a read token, with every allowlisted path', async () => {
-      const response = await runChain(
-        createContext('/api/openapi.json', { bearer: readToken }),
-        (ctx) => openApiGet(ctx as never) as Promise<Response>
-      );
+    test('a custom token gets exactly its operations, and every $ref still resolves', async () => {
+      const token = await createTokenWithGrants(['transactions:create', 'budgets:read']);
 
-      expect(response.status).toBe(200);
-      expect(response.headers.get('Content-Type')).toBe('application/json');
-      const spec = (await response.json()) as {
-        openapi: string;
-        paths: Record<string, Record<string, unknown>>;
-        components: { securitySchemes: Record<string, unknown> };
-      };
+      const spec = await fetchSpec({ bearer: token });
+
+      expect(operations(spec)).toEqual([
+        'GET /api/app-password/self',
+        'GET /api/budget/category-trends',
+        'GET /api/budget/category/{id}/remaining',
+        'GET /api/budget/history',
+        'GET /api/budget/overview',
+        'GET /api/budgets',
+        'GET /api/budgets/{id}',
+        'GET /api/openapi.json',
+        'POST /api/transactions',
+      ]);
       expect(spec.openapi).toStartWith('3.');
       expect(spec.components.securitySchemes.bearerAuth).toBeDefined();
-      const undocumented = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
-        rule.methods
-          .filter((method) => !spec.paths[rule.path]?.[method.toLowerCase()])
-          .map((method) => `${method} ${rule.path}`)
-      );
-      expect(undocumented).toEqual([]);
+      expect(spec.components.schemas.Transaction).toBeDefined();
+      expect(unresolvedRefs(spec)).toEqual([]);
     });
 
-    test('serves the spec to a session user', async () => {
-      mockCookieSession();
-      const response = await runChain(
-        createContext('/api/openapi.json', { cookies: { [SESSION_COOKIE]: 'signed-cookie' } }),
-        (ctx) => openApiGet(ctx as never) as Promise<Response>
+    test('a read token gets every allowlisted GET and no write', async () => {
+      const spec = await fetchSpec({ bearer: readToken });
+
+      const allowlistedGets = APP_PASSWORD_REST_ROUTES.filter((rule) =>
+        rule.methods.includes('GET')
+      ).map((rule) => `GET ${rule.path}`);
+      expect(operations(spec)).toEqual(allowlistedGets.sort());
+    });
+
+    test('a read-write token gets every allowlisted operation', async () => {
+      const spec = await fetchSpec({ bearer: readWriteToken });
+
+      const allowlisted = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
+        rule.methods.map((method) => `${method} ${rule.path}`)
       );
-      expect(response.status).toBe(200);
+      expect(operations(spec)).toEqual(allowlisted.sort());
+    });
+
+    test('an app password response is revalidated on every fetch; a session may cache it', async () => {
+      const get = (options: RequestOptions) =>
+        runChain(
+          createContext('/api/openapi.json', options),
+          (ctx) => openApiGet(ctx as never) as Promise<Response>
+        );
+
+      const token = await get({ bearer: readToken });
+      mockCookieSession();
+      const session = await get({ cookies: { [SESSION_COOKIE]: 'signed-cookie' } });
+
+      expect(token.headers.get('Cache-Control')).toBe('private, no-cache');
+      expect(session.headers.get('Cache-Control')).toBe('private, max-age=300');
+      expect(token.headers.get('Vary')).toBe('Authorization');
+      expect(session.headers.get('Vary')).toBe('Authorization');
+    });
+
+    test('a session user gets the whole document', async () => {
+      mockCookieSession();
+
+      const spec = await fetchSpec({ cookies: { [SESSION_COOKIE]: 'signed-cookie' } });
+
+      expect(spec.paths['/api/user/profile']).toBeDefined();
+      expect(spec.paths['/api/workspace/settings']?.put).toBeDefined();
     });
   });
 });

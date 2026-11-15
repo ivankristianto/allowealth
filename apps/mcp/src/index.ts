@@ -19,14 +19,15 @@ server.server.setRequestHandler(ListToolsRequestSchema, async () => {
 async function main(): Promise<void> {
   const auth = await authenticate();
   const services = createServices(db);
-  const ctx: ToolContext = { auth, services };
+  // The stdio server runs on the user's machine and applies no rate limit.
+  const ctx: ToolContext = { auth, services, rateLimit: null };
 
   console.error(`Allowealth MCP server started (workspace: ${auth.workspaceId.slice(0, 8)}…)`);
 
   server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Re-check key validity on each call (catches revocation/expiry without restart)
     const freshAuth = await getAuthContext();
-    const freshCtx: ToolContext = { auth: freshAuth, services: ctx.services };
+    const freshCtx: ToolContext = { ...ctx, auth: freshAuth };
     return handleToolCall(request.params.name, request.params.arguments ?? {}, freshCtx);
   });
 

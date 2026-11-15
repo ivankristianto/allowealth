@@ -15,6 +15,7 @@ paths:
 
         `_render=html` returns server-rendered fragments for the web UI and needs the
         `X-Requested-With: XMLHttpRequest` header. API clients should use the JSON default.
+      x-required-permission: budgets:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -110,6 +111,7 @@ paths:
 
         `_render=html` returns a server-rendered table for the web UI and needs the
         `X-Requested-With: XMLHttpRequest` header. API clients should use the JSON default.
+      x-required-permission: budgets:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -184,6 +186,7 @@ paths:
 
         `_render=html` returns a server-rendered table for the web UI and needs the
         `X-Requested-With: XMLHttpRequest` header. API clients should use the JSON default.
+      x-required-permission: budgets:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -245,6 +248,7 @@ paths:
 
         Returns 400 when `currency` is missing or not one of the workspace's currencies, and
         404 when the category does not exist in the workspace.
+      x-required-permission: budgets:read
       security:
         - sessionAuth: []
         - bearerAuth: []

@@ -11,6 +11,7 @@ paths:
 
         Returns 400 with code `MISSING_PARAMS` (month or year absent), `INVALID_MONTH`,
         `INVALID_YEAR` or `INVALID_CURRENCY`.
+      x-required-permission: budgets:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -104,6 +105,7 @@ paths:
       description: |
         One budget row by ID, without the category join or spending figures.
         Returns 404 when the budget does not exist in the workspace.
+      x-required-permission: budgets:read
       security:
         - sessionAuth: []
         - bearerAuth: []

@@ -161,8 +161,9 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 | `get_budget_summary`  | Read   | Get monthly budget overview with per-category breakdown and status           |
 | `get_dashboard`       | Read   | Get combined financial snapshot: accounts, income, expenses, budget health   |
 | `get_account_summary` | Read   | Get account totals grouped by currency and type                              |
+| `get_token_info`      | Read   | Describe the token in use: name, preset, permissions, expiry and rate limit  |
 
-Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold every permission. A tool without an entry is refused to every token, and a test fails until it has one. The stdio and HTTP servers apply the same check.
+Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold every permission. A tool without an entry is refused to every token, and a test fails until it has one. `get_token_info` is mapped to `ANY_VALID_TOKEN` instead, so every token may call it. Over stdio its `rate_limit` is `null`, because the local server applies none. The stdio and HTTP servers apply the same check.
 
 Read tools advertise `readOnlyHint: true`. Write tools advertise `readOnlyHint: false` and `destructiveHint`, which is `false` for tools that only create or confirm records (`add_expense`, `add_income`) and `true` for tools that can update or delete, so clients can warn before a write.
 

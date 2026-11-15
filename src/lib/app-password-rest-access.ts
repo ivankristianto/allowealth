@@ -7,7 +7,7 @@ import type { Permission } from '@/lib/permissions/registry';
 
 export type AppPasswordRestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-/** Marks a route that carries no workspace data, such as the OpenAPI document. */
+/** Marks a route that carries no workspace data, such as the OpenAPI document or the token's own description. */
 export const ANY_VALID_TOKEN = 'any-valid-token';
 
 export type AppPasswordRestPermission = Permission | typeof ANY_VALID_TOKEN;
@@ -30,6 +30,7 @@ function rule(path: string, permissions: AppPasswordRestPermissionMap): AppPassw
 
 export const APP_PASSWORD_REST_ROUTES: readonly AppPasswordRestRoute[] = [
   rule('/api/openapi.json', { GET: ANY_VALID_TOKEN }),
+  rule('/api/app-password/self', { GET: ANY_VALID_TOKEN }),
 
   rule('/api/transactions', { GET: 'transactions:read', POST: 'transactions:create' }),
   rule('/api/transactions/{id}', {
@@ -117,23 +118,39 @@ function matchesTemplate(templateSegments: readonly string[], pathSegments: stri
   });
 }
 
-/** `permissions` are the token's expanded grants; HEAD needs what GET needs. */
+/** The permission `method` needs on `route`, or undefined when the method is not allowed. HEAD needs what GET needs. */
+export function requiredPermission(
+  route: AppPasswordRestRoute,
+  method: string
+): AppPasswordRestPermission | undefined {
+  const upperMethod = method.toUpperCase();
+  const effectiveMethod = upperMethod === 'HEAD' ? 'GET' : upperMethod;
+  return Object.hasOwn(route.permissions, effectiveMethod)
+    ? route.permissions[effectiveMethod as AppPasswordRestMethod]
+    : undefined;
+}
+
+/** The permission a token holding the expanded `permissions` lacks for `required`, or null. */
+export function missingPermission(
+  required: AppPasswordRestPermission,
+  permissions: readonly Permission[]
+): Permission | null {
+  return required === ANY_VALID_TOKEN || permissions.includes(required) ? null : required;
+}
+
+/** `permissions` are the token's expanded grants. */
 export function authorizeAppPasswordRequest(
   method: string,
   pathname: string,
   permissions: readonly Permission[]
 ): AppPasswordRestDecision {
   const upperMethod = method.toUpperCase();
-  const effectiveMethod = upperMethod === 'HEAD' ? 'GET' : upperMethod;
   const pathSegments = (pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname).split('/');
   const route = COMPILED_ROUTES.find((candidate) =>
     matchesTemplate(candidate.segments, pathSegments)
   );
 
-  const required =
-    route && Object.hasOwn(route.permissions, effectiveMethod)
-      ? route.permissions[effectiveMethod as AppPasswordRestMethod]
-      : undefined;
+  const required = route && requiredPermission(route, method);
   if (!required) {
     return {
       allowed: false,
@@ -142,14 +159,15 @@ export function authorizeAppPasswordRequest(
     };
   }
 
-  if (required === ANY_VALID_TOKEN || permissions.includes(required)) {
+  const missing = missingPermission(required, permissions);
+  if (missing === null) {
     return { allowed: true };
   }
 
   return {
     allowed: false,
     code: 'APP_PASSWORD_PERMISSION_MISSING',
-    message: `This app password does not have the ${required} permission`,
-    details: { permission: required },
+    message: `This app password does not have the ${missing} permission`,
+    details: { permission: missing },
   };
 }

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { ANY_VALID_TOKEN, APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
 import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
 import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
+import { bundleOpenApiDocument } from '@/lib/openapi/bundle';
 import { PERMISSION_IDS, expandPermissionGrants, isPermission } from '@/lib/permissions/registry';
 import { TOOL_PERMISSIONS, registerTools, toolAnnotations } from '@mcp-server/tools/index';
 
@@ -20,11 +21,11 @@ describe('REST allowlist permissions', () => {
     expect(unmapped).toEqual([]);
   });
 
-  test('only the OpenAPI document is open to any valid token', () => {
+  test('only the OpenAPI document and the self description are open to any valid token', () => {
     const open = restPairs
       .filter(({ permission }) => permission === ANY_VALID_TOKEN)
       .map(({ rule, method }) => `${method} ${rule.path}`);
-    expect(open).toEqual(['GET /api/openapi.json']);
+    expect(open).toEqual(['GET /api/openapi.json', 'GET /api/app-password/self']);
   });
 });
 
@@ -38,6 +39,24 @@ describe('documented app password permissions', () => {
     expect(schemas.AppPasswordPermission.enum).toEqual([...PERMISSION_IDS]);
   });
 
+  test('x-required-permission on each operation matches the REST allowlist, in both directions', () => {
+    const document = bundleOpenApiDocument(read) as {
+      paths: Record<string, Record<string, { 'x-required-permission'?: string }>>;
+    };
+    const documented = Object.entries(document.paths).flatMap(([path, item]) =>
+      Object.entries(item)
+        .filter(([, operation]) => operation['x-required-permission'] !== undefined)
+        .map(([method, operation]) => {
+          return `${method.toUpperCase()} ${path} ${operation['x-required-permission']}`;
+        })
+    );
+    const allowlisted = restPairs.map(({ rule, method, permission }) => {
+      return `${method} ${rule.path} ${permission === ANY_VALID_TOKEN ? 'any' : permission}`;
+    });
+
+    expect(documented.sort()).toEqual(allowlisted.sort());
+  });
+
   test('the REST agent guide lists every permission', () => {
     const guide = read('apps/docs/src/content/docs/reference/ai-agent-rest.md');
     const missing = PERMISSION_IDS.filter((permission) => !guide.includes(`| \`${permission}\``));
@@ -48,14 +67,23 @@ describe('documented app password permissions', () => {
 describe('MCP tool permissions', () => {
   const toolNames = registerTools().map((tool) => tool.name);
 
-  test('every registered tool names at least one known permission', () => {
-    expect(toolNames).toHaveLength(8);
+  test('every registered tool names known permissions or the any-valid-token marker', () => {
+    expect(toolNames).toHaveLength(9);
     const unmapped = toolNames.filter((name) => {
-      const permissions: readonly unknown[] = TOOL_PERMISSIONS[name] ?? [];
+      const required = TOOL_PERMISSIONS[name];
+      if (required === ANY_VALID_TOKEN) return false;
+      const permissions: readonly unknown[] = required ?? [];
       return permissions.length === 0 || !permissions.every(isPermission);
     });
     expect(unmapped).toEqual([]);
     expect(Object.keys(TOOL_PERMISSIONS).sort()).toEqual([...toolNames].sort());
+  });
+
+  test('only get_token_info is open to any valid token', () => {
+    const open = Object.entries(TOOL_PERMISSIONS)
+      .filter(([, required]) => required === ANY_VALID_TOKEN)
+      .map(([name]) => name);
+    expect(open).toEqual(['get_token_info']);
   });
 
   test('each scope preset sees exactly the tools it saw before permissions', () => {
@@ -67,6 +95,7 @@ describe('MCP tool permissions', () => {
       'get_account_summary',
       'get_budget_summary',
       'get_dashboard',
+      'get_token_info',
       'list_accounts',
       'list_categories',
       'list_transactions',
@@ -122,6 +151,7 @@ describe('MCP tool annotations', () => {
       get_budget_summary: { readOnlyHint: true },
       get_dashboard: { readOnlyHint: true },
       get_account_summary: { readOnlyHint: true },
+      get_token_info: { readOnlyHint: true },
     });
   });
 });

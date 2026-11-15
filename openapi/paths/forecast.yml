@@ -13,6 +13,7 @@ paths:
       operationId: getForecast
       tags:
         - Forecast
+      x-required-permission: forecast:read
       security:
         - sessionAuth: []
         - bearerAuth: []

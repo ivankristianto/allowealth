@@ -179,6 +179,7 @@ describe('validateMcpToken', () => {
         userId: 'user-1',
         tokenId: 'tok-1',
         permissions: PERMISSION_IDS,
+        kind: 'oauth',
       });
     }
   });
@@ -203,6 +204,7 @@ describe('validateMcpToken', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       permissions: PERMISSION_IDS,
+      kind: 'oauth',
     });
     expect(mockCacheSet).not.toHaveBeenCalled();
   });
@@ -227,6 +229,7 @@ describe('validateMcpToken', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       permissions: PERMISSION_IDS,
+      kind: 'oauth',
     });
     expect(mockCacheSet).not.toHaveBeenCalled();
   });
@@ -299,6 +302,7 @@ describe('validateMcpToken app password dispatch', () => {
     userId: 'user-1',
     tokenId: 'pat_1',
     permissions: ['accounts:read' as const],
+    kind: 'app_password' as const,
   };
 
   beforeEach(() => {
@@ -347,6 +351,7 @@ describe('validateMcpToken app password dispatch', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       permissions: PERMISSION_IDS,
+      kind: 'oauth',
     });
   });
 });
@@ -357,6 +362,7 @@ describe('validateMcpToken with an archived workspace', () => {
     userId: 'user-1',
     tokenId: 'pat-1',
     permissions: ['accounts:read' as const],
+    kind: 'app_password' as const,
   };
 
   beforeEach(() => {

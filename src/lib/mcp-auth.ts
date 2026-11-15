@@ -9,6 +9,7 @@ import { WorkspaceService } from '@/services/workspace.service';
 import { eq } from 'drizzle-orm';
 
 export interface McpAuthContext {
+  kind: 'oauth' | 'app_password';
   workspaceId: string;
   userId: string;
   tokenId: string;
@@ -87,6 +88,7 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
   if (!userRecord?.workspace_id || userRecord.deleted_at) return null;
 
   return {
+    kind: 'oauth',
     workspaceId: userRecord.workspace_id,
     userId,
     tokenId: tokenRecord.id,

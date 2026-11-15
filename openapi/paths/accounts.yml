@@ -8,6 +8,7 @@ paths:
         Active (not closed, not deleted) accounts in the caller's workspace, sorted by name. The
         list is a bare array in `data`, with no pagination. Unknown `type` or `currency` values
         are ignored rather than rejected. Closed accounts are at GET /api/accounts/closed.
+      x-required-permission: accounts:read
       security:
         - sessionAuth: []
         - bearerAuth: []
@@ -86,6 +87,7 @@ paths:
       description: >-
         Retrieve a single active account in the caller's workspace. A closed or deleted account,
         or an ID from another workspace, returns 404 with message `Account not found`.
+      x-required-permission: accounts:read
       security:
         - sessionAuth: []
         - bearerAuth: []
