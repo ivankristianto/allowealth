@@ -1,14 +1,6 @@
 /**
- * App Password Authentication Middleware
- *
- * Authenticates `/api/*` requests that carry `Authorization: Bearer aw_pat_...`.
- * Runs before `authentication`; when it succeeds the request ignores cookies,
- * `locals.session` stays null and `locals.appPassword` is set, which also makes
- * `csrf` skip the request (browsers never attach an Authorization header on their own).
- *
- * Deny by default: only routes in APP_PASSWORD_REST_ROUTES pass, and a `read`
- * token may only use GET/HEAD. Other Bearer tokens (OAuth MCP tokens) get 401,
- * except on `/api/mcp` and Better Auth routes, which handle Bearer tokens themselves.
+ * Authenticates `Bearer aw_pat_...` requests to routes in APP_PASSWORD_REST_ROUTES.
+ * A verified request ignores cookies and skips CSRF: browsers never send Authorization unasked.
  */
 
 import type { MiddlewareHandler } from 'astro';
