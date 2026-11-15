@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { SQL } from 'drizzle-orm';
 import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { oauthAccessToken, users } from '@/db/schema/sqlite';
+import { PERMISSION_IDS } from '@/lib/permissions/registry';
 
 const mockFindFirst = mock(async () => null);
 const mockDb = {
@@ -177,6 +178,7 @@ describe('validateMcpToken', () => {
         workspaceId: 'ws-1',
         userId: 'user-1',
         tokenId: 'tok-1',
+        permissions: PERMISSION_IDS,
       });
     }
   });
@@ -196,7 +198,12 @@ describe('validateMcpToken', () => {
     }));
 
     const result = await validateMcpToken('valid-token', testDeps);
-    expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
+    expect(result).toEqual({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      tokenId: 'tok-1',
+      permissions: PERMISSION_IDS,
+    });
     expect(mockCacheSet).not.toHaveBeenCalled();
   });
 
@@ -215,7 +222,12 @@ describe('validateMcpToken', () => {
     }));
 
     const result = await validateMcpToken('short-lived-token', testDeps);
-    expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
+    expect(result).toEqual({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      tokenId: 'tok-1',
+      permissions: PERMISSION_IDS,
+    });
     expect(mockCacheSet).not.toHaveBeenCalled();
   });
 
@@ -316,7 +328,7 @@ describe('validateMcpToken app password dispatch', () => {
     expect(mockDb.query.oauthAccessToken.findFirst).not.toHaveBeenCalled();
   });
 
-  it('leaves OAuth tokens on the OAuth path with no scope restriction', async () => {
+  it('gives OAuth tokens every permission and no scope', async () => {
     const verify = mock(async () => appPasswordContext);
     mockDb.query.oauthAccessToken.findFirst = mock(async () => ({
       id: 'tok-1',
@@ -330,7 +342,12 @@ describe('validateMcpToken app password dispatch', () => {
     const result = await validateMcpToken('oauth-token', { ...testDeps, appPasswords: { verify } });
 
     expect(verify).not.toHaveBeenCalled();
-    expect(result).toEqual({ workspaceId: 'ws-1', userId: 'user-1', tokenId: 'tok-1' });
+    expect(result).toEqual({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      tokenId: 'tok-1',
+      permissions: PERMISSION_IDS,
+    });
     expect(result?.scope).toBeUndefined();
   });
 });

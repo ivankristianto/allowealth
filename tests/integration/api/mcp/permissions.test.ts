@@ -1,0 +1,161 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db';
+import { mcpAppPasswords, users, workspaces } from '@/db/schema';
+import type { PermissionGrant } from '@/lib/permissions/registry';
+import { clearRateLimitStore } from '@/lib/rate-limit';
+import { McpAppPasswordService } from '@/services/mcp-app-password.service';
+
+const WORKSPACE_ID = 'mcp-permissions-workspace';
+const USER_ID = 'mcp-permissions-user';
+const service = new McpAppPasswordService(db);
+
+let post: typeof import('@/pages/api/mcp').POST;
+
+interface ToolCallResult {
+  isError?: boolean;
+  content: Array<{ type: string; text: string }>;
+}
+
+async function createTokenWithGrants(grants: readonly PermissionGrant[]): Promise<string> {
+  // A read-scoped row proves the stored permissions decide, not the scope.
+  const { token, appPassword } = await service.create({
+    userId: USER_ID,
+    name: `mcp ${crypto.randomUUID()}`,
+    scope: 'read',
+    expiry: '30',
+  });
+  await db
+    .update(mcpAppPasswords)
+    .set({ permissions: [...grants] })
+    .where(eq(mcpAppPasswords.id, appPassword.id));
+  return token;
+}
+
+async function rpc(token: string, method: string, params?: Record<string, unknown>) {
+  const response = await post({
+    request: new Request('http://localhost/api/mcp', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    }),
+  } as never);
+  expect(response.status).toBe(200);
+  return ((await response.json()) as { result: unknown }).result;
+}
+
+async function listToolNames(token: string): Promise<string[]> {
+  const result = (await rpc(token, 'tools/list')) as { tools: Array<{ name: string }> };
+  return result.tools.map((tool) => tool.name).sort();
+}
+
+async function callTool(
+  token: string,
+  name: string,
+  args: Record<string, unknown> = {}
+): Promise<ToolCallResult> {
+  return (await rpc(token, 'tools/call', { name, arguments: args })) as ToolCallResult;
+}
+
+async function resetFixtures(): Promise<void> {
+  await db.delete(mcpAppPasswords).where(eq(mcpAppPasswords.user_id, USER_ID));
+  await db.delete(users).where(eq(users.id, USER_ID));
+  await db.delete(workspaces).where(eq(workspaces.id, WORKSPACE_ID));
+}
+
+describe('MCP tool access by app password permissions', () => {
+  beforeAll(async () => {
+    ({ POST: post } = await import('@/pages/api/mcp'));
+  });
+
+  beforeEach(async () => {
+    clearRateLimitStore();
+    await resetFixtures();
+    await db
+      .insert(workspaces)
+      .values({ id: WORKSPACE_ID, name: 'MCP Workspace', status: 'active' });
+    await db.insert(users).values({
+      id: USER_ID,
+      workspace_id: WORKSPACE_ID,
+      email: 'mcp-permissions@example.com',
+      name: 'MCP Owner',
+      role: 'admin',
+    });
+  });
+
+  afterAll(resetFixtures);
+
+  test('a token holding only transactions:create sees and calls only the add tools', async () => {
+    const token = await createTokenWithGrants(['transactions:create']);
+
+    expect(await listToolNames(token)).toEqual(['add_expense', 'add_income']);
+
+    const denied = await callTool(token, 'list_transactions');
+    expect(denied).toEqual({
+      isError: true,
+      content: [
+        { type: 'text', text: 'Tool list_transactions needs the transactions:read permission.' },
+      ],
+    });
+
+    // Invalid arguments fail inside the handler, which shows the permission check let it through.
+    const allowed = await callTool(token, 'add_expense');
+    expect(allowed.isError).toBe(true);
+    expect(allowed.content[0].text).toStartWith('Error: Invalid ');
+  });
+
+  test('get_dashboard needs all three of its permissions', async () => {
+    const twoOfThree = await createTokenWithGrants(['transactions:read', 'accounts:read']);
+
+    expect(await listToolNames(twoOfThree)).toEqual([
+      'get_account_summary',
+      'list_accounts',
+      'list_transactions',
+    ]);
+    const denied = await callTool(twoOfThree, 'get_dashboard');
+    expect(denied.isError).toBe(true);
+    expect(denied.content[0].text).toBe('Tool get_dashboard needs the budgets:read permission.');
+
+    const allThree = await createTokenWithGrants([
+      'transactions:read',
+      'accounts:read',
+      'budgets:read',
+    ]);
+    expect(await listToolNames(allThree)).toContain('get_dashboard');
+  });
+
+  test('a denial names every missing permission', async () => {
+    const token = await createTokenWithGrants(['transactions:read']);
+
+    const denied = await callTool(token, 'get_dashboard');
+    expect(denied.content[0].text).toBe(
+      'Tool get_dashboard needs the accounts:read, budgets:read permissions.'
+    );
+  });
+
+  test('a tool missing from TOOL_PERMISSIONS is refused to a token holding every permission', async () => {
+    const token = await createTokenWithGrants(['*']);
+
+    expect(await callTool(token, 'drop_all_data')).toEqual({
+      isError: true,
+      content: [{ type: 'text', text: 'Tool drop_all_data is not available.' }],
+    });
+  });
+
+  test('an Object.prototype member name is refused like any other unknown tool', async () => {
+    const token = await createTokenWithGrants(['*']);
+
+    for (const name of ['constructor', 'hasOwnProperty', '__proto__', 'toString']) {
+      expect(await callTool(token, name)).toEqual({
+        isError: true,
+        content: [{ type: 'text', text: `Tool ${name} is not available.` }],
+      });
+    }
+  });
+
+  test('a token with no permissions sees no tools', async () => {
+    const token = await createTokenWithGrants([]);
+
+    expect(await listToolNames(token)).toEqual([]);
+  });
+});

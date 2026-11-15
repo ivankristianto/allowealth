@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 import { handleToolCall, type ToolContext } from '@mcp-server/tools/index';
+import { PERMISSION_IDS } from '@/lib/permissions/registry';
 import { AccountServiceError, ServiceErrorCode } from '@/services/service-errors';
 
 function contextWithFindAll(findAll: () => Promise<unknown>): ToolContext {
   return {
-    auth: { workspaceId: 'workspace-1', userId: 'user-1', tokenId: 'token-1', scope: 'read' },
+    auth: {
+      workspaceId: 'workspace-1',
+      userId: 'user-1',
+      tokenId: 'token-1',
+      permissions: PERMISSION_IDS,
+    },
     services: { account: { findAll } },
   } as unknown as ToolContext;
 }

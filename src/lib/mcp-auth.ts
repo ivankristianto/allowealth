@@ -3,7 +3,7 @@ import { hashOAuthToken } from '@/lib/auth/oauth-token-hash';
 import { getCacheManager } from '@/lib/cache';
 import { isAppPasswordToken, type AppPasswordScope } from '@/lib/mcp-app-password';
 import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
-import type { Permission } from '@/lib/permissions/registry';
+import { PERMISSION_IDS, type Permission } from '@/lib/permissions/registry';
 import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { WorkspaceService } from '@/services/workspace.service';
 import { eq } from 'drizzle-orm';
@@ -12,10 +12,10 @@ export interface McpAuthContext {
   workspaceId: string;
   userId: string;
   tokenId: string;
-  /** Set for app passwords only; OAuth tokens have full MCP access. */
+  /** Set for app passwords only, for display. `permissions` decides access. */
   scope?: AppPasswordScope;
-  /** App passwords only, expanded from stored grants. REST enforces these; MCP reads `scope`. */
-  permissions?: readonly Permission[];
+  /** What the token may do on REST and MCP. App passwords expand their stored grants. */
+  permissions: readonly Permission[];
 }
 
 interface McpAuthDeps {
@@ -92,6 +92,8 @@ async function lookupToken(token: string, deps: McpAuthDeps): Promise<McpAuthCon
     workspaceId: userRecord.workspace_id,
     userId,
     tokenId: tokenRecord.id,
+    // The `mcp` OAuth scope is all-or-nothing, so it grants every permission.
+    permissions: PERMISSION_IDS,
   };
 }
 
