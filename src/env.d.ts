@@ -17,7 +17,7 @@ declare global {
       appPassword?: {
         tokenId: string;
         scope: AppPasswordScope;
-        /** Expanded grants; REST authorization reads these, not `scope`. */
+        /** Expanded grants, for routes that report what the token may do. */
         permissions: readonly Permission[];
       } | null;
       userSettings?: UserSettings;

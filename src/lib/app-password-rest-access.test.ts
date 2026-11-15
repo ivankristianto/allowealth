@@ -59,7 +59,7 @@ describe('authorizeAppPasswordRequest', () => {
       allowed: false,
       code: 'APP_PASSWORD_PERMISSION_MISSING',
       message: 'This app password does not have the transactions:create permission',
-      permission: 'transactions:create',
+      details: { permission: 'transactions:create' },
     });
   });
 
@@ -70,7 +70,7 @@ describe('authorizeAppPasswordRequest', () => {
     expect(authorizeAppPasswordRequest('HEAD', '/api/budgets', ['accounts:read'])).toMatchObject({
       allowed: false,
       code: 'APP_PASSWORD_PERMISSION_MISSING',
-      permission: 'budgets:read',
+      details: { permission: 'budgets:read' },
     });
   });
 
@@ -83,11 +83,11 @@ describe('authorizeAppPasswordRequest', () => {
       true
     );
     expect(authorizeAppPasswordRequest('GET', '/api/transactions', permissions)).toMatchObject({
-      permission: 'transactions:read',
+      details: { permission: 'transactions:read' },
     });
     expect(
       authorizeAppPasswordRequest('PUT', '/api/transactions/abc123', permissions)
-    ).toMatchObject({ permission: 'transactions:update' });
+    ).toMatchObject({ details: { permission: 'transactions:update' } });
   });
 
   test('the OpenAPI document needs no permission', () => {

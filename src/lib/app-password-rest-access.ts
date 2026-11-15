@@ -72,12 +72,12 @@ export const APP_PASSWORD_REST_ROUTES: readonly AppPasswordRestRoute[] = [
 
 export type AppPasswordRestDecision =
   | { allowed: true }
-  | { allowed: false; code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED'; message: string }
+  | { allowed: false; code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED'; message: string; details?: never }
   | {
       allowed: false;
       code: 'APP_PASSWORD_PERMISSION_MISSING';
       message: string;
-      permission: Permission;
+      details: { permission: Permission };
     };
 
 // IDs are nanoid-style; anything else (encoded slashes, dots) cannot match a segment.
@@ -130,9 +130,10 @@ export function authorizeAppPasswordRequest(
     matchesTemplate(candidate.segments, pathSegments)
   );
 
-  const required = (route?.methods as readonly string[] | undefined)?.includes(effectiveMethod)
-    ? route?.permissions[effectiveMethod as AppPasswordRestMethod]
-    : undefined;
+  const required =
+    route && Object.hasOwn(route.permissions, effectiveMethod)
+      ? route.permissions[effectiveMethod as AppPasswordRestMethod]
+      : undefined;
   if (!required) {
     return {
       allowed: false,
@@ -149,6 +150,6 @@ export function authorizeAppPasswordRequest(
     allowed: false,
     code: 'APP_PASSWORD_PERMISSION_MISSING',
     message: `This app password does not have the ${required} permission`,
-    permission: required,
+    details: { permission: required },
   };
 }

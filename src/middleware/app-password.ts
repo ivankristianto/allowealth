@@ -94,19 +94,15 @@ export const appPasswordAuthentication: MiddlewareHandler = async (context, next
   const permissions = verified.permissions ?? [];
   const decision = authorizeAppPasswordRequest(context.request.method, pathname, permissions);
   if (!decision.allowed) {
-    const details =
-      decision.code === 'APP_PASSWORD_PERMISSION_MISSING'
-        ? { permission: decision.permission }
-        : undefined;
     log.warn('App password request denied', {
       tokenId: verified.tokenId,
       method: context.request.method,
       path: pathname,
       code: decision.code,
-      ...details,
+      ...decision.details,
     });
     return applyRateLimitHeaders(
-      errorResponse(decision.message, 403, decision.code, details),
+      errorResponse(decision.message, 403, decision.code, decision.details),
       rateLimit
     );
   }
