@@ -82,7 +82,7 @@ export const GET: APIRoute = async (context) => {
         props: {
           occurrences: result.occurrences,
           hasTemplates,
-          monthLabel: toMonthLabel(month),
+          monthLabel: monthFilter ? toMonthLabel(monthFilter) : undefined,
           todayIso,
         },
       });
