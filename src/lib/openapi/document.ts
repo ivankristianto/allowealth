@@ -22,7 +22,6 @@ export function getOpenApiDocument(): OpenApiDocument {
   return cachedDocument;
 }
 
-/** The whole bundled document as JSON. */
 export function getOpenApiJson(): string {
   cachedJson ??= JSON.stringify(getOpenApiDocument());
   return cachedJson;

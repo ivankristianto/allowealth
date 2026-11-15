@@ -8,11 +8,7 @@ import { filterOpenApiForAppPassword } from '@/lib/openapi/filter';
 export const GET: APIRoute = async (context) => {
   try {
     getAuthenticatedUser(context);
-  } catch {
-    return errorResponse('Unauthorized', 401);
-  }
 
-  try {
     const appPassword = context.locals.appPassword;
     const body = appPassword
       ? JSON.stringify(filterOpenApiForAppPassword(getOpenApiDocument(), appPassword.permissions))
@@ -28,6 +24,9 @@ export const GET: APIRoute = async (context) => {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
     const errorId = logError('Error building OpenAPI document', error);
     return errorResponse('Failed to load the API description', 500, 'INTERNAL_ERROR', { errorId });
   }

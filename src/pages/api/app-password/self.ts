@@ -7,23 +7,18 @@ import { mcpAppPasswordService } from '@/services/mcp-app-password.service';
 
 /** GET /api/app-password/self: the calling app password's name, permissions, expiry and rate limit. */
 export const GET: APIRoute = async (context) => {
-  let userId: string;
   try {
-    ({ userId } = getAuthenticatedUser(context));
-  } catch {
-    return errorResponse('Unauthorized', 401);
-  }
+    const { userId } = getAuthenticatedUser(context);
 
-  const appPassword = context.locals.appPassword;
-  if (!appPassword) {
-    return errorResponse(
-      'This endpoint describes the app password sent as a Bearer token, and this request has none',
-      400,
-      'APP_PASSWORD_REQUIRED'
-    );
-  }
+    const appPassword = context.locals.appPassword;
+    if (!appPassword) {
+      return errorResponse(
+        'This endpoint describes the app password sent as a Bearer token, and this request has none',
+        400,
+        'APP_PASSWORD_REQUIRED'
+      );
+    }
 
-  try {
     const token = await mcpAppPasswordService.findForUser(userId, appPassword.tokenId);
     // Revoked after the middleware verified it, within this request.
     if (!token) {
@@ -33,6 +28,9 @@ export const GET: APIRoute = async (context) => {
       describeAppPasswordToken(token, appPassword.permissions, TOKEN_RATE_LIMIT)
     );
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
     const errorId = logError('Error describing an app password', error);
     return errorResponse('Failed to describe the app password', 500, 'INTERNAL_ERROR', {
       errorId,
