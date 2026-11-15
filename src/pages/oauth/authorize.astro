@@ -5,13 +5,18 @@ import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
 import { db, getActiveSchema } from '@/db';
 import { auth } from '@/lib/auth/server';
 import { getRedirectTarget, submitOAuthConsent } from '@/lib/auth/oauth-consent';
+import { getConsentScopeChoices } from '@/lib/mcp-oauth-scopes';
 import { eq } from 'drizzle-orm';
 
 const schema = getActiveSchema();
 
 // The form posts back to this page; Better Auth returns the URL to continue to.
 let consentError = '';
+let postedScopes: Set<string> | null = null;
 if (Astro.request.method === 'POST') {
+  // Kept so a refused submission shows the boxes as the user left them.
+  const posted = await Astro.request.clone().formData();
+  postedScopes = new Set(posted.getAll('scope').map(String));
   const result = await submitOAuthConsent(Astro.request);
   if ('url' in result) {
     return Astro.redirect(result.url);
@@ -28,6 +33,11 @@ const clientId = isValidRequest ? (Astro.url.searchParams.get('client_id') ?? ''
 const redirectTarget = isValidRequest
   ? getRedirectTarget(Astro.url.searchParams.get('redirect_uri'))
   : '';
+const requestedScopes = isValidRequest
+  ? (Astro.url.searchParams.get('scope') ?? '').split(' ').filter(Boolean)
+  : [];
+const scopeChoices = getConsentScopeChoices(requestedScopes);
+const isTicked = (scope: string) => postedScopes?.has(scope) ?? true;
 
 // Look up the client display name
 let clientName = clientId;
@@ -42,7 +52,7 @@ if (clientId) {
 
 <ProtectedLayout title="Authorize Access" currentPath="/oauth/authorize">
   <div class="flex min-h-screen items-center justify-center p-4">
-    <div class="card bg-base-100 shadow-xl w-full max-w-sm">
+    <div class="card bg-base-100 shadow-xl w-full max-w-md">
       <div class="card-body gap-6" data-oauth-consent>
         {isValidRequest ? (
           <>
@@ -59,38 +69,107 @@ if (clientId) {
               )}
             </div>
 
-            <div class="bg-base-200 rounded-box p-4">
-              <p class="text-sm font-medium mb-2">This will allow it to:</p>
-              <ul class="text-sm text-base-content/70 space-y-1">
-                <li>• Read your accounts and balances</li>
-                <li>• Read and create transactions</li>
-                <li>• Read budget summaries</li>
-                <li>• Read category and account lists</li>
-              </ul>
-            </div>
+            <form method="post" class="space-y-5">
+              <input type="hidden" name="oauth_query" value={oauthQuery} />
 
-            {consentError && (
-              <div class="alert alert-error" role="alert">
-                <span>{consentError}</span>
-              </div>
-            )}
+              {scopeChoices.required.length > 0 && (
+                <fieldset class="space-y-2">
+                  <legend class="mb-1 text-sm font-medium">Always included</legend>
+                  {scopeChoices.required.map((choice) => (
+                    <label class="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        class="checkbox checkbox-sm mt-0.5 rounded-md"
+                        checked
+                        disabled
+                      />
+                      <span class="text-sm">
+                        <span class="font-medium">{choice.label}</span>
+                        {choice.description && (
+                          <span class="block text-xs text-base-content/60">
+                            {choice.description}
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
 
-            <div class="flex gap-3">
-              <form method="post" class="flex-1">
-                <input type="hidden" name="accept" value="false" />
-                <input type="hidden" name="oauth_query" value={oauthQuery} />
-                <Button type="submit" variant="outline" className="w-full">
+              {scopeChoices.fullAccess && (
+                <div class="alert alert-warning text-sm" role="note" data-oauth-full-access>
+                  <span>
+                    {clientName} did not ask for specific permissions, so approving gives it full
+                    access to every Allowealth tool.
+                  </span>
+                </div>
+              )}
+
+              {scopeChoices.groups.length > 0 && (
+                <fieldset
+                  class="space-y-4 rounded-2xl border border-base-300 bg-base-200/40 p-3 sm:p-4"
+                  aria-describedby="oauth-permissions-hint"
+                  data-oauth-permissions
+                >
+                  <legend class="px-1 text-sm font-medium">Permissions</legend>
+                  <p id="oauth-permissions-hint" class="text-xs text-base-content/60">
+                    Untick anything you do not want {clientName} to do. Connect again to change this
+                    later.
+                  </p>
+                  {scopeChoices.groups.map((group) => (
+                    <fieldset class="space-y-2">
+                      <legend class="mb-1 text-xs font-semibold text-base-content/70">
+                        {group.label}
+                      </legend>
+                      {group.permissions.map((permission) => (
+                        <label class="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="scope"
+                            value={permission.scope}
+                            class="checkbox checkbox-sm mt-0.5 rounded-md"
+                            checked={isTicked(permission.scope)}
+                          />
+                          <span class="text-sm">
+                            <span class="font-medium">{permission.label}</span>
+                            <span class="block text-xs text-base-content/60">
+                              {permission.description}
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </fieldset>
+                  ))}
+                </fieldset>
+              )}
+
+              {consentError && (
+                <div class="alert alert-error" role="alert">
+                  <span>{consentError}</span>
+                </div>
+              )}
+
+              <div class="flex gap-3">
+                <Button
+                  type="submit"
+                  name="accept"
+                  value="false"
+                  variant="outline"
+                  className="flex-1"
+                >
                   Deny
                 </Button>
-              </form>
-              <form method="post" class="flex-1">
-                <input type="hidden" name="accept" value="true" />
-                <input type="hidden" name="oauth_query" value={oauthQuery} />
-                <Button type="submit" variant="primary" className="w-full">
+                <Button
+                  type="submit"
+                  name="accept"
+                  value="true"
+                  variant="primary"
+                  className="flex-1"
+                >
                   Authorize
                 </Button>
-              </form>
-            </div>
+              </div>
+            </form>
           </>
         ) : (
           <div class="text-center space-y-2">

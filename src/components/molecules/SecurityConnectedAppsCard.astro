@@ -1,6 +1,7 @@
 ---
 import Button from '@/components/atoms/Button.astro';
-import { MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import { MCP_CONNECT_SCOPES, MCP_OAUTH_CLIENTS } from '@/lib/mcp-oauth';
+import type { OAuthAccessDescription } from '@/lib/mcp-oauth-scopes';
 import { tokenActivityHref } from '@/lib/token-activity-filter';
 
 interface ConnectedApp {
@@ -9,6 +10,7 @@ interface ConnectedApp {
   clientId: string;
   createdAt: Date;
   accessTokenExpiresAt: Date;
+  access: OAuthAccessDescription;
 }
 
 interface Props {
@@ -23,7 +25,9 @@ function getAuthorizeUrl(clientId: string): string {
     client_id: clientId,
     response_type: 'code',
     redirect_uri: redirectUri,
-    scope: 'openid mcp',
+    scope: MCP_CONNECT_SCOPES.join(' '),
+    // Always show the consent page, so connecting again is how the user changes permissions.
+    prompt: 'consent',
     state: clientId,
   });
 
@@ -40,6 +44,11 @@ function getAuthorizeUrl(clientId: string): string {
         Allowealth disconnects them. App passwords below are separate and stay active until you
         revoke them.
       </p>
+      <p class="mt-2 text-sm text-base-content/60">
+        You choose an app's permissions when you connect it. Apps connected before permissions
+        existed, or that asked for none, have full access until their token expires or you revoke
+        it.
+      </p>
     </div>
 
     {apps.length === 0 ? (
@@ -54,6 +63,17 @@ function getAuthorizeUrl(clientId: string): string {
           <li class="flex items-center justify-between py-3 gap-4">
             <div class="min-w-0">
               <p class="font-medium text-sm truncate">{app.clientName}</p>
+              <div class="my-1" data-connected-app-access>
+                {app.access.kind === 'full' ? (
+                  <span class="badge badge-sm badge-warning badge-outline">Full access</span>
+                ) : (
+                  <ul class="flex flex-wrap gap-1" aria-label={`Permissions of ${app.clientName}`}>
+                    {app.access.permissionLabels.map((label) => (
+                      <li class="badge badge-sm badge-ghost h-auto py-0.5">{label}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <p class="text-xs text-base-content/50">
                 Authorized {app.createdAt.toLocaleDateString()} · Expires{' '}
                 {app.accessTokenExpiresAt.toLocaleDateString()}
