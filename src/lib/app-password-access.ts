@@ -4,12 +4,15 @@
  */
 
 import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
+import type { TokenRateLimit } from '@/lib/mcp-rate-limit';
 import {
   PERMISSIONS,
   expandPermissionGrants,
+  type Permission,
   type PermissionGrant,
   type PermissionResource,
 } from '@/lib/permissions/registry';
+import type { AppPasswordSummary } from '@/services/mcp-app-password.service';
 
 interface AppPasswordPresetDefinition {
   label: string;
@@ -46,6 +49,37 @@ export function deriveAppPasswordPreset(grants: readonly PermissionGrant[]): App
     );
   });
   return preset ?? 'custom';
+}
+
+/** What a token learns about itself, from REST `GET /api/app-password/self` and MCP `get_token_info`. */
+export interface AppPasswordTokenInfo {
+  kind: 'app_password';
+  id: string;
+  name: string;
+  preset: AppPasswordPreset;
+  permissions: readonly Permission[];
+  expires_at: string | null;
+  created_at: string;
+  /** Null where no limit applies, as on the stdio MCP server. */
+  rate_limit: TokenRateLimit | null;
+}
+
+/** `permissions` are the expanded grants the request was authorized with. */
+export function describeAppPasswordToken(
+  token: Pick<AppPasswordSummary, 'id' | 'name' | 'preset' | 'createdAt' | 'expiresAt'>,
+  permissions: readonly Permission[],
+  rateLimit: TokenRateLimit | null
+): AppPasswordTokenInfo {
+  return {
+    kind: 'app_password',
+    id: token.id,
+    name: token.name,
+    preset: token.preset,
+    permissions,
+    expires_at: token.expiresAt?.toISOString() ?? null,
+    created_at: token.createdAt.toISOString(),
+    rate_limit: rateLimit,
+  };
 }
 
 export type AppPasswordAccessDescription =

@@ -44,3 +44,41 @@ paths:
           $ref: '../responses/common.yml#/TooManyRequests'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/app-password/self:
+    get:
+      tags: [Meta]
+      summary: Describe the calling app password
+      description: >-
+        Returns the app password sent as the Bearer token: its name, preset, expanded permissions,
+        expiry and rate limit. Any valid app password may call it, so an agent can check what it
+        may do before it tries. A request with a session cookie and no app password gets 400
+        `APP_PASSWORD_REQUIRED`.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The calling app password
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AppPassword.yml#/AppPasswordSelfResponse'
+        '400':
+          description: The request carries no app password to describe
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+              example:
+                success: false
+                error:
+                  message: This endpoint describes the app password sent as a Bearer token, and this request has none
+                  code: APP_PASSWORD_REQUIRED
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          $ref: '../responses/common.yml#/Forbidden'
+        '429':
+          $ref: '../responses/common.yml#/TooManyRequests'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

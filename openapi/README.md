@@ -22,7 +22,7 @@ openapi/
 │   ├── calculators.yml              # Calculator endpoints (JSON or rendered HTML partial)
 │   ├── reports.yml                  # Reports endpoints
 │   ├── mcp.yml                      # MCP JSON-RPC endpoint (OAuth tokens and app passwords)
-│   ├── meta.yml                     # GET /api/openapi.json (this spec, bundled)
+│   ├── meta.yml                     # GET /api/openapi.json and GET /api/app-password/self
 │   └── admin-diagnostics.yml        # Admin diagnostics endpoint
 ├── schemas/                         # Reusable data model definitions
 │   ├── ApiErrorResponse.yml         # Base API response schema

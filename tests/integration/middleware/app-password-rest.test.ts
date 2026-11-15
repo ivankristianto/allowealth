@@ -41,6 +41,7 @@ let appPasswordAuthentication: typeof import('@/middleware/app-password').appPas
 let authentication: typeof import('@/middleware/auth').authentication;
 let csrf: typeof import('@/middleware/csrf').csrf;
 let openApiGet: typeof import('@/pages/api/openapi.json').GET;
+let selfGet: typeof import('@/pages/api/app-password/self').GET;
 
 const WORKSPACE_ID = 'app-pw-rest-workspace';
 const USER_ID = 'app-pw-rest-user';
@@ -180,6 +181,7 @@ describe('app password authentication on the REST API', () => {
     ({ authentication } = await import('@/middleware/auth'));
     ({ csrf } = await import('@/middleware/csrf'));
     ({ GET: openApiGet } = await import('@/pages/api/openapi.json'));
+    ({ GET: selfGet } = await import('@/pages/api/app-password/self'));
   });
 
   beforeEach(async () => {
@@ -476,12 +478,15 @@ describe('app password authentication on the REST API', () => {
       expect(routeHandler).toHaveBeenCalledTimes(4);
     });
 
-    test('a token with no permissions reaches only the OpenAPI document', async () => {
+    test('a token with no permissions reaches only the OpenAPI document and its own description', async () => {
       const token = await createTokenWithGrants([]);
 
       expect((await runChain(createContext('/api/openapi.json', { bearer: token }))).status).toBe(
         200
       );
+      expect(
+        (await runChain(createContext('/api/app-password/self', { bearer: token }))).status
+      ).toBe(200);
       await expectPermissionMissing(
         await runChain(createContext('/api/accounts', { bearer: token })),
         'accounts:read'
@@ -517,6 +522,73 @@ describe('app password authentication on the REST API', () => {
         expect(failures).toEqual([]);
       });
     }
+  });
+
+  describe('GET /api/app-password/self', () => {
+    const DAY_MS = 86_400_000;
+    const callSelf = (options: RequestOptions) =>
+      runChain(
+        createContext('/api/app-password/self', options),
+        (ctx) => selfGet(ctx as never) as Promise<Response>
+      );
+
+    test('describes a read preset token with its expanded permissions', async () => {
+      const { token, appPassword } = await service.create({
+        userId: USER_ID,
+        name: 'Nightly report',
+        permissions: ['*:read'],
+        expiry: '30',
+      });
+
+      const response = await callSelf({ bearer: token });
+
+      expect(response.status).toBe(200);
+      const { data } = await response.json();
+      // Stored dates keep whole seconds, so compare with the row as read back.
+      const stored = await service.findForUser(USER_ID, appPassword.id);
+      expect(data).toEqual({
+        kind: 'app_password',
+        id: appPassword.id,
+        name: 'Nightly report',
+        preset: 'read',
+        permissions: expandPermissionGrants(['*:read']),
+        expires_at: stored?.expiresAt?.toISOString(),
+        created_at: stored?.createdAt.toISOString(),
+        rate_limit: { limit: 60, window_seconds: 60 },
+      });
+      expect(Date.parse(data.expires_at) - Date.parse(data.created_at)).toBe(30 * DAY_MS);
+    });
+
+    test('describes a custom token that never expires', async () => {
+      const { token } = await service.create({
+        userId: USER_ID,
+        name: 'Expense logger',
+        permissions: ['transactions:create', 'budgets:read'],
+        expiry: 'never',
+      });
+
+      const { data } = await (await callSelf({ bearer: token })).json();
+
+      expect(data).toMatchObject({
+        name: 'Expense logger',
+        preset: 'custom',
+        permissions: ['transactions:create', 'budgets:read'],
+        expires_at: null,
+      });
+    });
+
+    test('a session request gets 400, since there is no token to describe', async () => {
+      mockCookieSession();
+
+      const response = await callSelf({ cookies: { [SESSION_COOKIE]: 'signed-cookie' } });
+
+      expect(response.status).toBe(400);
+      expect((await response.json()).error.code).toBe('APP_PASSWORD_REQUIRED');
+    });
+
+    test('an unauthenticated request gets 401', async () => {
+      expect((await callSelf({})).status).toBe(401);
+    });
   });
 
   describe('GET /api/openapi.json', () => {

@@ -7,7 +7,7 @@ import type { Permission } from '@/lib/permissions/registry';
 
 export type AppPasswordRestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-/** Marks a route that carries no workspace data, such as the OpenAPI document. */
+/** Marks a route that carries no workspace data, such as the OpenAPI document or the token's own description. */
 export const ANY_VALID_TOKEN = 'any-valid-token';
 
 export type AppPasswordRestPermission = Permission | typeof ANY_VALID_TOKEN;
@@ -30,6 +30,7 @@ function rule(path: string, permissions: AppPasswordRestPermissionMap): AppPassw
 
 export const APP_PASSWORD_REST_ROUTES: readonly AppPasswordRestRoute[] = [
   rule('/api/openapi.json', { GET: ANY_VALID_TOKEN }),
+  rule('/api/app-password/self', { GET: ANY_VALID_TOKEN }),
 
   rule('/api/transactions', { GET: 'transactions:read', POST: 'transactions:create' }),
   rule('/api/transactions/{id}', {

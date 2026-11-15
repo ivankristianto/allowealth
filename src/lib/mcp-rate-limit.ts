@@ -9,6 +9,17 @@ const MAX_REQUESTS = 60;
 const DEFAULT_ENDPOINT_ID = 'api-mcp';
 const UPSTASH_TTL_SECONDS = 120;
 
+export interface TokenRateLimit {
+  limit: number;
+  window_seconds: number;
+}
+
+/** What each HTTP surface (REST, `/api/mcp`) allows one token, in its own bucket. */
+export const TOKEN_RATE_LIMIT: Readonly<TokenRateLimit> = {
+  limit: MAX_REQUESTS,
+  window_seconds: WINDOW_MS / 1000,
+};
+
 export interface McpRateLimitDeps {
   /** Separate buckets per surface, so REST calls do not eat into a token's MCP budget. */
   endpointId?: string;

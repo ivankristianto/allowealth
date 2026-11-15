@@ -237,6 +237,8 @@ paths:
 
   /api/openapi.json:
     $ref: './openapi/paths/meta.yml#/paths/~1api~1openapi.json'
+  /api/app-password/self:
+    $ref: './openapi/paths/meta.yml#/paths/~1api~1app-password~1self'
 
   # Admin endpoints
   /api/admin/diagnostics:

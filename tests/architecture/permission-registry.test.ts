@@ -20,11 +20,11 @@ describe('REST allowlist permissions', () => {
     expect(unmapped).toEqual([]);
   });
 
-  test('only the OpenAPI document is open to any valid token', () => {
+  test('only the OpenAPI document and the self description are open to any valid token', () => {
     const open = restPairs
       .filter(({ permission }) => permission === ANY_VALID_TOKEN)
       .map(({ rule, method }) => `${method} ${rule.path}`);
-    expect(open).toEqual(['GET /api/openapi.json']);
+    expect(open).toEqual(['GET /api/openapi.json', 'GET /api/app-password/self']);
   });
 });
 
