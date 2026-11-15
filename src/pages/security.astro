@@ -25,6 +25,7 @@ import { isTwoFactorEnabled } from '@/lib/auth/two-factor-status';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getMcpOAuthClientName, getMcpOAuthRedirectUri } from '@/lib/mcp-oauth';
 import { isRecentSignIn } from '@/lib/mcp-app-password';
+import { parseTokenActivityFilter } from '@/lib/token-activity-filter';
 import {
   mcpAppPasswordService,
   type AppPasswordSummary,
@@ -178,15 +179,27 @@ if (user?.id) {
   }
 }
 
-// Fetch recent security activity from audit logs
+const activityTokenId = parseTokenActivityFilter(Astro.url);
 let securityEvents: SecurityEvent[] = [];
 if (user?.id && user?.workspaceId) {
   try {
-    securityEvents = await auditLogService.listForUser(user.id, user.workspaceId);
+    securityEvents = await auditLogService.listForUser(user.id, user.workspaceId, {
+      actorTokenId: activityTokenId ?? undefined,
+    });
   } catch (err) {
     logError('Failed to fetch security events', err);
   }
 }
+// A live token shows its current name; a revoked one, the name its events recorded.
+const activityTokenFilter = activityTokenId
+  ? {
+      name:
+        appPasswords.find((appPassword) => appPassword.id === activityTokenId)?.name ??
+        connectedApps.find((app) => app.tokenId === activityTokenId)?.clientName ??
+        securityEvents.find((event) => event.via)?.via ??
+        'this token',
+    }
+  : null;
 
 const demoMode = isDemoMode();
 ---
@@ -221,7 +234,7 @@ const demoMode = isDemoMode();
       {!demoMode && (
         <SecurityAppPasswordsCard appPasswords={appPasswords} recentSignIn={recentSignIn} />
       )}
-      <SecurityRecentUserActivitiesCard events={securityEvents} />
+      <SecurityRecentUserActivitiesCard events={securityEvents} tokenFilter={activityTokenFilter} />
     </div>
   </div>
 
