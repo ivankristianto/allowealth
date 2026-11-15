@@ -140,7 +140,7 @@ Connected Apps lists AI assistants you authorized through OAuth, such as Claude 
 3. Approve the consent screen
 4. Copy the one-time access token from the confirmation page
 
-These tokens last 24 hours. Signing out of Allowealth disconnects them. Click **Revoke** to disconnect one sooner.
+These tokens last 24 hours. Signing out of Allowealth disconnects them. Click **Revoke** to disconnect one sooner, or **Activity** to see what that token did.
 
 ### App Passwords
 
@@ -200,7 +200,7 @@ Anything using it loses access on its next request. App passwords are **not** re
 - **Hint**: the first characters of the token, so you can tell tokens apart
 - **Created**, **Last used** and **Expires** dates
 
-Creating, editing and revoking app passwords appears in **Recent Activity**.
+Creating, editing and revoking app passwords appears in **Recent Activity**. Click **Activity** on a token to see only what that token did, including requests it was refused.
 
 ### Security Events
 
@@ -210,6 +210,8 @@ Recent security activity appears in the **Security Events** section:
 - Password changes
 - MFA setup or removal
 - Passkey registration
+- Changes made with an app password or connected app, marked "via" and the token's name. A revoked token keeps its name here
+- **Permission Denied** when a token asked for something it may not do. Repeats are shown at most once per token and permission (or MCP tool) every 10 minutes
 
 Review this log periodically for unauthorized activity.
 
