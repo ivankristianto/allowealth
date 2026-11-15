@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { AppPasswordSummary } from '@/services/mcp-app-password.service';
-import { handleGetTokenInfo } from './token-info';
-import type { ToolContext } from './types';
+import { handleGetTokenInfo } from '@mcp-server/tools/token-info';
+import type { ToolContext } from '@mcp-server/tools/types';
 
 const createdAt = new Date('2026-11-01T00:00:00.000Z');
 

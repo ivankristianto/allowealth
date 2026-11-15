@@ -64,6 +64,14 @@ export interface AppPasswordTokenInfo {
   rate_limit: TokenRateLimit | null;
 }
 
+/** What an OAuth token learns about itself from MCP `get_token_info`. */
+export interface OAuthTokenInfo {
+  kind: 'oauth';
+  permissions: readonly Permission[];
+}
+
+export type TokenInfo = AppPasswordTokenInfo | OAuthTokenInfo;
+
 /** `permissions` are the expanded grants the request was authorized with. */
 export function describeAppPasswordToken(
   token: Pick<AppPasswordSummary, 'id' | 'name' | 'preset' | 'createdAt' | 'expiresAt'>,
