@@ -48,7 +48,7 @@ export WORKSPACE_TZ="Asia/Jakarta" # the workspace time zone, see below
 
 ## Access: presets and custom permissions
 
-Every route and method below needs one permission, named `resource:action`. `HEAD` needs the same one as `GET`, and `/api/openapi.json` needs none. A token gets its permissions in one of two ways.
+Every route and method below needs one permission, named `resource:action`. `HEAD` needs the same one as `GET`, and `/api/openapi.json` and `/api/app-password/self` need none. A token gets its permissions in one of two ways.
 
 **Presets** cover the common cases and keep covering permissions added in later releases:
 
@@ -82,6 +82,7 @@ The app password API reports each token's `permissions` as stored and a `preset`
 | Route                                                                     | Read | Write (needs the matching permission) |
 | ------------------------------------------------------------------------- | ---- | ------------------------------------- |
 | `/api/openapi.json`                                                       | GET  |                                       |
+| `/api/app-password/self`                                                  | GET  |                                       |
 | `/api/transactions`                                                       | GET  | POST                                  |
 | `/api/transactions/{id}`                                                  | GET  | PUT, DELETE                           |
 | `/api/transactions/{id}/history`                                          | GET  |                                       |
@@ -112,9 +113,37 @@ Never reachable with an app password: sign-in and other `/api/auth/*` routes, `/
 | 403    | `WORKSPACE_INACTIVE`              | The workspace was archived                                                          |
 | 429    | `RATE_LIMIT_EXCEEDED`             | More than 60 requests in a minute for this token; wait for `Retry-After` seconds    |
 
+## Check your own access first
+
+An agent should know what it may do before it tries. Ask the API about the token itself:
+
+```bash
+curl -s "$ALLOWEALTH_URL/api/app-password/self" -H "Authorization: Bearer $ALLOWEALTH_TOKEN"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "kind": "app_password",
+    "id": "pat_V1StGXR8Z5jdHi6B",
+    "name": "Expense logger",
+    "preset": "custom",
+    "permissions": ["transactions:create", "budgets:read"],
+    "expires_at": "2027-02-12T09:30:00.000Z",
+    "created_at": "2026-11-14T09:30:00.000Z",
+    "rate_limit": { "limit": 60, "window_seconds": 60 }
+  }
+}
+```
+
+`permissions` is what the token can do right now, with presets expanded, so a `read` token lists every `:read` permission. `expires_at` is `null` for a token that never expires. The live request count stays in the `X-RateLimit-*` headers. Any valid app password may call this route, even one with no permissions.
+
+A planning agent can stop here: if the task needs `transactions:create` and the list lacks it, ask the user for a token that has it instead of collecting `403`s. Over MCP, the `get_token_info` tool returns the same fields.
+
 ## Learn the API
 
-Give the agent the full schema first. It lists every allowed route with its parameters, request bodies, enums and response shapes:
+Give the agent the schema next. Fetched with an app password, it lists only the operations that token may call, with their parameters, request bodies, enums and response shapes. Each operation names the permission it needs in `x-required-permission`:
 
 ```bash
 curl -s "$ALLOWEALTH_URL/api/openapi.json" -H "Authorization: Bearer $ALLOWEALTH_TOKEN"

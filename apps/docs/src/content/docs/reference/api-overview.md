@@ -23,7 +23,8 @@ API endpoints live in `src/pages/api/` and follow file-based routing.
 - `/api/admin/*`: operational diagnostics and admin dashboards
 - `/api/mcp`: MCP HTTP transport endpoint. Accepts an OAuth access token or an app password (`aw_pat_...`) as a Bearer token
 - `/api/user/app-passwords`: list, create and revoke app passwords (session auth, creation needs a sign-in from the last 15 minutes)
-- `/api/openapi.json`: the bundled OpenAPI document, for any signed-in caller
+- `/api/openapi.json`: the bundled OpenAPI document, whole for a session, only the token's own operations for an app password
+- `/api/app-password/self`: describes the calling app password (name, permissions, expiry, rate limit)
 
 ## Authentication
 
