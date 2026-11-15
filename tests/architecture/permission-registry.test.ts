@@ -67,14 +67,23 @@ describe('documented app password permissions', () => {
 describe('MCP tool permissions', () => {
   const toolNames = registerTools().map((tool) => tool.name);
 
-  test('every registered tool names at least one known permission', () => {
-    expect(toolNames).toHaveLength(8);
+  test('every registered tool names known permissions or the any-valid-token marker', () => {
+    expect(toolNames).toHaveLength(9);
     const unmapped = toolNames.filter((name) => {
-      const permissions: readonly unknown[] = TOOL_PERMISSIONS[name] ?? [];
+      const required = TOOL_PERMISSIONS[name];
+      if (required === ANY_VALID_TOKEN) return false;
+      const permissions: readonly unknown[] = required ?? [];
       return permissions.length === 0 || !permissions.every(isPermission);
     });
     expect(unmapped).toEqual([]);
     expect(Object.keys(TOOL_PERMISSIONS).sort()).toEqual([...toolNames].sort());
+  });
+
+  test('only get_token_info is open to any valid token', () => {
+    const open = Object.entries(TOOL_PERMISSIONS)
+      .filter(([, required]) => required === ANY_VALID_TOKEN)
+      .map(([name]) => name);
+    expect(open).toEqual(['get_token_info']);
   });
 
   test('each scope preset sees exactly the tools it saw before permissions', () => {
@@ -86,6 +95,7 @@ describe('MCP tool permissions', () => {
       'get_account_summary',
       'get_budget_summary',
       'get_dashboard',
+      'get_token_info',
       'list_accounts',
       'list_categories',
       'list_transactions',
@@ -141,6 +151,7 @@ describe('MCP tool annotations', () => {
       get_budget_summary: { readOnlyHint: true },
       get_dashboard: { readOnlyHint: true },
       get_account_summary: { readOnlyHint: true },
+      get_token_info: { readOnlyHint: true },
     });
   });
 });

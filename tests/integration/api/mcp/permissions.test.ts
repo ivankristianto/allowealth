@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { mcpAppPasswords, users, workspaces } from '@/db/schema';
-import type { PermissionGrant } from '@/lib/permissions/registry';
+import { expandPermissionGrants, type PermissionGrant } from '@/lib/permissions/registry';
 import { clearRateLimitStore } from '@/lib/rate-limit';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 
@@ -83,7 +83,7 @@ describe('MCP tool access by app password permissions', () => {
   test('a token holding only transactions:create sees and calls only the add tools', async () => {
     const token = await createTokenWithGrants(['transactions:create']);
 
-    expect(await listToolNames(token)).toEqual(['add_expense', 'add_income']);
+    expect(await listToolNames(token)).toEqual(['add_expense', 'add_income', 'get_token_info']);
 
     const denied = await callTool(token, 'list_transactions');
     expect(denied).toEqual({
@@ -104,6 +104,7 @@ describe('MCP tool access by app password permissions', () => {
 
     expect(await listToolNames(twoOfThree)).toEqual([
       'get_account_summary',
+      'get_token_info',
       'list_accounts',
       'list_transactions',
     ]);
@@ -148,9 +149,46 @@ describe('MCP tool access by app password permissions', () => {
     }
   });
 
-  test('a token with no permissions sees no tools', async () => {
+  test('a token with no permissions sees and calls only get_token_info', async () => {
     const token = await createTokenWithGrants([]);
 
-    expect(await listToolNames(token)).toEqual([]);
+    expect(await listToolNames(token)).toEqual(['get_token_info']);
+    const result = await callTool(token, 'get_token_info');
+    expect(result.isError).toBeUndefined();
+    expect(JSON.parse(result.content[0].text)).toMatchObject({ preset: 'custom', permissions: [] });
+  });
+
+  test('get_token_info describes a read preset token with the HTTP rate limit', async () => {
+    const { token, appPassword } = await service.create({
+      userId: USER_ID,
+      name: 'Morning summary',
+      permissions: ['*:read'],
+      expiry: '30',
+    });
+    const stored = await service.findForUser(USER_ID, appPassword.id);
+
+    const result = await callTool(token, 'get_token_info');
+
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      kind: 'app_password',
+      id: appPassword.id,
+      name: 'Morning summary',
+      preset: 'read',
+      permissions: expandPermissionGrants(['*:read']),
+      expires_at: stored?.expiresAt?.toISOString(),
+      created_at: stored?.createdAt.toISOString(),
+      rate_limit: { limit: 60, window_seconds: 60 },
+    });
+  });
+
+  test('get_token_info lists exactly the permissions of a custom token', async () => {
+    const token = await createTokenWithGrants(['transactions:create', 'budgets:read']);
+
+    const info = JSON.parse((await callTool(token, 'get_token_info')).content[0].text);
+
+    expect(info).toMatchObject({
+      preset: 'custom',
+      permissions: ['transactions:create', 'budgets:read'],
+    });
   });
 });

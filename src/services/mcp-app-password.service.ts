@@ -228,6 +228,7 @@ export class McpAppPasswordService {
     }
 
     return {
+      kind: 'app_password',
       workspaceId: record.workspaceId,
       userId: record.userId,
       tokenId: record.id,

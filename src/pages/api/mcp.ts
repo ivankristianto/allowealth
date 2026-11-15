@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '@/db';
 import { validateMcpToken } from '@/lib/mcp-auth';
-import { checkMcpRateLimit } from '@/lib/mcp-rate-limit';
+import { TOKEN_RATE_LIMIT, checkMcpRateLimit } from '@/lib/mcp-rate-limit';
 import { createRateLimitResponse } from '@/lib/rate-limit';
 import { createServices } from '@mcp-server/context';
 import { registerTools, handleToolCall } from '@mcp-server/tools/index';
@@ -170,7 +170,7 @@ export const POST: APIRoute = async (context) => {
 
   // Build per-request ToolContext with fresh DB connection and service instances
   const services = createServices(db);
-  const ctx: ToolContext = { auth, services };
+  const ctx: ToolContext = { auth, services, rateLimit: TOKEN_RATE_LIMIT };
 
   let body: JsonRpcRequest;
   try {

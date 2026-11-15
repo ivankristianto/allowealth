@@ -1,5 +1,6 @@
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
+import { ANY_VALID_TOKEN } from '@/lib/app-password-rest-access';
 import { logError } from '@/lib/logger';
 import { isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
@@ -19,9 +20,12 @@ import {
   handleGetDashboard,
   handleGetAccountSummary,
 } from './dashboard.js';
+import { tokenInfoTool, handleGetTokenInfo } from './token-info.js';
 
-/** Permissions a token needs, all of them, to call each tool. */
-export const TOOL_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> = {
+type ToolPermissions = readonly Permission[] | typeof ANY_VALID_TOKEN;
+
+/** Permissions a token needs, all of them, to call each tool; ANY_VALID_TOKEN for tools without workspace data. */
+export const TOOL_PERMISSIONS: Readonly<Record<string, ToolPermissions>> = {
   list_categories: ['categories:read'],
   list_accounts: ['accounts:read'],
   list_transactions: ['transactions:read'],
@@ -30,6 +34,7 @@ export const TOOL_PERMISSIONS: Readonly<Record<string, readonly Permission[]>> =
   get_budget_summary: ['budgets:read'],
   get_dashboard: ['accounts:read', 'transactions:read', 'budgets:read'],
   get_account_summary: ['accounts:read'],
+  get_token_info: ANY_VALID_TOKEN,
 };
 
 // Creating or confirming adds a record and overwrites nothing.
@@ -46,7 +51,7 @@ export function toolAnnotations(permissions: readonly Permission[]): ToolAnnotat
 }
 
 // Own keys only: a client-chosen name such as `constructor` would otherwise hit Object.prototype.
-function toolPermissions(name: string): readonly Permission[] {
+function toolPermissions(name: string): ToolPermissions {
   return Object.hasOwn(TOOL_PERMISSIONS, name) ? TOOL_PERMISSIONS[name] : [];
 }
 
@@ -58,11 +63,19 @@ const TOOLS: readonly Tool[] = [
   budgetTool,
   dashboardTool,
   accountSummaryTool,
-].map((tool) => ({ ...tool, annotations: toolAnnotations(toolPermissions(tool.name)) }));
+  tokenInfoTool,
+].map((tool) => {
+  const required = toolPermissions(tool.name);
+  // A tool open to any token reads no workspace data, so it cannot change any either.
+  const annotations =
+    required === ANY_VALID_TOKEN ? { readOnlyHint: true } : toolAnnotations(required);
+  return { ...tool, annotations };
+});
 
 /** Why the token may not call the tool, or null when it may. */
 function toolDenial(name: string, granted: readonly Permission[]): string | null {
   const required = toolPermissions(name);
+  if (required === ANY_VALID_TOKEN) return null;
   // With no entry nothing is missing, so an unmapped tool has to be refused here.
   if (required.length === 0) return `Tool ${name} is not available.`;
   const missing = required.filter((permission) => !granted.includes(permission));
@@ -104,6 +117,8 @@ export async function handleToolCall(
         return await handleGetDashboard(args, ctx);
       case 'get_account_summary':
         return await handleGetAccountSummary(args, ctx);
+      case 'get_token_info':
+        return await handleGetTokenInfo(args, ctx);
       default:
         return {
           isError: true,

@@ -303,7 +303,11 @@ describe('PATCH /api/user/app-passwords/{id}', () => {
       ((await response.json()) as { data: { appPassword: AppPasswordBody } }).data.appPassword
     ).toMatchObject({ id, name: 'Agent', permissions: ['accounts:read'], preset: 'custom' });
 
-    expect(await listToolNames(token)).toEqual(['get_account_summary', 'list_accounts']);
+    expect(await listToolNames(token)).toEqual([
+      'get_account_summary',
+      'get_token_info',
+      'list_accounts',
+    ]);
 
     const update = auditRows(id).find((row) => row.action === 'update');
     expect(JSON.parse(update?.old_value ?? '{}')).toMatchObject({ permissions: ['*'] });
