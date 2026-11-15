@@ -143,6 +143,25 @@ export function deriveAppPasswordPreset(grants: readonly unknown[]): AppPassword
   return preset ?? 'custom';
 }
 
+const PRESET_LABELS: Readonly<Record<AppPasswordScope, string>> = {
+  read: 'Read only',
+  'read-write': 'Read and write',
+};
+
+/** What the token list shows: the preset's name, or one label per custom permission. */
+export function describeAppPasswordAccess(grants: readonly unknown[]): {
+  preset: AppPasswordPreset;
+  labels: string[];
+} {
+  const preset = deriveAppPasswordPreset(grants);
+  if (preset !== 'custom') return { preset, labels: [PRESET_LABELS[preset]] };
+  const granted = new Set<string>(expandPermissionGrants(grants));
+  const labels = PERMISSIONS.filter((permission) => granted.has(permission.id)).map(
+    (permission) => permission.label
+  );
+  return { preset, labels: labels.length > 0 ? labels : ['No permissions'] };
+}
+
 /**
  * Expands stored grants to concrete permissions in registry order. Unknown values are dropped
  * rather than thrown, so a permission removed from the registry denies instead of failing auth.

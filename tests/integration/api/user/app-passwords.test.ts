@@ -195,29 +195,14 @@ describe('POST /api/user/app-passwords', () => {
     expect(storedPermissions(appPassword.id)).toEqual(['transactions:create', 'accounts:read']);
   });
 
-  const invalidBodies: Array<[string, Record<string, unknown>, string]> = [
-    [
-      'an unknown permission',
-      { permissions: ['accounts:launch'] },
-      'accounts:launch is not a permission',
-    ],
-    ['a wildcard in custom permissions', { permissions: ['*'] }, '* is not a permission'],
-    ['an empty permission list', { permissions: [] }, 'Choose at least one permission'],
-    [
-      'both scope and permissions',
-      { scope: 'read', permissions: ['accounts:read'] },
-      'Send either scope or permissions, not both',
-    ],
-    ['neither scope nor permissions', {}, 'Send either scope or permissions'],
-    ['an unknown scope', { scope: 'admin' }, 'Choose read or read-write'],
-  ];
-
-  for (const [label, access, message] of invalidBodies) {
-    it(`rejects ${label}`, async () => {
-      await expectValidationError(await post({ name: 'x', expiry: '30', ...access }), message);
-      expect(db.select().from(schema.mcpAppPasswords).all()).toEqual([]);
-    });
-  }
+  // Every rule lives in src/lib/validation/app-passwords.test.ts; this proves the route applies it.
+  it('answers an invalid body with VALIDATION_ERROR and stores nothing', async () => {
+    await expectValidationError(
+      await post({ name: 'x', expiry: '30', permissions: ['*'] }),
+      '* is not a permission'
+    );
+    expect(db.select().from(schema.mcpAppPasswords).all()).toEqual([]);
+  });
 });
 
 describe('GET /api/user/app-passwords/{id}', () => {
@@ -291,14 +276,9 @@ describe('PATCH /api/user/app-passwords/{id}', () => {
     expect((await patch(id, { name: 'x' }, { user: null })).status).toBe(401);
   });
 
-  it('validates the body with the create rules', async () => {
+  it('answers an invalid body with VALIDATION_ERROR and leaves the token unchanged', async () => {
     const { id } = await create({ scope: 'read' });
 
-    await expectValidationError(await patch(id, {}), 'Send a name, a scope or permissions');
-    await expectValidationError(
-      await patch(id, { permissions: ['*:read'] }),
-      '*:read is not a permission'
-    );
     await expectValidationError(
       await patch(id, { permissions: [] }),
       'Choose at least one permission'
