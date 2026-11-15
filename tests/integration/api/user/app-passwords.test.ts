@@ -1,0 +1,317 @@
+/**
+ * The /api/user/app-passwords routes: creating with a preset or custom permissions,
+ * reading one token, and editing it, against a throwaway SQLite file.
+ */
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { join } from 'node:path';
+import { and, eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import { resetDb } from '@/db';
+import * as schema from '@/db/schema/sqlite';
+import { setTestEnv } from '@/lib/env';
+import { clearRateLimitStore } from '@/lib/rate-limit';
+import { APP_PASSWORD_WRITE_RATE_LIMIT } from '@/lib/mcp-app-password';
+import { createSetupSqlDatabase, seedWorkspaceUser } from '../../../helpers/setup-sql-db';
+
+const DB_PATH = join(import.meta.dir, `app-passwords-routes-${nanoid(8)}.test.sqlite`);
+const testDb = createSetupSqlDatabase(DB_PATH);
+const { db } = testDb;
+
+const workspaceId = `ws-${nanoid(8)}`;
+const userId = `usr-${nanoid(8)}`;
+const otherUserId = `usr-${nanoid(8)}`;
+
+const FRESH_SESSION = () => ({ createdAt: new Date() });
+const STALE_SESSION = () => ({ createdAt: new Date(Date.now() - 16 * 60 * 1000) });
+
+interface AppPasswordBody {
+  id: string;
+  name: string;
+  permissions: string[];
+  preset: string;
+}
+
+interface ErrorBody {
+  error: { code: string; message: string; details?: Array<{ message: string }> };
+}
+
+beforeAll(() => {
+  seedWorkspaceUser(db, { workspaceId, userId });
+  seedWorkspaceUser(db, { workspaceId, userId: otherUserId });
+  setTestEnv({ DATABASE_URL: DB_PATH });
+  resetDb();
+});
+
+afterAll(() => {
+  setTestEnv(null);
+  resetDb();
+  testDb.cleanup();
+});
+
+beforeEach(() => {
+  clearRateLimitStore();
+  db.delete(schema.mcpAppPasswords).run();
+});
+
+function routeContext(
+  request: Request,
+  options: { user?: string | null; session?: { createdAt: Date }; id?: string } = {}
+) {
+  const user = options.user === undefined ? userId : options.user;
+  return {
+    request,
+    url: new URL(request.url),
+    params: { id: options.id },
+    locals: {
+      user: user ? { id: user } : null,
+      session: options.session ?? FRESH_SESSION(),
+    },
+  } as never;
+}
+
+function jsonRequest(method: string, path: string, body: unknown): Request {
+  return new Request(`http://localhost${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+async function post(body: unknown, options: { session?: { createdAt: Date } } = {}) {
+  const { POST } = await import('@/pages/api/user/app-passwords/index');
+  return POST(routeContext(jsonRequest('POST', '/api/user/app-passwords', body), options));
+}
+
+async function create(access: Record<string, unknown>): Promise<{ token: string; id: string }> {
+  const response = await post({ name: 'Agent', expiry: '30', ...access });
+  expect(response.status).toBe(201);
+  const { data } = (await response.json()) as {
+    data: { token: string; appPassword: AppPasswordBody };
+  };
+  return { token: data.token, id: data.appPassword.id };
+}
+
+async function patch(
+  id: string,
+  body: unknown,
+  options: { user?: string | null; session?: { createdAt: Date } } = {}
+) {
+  const { PATCH } = await import('@/pages/api/user/app-passwords/[id]');
+  return PATCH(
+    routeContext(jsonRequest('PATCH', `/api/user/app-passwords/${id}`, body), { ...options, id })
+  );
+}
+
+async function getOne(id: string, user = userId) {
+  const { GET } = await import('@/pages/api/user/app-passwords/[id]');
+  return GET(
+    routeContext(new Request(`http://localhost/api/user/app-passwords/${id}`), { user, id })
+  );
+}
+
+async function listToolNames(token: string): Promise<string[]> {
+  const { POST } = await import('@/pages/api/mcp');
+  const response = await POST(
+    routeContext(
+      new Request('http://localhost/api/mcp', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+      }),
+      { user: null }
+    )
+  );
+  const body = (await response.json()) as { result: { tools: Array<{ name: string }> } };
+  return body.result.tools.map((tool) => tool.name).sort();
+}
+
+function storedPermissions(id: string) {
+  return db
+    .select({ permissions: schema.mcpAppPasswords.permissions })
+    .from(schema.mcpAppPasswords)
+    .where(eq(schema.mcpAppPasswords.id, id))
+    .get()?.permissions;
+}
+
+function auditRows(id: string) {
+  return db
+    .select()
+    .from(schema.auditLogs)
+    .where(
+      and(eq(schema.auditLogs.entity_id, id), eq(schema.auditLogs.entity_type, 'app_password'))
+    )
+    .all();
+}
+
+async function expectValidationError(response: Response, message: string): Promise<void> {
+  expect(response.status).toBe(400);
+  const body = (await response.json()) as ErrorBody;
+  expect(body.error.code).toBe('VALIDATION_ERROR');
+  expect(body.error.details?.map((detail) => detail.message)).toContain(message);
+}
+
+describe('POST /api/user/app-passwords', () => {
+  it('requires a sign-in from the last 15 minutes', async () => {
+    const response = await post(
+      { name: 'x', scope: 'read', expiry: '30' },
+      { session: STALE_SESSION() }
+    );
+
+    expect(response.status).toBe(403);
+    expect(((await response.json()) as ErrorBody).error.code).toBe('REAUTH_REQUIRED');
+  });
+
+  it('creates a preset token, returns it once with no-store, and audit-logs it', async () => {
+    const response = await post({ name: 'Reader', scope: 'read', expiry: '30' });
+    const body = (await response.json()) as {
+      data: { token: string; appPassword: AppPasswordBody };
+    };
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(body.data.token).toStartWith('aw_pat_');
+    expect(body.data.appPassword).toMatchObject({ permissions: ['*:read'], preset: 'read' });
+    expect(body.data.appPassword).not.toHaveProperty('scope');
+
+    const audit = auditRows(body.data.appPassword.id);
+    expect(audit.map((row) => row.action)).toEqual(['create']);
+    expect(JSON.stringify(audit)).not.toContain(body.data.token);
+  });
+
+  it('creates a custom token with its permissions in registry order', async () => {
+    const response = await post({
+      name: 'Bookkeeper',
+      expiry: '30',
+      permissions: ['transactions:create', 'accounts:read', 'transactions:create'],
+    });
+    const { appPassword } = ((await response.json()) as { data: { appPassword: AppPasswordBody } })
+      .data;
+
+    expect(response.status).toBe(201);
+    expect(appPassword).toMatchObject({
+      permissions: ['transactions:create', 'accounts:read'],
+      preset: 'custom',
+    });
+    expect(storedPermissions(appPassword.id)).toEqual(['transactions:create', 'accounts:read']);
+  });
+
+  const invalidBodies: Array<[string, Record<string, unknown>, string]> = [
+    [
+      'an unknown permission',
+      { permissions: ['accounts:launch'] },
+      'accounts:launch is not a permission',
+    ],
+    ['a wildcard in custom permissions', { permissions: ['*'] }, '* is not a permission'],
+    ['an empty permission list', { permissions: [] }, 'Choose at least one permission'],
+    [
+      'both scope and permissions',
+      { scope: 'read', permissions: ['accounts:read'] },
+      'Send either scope or permissions, not both',
+    ],
+    ['neither scope nor permissions', {}, 'Send either scope or permissions'],
+    ['an unknown scope', { scope: 'admin' }, 'Choose read or read-write'],
+  ];
+
+  for (const [label, access, message] of invalidBodies) {
+    it(`rejects ${label}`, async () => {
+      await expectValidationError(await post({ name: 'x', expiry: '30', ...access }), message);
+      expect(db.select().from(schema.mcpAppPasswords).all()).toEqual([]);
+    });
+  }
+});
+
+describe('GET /api/user/app-passwords/{id}', () => {
+  it("returns the caller's own token and 404 for anyone else's", async () => {
+    const { id } = await create({ scope: 'read-write' });
+
+    const own = await getOne(id);
+    expect(own.status).toBe(200);
+    expect(
+      ((await own.json()) as { data: { appPassword: AppPasswordBody } }).data.appPassword
+    ).toMatchObject({ id, permissions: ['*'], preset: 'read-write' });
+
+    expect((await getOne(id, otherUserId)).status).toBe(404);
+  });
+});
+
+describe('PATCH /api/user/app-passwords/{id}', () => {
+  it('narrows permissions, takes effect on the next request, and audit-logs the change', async () => {
+    const { token, id } = await create({ scope: 'read-write' });
+    expect(await listToolNames(token)).toContain('add_expense');
+
+    const response = await patch(id, { permissions: ['accounts:read'] });
+    expect(response.status).toBe(200);
+    expect(
+      ((await response.json()) as { data: { appPassword: AppPasswordBody } }).data.appPassword
+    ).toMatchObject({ id, name: 'Agent', permissions: ['accounts:read'], preset: 'custom' });
+
+    expect(await listToolNames(token)).toEqual(['get_account_summary', 'list_accounts']);
+
+    const update = auditRows(id).find((row) => row.action === 'update');
+    expect(JSON.parse(update?.old_value ?? '{}')).toMatchObject({ permissions: ['*'] });
+    expect(JSON.parse(update?.new_value ?? '{}')).toMatchObject({
+      permissions: ['accounts:read'],
+    });
+  });
+
+  it('renames without touching permissions, and switches back to a preset', async () => {
+    const { id } = await create({ permissions: ['budgets:read'] });
+
+    const renamed = await patch(id, { name: '  Budget bot  ' });
+    expect(
+      ((await renamed.json()) as { data: { appPassword: AppPasswordBody } }).data.appPassword
+    ).toMatchObject({ name: 'Budget bot', permissions: ['budgets:read'] });
+
+    expect((await patch(id, { scope: 'read' })).status).toBe(200);
+    expect(storedPermissions(id)).toEqual(['*:read']);
+  });
+
+  it("returns 404 for another user's token and leaves it unchanged", async () => {
+    const { id } = await create({ scope: 'read' });
+
+    const response = await patch(id, { scope: 'read-write' }, { user: otherUserId });
+
+    expect(response.status).toBe(404);
+    expect(((await response.json()) as ErrorBody).error.code).toBe('NOT_FOUND');
+    expect(storedPermissions(id)).toEqual(['*:read']);
+  });
+
+  it('requires a sign-in from the last 15 minutes', async () => {
+    const { id } = await create({ scope: 'read' });
+
+    const response = await patch(id, { scope: 'read-write' }, { session: STALE_SESSION() });
+
+    expect(response.status).toBe(403);
+    expect(((await response.json()) as ErrorBody).error.code).toBe('REAUTH_REQUIRED');
+    expect(storedPermissions(id)).toEqual(['*:read']);
+  });
+
+  it('requires a signed-in user', async () => {
+    const { id } = await create({ scope: 'read' });
+    expect((await patch(id, { name: 'x' }, { user: null })).status).toBe(401);
+  });
+
+  it('validates the body with the create rules', async () => {
+    const { id } = await create({ scope: 'read' });
+
+    await expectValidationError(await patch(id, {}), 'Send a name, a scope or permissions');
+    await expectValidationError(
+      await patch(id, { permissions: ['*:read'] }),
+      '*:read is not a permission'
+    );
+    await expectValidationError(
+      await patch(id, { permissions: [] }),
+      'Choose at least one permission'
+    );
+    expect(storedPermissions(id)).toEqual(['*:read']);
+  });
+
+  it('is rate limited per user like create', async () => {
+    const { id } = await create({ scope: 'read' });
+
+    for (let i = 0; i < APP_PASSWORD_WRITE_RATE_LIMIT.maxRequests; i++) {
+      expect((await patch(id, { name: `n${i}` })).status).toBe(200);
+    }
+    expect((await patch(id, { name: 'one more' })).status).toBe(429);
+  });
+});

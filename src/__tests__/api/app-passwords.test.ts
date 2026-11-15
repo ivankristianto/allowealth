@@ -1,10 +1,10 @@
 /**
- * App passwords end to end: the /api/user/app-passwords routes, /api/mcp and the
- * stdio server's auth cache, against a throwaway SQLite file next to this test.
+ * App passwords made through POST /api/user/app-passwords, used on /api/mcp and by
+ * the stdio server's auth cache, against a throwaway SQLite file next to this test.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { join } from 'node:path';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { resetDb } from '@/db';
 import * as schema from '@/db/schema/sqlite';
@@ -21,7 +21,6 @@ const userId = `usr-${nanoid(8)}`;
 const otherUserId = `usr-${nanoid(8)}`;
 
 const FRESH_SESSION = () => ({ createdAt: new Date() });
-const STALE_SESSION = () => ({ createdAt: new Date(Date.now() - 16 * 60 * 1000) });
 
 beforeAll(() => {
   seedWorkspaceUser(db, { workspaceId, userId });
@@ -105,58 +104,6 @@ async function callMcp(token: string, method: string, params?: Record<string, un
     )
   );
 }
-
-describe('POST /api/user/app-passwords', () => {
-  it('requires a sign-in from the last 15 minutes', async () => {
-    const response = await createAppPassword('read', { session: STALE_SESSION() });
-
-    expect(response.status).toBe(403);
-    expect(((await response.json()) as { error: { code: string } }).error.code).toBe(
-      'REAUTH_REQUIRED'
-    );
-  });
-
-  it('creates a token, returns it once with no-store, and audit-logs it', async () => {
-    const response = await createAppPassword('read');
-    const body = (await response.json()) as {
-      data: { token: string; appPassword: { id: string; permissions: string[]; preset: string } };
-    };
-
-    expect(response.status).toBe(201);
-    expect(response.headers.get('Cache-Control')).toBe('no-store');
-    expect(body.data.token).toStartWith('aw_pat_');
-    expect(body.data.appPassword).toMatchObject({ permissions: ['*:read'], preset: 'read' });
-    expect(body.data.appPassword).not.toHaveProperty('scope');
-
-    const audit = db
-      .select()
-      .from(schema.auditLogs)
-      .where(
-        and(
-          eq(schema.auditLogs.entity_id, body.data.appPassword.id),
-          eq(schema.auditLogs.entity_type, 'app_password')
-        )
-      )
-      .all();
-    expect(audit.map((row) => row.action)).toEqual(['create']);
-    expect(JSON.stringify(audit)).not.toContain(body.data.token);
-  });
-
-  it('rejects an unknown scope', async () => {
-    const { POST } = await import('@/pages/api/user/app-passwords/index');
-    const response = await POST(
-      routeContext(
-        new Request('http://localhost/api/user/app-passwords', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'x', scope: 'admin', expiry: '30' }),
-        }),
-        { user: userId, session: FRESH_SESSION() }
-      )
-    );
-    expect(response.status).toBe(400);
-  });
-});
 
 describe('/api/mcp with app passwords', () => {
   it('accepts a read-write token and lists every tool', async () => {

@@ -34,6 +34,7 @@ export type SecurityActivityType =
   | 'mcp_token_created'
   | 'mcp_token_revoked'
   | 'app_password_created'
+  | 'app_password_updated'
   | 'app_password_revoked'
   | ClientSecurityActivityType;
 
@@ -66,6 +67,7 @@ const EVENT_DEFINITIONS: Record<
   mcp_token_created: { action: 'mcp_token_create', entityType: 'mcp_token' },
   mcp_token_revoked: { action: 'mcp_token_revoke', entityType: 'mcp_token' },
   app_password_created: { action: 'create', entityType: 'app_password' },
+  app_password_updated: { action: 'update', entityType: 'app_password' },
   app_password_revoked: { action: 'delete', entityType: 'app_password' },
   mfa_enabled: { action: 'mfa_enable', entityType: 'user_mfa' },
   mfa_disabled: { action: 'mfa_disable', entityType: 'user_mfa' },
