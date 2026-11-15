@@ -14,11 +14,14 @@ export type AppPasswordLimitName = 'category' | 'own_transactions';
 
 export const MAX_LIMIT_CATEGORY_IDS = 200;
 
-/** Short labels for the token list, such as "2 categories" and "Own transactions only". */
-export function describeAppPasswordLimits(limits: AppPasswordLimits): string[] {
+/** Labels for the token list, such as "2 categories"; a deleted category is not counted. */
+export function describeAppPasswordLimits(
+  limits: AppPasswordLimits,
+  existingCategoryIds: ReadonlySet<string>
+): string[] {
   const labels: string[] = [];
   if (limits.category_ids !== undefined) {
-    const count = limits.category_ids.length;
+    const count = limits.category_ids.filter((id) => existingCategoryIds.has(id)).length;
     labels.push(count === 1 ? '1 category' : `${count} categories`);
   }
   if (limits.own_transactions_only) labels.push('Own transactions only');

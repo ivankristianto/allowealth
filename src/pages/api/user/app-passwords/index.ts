@@ -9,6 +9,7 @@ import {
 import { refuseAppPasswordWrite } from '@/lib/app-password-write-guard';
 import { logError } from '@/lib/logger';
 import { createAppPasswordSchema } from '@/lib/validation/app-passwords';
+import { categoryService } from '@/services';
 import { AppPasswordError, mcpAppPasswordService } from '@/services/mcp-app-password.service';
 import { securityActivityService } from '@/services/security-activity.service';
 import SecurityAppPasswordsListPartial from '@/components/partials/SecurityAppPasswordsListPartial.astro';
@@ -30,9 +31,10 @@ export const GET: APIRoute = async (context) => {
     const appPasswords = await mcpAppPasswordService.listForUser(user.id);
 
     if (render.wantsHtml()) {
+      const categories = user.workspaceId ? await categoryService.findAll(user.workspaceId) : [];
       const container = await AstroContainer.create();
       const html = await container.renderToString(SecurityAppPasswordsListPartial, {
-        props: { appPasswords },
+        props: { appPasswords, categories },
       });
       return render.html(html);
     }
