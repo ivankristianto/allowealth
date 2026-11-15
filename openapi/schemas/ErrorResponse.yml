@@ -21,7 +21,8 @@ ErrorResponse:
             details:
               description: >-
                 For `VALIDATION_ERROR`, an array of issues. For `INTERNAL_ERROR`, an object with
-                the `errorId` logged server-side.
+                the `errorId` logged server-side. For `APP_PASSWORD_PERMISSION_MISSING`, an
+                object with the missing `permission`.
               oneOf:
                 - type: array
                   items:

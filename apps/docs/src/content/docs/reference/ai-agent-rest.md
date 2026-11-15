@@ -35,7 +35,7 @@ Content-Type: application/json
 
 - The token decides who you are. Cookies on the same request are ignored.
 - No CSRF header is needed for Bearer requests.
-- Responses use the usual envelope: `{ "success": true, "data": ... }` or `{ "success": false, "error": { "message", "code" } }`.
+- Responses use the usual envelope: `{ "success": true, "data": ... }` or `{ "success": false, "error": { "message", "code", "details" } }`.
 
 The examples below assume:
 
@@ -52,40 +52,42 @@ export WORKSPACE_TZ="Asia/Jakarta" # the workspace time zone, see below
 | `read`       | `GET`, `HEAD`                        |
 | `read-write` | `GET`, `HEAD`, plus the writes below |
 
+Behind each scope is a set of permissions named `resource:action`, such as `transactions:read` or `transactions:create`. `/api/openapi.json` needs none. Every other route and method needs one, and `HEAD` needs the same one as `GET`. A `read` token holds every `:read` permission and a `read-write` token holds all of them.
+
 ## Allowed routes
 
-| Route                                                                     | Read | Write (read-write only) |
-| ------------------------------------------------------------------------- | ---- | ----------------------- |
-| `/api/openapi.json`                                                       | GET  |                         |
-| `/api/transactions`                                                       | GET  | POST                    |
-| `/api/transactions/{id}`                                                  | GET  | PUT, DELETE             |
-| `/api/transactions/{id}/history`                                          | GET  |                         |
-| `/api/budget/overview`, `/history`, `/category-trends`                    | GET  |                         |
-| `/api/budget/category/{id}/remaining`                                     | GET  |                         |
-| `/api/budgets`, `/api/budgets/{id}`                                       | GET  |                         |
-| `/api/recurring`                                                          | GET  | POST                    |
-| `/api/recurring/{id}`                                                     | GET  | PUT                     |
-| `/api/recurring/occurrences`                                              | GET  |                         |
-| `/api/recurring/occurrences/{id}/confirm`                                 |      | POST                    |
-| `/api/recurring/calendar`, `/forecast`, `/stats`                          | GET  |                         |
-| `/api/accounts`, `/api/accounts/{id}`                                     | GET  |                         |
-| `/api/categories`, `/api/categories/{id}`                                 | GET  |                         |
-| `/api/account-categories`, `/api/account-categories/{id}`                 | GET  |                         |
-| `/api/workspace/settings`                                                 | GET  |                         |
-| `/api/forecast`                                                           | GET  |                         |
-| `/api/reports`, `/expenses`, `/income`, `/members`, `/category-drilldown` | GET  |                         |
+| Route                                                                     | Read | Write (needs the matching permission) |
+| ------------------------------------------------------------------------- | ---- | ------------------------------------- |
+| `/api/openapi.json`                                                       | GET  |                                       |
+| `/api/transactions`                                                       | GET  | POST                                  |
+| `/api/transactions/{id}`                                                  | GET  | PUT, DELETE                           |
+| `/api/transactions/{id}/history`                                          | GET  |                                       |
+| `/api/budget/overview`, `/history`, `/category-trends`                    | GET  |                                       |
+| `/api/budget/category/{id}/remaining`                                     | GET  |                                       |
+| `/api/budgets`, `/api/budgets/{id}`                                       | GET  |                                       |
+| `/api/recurring`                                                          | GET  | POST                                  |
+| `/api/recurring/{id}`                                                     | GET  | PUT                                   |
+| `/api/recurring/occurrences`                                              | GET  |                                       |
+| `/api/recurring/occurrences/{id}/confirm`                                 |      | POST                                  |
+| `/api/recurring/calendar`, `/forecast`, `/stats`                          | GET  |                                       |
+| `/api/accounts`, `/api/accounts/{id}`                                     | GET  |                                       |
+| `/api/categories`, `/api/categories/{id}`                                 | GET  |                                       |
+| `/api/account-categories`, `/api/account-categories/{id}`                 | GET  |                                       |
+| `/api/workspace/settings`                                                 | GET  |                                       |
+| `/api/forecast`                                                           | GET  |                                       |
+| `/api/reports`, `/expenses`, `/income`, `/members`, `/category-drilldown` | GET  |                                       |
 
 Never reachable with an app password: sign-in and other `/api/auth/*` routes, `/api/admin/*`, `/api/user/*` (including app passwords themselves), `/api/security/*`, installer and onboarding routes, workspace members and invitations, bulk and import routes, and changes to workspace settings. `/api/mcp` keeps its own handler, described in [API Overview](/reference/api-overview/).
 
 ## Errors
 
-| Status | Code                              | Meaning                                                                            |
-| ------ | --------------------------------- | ---------------------------------------------------------------------------------- |
-| 401    | `APP_PASSWORD_INVALID`            | Malformed, expired or revoked token, or a Bearer token that is not an app password |
-| 403    | `APP_PASSWORD_ROUTE_NOT_ALLOWED`  | The route or method is not on the list above                                       |
-| 403    | `APP_PASSWORD_SCOPE_INSUFFICIENT` | A read-only token tried to write                                                   |
-| 403    | `WORKSPACE_INACTIVE`              | The workspace was archived                                                         |
-| 429    | `RATE_LIMIT_EXCEEDED`             | More than 60 requests in a minute for this token; wait for `Retry-After` seconds   |
+| Status | Code                              | Meaning                                                                             |
+| ------ | --------------------------------- | ----------------------------------------------------------------------------------- |
+| 401    | `APP_PASSWORD_INVALID`            | Malformed, expired or revoked token, or a Bearer token that is not an app password  |
+| 403    | `APP_PASSWORD_ROUTE_NOT_ALLOWED`  | The route or method is not on the list above                                        |
+| 403    | `APP_PASSWORD_PERMISSION_MISSING` | The token lacks the permission the route needs, named in `error.details.permission` |
+| 403    | `WORKSPACE_INACTIVE`              | The workspace was archived                                                          |
+| 429    | `RATE_LIMIT_EXCEEDED`             | More than 60 requests in a minute for this token; wait for `Retry-After` seconds    |
 
 ## Learn the API
 

@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  ANY_VALID_TOKEN,
-  APP_PASSWORD_REST_ROUTES,
-  authorizeAppPasswordRequest,
-} from '@/lib/app-password-rest-access';
+import { ANY_VALID_TOKEN, APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
 import { APP_PASSWORD_SCOPES } from '@/lib/mcp-app-password';
 import {
   SCOPE_PERMISSION_GRANTS,
@@ -35,21 +31,6 @@ describe('REST allowlist permissions', () => {
       .filter(({ permission }) => permission === ANY_VALID_TOKEN)
       .map(({ rule, method }) => `${method} ${rule.path}`);
     expect(open).toEqual(['GET /api/openapi.json']);
-  });
-
-  test('each scope preset allows exactly what the scope allows today', () => {
-    const mismatches = APP_PASSWORD_SCOPES.flatMap((scope) => {
-      const granted = new Set<string>(expandPermissionGrants(SCOPE_PERMISSION_GRANTS[scope]));
-      return restPairs
-        .filter(({ rule, method, permission }) => {
-          const concretePath = rule.path.replaceAll('{id}', 'abc123');
-          const allowedToday = authorizeAppPasswordRequest(method, concretePath, scope).allowed;
-          const allowedByPreset = permission === ANY_VALID_TOKEN || granted.has(permission ?? '');
-          return allowedToday !== allowedByPreset;
-        })
-        .map(({ rule, method }) => `${scope}: ${method} ${rule.path}`);
-    });
-    expect(mismatches).toEqual([]);
   });
 });
 

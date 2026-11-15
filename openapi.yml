@@ -258,11 +258,14 @@ components:
         App password sent as `Authorization: Bearer aw_pat_...`. Create one in the app under
         Security > App Passwords.
 
-        - Scopes: `read` allows GET and HEAD only. `read-write` also allows POST, PUT, PATCH and
-          DELETE.
+        - Permissions: each allowed route and method needs one `resource:action` permission, such
+          as `transactions:read` or `transactions:create`. HEAD needs the same permission as GET.
+          A `read` token holds every `:read` permission; a `read-write` token holds them all.
+          `GET /api/openapi.json` needs no permission.
         - Deny by default: only operations that list `bearerAuth` in their `security` accept app
           passwords. Any other route or method returns 403 `APP_PASSWORD_ROUTE_NOT_ALLOWED`. A
-          `read` token sending a write returns 403 `APP_PASSWORD_SCOPE_INSUFFICIENT`.
+          token without the needed permission returns 403 `APP_PASSWORD_PERMISSION_MISSING`
+          with the permission in `error.details.permission`.
         - An invalid, expired or revoked token, or a Bearer token without the `aw_pat_` prefix,
           returns 401 `APP_PASSWORD_INVALID`.
         - A Bearer request ignores cookies and needs no CSRF header.
