@@ -9,10 +9,10 @@ import * as realAuthServer from '@/lib/auth/server';
 import * as realOpenApiSources from '@/lib/openapi/sources';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 import type { AppPasswordScope } from '@/lib/mcp-app-password';
+import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
 import { APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
 import {
   PERMISSION_IDS,
-  SCOPE_PERMISSION_GRANTS,
   expandPermissionGrants,
   type Permission,
   type PermissionGrant,
@@ -119,7 +119,7 @@ async function createToken(
   const { token, appPassword } = await tokenService.create({
     userId: USER_ID,
     name: `test ${scope} ${crypto.randomUUID()}`,
-    permissions: [...SCOPE_PERMISSION_GRANTS[scope]],
+    permissions: [...APP_PASSWORD_PRESETS[scope].grants],
     expiry: '30',
   });
   return { token, id: appPassword.id };

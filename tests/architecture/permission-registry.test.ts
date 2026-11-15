@@ -2,13 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ANY_VALID_TOKEN, APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
+import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
 import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
-import {
-  PERMISSION_IDS,
-  SCOPE_PERMISSION_GRANTS,
-  expandPermissionGrants,
-  isPermission,
-} from '@/lib/permissions/registry';
+import { PERMISSION_IDS, expandPermissionGrants, isPermission } from '@/lib/permissions/registry';
 import { TOOL_PERMISSIONS, registerTools, toolAnnotations } from '@mcp-server/tools/index';
 
 const restPairs = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
@@ -56,7 +52,7 @@ describe('MCP tool permissions', () => {
 
   test('each scope preset sees exactly the tools it saw before permissions', () => {
     const toolsFor = (scope: AppPasswordScope) =>
-      registerTools({ permissions: expandPermissionGrants(SCOPE_PERMISSION_GRANTS[scope]) })
+      registerTools({ permissions: expandPermissionGrants(APP_PASSWORD_PRESETS[scope].grants) })
         .map((tool) => tool.name)
         .sort();
     const readTools = [

@@ -5,12 +5,8 @@ import {
   APP_PASSWORD_SCOPES,
   type AppPasswordScope,
 } from '@/lib/mcp-app-password';
-import {
-  PERMISSION_IDS,
-  SCOPE_PERMISSION_GRANTS,
-  type Permission,
-  type PermissionGrant,
-} from '@/lib/permissions/registry';
+import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
+import { PERMISSION_IDS, type Permission, type PermissionGrant } from '@/lib/permissions/registry';
 
 const nameSchema = v.pipe(
   v.string(),
@@ -40,15 +36,13 @@ interface AccessInput {
   permissions?: Permission[];
 }
 
-function hasBothAccessFields(input: AccessInput): boolean {
-  return input.scope !== undefined && input.permissions !== undefined;
-}
+const BOTH_ACCESS_FIELDS = 'Send either scope or permissions, not both';
 
-/** The grants to store: the scope's wildcard, or the custom list deduped in registry order. */
-function toGrants(input: AccessInput): PermissionGrant[] | undefined {
-  if (input.scope) return [...SCOPE_PERMISSION_GRANTS[input.scope]];
-  if (!input.permissions) return undefined;
-  const chosen = new Set<Permission>(input.permissions);
+/** The grants to store: the scope's wildcard, the custom list deduped in registry order, or none. */
+function toGrants({ scope, permissions }: AccessInput): PermissionGrant[] | undefined {
+  if (scope !== undefined) return [...APP_PASSWORD_PRESETS[scope].grants];
+  if (permissions === undefined) return undefined;
+  const chosen = new Set<Permission>(permissions);
   return PERMISSION_IDS.filter((permission) => chosen.has(permission));
 }
 
@@ -58,16 +52,19 @@ export const createAppPasswordSchema = v.pipe(
     expiry: v.picklist(APP_PASSWORD_EXPIRY_OPTIONS, 'Choose an expiry'),
     ...accessFields,
   }),
-  v.check(
-    (input) => input.scope !== undefined || input.permissions !== undefined,
-    'Send either scope or permissions'
-  ),
-  v.check((input) => !hasBothAccessFields(input), 'Send either scope or permissions, not both'),
-  v.transform(({ name, expiry, ...access }) => ({
-    name,
-    expiry,
-    permissions: toGrants(access) as PermissionGrant[],
-  }))
+  v.rawTransform(({ dataset, addIssue, NEVER }) => {
+    const { name, expiry, scope, permissions } = dataset.value;
+    if (scope !== undefined && permissions !== undefined) {
+      addIssue({ message: BOTH_ACCESS_FIELDS });
+      return NEVER;
+    }
+    const grants = toGrants({ scope, permissions });
+    if (!grants) {
+      addIssue({ message: 'Send either scope or permissions' });
+      return NEVER;
+    }
+    return { name, expiry, permissions: grants };
+  })
 );
 
 export const updateAppPasswordSchema = v.pipe(
@@ -75,17 +72,20 @@ export const updateAppPasswordSchema = v.pipe(
     name: v.optional(nameSchema),
     ...accessFields,
   }),
-  v.check((input) => !hasBothAccessFields(input), 'Send either scope or permissions, not both'),
-  v.check(
-    (input) =>
-      input.name !== undefined || input.scope !== undefined || input.permissions !== undefined,
-    'Send a name, a scope or permissions'
-  ),
-  v.transform(({ name, ...access }) => {
-    const permissions = toGrants(access);
+  v.rawTransform(({ dataset, addIssue, NEVER }) => {
+    const { name, scope, permissions } = dataset.value;
+    if (scope !== undefined && permissions !== undefined) {
+      addIssue({ message: BOTH_ACCESS_FIELDS });
+      return NEVER;
+    }
+    const grants = toGrants({ scope, permissions });
+    if (name === undefined && !grants) {
+      addIssue({ message: 'Send a name, a scope or permissions' });
+      return NEVER;
+    }
     return {
       ...(name !== undefined && { name }),
-      ...(permissions && { permissions }),
+      ...(grants && { permissions: grants }),
     };
   })
 );

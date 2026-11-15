@@ -3,8 +3,6 @@
  * name the permission they need. No DB imports, so client scripts can share this module.
  */
 
-import { APP_PASSWORD_SCOPES, type AppPasswordScope } from '@/lib/mcp-app-password';
-
 export const PERMISSIONS = [
   {
     id: 'transactions:read',
@@ -75,36 +73,9 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number]['id'];
 
-type PermissionResource = Permission extends `${infer Resource}:${string}` ? Resource : never;
-
-const RESOURCE_LABELS: Readonly<Record<PermissionResource, string>> = {
-  transactions: 'Transactions',
-  budgets: 'Budgets',
-  recurring: 'Recurring bills',
-  accounts: 'Accounts',
-  categories: 'Categories',
-  settings: 'Workspace settings',
-  forecast: 'Forecast',
-  reports: 'Reports',
-};
-
-export interface PermissionGroup {
-  resource: PermissionResource;
-  label: string;
-  permissions: (typeof PERMISSIONS)[number][];
-}
-
-/** The registry grouped by resource, in registry order, for the custom permission picker. */
-export const PERMISSION_GROUPS: readonly PermissionGroup[] = PERMISSIONS.reduce<PermissionGroup[]>(
-  (groups, permission) => {
-    const resource = permission.id.split(':')[0] as PermissionResource;
-    const group = groups.find((existing) => existing.resource === resource);
-    if (group) group.permissions.push(permission);
-    else groups.push({ resource, label: RESOURCE_LABELS[resource], permissions: [permission] });
-    return groups;
-  },
-  []
-);
+export type PermissionResource = Permission extends `${infer Resource}:${string}`
+  ? Resource
+  : never;
 
 /** Stored grants may also be wildcards, expanded against the registry when a token is verified. */
 export type PermissionGrant = Permission | '*' | '*:read';
@@ -119,47 +90,6 @@ export function isPermission(value: unknown): value is Permission {
 
 export function isReadPermission(permission: Permission): boolean {
   return permission.endsWith(':read');
-}
-
-/** The grants each legacy scope stands for; wildcards keep them covering permissions added later. */
-export const SCOPE_PERMISSION_GRANTS: Readonly<
-  Record<AppPasswordScope, readonly PermissionGrant[]>
-> = {
-  read: ['*:read'],
-  'read-write': ['*'],
-};
-
-export type AppPasswordPreset = AppPasswordScope | 'custom';
-
-/** Only the exact stored wildcard is a preset; an explicit list, even of everything, is custom. */
-export function deriveAppPasswordPreset(grants: readonly unknown[]): AppPasswordPreset {
-  const preset = APP_PASSWORD_SCOPES.find((scope) => {
-    const presetGrants = SCOPE_PERMISSION_GRANTS[scope];
-    return (
-      grants.length === presetGrants.length &&
-      presetGrants.every((grant, index) => grants[index] === grant)
-    );
-  });
-  return preset ?? 'custom';
-}
-
-const PRESET_LABELS: Readonly<Record<AppPasswordScope, string>> = {
-  read: 'Read only',
-  'read-write': 'Read and write',
-};
-
-/** What the token list shows: the preset's name, or one label per custom permission. */
-export function describeAppPasswordAccess(grants: readonly unknown[]): {
-  preset: AppPasswordPreset;
-  labels: string[];
-} {
-  const preset = deriveAppPasswordPreset(grants);
-  if (preset !== 'custom') return { preset, labels: [PRESET_LABELS[preset]] };
-  const granted = new Set<string>(expandPermissionGrants(grants));
-  const labels = PERMISSIONS.filter((permission) => granted.has(permission.id)).map(
-    (permission) => permission.label
-  );
-  return { preset, labels: labels.length > 0 ? labels : ['No permissions'] };
 }
 
 /**

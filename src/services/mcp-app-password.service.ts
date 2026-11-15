@@ -11,12 +11,8 @@ import {
   type AppPasswordExpiryOption,
 } from '@/lib/mcp-app-password';
 import type { McpAuthContext } from '@/lib/mcp-auth';
-import {
-  deriveAppPasswordPreset,
-  expandPermissionGrants,
-  type AppPasswordPreset,
-  type PermissionGrant,
-} from '@/lib/permissions/registry';
+import { deriveAppPasswordPreset, type AppPasswordPreset } from '@/lib/app-password-access';
+import { expandPermissionGrants, type PermissionGrant } from '@/lib/permissions/registry';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_USED_WRITE_INTERVAL_MS = 60_000;

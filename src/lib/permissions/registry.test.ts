@@ -2,10 +2,6 @@ import { describe, expect, test } from 'bun:test';
 import {
   PERMISSIONS,
   PERMISSION_IDS,
-  PERMISSION_GROUPS,
-  SCOPE_PERMISSION_GRANTS,
-  deriveAppPasswordPreset,
-  describeAppPasswordAccess,
   expandPermissionGrants,
   isPermission,
   isReadPermission,
@@ -74,69 +70,5 @@ describe('expandPermissionGrants', () => {
     expect(expandPermissionGrants('["*"]')).toEqual([]);
     expect(expandPermissionGrants(null)).toEqual([]);
     expect(expandPermissionGrants([42, { id: '*' }])).toEqual([]);
-  });
-});
-
-describe('scope presets', () => {
-  test('read expands to every read permission, read-write to everything', () => {
-    expect(SCOPE_PERMISSION_GRANTS).toEqual({ read: ['*:read'], 'read-write': ['*'] });
-    expect(expandPermissionGrants(SCOPE_PERMISSION_GRANTS.read)).toEqual(READ_PERMISSIONS);
-    expect(expandPermissionGrants(SCOPE_PERMISSION_GRANTS['read-write'])).toEqual([
-      ...PERMISSION_IDS,
-    ]);
-  });
-});
-
-describe('deriveAppPasswordPreset', () => {
-  test('names a preset only for its exact stored wildcard', () => {
-    expect(deriveAppPasswordPreset(['*:read'])).toBe('read');
-    expect(deriveAppPasswordPreset(['*'])).toBe('read-write');
-  });
-
-  test('calls every other grant list custom, even one listing every permission', () => {
-    expect(deriveAppPasswordPreset(['accounts:read'])).toBe('custom');
-    expect(deriveAppPasswordPreset([...PERMISSION_IDS])).toBe('custom');
-    expect(deriveAppPasswordPreset(READ_PERMISSIONS)).toBe('custom');
-    expect(deriveAppPasswordPreset(['*', '*:read'])).toBe('custom');
-    expect(deriveAppPasswordPreset([])).toBe('custom');
-  });
-});
-
-describe('PERMISSION_GROUPS', () => {
-  test('lists every permission once, grouped by resource in registry order', () => {
-    expect(PERMISSION_GROUPS.flatMap((group) => group.permissions.map((p) => p.id))).toEqual([
-      ...PERMISSION_IDS,
-    ]);
-    for (const group of PERMISSION_GROUPS) {
-      expect(group.label.length).toBeGreaterThan(0);
-      expect(group.permissions.every((p) => p.id.startsWith(`${group.resource}:`))).toBe(true);
-    }
-  });
-});
-
-describe('describeAppPasswordAccess', () => {
-  test('names a preset token by its preset', () => {
-    expect(describeAppPasswordAccess(['*:read'])).toEqual({
-      preset: 'read',
-      labels: ['Read only'],
-    });
-    expect(describeAppPasswordAccess(['*'])).toEqual({
-      preset: 'read-write',
-      labels: ['Read and write'],
-    });
-  });
-
-  test('lists a custom token by permission label in registry order', () => {
-    expect(describeAppPasswordAccess(['accounts:read', 'transactions:create'])).toEqual({
-      preset: 'custom',
-      labels: ['Add transactions', 'Read accounts'],
-    });
-  });
-
-  test('says so when no stored permission is still in the registry', () => {
-    expect(describeAppPasswordAccess(['transactions:launch'])).toEqual({
-      preset: 'custom',
-      labels: ['No permissions'],
-    });
   });
 });
