@@ -89,7 +89,7 @@ export class McpAppPasswordService {
       .where(eq(mcpAppPasswords.user_id, input.userId));
     if (total >= MAX_APP_PASSWORDS_PER_USER) {
       throw new AppPasswordError(
-        `You can have at most ${MAX_APP_PASSWORDS_PER_USER} app passwords. Revoke one first.`,
+        `You can have at most ${MAX_APP_PASSWORDS_PER_USER} app passwords. Revoke unused ones to make room.`,
         'LIMIT_REACHED'
       );
     }

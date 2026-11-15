@@ -108,6 +108,49 @@ describe('McpAppPasswordService.create', () => {
     expect(error).toBeInstanceOf(AppPasswordError);
     expect(error).toMatchObject({ code: 'LIMIT_REACHED' });
   });
+
+  test('a user already over the limit keeps every token but cannot add one', async () => {
+    expect(MAX_APP_PASSWORDS_PER_USER).toBe(5);
+    const created = [];
+    for (let i = 0; i < MAX_APP_PASSWORDS_PER_USER; i++) {
+      created.push(await service.create({ userId, name: `t${i}`, scope: 'read', expiry: '30' }));
+    }
+    // Tokens made under the old limit of 20; create() can no longer get a user here.
+    for (const suffix of ['legacy-a', 'legacy-b']) {
+      const token = `aw_pat_${suffix.padEnd(43, 'x')}`;
+      db.insert(schema.mcpAppPasswords)
+        .values({
+          id: `pat_${suffix}`,
+          user_id: userId,
+          workspace_id: workspaceId,
+          name: suffix,
+          token_hash: await hashOAuthToken(token),
+          token_hint: token.slice(0, 11),
+          scope: 'read-write',
+          permissions: ['*'],
+          created_at: clock,
+        })
+        .run();
+      created.push({ token, appPassword: { id: `pat_${suffix}` } });
+    }
+
+    for (const { token } of created) {
+      expect(await service.verify(token)).not.toBeNull();
+    }
+    const tryCreate = () =>
+      service
+        .create({ userId, name: 'one more', scope: 'read', expiry: '30' })
+        .catch((caught: unknown) => caught);
+    expect(await tryCreate()).toMatchObject({ code: 'LIMIT_REACHED' });
+
+    for (const { appPassword } of created.slice(0, 2)) {
+      await service.revoke(userId, appPassword.id);
+    }
+    expect(await tryCreate()).toMatchObject({ code: 'LIMIT_REACHED' });
+
+    await service.revoke(userId, created[2].appPassword.id);
+    expect(await tryCreate()).toMatchObject({ appPassword: { name: 'one more' } });
+  });
 });
 
 describe('McpAppPasswordService.verify', () => {

@@ -39,6 +39,8 @@ afterAll(() => {
 
 beforeEach(() => {
   clearRateLimitStore();
+  // Each test makes its own tokens; leftovers would hit the per-user limit.
+  db.delete(schema.mcpAppPasswords).where(eq(schema.mcpAppPasswords.user_id, userId)).run();
 });
 
 function routeContext(
