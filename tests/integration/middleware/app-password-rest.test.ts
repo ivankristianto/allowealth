@@ -10,6 +10,12 @@ import * as realOpenApiSources from '@/lib/openapi/sources';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 import type { AppPasswordScope } from '@/lib/mcp-app-password';
 import { APP_PASSWORD_REST_ROUTES } from '@/lib/app-password-rest-access';
+import {
+  PERMISSION_IDS,
+  expandPermissionGrants,
+  type Permission,
+  type PermissionGrant,
+} from '@/lib/permissions/registry';
 
 const SESSION_COOKIE = 'allowealth.session_token';
 const getSessionMock = mock(async (): Promise<unknown> => null);
@@ -118,6 +124,31 @@ async function createToken(
   return { token, id: appPassword.id };
 }
 
+/** Overwrites a token's stored grants, the way #480's API will. */
+async function setGrants(id: string, grants: readonly PermissionGrant[]): Promise<void> {
+  await db
+    .update(mcpAppPasswords)
+    .set({ permissions: [...grants] })
+    .where(eq(mcpAppPasswords.id, id));
+}
+
+async function createTokenWithGrants(
+  grants: readonly PermissionGrant[],
+  scope: AppPasswordScope = 'read'
+): Promise<string> {
+  const { token, id } = await createToken(scope);
+  await setGrants(id, grants);
+  return token;
+}
+
+async function expectPermissionMissing(response: Response, permission: Permission): Promise<void> {
+  const body = await response.json();
+  expect(response.status).toBe(403);
+  expect(body.error.code).toBe('APP_PASSWORD_PERMISSION_MISSING');
+  expect(body.error.message).toContain(permission);
+  expect(body.error.details).toEqual({ permission });
+}
+
 async function resetFixtures(): Promise<void> {
   await db.delete(mcpAppPasswords).where(eq(mcpAppPasswords.user_id, USER_ID));
   await db.delete(users).where(eq(users.id, USER_ID));
@@ -182,6 +213,7 @@ describe('app password authentication on the REST API', () => {
     expect(context.locals.user?.workspaceId).toBe(WORKSPACE_ID);
     expect(context.locals.session).toBeNull();
     expect(context.locals.appPassword?.scope).toBe('read');
+    expect(context.locals.appPassword?.permissions).toEqual(expandPermissionGrants(['*:read']));
     expect(response.headers.get('X-RateLimit-Limit')).toBe('60');
   });
 
@@ -200,8 +232,7 @@ describe('app password authentication on the REST API', () => {
       createContext('/api/transactions', { method: 'POST', bearer: readToken })
     );
 
-    expect(response.status).toBe(403);
-    expect((await response.json()).error.code).toBe('APP_PASSWORD_SCOPE_INSUFFICIENT');
+    await expectPermissionMissing(response, 'transactions:create');
     expect(routeHandler).not.toHaveBeenCalled();
   });
 
@@ -213,6 +244,7 @@ describe('app password authentication on the REST API', () => {
     expect(response.status).toBe(200);
     expect(routeHandler).toHaveBeenCalledTimes(1);
     expect(context.locals.appPassword?.scope).toBe('read-write');
+    expect(context.locals.appPassword?.permissions).toEqual(PERMISSION_IDS);
   });
 
   test('routes outside the allowlist return 403 even for read-write', async () => {
@@ -334,6 +366,161 @@ describe('app password authentication on the REST API', () => {
     }
     expect(statuses.slice(0, 60).every((status) => status === 200)).toBe(true);
     expect(statuses[60]).toBe(429);
+  });
+
+  describe('permission enforcement', () => {
+    const RESOURCE_CASES: readonly {
+      permission: Permission;
+      allowed: readonly [string, string];
+      unknown: readonly [string, string];
+    }[] = [
+      {
+        permission: 'transactions:create',
+        allowed: ['POST', '/api/transactions'],
+        unknown: ['DELETE', '/api/transactions/bulk'],
+      },
+      {
+        permission: 'budgets:read',
+        allowed: ['GET', '/api/budget/overview'],
+        unknown: ['POST', '/api/budgets'],
+      },
+      {
+        permission: 'recurring:confirm',
+        allowed: ['POST', '/api/recurring/occurrences/occ_1/confirm'],
+        unknown: ['DELETE', '/api/recurring/abc123'],
+      },
+      {
+        permission: 'accounts:read',
+        allowed: ['GET', '/api/accounts/abc123'],
+        unknown: ['PUT', '/api/accounts/abc123'],
+      },
+      {
+        permission: 'categories:read',
+        allowed: ['GET', '/api/account-categories'],
+        unknown: ['POST', '/api/categories'],
+      },
+      {
+        permission: 'settings:read',
+        allowed: ['GET', '/api/workspace/settings'],
+        unknown: ['PUT', '/api/workspace/settings'],
+      },
+      {
+        permission: 'forecast:read',
+        allowed: ['GET', '/api/forecast'],
+        unknown: ['POST', '/api/forecast'],
+      },
+      {
+        permission: 'reports:read',
+        allowed: ['GET', '/api/reports/expenses'],
+        unknown: ['POST', '/api/reports'],
+      },
+    ];
+
+    for (const { permission, allowed, unknown } of RESOURCE_CASES) {
+      test(`${permission}: allowed with it, named when missing, unknown routes stay closed`, async () => {
+        const [method, path] = allowed;
+        const { token, id } = await createToken('read');
+
+        await setGrants(id, [permission]);
+        expect((await runChain(createContext(path, { method, bearer: token }))).status).toBe(200);
+
+        await setGrants(
+          id,
+          PERMISSION_IDS.filter((candidate) => candidate !== permission)
+        );
+        await expectPermissionMissing(
+          await runChain(createContext(path, { method, bearer: token })),
+          permission
+        );
+
+        await setGrants(id, ['*']);
+        const [unknownMethod, unknownPath] = unknown;
+        const denied = await runChain(
+          createContext(unknownPath, { method: unknownMethod, bearer: token })
+        );
+        expect(denied.status).toBe(403);
+        expect((await denied.json()).error.code).toBe('APP_PASSWORD_ROUTE_NOT_ALLOWED');
+        expect(routeHandler).toHaveBeenCalledTimes(1);
+      });
+    }
+
+    test('a custom token reaches exactly its permissions', async () => {
+      const token = await createTokenWithGrants(['transactions:create', 'budgets:read']);
+      const request = (method: string, path: string) =>
+        runChain(createContext(path, { method, bearer: token }));
+
+      const context = createContext('/api/transactions', { method: 'POST', bearer: token });
+      expect((await runChain(context)).status).toBe(200);
+      expect(context.locals.appPassword?.permissions).toEqual([
+        'transactions:create',
+        'budgets:read',
+      ]);
+      expect((await request('GET', '/api/budgets')).status).toBe(200);
+      expect((await request('HEAD', '/api/budget/overview')).status).toBe(200);
+      expect((await request('GET', '/api/openapi.json')).status).toBe(200);
+
+      await expectPermissionMissing(await request('GET', '/api/transactions'), 'transactions:read');
+      await expectPermissionMissing(
+        await request('HEAD', '/api/transactions/abc123'),
+        'transactions:read'
+      );
+      await expectPermissionMissing(
+        await request('PUT', '/api/transactions/abc123'),
+        'transactions:update'
+      );
+      await expectPermissionMissing(
+        await request('DELETE', '/api/transactions/abc123'),
+        'transactions:delete'
+      );
+      await expectPermissionMissing(await request('POST', '/api/recurring'), 'recurring:write');
+      await expectPermissionMissing(await request('GET', '/api/accounts'), 'accounts:read');
+      expect(routeHandler).toHaveBeenCalledTimes(4);
+    });
+
+    test('scope no longer decides anything', async () => {
+      const readScoped = await createTokenWithGrants(['transactions:create'], 'read');
+      const writeScoped = await createTokenWithGrants(['budgets:read'], 'read-write');
+
+      const write = await runChain(
+        createContext('/api/transactions', { method: 'POST', bearer: readScoped })
+      );
+      expect(write.status).toBe(200);
+
+      await expectPermissionMissing(
+        await runChain(createContext('/api/transactions', { method: 'POST', bearer: writeScoped })),
+        'transactions:create'
+      );
+    });
+
+    test('a token with no permissions reaches only the OpenAPI document', async () => {
+      const token = await createTokenWithGrants([]);
+
+      expect((await runChain(createContext('/api/openapi.json', { bearer: token }))).status).toBe(
+        200
+      );
+      await expectPermissionMissing(
+        await runChain(createContext('/api/accounts', { bearer: token })),
+        'accounts:read'
+      );
+    });
+
+    for (const scope of ['read', 'read-write'] as const) {
+      test(`the ${scope} preset reaches exactly what the ${scope} scope reached before`, async () => {
+        const token = scope === 'read' ? readToken : readWriteToken;
+        const mismatches: string[] = [];
+        for (const rule of APP_PASSWORD_REST_ROUTES) {
+          for (const method of rule.methods) {
+            const path = rule.path.replaceAll('{id}', 'abc123');
+            const response = await runChain(createContext(path, { method, bearer: token }));
+            const expected = scope === 'read-write' || method === 'GET' ? 200 : 403;
+            if (response.status !== expected) {
+              mismatches.push(`${method} ${rule.path} ${response.status}`);
+            }
+          }
+        }
+        expect(mismatches).toEqual([]);
+      });
+    }
   });
 
   describe('GET /api/openapi.json', () => {

@@ -37,15 +37,20 @@ describe('REST allowlist permissions', () => {
     expect(open).toEqual(['GET /api/openapi.json']);
   });
 
-  test('each scope preset allows exactly what the scope allows today', () => {
+  test('each scope preset allows exactly what the scope allowed before permissions', () => {
     const mismatches = APP_PASSWORD_SCOPES.flatMap((scope) => {
-      const granted = new Set<string>(expandPermissionGrants(SCOPE_PERMISSION_GRANTS[scope]));
+      const granted = expandPermissionGrants(SCOPE_PERMISSION_GRANTS[scope]);
       return restPairs
-        .filter(({ rule, method, permission }) => {
+        .filter(({ rule, method }) => {
           const concretePath = rule.path.replaceAll('{id}', 'abc123');
-          const allowedToday = authorizeAppPasswordRequest(method, concretePath, scope).allowed;
-          const allowedByPreset = permission === ANY_VALID_TOKEN || granted.has(permission ?? '');
-          return allowedToday !== allowedByPreset;
+          // Enforcement before #477: a read token could only GET (and HEAD).
+          const allowedByScope = scope === 'read-write' || method === 'GET';
+          const allowedByPreset = authorizeAppPasswordRequest(
+            method,
+            concretePath,
+            granted
+          ).allowed;
+          return allowedByScope !== allowedByPreset;
         })
         .map(({ rule, method }) => `${scope}: ${method} ${rule.path}`);
     });

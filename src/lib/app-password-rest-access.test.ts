@@ -6,6 +6,7 @@ import {
   APP_PASSWORD_REST_ROUTES,
   authorizeAppPasswordRequest,
 } from '@/lib/app-password-rest-access';
+import { expandPermissionGrants } from '@/lib/permissions/registry';
 
 const API_DIR = join(process.cwd(), 'src/pages/api');
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
@@ -40,30 +41,76 @@ function listFileRoutes(): FileRoute[] {
   return routes;
 }
 
+const READ_PERMISSIONS = expandPermissionGrants(['*:read']);
+const ALL_PERMISSIONS = expandPermissionGrants(['*']);
+
 describe('authorizeAppPasswordRequest', () => {
   test('a read token may GET an allowlisted route', () => {
-    expect(authorizeAppPasswordRequest('GET', '/api/transactions', 'read')).toEqual({
+    expect(authorizeAppPasswordRequest('GET', '/api/transactions', READ_PERMISSIONS)).toEqual({
       allowed: true,
     });
-    expect(authorizeAppPasswordRequest('HEAD', '/api/budget/overview', 'read').allowed).toBe(true);
-  });
-
-  test('a read token may not write, even where read-write could', () => {
-    const decision = authorizeAppPasswordRequest('POST', '/api/transactions', 'read');
-    expect(decision).toMatchObject({ allowed: false, code: 'APP_PASSWORD_SCOPE_INSUFFICIENT' });
-  });
-
-  test('a read-write token may write to allowlisted write routes', () => {
-    expect(authorizeAppPasswordRequest('POST', '/api/transactions', 'read-write').allowed).toBe(
-      true
-    );
     expect(
-      authorizeAppPasswordRequest('POST', '/api/recurring/occurrences/occ_1/confirm', 'read-write')
-        .allowed
+      authorizeAppPasswordRequest('HEAD', '/api/budget/overview', READ_PERMISSIONS).allowed
     ).toBe(true);
   });
 
-  test('routes outside the allowlist are denied for every scope', () => {
+  test('a missing permission is denied and named', () => {
+    expect(authorizeAppPasswordRequest('POST', '/api/transactions', READ_PERMISSIONS)).toEqual({
+      allowed: false,
+      code: 'APP_PASSWORD_PERMISSION_MISSING',
+      message: 'This app password does not have the transactions:create permission',
+      permission: 'transactions:create',
+    });
+  });
+
+  test('HEAD needs the permission of GET', () => {
+    expect(authorizeAppPasswordRequest('HEAD', '/api/budgets', ['budgets:read']).allowed).toBe(
+      true
+    );
+    expect(authorizeAppPasswordRequest('HEAD', '/api/budgets', ['accounts:read'])).toMatchObject({
+      allowed: false,
+      code: 'APP_PASSWORD_PERMISSION_MISSING',
+      permission: 'budgets:read',
+    });
+  });
+
+  test('each method needs its own permission, whatever else the token holds', () => {
+    const permissions = ['transactions:create', 'budgets:read'] as const;
+    expect(authorizeAppPasswordRequest('POST', '/api/transactions', permissions).allowed).toBe(
+      true
+    );
+    expect(authorizeAppPasswordRequest('GET', '/api/budgets/abc123', permissions).allowed).toBe(
+      true
+    );
+    expect(authorizeAppPasswordRequest('GET', '/api/transactions', permissions)).toMatchObject({
+      permission: 'transactions:read',
+    });
+    expect(
+      authorizeAppPasswordRequest('PUT', '/api/transactions/abc123', permissions)
+    ).toMatchObject({ permission: 'transactions:update' });
+  });
+
+  test('the OpenAPI document needs no permission', () => {
+    expect(authorizeAppPasswordRequest('GET', '/api/openapi.json', []).allowed).toBe(true);
+    expect(authorizeAppPasswordRequest('GET', '/api/accounts', [])).toMatchObject({
+      code: 'APP_PASSWORD_PERMISSION_MISSING',
+    });
+  });
+
+  test('a read-write token may write to allowlisted write routes', () => {
+    expect(authorizeAppPasswordRequest('POST', '/api/transactions', ALL_PERMISSIONS).allowed).toBe(
+      true
+    );
+    expect(
+      authorizeAppPasswordRequest(
+        'POST',
+        '/api/recurring/occurrences/occ_1/confirm',
+        ALL_PERMISSIONS
+      ).allowed
+    ).toBe(true);
+  });
+
+  test('routes outside the allowlist are denied for every permission set', () => {
     for (const path of [
       '/api/user/app-passwords',
       '/api/user/password',
@@ -76,19 +123,26 @@ describe('authorizeAppPasswordRequest', () => {
       '/api/workspace/invitations',
       '/api/mcp',
     ]) {
-      expect(authorizeAppPasswordRequest('GET', path, 'read-write')).toMatchObject({
+      expect(authorizeAppPasswordRequest('GET', path, ALL_PERMISSIONS)).toMatchObject({
         allowed: false,
         code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED',
       });
     }
   });
 
+  test('an unlisted method is a route error, not a missing permission', () => {
+    expect(authorizeAppPasswordRequest('DELETE', '/api/accounts/abc123', [])).toMatchObject({
+      allowed: false,
+      code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED',
+    });
+  });
+
   test('workspace settings are read-only', () => {
-    expect(authorizeAppPasswordRequest('GET', '/api/workspace/settings', 'read').allowed).toBe(
-      true
-    );
     expect(
-      authorizeAppPasswordRequest('PUT', '/api/workspace/settings', 'read-write')
+      authorizeAppPasswordRequest('GET', '/api/workspace/settings', READ_PERMISSIONS).allowed
+    ).toBe(true);
+    expect(
+      authorizeAppPasswordRequest('PUT', '/api/workspace/settings', ALL_PERMISSIONS)
     ).toMatchObject({ allowed: false, code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED' });
   });
 
@@ -100,21 +154,23 @@ describe('authorizeAppPasswordRequest', () => {
       ['GET', '/api/budgets/initialize'],
       ['PUT', '/api/recurring/calendar'],
     ] as const) {
-      expect(authorizeAppPasswordRequest(method, path, 'read-write').allowed).toBe(false);
+      expect(authorizeAppPasswordRequest(method, path, ALL_PERMISSIONS).allowed).toBe(false);
     }
   });
 
   test('IDs with dots or encoded separators do not match', () => {
     expect(
-      authorizeAppPasswordRequest('GET', '/api/transactions/..%2Fuser', 'read-write').allowed
+      authorizeAppPasswordRequest('GET', '/api/transactions/..%2Fuser', ALL_PERMISSIONS).allowed
     ).toBe(false);
-    expect(authorizeAppPasswordRequest('GET', '/api/transactions/a.b', 'read-write').allowed).toBe(
-      false
-    );
+    expect(
+      authorizeAppPasswordRequest('GET', '/api/transactions/a.b', ALL_PERMISSIONS).allowed
+    ).toBe(false);
   });
 
   test('a trailing slash matches the same rule', () => {
-    expect(authorizeAppPasswordRequest('GET', '/api/transactions/', 'read').allowed).toBe(true);
+    expect(authorizeAppPasswordRequest('GET', '/api/transactions/', READ_PERMISSIONS).allowed).toBe(
+      true
+    );
   });
 });
 
@@ -139,7 +195,8 @@ describe('allowlist against the routes on disk', () => {
           const listed =
             (rule?.methods as readonly string[] | undefined)?.includes(method) ?? false;
           return (
-            authorizeAppPasswordRequest(method, route.concretePath, 'read-write').allowed !== listed
+            authorizeAppPasswordRequest(method, route.concretePath, ALL_PERMISSIONS).allowed !==
+            listed
           );
         })
         .map((method) => `${method} ${route.concretePath}`);

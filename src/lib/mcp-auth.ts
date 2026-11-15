@@ -14,7 +14,7 @@ export interface McpAuthContext {
   tokenId: string;
   /** Set for app passwords only; OAuth tokens have full MCP access. */
   scope?: AppPasswordScope;
-  /** App passwords only, expanded from stored grants. Enforcement still reads `scope`. */
+  /** App passwords only, expanded from stored grants. REST enforces these; MCP reads `scope`. */
   permissions?: readonly Permission[];
 }
 

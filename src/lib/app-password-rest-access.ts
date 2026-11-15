@@ -3,7 +3,6 @@
  * Deny by default: a route missing here returns 403 for Bearer app passwords.
  */
 
-import type { AppPasswordScope } from '@/lib/mcp-app-password';
 import type { Permission } from '@/lib/permissions/registry';
 
 export type AppPasswordRestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -73,10 +72,12 @@ export const APP_PASSWORD_REST_ROUTES: readonly AppPasswordRestRoute[] = [
 
 export type AppPasswordRestDecision =
   | { allowed: true }
+  | { allowed: false; code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED'; message: string }
   | {
       allowed: false;
-      code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED' | 'APP_PASSWORD_SCOPE_INSUFFICIENT';
+      code: 'APP_PASSWORD_PERMISSION_MISSING';
       message: string;
+      permission: Permission;
     };
 
 // IDs are nanoid-style; anything else (encoded slashes, dots) cannot match a segment.
@@ -116,10 +117,11 @@ function matchesTemplate(templateSegments: readonly string[], pathSegments: stri
   });
 }
 
+/** `permissions` are the token's expanded grants; HEAD needs what GET needs. */
 export function authorizeAppPasswordRequest(
   method: string,
   pathname: string,
-  scope: AppPasswordScope
+  permissions: readonly Permission[]
 ): AppPasswordRestDecision {
   const upperMethod = method.toUpperCase();
   const effectiveMethod = upperMethod === 'HEAD' ? 'GET' : upperMethod;
@@ -128,7 +130,10 @@ export function authorizeAppPasswordRequest(
     matchesTemplate(candidate.segments, pathSegments)
   );
 
-  if (!route || !(route.methods as readonly string[]).includes(effectiveMethod)) {
+  const required = (route?.methods as readonly string[] | undefined)?.includes(effectiveMethod)
+    ? route?.permissions[effectiveMethod as AppPasswordRestMethod]
+    : undefined;
+  if (!required) {
     return {
       allowed: false,
       code: 'APP_PASSWORD_ROUTE_NOT_ALLOWED',
@@ -136,13 +141,14 @@ export function authorizeAppPasswordRequest(
     };
   }
 
-  if (scope === 'read' && effectiveMethod !== 'GET') {
-    return {
-      allowed: false,
-      code: 'APP_PASSWORD_SCOPE_INSUFFICIENT',
-      message: 'This app password is read-only. Create a read-write app password to make changes.',
-    };
+  if (required === ANY_VALID_TOKEN || permissions.includes(required)) {
+    return { allowed: true };
   }
 
-  return { allowed: true };
+  return {
+    allowed: false,
+    code: 'APP_PASSWORD_PERMISSION_MISSING',
+    message: `This app password does not have the ${required} permission`,
+    permission: required,
+  };
 }
