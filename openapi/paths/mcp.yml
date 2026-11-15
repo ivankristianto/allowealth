@@ -18,13 +18,15 @@ paths:
         tool returns a tool result with `isError: true` whose text names the
         missing permissions. Read-only app passwords therefore get the read tools
         (`list_categories`, `list_accounts`, `list_transactions`,
-        `get_budget_summary`, `get_dashboard`, `get_account_summary`) and not
-        `add_expense` or `add_income`. OAuth tokens may call every tool.
+        `get_budget_summary`, `get_dashboard`, `get_account_summary`,
+        `get_token_info`) and not `add_expense` or `add_income`. OAuth tokens may
+        call every tool.
 
         `get_token_info` is open to every valid token, even one with no
         permissions. For an app password it returns the fields of
-        `GET /api/app-password/self`; for an OAuth token, `kind: "oauth"` and the
-        permissions it holds.
+        `GET /api/app-password/self`, except that `rate_limit` is `null` over the
+        local stdio server, which applies no limit. For an OAuth token it returns
+        `kind: "oauth"` and the permissions it holds.
 
         Read tools set `annotations.readOnlyHint: true`. Write tools set
         `readOnlyHint: false` and `destructiveHint`: `false` when the tool only

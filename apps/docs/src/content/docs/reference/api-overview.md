@@ -30,7 +30,7 @@ API endpoints live in `src/pages/api/` and follow file-based routing.
 
 Browser requests use the Better Auth session cookie, and state-changing calls also need the `X-CSRF-Token` header.
 
-Scripts and AI agents can send an app password instead: `Authorization: Bearer aw_pat_...`. It works on an allowlist of routes only, a `read` token is limited to GET, and Bearer requests skip CSRF and ignore cookies. See [Connect an AI agent over REST](/reference/ai-agent-rest/) for the route list, scopes and examples.
+Scripts and AI agents can send an app password instead: `Authorization: Bearer aw_pat_...`. It works on an allowlist of routes only, each route and method needs one `resource:action` permission (a `read` preset holds every `:read` one, `read-write` holds them all), and Bearer requests skip CSRF and ignore cookies. See [Connect an AI agent over REST](/reference/ai-agent-rest/) for the route list, the permissions and examples.
 
 ## Implementation pattern
 
