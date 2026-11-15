@@ -9,6 +9,7 @@ import { runSqliteMigrations } from './migrate';
 
 const MIGRATIONS_DIR = join(process.cwd(), 'drizzle/sqlite');
 const PERMISSIONS_TAG = '0008_app_password_permissions';
+const BACKFILL_TAG = '0009_app_password_permissions_backfill';
 
 interface Journal {
   entries: Array<{ tag: string }>;
@@ -32,7 +33,7 @@ function migrateToBeforePermissions(dbPath: string, scratch: string): void {
   }
 }
 
-describe(`migration ${PERMISSIONS_TAG}`, () => {
+describe(`migrations ${PERMISSIONS_TAG} and ${BACKFILL_TAG}`, () => {
   let scratch: string;
   let dbPath: string;
 
