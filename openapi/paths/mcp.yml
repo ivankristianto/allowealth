@@ -12,11 +12,15 @@ paths:
         an OAuth access token from the Connected Apps flow (24 hours) or an app
         password (`aw_pat_...`) from Security → App Passwords.
 
-        Read-only app passwords see only the read tools in `tools/list`
+        An app password sees in `tools/list` only the tools whose permissions it
+        holds, all of them for a tool that needs several (`get_dashboard` needs
+        `accounts:read`, `transactions:read` and `budgets:read`). Calling any other
+        tool returns a tool result with `isError: true` whose text names the
+        missing permissions. Read-only app passwords therefore get the read tools
         (`list_categories`, `list_accounts`, `list_transactions`,
-        `get_budget_summary`, `get_dashboard`, `get_account_summary`). Calling
-        `add_expense` or `add_income` with one returns a tool result with
-        `isError: true`.
+        `get_budget_summary`, `get_dashboard`, `get_account_summary`) and not
+        `add_expense` or `add_income`. OAuth tokens may call every tool. Each tool
+        sets `annotations.readOnlyHint` when it only reads.
 
         Rate limited to 60 requests per minute per token. Bodies over 64 KB get 413.
       security:

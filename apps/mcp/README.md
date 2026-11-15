@@ -38,7 +38,7 @@ The server accepts two kinds of token. Pick one.
 3. Name it, choose **Read only** or **Read and write**, and pick an expiry.
 4. Copy the `aw_pat_...` token. It is shown once.
 
-App passwords survive sign-out and password changes. They stop working when you revoke them, when they expire, when your account is deleted, or when you leave the workspace they were created in. Read-only tokens see and call only the read tools listed below.
+App passwords survive sign-out and password changes. They stop working when you revoke them, when they expire, when your account is deleted, or when you leave the workspace they were created in. A token sees and calls only the tools whose permissions it holds, so read-only tokens get the Read tools listed below.
 
 #### OAuth token
 
@@ -162,7 +162,9 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 | `get_dashboard`       | Read   | Get combined financial snapshot: accounts, income, expenses, budget health   |
 | `get_account_summary` | Read   | Get account totals grouped by currency and type                              |
 
-Read-only app passwords cannot see or call Write tools. Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. Read-only tokens get the tools whose permissions are all `:read`; a tool without an entry stays off-limits to them, and a test fails until it has one.
+Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. An app password sees and calls a tool only when it holds all of them (`get_dashboard` needs `accounts:read`, `transactions:read` and `budgets:read`). A denied call returns an error result naming the missing permissions. OAuth tokens hold every permission. A tool without an entry is refused to every token, and a test fails until it has one. The stdio and HTTP servers apply the same check.
+
+Tools advertise `readOnlyHint` when all their permissions are reads and `destructiveHint` when any is a delete, so clients can warn before a write.
 
 ## Usage Examples
 
