@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import { errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/logger';
-import { getOpenApiJson } from '@/lib/openapi/document';
+import { getOpenApiDocument, getOpenApiJson } from '@/lib/openapi/document';
+import { filterOpenApiForAppPassword } from '@/lib/openapi/filter';
 
-/** GET /api/openapi.json: the bundled spec, for a signed-in session or an app password. */
+/** GET /api/openapi.json: the whole spec for a session, only its own operations for an app password. */
 export const GET: APIRoute = async (context) => {
   try {
     getAuthenticatedUser(context);
@@ -12,11 +13,17 @@ export const GET: APIRoute = async (context) => {
   }
 
   try {
-    return new Response(getOpenApiJson(), {
+    const appPassword = context.locals.appPassword;
+    const body = appPassword
+      ? JSON.stringify(filterOpenApiForAppPassword(getOpenApiDocument(), appPassword.permissions))
+      : getOpenApiJson();
+    return new Response(body, {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'private, max-age=300',
+        // The body depends on which token, if any, asked for it.
+        Vary: 'Authorization',
       },
     });
   } catch (error) {

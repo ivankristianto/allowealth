@@ -6,8 +6,10 @@ paths:
       summary: Get this OpenAPI document
       description: >-
         Returns this specification bundled into a single OpenAPI 3.1 JSON document (all `$ref`s
-        local). Any authenticated caller may read it: a session cookie or an app password of
-        either scope. Responses may be cached privately for 5 minutes.
+        local). A session gets the whole document. An app password gets only the operations it
+        may call: other operations are removed, paths left with none are dropped, and
+        `components` stay whole. Any valid app password may read it. Responses may be cached
+        privately for 5 minutes and vary by `Authorization`.
       x-required-permission: any
       security:
         - sessionAuth: []
@@ -20,6 +22,10 @@ paths:
               schema:
                 type: string
                 example: private, max-age=300
+            Vary:
+              schema:
+                type: string
+                example: Authorization
           content:
             application/json:
               schema:

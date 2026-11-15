@@ -15,8 +15,8 @@ info:
     `Authorization: Bearer aw_pat_...` (see the `bearerAuth` security scheme). Operations that
     accept one list `bearerAuth` in their `security` and name the permission they need in
     `x-required-permission`; every other operation returns 403 for app passwords. Start with
-    `GET /api/openapi.json` to fetch this document and `GET /api/app-password/self` to see what
-    the token may do.
+    `GET /api/openapi.json`: fetched with an app password, it lists only the operations that
+    token may call. `GET /api/app-password/self` describes the token itself.
 
     Common public auth endpoints used by the app:
     - `POST /api/auth/sign-up/email`

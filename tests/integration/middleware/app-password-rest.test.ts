@@ -592,6 +592,58 @@ describe('app password authentication on the REST API', () => {
   });
 
   describe('GET /api/openapi.json', () => {
+    type Spec = {
+      openapi: string;
+      paths: Record<string, Record<string, unknown>>;
+      components: Record<string, Record<string, unknown>>;
+    };
+    const HTTP_METHODS = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch']);
+
+    async function fetchSpec(options: RequestOptions): Promise<Spec> {
+      const response = await runChain(
+        createContext('/api/openapi.json', options),
+        (ctx) => openApiGet(ctx as never) as Promise<Response>
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+      expect(response.headers.get('Vary')).toBe('Authorization');
+      return (await response.json()) as Spec;
+    }
+
+    function operations(spec: Spec): string[] {
+      return Object.entries(spec.paths)
+        .flatMap(([path, item]) =>
+          Object.keys(item)
+            .filter((key) => HTTP_METHODS.has(key))
+            .map((method) => `${method.toUpperCase()} ${path}`)
+        )
+        .sort();
+    }
+
+    function unresolvedRefs(spec: Spec): string[] {
+      const refs: string[] = [];
+      const collect = (node: unknown): void => {
+        if (Array.isArray(node)) return node.forEach(collect);
+        if (typeof node !== 'object' || node === null) return;
+        for (const [key, value] of Object.entries(node)) {
+          if (key === '$ref' && typeof value === 'string') refs.push(value);
+          else collect(value);
+        }
+      };
+      collect(spec);
+      return refs.filter((ref) => {
+        let target: unknown = spec;
+        for (const segment of ref.replace(/^#\//, '').split('/')) {
+          const key = segment.replaceAll('~1', '/').replaceAll('~0', '~');
+          if (typeof target !== 'object' || target === null || !Object.hasOwn(target, key)) {
+            return true;
+          }
+          target = (target as Record<string, unknown>)[key];
+        }
+        return false;
+      });
+    }
+
     test('requires authentication', async () => {
       const response = await runChain(
         createContext('/api/openapi.json'),
@@ -600,36 +652,53 @@ describe('app password authentication on the REST API', () => {
       expect(response.status).toBe(401);
     });
 
-    test('serves the bundled spec to a read token, with every allowlisted path', async () => {
-      const response = await runChain(
-        createContext('/api/openapi.json', { bearer: readToken }),
-        (ctx) => openApiGet(ctx as never) as Promise<Response>
-      );
+    test('a custom token gets exactly its operations, and every $ref still resolves', async () => {
+      const token = await createTokenWithGrants(['transactions:create', 'budgets:read']);
 
-      expect(response.status).toBe(200);
-      expect(response.headers.get('Content-Type')).toBe('application/json');
-      const spec = (await response.json()) as {
-        openapi: string;
-        paths: Record<string, Record<string, unknown>>;
-        components: { securitySchemes: Record<string, unknown> };
-      };
+      const spec = await fetchSpec({ bearer: token });
+
+      expect(operations(spec)).toEqual([
+        'GET /api/app-password/self',
+        'GET /api/budget/category-trends',
+        'GET /api/budget/category/{id}/remaining',
+        'GET /api/budget/history',
+        'GET /api/budget/overview',
+        'GET /api/budgets',
+        'GET /api/budgets/{id}',
+        'GET /api/openapi.json',
+        'POST /api/transactions',
+      ]);
       expect(spec.openapi).toStartWith('3.');
       expect(spec.components.securitySchemes.bearerAuth).toBeDefined();
-      const undocumented = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
-        rule.methods
-          .filter((method) => !spec.paths[rule.path]?.[method.toLowerCase()])
-          .map((method) => `${method} ${rule.path}`)
-      );
-      expect(undocumented).toEqual([]);
+      expect(spec.components.schemas.Transaction).toBeDefined();
+      expect(unresolvedRefs(spec)).toEqual([]);
     });
 
-    test('serves the spec to a session user', async () => {
-      mockCookieSession();
-      const response = await runChain(
-        createContext('/api/openapi.json', { cookies: { [SESSION_COOKIE]: 'signed-cookie' } }),
-        (ctx) => openApiGet(ctx as never) as Promise<Response>
+    test('a read token gets every allowlisted GET and no write', async () => {
+      const spec = await fetchSpec({ bearer: readToken });
+
+      const allowlistedGets = APP_PASSWORD_REST_ROUTES.filter((rule) =>
+        rule.methods.includes('GET')
+      ).map((rule) => `GET ${rule.path}`);
+      expect(operations(spec)).toEqual(allowlistedGets.sort());
+    });
+
+    test('a read-write token gets every allowlisted operation', async () => {
+      const spec = await fetchSpec({ bearer: readWriteToken });
+
+      const allowlisted = APP_PASSWORD_REST_ROUTES.flatMap((rule) =>
+        rule.methods.map((method) => `${method} ${rule.path}`)
       );
-      expect(response.status).toBe(200);
+      expect(operations(spec)).toEqual(allowlisted.sort());
+    });
+
+    test('a session user gets the whole document', async () => {
+      mockCookieSession();
+
+      const spec = await fetchSpec({ cookies: { [SESSION_COOKIE]: 'signed-cookie' } });
+
+      expect(spec.paths['/api/user/profile']).toBeDefined();
+      expect(spec.paths['/api/workspace/settings']?.put).toBeDefined();
     });
   });
 });
