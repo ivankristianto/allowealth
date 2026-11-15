@@ -7,6 +7,8 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { getCurrentDateISO, getRuntimeTimeZone } from '@/lib/utils/date';
+import { WorkspaceMetaService } from './workspace-meta.service';
 
 const ACTION_LABELS: Record<string, string> = {
   create: 'Created',
@@ -203,11 +205,12 @@ export class AuditLogService {
       .where(and(eq(auditLogs.user_id, userId), eq(auditLogs.workspace_id, workspaceId)))
       .orderBy(desc(auditLogs.created_at))
       .limit(limit);
+    const timeZone = await new WorkspaceMetaService(this.db).getTimezone(workspaceId);
 
     return (rows as AuditLogRow[]).map((row) => ({
       id: row.id,
       label: AuditLogService.formatLabel(row.action, row.entityType),
-      timestamp: AuditLogService.formatTimestamp(new Date(row.createdAt)),
+      timestamp: AuditLogService.formatTimestamp(new Date(row.createdAt), timeZone),
       tone: AuditLogService.getTone(row.action),
     }));
   }
@@ -280,18 +283,15 @@ export class AuditLogService {
     return `${actionLabel} ${entityLabel}`;
   }
 
-  /**
-   * Format a Date as "Today, 2:45 PM" (same day) or "Jan 15, 2024" (other days).
-   */
-  static formatTimestamp(date: Date): string {
-    const now = new Date();
-    const isToday =
-      date.getFullYear() === now.getFullYear() &&
-      date.getMonth() === now.getMonth() &&
-      date.getDate() === now.getDate();
-
-    if (isToday) {
+  /** Formats `date` in `timeZone` as "Today, 2:45 PM" (same day) or "Jan 15, 2024". */
+  static formatTimestamp(
+    date: Date,
+    timeZone: string = getRuntimeTimeZone(),
+    now: Date = new Date()
+  ): string {
+    if (getCurrentDateISO(timeZone, date) === getCurrentDateISO(timeZone, now)) {
       const time = date.toLocaleTimeString('en-US', {
+        timeZone,
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
@@ -300,6 +300,7 @@ export class AuditLogService {
     }
 
     return date.toLocaleDateString('en-US', {
+      timeZone,
       month: 'short',
       day: 'numeric',
       year: 'numeric',

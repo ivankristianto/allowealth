@@ -163,6 +163,17 @@ describe('AuditLogService', () => {
       expect(result).toMatch(/^Jun 1, 2023$/);
     });
 
+    test('decides "today" in the workspace zone, not the server zone', () => {
+      const now = new Date('2026-03-01T09:00:00Z');
+      const earlier = new Date('2026-03-01T01:00:00Z');
+
+      expect(AuditLogService.formatTimestamp(earlier, 'UTC', now)).toBe('Today, 1:00 AM');
+      expect(AuditLogService.formatTimestamp(earlier, 'Asia/Jakarta', now)).toBe('Today, 8:00 AM');
+      expect(AuditLogService.formatTimestamp(earlier, 'America/Los_Angeles', now)).toBe(
+        'Feb 28, 2026'
+      );
+    });
+
     test('handles Date object from timestamp number', () => {
       // Ensure formatTimestamp works correctly when passed a Date
       // created from a millisecond timestamp (as stored in SQLite)
