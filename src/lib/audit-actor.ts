@@ -9,7 +9,6 @@ import type { McpAuthContext } from '@/lib/mcp-auth';
 export interface AuditActor {
   tokenId: string;
   kind: McpAuthContext['kind'];
-  /** Copied onto each row, because revoking an app password deletes its row. */
   name: string;
 }
 

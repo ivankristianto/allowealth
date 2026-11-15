@@ -20,7 +20,6 @@ import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { hashPassword } from '@/lib/auth/password';
 import { calculateDueDate, shouldGenerateOccurrence } from '@/lib/utils/recurring-dates';
 import { nanoid } from 'nanoid';
-import { auditActorFields } from '@/lib/audit-actor';
 import { getTrailingMonths, maxDayForMonth, SEED_TIME_HOUR } from './lib/dates';
 import { amt, randomAmount } from './lib/amounts';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from './data/categories';
@@ -322,7 +321,6 @@ export async function seedBulkTransactions(
       user_id: userId,
       action: 'create',
       entity_type: 'transaction',
-      ...auditActorFields(),
       entity_id: txnId,
       old_value: null,
       new_value: JSON.stringify({ id: txnId, seeded: true }),
@@ -337,7 +335,6 @@ export async function seedBulkTransactions(
         user_id: userId,
         action: 'update',
         entity_type: 'transaction',
-        ...auditActorFields(),
         entity_id: txnId,
         old_value: JSON.stringify({ amount: '100000' }),
         new_value: JSON.stringify({ amount: '150000' }),

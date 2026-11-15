@@ -5,7 +5,8 @@ import ts from 'typescript';
 
 const INSERT_INTO_AUDIT_LOGS = /\.insert\(\s*[\w.]*\bauditLogs\s*\)/;
 const SOURCE_GLOBS = ['src/**/*.{ts,astro}', 'apps/mcp/src/**/*.ts'];
-const NOT_SOURCE = /(\.test\.ts$|\/test-helpers\/|\/__tests__\/)/;
+// Seeds run outside any request, so no token can be acting.
+const NOT_SOURCE = /(\.test\.ts$|\/test-helpers\/|\/__tests__\/|^src\/db\/seed\/)/;
 
 function spreadsActorFields(literal: ts.ObjectLiteralExpression): boolean {
   return literal.properties.some(
