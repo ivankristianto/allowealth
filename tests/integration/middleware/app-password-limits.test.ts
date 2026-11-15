@@ -246,7 +246,7 @@ describe('app password limits on the REST API', () => {
   });
 
   describe('category allowlist', () => {
-    test('creates in a listed category, records the token, and refuses others and transfers', async () => {
+    test('creates in a listed category, records the token, and refuses others', async () => {
       const { token, id: tokenId } = await createToken({ category_ids: [FOOD] });
       const create = (body: unknown) =>
         call(routes.createTransaction, 'POST', '/api/transactions', { bearer: token, body });
@@ -257,10 +257,6 @@ describe('app password limits on the REST API', () => {
       expect(created.created_by_token_id).toBe(tokenId);
 
       await expectLimit(await create(expenseBody(RENT)), 'category');
-      await expectLimit(
-        await create({ ...expenseBody(FOOD), type: 'transfer', to_account_id: WALLET }),
-        'category'
-      );
     });
 
     test('updates only stay inside listed categories, even when the category is unchanged', async () => {
@@ -279,11 +275,46 @@ describe('app password limits on the REST API', () => {
       await expectLimit(await update(unlisted, { amount: '2000' }), 'category');
       await expectLimit(await update(unlisted, { category_id: FOOD }), 'category');
       expect((await transactionRow(unlisted)).category_id).toBe(RENT);
-      await expectLimit(
-        await update(listed, { type: 'transfer', to_account_id: SAVINGS }),
-        'category'
-      );
-      expect((await transactionRow(listed)).type).toBe('expense');
+    });
+
+    test('transfers have no category, so a limited token cannot create, edit or switch to one', async () => {
+      const transferBody = { ...expenseBody(FOOD), type: 'transfer', to_account_id: SAVINGS };
+      const run = async (token: string) => {
+        const expense = await insertTransaction(FOOD, null);
+        const transfer = await insertTransaction(FOOD, null);
+        await db
+          .update(transactions)
+          .set({ type: 'transfer', to_account_id: SAVINGS })
+          .where(eq(transactions.id, transfer));
+        const update = (id: string, body: unknown) =>
+          call(routes.updateTransaction, 'PUT', `/api/transactions/${id}`, {
+            bearer: token,
+            id,
+            body,
+          });
+        return {
+          create: await call(routes.createTransaction, 'POST', '/api/transactions', {
+            bearer: token,
+            body: transferBody,
+          }),
+          intoTransfer: await update(expense, { type: 'transfer', to_account_id: SAVINGS }),
+          editTransfer: await update(transfer, { amount: '2000' }),
+          outOfTransfer: await update(transfer, { type: 'expense', to_account_id: null }),
+          expense,
+        };
+      };
+
+      const limited = await run((await createToken({ category_ids: [FOOD] })).token);
+      await expectLimit(limited.create, 'category');
+      await expectLimit(limited.intoTransfer, 'category');
+      await expectLimit(limited.editTransfer, 'category');
+      await expectLimit(limited.outOfTransfer, 'category');
+      expect((await transactionRow(limited.expense)).type).toBe('expense');
+
+      const unlimited = await run((await createToken({})).token);
+      expect(unlimited.create.status).toBe(201);
+      expect(unlimited.intoTransfer.status).toBe(200);
+      expect(unlimited.editTransfer.status).toBe(200);
     });
 
     test('recurring templates are created and edited only in listed categories', async () => {

@@ -113,6 +113,11 @@ interface MonthSummaryFilters {
   end_date: Date;
 }
 
+/** The category a write lands in for the category limit; a transfer has none, even with a stale category_id. */
+function limitedCategory(row: { type: string; category_id?: string | null }): string | null {
+  return row.type === 'transfer' ? null : (row.category_id ?? null);
+}
+
 export class TransactionService {
   /** Maximum IDs allowed per bulk operation */
   private static readonly BULK_OPERATION_LIMIT = 100;
@@ -207,9 +212,7 @@ export class TransactionService {
         );
       }
     }
-    await assertCategoriesAllowed([
-      validated.type === 'transfer' ? null : (validated.category_id ?? null),
-    ]);
+    await assertCategoriesAllowed([limitedCategory(validated)]);
 
     // Verify source account exists, belongs to workspace, and is active
     const account = await this.accountService.findByIdIncludingClosed(
@@ -653,13 +656,14 @@ export class TransactionService {
         );
       }
     }
-    // Checked even when the category stays, so a token cannot edit outside its categories.
-    // A transfer keeps its old category_id, so its type decides: it has no category.
+    // Both states are checked, so a token can neither edit outside its categories nor
+    // turn a transaction into or out of a transfer.
     await assertCategoriesAllowed([
-      existing.type === 'transfer' ? null : existing.category_id,
-      (validated.type ?? existing.type) === 'transfer'
-        ? null
-        : (validated.category_id ?? existing.category_id),
+      limitedCategory(existing),
+      limitedCategory({
+        type: validated.type ?? existing.type,
+        category_id: validated.category_id ?? existing.category_id,
+      }),
     ]);
 
     // Verify account if being updated
