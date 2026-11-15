@@ -52,6 +52,7 @@ export type AuditAction =
   | 'recurring_occurrence.skip'
   | 'mcp_token_create'
   | 'mcp_token_revoke'
+  | 'app_password_denied'
   | 'passkey_create'
   | 'passkey_delete';
 

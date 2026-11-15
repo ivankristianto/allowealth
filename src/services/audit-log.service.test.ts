@@ -61,6 +61,8 @@ function insertAuditLog(values: {
   createdAt: Date;
   oldValue?: string | null;
   newValue?: string | null;
+  actorTokenId?: string;
+  actorTokenName?: string;
 }) {
   db.insert(schema.auditLogs)
     .values({
@@ -72,6 +74,9 @@ function insertAuditLog(values: {
       entity_id: values.entityId ?? null,
       old_value: values.oldValue ?? null,
       new_value: values.newValue ?? null,
+      actor_token_id: values.actorTokenId ?? null,
+      actor_token_kind: values.actorTokenId ? 'app_password' : null,
+      actor_token_name: values.actorTokenName ?? null,
       created_at: values.createdAt,
     })
     .run();
@@ -275,7 +280,7 @@ describe('AuditLogService', () => {
         createdAt: new Date('2024-01-15T09:30:00Z'),
       });
 
-      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, 10);
+      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, { limit: 10 });
 
       expect(events).toHaveLength(2);
       expect(events[0]?.label).toBe('Signed In');
@@ -301,10 +306,45 @@ describe('AuditLogService', () => {
         createdAt: new Date('2024-01-15T07:30:00Z'),
       });
 
-      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, 2);
+      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, { limit: 2 });
 
       expect(events).toHaveLength(2);
       expect(events.map((event) => event.label)).toEqual(['Signed In', 'Signed Out']);
+    });
+
+    test('listForUser names the token behind each event, and filters to one token', async () => {
+      insertAuditLog({
+        action: 'login',
+        entityType: 'session',
+        createdAt: new Date('2024-01-15T07:00:00Z'),
+      });
+      insertAuditLog({
+        action: 'create',
+        entityType: 'transaction',
+        createdAt: new Date('2024-01-15T08:00:00Z'),
+        actorTokenId: 'pat_nightly',
+        actorTokenName: 'Nightly import',
+      });
+      insertAuditLog({
+        action: 'app_password_denied',
+        entityType: 'app_password',
+        createdAt: new Date('2024-01-15T09:00:00Z'),
+        actorTokenId: 'pat_other',
+        actorTokenName: 'Other agent',
+      });
+
+      const all = await auditLogService.listForUser(USER_ID, WORKSPACE_ID);
+      expect(all.map(({ label, via }) => ({ label, via }))).toEqual([
+        { label: 'Permission Denied', via: 'Other agent' },
+        { label: 'Created Transaction', via: 'Nightly import' },
+        { label: 'Signed In', via: null },
+      ]);
+      expect(all[0]?.tone).toBe('warning');
+
+      const nightly = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, {
+        actorTokenId: 'pat_nightly',
+      });
+      expect(nightly.map((event) => event.label)).toEqual(['Created Transaction']);
     });
 
     test('exportToCsv defaults to 1000 records', async () => {
@@ -355,7 +395,7 @@ describe('AuditLogService', () => {
         createdAt: testDate,
       });
 
-      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, 10);
+      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, { limit: 10 });
 
       expect(events).toHaveLength(1);
       expect(events[0]?.timestamp).toMatch(/Jan 24, 2025/);
@@ -372,7 +412,7 @@ describe('AuditLogService', () => {
         createdAt: testDate,
       });
 
-      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, 10);
+      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, { limit: 10 });
 
       expect(events).toHaveLength(1);
       // Should show Mar 14, 2025 (or Today if running on that date)

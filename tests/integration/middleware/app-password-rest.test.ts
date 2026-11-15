@@ -1,12 +1,33 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  setSystemTime,
+  test,
+} from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { mcpAppPasswords, users, workspaces } from '@/db/schema';
+import {
+  accounts,
+  auditLogs,
+  categories,
+  mcpAppPasswords,
+  transactions,
+  users,
+  workspaces,
+} from '@/db/schema';
+import { logAuditEvent } from '@/lib/audit-log';
+import { resetCacheManager } from '@/lib/cache';
 import { mockModuleForFile } from '@/lib/test-helpers/mock-module';
 import * as realAuthServer from '@/lib/auth/server';
 import * as realOpenApiSources from '@/lib/openapi/sources';
+import { AuditLogService } from '@/services/audit-log.service';
 import { McpAppPasswordService } from '@/services/mcp-app-password.service';
 import type { AppPasswordScope } from '@/lib/mcp-app-password';
 import { APP_PASSWORD_PRESETS } from '@/lib/app-password-access';
@@ -42,6 +63,7 @@ let authentication: typeof import('@/middleware/auth').authentication;
 let csrf: typeof import('@/middleware/csrf').csrf;
 let openApiGet: typeof import('@/pages/api/openapi.json').GET;
 let selfGet: typeof import('@/pages/api/app-password/self').GET;
+let transactionsPost: typeof import('@/pages/api/transactions/index').POST;
 
 const WORKSPACE_ID = 'app-pw-rest-workspace';
 const USER_ID = 'app-pw-rest-user';
@@ -65,11 +87,13 @@ interface RequestOptions {
   bearer?: string;
   cookies?: Record<string, string>;
   headers?: Record<string, string>;
+  body?: unknown;
 }
 
 function createContext(pathname: string, options: RequestOptions = {}): TestContext {
   const cookies = new Map(Object.entries(options.cookies ?? {}));
   const headers: Record<string, string> = { ...options.headers };
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (options.bearer !== undefined) headers.Authorization = `Bearer ${options.bearer}`;
   if (cookies.size > 0) {
     headers.cookie = [...cookies].map(([name, value]) => `${name}=${value}`).join('; ');
@@ -78,7 +102,11 @@ function createContext(pathname: string, options: RequestOptions = {}): TestCont
 
   return {
     locals: {},
-    request: new Request(url, { method: options.method ?? 'GET', headers }),
+    request: new Request(url, {
+      method: options.method ?? 'GET',
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    }),
     url,
     cookies: {
       get: (name) => (cookies.has(name) ? { value: cookies.get(name)! } : undefined),
@@ -152,6 +180,10 @@ async function expectPermissionMissing(response: Response, permission: Permissio
 }
 
 async function resetFixtures(): Promise<void> {
+  await db.delete(auditLogs).where(eq(auditLogs.user_id, USER_ID));
+  await db.delete(transactions).where(eq(transactions.workspace_id, WORKSPACE_ID));
+  await db.delete(accounts).where(eq(accounts.workspace_id, WORKSPACE_ID));
+  await db.delete(categories).where(eq(categories.workspace_id, WORKSPACE_ID));
   await db.delete(mcpAppPasswords).where(eq(mcpAppPasswords.user_id, USER_ID));
   await db.delete(users).where(eq(users.id, USER_ID));
   await db.delete(workspaces).where(eq(workspaces.id, WORKSPACE_ID));
@@ -182,6 +214,7 @@ describe('app password authentication on the REST API', () => {
     ({ csrf } = await import('@/middleware/csrf'));
     ({ GET: openApiGet } = await import('@/pages/api/openapi.json'));
     ({ GET: selfGet } = await import('@/pages/api/app-password/self'));
+    ({ POST: transactionsPost } = await import('@/pages/api/transactions/index'));
   });
 
   beforeEach(async () => {
@@ -367,6 +400,171 @@ describe('app password authentication on the REST API', () => {
     }
     expect(statuses.slice(0, 60).every((status) => status === 200)).toBe(true);
     expect(statuses[60]).toBe(429);
+  });
+
+  describe('audit attribution', () => {
+    const auditLogService = new AuditLogService(db);
+
+    async function auditRows(action: string) {
+      return db
+        .select()
+        .from(auditLogs)
+        .where(and(eq(auditLogs.user_id, USER_ID), eq(auditLogs.action, action)));
+    }
+
+    async function createExpenseWith(bearer: string): Promise<Response> {
+      await db.insert(accounts).values({
+        id: `acc-${crypto.randomUUID()}`,
+        workspace_id: WORKSPACE_ID,
+        created_by_user_id: USER_ID,
+        name: 'Wallet',
+        type: 'cash',
+        balance: '1000000',
+        currency: 'IDR',
+      });
+      await db.insert(categories).values({
+        id: `cat-${crypto.randomUUID()}`,
+        workspace_id: WORKSPACE_ID,
+        created_by_user_id: USER_ID,
+        name: 'Food',
+        type: 'expense',
+      });
+      const [account] = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.workspace_id, WORKSPACE_ID));
+      const [category] = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.workspace_id, WORKSPACE_ID));
+
+      return runChain(
+        createContext('/api/transactions', {
+          method: 'POST',
+          bearer,
+          body: {
+            type: 'expense',
+            amount: '25000',
+            currency: 'IDR',
+            account_id: account.id,
+            category_id: category.id,
+            transaction_date: '2026-11-01',
+          },
+        }),
+        (ctx) => transactionsPost(ctx as never) as Promise<Response>
+      );
+    }
+
+    async function readWriteSummary() {
+      const tokens = await service.listForUser(USER_ID);
+      return tokens.find((token) => token.preset === 'read-write')!;
+    }
+
+    // The service writes the create event fire-and-forget, after the response.
+    async function waitForAuditRow(action: string) {
+      for (let attempt = 0; attempt < 50; attempt++) {
+        const [row] = await auditRows(action);
+        if (row) return row;
+        await Bun.sleep(10);
+      }
+      throw new Error(`no ${action} audit row`);
+    }
+
+    beforeEach(resetCacheManager);
+
+    afterEach(() => {
+      setSystemTime();
+      resetCacheManager();
+    });
+
+    test('a write with an app password records the token on its audit row', async () => {
+      const readWrite = await readWriteSummary();
+
+      const response = await createExpenseWith(readWriteToken);
+
+      expect(response.status).toBe(201);
+      expect(await waitForAuditRow('create')).toMatchObject({
+        entity_type: 'transaction',
+        actor_token_id: readWrite.id,
+        actor_token_kind: 'app_password',
+        actor_token_name: readWrite.name,
+      });
+    });
+
+    test('a session request leaves the token columns empty', async () => {
+      mockCookieSession();
+      const context = createContext('/api/transactions', {
+        cookies: { [SESSION_COOKIE]: 'cookie-session-token' },
+      });
+
+      const response = await runChain(context, async () => {
+        await logAuditEvent({
+          workspaceId: WORKSPACE_ID,
+          userId: USER_ID,
+          action: 'update',
+          entityType: 'transaction',
+          entityId: 'txn-1',
+        });
+        return Response.json({ success: true });
+      });
+
+      expect(response.status).toBe(200);
+      expect(await auditRows('update')).toEqual([
+        expect.objectContaining({
+          actor_token_id: null,
+          actor_token_kind: null,
+          actor_token_name: null,
+        }),
+      ]);
+    });
+
+    test("a revoked token's events still show its name", async () => {
+      const readWrite = await readWriteSummary();
+      await createExpenseWith(readWriteToken);
+      await waitForAuditRow('create');
+
+      await service.revoke(USER_ID, readWrite.id);
+
+      const events = await auditLogService.listForUser(USER_ID, WORKSPACE_ID, {
+        actorTokenId: readWrite.id,
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0].via).toBe(readWrite.name);
+    });
+
+    test('a denied request is recorded once per token and permission every 10 minutes', async () => {
+      const start = new Date('2026-11-15T09:00:00Z');
+      setSystemTime(start);
+      const post = () =>
+        runChain(createContext('/api/transactions', { method: 'POST', bearer: readToken }));
+
+      await expectPermissionMissing(await post(), 'transactions:create');
+      await expectPermissionMissing(await post(), 'transactions:create');
+      await runChain(
+        createContext('/api/transactions/txn-1', { method: 'DELETE', bearer: readToken })
+      );
+
+      const denials = await auditRows('app_password_denied');
+      expect(denials).toHaveLength(2);
+      expect(denials.map((row) => JSON.parse(row.new_value!))).toEqual(
+        expect.arrayContaining([
+          { method: 'POST', path: '/api/transactions', permission: 'transactions:create' },
+          { method: 'DELETE', path: '/api/transactions/txn-1', permission: 'transactions:delete' },
+        ])
+      );
+      expect(denials[0]).toMatchObject({
+        workspace_id: WORKSPACE_ID,
+        entity_type: 'app_password',
+        entity_id: readTokenId,
+        actor_token_id: readTokenId,
+        actor_token_kind: 'app_password',
+      });
+
+      setSystemTime(new Date(start.getTime() + 10 * 60_000 + 1_000));
+      await post();
+
+      expect(await auditRows('app_password_denied')).toHaveLength(3);
+    });
   });
 
   describe('permission enforcement', () => {

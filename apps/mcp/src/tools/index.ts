@@ -2,6 +2,7 @@ import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { ValiError } from 'valibot';
 import { ANY_VALID_TOKEN } from '@/lib/app-password-rest-access';
 import { logError } from '@/lib/logger';
+import { recordTokenDenial } from '@/lib/token-denial-audit';
 import { isReadPermission, type Permission } from '@/lib/permissions/registry';
 import { ServiceError } from '@/services/service-errors';
 import type { ToolContext } from './types.js';
@@ -72,16 +73,22 @@ const TOOLS: readonly Tool[] = [
   return { ...tool, annotations };
 });
 
+interface ToolDenial {
+  message: string;
+  /** Empty for a tool with no permission entry, which no grant could unlock. */
+  missing: Permission[];
+}
+
 /** Why the token may not call the tool, or null when it may. */
-function toolDenial(name: string, granted: readonly Permission[]): string | null {
+function toolDenial(name: string, granted: readonly Permission[]): ToolDenial | null {
   const required = toolPermissions(name);
   if (required === ANY_VALID_TOKEN) return null;
   // With no entry nothing is missing, so an unmapped tool has to be refused here.
-  if (required.length === 0) return `Tool ${name} is not available.`;
+  if (required.length === 0) return { message: `Tool ${name} is not available.`, missing: [] };
   const missing = required.filter((permission) => !granted.includes(permission));
   if (missing.length === 0) return null;
   const noun = missing.length === 1 ? 'permission' : 'permissions';
-  return `Tool ${name} needs the ${missing.join(', ')} ${noun}.`;
+  return { message: `Tool ${name} needs the ${missing.join(', ')} ${noun}.`, missing };
 }
 
 /** Every tool without `auth`; with it, only the tools that token may call. */
@@ -97,7 +104,16 @@ export async function handleToolCall(
   ctx: ToolContext
 ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
   const denial = toolDenial(name, ctx.auth.permissions);
-  if (denial) return { isError: true, content: [{ type: 'text', text: denial }] };
+  if (denial) {
+    // Unknown tool names are client-chosen, so only mapped tools reach the audit log.
+    if (denial.missing.length > 0) {
+      await recordTokenDenial(ctx.auth, {
+        subject: `tool:${name}`,
+        details: { tool: name, missing: denial.missing },
+      });
+    }
+    return { isError: true, content: [{ type: 'text', text: denial.message }] };
+  }
 
   try {
     switch (name) {
