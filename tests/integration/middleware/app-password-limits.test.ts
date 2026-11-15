@@ -255,8 +255,9 @@ describe('app password limits on the REST API', () => {
 
       const allowed = await create(expenseBody(FOOD));
       expect(allowed.status).toBe(201);
-      const created = await transactionRow((await allowed.json()).data.id);
-      expect(created.created_by_token_id).toBe(tokenId);
+      const { data } = await allowed.json();
+      expect(data.created_by_token_id).toBe(tokenId);
+      expect((await transactionRow(data.id)).created_by_token_id).toBe(tokenId);
 
       await expectLimit(await create(expenseBody(RENT)), 'category');
     });

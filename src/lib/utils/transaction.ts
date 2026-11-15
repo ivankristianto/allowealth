@@ -18,6 +18,7 @@ export interface DrizzleTransactionResult {
   description: string | null;
   transaction_date: Date;
   updated_by_user_id?: string | null;
+  created_by_token_id?: string | null;
   deleted_by_user_id?: string | null;
   deleted_at: Date | null;
   created_at: Date;
@@ -62,6 +63,7 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
     description: t.description,
     transaction_date: t.transaction_date,
     updated_by_user_id: t.updated_by_user_id ?? null,
+    created_by_token_id: t.created_by_token_id ?? null,
     deleted_by_user_id: t.deleted_by_user_id ?? null,
     deleted_at: t.deleted_at,
     created_at: t.created_at,

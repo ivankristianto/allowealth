@@ -27,6 +27,8 @@ export interface Transaction {
   description: string | null;
   transaction_date: Date;
   updated_by_user_id: string | null;
+  /** The app password that created it; null for the app, imports and OAuth tokens. */
+  created_by_token_id?: string | null;
   deleted_by_user_id: string | null;
   deleted_at: Date | null;
   created_at: Date;
