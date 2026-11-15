@@ -5,6 +5,7 @@ import { logAuditEvent } from '@/lib/audit-log';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters, invalidateTags } from '@/lib/cache';
 import { createLogger } from '@/lib/logger';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { assertCategoriesAllowed } from '@/lib/token-write-limits';
 import { parse } from 'valibot';
 import type { Currency } from '@/lib/enums';
 import type {
@@ -336,6 +337,8 @@ export class RecurringOccurrenceService {
     await this.ensureOccurrenceIsDue(workspaceId, occurrence.due_date);
 
     const template = occurrence.template as RecurringTemplate;
+    // The body's category is checked by create; the bill itself must be in a listed category too.
+    await assertCategoriesAllowed([template.category_id]);
     const description =
       template.is_installment && template.total_occurrences
         ? generateInstallmentDescription(

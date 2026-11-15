@@ -24,6 +24,7 @@ type Route = (context: never) => Response | Promise<Response>;
 const WORKSPACE_ID = 'app-pw-limits-workspace';
 const USER_ID = 'app-pw-limits-user';
 const WALLET = 'app-pw-limits-wallet';
+const SAVINGS = 'app-pw-limits-savings';
 const FOOD = 'app-pw-limits-food';
 const RENT = 'app-pw-limits-rent';
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -217,15 +218,17 @@ describe('app password limits on the REST API', () => {
       name: 'Limits Owner',
       role: 'admin',
     });
-    await db.insert(accounts).values({
-      id: WALLET,
-      workspace_id: WORKSPACE_ID,
-      created_by_user_id: USER_ID,
-      name: 'Wallet',
-      type: 'cash',
-      balance: '1000000',
-      currency: 'IDR',
-    });
+    await db.insert(accounts).values(
+      [WALLET, SAVINGS].map((id) => ({
+        id,
+        workspace_id: WORKSPACE_ID,
+        created_by_user_id: USER_ID,
+        name: id === WALLET ? 'Wallet' : 'Savings',
+        type: 'cash' as const,
+        balance: '1000000',
+        currency: 'IDR',
+      }))
+    );
     await db.insert(categories).values(
       [FOOD, RENT].map((id) => ({
         id,
@@ -276,6 +279,11 @@ describe('app password limits on the REST API', () => {
       await expectLimit(await update(unlisted, { amount: '2000' }), 'category');
       await expectLimit(await update(unlisted, { category_id: FOOD }), 'category');
       expect((await transactionRow(unlisted)).category_id).toBe(RENT);
+      await expectLimit(
+        await update(listed, { type: 'transfer', to_account_id: SAVINGS }),
+        'category'
+      );
+      expect((await transactionRow(listed)).type).toBe('expense');
     });
 
     test('recurring templates are created and edited only in listed categories', async () => {
@@ -306,6 +314,8 @@ describe('app password limits on the REST API', () => {
 
       const refused = await insertDueOccurrence(RENT);
       await expectLimit(await confirm(refused, RENT), 'category');
+      // A listed category in the body does not open a bill outside the allowlist.
+      await expectLimit(await confirm(refused, FOOD), 'category');
       const [stillPending] = await db
         .select({ status: recurringOccurrences.status })
         .from(recurringOccurrences)

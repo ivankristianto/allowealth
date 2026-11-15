@@ -654,9 +654,12 @@ export class TransactionService {
       }
     }
     // Checked even when the category stays, so a token cannot edit outside its categories.
+    // A transfer keeps its old category_id, so its type decides: it has no category.
     await assertCategoriesAllowed([
-      existing.category_id,
-      validated.category_id ?? existing.category_id,
+      existing.type === 'transfer' ? null : existing.category_id,
+      (validated.type ?? existing.type) === 'transfer'
+        ? null
+        : (validated.category_id ?? existing.category_id),
     ]);
 
     // Verify account if being updated
