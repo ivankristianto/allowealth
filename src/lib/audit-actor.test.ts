@@ -1,8 +1,27 @@
 import { describe, expect, test } from 'bun:test';
-import { auditActorFields, auditActorFromAuth, runWithAuditActor } from './audit-actor';
+import {
+  auditActorFields,
+  auditActorFromAuth,
+  currentAuditActor,
+  runWithAuditActor,
+  type AuditActor,
+} from './audit-actor';
 
-const nightly = { tokenId: 'pat_1', kind: 'app_password', name: 'Nightly import' } as const;
-const desktop = { tokenId: 'tok_1', kind: 'oauth', name: 'Claude Desktop' } as const;
+const owner = { userId: 'user_1', workspaceId: 'ws_1' };
+const nightly: AuditActor = {
+  ...owner,
+  tokenId: 'pat_1',
+  kind: 'app_password',
+  tokenName: 'Nightly import',
+  limits: { own_transactions_only: true },
+};
+const desktop: AuditActor = {
+  ...owner,
+  tokenId: 'tok_1',
+  kind: 'oauth',
+  tokenName: 'Claude Desktop',
+  limits: {},
+};
 
 describe('auditActorFields', () => {
   test('is all null outside a token request', () => {
@@ -47,10 +66,19 @@ describe('auditActorFields', () => {
   });
 });
 
+describe('currentAuditActor', () => {
+  test("carries the token's limits inside the request and nothing outside it", () => {
+    expect(runWithAuditActor(nightly, () => currentAuditActor()?.limits)).toEqual({
+      own_transactions_only: true,
+    });
+    expect(currentAuditActor()).toBeUndefined();
+  });
+});
+
 describe('auditActorFromAuth', () => {
-  test('maps an MCP auth context to an actor', () => {
+  test('keeps only the actor fields of an MCP auth context', () => {
     expect(
-      auditActorFromAuth({ tokenId: 'tok_1', kind: 'oauth', tokenName: 'Claude Desktop' })
+      auditActorFromAuth({ ...desktop, permissions: ['accounts:read'] } as AuditActor)
     ).toEqual(desktop);
   });
 });

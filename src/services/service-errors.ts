@@ -3,6 +3,8 @@
  * Provides consistent error handling with error codes
  */
 
+import type { AppPasswordLimitName } from '@/lib/app-password-limits';
+
 export enum ServiceErrorCode {
   // General errors
   VALIDATION_ERROR = 'VALIDATION_ERROR',
@@ -51,6 +53,9 @@ export enum ServiceErrorCode {
   CURRENCY_LOCKED = 'CURRENCY_LOCKED',
   INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
 
+  // App password limits
+  APP_PASSWORD_LIMIT = 'APP_PASSWORD_LIMIT',
+
   // Auth-specific errors
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   USER_EXISTS = 'USER_EXISTS',
@@ -79,7 +84,9 @@ export class ServiceError extends Error {
   constructor(
     public code: ServiceErrorCode,
     message: string,
-    public statusCode: number = 400
+    public statusCode: number = 400,
+    /** Machine-readable context for `error.details` in the API response. */
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ServiceError';
@@ -90,6 +97,17 @@ export class TransactionServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'TransactionServiceError';
+  }
+}
+
+/** A write an app password's limits do not allow; `limit` names the one it hit. */
+export class TokenLimitError extends ServiceError {
+  constructor(
+    readonly limit: AppPasswordLimitName,
+    message: string
+  ) {
+    super(ServiceErrorCode.APP_PASSWORD_LIMIT, message, 403, { limit });
+    this.name = 'TokenLimitError';
   }
 }
 

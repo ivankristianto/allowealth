@@ -12,6 +12,7 @@ const validateMcpTokenMock = mock(async (): Promise<McpAuthContext | null> => ({
   userId: 'user-1',
   tokenId: 'tok-1',
   tokenName: 'Claude Desktop',
+  limits: {},
   permissions: [],
   kind: 'oauth',
 }));

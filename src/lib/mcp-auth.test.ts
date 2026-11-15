@@ -181,6 +181,7 @@ describe('validateMcpToken', () => {
         userId: 'user-1',
         tokenId: 'tok-1',
         tokenName: name,
+        limits: {},
         permissions: ['accounts:read'],
         kind: 'oauth',
       });
@@ -256,6 +257,7 @@ describe('validateMcpToken', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       tokenName: 'Claude Desktop',
+      limits: {},
       permissions: ['accounts:read'],
       kind: 'oauth',
     });
@@ -282,6 +284,7 @@ describe('validateMcpToken', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       tokenName: 'Claude Desktop',
+      limits: {},
       permissions: ['accounts:read'],
       kind: 'oauth',
     });
@@ -356,6 +359,7 @@ describe('validateMcpToken app password dispatch', () => {
     userId: 'user-1',
     tokenId: 'pat_1',
     tokenName: 'Nightly import',
+    limits: {},
     permissions: ['accounts:read' as const],
     kind: 'app_password' as const,
   };
@@ -406,6 +410,7 @@ describe('validateMcpToken app password dispatch', () => {
       userId: 'user-1',
       tokenId: 'tok-1',
       tokenName: 'Claude Desktop',
+      limits: {},
       permissions: ['accounts:read'],
       kind: 'oauth',
     });
@@ -418,6 +423,7 @@ describe('validateMcpToken with an archived workspace', () => {
     userId: 'user-1',
     tokenId: 'pat-1',
     tokenName: 'Nightly import',
+    limits: {},
     permissions: ['accounts:read' as const],
     kind: 'app_password' as const,
   };

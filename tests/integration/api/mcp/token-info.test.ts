@@ -19,6 +19,7 @@ function context(
       tokenId: 'pat_1',
       tokenName: 'Cron agent',
       permissions: [],
+      limits: {},
       ...auth,
     },
     rateLimit,

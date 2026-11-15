@@ -199,6 +199,7 @@ export class McpAppPasswordService {
           userId: mcpAppPasswords.user_id,
           workspaceId: mcpAppPasswords.workspace_id,
           permissions: mcpAppPasswords.permissions,
+          limits: mcpAppPasswords.limits,
           expiresAt: mcpAppPasswords.expires_at,
           lastUsedAt: mcpAppPasswords.last_used_at,
           userWorkspaceId: users.workspace_id,
@@ -235,6 +236,7 @@ export class McpAppPasswordService {
       tokenId: record.id,
       tokenName: record.name,
       permissions: expandPermissionGrants(record.permissions),
+      limits: record.limits,
     };
   }
 

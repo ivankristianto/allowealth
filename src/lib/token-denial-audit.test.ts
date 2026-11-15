@@ -11,6 +11,7 @@ const token = {
   kind: 'app_password' as const,
   tokenId: 'pat_denial',
   tokenName: 'Probe agent',
+  limits: {},
   userId: USER_ID,
   workspaceId: WORKSPACE_ID,
 };
