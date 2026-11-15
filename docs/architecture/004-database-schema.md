@@ -357,6 +357,9 @@ erDiagram
         text entity_id
         text old_value
         text new_value
+        text actor_token_id
+        text actor_token_kind
+        text actor_token_name
         timestamp created_at
     }
 ```
