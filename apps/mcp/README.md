@@ -162,9 +162,7 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 | `get_dashboard`       | Read   | Get combined financial snapshot: accounts, income, expenses, budget health   |
 | `get_account_summary` | Read   | Get account totals grouped by currency and type                              |
 
-Read-only app passwords cannot see or call Write tools. A tool added later stays off-limits to read-only tokens until it is added to `READ_ONLY_TOOLS` in `src/tools/index.ts`.
-
-Every tool also needs an entry in `TOOL_PERMISSIONS` in the same file, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. A test fails until it has one.
+Read-only app passwords cannot see or call Write tools. Every tool needs an entry in `TOOL_PERMISSIONS` in `src/tools/index.ts`, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. Read-only tokens get the tools whose permissions are all `:read`; a tool without an entry stays off-limits to them, and a test fails until it has one.
 
 ## Usage Examples
 
