@@ -164,6 +164,8 @@ Allowealth MCP server started (workspace: a1b2c3d4...)
 
 Read-only app passwords cannot see or call Write tools. A tool added later stays off-limits to read-only tokens until it is added to `READ_ONLY_TOOLS` in `src/tools/index.ts`.
 
+Every tool also needs an entry in `TOOL_PERMISSIONS` in the same file, naming the registry permissions (`src/lib/permissions/registry.ts`) it requires. A test fails until it has one.
+
 ## Usage Examples
 
 Once connected, you can ask your AI assistant things like:
